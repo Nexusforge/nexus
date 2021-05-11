@@ -15,6 +15,7 @@ namespace Nexus.Core
 
             // preset, mutable
             this.AggregationChunkSizeMB = 200;
+            this.DisplayName = "Nexus";
             this.AspBaseUrl = "http://0.0.0.0:8080";
             this.Language = "en";
         }
@@ -25,6 +26,8 @@ namespace Nexus.Core
         // preset, mutable
 
         public uint AggregationChunkSizeMB { get; set; }
+
+        public string DisplayName { get; set; }
 
         public string AspBaseUrl { get; set; }
 
