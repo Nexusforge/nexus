@@ -160,7 +160,7 @@ namespace Nexus.Extensions
                     foreach (var projectId in projectIds)
                     {
                         var project = cache.FirstOrDefault(project => project.Id == projectId);
-                        var currentMonthFolder = Path.Combine(dataFolderPath, WebUtility.UrlEncode(project.Id), currentMonth.ToString("yyyy-MM"));
+                        var currentMonthFolder = Path.Combine(dataFolderPath, WebUtility.UrlEncode(projectId), currentMonth.ToString("yyyy-MM"));
 
                         // project is in cache ...
                         if (project != null)

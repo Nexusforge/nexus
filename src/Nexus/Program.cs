@@ -43,6 +43,13 @@ namespace Nexus
             // paths
             var appdataFolderPath = Environment.GetEnvironmentVariable("NEXUS_APPDATA");
 
+            if (string.IsNullOrWhiteSpace(appdataFolderPath))
+                appdataFolderPath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "Nexus");
+
+            Directory.CreateDirectory(appdataFolderPath);
+
             // configure logging
             _loggerFactory = LoggerFactory.Create(builder =>
             {
