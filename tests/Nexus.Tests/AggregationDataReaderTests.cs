@@ -28,6 +28,7 @@ namespace Nexus.Tests
 
             // act
             var actual = dataReader.GetProjectIds();
+            actual.Sort();
 
             // assert
             var expected = new List<string>() { "/A/B/C", "/A2/B/C" };
