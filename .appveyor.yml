@@ -25,16 +25,12 @@ before_build:
   - ps: "Get-ChildItem Env:"
 
 build_script:
- - ps: dotnet build ./extensions/Nexus.Extension.Csv/Nexus.Extension.Csv.csproj                  -c $Env:CONFIGURATION /p:Build=$Env:APPVEYOR_BUILD_NUMBER /p:IsFinalBuild=$Env:APPVEYOR_REPO_TAG
- - ps: dotnet build ./extensions/Nexus.Extension.Famos/Nexus.Extension.Famos.csproj              -c $Env:CONFIGURATION /p:Build=$Env:APPVEYOR_BUILD_NUMBER /p:IsFinalBuild=$Env:APPVEYOR_REPO_TAG
- - ps: dotnet build ./extensions/Nexus.Extension.Mat73/Nexus.Extension.Mat73.csproj              -c $Env:CONFIGURATION /p:Build=$Env:APPVEYOR_BUILD_NUMBER /p:IsFinalBuild=$Env:APPVEYOR_REPO_TAG
-
  - ps: if ($isLinux) { sudo docker build -t apollo3zehn/nexus:1.0.0.alpha.1.$Env:APPVEYOR_BUILD_NUMBER . }
 
 #  - ps: if ($isWindows) { msbuild .\src\Nexus.Deployment\Nexus.Deployment.wixproj       /p:Configuraton=$Env:CONFIGURATION /p:Build=$Env:APPVEYOR_BUILD_NUMBER /p:IsFinalBuild=$Env:APPVEYOR_REPO_TAG }
 
 test_script:
- - ps: dotnet test ./tests/Nexus.Tests -c $Env:CONFIGURATION /p:BuildProjectReferences=false
+ - ps: dotnet test ./tests/Nexus.Tests -c $Env:CONFIGURATION
 
 artifacts:
   - path: ./artifacts/packages/**/*.nupkg
