@@ -9,6 +9,7 @@ using System.Linq;
 namespace Nexus.Extension.Csv
 {
     // v1: initial version
+    [DataWriterFormatVersion(1)]
     public class CsvWriter : DataWriterExtensionLogicBase
     {
         #region "Fields"
