@@ -1,0 +1,82 @@
+version: '{build}'
+clone_depth: 1
+
+image:
+  # - Visual Studio 2019
+  - Ubuntu
+
+environment:
+  DOCKER_PASSWORD:
+     secure: 5thIPcBWPN+Qcha5VkR8Ng== 
+
+branches:
+  only:
+    - master
+    - dev
+
+configuration:
+  - Release
+
+init:
+  - git config --global core.autocrlf true
+
+before_build:
+  - ps: dotnet --info
+  - ps: "Get-ChildItem Env:"
+
+build_script:
+ - ps: dotnet build ./extensions/Nexus.Extension.Csv/Nexus.Extension.Csv.csproj                  -c $Env:CONFIGURATION /p:Build=$Env:APPVEYOR_BUILD_NUMBER /p:IsFinalBuild=$Env:APPVEYOR_REPO_TAG
+ - ps: dotnet build ./extensions/Nexus.Extension.Famos/Nexus.Extension.Famos.csproj              -c $Env:CONFIGURATION /p:Build=$Env:APPVEYOR_BUILD_NUMBER /p:IsFinalBuild=$Env:APPVEYOR_REPO_TAG
+ - ps: dotnet build ./extensions/Nexus.Extension.Mat73/Nexus.Extension.Mat73.csproj              -c $Env:CONFIGURATION /p:Build=$Env:APPVEYOR_BUILD_NUMBER /p:IsFinalBuild=$Env:APPVEYOR_REPO_TAG
+
+ - ps: if ($isLinux) { sudo docker build -t apollo3zehn/nexus:1.0.0.alpha.1.$Env:APPVEYOR_BUILD_NUMBER . }
+
+#  - ps: if ($isWindows) { msbuild .\src\Nexus.Deployment\Nexus.Deployment.wixproj       /p:Configuraton=$Env:CONFIGURATION /p:Build=$Env:APPVEYOR_BUILD_NUMBER /p:IsFinalBuild=$Env:APPVEYOR_REPO_TAG }
+
+test_script:
+ - ps: dotnet test ./tests/Nexus.Tests -c $Env:CONFIGURATION /p:BuildProjectReferences=false
+
+artifacts:
+  - path: ./artifacts/packages/**/*.nupkg
+  - path: ./artifacts/msi/**/*.msi
+
+after_test:
+
+# Docker
+  - ps: if ($isLinux) { docker login -u="apollo3zehn" -p="$env:DOCKER_PASSWORD" }
+  - ps: if ($isLinux) { docker push apollo3zehn/nexus:1.0.0.alpha.1.$Env:APPVEYOR_BUILD_NUMBER }
+
+deploy:
+
+# MyGet (dev)
+  - provider: NuGet
+    server: https://www.myget.org/F/nexus/api/v2/package
+    api_key:
+      secure: DVadlPknnKPMR4F2+3VqeU7BFFmtLcXDHzkySA590MqQNIdzbx8HRuaPwDVbHRqX
+    skip_symbols: true
+    artifact: /.*\.nupkg/
+    on:
+      branch: dev
+      CI_LINUX: true
+
+# NuGet (master)
+  - provider: NuGet
+    server: https://www.nuget.org/api/v2/package
+    api_key:
+      secure: WqZcnRwOmzIa+INti/HnihBrUz0u71rTRNElX/2wbuAIbzMX6SV8h4OxJtCaX2vN
+    skip_symbols: true
+    artifact: /.*\.nupkg/ 
+    on:
+      branch: master
+      CI_WINDOWS: true
+      APPVEYOR_REPO_TAG: true
+
+# GitHub (master)
+  - provider: GitHub
+    force_update: true
+    auth_token:
+      secure: Ssl8rHF6345+qU9lhUQlHRx0Ta4e6UXIQM3SEpDpjR4+WcpMJM3TvQ5gUWjwf6jQ
+    artifact: /.*\.msi/
+    on:
+      CI_WINDOWS: true
+      APPVEYOR_REPO_TAG: true
