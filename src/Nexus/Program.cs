@@ -41,8 +41,7 @@ namespace Nexus
             var isWindowsService = args.Contains("--non-interactive");
 
             // paths
-            var appdataFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Nexus");
-            Directory.CreateDirectory(appdataFolderPath);
+            var appdataFolderPath = Environment.GetEnvironmentVariable("NEXUS_APPDATA");
 
             // configure logging
             _loggerFactory = LoggerFactory.Create(builder =>
