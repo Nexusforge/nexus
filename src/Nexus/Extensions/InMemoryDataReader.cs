@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace Nexus.Extensions
 {
-    [ExtensionIdentification("Nexus.InMemory", "Nexus in-memory", "Provides an in-memory database.", "", "")]
+    [ExtensionIdentification("Nexus.InMemory", "Nexus in-memory", "Provides an in-memory database.")]
     public class InMemoryDataReader : DataReaderExtensionBase
     {
         #region Constructors

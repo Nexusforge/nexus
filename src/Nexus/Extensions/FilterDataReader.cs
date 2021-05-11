@@ -20,7 +20,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Extensions
 {
-    [ExtensionIdentification(FilterDataReader.Id, "Nexus filters", "Dynamically loads and compiles user-defined filters.", "", "")]
+    [ExtensionIdentification(FilterDataReader.Id, "Nexus filters", "Dynamically loads and compiles user-defined filters.")]
     public class FilterDataReader : DataReaderExtensionBase
     {
         #region Fields
