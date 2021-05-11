@@ -44,7 +44,7 @@ namespace Nexus.Controllers
             _serviceProvider = serviceProvider;
             _exportJobService = exportJobService;
             _aggregationJobService = aggregationJobService;
-            _logger = loggerFactory.CreateLogger("Nexus Explorer");
+            _logger = loggerFactory.CreateLogger("Nexus");
         }
 
         #endregion

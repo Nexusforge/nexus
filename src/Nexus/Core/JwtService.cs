@@ -44,7 +44,7 @@ namespace Nexus.Core
 
                     var signingCredentials = new SigningCredentials(Startup.SecurityKey, SecurityAlgorithms.HmacSha256);
 
-                    var token = new JwtSecurityToken(issuer: "Nexus Explorer",
+                    var token = new JwtSecurityToken(issuer: "Nexus",
                                                      audience: signingCredentials.Algorithm,
                                                      claims: claims,
                                                      expires: DateTime.UtcNow.AddSeconds(30),

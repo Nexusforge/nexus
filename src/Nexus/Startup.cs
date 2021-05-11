@@ -118,7 +118,7 @@ namespace Nexus
 
             services.AddSwaggerDocument(config =>
             {
-                config.Title = "Nexus Explorer REST API";
+                config.Title = "Nexus REST API";
                 config.Version = "v1";
                 config.Description = "Explore resources and get their data.";
                 //config.OperationProcessors.Add(new OperationSecurityScopeProcessor("JWT Token"));

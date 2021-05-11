@@ -16,7 +16,7 @@ namespace Nexus.Services
         public UserManager(IServiceProvider serviceProvider, ILoggerFactory loggerFactory)
         {
             _serviceProvider = serviceProvider;
-            _logger = loggerFactory.CreateLogger("Nexus Explorer");
+            _logger = loggerFactory.CreateLogger("Nexus");
         }
 
         public void Initialize()

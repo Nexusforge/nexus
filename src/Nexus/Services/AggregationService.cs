@@ -50,7 +50,7 @@ namespace Nexus.Services
             _signInManager = signInManager;
             _databaseManager = databaseManager;
             _aggregationChunkSizeMb = options.AggregationChunkSizeMB;
-            _logger = loggerFactory.CreateLogger("Nexus Explorer");
+            _logger = loggerFactory.CreateLogger("Nexus");
 
             this.Progress = new Progress<ProgressUpdatedEventArgs>();
         }

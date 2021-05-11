@@ -23,7 +23,7 @@ namespace Nexus.Controllers
                                  ILoggerFactory loggerFactory)
         {
             _jwtService = jwtService;
-            _logger = loggerFactory.CreateLogger("Nexus Explorer");
+            _logger = loggerFactory.CreateLogger("Nexus");
         }
 
         #endregion

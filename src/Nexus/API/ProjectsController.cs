@@ -35,7 +35,7 @@ namespace Nexus.Controllers
         {
             _userIdService = userIdService;
             _databaseManager = databaseManager;
-            _logger = loggerFactory.CreateLogger("Nexus Explorer");
+            _logger = loggerFactory.CreateLogger("Nexus");
         }
 
         #endregion

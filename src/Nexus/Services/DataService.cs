@@ -42,7 +42,7 @@ namespace Nexus.Services
         {
             _databaseManager = databaseManager;
             _userIdService = userIdService;
-            _logger = loggerFactory.CreateLogger("Nexus Explorer");
+            _logger = loggerFactory.CreateLogger("Nexus");
             _options = options;
             _blockSizeLimit = 5 * 1000 * 1000UL;
 
@@ -248,14 +248,14 @@ namespace Nexus.Services
 
             // create custom meta data
             var customMetadataEntrySet = new List<CustomMetadataEntry>();
-            //customMetadataEntrySet.Add(new CustomMetadataEntry("system_name", "Nexus Explorer", CustomMetadataEntryLevel.File));
+            //customMetadataEntrySet.Add(new CustomMetadataEntry("system_name", "Nexus", CustomMetadataEntryLevel.File));
 
             if (!string.IsNullOrWhiteSpace(sparseProject.License.FileMessage))
                 customMetadataEntrySet.Add(new CustomMetadataEntry("license", sparseProject.License.FileMessage, CustomMetadataEntryLevel.Project));
 
             // initialize data writer
             var projectName_splitted = sparseProject.Id.Split('/');
-            var dataWriterContext = new DataWriterContext("Nexus Explorer", directoryPath, new NexusProjectDescription(Guid.Empty, 0, projectName_splitted[1], projectName_splitted[2], projectName_splitted[3]), customMetadataEntrySet);
+            var dataWriterContext = new DataWriterContext("Nexus", directoryPath, new NexusProjectDescription(Guid.Empty, 0, projectName_splitted[1], projectName_splitted[2], projectName_splitted[3]), customMetadataEntrySet);
             dataWriter.Configure(dataWriterContext, channelDescriptionSet);
 
             try
