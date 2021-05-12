@@ -26,9 +26,6 @@ namespace Nexus.API
 
             this.Field(x => x.SpecialInfo)
                 .Description("Special info of the channel.");
-
-            //this.Field(x => x.TransferFunctions)
-            //    .Description("Transfer functions.");
         }
     }
 }
