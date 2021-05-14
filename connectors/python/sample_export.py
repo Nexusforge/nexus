@@ -25,13 +25,17 @@ channel_paths = [
 ]
 
 # export data
-connector = NexusConnector(scheme, host, port, username, password) # or without authentication: ... = NexusConnector(host, port, secure)
+connector = NexusConnector(scheme, host, port, username, password)
 # without authentication: connector = NexusConnector(scheme, host, port)
 
 params = {
-    "FileGranularity": "Day",   # Minute_1, Minute_10, Hour, Day, SingleFile
-    "FileFormat": "MAT73",      # CSV, FAMOS, MAT73
-    "ChannelPaths": channel_paths
+    "FileGranularity": "Day",       # Minute_1, Minute_10, Hour, Day, SingleFile
+    "FileFormat": "MAT73",          # CSV, FAMOS, MAT73
+    "ChannelPaths": channel_paths,
+
+    # CSV-only:
+    # "CsvSignificantFigures": 4,
+    # "CsvRowIndexFormat": "Index"  # Index, Unix, Excel
 }
 
 asyncio.run(connector.export(begin, end, params, target_folder))

@@ -16,8 +16,10 @@ namespace Nexus.Extension.Csv
 
         private CsvSettings _settings;
 
-        private double _unixStart;
+        private decimal _unixStart;
+        private decimal _excelStart;
         private DateTime _unixEpoch;
+        private DateTime _excelEpoch;
         private DateTime _lastFileStartDateTime;
         private NumberFormatInfo _nfi;
 
@@ -30,6 +32,7 @@ namespace Nexus.Extension.Csv
             _settings = settings;
 
             _unixEpoch = new DateTime(1970, 01, 01);
+            _excelEpoch = new DateTime(1900, 01, 01);
 
             _nfi = new NumberFormatInfo()
             {
@@ -45,7 +48,8 @@ namespace Nexus.Extension.Csv
         protected override void OnPrepareFile(DateTime startDateTime, List<ChannelContextGroup> channelContextGroupSet)
         {
             _lastFileStartDateTime = startDateTime;
-            _unixStart = (startDateTime - _unixEpoch).TotalSeconds;
+            _unixStart = (decimal)(startDateTime - _unixEpoch).TotalSeconds;
+            _excelStart = (decimal)startDateTime.ToOADate();
 
             foreach (var contextGroup in channelContextGroupSet)
             {
@@ -82,9 +86,15 @@ namespace Nexus.Extension.Csv
                             case CsvRowIndexFormat.Index:
                                 streamWriter.Write("index;");
                                 break;
+
                             case CsvRowIndexFormat.Unix:
-                                streamWriter.Write("unix time;");
+                                streamWriter.Write("Unix time;");
                                 break;
+
+                            case CsvRowIndexFormat.Excel:
+                                streamWriter.Write("Excel time;");
+                                break;
+
                             default:
                                 throw new NotSupportedException($"The row index format '{_settings.RowIndexFormat}' is not supported.");
                         }
@@ -140,7 +150,10 @@ namespace Nexus.Extension.Csv
                             streamWriter.Write($"{string.Format(_nfi, "{0:N0}", fileOffset + rowIndex)};");
                             break;
                         case CsvRowIndexFormat.Unix:
-                            streamWriter.Write($"{string.Format(_nfi, "{0:N5}", _unixStart + (double)((fileOffset + rowIndex) / contextGroup.SampleRate.SamplesPerSecond))};");
+                            streamWriter.Write($"{string.Format(_nfi, "{0:N5}", _unixStart + ((fileOffset + rowIndex) / contextGroup.SampleRate.SamplesPerSecond))};");
+                            break;
+                        case CsvRowIndexFormat.Excel:
+                            streamWriter.Write($"{string.Format(_nfi, "{0:N9}", _excelStart + ((fileOffset + rowIndex) / (decimal)contextGroup.SampleRate.SamplesPerDay))};");
                             break;
                         default:
                             throw new NotSupportedException($"The row index format '{_settings.RowIndexFormat}' is not supported.");

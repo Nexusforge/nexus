@@ -19,8 +19,12 @@ channelPaths = { ...
 connector = NexusConnector(scheme, host, port, username, password);
 % without authentication: connector = NexusConnector(scheme, host, port)
 
-params.FileGranularity  = 'Day';    % Minute_1, Minute_10, Hour, Day, SingleFile
-params.FileFormat       = 'MAT73';  % CSV, FAMOS, MAT73
-params.ChannelPaths     = channelPaths;
+params.FileGranularity          = 'Day';    % Minute_1, Minute_10, Hour, Day, SingleFile
+params.FileFormat               = 'MAT73';  % CSV, FAMOS, MAT73
+params.ChannelPaths             = channelPaths;
+
+% CSV-only: 
+% params.CsvSignificantFigures  = 4;
+% params.CsvRowIndexFormat      = 'Index'   % Index, Unix, Excel
 
 connector.Export(dateTimeBegin, dateTimeEnd, params, targetFolder);

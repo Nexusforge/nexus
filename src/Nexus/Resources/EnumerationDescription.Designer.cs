@@ -88,6 +88,15 @@ namespace Nexus {
         }
         
         /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Excel time ähnelt.
+        /// </summary>
+        internal static string CsvRowIndexFormat_Excel {
+            get {
+                return ResourceManager.GetString("CsvRowIndexFormat_Excel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Index-based ähnelt.
         /// </summary>
         internal static string CsvRowIndexFormat_Index {

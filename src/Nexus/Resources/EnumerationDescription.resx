@@ -126,6 +126,9 @@
   <data name="CodeType_Shared" xml:space="preserve">
     <value>Shared code</value>
   </data>
+  <data name="CsvRowIndexFormat_Excel" xml:space="preserve">
+    <value>Excel time</value>
+  </data>
   <data name="CsvRowIndexFormat_Index" xml:space="preserve">
     <value>Index-based</value>
   </data>
