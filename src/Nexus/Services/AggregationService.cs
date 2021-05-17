@@ -298,7 +298,7 @@ namespace Nexus.Services
                         var targetFileName = $"{channel.Id}_{period}_s_{methodIdentifier}.nex";
                         var targetFilePath = Path.Combine(targetDirectoryPath, targetFileName);
 
-                        if (force || !File.Exists(targetFileName))
+                        if (force || !File.Exists(targetFilePath))
                         {
                             var buffer = new double[86400 / period];
 
