@@ -63,10 +63,10 @@ namespace Nexus
             services.Configure<IdentityOptions>(options =>
             {
                 // Instead of RequireConfirmedEmail, this one has the desired effect!
-                options.SignIn.RequireConfirmedAccount = Program.Options.Email != null;
+                options.SignIn.RequireConfirmedAccount = Program.Options.RequireConfirmedAccount;
             });
 
-            if (Program.Options.Email != null)
+            if (Program.Options.RequireConfirmedAccount)
                 services.AddTransient<IEmailSender, EmailSender>();
 
             // blazor

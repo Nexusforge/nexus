@@ -40,7 +40,7 @@ namespace Nexus.Core
                 var signInResult = await _signInManager.CheckPasswordSignInAsync(user, credentials.Password, false);
                 
                 var isConfirmed = 
-                    Program.Options.Email == null ||
+                    !Program.Options.RequireConfirmedAccount ||
                     await _userManager.IsEmailConfirmedAsync(user);
 
                 if (isConfirmed)

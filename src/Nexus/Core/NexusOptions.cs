@@ -36,6 +36,9 @@ namespace Nexus.Core
 
         // preset, immutable
         [JsonIgnore]
+        public bool RequireConfirmedAccount => this.Email != null;
+
+        [JsonIgnore]
         public string ExportDirectoryPath => Path.Combine(this.DataBaseFolderPath, "EXPORT");
 
         public static NexusOptions Load(string filePath)
