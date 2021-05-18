@@ -33,14 +33,15 @@ namespace Nexus.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpPost("token")]
-        public async Task<ActionResult<string>> GetStream(UserCredentials credentials)
+        public async Task<ActionResult<string>> GetToken(UserCredentials credentials)
         {
-            var token = await _jwtService.GenerateTokenAsync(credentials);
+            (var result, var success) = await _jwtService.GenerateTokenAsync(credentials);
 
-            if (!string.IsNullOrWhiteSpace(token))
-                return new JsonResult(token);
+            if (success)
+                return new JsonResult(result);
+
             else
-                return this.Unauthorized();
+                return this.Unauthorized(result);
         }
     }
 }

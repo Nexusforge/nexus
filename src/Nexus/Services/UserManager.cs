@@ -53,6 +53,11 @@ namespace Nexus.Services
 
                     if (result.Succeeded)
                     {
+                        // confirm account
+                        var token = userManager.GenerateEmailConfirmationTokenAsync(user).Result;
+                        userManager.ConfirmEmailAsync(user, token);
+
+                        // add claim
                         var claim = new Claim(Claims.IS_ADMIN, "true");
                         userManager.AddClaimAsync(user, claim).Wait();
 
@@ -82,6 +87,11 @@ namespace Nexus.Services
 
                     if (result.Succeeded)
                     {
+                        // confirm account
+                        var token = userManager.GenerateEmailConfirmationTokenAsync(user).Result;
+                        userManager.ConfirmEmailAsync(user, token);
+
+                        // add claim
                         var claim = new Claim(Claims.CAN_ACCESS_PROJECT, "/IN_MEMORY/TEST/ACCESSIBLE;/IN_MEMORY/TEST/RESTRICTED");
                         userManager.AddClaimAsync(user, claim).Wait();
                     }

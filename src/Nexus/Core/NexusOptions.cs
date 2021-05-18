@@ -22,6 +22,7 @@ namespace Nexus.Core
 
         // unset, mutable
         public string DataBaseFolderPath { get; set; }
+        public EmailOptions Email { get; set; }
 
         // preset, mutable
 

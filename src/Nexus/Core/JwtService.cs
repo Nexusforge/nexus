@@ -13,48 +13,71 @@ namespace Nexus.Core
 
         private static JwtSecurityTokenHandler _tokenHandler = new JwtSecurityTokenHandler();
         private SignInManager<TUser> _signInManager;
+        private UserManager<TUser> _userManager;
 
         #endregion
 
         #region Constructors
 
-        public JwtService(SignInManager<TUser> signInManager)
+        public JwtService(SignInManager<TUser> signInManager, UserManager<TUser> userManager)
         {
             _signInManager = signInManager;
+            _userManager = userManager;
         }
 
         #endregion
 
         #region Methods
 
-        public async Task<string> GenerateTokenAsync(UserCredentials credentials)
+        public async Task<(string, bool)> GenerateTokenAsync(UserCredentials credentials)
         {
-            var result = string.Empty;
+            string result;
+            var success = false;
             var user = await _signInManager.UserManager.FindByNameAsync(credentials.Username);
 
             if (user != null)
             {
                 var signInResult = await _signInManager.CheckPasswordSignInAsync(user, credentials.Password, false);
+                
+                var isConfirmed = 
+                    Program.Options.Email == null ||
+                    await _userManager.IsEmailConfirmedAsync(user);
 
-                if (signInResult.Succeeded)
+                if (isConfirmed)
                 {
-                    var claims = await _signInManager.UserManager.GetClaimsAsync(user);
-                    claims.Add(new Claim(ClaimTypes.Name, credentials.Username));
-                    claims.Add(new Claim(ClaimTypes.Email, credentials.Username));
+                    if (signInResult.Succeeded)
+                    {
+                        var claims = await _signInManager.UserManager.GetClaimsAsync(user);
+                        claims.Add(new Claim(ClaimTypes.Name, credentials.Username));
+                        claims.Add(new Claim(ClaimTypes.Email, credentials.Username));
 
-                    var signingCredentials = new SigningCredentials(Startup.SecurityKey, SecurityAlgorithms.HmacSha256);
+                        var signingCredentials = new SigningCredentials(Startup.SecurityKey, SecurityAlgorithms.HmacSha256);
 
-                    var token = new JwtSecurityToken(issuer: "Nexus",
-                                                     audience: signingCredentials.Algorithm,
-                                                     claims: claims,
-                                                     expires: DateTime.UtcNow.AddSeconds(30),
-                                                     signingCredentials: signingCredentials);
+                        var token = new JwtSecurityToken(issuer: "Nexus",
+                                                         audience: signingCredentials.Algorithm,
+                                                         claims: claims,
+                                                         expires: DateTime.UtcNow.AddSeconds(30),
+                                                         signingCredentials: signingCredentials);
 
-                    result = _tokenHandler.WriteToken(token);
+                        result = _tokenHandler.WriteToken(token);
+                        success = true;
+                    }
+                    else
+                    {
+                        result = "Password sign-in failed.";
+                    }
+                }
+                else
+                {
+                    result = "The account has not been confirmed yet.";
                 }
             }
+            else
+            {
+                result = "The user does not exist.";
+            }
 
-            return result;
+            return (result, success);
         }
 
         #endregion
