@@ -30,7 +30,7 @@ namespace Nexus.DataModel
 
         public DateTime ProjectEnd { get; set; }
 
-        public List<Channel> Channels { get; set; }
+        public List<Channel> Channels { get; set; } = new List<Channel>();
 
         #endregion
 

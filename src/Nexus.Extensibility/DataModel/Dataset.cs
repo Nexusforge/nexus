@@ -2,6 +2,7 @@
 using Nexus.Infrastructure;
 using System;
 using System.Diagnostics;
+using System.Text.Json.Serialization;
 
 namespace Nexus.DataModel
 {
@@ -29,6 +30,7 @@ namespace Nexus.DataModel
 
         public NexusDataType DataType { get; set; }
 
+        [JsonIgnore]
         public Channel Channel { get; internal set; }
 
         internal DataSourceRegistration Registration { get; set; }

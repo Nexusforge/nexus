@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text.Json.Serialization;
 
 namespace Nexus.DataModel
 {
@@ -31,12 +32,13 @@ namespace Nexus.DataModel
 
         public string Group { get; set; }
 
-        public string Unit { get; set; }
+        public string? Unit { get; set; }
 
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
-        public List<Dataset> Datasets { get; set; }
+        public List<Dataset> Datasets { get; set; } = new List<Dataset>();
 
+        [JsonIgnore]
         public Project Project { get; internal set; }
 
         #endregion

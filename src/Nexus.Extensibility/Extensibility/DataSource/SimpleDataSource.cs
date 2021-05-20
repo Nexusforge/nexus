@@ -2,17 +2,26 @@
 using Nexus.DataModel;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Nexus.Extensibility
 {
     public abstract class SimpleDataSource : IDataSource
     {
+        #region Fields
+
+        private List<Project> _projects;
+
+        #endregion
+
         #region Properties
 
         public string RootPath { get; private set; }
 
         public ILogger Logger { get; private set; }
+
+        public IReadOnlyList<Project> Projects => _projects;
 
         public Dictionary<string, string> Options { get; private set; }
 
@@ -20,19 +29,26 @@ namespace Nexus.Extensibility
 
         #region Methods
 
+        public Project GetProject(string projectId)
+        {
+            return this.Projects.First(project => project.Id == projectId);
+        }
+
         public abstract Task<List<Project>> InitializeAsync();
 
         #endregion
 
         #region IDataSource
 
-        public Task<List<Project>> InitializeAsync(string rootPath, ILogger logger, Dictionary<string, string> options)
+        public async Task<List<Project>> InitializeAsync(string rootPath, ILogger logger, Dictionary<string, string> options)
         {
             this.RootPath = rootPath;
             this.Logger = logger;
             this.Options = options;
 
-            return this.InitializeAsync();
+            _projects = await this.InitializeAsync();
+
+            return _projects;
         }
 
         public abstract Task<double> GetAvailabilityAsync(string projectId, DateTime day);
