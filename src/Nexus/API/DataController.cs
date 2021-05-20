@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Logging;
-using Nexus.Database;
+using Nexus.DataModel;
 using Nexus.Core;
 using Nexus.Services;
 using Nexus.Types;
@@ -88,7 +88,7 @@ namespace Nexus.Controllers
                 if (!_databaseManager.Database.TryFindDataset(path, out var dataset))
                     return this.NotFound($"Could not find dataset with name '{path}'.");
 
-                var project = (ProjectInfo)dataset.Parent.Parent;
+                var project = dataset.Channel.Project;
 
                 // security check
                 if (!Utilities.IsProjectAccessible(this.User, project.Id, _databaseManager.Database))

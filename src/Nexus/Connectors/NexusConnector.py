@@ -14,7 +14,7 @@ import aiohttp
 from aiohttp.client import ClientResponseError
 
 
-class ChannelInfo():
+class Channel():
 
     values = None
 
@@ -43,7 +43,7 @@ class NexusConnector():
         self.logger = logging.getLogger("NexusConnector")
         logging.basicConfig(level=logging.INFO)
    
-    async def load(self, begin, end, params) -> List[ChannelInfo]:
+    async def load(self, begin, end, params) -> List[Channel]:
 
         begin = begin.replace(tzinfo=timezone.utc)
         end = end.replace(tzinfo=timezone.utc)
@@ -58,10 +58,10 @@ class NexusConnector():
             index = 0
 
             for i, channelPath in enumerate(params["ChannelPaths"]):
-                channelInfo = await self._getChannelInfo(channelPath)
-                channelInfo.values = await self._getDataStream( \
+                channel = await self._getChannel(channelPath)
+                channel.values = await self._getDataStream( \
                     params, channelPath, index, len(params["ChannelPaths"]))
-                result[channelPath] = channelInfo
+                result[channelPath] = channel
                 index += 1
 
             self.logger.info("Streaming ... Done.")
@@ -82,7 +82,7 @@ class NexusConnector():
 
         await self._getDataFiles(params, target_folder)
 
-    async def _getChannelInfo(self, channelPath) -> ChannelInfo :
+    async def _getChannel(self, channelPath) -> Channel :
 
         channelPathParts = channelPath.split("/")
         projectId = quote("/" + channelPathParts[1] + "/" + channelPathParts[2] + "/" + channelPathParts[3], safe="")
@@ -99,7 +99,7 @@ class NexusConnector():
             response = await self._send(session, lambda session: session.get(url))
             jsonString = await response.text()
             response.close()
-            return ChannelInfo(json.loads(jsonString), channelPath)
+            return Channel(json.loads(jsonString), channelPath)
 
     async def _getDataStream(self, params, channelPath, current, total):
 

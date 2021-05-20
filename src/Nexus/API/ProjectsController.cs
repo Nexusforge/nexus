@@ -1,12 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Logging;
-using NJsonSchema.Annotations;
-using Nexus.Database;
 using Nexus.Core;
-using Nexus.Services;
+using Nexus.DataModel;
 using Nexus.Infrastructure;
+using Nexus.Services;
 using Nexus.Types;
+using NJsonSchema.Annotations;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -215,7 +215,7 @@ namespace Nexus.Controllers
                     (project, projectMeta) =>
                     {
                         var channel = project.Channels.FirstOrDefault(
-                            current => current.Id == channelId);
+                            current => current.Id.ToString() == channelId);
 
                         if (channel == null)
                             channel = project.Channels.FirstOrDefault(
@@ -266,7 +266,7 @@ namespace Nexus.Controllers
                     (project, projectMeta) =>
                     {
                         var channel = project.Channels.FirstOrDefault(
-                            current => current.Id == channelId);
+                            current => current.Id.ToString() == channelId);
 
                         if (channel == null)
                             channel = project.Channels.FirstOrDefault(
@@ -319,7 +319,7 @@ namespace Nexus.Controllers
                     (project, projectMeta) =>
                     {
                         var channel = project.Channels.FirstOrDefault(
-                            current => current.Id == channelId);
+                            current => current.Id.ToString() == channelId);
 
                         if (channel == null)
                             channel = project.Channels.FirstOrDefault(
@@ -346,7 +346,7 @@ namespace Nexus.Controllers
             }
         }
 
-        private Project CreateProjectResponse(ProjectInfo project, ProjectMeta projectMeta)
+        private Project CreateProjectResponse(DataModel.Project project, ProjectMeta projectMeta)
         {
             return new Project()
             {
@@ -362,7 +362,7 @@ namespace Nexus.Controllers
             };
         }
 
-        private List<AvailabilityResult> CreateAvailabilityResponse(ProjectInfo project, DateTime begin, DateTime end, AvailabilityGranularity granularity)
+        private List<AvailabilityResult> CreateAvailabilityResponse(DataModel.Project project, DateTime begin, DateTime end, AvailabilityGranularity granularity)
         {
             var dataReaders = _databaseManager.GetDataReaders(_userIdService.User, project.Id);
 
@@ -371,21 +371,21 @@ namespace Nexus.Controllers
                 using var dataReader = dataReaderForUsing;
                 var availability = dataReader.GetAvailability(project.Id, begin, end, granularity);
 
-                var registration = new DataReaderRegistration()
+                var registration = new DataSourceRegistration()
                 {
-                    RootPath = availability.DataReaderRegistration.RootPath,
-                    DataReaderId = availability.DataReaderRegistration.DataReaderId,
+                    RootPath = availability.DataSourceRegistration.RootPath,
+                    DataSourceId = availability.DataSourceRegistration.DataSourceId,
                 };
 
                 return new AvailabilityResult()
                 {
-                    DataReaderRegistration = registration,
+                    DataSourceRegistration = registration,
                     Data = availability.Data
                 };
             }).ToList();
         }
 
-        private Channel CreateChannelResponse(ChannelInfo channel, ChannelMeta channelMeta)
+        private Channel CreateChannelResponse(DataModel.Channel channel, ChannelMeta channelMeta)
         {
             return new Channel()
             {
@@ -402,7 +402,7 @@ namespace Nexus.Controllers
             };
         }
 
-        private Dataset CreateDatasetResponse(DatasetInfo dataset)
+        private Dataset CreateDatasetResponse(DataModel.Dataset dataset)
         {
             return new Dataset()
             {
@@ -414,7 +414,7 @@ namespace Nexus.Controllers
         private ActionResult<T> ProcessProjectId<T>(
             string projectId,
             string message,
-            Func<ProjectInfo, ProjectMeta, ActionResult<T>> action)
+            Func<DataModel.Project, ProjectMeta, ActionResult<T>> action)
         {
             if (!Utilities.IsProjectAccessible(this.User, projectId, _databaseManager.Database))
                 return this.Unauthorized($"The current user is not authorized to access the project '{projectId}'.");
@@ -442,15 +442,15 @@ namespace Nexus.Controllers
 
         #region Types
 
-        public record DataReaderRegistration
+        public record DataSourceRegistration
         {
             public string RootPath { get; set; }
-            public string DataReaderId { get; set; }
+            public string DataSourceId { get; set; }
         }
 
         public record AvailabilityResult
         {
-            public DataReaderRegistration DataReaderRegistration { get; set; }
+            public DataSourceRegistration DataSourceRegistration { get; set; }
             public Dictionary<DateTime, double> Data { get; set; }
         }
 
@@ -469,7 +469,7 @@ namespace Nexus.Controllers
 
         public record Channel()
         {
-            public string Id { get; set; }
+            public Guid Id { get; set; }
             public string Name { get; set; }
             public string Group { get; set; }
             public string Unit { get; set; }

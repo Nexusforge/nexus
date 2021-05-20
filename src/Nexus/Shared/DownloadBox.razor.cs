@@ -62,7 +62,7 @@ namespace Nexus.Shared
 
         #region Commands
 
-		private void CopyPath(DatasetInfoViewModel dataset)
+		private void CopyPath(DatasetViewModel dataset)
         {
 			this.JsRuntime.WriteToClipboard($"{dataset.Parent.Parent.Id}/{dataset.Parent.Name}/{dataset.Model.Id}");
         }

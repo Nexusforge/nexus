@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
-using Nexus.Database;
+using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Infrastructure;
 using System;
@@ -13,7 +13,7 @@ namespace Nexus.Extensions
     {
         #region Constructors
 
-        public InMemoryDataReader(DataReaderRegistration registration, ILogger logger) : base(registration, logger)
+        public InMemoryDataReader(DataSourceRegistration registration, ILogger logger) : base(registration, logger)
         {
             //
         }
@@ -22,7 +22,7 @@ namespace Nexus.Extensions
 
         #region Methods
 
-        public override (T[] Dataset, byte[] Status) ReadSingle<T>(DatasetInfo dataset, DateTime begin, DateTime end)
+        public override (T[] Dataset, byte[] Status) ReadSingle<T>(Dataset dataset, DateTime begin, DateTime end)
         {
             double[] dataDouble;
 
@@ -32,7 +32,7 @@ namespace Nexus.Extensions
             var length = (int)((end - begin).TotalSeconds * (double)dataset.GetSampleRate().SamplesPerSecond);
             var dt = (double)(1 / dataset.GetSampleRate().SamplesPerSecond);
 
-            if (((ChannelInfo)dataset.Parent).Name.Contains("unix_time"))
+            if (dataset.Channel.Name.Contains("unix_time"))
             {
                 dataDouble = Enumerable.Range(0, length).Select(i => i * dt + beginTime).ToArray();
             }
@@ -58,21 +58,21 @@ namespace Nexus.Extensions
             return (data, status);
         }
 
-        protected override List<ProjectInfo> LoadProjects()
+        protected override List<Project> LoadProjects()
         {
-            var id11 = "f01b6a96-1de6-4caa-9205-184d8a3eb2f8";
-            var id12 = "d549a4dd-e003-4d24-98de-4d5bc8c72aca";
-            var id13 = "7dec6d79-b92e-4af2-9358-21be1f3626c9";
-            var id14 = "cf50190b-fd2a-477b-9655-48f4f41ba7bf";
+            var id11 = Guid.Parse("f01b6a96-1de6-4caa-9205-184d8a3eb2f8");
+            var id12 = Guid.Parse("d549a4dd-e003-4d24-98de-4d5bc8c72aca");
+            var id13 = Guid.Parse("7dec6d79-b92e-4af2-9358-21be1f3626c9");
+            var id14 = Guid.Parse("cf50190b-fd2a-477b-9655-48f4f41ba7bf");
             var project_allowed = this.LoadProject("/IN_MEMORY/TEST/ACCESSIBLE", id11, id12, id13, id14);
 
-            var id21 = "50d38fe5-a7a8-49e8-8bd4-3e98a48a951f";
-            var id22 = "d47d1adc6-7c38-4b75-9459-742fa570ef9d";
-            var id23 = "511d6e9c-9075-41ee-bac7-891d359f0dda";
-            var id24 = "99b85689-5373-4a9a-8fd7-be04a89c9da8";
+            var id21 = Guid.Parse("50d38fe5-a7a8-49e8-8bd4-3e98a48a951f");
+            var id22 = Guid.Parse("d47d1adc6-7c38-4b75-9459-742fa570ef9d");
+            var id23 = Guid.Parse("511d6e9c-9075-41ee-bac7-891d359f0dda");
+            var id24 = Guid.Parse("99b85689-5373-4a9a-8fd7-be04a89c9da8");
             var project_restricted = this.LoadProject("/IN_MEMORY/TEST/RESTRICTED", id21, id22, id23, id24);
 
-            return new List<ProjectInfo>() { project_allowed, project_restricted };
+            return new List<Project>() { project_allowed, project_restricted };
         }
 
         protected override double GetAvailability(string projectId, DateTime day)
@@ -83,20 +83,20 @@ namespace Nexus.Extensions
             return new Random((int)day.Ticks).NextDouble() / 10 + 0.9;
         }
 
-        private ProjectInfo LoadProject(string projectId, string id1, string id2, string id3, string id4)
+        private Project LoadProject(string projectId, Guid id1, Guid id2, Guid id3, Guid id4)
         {
-            var project = new ProjectInfo(projectId);
+            var project = new Project(projectId);
 
-            var channelA = new ChannelInfo(id1, project);
-            var channelB = new ChannelInfo(id2, project);
-            var channelC = new ChannelInfo(id3, project);
-            var channelD = new ChannelInfo(id4, project);
+            var channelA = new Channel(id1, project);
+            var channelB = new Channel(id2, project);
+            var channelC = new Channel(id3, project);
+            var channelD = new Channel(id4, project);
 
-            var dataset1 = new DatasetInfo("1 s_mean", channelA) { DataType = NexusDataType.FLOAT64 };
-            var dataset2 = new DatasetInfo("1 s_mean", channelB) { DataType = NexusDataType.FLOAT64 };
-            var dataset3 = new DatasetInfo("25 Hz", channelC) { DataType = NexusDataType.INT32 };
-            var dataset4 = new DatasetInfo("1 s_max", channelD) { DataType = NexusDataType.FLOAT64 };
-            var dataset5 = new DatasetInfo("1 s_mean", channelD) { DataType = NexusDataType.FLOAT64 };
+            var dataset1 = new Dataset("1 s_mean", channelA) { DataType = NexusDataType.FLOAT64 };
+            var dataset2 = new Dataset("1 s_mean", channelB) { DataType = NexusDataType.FLOAT64 };
+            var dataset3 = new Dataset("25 Hz", channelC) { DataType = NexusDataType.INT32 };
+            var dataset4 = new Dataset("1 s_max", channelD) { DataType = NexusDataType.FLOAT64 };
+            var dataset5 = new Dataset("1 s_mean", channelD) { DataType = NexusDataType.FLOAT64 };
 
             // channel A
             channelA.Name = "T1";
@@ -132,7 +132,7 @@ namespace Nexus.Extensions
             channelD.Datasets.Add(dataset5);
 
             // project
-            project.Channels = new List<ChannelInfo>()
+            project.Channels = new List<Channel>()
             {
                 channelA,
                 channelB,

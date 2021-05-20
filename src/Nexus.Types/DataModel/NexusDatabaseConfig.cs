@@ -1,6 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using Nexus.Extensibility;
+using System.Collections.Generic;
 
-namespace Nexus.Database
+namespace Nexus.DataModel
 {
     public class NexusDatabaseConfig
     {
@@ -9,7 +10,7 @@ namespace Nexus.Database
         public NexusDatabaseConfig()
         {
             this.AggregationDataReaderRootPath = "";
-            this.DataReaderRegistrations = new List<DataReaderRegistration>();
+            this.DataSourceRegistrations = new List<DataSourceRegistration>();
         }
 
         #endregion
@@ -18,7 +19,7 @@ namespace Nexus.Database
 
         public string AggregationDataReaderRootPath { get; set; }
 
-        public List<DataReaderRegistration> DataReaderRegistrations { get; set; }
+        public List<DataSourceRegistration> DataSourceRegistrations { get; set; }
 
         #endregion
     }

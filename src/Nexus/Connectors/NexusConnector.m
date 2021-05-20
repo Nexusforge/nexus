@@ -45,10 +45,10 @@ classdef NexusConnector < matlab.net.http.ProgressMonitor
                 index = 0;
                 
                 for channelPath = params.ChannelPaths.'
-                    channelInfo                 = self.GetChannelInfo(channelPath);
-                    channelInfo.Values          = self.GetDataStream(...
+                    channel                     = self.GetChannel(channelPath);
+                    channel.Values              = self.GetDataStream(...
                         params, channelPath, index, length(params.ChannelPaths));
-                    result(char(channelPath))   = channelInfo;
+                    result(char(channelPath))   = channel;
                     index                       = index + 1;
                 end 
 
@@ -94,7 +94,7 @@ classdef NexusConnector < matlab.net.http.ProgressMonitor
     
     methods (Access = private)
         
-        function channelInfo = GetChannelInfo(self, channelPath)
+        function channel = GetChannel(self, channelPath)
             import matlab.net.*
             import matlab.net.http.*
             
@@ -109,7 +109,7 @@ classdef NexusConnector < matlab.net.http.ProgressMonitor
                 '/channels/' channelId]);
             
             response                = self.Send(requestMessage, uri);          
-            channelInfo             = self.ToPascalCase(response.Body.Data);
+            channel                 = self.ToPascalCase(response.Body.Data);
         end
                      
         function data = GetDataStream(self, params, channelPath, current, total)

@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
-using Nexus.Database;
+using Nexus.DataModel;
 using Nexus.Roslyn;
 using Nexus.Services;
 using Nexus.ViewModels;
@@ -48,8 +48,8 @@ namespace Nexus.Core
         private JobControl<ExportJob> _exportJobControl;
         private AuthenticationStateProvider _authenticationStateProvider;
 
-        private KeyValuePair<string, List<ChannelInfoViewModel>> _groupedChannelsEntry;
-        private Dictionary<string, List<DatasetInfoViewModel>> _sampleRateToSelectedDatasetsMap;
+        private KeyValuePair<string, List<ChannelViewModel>> _groupedChannelsEntry;
+        private Dictionary<string, List<DatasetViewModel>> _sampleRateToSelectedDatasetsMap;
 
         #endregion
 
@@ -288,9 +288,9 @@ namespace Nexus.Core
 
         public SplittedProjectContainers ProjectContainersInfo { get; private set; }
 
-        public Dictionary<string, List<ChannelInfoViewModel>> GroupedChannels { get; private set; }
+        public Dictionary<string, List<ChannelViewModel>> GroupedChannels { get; private set; }
 
-        public KeyValuePair<string, List<ChannelInfoViewModel>> GroupedChannelsEntry
+        public KeyValuePair<string, List<ChannelViewModel>> GroupedChannelsEntry
         {
             get { return _groupedChannelsEntry; }
             set { base.SetProperty(ref _groupedChannelsEntry, value); }
@@ -310,7 +310,7 @@ namespace Nexus.Core
 
         #region Properties - Download Area
 
-        public IReadOnlyCollection<DatasetInfoViewModel> SelectedDatasets => this.GetSelectedDatasets();
+        public IReadOnlyCollection<DatasetViewModel> SelectedDatasets => this.GetSelectedDatasets();
 
         #endregion
 
@@ -457,7 +457,7 @@ namespace Nexus.Core
                 var selectedDatasets = this.GetSelectedDatasets().Select(dataset => dataset.Model).ToList();
 
                 // security check
-                var projectIds = selectedDatasets.Select(dataset => dataset.Parent.Parent.Id).Distinct();
+                var projectIds = selectedDatasets.Select(dataset => dataset.Channel.Project.Id).Distinct();
 
                 foreach (var projectId in projectIds)
                 {
@@ -550,7 +550,7 @@ namespace Nexus.Core
         public void SetExportParameters(ExportParameters exportParameters)
         {
             _sampleRateToSelectedDatasetsMap = this.SampleRateValues
-                .ToDictionary(sampleRate => sampleRate, sampleRate => new List<DatasetInfoViewModel>());
+                .ToDictionary(sampleRate => sampleRate, sampleRate => new List<DatasetViewModel>());
 
             // find sample rate
             var sampleRates = exportParameters.ChannelPaths.Select(channelPath 
@@ -575,7 +575,7 @@ namespace Nexus.Core
                 if (projectContainer != null)
                 {
                     var channels = _appState.GetChannels(projectContainer);
-                    var channel = channels.FirstOrDefault(current => current.Id == channelName);
+                    var channel = channels.FirstOrDefault(current => current.Id.ToString() == channelName);
 
                     if (channel != null)
                     {
@@ -590,12 +590,12 @@ namespace Nexus.Core
             this.RaisePropertyChanged(nameof(UserState.ExportParameters));
         }
 
-        public bool IsDatasetSeleced(DatasetInfoViewModel dataset)
+        public bool IsDatasetSeleced(DatasetViewModel dataset)
         {
             return this.SelectedDatasets.Contains(dataset);
         }
 
-        public void ToggleDatasetSelection(DatasetInfoViewModel dataset)
+        public void ToggleDatasetSelection(DatasetViewModel dataset)
         {
             var isSelected = this.SelectedDatasets.Contains(dataset);
 
@@ -662,7 +662,7 @@ namespace Nexus.Core
         {
             if (this.ProjectContainer is not null)
             {
-                this.GroupedChannels = new Dictionary<string, List<ChannelInfoViewModel>>();
+                this.GroupedChannels = new Dictionary<string, List<ChannelViewModel>>();
 
                 foreach (var channel in _appState.GetChannels(this.ProjectContainer))
                 {
@@ -676,7 +676,7 @@ namespace Nexus.Core
 
                             if (!success)
                             {
-                                group = new List<ChannelInfoViewModel>();
+                                group = new List<ChannelViewModel>();
                                 this.GroupedChannels[groupName] = group;
                             }
 
@@ -720,7 +720,7 @@ namespace Nexus.Core
             }).ToList();
         }
 
-        private bool ChannelMatchesFilter(ChannelInfoViewModel channel)
+        private bool ChannelMatchesFilter(ChannelViewModel channel)
         {
             if (string.IsNullOrWhiteSpace(this.SearchString))
                 return true;
@@ -732,14 +732,14 @@ namespace Nexus.Core
             return false;
         }
 
-        private List<DatasetInfoViewModel> GetSelectedDatasets()
+        private List<DatasetViewModel> GetSelectedDatasets()
         {
             var containsKey = !string.IsNullOrWhiteSpace(this.SampleRate) && _sampleRateToSelectedDatasetsMap.ContainsKey(this.SampleRate);
 
             if (containsKey)
                 return _sampleRateToSelectedDatasetsMap[this.SampleRate];
             else
-                return new List<DatasetInfoViewModel>();
+                return new List<DatasetViewModel>();
         }
 
         private async Task<SplittedProjectContainers> SplitCampainContainersAsync(List<ProjectContainer> projectContainers,

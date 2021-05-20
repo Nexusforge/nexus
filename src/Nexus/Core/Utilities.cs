@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Identity;
-using Nexus.Database;
+using Nexus.DataModel;
 using System;
 using System.Collections.Generic;
 using System.Linq;

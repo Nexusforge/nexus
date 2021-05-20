@@ -1,4 +1,5 @@
-﻿using Nexus.Database;
+﻿using Nexus.DataModel;
+using Nexus.Extensibility;
 using System;
 using System.Collections.Generic;
 
@@ -26,7 +27,7 @@ namespace Nexus.Core
         public string ProjectId { get; set; } = string.Empty;
 
         /// <example>Nexus.InMemory</example>
-        public string DataReaderId { get; set; } = string.Empty;
+        public string DataSourceId { get; set; } = string.Empty;
 
         /// <example>:memory:</example>
         public string DataReaderRootPath { get; set; } = string.Empty;
@@ -76,7 +77,7 @@ namespace Nexus.Core
 
     public record AggregationChannel
     {
-        public ChannelInfo Channel { get; init; }
+        public Channel Channel { get; init; }
 
         public List<Aggregation> Aggregations { get; init; }
     }
@@ -98,5 +99,5 @@ namespace Nexus.Core
         public string TargetFilePath { get; init; }
     }
 
-    public record AggregationInstruction(ProjectContainer Container, Dictionary<DataReaderRegistration, List<AggregationChannel>> DataReaderToAggregationsMap);
+    public record AggregationInstruction(ProjectContainer Container, Dictionary<DataSourceRegistration, List<AggregationChannel>> DataReaderToAggregationsMap);
 }

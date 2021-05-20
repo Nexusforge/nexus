@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Nexus.Database;
 using Nexus.Core;
 using Nexus.Filters;
 using Nexus.Extensibility;
@@ -15,6 +14,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Nexus.DataModel;
 
 namespace Nexus.Services
 {
@@ -46,10 +46,10 @@ namespace Nexus.Services
 
         public record DatabaseManagerState
         {
-            public DataReaderRegistration AggregationRegistration { get; init; }
+            public DataSourceRegistration AggregationRegistration { get; init; }
             public NexusDatabase Database { get; init; }
-            public Dictionary<DataReaderRegistration, Type> RegistrationToDataReaderTypeMap { get; init; }
-            public Dictionary<DataReaderRegistration, List<ProjectInfo>> RegistrationToProjectsMap { get; init; }
+            public Dictionary<DataSourceRegistration, Type> RegistrationToDataReaderTypeMap { get; init; }
+            public Dictionary<DataSourceRegistration, List<Project>> RegistrationToProjectsMap { get; init; }
         }
 
         #endregion
@@ -113,25 +113,25 @@ namespace Nexus.Services
             // GetDataReader. To divide both processes (external call vs this method),the State property is introduced, 
             // so external calls use old maps and this method uses the new instances.
 
-            FilterDataReader.ClearCache();
+            FilterDataSource.ClearCache();
             var database = new NexusDatabase();
 
             // create new empty projects map
-            var registrationToProjectsMap = new Dictionary<DataReaderRegistration, List<ProjectInfo>>();
+            var registrationToProjectsMap = new Dictionary<DataSourceRegistration, List<Project>>();
 
             // load data readers
-            var registrationToDataReaderTypeMap = this.LoadDataReaders(this.Config.DataReaderRegistrations);
+            var registrationToDataReaderTypeMap = this.LoadDataReaders(this.Config.DataSourceRegistrations);
 
             // register aggregation data reader
-            var registration = new DataReaderRegistration()
+            var registration = new DataSourceRegistration()
             {
-                DataReaderId = "Nexus.Aggregation",
+                DataSourceId = "Nexus.Aggregation",
                 RootPath = !string.IsNullOrWhiteSpace(this.Config.AggregationDataReaderRootPath) 
                     ? this.Config.AggregationDataReaderRootPath
                     : _options.DataBaseFolderPath
             };
 
-            registrationToDataReaderTypeMap[registration] = typeof(AggregationDataReader);
+            registrationToDataReaderTypeMap[registration] = typeof(AggregationDataSource);
 
             // instantiate data readers
             var dataReaders = registrationToDataReaderTypeMap
@@ -170,7 +170,7 @@ namespace Nexus.Services
 
             // ensure that the filter data reader plugin does not create projects and channels without permission
             var filterProjects = registrationToProjectsMap
-                .Where(entry => entry.Key.DataReaderId == FilterDataReader.Id)
+                .Where(entry => entry.Key.DataSourceId == FilterDataSource.Id)
                 .SelectMany(entry => entry.Value)
                 .ToList();
 
@@ -254,7 +254,7 @@ namespace Nexus.Services
 
         public DataReaderExtensionBase GetDataReader(
                     ClaimsPrincipal user,
-                    DataReaderRegistration registration,
+                    DataSourceRegistration registration,
                     DatabaseManagerState state = null)
         {
             if (state == null)
@@ -266,10 +266,10 @@ namespace Nexus.Services
             var dataReader = this.InstantiateDataReader(registration, dataReaderType, state.RegistrationToProjectsMap);
 
             // special case checks
-            if (dataReaderType == typeof(FilterDataReader))
+            if (dataReaderType == typeof(FilterDataSource))
             {
-                ((FilterDataReader)dataReader).User = user;
-                ((FilterDataReader)dataReader).DatabaseManager = this;
+                ((FilterDataSource)dataReader).User = user;
+                ((FilterDataSource)dataReader).DatabaseManager = this;
             }
 
             return dataReader;
@@ -323,23 +323,23 @@ namespace Nexus.Services
                     }
 
                     // extend config with more data readers
-                    var inMemoryRegistration = new DataReaderRegistration()
+                    var inMemoryRegistration = new DataSourceRegistration()
                     {
-                        DataReaderId = "Nexus.InMemory",
+                        DataSourceId = "Nexus.InMemory",
                         RootPath = ":memory:"
                     };
 
-                    if (!this.Config.DataReaderRegistrations.Contains(inMemoryRegistration))
-                        this.Config.DataReaderRegistrations.Add(inMemoryRegistration);
+                    if (!this.Config.DataSourceRegistrations.Contains(inMemoryRegistration))
+                        this.Config.DataSourceRegistrations.Add(inMemoryRegistration);
 
-                    var filterRegistration = new DataReaderRegistration()
+                    var filterRegistration = new DataSourceRegistration()
                     {
-                        DataReaderId = "Nexus.Filters",
+                        DataSourceId = "Nexus.Filters",
                         RootPath = _options.DataBaseFolderPath
                     };
 
-                    if (!this.Config.DataReaderRegistrations.Contains(filterRegistration))
-                        this.Config.DataReaderRegistrations.Add(filterRegistration);
+                    if (!this.Config.DataSourceRegistrations.Contains(filterRegistration))
+                        this.Config.DataSourceRegistrations.Add(filterRegistration);
 
                     // save config to disk
                     this.SaveConfig(dbFolderPath, this.Config);
@@ -354,17 +354,17 @@ namespace Nexus.Services
         }
 
         private DataReaderExtensionBase InstantiateDataReader(
-            DataReaderRegistration registration, Type type,
-            Dictionary<DataReaderRegistration, List<ProjectInfo>> registrationToProjectsMap)
+            DataSourceRegistration registration, Type type,
+            Dictionary<DataSourceRegistration, List<Project>> registrationToProjectsMap)
         {
-            var logger = _loggerFactory.CreateLogger($"{registration.DataReaderId} - {registration.RootPath}");
+            var logger = _loggerFactory.CreateLogger($"{registration.DataSourceId} - {registration.RootPath}");
             var dataReader = (DataReaderExtensionBase)Activator.CreateInstance(type, registration, logger);
 
             // special case checks
-            if (type == typeof(AggregationDataReader))
+            if (type == typeof(AggregationDataSource))
             {
                 var fileAccessManger = _serviceProvider.GetRequiredService<FileAccessManager>();
-                ((AggregationDataReader)dataReader).FileAccessManager = fileAccessManger;
+                ((AggregationDataSource)dataReader).FileAccessManager = fileAccessManger;
             }
 
             // initialize projects property
@@ -374,7 +374,7 @@ namespace Nexus.Services
             }
             else
             {
-                _logger.LogInformation($"Loading {registration.DataReaderId} on path {registration.RootPath} ...");
+                _logger.LogInformation($"Loading {registration.DataSourceId} on path {registration.RootPath} ...");
                 dataReader.InitializeProjects();
 
                 registrationToProjectsMap[registration] = dataReader
@@ -391,7 +391,7 @@ namespace Nexus.Services
             return Path.Combine(_options.DataBaseFolderPath, "META", $"{projectName.TrimStart('/').Replace('/', '_')}.json");
         }
 
-        private Dictionary<DataReaderRegistration, Type> LoadDataReaders(List<DataReaderRegistration> dataReaderRegistrations)
+        private Dictionary<DataSourceRegistration, Type> LoadDataReaders(List<DataSourceRegistration> DataSourceRegistrations)
         {
             var extensionDirectoryPath = Path.Combine(_options.DataBaseFolderPath, "EXTENSION");
 
@@ -413,9 +413,9 @@ namespace Nexus.Services
 
 #warning Improve this.
             // add additional data readers
-            types.Add(typeof(AggregationDataReader));
+            types.Add(typeof(AggregationDataSource));
             types.Add(typeof(InMemoryDataReader));
-            types.Add(typeof(FilterDataReader));
+            types.Add(typeof(FilterDataSource));
 
             // get ID for each extension
             foreach (var type in types)
@@ -425,10 +425,10 @@ namespace Nexus.Services
             }
 
             // return root path to type map
-            return dataReaderRegistrations.ToDictionary(registration => registration, registration =>
+            return DataSourceRegistrations.ToDictionary(registration => registration, registration =>
             {
-                if (!idToDataReaderTypeMap.TryGetValue(registration.DataReaderId, out var type))
-                    throw new Exception($"No data reader extension with ID '{registration.DataReaderId}' could be found.");
+                if (!idToDataReaderTypeMap.TryGetValue(registration.DataSourceId, out var type))
+                    throw new Exception($"No data reader extension with ID '{registration.DataSourceId}' could be found.");
 
                 return type;
             });
@@ -439,13 +439,13 @@ namespace Nexus.Services
             return assembly.ExportedTypes.Where(type => type.IsClass && !type.IsAbstract && type.IsSubclassOf(typeof(DataReaderExtensionBase))).ToList();
         }
 
-        private void CleanUpFilterProjects(List<ProjectInfo> filterProjects,
+        private void CleanUpFilterProjects(List<Project> filterProjects,
                                            List<ProjectMeta> projectMetas,
                                            UserManager<IdentityUser> userManager,
                                            CancellationToken cancellationToken)
         {
             var usersMap = new Dictionary<string, ClaimsPrincipal>();
-            var projectsToRemove = new List<ProjectInfo>();
+            var projectsToRemove = new List<Project>();
 
             foreach (var project in filterProjects)
             {
@@ -453,17 +453,17 @@ namespace Nexus.Services
                     return;
 
                 var projectMeta = projectMetas.First(projectMeta => projectMeta.Id == project.Id);
-                var channelsToRemove = new List<ChannelInfo>();
+                var channelsToRemove = new List<Channel>();
 
                 foreach (var channel in project.Channels)
                 {
-                    var datasetsToRemove = new List<DatasetInfo>();
+                    var datasetsToRemove = new List<Dataset>();
 
                     foreach (var dataset in channel.Datasets)
                     {
                         var keep = false;
 
-                        if (FilterDataReader.TryGetFilterCodeDefinition(dataset, out var codeDefinition))
+                        if (FilterDataSource.TryGetFilterCodeDefinition(dataset, out var codeDefinition))
                         {
                             // get user
                             if (!usersMap.TryGetValue(codeDefinition.Owner, out var user))

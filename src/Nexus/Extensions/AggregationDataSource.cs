@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
-using Nexus.Database;
 using Nexus.Core;
-using Nexus.Services;
+using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Infrastructure;
+using Nexus.Services;
 using Nexus.Types;
 using System;
 using System.Collections.Generic;
@@ -12,16 +12,15 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading;
-using System.Text.RegularExpressions;
 
 namespace Nexus.Extensions
 {
     [ExtensionIdentification("Nexus.Aggregation", "Nexus Aggregation", "Provides access to databases with Nexus aggregation files.")]
-    public class AggregationDataReader : DataReaderExtensionBase
+    public class AggregationDataSource : DataReaderExtensionBase
     {
         #region Constructors
 
-        public AggregationDataReader(DataReaderRegistration registration, ILogger logger) : base(registration, logger)
+        public AggregationDataSource(DataSourceRegistration registration, ILogger logger) : base(registration, logger)
         {
             //
         }
@@ -37,10 +36,10 @@ namespace Nexus.Extensions
         #region Methods
 
 #warning Unify this with other readers
-        public override (T[] Dataset, byte[] Status) ReadSingle<T>(DatasetInfo dataset, DateTime begin, DateTime end)
+        public override (T[] Dataset, byte[] Status) ReadSingle<T>(Dataset dataset, DateTime begin, DateTime end)
         {
-            var project = (ProjectInfo)dataset.Parent.Parent;
-            var channel = (ChannelInfo)dataset.Parent;
+            var project = dataset.Channel.Project;
+            var channel = dataset.Channel;
             var projectFolderPath = Path.Combine(this.RootPath, "DATA", WebUtility.UrlEncode(project.Id));
             var samplesPerDay = new SampleRateContainer(dataset.Id).SamplesPerDay;
             var length = (long)Math.Round((end - begin).TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
@@ -104,7 +103,7 @@ namespace Nexus.Extensions
             return (data, status);
         }
 
-        protected override List<ProjectInfo> LoadProjects()
+        protected override List<Project> LoadProjects()
         {
             // (0) load versioning file
             var versioningFilePath = Path.Combine(this.RootPath, "versioning.json");
@@ -149,12 +148,12 @@ namespace Nexus.Extensions
                 // (4) find corresponding cache file
                 var cacheFilePath = Path.Combine(cacheFolderPath, $"{currentMonth.ToString("yyyy-MM")}.json");
                
-                List<ProjectInfo> cache;
+                List<Project> cache;
 
                 // (5.a) cache file exists
                 if (File.Exists(cacheFilePath))
                 {
-                    cache = JsonSerializerHelper.Deserialize<List<ProjectInfo>>(cacheFilePath);
+                    cache = JsonSerializerHelper.Deserialize<List<Project>>(cacheFilePath);
                     cache.ForEach(project => project.Initialize());
 
                     foreach (var projectId in projectIds)
@@ -204,12 +203,12 @@ namespace Nexus.Extensions
             }
 
             // (7) update main cache
-            List<ProjectInfo> mainCache;
+            List<Project> mainCache;
 
             if (cacheChanged || !File.Exists(mainCacheFilePath))
             {
                 var cacheFiles = Directory.EnumerateFiles(cacheFolderPath, "*-*.json");
-                mainCache = new List<ProjectInfo>();
+                mainCache = new List<Project>();
 
                 var message = "Merging cache files into main cache ...";
 
@@ -219,7 +218,7 @@ namespace Nexus.Extensions
 
                     foreach (var cacheFile in cacheFiles)
                     {
-                        var cache = JsonSerializerHelper.Deserialize<List<ProjectInfo>>(cacheFile);
+                        var cache = JsonSerializerHelper.Deserialize<List<Project>>(cacheFile);
                         cache.ForEach(project => project.Initialize());
 
                         foreach (var project in cache)
@@ -245,7 +244,7 @@ namespace Nexus.Extensions
             }
             else
             {
-                mainCache = JsonSerializerHelper.Deserialize<List<ProjectInfo>>(mainCacheFilePath);
+                mainCache = JsonSerializerHelper.Deserialize<List<Project>>(mainCacheFilePath);
                 mainCache.ForEach(project => project.Initialize());
             }
 
@@ -297,9 +296,9 @@ namespace Nexus.Extensions
             }
         }
 
-        private ProjectInfo ScanFiles(string projectId, string currentMonthFolder, AggregationVersioning versioning)
+        private Project ScanFiles(string projectId, string currentMonthFolder, AggregationVersioning versioning)
         {
-            var project = new ProjectInfo(projectId);
+            var project = new Project(projectId);
 
             if (Directory.Exists(currentMonthFolder))
             {
@@ -417,10 +416,10 @@ namespace Nexus.Extensions
             }
         }
 
-        private ProjectInfo GetProject(string projectId, string dayFolder)
+        private Project GetProject(string projectId, string dayFolder)
         {
-            var project = new ProjectInfo(projectId);
-            var channelMap = new Dictionary<string, ChannelInfo>();
+            var project = new Project(projectId);
+            var channelMap = new Dictionary<Guid, Channel>();
 
             Directory
                 .EnumerateFiles(dayFolder, "*.nex", SearchOption.TopDirectoryOnly)
@@ -429,16 +428,16 @@ namespace Nexus.Extensions
                 {
                     var fileName = Path.GetFileNameWithoutExtension(filePath);
                     var fileNameParts = fileName.Split('_');
-                    var id = fileNameParts[0];
+                    var id = Guid.Parse(fileNameParts[0]);
                     var datasetName = $"{fileNameParts[1]} {fileNameParts[2]}_{fileNameParts[3]}";
 
                     if (!channelMap.TryGetValue(id, out var channel))
                     {
-                        channel = new ChannelInfo(id, project);
+                        channel = new Channel(id, project);
                         channelMap[id] = channel;
                     }
 
-                    var dataset = new DatasetInfo(datasetName, channel)
+                    var dataset = new Dataset(datasetName, channel)
                     {
                         DataType = NexusDataType.FLOAT64
                     };

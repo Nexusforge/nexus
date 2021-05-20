@@ -82,7 +82,7 @@ namespace Nexus.Services
                     if (aggregationChannels.Any())
                     {
                         sb.AppendLine();
-                        sb.AppendLine($"\tData Reader '{registration.DataReaderId}' ({registration.RootPath})");
+                        sb.AppendLine($"\tData Reader '{registration.DataSourceId}' ({registration.RootPath})");
 
                         foreach (var aggregationChannel in aggregationChannels)
                         {

@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Nexus.Buffers;
-using Nexus.Database;
+using Nexus.DataModel;
 using Nexus.Core;
 using Nexus.Filters;
 using Nexus.Roslyn;
@@ -20,8 +20,8 @@ using System.Threading.Tasks;
 
 namespace Nexus.Extensions
 {
-    [ExtensionIdentification(FilterDataReader.Id, "Nexus filters", "Dynamically loads and compiles user-defined filters.")]
-    public class FilterDataReader : DataReaderExtensionBase
+    [ExtensionIdentification(FilterDataSource.Id, "Nexus filters", "Dynamically loads and compiles user-defined filters.")]
+    public class FilterDataSource : DataReaderExtensionBase
     {
         #region Fields
 
@@ -33,15 +33,15 @@ namespace Nexus.Extensions
 
         #region Constructors
 
-        static FilterDataReader()
+        static FilterDataSource()
         {
-            FilterDataReader.FilterSettingsCache = new ConcurrentDictionary<DataReaderRegistration, FilterSettings>();
-            FilterDataReader.FilterDataReaderCache = new ConcurrentDictionary<DataReaderRegistration, List<FilterDataReaderCacheEntry>>();
+            FilterDataSource.FilterSettingsCache = new ConcurrentDictionary<DataSourceRegistration, FilterSettings>();
+            FilterDataSource.FilterDataReaderCache = new ConcurrentDictionary<DataSourceRegistration, List<FilterDataReaderCacheEntry>>();
         }
 
-        public FilterDataReader(DataReaderRegistration registration, ILogger logger) : base(registration, logger)
+        public FilterDataSource(DataSourceRegistration registration, ILogger logger) : base(registration, logger)
         {
-            _cacheEntries = FilterDataReader.FilterDataReaderCache.GetOrAdd(registration, new List<FilterDataReaderCacheEntry>());
+            _cacheEntries = FilterDataSource.FilterDataReaderCache.GetOrAdd(registration, new List<FilterDataReaderCacheEntry>());
         }
 
         #endregion
@@ -52,22 +52,22 @@ namespace Nexus.Extensions
 
         public DatabaseManager DatabaseManager { get; set; }
 
-        private static ConcurrentDictionary<DataReaderRegistration, FilterSettings> FilterSettingsCache { get; }
+        private static ConcurrentDictionary<DataSourceRegistration, FilterSettings> FilterSettingsCache { get; }
 
-        private static ConcurrentDictionary<DataReaderRegistration, List<FilterDataReaderCacheEntry>> FilterDataReaderCache { get; }
+        private static ConcurrentDictionary<DataSourceRegistration, List<FilterDataReaderCacheEntry>> FilterDataReaderCache { get; }
 
         #endregion
 
         #region Methods
 
-        public static bool TryGetFilterCodeDefinition(DatasetInfo datasetInfo, out CodeDefinition codeDefinition)
+        public static bool TryGetFilterCodeDefinition(Dataset datasetInfo, out CodeDefinition codeDefinition)
         {
             codeDefinition = default;
 
-            if (FilterDataReader.FilterDataReaderCache.TryGetValue(datasetInfo.Registration, out var cacheEntries))
+            if (FilterDataSource.FilterDataReaderCache.TryGetValue(datasetInfo.Registration, out var cacheEntries))
             {
                 var cacheEntry = cacheEntries
-                    .FirstOrDefault(entry => entry.SupportedChanneIds.Contains(datasetInfo.Parent.Id));
+                    .FirstOrDefault(entry => entry.SupportedChanneIds.Contains(datasetInfo.Channel.Id));
 
                 if (cacheEntry is not null)
                 {
@@ -81,14 +81,14 @@ namespace Nexus.Extensions
 
         public static void ClearCache()
         {
-            FilterDataReader.FilterSettingsCache.Clear();
+            FilterDataSource.FilterSettingsCache.Clear();
 
             // unload DLLs
-            var loadContexts = FilterDataReader.FilterDataReaderCache
+            var loadContexts = FilterDataSource.FilterDataReaderCache
                 .SelectMany(entry => entry.Value.Select(cacheEntry => cacheEntry.LoadContext))
                 .ToList();
 
-            FilterDataReader.FilterDataReaderCache.Clear();
+            FilterDataSource.FilterDataReaderCache.Clear();
 
             foreach (var loadContext in loadContexts)
             {
@@ -96,11 +96,11 @@ namespace Nexus.Extensions
             }
         }
 
-        public override (T[] Dataset, byte[] Status) ReadSingle<T>(DatasetInfo dataset, DateTime begin, DateTime end)
+        public override (T[] Dataset, byte[] Status) ReadSingle<T>(Dataset dataset, DateTime begin, DateTime end)
         {
             var samplesPerDay = new SampleRateContainer(dataset.Id).SamplesPerDay;
             var length = (long)Math.Round((end - begin).TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
-            var cacheEntry = _cacheEntries.FirstOrDefault(current => current.SupportedChanneIds.Contains(dataset.Parent.Id));
+            var cacheEntry = _cacheEntries.FirstOrDefault(current => current.SupportedChanneIds.Contains(dataset.Channel.Id));
 
             if (cacheEntry is null)
                 throw new Exception("The requested filter channel ID could not be found.");
@@ -126,7 +126,7 @@ namespace Nexus.Extensions
                     throw new Exception($"Unable to find dataset with path '{path}'.");
                 }
 
-                if (!Utilities.IsProjectAccessible(this.User, dataset.Parent.Parent.Id, this.DatabaseManager.Database))
+                if (!Utilities.IsProjectAccessible(this.User, dataset.Channel.Project.Id, this.DatabaseManager.Database))
                     throw new UnauthorizedAccessException("The current user is not allowed to access this filter.");
 
                 var dataReader = this.DatabaseManager.GetDataReader(this.User, dataset.Registration);
@@ -137,15 +137,15 @@ namespace Nexus.Extensions
             };
 
             // execute
-            var filter = cacheEntry.FilterProvider.Filters.First(filter => filter.ToGuid(cacheEntry.FilterCodeDefinition).ToString() == dataset.Parent.Id);
+            var filter = cacheEntry.FilterProvider.Filters.First(filter => filter.ToGuid(cacheEntry.FilterCodeDefinition) == dataset.Channel.Id);
             cacheEntry.FilterProvider.Filter(begin, end, filter, getData, result);
 
             return ((T[])(object)result, status);
         }
 
-        protected override List<ProjectInfo> LoadProjects()
+        protected override List<Project> LoadProjects()
         {
-            var projects = new Dictionary<string, ProjectInfo>();
+            var projects = new Dictionary<string, Project>();
 
             if (this.TryGetFilterSettings(out var filterSettings))
             {
@@ -185,7 +185,7 @@ namespace Nexus.Extensions
                         // get or create project
                         if (!projects.TryGetValue(localFilterChannel.ProjectId, out var project))
                         {
-                            project = new ProjectInfo(localFilterChannel.ProjectId);
+                            project = new Project(localFilterChannel.ProjectId);
                             projects[localFilterChannel.ProjectId] = project;
                         }
 
@@ -196,7 +196,7 @@ namespace Nexus.Extensions
                             continue;
                         }
 
-                        var channel = new ChannelInfo(localFilterChannel.ToGuid(cacheEntry.FilterCodeDefinition).ToString(), project)
+                        var channel = new Channel(localFilterChannel.ToGuid(cacheEntry.FilterCodeDefinition), project)
                         {
                             Name = localFilterChannel.ChannelName,
                             Group = localFilterChannel.Group,
@@ -205,9 +205,9 @@ namespace Nexus.Extensions
                         };
 
                         // create datasets
-                        var datasets = new List<DatasetInfo>()
+                        var datasets = new List<Dataset>()
                         {
-                            new DatasetInfo(filterCodeDefinition.SampleRate, channel)
+                            new Dataset(filterCodeDefinition.SampleRate, channel)
                             {
                                 DataType = NexusDataType.FLOAT64                              
                             }
@@ -235,7 +235,7 @@ namespace Nexus.Extensions
         private bool TryGetFilterSettings(out FilterSettings filterSettings)
         {
             // search in cache
-            if (FilterDataReader.FilterSettingsCache.TryGetValue(this.Registration, out filterSettings))
+            if (FilterDataSource.FilterSettingsCache.TryGetValue(this.Registration, out filterSettings))
             {
                 return true;   
             }
@@ -251,7 +251,7 @@ namespace Nexus.Extensions
 
                     // add to cache
                     var filterSettings2 = filterSettings; // to make compiler happy
-                    FilterDataReader.FilterSettingsCache.AddOrUpdate(this.Registration, filterSettings, (key, value) => filterSettings2);
+                    FilterDataSource.FilterSettingsCache.AddOrUpdate(this.Registration, filterSettings, (key, value) => filterSettings2);
 
                     return true;
                 }
@@ -308,7 +308,7 @@ namespace Nexus.Extensions
                 try
                 {
                     var filterProvider = (FilterProviderBase)Activator.CreateInstance(filterType);
-                    var supportedChanneIds = filterProvider.Filters.Select(filter => filter.ToGuid(filterCodeDefinition).ToString()).ToList();
+                    var supportedChanneIds = filterProvider.Filters.Select(filter => filter.ToGuid(filterCodeDefinition)).ToList();
                     cacheEntries[i] = new FilterDataReaderCacheEntry(filterCodeDefinition, loadContext, filterProvider, supportedChanneIds);
                 }
                 catch (Exception ex)

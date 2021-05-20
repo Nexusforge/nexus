@@ -1,6 +1,6 @@
 ﻿using System.Security.Claims;
 
-namespace Nexus.Core
+namespace Nexus.ViewModels
 {
     public class ClaimViewModel
     {

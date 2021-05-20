@@ -1,13 +1,14 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 
-namespace Nexus.Database
+namespace Nexus.DataModel
 {
     [DebuggerDisplay("{Id,nq}")]
     public class ChannelMeta
     {
         #region "Constructors"
 
-        public ChannelMeta(string id)
+        public ChannelMeta(Guid id)
         {
             this.Id = id;
             this.Description = string.Empty;
@@ -24,7 +25,7 @@ namespace Nexus.Database
 
         #region "Properties"
 
-        public string Id { get; set; }
+        public Guid Id { get; set; }
 
         public string Description { get; set; }
 

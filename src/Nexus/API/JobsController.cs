@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Nexus.Database;
+using Nexus.DataModel;
 using Nexus.Core;
 using Nexus.Services;
 using Nexus.Types;
@@ -66,7 +66,7 @@ namespace Nexus.Controllers
             parameters.End = parameters.End.ToUniversalTime();
 
             // translate channel paths to datasets
-            List<DatasetInfo> datasets;
+            List<Dataset> datasets;
 
             try
             {
@@ -88,7 +88,7 @@ namespace Nexus.Controllers
                 return this.BadRequest("The list of channel paths is empty.");
 
             // security check
-            var projectIds = datasets.Select(dataset => dataset.Parent.Parent.Id).Distinct();
+            var projectIds = datasets.Select(dataset => dataset.Channel.Project.Id).Distinct();
 
             foreach (var projectId in projectIds)
             {

@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.Linq;
 
-namespace Nexus.Database
+namespace Nexus.DataModel
 {
     [DebuggerDisplay("{Id,nq}")]
     public class ProjectContainer
@@ -12,7 +12,7 @@ namespace Nexus.Database
         public ProjectContainer(string id)
         {
             this.Id = id;
-            this.Project = new ProjectInfo(id);
+            this.Project = new Project(id);
         }
 
         private ProjectContainer()
@@ -28,7 +28,7 @@ namespace Nexus.Database
 
         public string PhysicalName => this.Id.TrimStart('/').Replace('/', '_');
 
-        public ProjectInfo Project { get; set; }
+        public Project Project { get; set; }
 
         public ProjectMeta ProjectMeta { get; set; }
 
@@ -41,16 +41,16 @@ namespace Nexus.Database
             this.Project.Initialize();
         }
 
-        public SparseProjectInfo ToSparseProject(List<DatasetInfo> datasets)
+        public SparseProject ToSparseProject(List<Dataset> datasets)
         {
-            var project = new SparseProjectInfo(this.Id, this.ProjectMeta.License);
-            var channels = datasets.Select(dataset => (ChannelInfo)dataset.Parent).Distinct().ToList();
+            var project = new SparseProject(this.Id, this.ProjectMeta.License);
+            var channels = datasets.Select(dataset => dataset.Channel).Distinct().ToList();
 
             project.Channels = channels.Select(reference =>
             {
                 var channelMeta = this.ProjectMeta.Channels.First(channelMeta => channelMeta.Id == reference.Id);
 
-                var channel = new ChannelInfo(reference.Id, project)
+                var channel = new Channel(reference.Id, project)
                 {
                     Name = reference.Name,
                     Group = reference.Group,
@@ -64,11 +64,11 @@ namespace Nexus.Database
                         : reference.Description
                 };
 
-                var referenceDatasets = datasets.Where(dataset => (ChannelInfo)dataset.Parent == reference);
+                var referenceDatasets = datasets.Where(dataset => (Channel)dataset.Channel == reference);
 
                 channel.Datasets = referenceDatasets.Select(referenceDataset =>
                 {
-                    return new DatasetInfo(referenceDataset.Id, channel)
+                    return new Dataset(referenceDataset.Id, channel)
                     {
                         DataType = referenceDataset.DataType,
                         Registration = referenceDataset.Registration

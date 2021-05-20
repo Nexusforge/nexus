@@ -4,13 +4,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Nexus.Database
+namespace Nexus.DataModel
 {
-    public class SparseProjectInfo : ProjectInfo
+    public class SparseProject : Project
     {
         #region "Constructors"
 
-        public SparseProjectInfo(string id, ProjectLicense license) : base(id)
+        public SparseProject(string id, ProjectLicense license) : base(id)
         {
             this.License = license;
         }
@@ -31,7 +31,7 @@ namespace Nexus.Database
             {
                 return channel.Datasets.Select(dataset =>
                 {
-                    var guid = new Guid(channel.Id);
+                    var guid = channel.Id;
                     var displayName = channel.Name;
                     var datasetName = dataset.Id;
                     var groupName = channel.Group;

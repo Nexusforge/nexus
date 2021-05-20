@@ -3,23 +3,20 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-namespace Nexus.Database
+namespace Nexus.DataModel
 {
     [DebuggerDisplay("{Name,nq}")]
-    public class ChannelInfo : ProjectElement
+    public class Channel
     {
         #region "Constructors"
 
-        public ChannelInfo(string id, ProjectElement parent) : base(id, parent)
+        public Channel(Guid id, Project project)
         {
-            this.Name = string.Empty;
-            this.Group = string.Empty;
-            this.Unit = string.Empty;
-            this.Description = string.Empty;
-            this.Datasets = new List<DatasetInfo>();
+            this.Id = id;
+            this.Project = project;
         }
 
-        private ChannelInfo()
+        private Channel()
         {
             //
         }
@@ -27,6 +24,8 @@ namespace Nexus.Database
         #endregion
 
         #region "Properties"
+
+        public Guid Id { get; init; }
 
         public string Name { get; set; }
 
@@ -36,15 +35,17 @@ namespace Nexus.Database
 
         public string Description { get; set; }
 
-        public List<DatasetInfo> Datasets { get; set; }
+        public List<Dataset> Datasets { get; set; }
+
+        public Project Project { get; internal set; }
 
         #endregion
 
         #region "Methods"
 
-        public void Merge(ChannelInfo channel, ChannelMergeMode mergeMode)
+        public void Merge(Channel channel, ChannelMergeMode mergeMode)
         {
-            if (this.Parent.Id != channel.Parent.Id)
+            if (this.Project.Id != channel.Project.Id)
                 throw new Exception("The channel to be merged has a different parent.");
 
             // merge properties
@@ -78,7 +79,7 @@ namespace Nexus.Database
             }
 
             // merge datasets
-            var newDatasets = new List<DatasetInfo>();
+            var newDatasets = new List<Dataset>();
 
             foreach (var dataset in channel.Datasets)
             {
@@ -89,30 +90,22 @@ namespace Nexus.Database
                 else
                     newDatasets.Add(dataset);
 
-                dataset.Parent = this;
+                dataset.Channel = this;
             }
 
             this.Datasets.AddRange(newDatasets);
         }
 
-        public override string GetPath()
+        public string GetPath()
         {
-            return $"{this.Parent.GetPath()}/{this.Id}";
+            return $"{this.Project.GetPath()}/{this.Id}";
         }
 
-        public override IEnumerable<ProjectElement> GetChilds()
+        public void Initialize()
         {
-            return this.Datasets;
-        }
-
-        public override void Initialize()
-        {
-            base.Initialize();
-
             foreach (var dataset in this.Datasets)
             {
-                dataset.Parent = this;
-                dataset.Initialize();
+                dataset.Channel = this;
             }
         }
 

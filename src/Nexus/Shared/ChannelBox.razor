@@ -46,11 +46,11 @@ else if (this.UserState.ProjectContainer != null) // user has no access to proje
     <div class="flex-centered h-100 w-100">
         @if (this.ContextAccessor.HttpContext.User.Identity.IsAuthenticated)
         {
-            @if (this.UserState.ProjectContainer.ProjectMeta.License.LicensingScheme == Database.ProjectLicensingScheme.ManualRequest)
+            @if (this.UserState.ProjectContainer.ProjectMeta.License.LicensingScheme == DataModel.ProjectLicensingScheme.ManualRequest)
             {
                 <span>You do not have access to this project.@(!string.IsNullOrWhiteSpace(this.UserState.ProjectContainer.ProjectMeta.Contact) ? $" Please contact {this.UserState.ProjectContainer.ProjectMeta.Contact} to request permission." : "")</span>
             }
-            else if (this.UserState.ProjectContainer.ProjectMeta.License.LicensingScheme == Database.ProjectLicensingScheme.AcceptLicense)
+            else if (this.UserState.ProjectContainer.ProjectMeta.License.LicensingScheme == DataModel.ProjectLicensingScheme.AcceptLicense)
             {
                 <MatButton Outlined="true" Icon="@MatIconNames.Lock_open" @onclick="this.OpenLicenseDialog">Unlock</MatButton>
             }

@@ -8,7 +8,7 @@ using ChartJs.Blazor.Common.Time;
 using MatBlazor;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
-using Nexus.Database;
+using Nexus.DataModel;
 using Nexus.Core;
 using Nexus.Services;
 using Nexus.Types;
@@ -178,12 +178,12 @@ namespace Nexus.Shared
 
                     if (hasCleared)
                     {
-                        var registration = availability[i].DataReaderRegistration;
+                        var registration = availability[i].DataSourceRegistration;
                         var isAggregation = registration.Equals(this.DatabaseManager.State.AggregationRegistration);
 
                         dataset = new BarDataset<TimePoint>
                         {
-                            Label = isAggregation ? "Aggregations" : $"Raw ({registration.RootPath} - {registration.DataReaderId})",
+                            Label = isAggregation ? "Aggregations" : $"Raw ({registration.RootPath} - {registration.DataSourceId})",
                             BackgroundColor = _backgroundColors[i % _backgroundColors.Count()],
                             BorderColor = _borderColors[i % _borderColors.Count()],
                             BorderWidth = 2

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
-using Nexus.Database;
+using Nexus.DataModel;
+using Nexus.DataModel;
 using Nexus.Infrastructure;
 using System;
 using System.Collections.Concurrent;
@@ -16,7 +17,7 @@ namespace Nexus.Extensibility
     {
         #region Constructors
 
-        public DataReaderExtensionBase(DataReaderRegistration registration, ILogger logger)
+        public DataReaderExtensionBase(DataSourceRegistration registration, ILogger logger)
         {
             this.Registration = registration;
             this.Logger = logger;
@@ -33,11 +34,11 @@ namespace Nexus.Extensibility
 
         public Progress<double> Progress { get; }
 
-        public List<ProjectInfo> Projects { get; private set; }
+        public List<Project> Projects { get; private set; }
 
         public Dictionary<string, string> OptionalParameters { get; set; }
 
-        internal DataReaderRegistration Registration { get; }
+        internal DataSourceRegistration Registration { get; }
 
         #endregion
 
@@ -61,19 +62,19 @@ namespace Nexus.Extensibility
             this.Projects = projects;
         }
 
-        public void InitializeProjects(List<ProjectInfo> projects)
+        public void InitializeProjects(List<Project> projects)
         {
             this.Projects = projects;
         }
 
         public DataReaderDoubleStream ReadAsDoubleStream(
-            DatasetInfo dataset,
+            Dataset dataset,
             DateTime begin,
             DateTime end,
             ulong upperBlockSize,
             CancellationToken cancellationToken)
         {
-            var progressRecords = this.Read(new List<DatasetInfo>() { dataset }, begin, end, upperBlockSize, TimeSpan.FromMinutes(1), cancellationToken);
+            var progressRecords = this.Read(new List<Dataset>() { dataset }, begin, end, upperBlockSize, TimeSpan.FromMinutes(1), cancellationToken);
             var samplesPerSecond = new SampleRateContainer(dataset.Id).SamplesPerSecond;
             var length = (long)Math.Round(samplesPerSecond * 
                 (decimal)(end - begin).TotalSeconds, MidpointRounding.AwayFromZero) * 
@@ -83,7 +84,7 @@ namespace Nexus.Extensibility
         }
 
         public IEnumerable<DataReaderProgressRecord> Read(
-            DatasetInfo dataset,
+            Dataset dataset,
             DateTime begin,
             DateTime end,
             ulong upperBlockSize,
@@ -94,11 +95,11 @@ namespace Nexus.Extensibility
                 ? TimeSpan.FromMinutes(10)
                 : TimeSpan.FromMinutes(1);
 
-            return this.Read(new List<DatasetInfo>() { dataset }, begin, end, upperBlockSize, fundamentalPeriod, cancellationToken);
+            return this.Read(new List<Dataset>() { dataset }, begin, end, upperBlockSize, fundamentalPeriod, cancellationToken);
         }
 
         public IEnumerable<DataReaderProgressRecord> Read(
-            List<DatasetInfo> datasets,
+            List<Dataset> datasets,
             DateTime begin,
             DateTime end,
             ulong upperBlockSize,
@@ -114,18 +115,18 @@ namespace Nexus.Extensibility
         }
 
         public IEnumerable<DataReaderProgressRecord> Read(
-            DatasetInfo dataset,
+            Dataset dataset,
             DateTime begin,
             DateTime end,
             ulong upperBlockSize,
             TimeSpan fundamentalPeriod,
             CancellationToken cancellationToken)
         {
-            return this.Read(new List<DatasetInfo>() { dataset }, begin, end, upperBlockSize, fundamentalPeriod, cancellationToken);
+            return this.Read(new List<Dataset>() { dataset }, begin, end, upperBlockSize, fundamentalPeriod, cancellationToken);
         }
 
         public IEnumerable<DataReaderProgressRecord> Read(
-            List<DatasetInfo> datasets,
+            List<Dataset> datasets,
             DateTime begin,
             DateTime end,
             ulong blockSizeLimit,
@@ -158,7 +159,7 @@ namespace Nexus.Extensibility
         }
 
         private IEnumerable<DataReaderProgressRecord> InternalRead(
-            List<DatasetInfo> datasets,
+            List<Dataset> datasets,
             DateTime begin,
             DateTime end,
             ulong blockSizeLimit,
@@ -220,7 +221,7 @@ namespace Nexus.Extensibility
 
             while (remainingPeriod > TimeSpan.Zero)
             {
-                var datasetToRecordMap = new Dictionary<DatasetInfo, DataRecord>();
+                var datasetToRecordMap = new Dictionary<Dataset, DataRecord>();
                 var currentPeriod = TimeSpan.FromTicks(Math.Min(remainingPeriod.Ticks, maxPeriodPerRequest.Ticks));
                 var currentEnd = currentBegin + currentPeriod;
                 var index = 1;
@@ -320,7 +321,7 @@ namespace Nexus.Extensibility
 
             return new AvailabilityResult()
             {
-                DataReaderRegistration = this.Registration,
+                DataSourceRegistration = this.Registration,
                 Data = aggregatedData
                     .ToDictionary(entry => entry.Key, entry => entry.Value)
             };
@@ -331,13 +332,13 @@ namespace Nexus.Extensibility
             return this.Projects.Select(project => project.Id).ToList();
         }
 
-        public bool TryGetProject(string projectId, out ProjectInfo projectInfo)
+        public bool TryGetProject(string projectId, out Project projectInfo)
         {
             projectInfo = this.Projects.FirstOrDefault(project => project.Id == projectId);
             return projectInfo != null;
         }
 
-        public ProjectInfo GetProject(string projectId)
+        public Project GetProject(string projectId)
         {
             return this.Projects.First(project => project.Id == projectId);
         }
@@ -348,9 +349,9 @@ namespace Nexus.Extensibility
         }
 
 #warning Why generic?
-        public abstract (T[] Dataset, byte[] Status) ReadSingle<T>(DatasetInfo dataset, DateTime begin, DateTime end) where T : unmanaged;
+        public abstract (T[] Dataset, byte[] Status) ReadSingle<T>(Dataset dataset, DateTime begin, DateTime end) where T : unmanaged;
 
-        public (Array Dataset, byte[] Status) ReadSingle(DatasetInfo dataset, DateTime begin, DateTime end)
+        public (Array Dataset, byte[] Status) ReadSingle(Dataset dataset, DateTime begin, DateTime end)
         {
             // invoke generic method
             var type = typeof(DataReaderExtensionBase);
@@ -377,7 +378,7 @@ namespace Nexus.Extensibility
             //
         }
 
-        protected abstract List<ProjectInfo> LoadProjects();
+        protected abstract List<Project> LoadProjects();
 
         protected abstract double GetAvailability(string projectId, DateTime Day);
 

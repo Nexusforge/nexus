@@ -1,13 +1,13 @@
-﻿using Nexus.Database;
+﻿using Nexus.DataModel;
 using Nexus.Infrastructure;
 
 namespace Nexus.ViewModels
 {
-    public class DatasetInfoViewModel
+    public class DatasetViewModel
     {
         #region Constructors
 
-        public DatasetInfoViewModel(DatasetInfo dataset, ChannelInfoViewModel parent)
+        public DatasetViewModel(Dataset dataset, ChannelViewModel parent)
         {
             this.Model = dataset;
             this.Parent = parent;
@@ -17,13 +17,13 @@ namespace Nexus.ViewModels
 
         #region Properties
 
-        public DatasetInfo Model { get; }
+        public Dataset Model { get; }
 
         public string Name => this.Model.Id;
 
         public NexusDataType DataType => this.Model.DataType;
 
-        public ChannelInfoViewModel Parent { get; }
+        public ChannelViewModel Parent { get; }
 
         #endregion
     }

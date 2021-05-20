@@ -14,7 +14,7 @@ namespace Nexus.Shared
         #region Fields
 
         private bool _showAdditionalInfo;
-        private List<DatasetInfoViewModel> _filteredDatasets;
+        private List<DatasetViewModel> _filteredDatasets;
 
         #endregion
 
@@ -27,7 +27,7 @@ namespace Nexus.Shared
         public bool IsExpanded { get; set; }
 
         [Parameter]
-        public ChannelInfoViewModel Channel { get; set; }
+        public ChannelViewModel Channel { get; set; }
 
         #endregion
 
@@ -54,7 +54,7 @@ namespace Nexus.Shared
         private void UpdateFilteredDatasets()
         {
             if (string.IsNullOrWhiteSpace(this.UserState.SampleRate))
-                _filteredDatasets = new List<DatasetInfoViewModel>();
+                _filteredDatasets = new List<DatasetViewModel>();
             else
                 _filteredDatasets = this.Channel.Datasets.Where(dataset => dataset.Name.Contains(this.UserState.SampleRate)).ToList();
         }

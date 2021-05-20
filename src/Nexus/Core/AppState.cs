@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Logging;
-using Nexus.Database;
+using Nexus.DataModel;
 using Nexus.Services;
 using Nexus.ViewModels;
 using Nexus.Infrastructure;
@@ -28,7 +28,7 @@ namespace Nexus.Core
         private SemaphoreSlim _updateDatabaseSemaphore;
         private CancellationTokenSource _updateDatabaseCancellationTokenSource;
         private DatabaseManager _databaseManager;
-        private Dictionary<ProjectContainer, List<ChannelInfoViewModel>> _channelCache;
+        private Dictionary<ProjectContainer, List<ChannelViewModel>> _channelCache;
 
         #endregion
 
@@ -128,7 +128,7 @@ namespace Nexus.Core
                 this.FilterSettings = new FilterSettingsViewModel(filterSettingsFilePath);
                 this.InitializeFilterSettings(this.FilterSettings.Model, filterSettingsFilePath);
 
-                _channelCache = new Dictionary<ProjectContainer, List<ChannelInfoViewModel>>();
+                _channelCache = new Dictionary<ProjectContainer, List<ChannelViewModel>>();
                 _updateDatabaseSemaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
 
                 _userManager.Initialize();
@@ -173,14 +173,14 @@ namespace Nexus.Core
             }
         }
 
-        public List<ChannelInfoViewModel> GetChannels(ProjectContainer projectContainer)
+        public List<ChannelViewModel> GetChannels(ProjectContainer projectContainer)
         {
             if (!_channelCache.TryGetValue(projectContainer, out var channels))
             {
                 channels = projectContainer.Project.Channels.Select(channel =>
                 {
                     var channelMeta = projectContainer.ProjectMeta.Channels.First(channelMeta => channelMeta.Id == channel.Id);
-                    return new ChannelInfoViewModel(channel, channelMeta);
+                    return new ChannelViewModel(channel, channelMeta);
                 }).ToList();
 
                 _channelCache[projectContainer] = channels;

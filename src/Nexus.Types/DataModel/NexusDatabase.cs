@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Nexus.Database
+namespace Nexus.DataModel
 {
     public class NexusDatabase
     {
@@ -23,12 +23,12 @@ namespace Nexus.Database
 
         #region Methods
 
-        public List<ProjectInfo> GetProjects()
+        public List<Project> GetProjects()
         {
             return this.ProjectContainers.Select(container => container.Project).ToList();
         }
 
-        public bool TryFindProjectById(string id, out ProjectInfo project)
+        public bool TryFindProjectById(string id, out Project project)
         {
             var projectContainer = this.ProjectContainers.FirstOrDefault(projectContainer => projectContainer.Id == id);
             project = projectContainer?.Project;
@@ -36,26 +36,27 @@ namespace Nexus.Database
             return project != null;
         }
 
-        public bool TryFindChannelById(string projectId, string channelId, out ChannelInfo channel)
+        public bool TryFindChannelByIdOrName(string projectId, string channelIdOrName, out Channel channel)
         {
             channel = default;
 
             if (this.TryFindProjectById(projectId, out var project))
             {
-                channel = project.Channels.FirstOrDefault(current => current.Id == channelId);
+                if (Guid.TryParse(channelIdOrName, out var channelId))
+                    channel = project.Channels.FirstOrDefault(current => current.Id == channelId);
 
                 if (channel == null)
-                    channel = project.Channels.FirstOrDefault(current => current.Name == channelId);
+                    channel = project.Channels.FirstOrDefault(current => current.Name == channelIdOrName);
             }
 
             return channel != null;
         }
 
-        public bool TryFindDatasetById(string projectId, string channelId, string datsetId, out DatasetInfo dataset)
+        public bool TryFindDatasetById(string projectId, string channelIdOrName, string datsetId, out Dataset dataset)
         {
             dataset = default;
 
-            if (this.TryFindChannelById(projectId, channelId, out var channel))
+            if (this.TryFindChannelByIdOrName(projectId, channelIdOrName, out var channel))
             {
                 dataset = channel.Datasets.FirstOrDefault(dataset => dataset.Id == datsetId);
 
@@ -66,7 +67,7 @@ namespace Nexus.Database
             return false;
         }
 
-        public bool TryFindDataset(string path, out DatasetInfo dataset)
+        public bool TryFindDataset(string path, out Dataset dataset)
         {
             var pathParts = path.Split("/");
 
@@ -80,7 +81,7 @@ namespace Nexus.Database
             return this.TryFindDatasetById(projectName, channelName, datasetName, out dataset);
         }
 
-        public bool TryFindDatasetsByGroup(string groupPath, out List<DatasetInfo> datasets)
+        public bool TryFindDatasetsByGroup(string groupPath, out List<Dataset> datasets)
         {
             var groupPathParts = groupPath.Split("/");
 
@@ -94,9 +95,9 @@ namespace Nexus.Database
             return this.TryFindDatasetsByGroup(projectName, groupName, datasetName, out datasets);
         }
 
-        private bool TryFindDatasetsByGroup(string projectName, string groupName, string datasetName, out List<DatasetInfo> datasets)
+        private bool TryFindDatasetsByGroup(string projectName, string groupName, string datasetName, out List<Dataset> datasets)
         {
-            datasets = new List<DatasetInfo>();
+            datasets = new List<Dataset>();
 
             var projectContainer = this.ProjectContainers.FirstOrDefault(projectContainer => projectContainer.Id == projectName);
 

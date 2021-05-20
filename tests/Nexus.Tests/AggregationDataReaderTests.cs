@@ -23,7 +23,7 @@ namespace Nexus.Tests
         public void ProvidesProjectIds()
         {
             // arrange
-            var dataReader = new AggregationDataReader(_fixture.DataReaderRegistration, _logger);
+            var dataReader = new AggregationDataSource(_fixture.DataSourceRegistration, _logger);
             dataReader.InitializeProjects();
 
             // act
@@ -39,7 +39,7 @@ namespace Nexus.Tests
         public void ProvidesProject()
         {
             // arrange
-            var dataReader = new AggregationDataReader(_fixture.DataReaderRegistration, _logger);
+            var dataReader = new AggregationDataSource(_fixture.DataSourceRegistration, _logger);
             dataReader.InitializeProjects();
 
             // act
@@ -59,11 +59,11 @@ namespace Nexus.Tests
         public void ProvidesAvailability()
         {
             // arrange
-            var dataReader = new AggregationDataReader(_fixture.DataReaderRegistration, _logger);
+            var dataReader = new AggregationDataSource(_fixture.DataSourceRegistration, _logger);
             dataReader.InitializeProjects();
 
             // act
-            var actual = dataReader.GetAvailability("/A/B/C", new DateTime(2020, 07, 07, 0, 0, 0, DateTimeKind.Utc), new DateTime(2020, 07, 10, 0, 0, 0, DateTimeKind.Utc), Database.AvailabilityGranularity.Day);
+            var actual = dataReader.GetAvailability("/A/B/C", new DateTime(2020, 07, 07, 0, 0, 0, DateTimeKind.Utc), new DateTime(2020, 07, 10, 0, 0, 0, DateTimeKind.Utc), DataModel.AvailabilityGranularity.Day);
 
             // assert
             var expected = new SortedDictionary<DateTime, double>(new Dictionary<DateTime, double>
@@ -80,7 +80,7 @@ namespace Nexus.Tests
         public void CanReadTwoDaysShifted()
         {
             // arrange
-            var dataReader = new AggregationDataReader(_fixture.DataReaderRegistration, _logger);
+            var dataReader = new AggregationDataSource(_fixture.DataSourceRegistration, _logger);
             dataReader.InitializeProjects();
 
             // act

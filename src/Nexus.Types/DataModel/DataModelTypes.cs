@@ -1,7 +1,8 @@
+using Nexus.Extensibility;
 using System;
 using System.Collections.Generic;
 
-namespace Nexus.Database
+namespace Nexus.DataModel
 {
     public enum AvailabilityGranularity
     {
@@ -24,15 +25,9 @@ namespace Nexus.Database
         public string Url { get; init; } = string.Empty;
     }
 
-    public record DataReaderRegistration
-    {
-        public string RootPath { get; set; }
-        public string DataReaderId { get; set; }
-    }
-
     public record AvailabilityResult
     {
-        public DataReaderRegistration DataReaderRegistration { get; set; }
+        public DataSourceRegistration DataSourceRegistration { get; set; }
         public Dictionary<DateTime, double> Data { get; set; }
     }
 }

@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nexus.Buffers;
-using Nexus.Database;
+using Nexus.DataModel;
 using Nexus.Core;
 using Nexus.Infrastructure;
 using Nexus.Extensibility;
@@ -74,7 +74,7 @@ namespace Nexus.Services
         }
 
         public Task<string> ExportDataAsync(ExportParameters exportParameters,
-                                            List<DatasetInfo> datasets,
+                                            List<Dataset> datasets,
                                             CancellationToken cancellationToken)
         {
             if (!datasets.Any() || exportParameters.Begin == exportParameters.End)
@@ -99,13 +99,13 @@ namespace Nexus.Services
                 try
                 {
                     // convert datasets into projects
-                    var projectIds = datasets.Select(dataset => dataset.Parent.Parent.Id).Distinct();
+                    var projectIds = datasets.Select(dataset => dataset.Channel.Project.Id).Distinct();
                     var projectContainers = _databaseManager.Database.ProjectContainers
                         .Where(projectContainer => projectIds.Contains(projectContainer.Id));
 
                     var sparseProjects = projectContainers.Select(projectContainer =>
                     {
-                        var currentDatasets = datasets.Where(dataset => dataset.Parent.Parent.Id == projectContainer.Id).ToList();
+                        var currentDatasets = datasets.Where(dataset => dataset.Channel.Project.Id == projectContainer.Id).ToList();
                         return projectContainer.ToSparseProject(currentDatasets);
                     });
 
@@ -185,7 +185,7 @@ namespace Nexus.Services
 
         private void CreateFiles(ClaimsPrincipal user, 
                                  ExportParameters exportParameters,
-                                 SparseProjectInfo sparseProject,
+                                 SparseProject sparseProject,
                                  string directoryPath,
                                  CancellationToken cancellationToken)
         {
@@ -273,16 +273,16 @@ namespace Nexus.Services
         private void CreateFiles(ClaimsPrincipal user,
                                  DataWriterExtensionLogicBase dataWriter,
                                  ExportParameters exportParameters,
-                                 SparseProjectInfo sparseProject,
+                                 SparseProject sparseProject,
                                  CancellationToken cancellationToken)
         {
             var datasets = sparseProject.Channels.SelectMany(channel => channel.Datasets);
-            var registrationToDatasetsMap = new Dictionary<DataReaderRegistration, List<DatasetInfo>>();
+            var registrationToDatasetsMap = new Dictionary<DataSourceRegistration, List<Dataset>>();
 
             foreach (var dataset in datasets)
             {
                 if (!registrationToDatasetsMap.ContainsKey(dataset.Registration))
-                    registrationToDatasetsMap[dataset.Registration] = new List<DatasetInfo>();
+                    registrationToDatasetsMap[dataset.Registration] = new List<Dataset>();
 
                 registrationToDatasetsMap[dataset.Registration].Add(dataset);
             }

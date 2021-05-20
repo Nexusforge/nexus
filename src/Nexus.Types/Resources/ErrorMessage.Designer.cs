@@ -270,9 +270,9 @@ namespace Nexus {
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Invalid group identifier. ähnelt.
         /// </summary>
-        internal static string ProjectInfo {
+        internal static string Project {
             get {
-                return ResourceManager.GetString("ProjectInfo", resourceCulture);
+                return ResourceManager.GetString("Project", resourceCulture);
             }
         }
     }

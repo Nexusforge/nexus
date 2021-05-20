@@ -3,19 +3,19 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-namespace Nexus.Database
+namespace Nexus.DataModel
 {
     [DebuggerDisplay("{Id,nq}")]
-    public class ProjectInfo : ProjectElement
+    public class Project
     {
         #region "Constructors"
 
-        public ProjectInfo(string id) : base(id, null)
+        public Project(string id)
         {
-            this.Channels = new List<ChannelInfo>();
+            this.Id = id;
         }
 
-        private ProjectInfo()
+        private Project()
         {
             //
         }
@@ -24,23 +24,25 @@ namespace Nexus.Database
 
         #region "Properties"
 
+        public string Id { get; }
+
         public DateTime ProjectStart { get; set; }
 
         public DateTime ProjectEnd { get; set; }
 
-        public List<ChannelInfo> Channels { get; set; }
+        public List<Channel> Channels { get; set; }
 
         #endregion
 
         #region "Methods"
 
-        public void Merge(ProjectInfo project, ChannelMergeMode mergeMode)
+        public void Merge(Project project, ChannelMergeMode mergeMode)
         {
             if (this.Id != project.Id)
                 throw new Exception("The project to be merged has a different ID.");
 
             // merge channels
-            List<ChannelInfo> newChannels = new List<ChannelInfo>();
+            List<Channel> newChannels = new List<Channel>();
 
             foreach (var channel in project.Channels)
             {
@@ -51,7 +53,7 @@ namespace Nexus.Database
                 else
                     newChannels.Add(channel);
 
-                channel.Parent = this;
+                channel.Project = this;
             }
 
             this.Channels.AddRange(newChannels);
@@ -68,23 +70,16 @@ namespace Nexus.Database
                 this.ProjectEnd = new DateTime(Math.Max(this.ProjectEnd.Ticks, project.ProjectEnd.Ticks));
         }
 
-        public override string GetPath()
+        public string GetPath()
         {
             return this.Id;
         }
 
-        public override IEnumerable<ProjectElement> GetChilds()
+        public void Initialize()
         {
-            return this.Channels;
-        }
-
-        public override void Initialize()
-        {
-            base.Initialize();
-
             foreach (var channel in this.Channels)
             {
-                channel.Parent = this;
+                channel.Project = this;
                 channel.Initialize();
             }
         }

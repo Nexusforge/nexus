@@ -186,7 +186,7 @@
   <data name="NexusUtilities_NameEmpty" xml:space="preserve">
     <value>The name must not be empty.</value>
   </data>
-  <data name="ProjectInfo" xml:space="preserve">
+  <data name="Project" xml:space="preserve">
     <value>Invalid group identifier.</value>
   </data>
 </root>

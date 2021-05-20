@@ -3,13 +3,14 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Host.Mef;
 using Microsoft.CodeAnalysis.Text;
 using Nexus.Core;
+using Nexus.DataModel;
+using Nexus.Extensibility;
 using Nexus.Filters;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using NexusDatabase = Nexus.Database.NexusDatabase;
 
 namespace Nexus.Roslyn
 {
@@ -172,7 +173,7 @@ namespace Nexus.Roslyn
                         foreach (var dataset in channel.Datasets.Where(dataset => dataset.Id.Contains(sampleRate)))
                         {
                             // dataset property
-                            channelStringBuilder.AppendLine($"public double[] {NexusUtilities.EnforceNamingConvention(dataset.Id, prefix: "DATASET")} {{ get; set; }}");
+                            channelStringBuilder.AppendLine($"public double[] {ExtensibilityUtilities.EnforceNamingConvention(dataset.Id, prefix: "DATASET")} {{ get; set; }}");
 
                             addChannel = true;
                             addProject = true;

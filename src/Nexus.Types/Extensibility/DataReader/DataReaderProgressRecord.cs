@@ -1,4 +1,4 @@
-﻿using Nexus.Database;
+﻿using Nexus.DataModel;
 using Nexus.Extensibility;
 using System;
 using System.Collections.Generic;
@@ -7,7 +7,7 @@ public class DataReaderProgressRecord
 {
     #region Constructors
 
-    public DataReaderProgressRecord(Dictionary<DatasetInfo, DataRecord> datasetToRecordMap, DateTime begin, DateTime end)
+    public DataReaderProgressRecord(Dictionary<Dataset, DataRecord> datasetToRecordMap, DateTime begin, DateTime end)
     {
         this.DatasetToRecordMap = datasetToRecordMap;
         this.Begin = begin;
@@ -18,7 +18,7 @@ public class DataReaderProgressRecord
 
     #region Properties
 
-    public Dictionary<DatasetInfo, DataRecord> DatasetToRecordMap { get; }
+    public Dictionary<Dataset, DataRecord> DatasetToRecordMap { get; }
 
     public DateTime Begin { get; }
 

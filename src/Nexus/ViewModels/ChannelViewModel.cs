@@ -1,35 +1,36 @@
-﻿using Nexus.Database;
+﻿using Nexus.DataModel;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace Nexus.ViewModels
 {
-    public class ChannelInfoViewModel
+    public class ChannelViewModel
     {
         #region Fields
 
-        private ChannelInfo _channel;
+        private Channel _channel;
         private ChannelMeta _channelMeta;
 
         #endregion
 
         #region Constructors
 
-        public ChannelInfoViewModel(ChannelInfo channel, ChannelMeta channelMeta)
+        public ChannelViewModel(Channel channel, ChannelMeta channelMeta)
         {
             _channel = channel;
             _channelMeta = channelMeta;
 
             this.Datasets = channel.Datasets
                 .Where(dataset => !dataset.Id.EndsWith("_status"))
-                .Select(dataset => new DatasetInfoViewModel(dataset, this)).ToList();
+                .Select(dataset => new DatasetViewModel(dataset, this)).ToList();
         }
 
         #endregion
 
         #region Properties
 
-        public string Id => _channel.Id;
+        public Guid Id => _channel.Id;
 
         public string Name => _channel.Name;
 
@@ -69,9 +70,9 @@ namespace Nexus.ViewModels
             set { _channelMeta.SpecialInfo = value; }
         }
 
-        public ProjectInfo Parent => (ProjectInfo)_channel.Parent;
+        public Project Parent => (Project)_channel.Project;
 
-        public List<DatasetInfoViewModel> Datasets { get; private set; }
+        public List<DatasetViewModel> Datasets { get; private set; }
 
         #endregion
     }

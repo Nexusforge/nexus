@@ -1,13 +1,15 @@
 ﻿using GraphQL;
 using GraphQL.Types;
-using Nexus.Database;
+using Nexus.DataModel;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using static Nexus.Controllers.ProjectsController;
+using Channel = Nexus.Controllers.ProjectsController.Channel;
+using Project = Nexus.DataModel.Project;
 
 namespace Nexus.API
 {
-    public class ProjectType : ObjectGraphType<(ProjectInfo Project, ProjectMeta Meta)>
+    public class ProjectType : ObjectGraphType<(Project Project, ProjectMeta Meta)>
     {
         public ProjectType()
         {
@@ -28,7 +30,7 @@ namespace Nexus.API
                     new QueryArgument<IdGraphType> { Name = "id", Description = "The ID of the channel." }),
                 resolve: context =>
             {
-                var id = context.GetArgument<string>("id");
+                var id = context.GetArgument<Guid>("id");
                 var project = context.Source.Project;
                 var projectMeta = context.Source.Meta;
 

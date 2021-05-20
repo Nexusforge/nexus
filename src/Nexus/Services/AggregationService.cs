@@ -3,7 +3,7 @@ using MathNet.Numerics.Statistics;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Nexus.Buffers;
-using Nexus.Database;
+using Nexus.DataModel;
 using Nexus.Core;
 using Nexus.Extensibility;
 using Nexus.Infrastructure;
@@ -78,7 +78,7 @@ namespace Nexus.Services
                 if (container is null)
                     return null;
 
-                var dataReaderRegistrations = container
+                var DataSourceRegistrations = container
                     .Project
                     .Channels
                     .SelectMany(channel => channel.Datasets.Select(dataset => dataset.Registration))
@@ -86,7 +86,7 @@ namespace Nexus.Services
                     .Where(registration => registration != state.AggregationRegistration)
                     .ToList();
 
-                return new AggregationInstruction(container, dataReaderRegistrations.ToDictionary(registration => registration, registration =>
+                return new AggregationInstruction(container, DataSourceRegistrations.ToDictionary(registration => registration, registration =>
                 {
                     // find aggregations for project ID
                     var potentialAggregations = setup.Aggregations
@@ -190,10 +190,10 @@ namespace Nexus.Services
                 foreach (var configuration in setup.ReaderConfigurations
                     .Where(configuration => configuration.ProjectId == projectId))
                 {
-                    var tmpRegistration = new DataReaderRegistration()
+                    var tmpRegistration = new DataSourceRegistration()
                     {
                         RootPath = configuration.DataReaderRootPath,
-                        DataReaderId = configuration.DataReaderId
+                        DataSourceId = configuration.DataSourceId
                     };
 
                     if (dataReader.Registration.Equals(tmpRegistration))
@@ -252,7 +252,7 @@ namespace Nexus.Services
 
         private void OrchestrateAggregation<T>(string targetDirectoryPath,
                                                DataReaderExtensionBase dataReader,
-                                               DatasetInfo dataset,
+                                               Dataset dataset,
                                                List<Aggregation> aggregations,
                                                DateTime date,
                                                bool force,
@@ -263,7 +263,7 @@ namespace Nexus.Services
 
             // prepare variables
             var units = new List<AggregationUnit>();
-            var channel = (ChannelInfo)dataset.Parent;
+            var channel = dataset.Channel;
 
             // prepare buffers
             foreach (var aggregation in aggregations)
@@ -369,7 +369,7 @@ namespace Nexus.Services
             }
         }
 
-        private Dictionary<AggregationUnit, double[]> ApplyAggregationFunction<T>(DatasetInfo dataset,
+        private Dictionary<AggregationUnit, double[]> ApplyAggregationFunction<T>(Dataset dataset,
                                                                               T[] data,
                                                                               byte[] status,
                                                                               List<AggregationUnit> aggregationUnits) where T : unmanaged
@@ -695,7 +695,7 @@ namespace Nexus.Services
                 .ToArray();
         }
 
-        private static bool ApplyAggregationFilter(ChannelInfo channel, ChannelMeta channelMeta, Dictionary<AggregationFilter, string> filters, ILogger logger)
+        private static bool ApplyAggregationFilter(Channel channel, ChannelMeta channelMeta, Dictionary<AggregationFilter, string> filters, ILogger logger)
         {
             bool result = true;
 

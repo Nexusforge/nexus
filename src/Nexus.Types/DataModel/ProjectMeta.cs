@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Nexus.Database
+namespace Nexus.DataModel
 {
     public class ProjectMeta
     {
@@ -54,7 +54,7 @@ namespace Nexus.Database
 
         #region Methods
 
-        public void Initialize(ProjectInfo project)
+        public void Initialize(Project project)
         {
             if (string.IsNullOrWhiteSpace(this.ShortDescription))
                 this.ShortDescription = "<no description available>";

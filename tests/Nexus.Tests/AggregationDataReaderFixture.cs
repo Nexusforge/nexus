@@ -1,5 +1,5 @@
 ﻿using Nexus.Core;
-using Nexus.Database;
+using Nexus.Extensibility;
 using System;
 using System.IO;
 using System.Net;
@@ -11,22 +11,22 @@ namespace Nexus.Tests
         public AggregationDataReaderFixture()
         {
             var rootPath = this.InitializeDatabase();
-            var registration = new DataReaderRegistration()
+            var registration = new DataSourceRegistration()
             {
-                DataReaderId = "",
+                DataSourceId = "",
                 RootPath = rootPath
             };
 
-            this.DataReaderRegistration = registration;
+            this.DataSourceRegistration = registration;
         }
 
-        public DataReaderRegistration DataReaderRegistration { get; }
+        public DataSourceRegistration DataSourceRegistration { get; }
 
         public void Dispose()
         {
             try
             {
-                Directory.Delete(this.DataReaderRegistration.RootPath, true);
+                Directory.Delete(this.DataSourceRegistration.RootPath, true);
             }
             catch
             {

@@ -1,4 +1,4 @@
-﻿namespace Nexus.Database
+﻿namespace Nexus.DataModel
 {
     public enum ChannelMergeMode
     {
