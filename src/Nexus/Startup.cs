@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
@@ -18,7 +19,9 @@ using Nexus.Core;
 using Nexus.Services;
 using Nexus.ViewModels;
 using System;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -202,21 +205,31 @@ namespace Nexus
 
             // static files
             app.UseStaticFiles();
+
             app.UseStaticFiles(new StaticFileOptions
             {
                 FileProvider = new LazyPhysicalFileProvider(options, "ATTACHMENTS"),
                 RequestPath = "/attachments",
                 ServeUnknownFileTypes = true
             });
+
             app.UseStaticFiles(new StaticFileOptions
             {
-                FileProvider = new LazyPhysicalFileProvider(options, "PRESETS"),
-                RequestPath = "/presets"
+                FileProvider = new PhysicalFileProvider(Path.Combine(Assembly.GetExecutingAssembly().Location, "..", "Connectors")),
+                RequestPath = "/connectors",
+                ServeUnknownFileTypes = true
             });
+
             app.UseStaticFiles(new StaticFileOptions
             {
                 FileProvider = new LazyPhysicalFileProvider(options, "EXPORT"),
                 RequestPath = "/export"
+            });
+
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new LazyPhysicalFileProvider(options, "PRESETS"),
+                RequestPath = "/presets"
             });
 
             // swagger

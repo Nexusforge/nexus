@@ -14,6 +14,13 @@ channelPaths = { ...
     '/IN_MEMORY/TEST/ACCESSIBLE/V1/1 s_mean'
 };
 
+%% load connector script
+connectorFolderPath = fullfile(tempdir, 'Nexus');
+[~,~ ]              = mkdir(connectorFolderPath);
+url                 = sprintf('%s://%s:%d/connectors/NexusConnector.m', scheme, host, port);
+websave(fullfile(connectorFolderPath, 'NexusConnector.m'), url);
+addpath(connectorFolderPath)
+
 %% load data
 connector = NexusConnector(scheme, host, port, username, password);
 % without authentication: connector = NexusConnector(scheme, host, port)

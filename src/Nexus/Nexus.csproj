@@ -92,6 +92,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Connectors\NexusConnector.m">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Connectors\NexusConnector.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="OmniSharp\OmniSharpQuickInfoProvider.tt">
       <LastGenOutput>OmniSharpQuickInfoProvider.cs</LastGenOutput>
       <Generator>TextTemplatingFileGenerator</Generator>

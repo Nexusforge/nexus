@@ -8,8 +8,6 @@ from datetime import datetime, timedelta, timezone
 
 import matplotlib.pyplot as plt
 
-from NexusConnector import NexusConnector
-
 # settings
 scheme = "http"
 host = "localhost"
@@ -25,6 +23,16 @@ channel_paths = [
     "/IN_MEMORY/TEST/ACCESSIBLE/T1/1 s_mean",
     "/IN_MEMORY/TEST/ACCESSIBLE/V1/1 s_mean"
 ]
+
+# load connector script
+import sys, os, urllib.request, tempfile
+connectorFolderPath = os.path.join(tempfile.gettempdir(), "Nexus")
+os.makedirs(connectorFolderPath, exist_ok=True)
+url = f"{scheme}://{host}:{port}/connectors/NexusConnector.py"
+urllib.request.urlretrieve(url, connectorFolderPath + "/NexusConnector.py")
+sys.path.append(connectorFolderPath)
+NexusConnector = ""
+exec("from NexusConnector import NexusConnector")
 
 # load data
 connector = NexusConnector(scheme, host, port, username, password) 
