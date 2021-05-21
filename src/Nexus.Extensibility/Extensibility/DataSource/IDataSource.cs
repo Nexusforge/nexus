@@ -8,11 +8,27 @@ namespace Nexus.Extensibility
 {
     public interface IDataSource : IDisposable
     {
-        Task<List<Project>> InitializeAsync(string rootPath, ILogger logger, Dictionary<string, string> options);
+        #region Properties
+
+        string RootPath { set; }
+
+        ILogger Logger { set; }
+
+        Dictionary<string, string> Options { set; }
+
+        #endregion
+
+        #region Methods
+
+        Task OnParametersSetAsync();
+
+        Task<List<Project>> InitializeAsync();
 
         Task<double> GetAvailabilityAsync(string projectId, DateTime day);
 
-        Task<ReadResult<T>> ReadSingleAsync<T>(Dataset dataset, DateTime begin, DateTime end) 
+        Task<ReadResult<T>> ReadSingleAsync<T>(Dataset dataset, DateTime begin, DateTime end)
             where T : unmanaged;
+
+        #endregion
     }
 }

@@ -1,0 +1,14 @@
+{
+  "Projects": {
+    "/A/B/C": {
+      "position_A": {
+        "DailyFilesTemplate": "'DATA/position_A/__0_'yyyy-MM-dd'*.dat'",
+        "FilePeriod": "00:10:00"
+      },
+      "position_B": {
+        "DailyFilesTemplate": "'DATA/position_B/__1_'yyyy-MM-dd'*.dat'",
+        "FilePeriod": "01:00:00"
+      }
+    }
+  }
+}

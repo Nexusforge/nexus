@@ -1,0 +1,10 @@
+{
+  "Projects": {
+    "/A/B/C": {
+      "default": {
+        "DailyFilesTemplate": "'DATA/'yyyy-MM-dd'/__0_'yyyy-MM-dd'*.dat'",
+        "FilePeriod": "00:10:00"
+      }
+    }
+  }
+}

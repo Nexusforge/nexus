@@ -1,0 +1,15 @@
+{
+  "Projects": {
+    "/A/B/C": {
+      "default": {
+        "PathParts": [
+          "DATA",
+          "'prefix_'dd-MM-yyyy_HH",
+          "HH-mm-ss'.dat'"
+        ],
+        "DailyFilesTemplate": "'DATA/prefix_'dd-MM-yyyy'*/*.dat'",
+        "FilePeriod": "00:00:01"
+      }
+    }
+  }
+}

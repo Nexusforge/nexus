@@ -1,0 +1,10 @@
+{
+  "Projects": {
+    "/A/B/C": {
+      "calibrated": {
+        "DailyFilesTemplate": "'DATA/calibrated/'yyyy-MM'/'yyyy-MM-dd'/'yyyy-MM-dd_'*.dat'",
+        "FilePeriod": "00:10:00"
+      }
+    }
+  }
+}

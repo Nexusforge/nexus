@@ -1,0 +1,14 @@
+{
+  "Projects": {
+    "/A/B/C": {
+      "average": {
+        "DailyFilesTemplate": "'DATA/'yyyy-MM'/prefix_average_data_'yyyy-MM-dd'*.dat'",
+        "FilePeriod": "1.00:00:00"
+      },
+      "real_time": {
+        "DailyFilesTemplate": "'DATA/'yyyy-MM'/prefix_real_time_data_'yyyy-MM-dd'*.dat'",
+        "FilePeriod": "00:30:00"
+      }
+    }
+  }
+}
