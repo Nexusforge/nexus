@@ -25,7 +25,11 @@ namespace Nexus.Services
             try
             {
                 var client = new SmtpClient(emailOptions.ServerAddress, (int)emailOptions.Port);
-                var mailMessage = new MailMessage(emailOptions.SenderEmail, email, subject, message);
+
+                var mailMessage = new MailMessage(emailOptions.SenderEmail, email, subject, message)
+                {
+                    IsBodyHtml = true
+                };
 
                 await client.SendMailAsync(mailMessage);
 
