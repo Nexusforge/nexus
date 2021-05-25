@@ -18,12 +18,12 @@ namespace Nexus.Services
 
         public async Task SendEmailAsync(string email, string subject, string message)
         {
-            var logMessage = $"Sending mail ... ";
+            var emailOptions = Program.Options.Email;
+            var logMessage = $"Sending mail to address {email} via server {emailOptions.ServerAddress}:{emailOptions.Port} ... ";
             _logger.LogInformation(logMessage);
 
             try
             {
-                var emailOptions = Program.Options.Email;
                 var client = new SmtpClient(emailOptions.ServerAddress, (int)emailOptions.Port);
                 var mailMessage = new MailMessage(emailOptions.SenderEmail, email, subject, message);
 
