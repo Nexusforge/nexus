@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Extensibility
 {
-    public interface IDataSource : IDisposable
+    public interface IDataSource
     {
         #region Properties
 
@@ -20,7 +20,10 @@ namespace Nexus.Extensibility
 
         #region Methods
 
-        Task OnParametersSetAsync();
+        Task OnParametersSetAsync()
+        {
+            return Task.CompletedTask;
+        }
 
         Task<List<Project>> InitializeAsync();
 
