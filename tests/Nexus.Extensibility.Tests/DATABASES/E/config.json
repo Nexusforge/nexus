@@ -8,11 +8,10 @@
           "prefix_average_data_(.{19})"
         ],
         "PathSegments": [
-          "DATA",
+          "'DATA'",
           "yyyy-MM",
           "yyyy-MM-dd_HH-mm-ss"
         ],
-        "DailyFilesTemplate": "'DATA/'yyyy-MM'/prefix_average_data_'yyyy-MM-dd'*.dat'",
         "FilePeriod": "1.00:00:00"
       },
       "real_time": {
@@ -22,11 +21,10 @@
           "prefix_real_time_data_(.{19})"
         ],
         "PathSegments": [
-          "DATA",
+          "'DATA'",
           "yyyy-MM",
           "yyyy-MM-dd_HH-mm-ss"
         ],
-        "DailyFilesTemplate": "'DATA/'yyyy-MM'/prefix_real_time_data_'yyyy-MM-dd'*.dat'",
         "FilePeriod": "00:30:00"
       }
     }

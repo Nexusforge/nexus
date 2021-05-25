@@ -3,11 +3,10 @@
     "/A/B/C": {
       "default": {
         "PathSegments": [
-          "DATA",
+          "'DATA'",
           "yyyy-MM-dd",
           "'__0_'yyyy-MM-dd_HH-mm-ss'_000000.dat'"
         ],
-        "DailyFilesTemplate": "'DATA/'yyyy-MM-dd'/__0_'yyyy-MM-dd'*.dat'",
         "FilePeriod": "00:10:00"
       }
     }

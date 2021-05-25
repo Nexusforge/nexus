@@ -3,13 +3,12 @@
     "/A/B/C": {
       "calibrated": {
         "PathSegments": [
-          "DATA",
-          "calibrated",
+          "'DATA'",
+          "'calibrated'",
           "yyyy-MM",
           "yyyy-MM-dd",
           "yyyy-MM-dd_HH-mm-ss'.dat'"
         ],
-        "DailyFilesTemplate": "'DATA/calibrated/'yyyy-MM'/'yyyy-MM-dd'/'yyyy-MM-dd'_*.dat'",
         "FilePeriod": "00:10:00"
       }
     }
