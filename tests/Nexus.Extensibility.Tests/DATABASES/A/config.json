@@ -2,7 +2,14 @@
   "Projects": {
     "/A/B/C": {
       "calibrated": {
-        "DailyFilesTemplate": "'DATA/calibrated/'yyyy-MM'/'yyyy-MM-dd'/'yyyy-MM-dd_'*.dat'",
+        "PathSegments": [
+          "DATA",
+          "calibrated",
+          "yyyy-MM",
+          "yyyy-MM-dd",
+          "yyyy-MM-dd_HH-mm-ss'.dat'"
+        ],
+        "DailyFilesTemplate": "'DATA/calibrated/'yyyy-MM'/'yyyy-MM-dd'/'yyyy-MM-dd'_*.dat'",
         "FilePeriod": "00:10:00"
       }
     }

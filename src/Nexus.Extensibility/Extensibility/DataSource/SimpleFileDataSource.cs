@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Nexus.Extensibility
@@ -150,37 +151,89 @@ namespace Nexus.Extensibility
 
             // get all candidate folders
             var candidateFolders = SimpleFileDataSource
-                .GetCandidateFolders(this.RootPath, default, source.PathParts, first);
+                .GetCandidateFolders(this.RootPath, default, source.PathSegments, first);
 
             // get all files that can be parsed
-            var fileNameTemplate = source.PathParts.Last();
+            var regex = source.PathPreselectors is not null
+                    ? new Regex(source.PathPreselectors.Last())
+                    : null;
+
+            var regexString = source.PathPreselectors?.Last();
+            var fileNameTemplate = source.PathSegments.Last();
 
             var dates = candidateFolders.SelectMany(currentFolder =>
             {
                 var filePaths = Directory.EnumerateFiles(currentFolder.FolderPath);
 
-                return filePaths
-                   .Select(currentFile =>
-                   {
-                       var fileName = Path.GetFileName(currentFile);
+                // (1) Regex is required in scenarios when there are more complex
+                // file names, i.e. file names containing an opaque string that
+                // changes for every file. This could be a counter, a serial
+                // number or some other unpredictable proprietary string.
+                // 
+                // (2) It is also required as a filter if there is more than one
+                // file type in the containing folder, i.e. high frequent and
+                // averaged data files that are being treated as different sources.
+                var matchedFiles = filePaths
+                    .Select(filePath =>
+                    {
+                        var fileName = Path.GetFileName(filePath);
 
-                       _ = DateTime.TryParseExact(
-                           fileName,
-                           fileNameTemplate,
-                           default,
-                           DateTimeStyles.NoCurrentDateDefault,
-                           out var parsedDateTime
-                       );
+                        var match = regex is not null
+                           ? regex.Match(fileName)
+                           : null;
 
-                       // use file date
-                       if (parsedDateTime.Date != default)
-                           return parsedDateTime.Date;
+                        return (fileName, match);
+                    })
+                    .Where(current => current.match == null || current.match.Success);
 
-                       // use folder date
-                       else
-                           return currentFolder.Date;
-                   })
+                var candidateDates = matchedFiles
+                    .Select(currentFileMatch =>
+                    {
+                        var fileName = currentFileMatch.fileName;
+
+                        if (regex is not null)
+                            fileName = string.Join("", regex
+                                .Match(fileName).Groups
+                                .Cast<Group>()
+                                .Skip(1)
+                                .Select(match => match.Value)
+                        );
+
+                        var success = DateTime.TryParseExact(
+                            fileName,
+                            fileNameTemplate,
+                            default,
+                            DateTimeStyles.NoCurrentDateDefault,
+                            out var parsedDateTime
+                        );
+
+                        if (success)
+                        {
+                            // use file date
+                            if (parsedDateTime.Date != default)
+                                return parsedDateTime.Date;
+
+                            // use folder date
+                            else
+                                return currentFolder.Date;
+                        }
+                        // should never happen if file and folder templates are correct
+                        else
+                        {
+                            return first
+                                ? DateTime.MaxValue
+                                : DateTime.MinValue;
+                        }
+                    })
                   .Where(current => current != default);
+
+                // normal case
+                if (candidateDates.Any())
+                    return candidateDates;
+
+                // i.e. when there are empty folders
+                else
+                    return currentFolder.Date;
             });
 
             // get first or last file of that list
@@ -191,7 +244,7 @@ namespace Nexus.Extensibility
             return date != default;
         }
 
-        private static IEnumerable<(string FolderPath, DateTime Date)> GetCandidateFolders(string root, DateTime rootDate, IEnumerable<string> pathParts, bool first)
+        private static IEnumerable<(string FolderPath, DateTime Date)> GetCandidateFolders(string root, DateTime rootDate, IEnumerable<string> pathSegments, bool first)
         {
             // get all available folders
             var canSortByDateTime = false;
@@ -209,7 +262,7 @@ namespace Nexus.Extensibility
                     var success = DateTime
                         .TryParseExact(
                             folderName,
-                            pathParts.First(),
+                            pathSegments.First(),
                             default,
                             DateTimeStyles.NoCurrentDateDefault,
                             out var parsedDateTime
@@ -242,7 +295,7 @@ namespace Nexus.Extensibility
                     : candidate.Value.Date;
 
                 // we have reached the most nested folder level
-                if (pathParts.Count() == 2)
+                if (pathSegments.Count() == 2)
                 {
                     return new List<(string, DateTime)>() { (newRoot, newRootDate) };
                 }
@@ -253,7 +306,7 @@ namespace Nexus.Extensibility
                     return SimpleFileDataSource.GetCandidateFolders(
                         newRoot,
                         newRootDate, 
-                        pathParts.Skip(1),
+                        pathSegments.Skip(1),
                         first
                     );
                 }
@@ -263,7 +316,7 @@ namespace Nexus.Extensibility
             else
             {
                 // we have reached the most nested folder level
-                if (pathParts.Count() == 2)
+                if (pathSegments.Count() == 2)
                 {
                     return folderPaths.Select(current => (current, rootDate));
                 }
@@ -275,7 +328,7 @@ namespace Nexus.Extensibility
                         SimpleFileDataSource.GetCandidateFolders(
                             current,
                             rootDate,
-                            pathParts.Skip(1),
+                            pathSegments.Skip(1),
                             first
                         )
                     );
@@ -339,7 +392,6 @@ namespace Nexus.Extensibility
         #region IDisposable
 
         private bool disposed;
-        private static object rootDate;
 
         protected virtual void Dispose(bool disposing)
         {

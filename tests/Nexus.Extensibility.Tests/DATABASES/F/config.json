@@ -2,6 +2,16 @@
   "Projects": {
     "/A/B/C": {
       "default": {
+        "PathPreselectors": [
+          ".*",
+          ".*",
+          "(.{11})"
+        ],
+        "PathSegments": [
+          "DATA",
+          "yyyy-MM",
+          "yyyyMMdd_HH"
+        ],
         "DailyFilesTemplate": "'DATA/'yyyy-MM'/'yyyyMMdd'*.dat'",
         "FilePeriod": "01:00:00"
       }

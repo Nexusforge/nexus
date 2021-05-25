@@ -84,9 +84,9 @@ class NexusConnector():
 
     async def _getChannel(self, channelPath) -> Channel :
 
-        channelPathParts = channelPath.split("/")
-        projectId = quote("/" + channelPathParts[1] + "/" + channelPathParts[2] + "/" + channelPathParts[3], safe="")
-        channelId = quote(channelPathParts[4], safe="")
+        channelPathSegments = channelPath.split("/")
+        projectId = quote("/" + channelPathSegments[1] + "/" + channelPathSegments[2] + "/" + channelPathSegments[3], safe="")
+        channelId = quote(channelPathSegments[4], safe="")
 
         url = urlunsplit(( \
             self.scheme, \
@@ -103,16 +103,16 @@ class NexusConnector():
 
     async def _getDataStream(self, params, channelPath, current, total):
 
-        channelPathParts = channelPath.split("/")
+        channelPathSegments = channelPath.split("/")
 
         projectId = quote(\
-            "/" + channelPathParts[2] + \
-            "/" + channelPathParts[3] + \
-            "/" + channelPathParts[4], safe="")
+            "/" + channelPathSegments[2] + \
+            "/" + channelPathSegments[3] + \
+            "/" + channelPathSegments[4], safe="")
 
-        projectId = quote("/" + channelPathParts[1] + "/" + channelPathParts[2] + "/" + channelPathParts[3], safe="")
-        channelId = quote(channelPathParts[4], safe="")
-        datasetId = quote(channelPathParts[5], safe="")
+        projectId = quote("/" + channelPathSegments[1] + "/" + channelPathSegments[2] + "/" + channelPathSegments[3], safe="")
+        channelId = quote(channelPathSegments[4], safe="")
+        datasetId = quote(channelPathSegments[5], safe="")
         begin = params["Begin"]
         end = params["End"]
 

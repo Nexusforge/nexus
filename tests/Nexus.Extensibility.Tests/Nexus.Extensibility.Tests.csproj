@@ -26,6 +26,9 @@
     <None Update="DATABASES\A\config.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="DATABASES\A\DATA\calibrated\2019-12\2019-12-31\2019-12-31_12-00-00.dat">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="DATABASES\A\DATA\calibrated\2020-01\2020-01-02\2020-01-02_00-00-00.dat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -33,6 +36,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="DATABASES\B\config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="DATABASES\B\DATA\2019-12\calibrated\2019-12-31\2019-12-31_12-00-00.dat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="DATABASES\B\DATA\2020-01\calibrated\2020-01-02\2020-01-02_00-00-00.dat">
@@ -44,6 +50,9 @@
     <None Update="DATABASES\C\config.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="DATABASES\C\DATA\2019-12-31\__0_2019-12-31_12-00-00_000000.dat">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="DATABASES\C\DATA\2020-01-02\__0_2020-01-02_00-00-00_000000.dat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -51,6 +60,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="DATABASES\D\config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="DATABASES\D\DATA\position_A\__0_2019-12-31_12-00-00_000000.dat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="DATABASES\D\DATA\position_A\__0_2020-01-02_00-00-00_000000.dat">
@@ -68,6 +80,9 @@
     <None Update="DATABASES\E\config.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="DATABASES\E\DATA\2019-12\prefix_real_time_data_2019-12-31_12-00-00.dat">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="DATABASES\E\DATA\2020-01\prefix_average_data_2020-01-01_00-00-00.dat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -81,6 +96,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="DATABASES\F\config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="DATABASES\F\DATA\2019-12\20191231_12_x_0000.dat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="DATABASES\F\DATA\2020-01\20200102_00_x_0001.dat">

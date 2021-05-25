@@ -2,7 +2,7 @@
   "Projects": {
     "/A/B/C": {
       "default": {
-        "PathParts": [
+        "PathSegments": [
           "DATA",
           "'prefix_'dd-MM-yyyy_HH",
           "HH-mm-ss'.dat'"

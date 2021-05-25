@@ -47,10 +47,10 @@ async function UpdateChart(userState, chartEntries, start, end, count, dt, begin
             var chartEntry = chartEntries[i];
             var channelData = Array(count);
 
-            var channelPathParts = chartEntry.path.split("/");
-            var projectId = encodeURIComponent('/' + channelPathParts[1] + '/' + channelPathParts[2] + '/' + channelPathParts[3]);
-            var channelId = encodeURIComponent(channelPathParts[4]);
-            var datasetId = encodeURIComponent(channelPathParts[5]);
+            var channelPathSegments = chartEntry.path.split("/");
+            var projectId = encodeURIComponent('/' + channelPathSegments[1] + '/' + channelPathSegments[2] + '/' + channelPathSegments[3]);
+            var channelId = encodeURIComponent(channelPathSegments[4]);
+            var datasetId = encodeURIComponent(channelPathSegments[5]);
 
             url = "/api/v1/data" +
                   "?projectId=" + projectId +

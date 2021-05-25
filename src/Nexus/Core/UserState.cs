@@ -565,10 +565,10 @@ namespace Nexus.Core
 
             exportParameters.ChannelPaths.ForEach(value =>
             {
-                var pathParts = value.Split('/');
-                var projectName = $"/{pathParts[1]}/{pathParts[2]}/{pathParts[3]}";
-                var channelName = pathParts[4];
-                var datasetName = pathParts[5];
+                var pathSegments = value.Split('/');
+                var projectName = $"/{pathSegments[1]}/{pathSegments[2]}/{pathSegments[3]}";
+                var channelName = pathSegments[4];
+                var datasetName = pathSegments[5];
 
                 var projectContainer = this.ProjectContainersInfo.Accessible.FirstOrDefault(current => current.Id == projectName);
 

@@ -100,9 +100,9 @@ classdef NexusConnector < matlab.net.http.ProgressMonitor
             
             requestMessage          = RequestMessage;
             requestMessage.Method   = 'get';
-            channelPathParts        = split(channelPath, '/');
-            projectId               = urlencode(['/' char(channelPathParts(2)) '/' char(channelPathParts(3)) '/' char(channelPathParts(4))]);
-            channelId               = urlencode(char(channelPathParts(5)));
+            channelPathSegments        = split(channelPath, '/');
+            projectId               = urlencode(['/' char(channelPathSegments(2)) '/' char(channelPathSegments(3)) '/' char(channelPathSegments(4))]);
+            channelId               = urlencode(char(channelPathSegments(5)));
             
             uri = URI([self.Scheme '://' self.Host ':' num2str(self.Port) '/api/v1' ...
                 '/projects/' projectId ...
@@ -118,10 +118,10 @@ classdef NexusConnector < matlab.net.http.ProgressMonitor
             
             requestMessage          = RequestMessage;
             requestMessage.Method   = 'get';
-            channelPathParts        = split(channelPath, '/');
-            projectId               = urlencode(['/' char(channelPathParts(2)) '/' char(channelPathParts(3)) '/' char(channelPathParts(4))]);
-            channelId               = urlencode(char(channelPathParts(5)));
-            datasetId               = urlencode(char(channelPathParts(6)));
+            channelPathSegments        = split(channelPath, '/');
+            projectId               = urlencode(['/' char(channelPathSegments(2)) '/' char(channelPathSegments(3)) '/' char(channelPathSegments(4))]);
+            channelId               = urlencode(char(channelPathSegments(5)));
+            datasetId               = urlencode(char(channelPathSegments(6)));
             
             uri = URI([self.Scheme '://' self.Host ':' num2str(self.Port) '/api/v1/data' ...
                 '?projectId=' projectId ...

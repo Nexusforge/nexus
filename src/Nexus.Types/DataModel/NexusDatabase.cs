@@ -69,28 +69,28 @@ namespace Nexus.DataModel
 
         public bool TryFindDataset(string path, out Dataset dataset)
         {
-            var pathParts = path.Split("/");
+            var pathSegments = path.Split("/");
 
-            if (pathParts.Length != 6)
+            if (pathSegments.Length != 6)
                 throw new Exception($"The channel path '{path}' is invalid.");
 
-            var projectName = $"/{pathParts[1]}/{pathParts[2]}/{pathParts[3]}";
-            var channelName = pathParts[4];
-            var datasetName = pathParts[5];
+            var projectName = $"/{pathSegments[1]}/{pathSegments[2]}/{pathSegments[3]}";
+            var channelName = pathSegments[4];
+            var datasetName = pathSegments[5];
 
             return this.TryFindDatasetById(projectName, channelName, datasetName, out dataset);
         }
 
         public bool TryFindDatasetsByGroup(string groupPath, out List<Dataset> datasets)
         {
-            var groupPathParts = groupPath.Split("/");
+            var groupPathSegments = groupPath.Split("/");
 
-            if (groupPathParts.Length != 6)
+            if (groupPathSegments.Length != 6)
                 throw new Exception($"The group path '{groupPath}' is invalid.");
 
-            var projectName = $"/{groupPathParts[1]}/{groupPathParts[2]}/{groupPathParts[3]}";
-            var groupName = groupPathParts[4];
-            var datasetName = groupPathParts[5];
+            var projectName = $"/{groupPathSegments[1]}/{groupPathSegments[2]}/{groupPathSegments[3]}";
+            var groupName = groupPathSegments[4];
+            var datasetName = groupPathSegments[5];
 
             return this.TryFindDatasetsByGroup(projectName, groupName, datasetName, out datasets);
         }

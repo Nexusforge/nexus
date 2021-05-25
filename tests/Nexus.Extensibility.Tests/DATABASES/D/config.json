@@ -2,10 +2,20 @@
   "Projects": {
     "/A/B/C": {
       "position_A": {
+        "PathSegments": [
+          "DATA",
+          "position_A",
+          "'__0_'yyyy-MM-dd_HH-mm-ss'_000000.dat'"
+        ],
         "DailyFilesTemplate": "'DATA/position_A/__0_'yyyy-MM-dd'*.dat'",
         "FilePeriod": "00:10:00"
       },
       "position_B": {
+        "PathSegments": [
+          "DATA",
+          "position_B",
+          "'__1_'yyyy-MM-dd_HH-mm-ss'_000000.dat'"
+        ],
         "DailyFilesTemplate": "'DATA/position_B/__1_'yyyy-MM-dd'*.dat'",
         "FilePeriod": "01:00:00"
       }

@@ -40,6 +40,12 @@ namespace Nexus.Extensibility.Tests
         }
 
         [Theory]
+        [InlineData("DATABASES/A", "2019-12-31", "2020-01-02")]
+        [InlineData("DATABASES/B", "2019-12-31", "2020-01-02")]
+        [InlineData("DATABASES/C", "2019-12-31", "2020-01-02")]
+        [InlineData("DATABASES/D", "2019-12-31", "2020-01-02")]
+        [InlineData("DATABASES/E", "2019-12-31", "2020-01-02")]
+        [InlineData("DATABASES/F", "2019-12-31", "2020-01-02")]
         [InlineData("DATABASES/G", "2019-12-31", "2020-01-01")]
         public async Task CanAssignProjectLifetime(string rootPath, DateTime expectedStart, DateTime expectedEnd)
         {
