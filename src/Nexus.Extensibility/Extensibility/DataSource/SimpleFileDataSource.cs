@@ -74,11 +74,6 @@ namespace Nexus.Extensibility
 
         #region IDataSource
 
-        public virtual Task OnParametersSetAsync()
-        {
-            return Task.CompletedTask;
-        }
-
         public async Task<List<Project>> InitializeAsync()
         {
             (_configuration, _projects) = await this.InitializeDataModelAsync();
@@ -233,7 +228,7 @@ namespace Nexus.Extensibility
 
                 // i.e. when there are empty folders
                 else
-                    return currentFolder.Date;
+                    return new List<DateTime>() { currentFolder.Date };
             });
 
             // get first or last file of that list
@@ -385,31 +380,6 @@ namespace Nexus.Extensibility
                 return new string[] { absolute };
 
             return new string[0];
-        }
-
-        #endregion
-
-        #region IDisposable
-
-        private bool disposed;
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposed)
-            {
-                if (disposing)
-                {
-                    //
-                }
-
-                disposed = true;
-            }
-        }
-
-        public void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
         }
 
         #endregion
