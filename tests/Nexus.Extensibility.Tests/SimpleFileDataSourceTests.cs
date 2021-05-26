@@ -24,6 +24,7 @@ namespace Nexus.Extensibility.Tests
         [InlineData("DATABASES/E", "2020-01-02", (1 + 2 / 48.0) / 2, 4)]
         [InlineData("DATABASES/F", "2020-01-02", 2 / 24.0, 4)]
         [InlineData("DATABASES/G", "2020-01-01", 2 / 86400.0, 6)]
+        [InlineData("DATABASES/H", "2020-01-02", 2 / 144.0, 4)]
         public async Task CanProvideAvailability(string rootPath, DateTime day, double expected, int precision)
         {
             var dataSource = new SimpleFileDataSourceTester()
@@ -47,6 +48,7 @@ namespace Nexus.Extensibility.Tests
         [InlineData("DATABASES/E", "2019-12-31", "2020-01-02")]
         [InlineData("DATABASES/F", "2019-12-31", "2020-01-02")]
         [InlineData("DATABASES/G", "2019-12-31", "2020-01-01")]
+        [InlineData("DATABASES/H", "2019-12-31", "2020-01-02")]
         public async Task CanAssignProjectLifetime(string rootPath, DateTime expectedStart, DateTime expectedEnd)
         {
             var dataSource = new SimpleFileDataSourceTester()

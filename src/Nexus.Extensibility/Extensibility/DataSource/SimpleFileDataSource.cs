@@ -30,8 +30,10 @@ namespace Nexus.Extensibility
         // NOTE: The format of the date/time is only illustrative and is being determined
         // by separate format providers.
         //
-        // (3) The files are always located in the most nested folder and not distributed
+        // (2) The files are always located in the most nested folder and not distributed
         // over the hierarchy.
+        //
+        // (3) Most nested folders are not empty.
 
         #region Fields
 
@@ -163,8 +165,12 @@ namespace Nexus.Extensibility
                 return new List<DateTime>();
 
             // get all candidate folders
-            var candidateFolders = SimpleFileDataSource
-                .GetCandidateFolders(searchDate, rootPath, default, source.PathSegments);
+            var candidateFolders = source.PathSegments.Count > 1
+
+                ? SimpleFileDataSource
+                    .GetCandidateFolders(searchDate, rootPath, default, source.PathSegments)
+
+                : new List<(string, DateTime)>() { (rootPath, default) };
 
             // get all files that can be parsed
             var regex = source.PathPreselectors is not null
@@ -255,7 +261,7 @@ namespace Nexus.Extensibility
             });
         }
 
-        private static IEnumerable<(string FolderPath, DateTime DateTime)> GetCandidateFolders(DateTime searchDate, string root, DateTime rootDate, IEnumerable<string> pathSegments)
+        private static IEnumerable<(string FolderPath, DateTime DateTime)> GetCandidateFolders(DateTime searchDate, string root, DateTime rootDate, List<string> pathSegments)
         {
             // get all available folders
             var folderPaths = Directory
@@ -263,6 +269,8 @@ namespace Nexus.Extensibility
                 .ToList();
 
             // get all folders that can be parsed
+            var hasDateTimeInformation = false;
+
             var folderNameToDateTimeMap = folderPaths
                 .Select(folderPath =>
                 {
@@ -280,20 +288,58 @@ namespace Nexus.Extensibility
                     if (parsedDateTime == default)
                         parsedDateTime = rootDate;
 
+                    else
+                        hasDateTimeInformation = true;
+
                     return (folderPath, parsedDateTime);
                 })
                .ToDictionary(current => current.folderPath, current => current.parsedDateTime);
 
             // keep only folders that fall within the searched time period
-            IEnumerable<(string Key, DateTime Value)> folderCandidates;
+            var expectedSegmentName = searchDate.ToString(pathSegments.First());
 
+            var folderCandidates = hasDateTimeInformation
+
+                // filter by search date
+                ? SimpleFileDataSource
+                    .FilterBySearchDate(searchDate, folderNameToDateTimeMap, expectedSegmentName)
+
+                // filter by exact match
+                : folderNameToDateTimeMap
+                    .Where(entry => Path.GetFileName(entry.Key) == expectedSegmentName)
+                    .Select(entry => (entry.Key, entry.Value));
+
+            // go deeper
+            if (pathSegments.Count() > 2)
+            {
+                return folderCandidates.SelectMany(current =>
+                    SimpleFileDataSource.GetCandidateFolders(
+                        searchDate,
+                        current.Key,
+                        current.Value,
+                        pathSegments.Skip(1).ToList()
+                    )
+                );
+            }
+
+            // we have reached the most nested folder level
+            else
+            {
+                return folderCandidates;
+            }
+        }
+
+        private static IEnumerable<(string Key, DateTime Value)> FilterBySearchDate(DateTime searchDate,
+                                                                 Dictionary<string, DateTime> folderNameToDateTimeMap,
+                                                                 string expectedSegmentName)
+        {
             if (searchDate == DateTime.MinValue)
             {
                 var folderCandidate = folderNameToDateTimeMap
                     .OrderBy(entry => entry.Value)
                     .FirstOrDefault();
 
-                folderCandidates = new List<(string, DateTime)>() { (folderCandidate.Key, folderCandidate.Value) };
+                return new List<(string, DateTime)>() { (folderCandidate.Key, folderCandidate.Value) };
             }
 
             else if (searchDate == DateTime.MaxValue)
@@ -302,14 +348,12 @@ namespace Nexus.Extensibility
                    .OrderByDescending(entry => entry.Value)
                    .FirstOrDefault();
 
-                folderCandidates = new List<(string, DateTime)>() { (folderCandidate.Key, folderCandidate.Value) };
+                return new List<(string, DateTime)>() { (folderCandidate.Key, folderCandidate.Value) };
             }
 
             else
             {
-                var expectedSegmentName = searchDate.ToString(pathSegments.First());
-
-                folderCandidates = folderNameToDateTimeMap
+                return folderNameToDateTimeMap
                     .Where(entry =>
                     {
                         // Check for the case that the parsed date/time(2020-01-01T22) is
@@ -323,25 +367,6 @@ namespace Nexus.Extensibility
                             return Path.GetFileName(entry.Key) == expectedSegmentName;
                     })
                     .Select(entry => (entry.Key, entry.Value));
-            }
-
-            // we have reached the most nested folder level
-            if (pathSegments.Count() == 2)
-            {
-                return folderCandidates;
-            }
-
-            // go deeper
-            else
-            {
-                return folderCandidates.SelectMany(current =>
-                    SimpleFileDataSource.GetCandidateFolders(
-                        searchDate,
-                        current.Key,
-                        current.Value,
-                        pathSegments.Skip(1)
-                    )
-                );
             }
         }
 
