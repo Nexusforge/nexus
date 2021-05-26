@@ -4,8 +4,8 @@ using System.Collections.Generic;
 namespace Nexus.Extensibility
 {
     public record SourceDescription(
-        List<string>? PathPreselectors,
         List<string> PathSegments,
+        string? FileNamePreselector,
         TimeSpan FilePeriod
     );
 

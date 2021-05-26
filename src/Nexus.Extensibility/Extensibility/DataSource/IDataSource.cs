@@ -2,6 +2,7 @@
 using Nexus.DataModel;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nexus.Extensibility
@@ -25,11 +26,19 @@ namespace Nexus.Extensibility
             return Task.CompletedTask;
         }
 
-        Task<List<Project>> InitializeAsync();
+        Task<List<Project>> GetDataModelAsync(CancellationToken cancellationToken);
 
-        Task<double> GetAvailabilityAsync(string projectId, DateTime day);
+        Task<(DateTime Begin, DateTime End)> GetProjectTimeRangeAsync(string projectId,
+                                                                      CancellationToken cancellationToken);
 
-        Task<ReadResult<T>> ReadSingleAsync<T>(Dataset dataset, DateTime begin, DateTime end)
+        Task<double> GetAvailabilityAsync(string projectId,
+                                          DateTime day,
+                                          CancellationToken cancellationToken);
+
+        Task<ReadResult<T>> ReadSingleAsync<T>(Dataset dataset,
+                                               DateTime begin,
+                                               DateTime end,
+                                               CancellationToken cancellationToken)
             where T : unmanaged;
 
         #endregion

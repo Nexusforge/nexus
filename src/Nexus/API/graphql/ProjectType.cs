@@ -18,12 +18,6 @@ namespace Nexus.API
             this.Field(x => x.Project.Id, type: typeof(IdGraphType))
                 .Description("The project ID.");
 
-            this.Field(x => x.Project.ProjectStart)
-                .Description("The datetime of the oldest data available.");
-
-            this.Field(x => x.Project.ProjectEnd)
-                .Description("The datetime of the newest data available.");
-
             this.Field<ChannelType>(
                 "Channel",
                 arguments: new QueryArguments(

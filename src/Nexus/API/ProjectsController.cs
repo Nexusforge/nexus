@@ -99,6 +99,39 @@ namespace Nexus.Controllers
         }
 
         /// <summary>
+        /// Gets the specified project time range.
+        /// </summary>
+        /// <param name="projectId">The project identifier.</param>
+        [HttpGet("{projectId}/timerange")]
+        public ActionResult<List<AvailabilityResult>> GetProjectTimeRange(string projectId)
+        {
+            if (_databaseManager.Database == null)
+                return this.StatusCode(503, "The database has not been loaded yet.");
+
+            projectId = WebUtility.UrlDecode(projectId);
+
+            // log
+            var message = $"User '{_userIdService.GetUserId()}' requests time range of project '{projectId}' ...";
+            _logger.LogInformation(message);
+
+            try
+            {
+                return this.ProcessProjectId<TimeRangeResult>(projectId, message,
+                    (project, projectMeta) =>
+                    {
+                        _logger.LogInformation($"{message} Done.");
+                        return this.CreateTimeRangeResponse(project);
+                    });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"{message} {ex.GetFullMessage()}");
+                throw;
+            }
+        }
+
+
+        /// <summary>
         /// Gets the specified project availability.
         /// </summary>
         /// <param name="projectId">The project identifier.</param>
@@ -352,14 +385,29 @@ namespace Nexus.Controllers
             {
                 Id = project.Id,
                 Contact = projectMeta.Contact,
-                ProjectStart = project.ProjectStart,
-                ProjectEnd = project.ProjectEnd,
                 ShortDescription = projectMeta.ShortDescription,
                 LongDescription = projectMeta.LongDescription,
                 IsQualityControlled = projectMeta.IsQualityControlled,
                 License = projectMeta.License,
                 LogBook = projectMeta.Logbook
             };
+        }
+
+        private List<AvailabilityResult> CreateTimeRangeResponse(DataModel.Project project)
+        {
+            var dataReaders = _databaseManager.GetDataReaders(_userIdService.User, project.Id);
+
+            return dataReaders.Select(dataReaderForUsing =>
+            {
+                using var dataReader = dataReaderForUsing;
+                (var begin, var end) = dataReader.GetTimeRange(project.Id);
+
+                return new TimeRangeResult()
+                {
+                    Begin = begin,
+                    End = end
+                };
+            }).ToList();
         }
 
         private List<AvailabilityResult> CreateAvailabilityResponse(DataModel.Project project, DateTime begin, DateTime end, AvailabilityGranularity granularity)
@@ -448,6 +496,12 @@ namespace Nexus.Controllers
             public string DataSourceId { get; set; }
         }
 
+        public record TimeRangeResult
+        {
+            public DateTime Begin { get; set; }
+            public DateTime End { get; set; }
+        }
+
         public record AvailabilityResult
         {
             public DataSourceRegistration DataSourceRegistration { get; set; }
@@ -458,8 +512,6 @@ namespace Nexus.Controllers
         {
             public string Id { get; set; }
             public string Contact { get; set; }
-            public DateTime ProjectStart { get; set; }
-            public DateTime ProjectEnd { get; set; }
             public string ShortDescription { get; set; }
             public string LongDescription { get; set; }
             public bool IsQualityControlled { get; set; }

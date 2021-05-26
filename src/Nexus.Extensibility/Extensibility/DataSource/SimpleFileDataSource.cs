@@ -6,13 +6,14 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nexus.Extensibility
 {
     public abstract class SimpleFileDataSource : IDataSource
     {
-        // The algorithms assume the following:
+        // This implementation assumes the following:
         //
         // (1) The top-most folders carry rough date/time information while deeper nested
         // folders carry more fine-grained date/time information. Examples:
@@ -37,7 +38,7 @@ namespace Nexus.Extensibility
 
         #region Fields
 
-        private FileSystemDescription _configuration;
+        private bool _isInitialized;
         private List<Project> _projects;
 
         #endregion
@@ -50,91 +51,78 @@ namespace Nexus.Extensibility
 
         public Dictionary<string, string> Options { get; set; }
 
-        public IReadOnlyList<Project> Projects => _projects;
-
         #endregion
 
-        #region Methods
+        #region Protected API as seen by subclass
 
-        public Project GetProject(string projectId)
+        protected abstract Task<List<SourceDescription>>
+            GetSourceDescriptionsAsync(string projectId, CancellationToken cancellationToken);
+
+        protected abstract Task<List<Project>>
+            GetDataModelAsync(CancellationToken cancellationToken);
+
+        protected virtual async Task<(DateTime Begin, DateTime End)> 
+            GetProjectTimeRangeAsync(string projectId, CancellationToken cancellationToken)
         {
-            return this.Projects.First(project => project.Id == projectId);
-        }
-
-        public abstract Task<(FileSystemDescription, List<Project>)> InitializeDataModelAsync();
-
-        public virtual void AssignProjectLifetime(Project project)
-        {
-            if (!_configuration.Projects.TryGetValue(project.Id, out var sources))
-                throw new Exception($"A configuration for the project '{project.Id}' could not be found.");
-
-            var minDate = DateTime.MaxValue;
-            var maxDate = DateTime.MinValue;
-
-            if (Directory.Exists(this.RootPath))
+            return await Task.Run(async () =>
             {
-                foreach (var source in sources)
+                var minDate = DateTime.MaxValue;
+                var maxDate = DateTime.MinValue;
+
+                if (Directory.Exists(this.RootPath))
                 {
-                    // first
-                    var firstDateTime = SimpleFileDataSource
-                        .GetCandidateDateTimes(source.Value, DateTime.MinValue, this.RootPath)
-                        .OrderBy(current => current)
-                        .FirstOrDefault();
+                    var sources = await this.GetSourceDescriptionsAsync(projectId, cancellationToken);
 
-                    if (firstDateTime == default)
-                        firstDateTime = DateTime.MaxValue;
+                    foreach (var source in sources)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
 
-                    if (firstDateTime.Date < minDate)
-                        minDate = firstDateTime.Date;
+                        // first
+                        var firstDateTime = SimpleFileDataSource
+                            .GetCandidateDateTimes(source, DateTime.MinValue, this.RootPath, cancellationToken)
+                            .OrderBy(current => current)
+                            .FirstOrDefault();
 
-                    // last
-                    var lastDateTime = SimpleFileDataSource
-                        .GetCandidateDateTimes(source.Value, DateTime.MaxValue, this.RootPath)
-                        .OrderByDescending(current => current)
-                        .FirstOrDefault();
+                        if (firstDateTime == default)
+                            firstDateTime = DateTime.MaxValue;
 
-                    if (lastDateTime == default)
-                        lastDateTime = DateTime.MinValue;
+                        if (firstDateTime.Date < minDate)
+                            minDate = firstDateTime.Date;
 
-                    if (lastDateTime.Date > maxDate)
-                        maxDate = lastDateTime.Date;
+                        // last
+                        var lastDateTime = SimpleFileDataSource
+                            .GetCandidateDateTimes(source, DateTime.MaxValue, this.RootPath, cancellationToken)
+                            .OrderByDescending(current => current)
+                            .FirstOrDefault();
+
+                        if (lastDateTime == default)
+                            lastDateTime = DateTime.MinValue;
+
+                        if (lastDateTime.Date > maxDate)
+                            maxDate = lastDateTime.Date;
+                    }
                 }
-            }
 
-            project.ProjectStart = minDate;
-            project.ProjectEnd = maxDate;
+                return (minDate, maxDate);
+            }).ConfigureAwait(false);
         }
 
-        #endregion
-
-        #region IDataSource
-
-        public async Task<List<Project>> InitializeAsync()
+        protected virtual async Task<double>
+            GetAvailabilityAsync(string projectId, DateTime day, CancellationToken cancellationToken)
         {
-            (_configuration, _projects) = await this.InitializeDataModelAsync();
-
-            foreach (var project in _projects)
-            {
-                this.AssignProjectLifetime(project);
-            }
-
-            return _projects;
-        }
-
-        public virtual Task<double> GetAvailabilityAsync(string projectId, DateTime day)
-        {
-            if (!_configuration.Projects.TryGetValue(projectId, out var sources))
-                throw new Exception($"A configuration for the project '{projectId}' could not be found.");
-
             // no true async file enumeration available: https://github.com/dotnet/runtime/issues/809
-            return Task.Run(() =>
+            return await Task.Run(async () =>
             {
                 if (!Directory.Exists(this.RootPath))
                     return 0;
 
-                var summedAvailability = sources.Values.Sum(source =>
+                var sources = await this.GetSourceDescriptionsAsync(projectId, cancellationToken);
+
+                var summedAvailability = sources.Sum(source =>
                 {
-                    var candidateDateTimes = SimpleFileDataSource.GetCandidateDateTimes(source, day, this.RootPath);
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    var candidateDateTimes = SimpleFileDataSource.GetCandidateDateTimes(source, day, this.RootPath, cancellationToken);
 
                     var fileCount = candidateDateTimes
                         .Where(current => day <= current && current < day.AddDays(1))
@@ -146,18 +134,68 @@ namespace Nexus.Extensibility
                 });
 
                 return summedAvailability / sources.Count;
-            });
+            }).ConfigureAwait(false);
         }
 
-        public abstract Task<ReadResult<T>> ReadSingleAsync<T>(Dataset dataset, DateTime begin, DateTime end) 
+        protected abstract Task<ReadResult<T>> 
+            ReadSingleAsync<T>(Dataset dataset, DateTime begin, DateTime end, CancellationToken cancellationToken)
             where T : unmanaged;
+
+        #endregion
+
+        #region Public API as seen by Nexus and unit tests
+
+        async Task<List<Project>> 
+            IDataSource.GetDataModelAsync(CancellationToken cancellationToken)
+        {
+            await this
+                .EnsureProjectsAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            return _projects;
+        }
+
+        Task<(DateTime Begin, DateTime End)> 
+            IDataSource.GetProjectTimeRangeAsync(string projectId, CancellationToken cancellationToken)
+        {
+            return this.GetProjectTimeRangeAsync(projectId, cancellationToken);
+        }
+
+        Task<double> 
+            IDataSource.GetAvailabilityAsync(string projectId, DateTime day, CancellationToken cancellationToken)
+        {
+            return this.GetAvailabilityAsync(projectId, day, cancellationToken);
+        }
+
+        Task<ReadResult<T>> 
+            IDataSource.ReadSingleAsync<T>(Dataset dataset, DateTime begin, DateTime end, CancellationToken cancellationToken)
+        {
+            return this.ReadSingleAsync<T>(dataset, begin, end, cancellationToken);
+        }
 
         #endregion
 
         #region Helpers
 
-        private static IEnumerable<DateTime> GetCandidateDateTimes(SourceDescription source, DateTime searchDate, string rootPath)
+        private async Task EnsureProjectsAsync(CancellationToken cancellationToken)
         {
+            if (!_isInitialized)
+            {
+                _projects = await this
+                    .GetDataModelAsync(cancellationToken)
+                    .ConfigureAwait(false);
+
+                _isInitialized = true;
+            }
+        }
+
+        private static IEnumerable<DateTime> GetCandidateDateTimes(SourceDescription source,
+                                                                   DateTime searchDate,
+                                                                   string rootPath,
+                                                                   CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
             // (could also be named "GetCandidateFiles", since it is similar to the "GetCandidateFolders" method)
 
             // initial check
@@ -168,16 +206,15 @@ namespace Nexus.Extensibility
             var candidateFolders = source.PathSegments.Count > 1
 
                 ? SimpleFileDataSource
-                    .GetCandidateFolders(searchDate, rootPath, default, source.PathSegments)
+                    .GetCandidateFolders(searchDate, rootPath, default, source.PathSegments, cancellationToken)
 
                 : new List<(string, DateTime)>() { (rootPath, default) };
 
             // get all files that can be parsed
-            var regex = source.PathPreselectors is not null
-                    ? new Regex(source.PathPreselectors.Last())
+            var regex = !string.IsNullOrWhiteSpace(source.FileNamePreselector)
+                    ? new Regex(source.FileNamePreselector)
                     : null;
 
-            var regexString = source.PathPreselectors?.Last();
             var fileNameTemplate = source.PathSegments.Last();
 
             return candidateFolders.SelectMany(currentFolder =>
@@ -261,8 +298,14 @@ namespace Nexus.Extensibility
             });
         }
 
-        private static IEnumerable<(string FolderPath, DateTime DateTime)> GetCandidateFolders(DateTime searchDate, string root, DateTime rootDate, List<string> pathSegments)
+        private static IEnumerable<(string FolderPath, DateTime DateTime)> GetCandidateFolders(DateTime searchDate,
+                                                                                               string root,
+                                                                                               DateTime rootDate,
+                                                                                               List<string> pathSegments,
+                                                                                               CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             // get all available folders
             var folderPaths = Directory
                 .EnumerateDirectories(root)
@@ -317,7 +360,7 @@ namespace Nexus.Extensibility
                         searchDate,
                         current.Key,
                         current.Value,
-                        pathSegments.Skip(1).ToList()
+                        pathSegments.Skip(1).ToList(), cancellationToken
                     )
                 );
             }
@@ -330,8 +373,8 @@ namespace Nexus.Extensibility
         }
 
         private static IEnumerable<(string Key, DateTime Value)> FilterBySearchDate(DateTime searchDate,
-                                                                 Dictionary<string, DateTime> folderNameToDateTimeMap,
-                                                                 string expectedSegmentName)
+                                                                                    Dictionary<string, DateTime> folderNameToDateTimeMap,
+                                                                                    string expectedSegmentName)
         {
             if (searchDate == DateTime.MinValue)
             {
