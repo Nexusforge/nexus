@@ -1,10 +1,20 @@
-﻿using System;
+﻿using Nexus.DataModel;
+using Nexus.Infrastructure;
+using System;
 using System.Text.RegularExpressions;
 
 namespace Nexus.Extensibility
 {
     public static class ExtensibilityUtilities
     {
+        public static ReadResult<T> CreateReadResult<T>(Dataset dataset, DateTime begin, DateTime end)
+        {
+            var samplesPerDay = new SampleRateContainer(dataset.Id).SamplesPerDay;
+            var length = (int)Math.Round((end - begin).TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
+
+            return new ReadResult<T>(length);
+        }
+
         public static string EnforceNamingConvention(string value, string prefix = "X")
         {
             if (string.IsNullOrWhiteSpace(value))

@@ -38,9 +38,6 @@ namespace Nexus.Extensibility
         //
         // (4) UtcOffset is only considered when reading data, not to determine the
         // availability or the project time range.
-        //
-        // (5) File names begin at multiples of the file length, e.g. file length = 00:10:00
-        // and file start times are 
 
         #region Fields
 
@@ -77,15 +74,15 @@ namespace Nexus.Extensibility
 
                 if (Directory.Exists(this.RootPath))
                 {
-                    var sources = await this.GetSourceDescriptionsAsync(projectId, cancellationToken);
+                    var sourceDescriptions = await this.GetSourceDescriptionsAsync(projectId, cancellationToken);
 
-                    foreach (var source in sources)
+                    foreach (var sourceDescription in sourceDescriptions)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
 
                         // first
                         var firstDateTime = SimpleFileDataSource
-                            .GetCandidateDateTimes(this.RootPath, DateTime.MinValue, DateTime.MinValue, source, cancellationToken)
+                            .GetCandidateDateTimes(this.RootPath, DateTime.MinValue, DateTime.MinValue, sourceDescription, cancellationToken)
                             .OrderBy(current => current)
                             .FirstOrDefault();
 
@@ -97,7 +94,7 @@ namespace Nexus.Extensibility
 
                         // last
                         var lastDateTime = SimpleFileDataSource
-                            .GetCandidateDateTimes(this.RootPath, DateTime.MaxValue, DateTime.MaxValue, source, cancellationToken)
+                            .GetCandidateDateTimes(this.RootPath, DateTime.MaxValue, DateTime.MaxValue, sourceDescription, cancellationToken)
                             .OrderByDescending(current => current)
                             .FirstOrDefault();
 
@@ -125,91 +122,115 @@ namespace Nexus.Extensibility
                 if (!Directory.Exists(this.RootPath))
                     return 0;
 
-                var sources = await this.GetSourceDescriptionsAsync(projectId, cancellationToken);
+                var sourceDescription = await this.GetSourceDescriptionsAsync(projectId, cancellationToken);
 
-                var summedAvailability = sources.Sum(source =>
+                var summedAvailability = sourceDescription.Sum(sourceDescription =>
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    var candidateDateTimes = SimpleFileDataSource.GetCandidateDateTimes(this.RootPath, begin, end, source, cancellationToken);
+                    var candidateDateTimes = SimpleFileDataSource.GetCandidateDateTimes(this.RootPath, begin, end, sourceDescription, cancellationToken);
 
                     var fileCount = candidateDateTimes
                         .Where(current => begin <= current && current < end)
                         .Count();
 
-                    var filesPerTimeRange = (end - begin).Ticks / source.FilePeriod.Ticks;
+                    var filesPerTimeRange = (end - begin).Ticks / sourceDescription.FilePeriod.Ticks;
 
                     return fileCount / (double)filesPerTimeRange;
                 });
 
-                return summedAvailability / sources.Count;
+                return summedAvailability / sourceDescription.Count;
             }).ConfigureAwait(false);
         }
 
-        protected virtual async Task 
+        protected virtual Task 
             ReadSingleAsync<T>(Dataset dataset, ReadResult<T> readResult, DateTime begin, DateTime end, CancellationToken cancellationToken)
             where T : unmanaged
         {
-            throw new NotImplementedException();
-//            var project = dataset.Channel.Project;
-//#warning !!!
-//            var sourceDescription = (await this.GetSourceDescriptionsAsync(project.Id, cancellationToken)).First();
-//            var samplesPerDay = dataset.GetSampleRate().SamplesPerDay;
+            if (begin >= end)
+                throw new ArgumentException("The start time must be before the end time.");
 
-//            var currentBegin = ExtensibilityUtilities.RoundDown(begin, sourceDescription.FilePeriod);
-//            var fileLength = (int)Math.Round(sourceDescription.FilePeriod.TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
-//            var fileOffset = (int)Math.Round((begin - currentBegin).TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
-//            var bufferOffset = 0;
-//            var remainingBufferLength = readResult.Length;
+            return Task.Run(async () =>
+            {
+                var project = dataset.Channel.Project;
+#warning !!!
+                var sourceDescription = (await this.GetSourceDescriptionsAsync(project.Id, cancellationToken)).First();
+                var samplesPerDay = dataset.GetSampleRate().SamplesPerDay;
 
-//            while (remainingBufferLength > 0)
-//            {
-//                // get data
-//                var groupSettings = _config.GroupSettings[dataset.Channel.Group];
-//                var fileName = $"{currentBegin.ToString(_config.DateTimeFormat)}{groupSettings.PathPostfix}";
-//                var filePath = Directory.EnumerateFiles(_dataFolderPath, fileName, SearchOption.TopDirectoryOnly).FirstOrDefault();
+                var currentBegin = ExtensibilityUtilities.RoundDown(begin, sourceDescription.FilePeriod);
+                var fileLength = (int)Math.Round(sourceDescription.FilePeriod.TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
+                var fileOffset = (int)Math.Round((begin - currentBegin).TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
+                var bufferOffset = 0;
+                var remainingBufferLength = readResult.Length;
 
-//                var filePath = this.GetFilePathAsync();
-//                var fileBlock = fileLength - fileOffset;
-//                var currentBlock = Math.Min(remainingBufferLength, fileBlock);
+                while (remainingBufferLength > 0)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
 
-//                if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
-//                {
-//                    try
-//                    {
-//                        using var campbellFile = new CampbellFile(filePath);
+                    // get data
+                    var filePath = await this.GetFilePathAsync(currentBegin, sourceDescription);
+                    var fileBlock = fileLength - fileOffset;
+                    var currentBlock = Math.Min(remainingBufferLength, fileBlock);
 
-//                        var campbellVariable = campbellFile.Variables.First(current => current.Name.Replace("thies_", "thies_25_") == dataset.Channel.Name);
-//                        var campbellData = campbellFile.Read<T>(campbellVariable);
-//                        var result = campbellData.Data.Buffer;
+                    if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
+                    {
+                        try
+                        {
+                            var localResult = await this.ReadSingleAsync<T>(filePath, dataset, cancellationToken);
 
-//                        // write data
-//                        if (result.Length == fileLength)
-//                        {
-//                            result.AsSpan(fileOffset, currentBlock).CopyTo(data.AsSpan(bufferOffset));
-//                            status.AsSpan(bufferOffset, currentBlock).Fill(1);
-//                        }
-//                    }
-//                    catch (Exception ex)
-//                    {
-//                        this.Logger.LogError(ex.Message);
-//                    }
-//                }
+                            // write data
+                            if (localResult.Length == fileLength)
+                            {
+                                localResult
+                                    .Slice(fileOffset, currentBlock)
+                                    .CopyTo(readResult.Dataset.Slice(bufferOffset));
 
-//                // update loop state
-//                fileOffset = 0; // Only the data in the first file may have an offset.
-//                bufferOffset += currentBlock;
-//                remainingBufferLength -= currentBlock;
-//                currentBegin += _config.Period;
-//            }
+                                readResult
+                                    .Status
+                                    .Slice(bufferOffset, currentBlock)
+                                    .Span
+                                    .Fill(1);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            this.Logger.LogError(ex.Message);
+                        }
+                    }
 
-//            return Task.FromResult(new ReadResult<T>(data, status));
+                    // update loop state
+                    fileOffset = 0; // Only the data in the first file may have an offset.
+                    bufferOffset += currentBlock;
+                    remainingBufferLength -= currentBlock;
+                    currentBegin += sourceDescription.FilePeriod;
+                }
+            });
         }
 
-        //protected async Task<string> GetFilePathAsync(Dataset dataset, DateTime currentBegin)
-        //{
+        protected abstract Task<ReadOnlyMemory<T>>
+            ReadSingleAsync<T>(string filePath, Dataset dataset, CancellationToken cancellationToken)
+            where T : unmanaged;
 
-        //}
+        protected Task<string> GetFilePathAsync(DateTime begin, SourceDescription sourceDescription)
+        {
+            var folderNames = sourceDescription
+                .PathSegments
+                .Select(segment => begin.ToString(segment));
+
+            var folderNameArray = new List<string>() { this.RootPath }
+                .Concat(folderNames)
+                .ToArray();
+
+            var folderPath = Path.Combine(folderNameArray);
+            var fileName = begin.ToString(sourceDescription.FileTemplate);
+            var filePath = Path.Combine(folderPath, fileName);
+
+            if (filePath.Contains("?") || filePath.Contains("*") && Directory.Exists(folderPath))
+                return Task.FromResult(Directory.EnumerateFiles(folderPath, fileName).FirstOrDefault());
+
+            else
+                return Task.FromResult(Path.Combine(folderPath, fileName));
+        }
 
         #endregion
 
@@ -358,7 +379,7 @@ namespace Nexus.Extensibility
                             else
                                 return currentFolder.DateTime;
                         }
-                        // should only happen when file path segment template and preselection are incorrect
+                        // should only happen when file date/time selection and file date/time  preselection are specified incorrectly
                         else
                         {
                             return begin == DateTime.MinValue && end == DateTime.MinValue
