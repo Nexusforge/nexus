@@ -5,7 +5,8 @@
         "PathSegments": [
           "yyyy-MM-dd_HH-mm-ss'.dat'"
         ],
-        "FilePeriod": "00:10:00"
+        "FilePeriod": "00:10:00",
+        "UtcOffset": "00:00:00"
       }
     }
   }

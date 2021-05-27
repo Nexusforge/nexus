@@ -7,7 +7,8 @@
           "'position_A'",
           "'__0_'yyyy-MM-dd_HH-mm-ss'_000000.dat'"
         ],
-        "FilePeriod": "00:10:00"
+        "FilePeriod": "00:10:00",
+        "UtcOffset": "02:00:00"
       },
       "position_B": {
         "PathSegments": [
@@ -15,7 +16,8 @@
           "'position_B'",
           "'__1_'yyyy-MM-dd_HH-mm-ss'_000000.dat'"
         ],
-        "FilePeriod": "01:00:00"
+        "FilePeriod": "01:00:00",
+        "UtcOffset": "01:00:00"
       }
     }
   }

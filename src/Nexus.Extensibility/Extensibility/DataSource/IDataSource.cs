@@ -32,7 +32,8 @@ namespace Nexus.Extensibility
                                                                       CancellationToken cancellationToken);
 
         Task<double> GetAvailabilityAsync(string projectId,
-                                          DateTime day,
+                                          DateTime begin,
+                                          DateTime end,
                                           CancellationToken cancellationToken);
 
         Task<ReadResult<T>> ReadSingleAsync<T>(Dataset dataset,

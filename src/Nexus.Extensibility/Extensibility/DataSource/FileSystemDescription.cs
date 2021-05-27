@@ -6,7 +6,8 @@ namespace Nexus.Extensibility
     public record SourceDescription(
         List<string> PathSegments,
         string? FileNamePreselector,
-        TimeSpan FilePeriod
+        TimeSpan FilePeriod,
+        TimeSpan UtcOffset
     );
 
     public class ProjectDescriptions : Dictionary<string, Dictionary<string, SourceDescription>>

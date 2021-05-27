@@ -2,8 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nexus.Extensibility.Tests
@@ -12,16 +14,25 @@ namespace Nexus.Extensibility.Tests
     {
         #region Methods
 
-        public override async Task<(FileSystemDescription, List<Project>)> InitializeDataModelAsync()
+        protected override async Task<List<SourceDescription>> GetSourceDescriptionsAsync(string projectId, CancellationToken cancellationToken)
         {
             var configFilePath = Path.Combine(this.RootPath, "config.json");
-            var config = await SimpleFileDataSourceTester.DeserializeAsync<FileSystemDescription>(configFilePath);
-            var projects = new List<Project>() { new Project("/A/B/C") };
 
-            return (config, projects);
+            var config = await SimpleFileDataSourceTester
+                .DeserializeAsync<FileSystemDescription>(configFilePath);
+
+            if (!config.Projects.TryGetValue(projectId, out var sourceDescriptionMap))
+                throw new Exception($"A configuration for the project '{projectId}' could not be found.");
+
+            return sourceDescriptionMap.Values.ToList();
         }
 
-        public override Task<ReadResult<T>> ReadSingleAsync<T>(Dataset dataset, DateTime begin, DateTime end)
+        protected override Task<List<Project>> GetDataModelAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromResult(new List<Project>() { new Project("/A/B/C") });
+        }
+
+        protected override Task<ReadResult<T>> ReadSingleAsync<T>(Dataset dataset, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }

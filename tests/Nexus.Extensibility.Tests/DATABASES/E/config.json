@@ -8,7 +8,8 @@
           "yyyy-MM-dd_HH-mm-ss"
         ],
         "FileNamePreselector": "prefix_average_data_(.{19})",
-        "FilePeriod": "1.00:00:00"
+        "FilePeriod": "1.00:00:00",
+        "UtcOffset": "00:00:00"
       },
       "real_time": {
         "PathSegments": [
@@ -17,7 +18,8 @@
           "yyyy-MM-dd_HH-mm-ss"
         ],
         "FileNamePreselector": "prefix_real_time_data_(.{19})",
-        "FilePeriod": "00:30:00"
+        "FilePeriod": "00:30:00",
+        "UtcOffset": "00:00:00"
       }
     }
   }

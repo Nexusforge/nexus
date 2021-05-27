@@ -8,7 +8,8 @@
           "yyyyMMdd_HH"
         ],
         "FileNamePreselector": "(.{11})",
-        "FilePeriod": "01:00:00"
+        "FilePeriod": "01:00:00",
+        "UtcOffset": "00:00:00"
       }
     }
   }

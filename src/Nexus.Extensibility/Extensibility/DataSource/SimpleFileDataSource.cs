@@ -35,6 +35,9 @@ namespace Nexus.Extensibility
         // over the hierarchy.
         //
         // (3) Most nested folders are not empty.
+        //
+        // (4) UtcOffset is only considered when reading data, not to determine the
+        // availability or the project time range.
 
         #region Fields
 
@@ -79,7 +82,7 @@ namespace Nexus.Extensibility
 
                         // first
                         var firstDateTime = SimpleFileDataSource
-                            .GetCandidateDateTimes(source, DateTime.MinValue, this.RootPath, cancellationToken)
+                            .GetCandidateDateTimes(source, DateTime.MinValue, DateTime.MinValue, this.RootPath, cancellationToken)
                             .OrderBy(current => current)
                             .FirstOrDefault();
 
@@ -91,7 +94,7 @@ namespace Nexus.Extensibility
 
                         // last
                         var lastDateTime = SimpleFileDataSource
-                            .GetCandidateDateTimes(source, DateTime.MaxValue, this.RootPath, cancellationToken)
+                            .GetCandidateDateTimes(source, DateTime.MaxValue, DateTime.MaxValue, this.RootPath, cancellationToken)
                             .OrderByDescending(current => current)
                             .FirstOrDefault();
 
@@ -108,8 +111,11 @@ namespace Nexus.Extensibility
         }
 
         protected virtual async Task<double>
-            GetAvailabilityAsync(string projectId, DateTime day, CancellationToken cancellationToken)
+            GetAvailabilityAsync(string projectId, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
+            if (begin >= end)
+                throw new ArgumentException("The start time must be before the end time.");
+
             // no true async file enumeration available: https://github.com/dotnet/runtime/issues/809
             return await Task.Run(async () =>
             {
@@ -122,15 +128,15 @@ namespace Nexus.Extensibility
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    var candidateDateTimes = SimpleFileDataSource.GetCandidateDateTimes(source, day, this.RootPath, cancellationToken);
+                    var candidateDateTimes = SimpleFileDataSource.GetCandidateDateTimes(source, begin, end, this.RootPath, cancellationToken);
 
                     var fileCount = candidateDateTimes
-                        .Where(current => day <= current && current < day.AddDays(1))
+                        .Where(current => begin <= current && current < end)
                         .Count();
 
-                    var filesPerDay = TimeSpan.FromDays(1).Ticks / source.FilePeriod.Ticks;
+                    var filesPerTimeRange = (end - begin).Ticks / source.FilePeriod.Ticks;
 
-                    return fileCount / (double)filesPerDay;
+                    return fileCount / (double)filesPerTimeRange;
                 });
 
                 return summedAvailability / sources.Count;
@@ -162,9 +168,9 @@ namespace Nexus.Extensibility
         }
 
         Task<double> 
-            IDataSource.GetAvailabilityAsync(string projectId, DateTime day, CancellationToken cancellationToken)
+            IDataSource.GetAvailabilityAsync(string projectId, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
-            return this.GetAvailabilityAsync(projectId, day, cancellationToken);
+            return this.GetAvailabilityAsync(projectId, begin, end, cancellationToken);
         }
 
         Task<ReadResult<T>> 
@@ -190,7 +196,8 @@ namespace Nexus.Extensibility
         }
 
         private static IEnumerable<DateTime> GetCandidateDateTimes(SourceDescription source,
-                                                                   DateTime searchDate,
+                                                                   DateTime begin,
+                                                                   DateTime end,
                                                                    string rootPath,
                                                                    CancellationToken cancellationToken)
         {
@@ -206,7 +213,7 @@ namespace Nexus.Extensibility
             var candidateFolders = source.PathSegments.Count > 1
 
                 ? SimpleFileDataSource
-                    .GetCandidateFolders(searchDate, rootPath, default, source.PathSegments, cancellationToken)
+                    .GetCandidateFolders(begin, end, rootPath, default, source.PathSegments, cancellationToken)
 
                 : new List<(string, DateTime)>() { (rootPath, default) };
 
@@ -284,7 +291,7 @@ namespace Nexus.Extensibility
                         // should only happen when file path segment template and preselection are incorrect
                         else
                         {
-                            return searchDate == DateTime.MinValue
+                            return begin == DateTime.MinValue && end == DateTime.MinValue
                                 ? DateTime.MaxValue  // searchDate == DateTime.MinValue
                                 : DateTime.MinValue; // searchDate == DateTime.MaxValue or searchDate == every other date
                         }
@@ -298,7 +305,8 @@ namespace Nexus.Extensibility
             });
         }
 
-        private static IEnumerable<(string FolderPath, DateTime DateTime)> GetCandidateFolders(DateTime searchDate,
+        private static IEnumerable<(string FolderPath, DateTime DateTime)> GetCandidateFolders(DateTime begin,
+                                                                                               DateTime end,
                                                                                                string root,
                                                                                                DateTime rootDate,
                                                                                                List<string> pathSegments,
@@ -339,13 +347,19 @@ namespace Nexus.Extensibility
                .ToDictionary(current => current.folderPath, current => current.parsedDateTime);
 
             // keep only folders that fall within the searched time period
-            var expectedSegmentName = searchDate.ToString(pathSegments.First());
+
+            /* The expected segment name is used for two purposes:
+             * (1) for "filter by search date" where only the begin date/time matters
+             * (2) for "filter by exact match" where any date/time can be put into
+             * the ToString() method to remove the quotation marks from the path segment
+             */
+            var expectedSegmentName = begin.ToString(pathSegments.First());
 
             var folderCandidates = hasDateTimeInformation
 
                 // filter by search date
                 ? SimpleFileDataSource
-                    .FilterBySearchDate(searchDate, folderNameToDateTimeMap, expectedSegmentName)
+                    .FilterBySearchDate(begin, end, folderNameToDateTimeMap, expectedSegmentName)
 
                 // filter by exact match
                 : folderNameToDateTimeMap
@@ -357,7 +371,8 @@ namespace Nexus.Extensibility
             {
                 return folderCandidates.SelectMany(current =>
                     SimpleFileDataSource.GetCandidateFolders(
-                        searchDate,
+                        begin,
+                        end,
                         current.Key,
                         current.Value,
                         pathSegments.Skip(1).ToList(), cancellationToken
@@ -372,11 +387,12 @@ namespace Nexus.Extensibility
             }
         }
 
-        private static IEnumerable<(string Key, DateTime Value)> FilterBySearchDate(DateTime searchDate,
+        private static IEnumerable<(string Key, DateTime Value)> FilterBySearchDate(DateTime begin,
+                                                                                    DateTime end,
                                                                                     Dictionary<string, DateTime> folderNameToDateTimeMap,
                                                                                     string expectedSegmentName)
         {
-            if (searchDate == DateTime.MinValue)
+            if (begin == DateTime.MinValue && end == DateTime.MinValue)
             {
                 var folderCandidate = folderNameToDateTimeMap
                     .OrderBy(entry => entry.Value)
@@ -385,7 +401,7 @@ namespace Nexus.Extensibility
                 return new List<(string, DateTime)>() { (folderCandidate.Key, folderCandidate.Value) };
             }
 
-            else if (searchDate == DateTime.MaxValue)
+            else if (begin == DateTime.MaxValue && end == DateTime.MaxValue)
             {
                 var folderCandidate = folderNameToDateTimeMap
                    .OrderByDescending(entry => entry.Value)
@@ -399,13 +415,14 @@ namespace Nexus.Extensibility
                 return folderNameToDateTimeMap
                     .Where(entry =>
                     {
-                        // Check for the case that the parsed date/time(2020-01-01T22) is
-                        // more specific than the search date/time (2020-01-01T00):
-                        if (searchDate <= entry.Value && entry.Value <= searchDate.AddDays(1))
+                        // Check for the case that the parsed date/time
+                        // (1) is more specific (2020-01-01T22) than the search time range (2020-01-01T00 - 2021-01-02T00):
+                        // (2) is less specific but in-between (2020-02) the search time range (2020-01-01 - 2021-03-01)
+                        if (begin <= entry.Value && entry.Value < end)
                             return true;
 
-                        // Check for the case that the parsed date/time (2020-01) is less 
-                        // specific than the search date/time (2020-01-02)
+                        // Check for the case that the parsed date/time
+                        // (1) is less specific (2020-01) and outside the search time range (2020-01-02 - 2020-01-03)
                         else
                             return Path.GetFileName(entry.Key) == expectedSegmentName;
                     })
