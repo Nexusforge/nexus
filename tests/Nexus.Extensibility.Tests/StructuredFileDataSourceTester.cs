@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Extensibility.Tests
 {
-    public class SimpleFileDataSourceTester : SimpleFileDataSource
+    public class StructuredFileDataSourceTester : SimpleFileDataSource
     {
         #region Methods
 
@@ -18,7 +18,7 @@ namespace Nexus.Extensibility.Tests
         {
             var configFilePath = Path.Combine(this.RootPath, "config.json");
 
-            var config = await SimpleFileDataSourceTester
+            var config = await StructuredFileDataSourceTester
                 .DeserializeAsync<FileSystemDescription>(configFilePath);
 
             if (!config.Projects.TryGetValue(projectId, out var sourceDescriptionMap))

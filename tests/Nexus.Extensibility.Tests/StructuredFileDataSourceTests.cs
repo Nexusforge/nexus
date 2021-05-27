@@ -8,13 +8,13 @@ using Xunit.Abstractions;
 
 namespace Nexus.Extensibility.Tests
 {
-    public class SimpleFileDataSourceTests
+    public class StructuredFileDataSourceTests
     {
         private ILogger _logger;
 
-        public SimpleFileDataSourceTests(ITestOutputHelper xunitLogger)
+        public StructuredFileDataSourceTests(ITestOutputHelper xunitLogger)
         {
-            _logger = new XunitLoggerProvider(xunitLogger).CreateLogger(nameof(SimpleFileDataSourceTests));
+            _logger = new XunitLoggerProvider(xunitLogger).CreateLogger(nameof(StructuredFileDataSourceTests));
         }
 
         [Theory]
@@ -29,7 +29,7 @@ namespace Nexus.Extensibility.Tests
         [InlineData("DATABASES/H", "2020-01-02", "2020-01-03", 2 / 144.0, 4)]
         public async Task CanProvideAvailability(string rootPath, DateTime begin, DateTime end, double expected, int precision)
         {
-            var dataSource = new SimpleFileDataSourceTester()
+            var dataSource = new StructuredFileDataSourceTester()
             {
                 RootPath = rootPath,
                 Logger = _logger,
@@ -53,7 +53,7 @@ namespace Nexus.Extensibility.Tests
         [InlineData("DATABASES/H", "2019-12-31", "2020-01-02")]
         public async Task CanProvideProjectTimeRange(string rootPath, DateTime expectedBegin, DateTime expectedEnd)
         {
-            var dataSource = new SimpleFileDataSourceTester()
+            var dataSource = new StructuredFileDataSourceTester()
             {
                 RootPath = rootPath,
                 Logger = _logger,

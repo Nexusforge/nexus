@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Extensibility
 {
-    public abstract class SimpleFileDataSource : IDataSource
+    public abstract class StructuredFileDataSource : IDataSource
     {
         // This implementation assumes the following:
         //
@@ -81,7 +81,7 @@ namespace Nexus.Extensibility
                         cancellationToken.ThrowIfCancellationRequested();
 
                         // first
-                        var firstDateTime = SimpleFileDataSource
+                        var firstDateTime = StructuredFileDataSource
                             .GetCandidateDateTimes(this.RootPath, DateTime.MinValue, DateTime.MinValue, sourceDescription, cancellationToken)
                             .OrderBy(current => current)
                             .FirstOrDefault();
@@ -93,7 +93,7 @@ namespace Nexus.Extensibility
                             minDate = firstDateTime.Date;
 
                         // last
-                        var lastDateTime = SimpleFileDataSource
+                        var lastDateTime = StructuredFileDataSource
                             .GetCandidateDateTimes(this.RootPath, DateTime.MaxValue, DateTime.MaxValue, sourceDescription, cancellationToken)
                             .OrderByDescending(current => current)
                             .FirstOrDefault();
@@ -128,7 +128,7 @@ namespace Nexus.Extensibility
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    var candidateDateTimes = SimpleFileDataSource.GetCandidateDateTimes(this.RootPath, begin, end, sourceDescription, cancellationToken);
+                    var candidateDateTimes = StructuredFileDataSource.GetCandidateDateTimes(this.RootPath, begin, end, sourceDescription, cancellationToken);
 
                     var fileCount = candidateDateTimes
                         .Where(current => begin <= current && current < end)
@@ -297,7 +297,7 @@ namespace Nexus.Extensibility
             // get all candidate folders
             var candidateFolders = source.PathSegments.Count >= 1
 
-                ? SimpleFileDataSource
+                ? StructuredFileDataSource
                     .GetCandidateFolders(rootPath, default, begin, end, source.PathSegments, cancellationToken)
 
                 : new List<(string, DateTime)>() { (rootPath, default) };
@@ -449,7 +449,7 @@ namespace Nexus.Extensibility
             var folderCandidates = hasDateTimeInformation
 
                 // filter by search date
-                ? SimpleFileDataSource
+                ? StructuredFileDataSource
                     .FilterBySearchDate(begin, end, folderNameToDateTimeMap, expectedSegmentName)
 
                 // filter by exact match
@@ -461,7 +461,7 @@ namespace Nexus.Extensibility
             if (pathSegments.Count() > 1)
             {
                 return folderCandidates.SelectMany(current =>
-                    SimpleFileDataSource.GetCandidateFolders(
+                    StructuredFileDataSource.GetCandidateFolders(
                         current.Key,
                         current.Value,
                         begin,
