@@ -4,9 +4,9 @@
       "default": {
         "PathSegments": [
           "'DATA'",
-          "'prefix_'dd-MM-yyyy_HH",
-          "HH-mm-ss'.dat'"
+          "'prefix_'dd-MM-yyyy_HH"
         ],
+        "FileTemplate": "HH-mm-ss'.dat'",
         "FilePeriod": "00:00:01",
         "UtcOffset": "00:00:00"
       }

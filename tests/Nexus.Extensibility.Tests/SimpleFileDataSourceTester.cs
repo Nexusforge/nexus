@@ -32,7 +32,7 @@ namespace Nexus.Extensibility.Tests
             return Task.FromResult(new List<Project>() { new Project("/A/B/C") });
         }
 
-        protected override Task<ReadResult<T>> ReadSingleAsync<T>(Dataset dataset, DateTime begin, DateTime end, CancellationToken cancellationToken)
+        protected override Task ReadSingleAsync<T>(Dataset dataset, ReadResult<T> readResult, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }

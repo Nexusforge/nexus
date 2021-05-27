@@ -232,6 +232,8 @@ namespace Nexus.Extensibility
                     if (cancellationToken.IsCancellationRequested)
                         yield break;
 
+#error ReadSingle returns ReadResult ... and that read result should be disposable using the IMemoryOwners
+#error every consumer that is done with the specific read result must dispose it!
                     (var data, var status) = this.ReadSingle(dataset, currentBegin, currentEnd);
                     datasetToRecordMap[dataset] = new DataRecord(data, status);
 

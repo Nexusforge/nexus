@@ -38,6 +38,9 @@ namespace Nexus.Extensibility
         //
         // (4) UtcOffset is only considered when reading data, not to determine the
         // availability or the project time range.
+        //
+        // (5) File names begin at multiples of the file length, e.g. file length = 00:10:00
+        // and file start times are 
 
         #region Fields
 
@@ -143,9 +146,70 @@ namespace Nexus.Extensibility
             }).ConfigureAwait(false);
         }
 
-        protected abstract Task<ReadResult<T>> 
-            ReadSingleAsync<T>(Dataset dataset, DateTime begin, DateTime end, CancellationToken cancellationToken)
-            where T : unmanaged;
+        protected virtual async Task 
+            ReadSingleAsync<T>(Dataset dataset, ReadResult<T> readResult, DateTime begin, DateTime end, CancellationToken cancellationToken)
+            where T : unmanaged
+        {
+            throw new NotImplementedException();
+//            var project = dataset.Channel.Project;
+//#warning !!!
+//            var sourceDescription = (await this.GetSourceDescriptionsAsync(project.Id, cancellationToken)).First();
+//            var samplesPerDay = dataset.GetSampleRate().SamplesPerDay;
+
+//            var currentBegin = ExtensibilityUtilities.RoundDown(begin, sourceDescription.FilePeriod);
+//            var fileLength = (int)Math.Round(sourceDescription.FilePeriod.TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
+//            var fileOffset = (int)Math.Round((begin - currentBegin).TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
+//            var bufferOffset = 0;
+//            var remainingBufferLength = readResult.Length;
+
+//            while (remainingBufferLength > 0)
+//            {
+//                // get data
+//                var groupSettings = _config.GroupSettings[dataset.Channel.Group];
+//                var fileName = $"{currentBegin.ToString(_config.DateTimeFormat)}{groupSettings.PathPostfix}";
+//                var filePath = Directory.EnumerateFiles(_dataFolderPath, fileName, SearchOption.TopDirectoryOnly).FirstOrDefault();
+
+//                var filePath = this.GetFilePathAsync();
+//                var fileBlock = fileLength - fileOffset;
+//                var currentBlock = Math.Min(remainingBufferLength, fileBlock);
+
+//                if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
+//                {
+//                    try
+//                    {
+//                        using var campbellFile = new CampbellFile(filePath);
+
+//                        var campbellVariable = campbellFile.Variables.First(current => current.Name.Replace("thies_", "thies_25_") == dataset.Channel.Name);
+//                        var campbellData = campbellFile.Read<T>(campbellVariable);
+//                        var result = campbellData.Data.Buffer;
+
+//                        // write data
+//                        if (result.Length == fileLength)
+//                        {
+//                            result.AsSpan(fileOffset, currentBlock).CopyTo(data.AsSpan(bufferOffset));
+//                            status.AsSpan(bufferOffset, currentBlock).Fill(1);
+//                        }
+//                    }
+//                    catch (Exception ex)
+//                    {
+//                        this.Logger.LogError(ex.Message);
+//                    }
+//                }
+
+//                // update loop state
+//                fileOffset = 0; // Only the data in the first file may have an offset.
+//                bufferOffset += currentBlock;
+//                remainingBufferLength -= currentBlock;
+//                currentBegin += _config.Period;
+//            }
+
+//            return Task.FromResult(new ReadResult<T>(data, status));
+        }
+
+        //protected async Task<string> GetFilePathAsync(Dataset dataset, DateTime currentBegin)
+        //{
+
+        //}
 
         #endregion
 
@@ -173,10 +237,10 @@ namespace Nexus.Extensibility
             return this.GetAvailabilityAsync(projectId, begin, end, cancellationToken);
         }
 
-        Task<ReadResult<T>> 
-            IDataSource.ReadSingleAsync<T>(Dataset dataset, DateTime begin, DateTime end, CancellationToken cancellationToken)
+        Task 
+            IDataSource.ReadSingleAsync<T>(Dataset dataset, ReadResult<T> readResult, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
-            return this.ReadSingleAsync<T>(dataset, begin, end, cancellationToken);
+            return this.ReadSingleAsync(dataset, readResult, begin, end, cancellationToken);
         }
 
         #endregion
@@ -210,7 +274,7 @@ namespace Nexus.Extensibility
                 return new List<DateTime>();
 
             // get all candidate folders
-            var candidateFolders = source.PathSegments.Count > 1
+            var candidateFolders = source.PathSegments.Count >= 1
 
                 ? SimpleFileDataSource
                     .GetCandidateFolders(rootPath, default, begin, end, source.PathSegments, cancellationToken)
@@ -218,11 +282,17 @@ namespace Nexus.Extensibility
                 : new List<(string, DateTime)>() { (rootPath, default) };
 
             // get all files that can be parsed
-            var regex = !string.IsNullOrWhiteSpace(source.FileNamePreselector)
-                    ? new Regex(source.FileNamePreselector)
-                    : null;
+            var fileTemplate = source.FileTemplate;
+            var regex = default(Regex);
 
-            var fileNameTemplate = source.PathSegments.Last();
+            if (!string.IsNullOrWhiteSpace(source.FileDateTimePreselector))
+            {
+                if (string.IsNullOrEmpty(source.FileDateTimeSelector))
+                    throw new Exception("When a file date/time preselector is provided, the selector itself must be provided too.");
+
+                fileTemplate = source.FileDateTimeSelector;
+                regex = new Regex(source.FileDateTimePreselector);
+            }
 
             return candidateFolders.SelectMany(currentFolder =>
             {
@@ -264,7 +334,7 @@ namespace Nexus.Extensibility
 
                         var success = DateTime.TryParseExact(
                             fileName,
-                            fileNameTemplate,
+                            fileTemplate,
                             default,
                             DateTimeStyles.NoCurrentDateDefault,
                             out var parsedDateTime
@@ -346,7 +416,7 @@ namespace Nexus.Extensibility
                 })
                .ToDictionary(current => current.folderPath, current => current.parsedDateTime);
 
-            // keep only folders that fall within the searched time period
+            // keep only folders that fall within the wanted time range
 
             /* The expected segment name is used for two purposes:
              * (1) for "filter by search date" where only the begin date/time matters
@@ -367,7 +437,7 @@ namespace Nexus.Extensibility
                     .Select(entry => (entry.Key, entry.Value));
 
             // go deeper
-            if (pathSegments.Count() > 2)
+            if (pathSegments.Count() > 1)
             {
                 return folderCandidates.SelectMany(current =>
                     SimpleFileDataSource.GetCandidateFolders(

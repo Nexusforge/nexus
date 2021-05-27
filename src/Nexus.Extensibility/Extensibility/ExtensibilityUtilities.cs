@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System;
+using System.Text.RegularExpressions;
 
 namespace Nexus.Extensibility
 {
@@ -15,6 +16,11 @@ namespace Nexus.Extensibility
                 value = $"{prefix}_" + value;
 
             return value;
+        }
+
+        internal static DateTime RoundDown(DateTime dateTime, TimeSpan timeSpan)
+        {
+            return new DateTime(dateTime.Ticks - (dateTime.Ticks % timeSpan.Ticks), dateTime.Kind);
         }
     }
 }

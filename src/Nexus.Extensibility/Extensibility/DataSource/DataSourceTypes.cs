@@ -3,9 +3,22 @@ using System.Collections.Generic;
 
 namespace Nexus.Extensibility
 {
+    public record ReadResult<T>(ReadOnlyMemory<T> Dataset, ReadOnlyMemory<byte> Status)
+    {
+        public int Length => this.Dataset.Length;
+    }
+
+    public record DataSourceRegistration
+    {
+        public string RootPath { get; set; }
+        public string DataSourceId { get; set; }
+    }
+
     public record SourceDescription(
         List<string> PathSegments,
-        string? FileNamePreselector,
+        string FileTemplate,
+        string? FileDateTimePreselector,
+        string? FileDateTimeSelector,
         TimeSpan FilePeriod,
         TimeSpan UtcOffset
     );
