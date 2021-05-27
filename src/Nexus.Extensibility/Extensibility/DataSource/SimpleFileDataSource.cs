@@ -82,7 +82,7 @@ namespace Nexus.Extensibility
 
                         // first
                         var firstDateTime = SimpleFileDataSource
-                            .GetCandidateDateTimes(source, DateTime.MinValue, DateTime.MinValue, this.RootPath, cancellationToken)
+                            .GetCandidateDateTimes(this.RootPath, DateTime.MinValue, DateTime.MinValue, source, cancellationToken)
                             .OrderBy(current => current)
                             .FirstOrDefault();
 
@@ -94,7 +94,7 @@ namespace Nexus.Extensibility
 
                         // last
                         var lastDateTime = SimpleFileDataSource
-                            .GetCandidateDateTimes(source, DateTime.MaxValue, DateTime.MaxValue, this.RootPath, cancellationToken)
+                            .GetCandidateDateTimes(this.RootPath, DateTime.MaxValue, DateTime.MaxValue, source, cancellationToken)
                             .OrderByDescending(current => current)
                             .FirstOrDefault();
 
@@ -128,7 +128,7 @@ namespace Nexus.Extensibility
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    var candidateDateTimes = SimpleFileDataSource.GetCandidateDateTimes(source, begin, end, this.RootPath, cancellationToken);
+                    var candidateDateTimes = SimpleFileDataSource.GetCandidateDateTimes(this.RootPath, begin, end, source, cancellationToken);
 
                     var fileCount = candidateDateTimes
                         .Where(current => begin <= current && current < end)
@@ -195,10 +195,10 @@ namespace Nexus.Extensibility
             }
         }
 
-        private static IEnumerable<DateTime> GetCandidateDateTimes(SourceDescription source,
+        private static IEnumerable<DateTime> GetCandidateDateTimes(string rootPath, 
                                                                    DateTime begin,
                                                                    DateTime end,
-                                                                   string rootPath,
+                                                                   SourceDescription source,
                                                                    CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -213,7 +213,7 @@ namespace Nexus.Extensibility
             var candidateFolders = source.PathSegments.Count > 1
 
                 ? SimpleFileDataSource
-                    .GetCandidateFolders(begin, end, rootPath, default, source.PathSegments, cancellationToken)
+                    .GetCandidateFolders(rootPath, default, begin, end, source.PathSegments, cancellationToken)
 
                 : new List<(string, DateTime)>() { (rootPath, default) };
 
@@ -292,23 +292,23 @@ namespace Nexus.Extensibility
                         else
                         {
                             return begin == DateTime.MinValue && end == DateTime.MinValue
-                                ? DateTime.MaxValue  // searchDate == DateTime.MinValue
-                                : DateTime.MinValue; // searchDate == DateTime.MaxValue or searchDate == every other date
+                                ? DateTime.MaxValue  // begin/end == DateTime.MinValue
+                                : DateTime.MinValue; // begin/end == DateTime.MaxValue or begin/end == every other date
                         }
                     })
-                    // searchDate == DateTime.MinValue: do not allow default values to propagate
-                    // searchDate == DateTime.MaxValue: it does not matter if DateTime.MinValue or empty collection is returned
-                    // searchDate == every other date:  it doesn't matter if default values are removed
+                    // begin/end == DateTime.MinValue: do not allow default values to propagate
+                    // begin/end == DateTime.MaxValue: it does not matter if DateTime.MinValue or empty collection is returned
+                    // begin/end == every other date:  it doesn't matter if default values are removed
                     .Where(current => current != default);
 
                 return candidateDateTimes;
             });
         }
 
-        private static IEnumerable<(string FolderPath, DateTime DateTime)> GetCandidateFolders(DateTime begin,
-                                                                                               DateTime end,
-                                                                                               string root,
+        private static IEnumerable<(string FolderPath, DateTime DateTime)> GetCandidateFolders(string root,
                                                                                                DateTime rootDate,
+                                                                                               DateTime begin,
+                                                                                               DateTime end,
                                                                                                List<string> pathSegments,
                                                                                                CancellationToken cancellationToken)
         {
@@ -371,10 +371,10 @@ namespace Nexus.Extensibility
             {
                 return folderCandidates.SelectMany(current =>
                     SimpleFileDataSource.GetCandidateFolders(
-                        begin,
-                        end,
                         current.Key,
                         current.Value,
+                        begin,
+                        end,
                         pathSegments.Skip(1).ToList(), cancellationToken
                     )
                 );
