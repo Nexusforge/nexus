@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Extensibility.Tests
 {
-    public class StructuredFileDataSourceTester : SimpleFileDataSource
+    public class StructuredFileDataSourceTester : StructuredFileDataSource
     {
         #region Methods
 
@@ -32,7 +32,7 @@ namespace Nexus.Extensibility.Tests
             return Task.FromResult(new List<Project>() { new Project("/A/B/C") });
         }
 
-        protected override Task ReadSingleAsync<T>(Dataset dataset, ReadResult<T> readResult, DateTime begin, DateTime end, CancellationToken cancellationToken)
+        protected override Task ReadSingleAsync<T>(ReadInfo<T> readInfo, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }

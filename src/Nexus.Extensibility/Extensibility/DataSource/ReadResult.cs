@@ -3,11 +3,11 @@ using System.Buffers;
 
 namespace Nexus.Extensibility
 {
-    public class ReadResult<T> : IDisposable
+    public struct ReadResult<T> : IDisposable
     {
         #region Fields
 
-        private IMemoryOwner<T> _datasetOwner;
+        private IMemoryOwner<T> _dataOwner;
         private IMemoryOwner<byte> _statusOwner;
 
         #endregion
@@ -16,10 +16,12 @@ namespace Nexus.Extensibility
 
         public ReadResult(int length)
         {
-            _datasetOwner = MemoryPool<T>.Shared.Rent(length);
+            _dataOwner = MemoryPool<T>.Shared.Rent(length);
             _statusOwner = MemoryPool<byte>.Shared.Rent(length);
 
-            this.Dataset.Span.Clear();
+            this.Length = length;
+
+            this.Data.Span.Clear();
             this.Status.Span.Clear();
         }
 
@@ -27,34 +29,20 @@ namespace Nexus.Extensibility
 
         #region Properties
 
-        public Memory<T> Dataset => _datasetOwner.Memory;
+        public Memory<T> Data => _dataOwner.Memory;
 
         public Memory<byte> Status => _statusOwner.Memory;
 
-        public int Length => this.Dataset.Length;
+        public int Length { get; }
 
         #endregion
 
         #region IDisposable
 
-        private bool disposedValue;
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    _datasetOwner?.Dispose();
-                    _statusOwner?.Dispose();
-                }
-            }
-        }
-
         public void Dispose()
         {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
+            _dataOwner?.Dispose();
+            _statusOwner?.Dispose();
         }
 
         #endregion

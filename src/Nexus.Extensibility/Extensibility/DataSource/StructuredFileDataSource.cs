@@ -29,7 +29,7 @@ namespace Nexus.Extensibility
         // NOT OK:  /2019-12-31/31/...
         //
         // NOTE: The format of the date/time is only illustrative and is being determined
-        // by separate format providers.
+        // by the specified format provider.
         //
         // (2) The files are always located in the most nested folder and not distributed
         // over the hierarchy.
@@ -38,6 +38,8 @@ namespace Nexus.Extensibility
         //
         // (4) UtcOffset is only considered when reading data, not to determine the
         // availability or the project time range.
+        //
+        // (5) Files periods are constant (except for partially written files)
 
         #region Fields
 
@@ -143,76 +145,114 @@ namespace Nexus.Extensibility
             }).ConfigureAwait(false);
         }
 
-        protected virtual Task 
+        protected virtual async Task 
             ReadSingleAsync<T>(Dataset dataset, ReadResult<T> readResult, DateTime begin, DateTime end, CancellationToken cancellationToken)
             where T : unmanaged
         {
             if (begin >= end)
                 throw new ArgumentException("The start time must be before the end time.");
 
-            return Task.Run(async () =>
-            {
-                var project = dataset.Channel.Project;
+            var project = dataset.Channel.Project;
 #warning !!!
-                var sourceDescription = (await this.GetSourceDescriptionsAsync(project.Id, cancellationToken)).First();
-                var samplesPerDay = dataset.GetSampleRate().SamplesPerDay;
+            var sourceDescription = (await this.GetSourceDescriptionsAsync(project.Id, cancellationToken)).First();
+            var samplesPerDay = dataset.GetSampleRate().SamplesPerDay;
+            var fileLength = (long)Math.Round(sourceDescription.FilePeriod.TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
 
-                var currentBegin = ExtensibilityUtilities.RoundDown(begin, sourceDescription.FilePeriod);
-                var fileLength = (int)Math.Round(sourceDescription.FilePeriod.TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
-                var fileOffset = (int)Math.Round((begin - currentBegin).TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
-                var bufferOffset = 0;
-                var remainingBufferLength = readResult.Length;
+            var bufferOffset = 0;
+            var currentBegin = begin;
+            var remainingPeriod = end - begin;
 
-                while (remainingBufferLength > 0)
+            while (remainingPeriod.Ticks > 0)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                int fileBlock;
+                TimeSpan consumedPeriod;
+
+                // get file path and begin
+                var localCurrentBegin = DateTime.SpecifyKind(currentBegin.Add(sourceDescription.UtcOffset), DateTimeKind.Utc);
+                (var filePath, var fileBegin) = await this.FindFilePathAsync(localCurrentBegin, sourceDescription);
+                fileBegin = fileBegin.Add(-sourceDescription.UtcOffset);
+
+                // determine file begin if not yet done
+                if (!string.IsNullOrWhiteSpace(filePath) && fileBegin == default)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
+                    if (!StructuredFileDataSource.TryGetFileBeginByPath(filePath, sourceDescription, out fileBegin, default))
+                        throw new Exception("Unable to determine file date/time.");
+                }
 
-                    // get data
-                    var filePath = await this.GetFilePathAsync(currentBegin, sourceDescription);
-                    var fileBlock = fileLength - fileOffset;
-                    var currentBlock = Math.Min(remainingBufferLength, fileBlock);
+                /* CB = Current Begin, FP = File Period
+                 * 
+                 *  begin    CB-FP        CB         CB+FP                 end
+                 *    |--------|-----------|-----------|-----------|--------|
+                 */
+                var CB_MINUS_FP = currentBegin - sourceDescription.FilePeriod;
+                var CB_PLUS_FP = currentBegin + sourceDescription.FilePeriod;
 
-                    if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
+                if (CB_MINUS_FP < fileBegin && fileBegin <= currentBegin)
+                {
+                    var fileBeginOffset = currentBegin - fileBegin;
+                    var fileOffset = (long)Math.Round(fileBeginOffset.TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
+                    consumedPeriod = TimeSpan.FromTicks(Math.Min(sourceDescription.FilePeriod.Ticks - fileBeginOffset.Ticks, remainingPeriod.Ticks));
+                    fileBlock = (int)(fileLength - fileOffset);
+
+                    if (File.Exists(filePath))
                     {
                         try
                         {
-                            var localResult = await this.ReadSingleAsync<T>(filePath, dataset, cancellationToken);
+                            var slicedData = readResult
+                                .Data
+                                .Slice(bufferOffset, fileBlock);
 
-                            // write data
-                            if (localResult.Length == fileLength)
-                            {
-                                localResult
-                                    .Slice(fileOffset, currentBlock)
-                                    .CopyTo(readResult.Dataset.Slice(bufferOffset));
+                            var slicedStatus = readResult
+                                .Status
+                                .Slice(bufferOffset, fileBlock);
 
-                                readResult
-                                    .Status
-                                    .Slice(bufferOffset, currentBlock)
-                                    .Span
-                                    .Fill(1);
-                            }
+                            var readParameters = new ReadInfo<T>(
+                                filePath,
+                                dataset,
+                                slicedData,
+                                slicedStatus,
+                                fileOffset,
+                                fileLength
+                            );
+
+                            await this
+                                .ReadSingleAsync(readParameters, cancellationToken)
+                                .ConfigureAwait(false);
                         }
                         catch (Exception ex)
                         {
                             this.Logger.LogError(ex.Message);
                         }
                     }
-
-                    // update loop state
-                    fileOffset = 0; // Only the data in the first file may have an offset.
-                    bufferOffset += currentBlock;
-                    remainingBufferLength -= currentBlock;
-                    currentBegin += sourceDescription.FilePeriod;
                 }
-            });
+                else if (CB_PLUS_FP <= fileBegin && fileBegin < end)
+                {
+                    consumedPeriod = fileBegin - currentBegin;
+                    fileBlock = (int)Math.Round(consumedPeriod.TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
+                }
+                else
+                {
+                    break;
+                }
+
+                // update loop state
+                bufferOffset += fileBlock;
+                remainingPeriod -= consumedPeriod;
+                currentBegin += consumedPeriod;
+            }
         }
 
-        protected abstract Task<ReadOnlyMemory<T>>
-            ReadSingleAsync<T>(string filePath, Dataset dataset, CancellationToken cancellationToken)
+        protected abstract Task 
+            ReadSingleAsync<T>(ReadInfo<T> readInfo, CancellationToken cancellationToken)
             where T : unmanaged;
 
-        protected Task<string> GetFilePathAsync(DateTime begin, SourceDescription sourceDescription)
+        protected virtual Task<(string, DateTime)> FindFilePathAsync(DateTime begin, SourceDescription sourceDescription)
         {
+            // This implementation assumes that all files date and times are aligned multiples of the file period.
+            var fileBegin = ExtensibilityUtilities.RoundDown(begin, sourceDescription.FilePeriod);
+
             var folderNames = sourceDescription
                 .PathSegments
                 .Select(segment => begin.ToString(segment));
@@ -225,11 +265,10 @@ namespace Nexus.Extensibility
             var fileName = begin.ToString(sourceDescription.FileTemplate);
             var filePath = Path.Combine(folderPath, fileName);
 
-            if (filePath.Contains("?") || filePath.Contains("*") && Directory.Exists(folderPath))
-                return Task.FromResult(Directory.EnumerateFiles(folderPath, fileName).FirstOrDefault());
+            if (fileName.Contains("?") || fileName.Contains("*") && Directory.Exists(folderPath))
+                filePath = Directory.EnumerateFiles(folderPath, fileName).FirstOrDefault();
 
-            else
-                return Task.FromResult(Path.Combine(folderPath, fileName));
+            return Task.FromResult((filePath, fileBegin));
         }
 
         #endregion
@@ -268,7 +307,8 @@ namespace Nexus.Extensibility
 
         #region Helpers
 
-        private async Task EnsureProjectsAsync(CancellationToken cancellationToken)
+        private async Task
+            EnsureProjectsAsync(CancellationToken cancellationToken)
         {
             if (!_isInitialized)
             {
@@ -280,11 +320,8 @@ namespace Nexus.Extensibility
             }
         }
 
-        private static IEnumerable<DateTime> GetCandidateDateTimes(string rootPath, 
-                                                                   DateTime begin,
-                                                                   DateTime end,
-                                                                   SourceDescription source,
-                                                                   CancellationToken cancellationToken)
+        private static 
+            IEnumerable<DateTime> GetCandidateDateTimes(string rootPath, DateTime begin, DateTime end, SourceDescription sourceDescription, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -295,113 +332,34 @@ namespace Nexus.Extensibility
                 return new List<DateTime>();
 
             // get all candidate folders
-            var candidateFolders = source.PathSegments.Count >= 1
+            var candidateFolders = sourceDescription.PathSegments.Length >= 1
 
                 ? StructuredFileDataSource
-                    .GetCandidateFolders(rootPath, default, begin, end, source.PathSegments, cancellationToken)
+                    .GetCandidateFolders(rootPath, default, begin, end, sourceDescription.PathSegments, cancellationToken)
 
                 : new List<(string, DateTime)>() { (rootPath, default) };
-
-            // get all files that can be parsed
-            var fileTemplate = source.FileTemplate;
-            var regex = default(Regex);
-
-            if (!string.IsNullOrWhiteSpace(source.FileDateTimePreselector))
-            {
-                if (string.IsNullOrEmpty(source.FileDateTimeSelector))
-                    throw new Exception("When a file date/time preselector is provided, the selector itself must be provided too.");
-
-                fileTemplate = source.FileDateTimeSelector;
-                regex = new Regex(source.FileDateTimePreselector);
-            }
 
             return candidateFolders.SelectMany(currentFolder =>
             {
                 var filePaths = Directory.EnumerateFiles(currentFolder.FolderPath);
 
-                // (1) Regex is required in scenarios when there are more complex
-                // file names, i.e. file names containing an opaque string that
-                // changes for every file. This could be a counter, a serial
-                // number or some other unpredictable proprietary string.
-                // 
-                // (2) It is also required as a filter if there is more than one
-                // file type in the containing folder, i.e. high frequent and
-                // averaged data files that are being treated as different sources.
-                var matchedFiles = filePaths
+                var candidateDateTimes = filePaths
                     .Select(filePath =>
                     {
-                        var fileName = Path.GetFileName(filePath);
+                        var success = StructuredFileDataSource
+                            .TryGetFileBeginByPath(filePath, sourceDescription, out var fileBegin, currentFolder.DateTime);
 
-                        var match = regex is not null
-                           ? regex.Match(fileName)
-                           : null;
-
-                        return (fileName, match);
+                        return (success, fileBegin);
                     })
-                    .Where(current => current.match == null || current.match.Success);
-
-                var candidateDateTimes = matchedFiles
-                    .Select(currentFileMatch =>
-                    {
-                        var fileName = currentFileMatch.fileName;
-
-                        if (regex is not null)
-                            fileName = string.Join("", regex
-                                .Match(fileName).Groups
-                                .Cast<Group>()
-                                .Skip(1)
-                                .Select(match => match.Value)
-                        );
-
-                        var success = DateTime.TryParseExact(
-                            fileName,
-                            fileTemplate,
-                            default,
-                            DateTimeStyles.NoCurrentDateDefault,
-                            out var parsedDateTime
-                        );
-
-                        if (success)
-                        {
-                            // Parsing "yxz" with format "'xyz'" will succeed,
-                            // as well as parsing files with time information only,
-                            // so further distinction is required:
-
-                            // use file date/time
-                            if (parsedDateTime.Date != default)
-                                return parsedDateTime;
-
-                            // use combined folder and file date/time
-                            if (parsedDateTime.TimeOfDay != default)
-                                return new DateTime(currentFolder.DateTime.Date.Ticks + parsedDateTime.TimeOfDay.Ticks);
-
-                            // use folder date/time
-                            else
-                                return currentFolder.DateTime;
-                        }
-                        // should only happen when file date/time selection and file date/time  preselection are specified incorrectly
-                        else
-                        {
-                            return begin == DateTime.MinValue && end == DateTime.MinValue
-                                ? DateTime.MaxValue  // begin/end == DateTime.MinValue
-                                : DateTime.MinValue; // begin/end == DateTime.MaxValue or begin/end == every other date
-                        }
-                    })
-                    // begin/end == DateTime.MinValue: do not allow default values to propagate
-                    // begin/end == DateTime.MaxValue: it does not matter if DateTime.MinValue or empty collection is returned
-                    // begin/end == every other date:  it doesn't matter if default values are removed
-                    .Where(current => current != default);
+                    .Where(current => current.success)
+                    .Select(current => current.fileBegin);            
 
                 return candidateDateTimes;
             });
         }
 
-        private static IEnumerable<(string FolderPath, DateTime DateTime)> GetCandidateFolders(string root,
-                                                                                               DateTime rootDate,
-                                                                                               DateTime begin,
-                                                                                               DateTime end,
-                                                                                               List<string> pathSegments,
-                                                                                               CancellationToken cancellationToken)
+        private static 
+            IEnumerable<(string FolderPath, DateTime DateTime)> GetCandidateFolders(string root, DateTime rootDate, DateTime begin, DateTime end, string[] pathSegments, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -444,7 +402,7 @@ namespace Nexus.Extensibility
              * (2) for "filter by exact match" where any date/time can be put into
              * the ToString() method to remove the quotation marks from the path segment
              */
-            var expectedSegmentName = begin.ToString(pathSegments.First());
+                var expectedSegmentName = begin.ToString(pathSegments.First());
 
             var folderCandidates = hasDateTimeInformation
 
@@ -466,7 +424,7 @@ namespace Nexus.Extensibility
                         current.Value,
                         begin,
                         end,
-                        pathSegments.Skip(1).ToList(), cancellationToken
+                        pathSegments.Skip(1).ToArray(), cancellationToken
                     )
                 );
             }
@@ -478,10 +436,8 @@ namespace Nexus.Extensibility
             }
         }
 
-        private static IEnumerable<(string Key, DateTime Value)> FilterBySearchDate(DateTime begin,
-                                                                                    DateTime end,
-                                                                                    Dictionary<string, DateTime> folderNameToDateTimeMap,
-                                                                                    string expectedSegmentName)
+        private static 
+            IEnumerable<(string Key, DateTime Value)> FilterBySearchDate(DateTime begin, DateTime end, Dictionary<string, DateTime> folderNameToDateTimeMap, string expectedSegmentName)
         {
             if (begin == DateTime.MinValue && end == DateTime.MinValue)
             {
@@ -519,6 +475,119 @@ namespace Nexus.Extensibility
                     })
                     .Select(entry => (entry.Key, entry.Value));
             }
+        }
+
+        private static bool TryGetFileBeginByPath(string filePath, SourceDescription sourceDescription, out DateTime fileBegin, DateTime folderBegin = default)
+        {
+            var fileName = Path.GetFileName(filePath);
+
+            if (StructuredFileDataSource.TryGetFileBeginByName(fileName, sourceDescription, out fileBegin))
+            {
+                // use file date/time
+                if (fileBegin.Date != default)
+                {
+                    return true;
+                }
+
+                // use combined folder and file date/time
+                else if (fileBegin.TimeOfDay != default)
+                {
+                    // short cut
+                    if (folderBegin != default)
+                    {
+                        fileBegin = new DateTime(folderBegin.Date.Ticks + fileBegin.TimeOfDay.Ticks);
+                        return true;
+                    }
+
+                    // long way
+                    else
+                    {
+                        var pathSegments = filePath
+                            .Split('/', '\\');
+
+                        pathSegments = pathSegments
+                            .Skip(pathSegments.Length - sourceDescription.PathSegments.Length)
+                            .ToArray();
+
+                        for (int i = 0; i < pathSegments.Length; i++)
+                        {
+                            var folderName = pathSegments[i];
+                            var folderTemplate = sourceDescription.PathSegments[i];
+
+                            var success = DateTime.TryParseExact(
+                                folderName,
+                                folderTemplate,
+                                default,
+                                DateTimeStyles.NoCurrentDateDefault,
+                                out var currentFolderBegin
+                            );
+
+                            if (currentFolderBegin > folderBegin)
+                                folderBegin = currentFolderBegin;
+                        }
+
+                        if (folderBegin == default)
+                            return false;
+
+                        return true;
+                    }
+                }
+
+                // use folder date/time
+                else
+                {
+                    fileBegin = folderBegin;
+                    return true;
+                }
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        private static bool TryGetFileBeginByName(string fileName, SourceDescription sourceDescription, out DateTime fileBegin)
+        {
+            /* (1) Regex is required in scenarios when there are more complex
+             * file names, i.e. file names containing an opaque string that
+             * changes for every file. This could be a counter, a serial
+             * number or some other unpredictable proprietary string.
+             *
+             * (2) It is also required as a filter if there is more than one
+             * file type in the containing folder, i.e. high frequent and
+             * averaged data files that are being treated as different sources.
+             */
+
+            var fileTemplate = sourceDescription.FileTemplate;
+
+            if (!string.IsNullOrWhiteSpace(sourceDescription.FileDateTimePreselector))
+            {
+                if (string.IsNullOrEmpty(sourceDescription.FileDateTimeSelector))
+                    throw new Exception("When a file date/time preselector is provided, the selector itself must be provided too.");
+
+                fileTemplate = sourceDescription.FileDateTimeSelector;
+                var regex = new Regex(sourceDescription.FileDateTimePreselector);
+
+                fileName = string.Join("", regex
+                    .Match(fileName)
+                    .Groups
+                    .Cast<Group>()
+                    .Skip(1)
+                    .Select(match => match.Value)
+                );
+            }
+
+            var success = DateTime.TryParseExact(
+                fileName,
+                fileTemplate,
+                default,
+                DateTimeStyles.NoCurrentDateDefault,
+                out fileBegin
+            );
+
+            // Parsing "xyz" with format "'xyz'" will succeed,
+            // but returns DateTime.MinValue, so filter it out:
+            return success && fileBegin != DateTime.MinValue;
         }
 
         #endregion

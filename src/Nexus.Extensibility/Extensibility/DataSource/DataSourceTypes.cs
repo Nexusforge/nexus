@@ -1,8 +1,18 @@
-﻿using System;
+﻿using Nexus.DataModel;
+using System;
 using System.Collections.Generic;
 
 namespace Nexus.Extensibility
 {
+    public record ReadInfo<T>(
+        string FilePath,
+        Dataset Dataset,
+        Memory<T> Data,
+        Memory<byte> Status,
+        long Offset,
+        long ExpectedTotalSize
+    ) where T : unmanaged;
+
     public record DataSourceRegistration
     {
         public string RootPath { get; set; }
@@ -10,7 +20,7 @@ namespace Nexus.Extensibility
     }
 
     public record SourceDescription(
-        List<string> PathSegments,
+        string[] PathSegments,
         string FileTemplate,
         string? FileDateTimePreselector,
         string? FileDateTimeSelector,
