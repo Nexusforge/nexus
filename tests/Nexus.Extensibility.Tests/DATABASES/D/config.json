@@ -1,6 +1,6 @@
 {
-  "Projects": {
-    "/A/B/C": {
+  "/A/B/C": {
+    "DataAccess": {
       "position_A": {
         "PathSegments": [
           "'DATA'",

@@ -36,6 +36,8 @@ namespace Nexus.Extensibility.Tests
                 Options = null,
             } as IDataSource;
 
+            await dataSource.OnParametersSetAsync();
+
             var projects = await dataSource.GetDataModelAsync(CancellationToken.None);
             var actual = await dataSource.GetAvailabilityAsync(projects.First().Id, begin, end, CancellationToken.None);
 
@@ -59,6 +61,8 @@ namespace Nexus.Extensibility.Tests
                 Logger = _logger,
                 Options = null,
             } as IDataSource;
+
+            await dataSource.OnParametersSetAsync();
 
             var projects = await dataSource.GetDataModelAsync(CancellationToken.None);
             var actual = await dataSource.GetProjectTimeRangeAsync(projects.First().Id, CancellationToken.None);

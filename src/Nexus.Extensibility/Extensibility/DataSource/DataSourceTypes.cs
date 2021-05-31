@@ -4,6 +4,14 @@ using System.Collections.Generic;
 
 namespace Nexus.Extensibility
 {
+    public record DataAccessDescriptions()
+    {
+        public GetDataAccessDescriptionDelegate Single { get; set; }
+        public List<DataAccessDescription> All { get; set; }
+    }
+
+    public delegate DataAccessDescription GetDataAccessDescriptionDelegate(Dataset dataset);
+
     public record ReadInfo<T>(
         string FilePath,
         Dataset Dataset,
@@ -19,7 +27,7 @@ namespace Nexus.Extensibility
         public string DataSourceId { get; set; }
     }
 
-    public record SourceDescription(
+    public record DataAccessDescription(
         string[] PathSegments,
         string FileTemplate,
         string? FileDateTimePreselector,
@@ -27,27 +35,4 @@ namespace Nexus.Extensibility
         TimeSpan FilePeriod,
         TimeSpan UtcOffset
     );
-
-    public class ProjectDescriptions : Dictionary<string, Dictionary<string, SourceDescription>>
-    {
-        //
-    }
-
-    public class FileSystemDescription
-    {
-        #region Constructors
-
-        public FileSystemDescription(ProjectDescriptions projects)
-        {
-            this.Projects = projects;
-        }
-
-        #endregion
-
-        #region Properties
-
-        public ProjectDescriptions Projects { get; }
-
-        #endregion
-    }
 }

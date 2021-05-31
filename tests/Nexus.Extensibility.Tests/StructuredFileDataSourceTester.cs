@@ -12,19 +12,59 @@ namespace Nexus.Extensibility.Tests
 {
     public class StructuredFileDataSourceTester : StructuredFileDataSource
     {
+        #region Types
+
+        public record ProjectDescription()
+        {
+            public Dictionary<string, DataAccessDescription> DataAccess { get; init; }
+        }
+
+        class TimeSpanConverter : JsonConverter<TimeSpan>
+        {
+            public override TimeSpan Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                return TimeSpan.Parse(reader.GetString());
+            }
+
+            public override void Write(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options)
+            {
+                writer.WriteStringValue(value.ToString());
+            }
+        }
+
+        #endregion
+
+        #region Fields
+
+        private Dictionary<string, ProjectDescription> _config;
+
+        #endregion
+
         #region Methods
 
-        protected override async Task<List<SourceDescription>> GetSourceDescriptionsAsync(string projectId, CancellationToken cancellationToken)
+        protected override async Task OnParametersSetAsync()
         {
             var configFilePath = Path.Combine(this.RootPath, "config.json");
 
-            var config = await StructuredFileDataSourceTester
-                .DeserializeAsync<FileSystemDescription>(configFilePath);
+            if (!File.Exists(configFilePath))
+                throw new Exception($"The configuration file does not exist on path '{configFilePath}'.");
 
-            if (!config.Projects.TryGetValue(projectId, out var sourceDescriptionMap))
-                throw new Exception($"A configuration for the project '{projectId}' could not be found.");
+            _config = await DeserializeAsync<Dictionary<string, ProjectDescription>>(configFilePath);
+        }
 
-            return sourceDescriptionMap.Values.ToList();
+        protected override Task<DataAccessDescriptions> GetDataAccessDescriptionsAsync(string projectId, CancellationToken cancellationToken)
+        {
+            var all = _config[projectId]
+                .DataAccess
+                .Values
+                .Cast<DataAccessDescription>()
+                .ToList();
+
+            return Task.FromResult(new DataAccessDescriptions
+            {
+                All = all,
+                Single = dataset => all.First(),
+            });
         }
 
         protected override Task<List<Project>> GetDataModelAsync(CancellationToken cancellationToken)
@@ -52,19 +92,6 @@ namespace Nexus.Extensibility.Tests
                 .DeserializeAsync<T>(jsonStream, options)
                 .AsTask()
                 .ConfigureAwait(false);
-        }
-
-        class TimeSpanConverter : JsonConverter<TimeSpan>
-        {
-            public override TimeSpan Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-            {
-                return TimeSpan.Parse(reader.GetString());
-            }
-
-            public override void Write(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options)
-            {
-                writer.WriteStringValue(value.ToString());
-            }
         }
 
         #endregion

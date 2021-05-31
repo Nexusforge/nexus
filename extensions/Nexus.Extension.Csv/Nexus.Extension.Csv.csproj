@@ -5,10 +5,6 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <None Include="..\..\.editorconfig" Link=".editorconfig" />
-  </ItemGroup>
-  
-  <ItemGroup>
     <ProjectReference Include="..\..\src\Nexus.Types\Nexus.Types.csproj" />
   </ItemGroup>
   
