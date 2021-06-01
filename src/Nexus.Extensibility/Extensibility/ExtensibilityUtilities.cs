@@ -32,5 +32,20 @@ namespace Nexus.Extensibility
         {
             return new DateTime(dateTime.Ticks - (dateTime.Ticks % timeSpan.Ticks), dateTime.Kind);
         }
+
+        internal static string GetFullMessage(Exception ex, bool includeStackTrace = true)
+        {
+            if (includeStackTrace)
+                return $"{ex.InternalGetFullMessage()} - stack trace: {ex.StackTrace}";
+            else
+                return ex.InternalGetFullMessage();
+        }
+
+        private static string InternalGetFullMessage(this Exception ex)
+        {
+            return ex.InnerException == null
+                 ? ex.Message
+                 : ex.Message + " --> " + ExtensibilityUtilities.GetFullMessage(ex.InnerException);
+        }
     }
 }

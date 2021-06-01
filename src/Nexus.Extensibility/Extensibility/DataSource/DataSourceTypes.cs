@@ -17,6 +17,7 @@ namespace Nexus.Extensibility
         Dataset Dataset,
         Memory<T> Data,
         Memory<byte> Status,
+        DateTime FileBegin,
         long Offset,
         long ExpectedTotalSize
     ) where T : unmanaged;
