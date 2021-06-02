@@ -15,7 +15,7 @@ namespace Nexus.Extensibility.Tests
     {
         #region Types
 
-        public record ProjectDescription()
+        public record CatalogDescription()
         {
             public Dictionary<string, ConfigurationUnit> Config { get; init; }
         }
@@ -38,7 +38,7 @@ namespace Nexus.Extensibility.Tests
         #region Fields
 
         private bool _overrideFindFilePathsWithNoDateTime;
-        private Dictionary<string, ProjectDescription> _config;
+        private Dictionary<string, CatalogDescription> _config;
 
         #endregion
 
@@ -61,12 +61,12 @@ namespace Nexus.Extensibility.Tests
             if (!File.Exists(configFilePath))
                 throw new Exception($"The configuration file does not exist on path '{configFilePath}'.");
 
-            _config = await DeserializeAsync<Dictionary<string, ProjectDescription>>(configFilePath);
+            _config = await DeserializeAsync<Dictionary<string, CatalogDescription>>(configFilePath);
         }
 
-        protected override Task<Configuration> GetConfigurationAsync(string projectId, CancellationToken cancellationToken)
+        protected override Task<Configuration> GetConfigurationAsync(string catalogId, CancellationToken cancellationToken)
         {
-            var all = _config[projectId]
+            var all = _config[catalogId]
                 .Config
                 .Values
                 .Cast<ConfigurationUnit>()
@@ -79,16 +79,16 @@ namespace Nexus.Extensibility.Tests
             });
         }
 
-        protected override Task<List<Project>> GetDataModelAsync(CancellationToken cancellationToken)
+        protected override Task<List<Catalog>> GetCatalogsAsync(CancellationToken cancellationToken)
         {
-            var project = new Project("/A/B/C");
-            var channel = new Channel(Guid.NewGuid(), project);
+            var catalog = new Catalog("/A/B/C");
+            var channel = new Channel(Guid.NewGuid(), catalog);
             var dataset = new Dataset("1 Hz_mean", channel);
 
             channel.Datasets.Add(dataset);
-            project.Channels.Add(channel);
+            catalog.Channels.Add(channel);
 
-            return Task.FromResult(new List<Project>() { project });
+            return Task.FromResult(new List<Catalog>() { catalog });
         }
 
         protected override async Task ReadSingleAsync<T>(ReadInfo<T> readInfo, CancellationToken cancellationToken)

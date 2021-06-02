@@ -65,12 +65,12 @@ namespace Nexus.Extension.Mat73
                 _textEntrySet.Add(new TextEntry("/info", customMetadataEntry.Key, customMetadataEntry.Value));
             });
 
-            _textEntrySet.Add(new TextEntry("/info", "project_first_level", this.DataWriterContext.ProjectDescription.PrimaryGroupName));
-            _textEntrySet.Add(new TextEntry("/info", "project_second_level", this.DataWriterContext.ProjectDescription.SecondaryGroupName));
-            _textEntrySet.Add(new TextEntry("/info", "project_name", this.DataWriterContext.ProjectDescription.ProjectName));
-            _textEntrySet.Add(new TextEntry("/info", "project_version", this.DataWriterContext.ProjectDescription.Version.ToString()));
+            _textEntrySet.Add(new TextEntry("/info", "catalog_first_level", this.DataWriterContext.CatalogDescription.PrimaryGroupName));
+            _textEntrySet.Add(new TextEntry("/info", "catalog_second_level", this.DataWriterContext.CatalogDescription.SecondaryGroupName));
+            _textEntrySet.Add(new TextEntry("/info", "catalog_name", this.DataWriterContext.CatalogDescription.CatalogName));
+            _textEntrySet.Add(new TextEntry("/info", "catalog_version", this.DataWriterContext.CatalogDescription.Version.ToString()));
 
-            this.DataWriterContext.CustomMetadataEntrySet.Where(customMetadataEntry => customMetadataEntry.CustomMetadataEntryLevel == CustomMetadataEntryLevel.Project).ToList().ForEach(customMetadataEntry =>
+            this.DataWriterContext.CustomMetadataEntrySet.Where(customMetadataEntry => customMetadataEntry.CustomMetadataEntryLevel == CustomMetadataEntryLevel.Catalog).ToList().ForEach(customMetadataEntry =>
             {
                 _textEntrySet.Add(new TextEntry("/info", customMetadataEntry.Key, customMetadataEntry.Value));
             });
@@ -81,8 +81,8 @@ namespace Nexus.Extension.Mat73
 
         protected override void OnPrepareFile(DateTime startDateTime, List<ChannelContextGroup> channelContextGroupSet)
         {
-            var projectDescription = this.DataWriterContext.ProjectDescription;
-            _dataFilePath = Path.Combine(this.DataWriterContext.DataDirectoryPath, $"{projectDescription.PrimaryGroupName}_{projectDescription.SecondaryGroupName}_{projectDescription.ProjectName}_V{projectDescription.Version}_{startDateTime.ToString("yyyy-MM-ddTHH-mm-ss")}Z.mat");
+            var catalogDescription = this.DataWriterContext.CatalogDescription;
+            _dataFilePath = Path.Combine(this.DataWriterContext.DataDirectoryPath, $"{catalogDescription.PrimaryGroupName}_{catalogDescription.SecondaryGroupName}_{catalogDescription.CatalogName}_V{catalogDescription.Version}_{startDateTime.ToString("yyyy-MM-ddTHH-mm-ss")}Z.mat");
 
             if (_fileId > -1)
                 this.CloseHdfFile(_fileId);

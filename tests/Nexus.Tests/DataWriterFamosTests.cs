@@ -25,14 +25,14 @@ namespace Nexus.Tests
             var provider = services.BuildServiceProvider();
             var dataWriter = provider.GetRequiredService<FamosWriter>();
 
-            var projectGuid = Guid.NewGuid();
-            var dataDirectoryPath = Path.Combine(Path.GetTempPath(), projectGuid.ToString());
+            var catalogGuid = Guid.NewGuid();
+            var dataDirectoryPath = Path.Combine(Path.GetTempPath(), catalogGuid.ToString());
 
             Directory.CreateDirectory(dataDirectoryPath);
 
-            var projectDescription = new NexusProjectDescription(projectGuid, 1, "a", "b", "c");
+            var catalogDescription = new NexusCatalogDescription(catalogGuid, 1, "a", "b", "c");
             var customMetadataEntrySet = new List<CustomMetadataEntry>();
-            var dataWriterContext = new DataWriterContext("Nexus", dataDirectoryPath, projectDescription, customMetadataEntrySet);
+            var dataWriterContext = new DataWriterContext("Nexus", dataDirectoryPath, catalogDescription, customMetadataEntrySet);
 
             var channelDescriptionSet = new List<ChannelDescription>()
             {

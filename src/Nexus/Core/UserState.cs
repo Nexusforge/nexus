@@ -43,7 +43,7 @@ namespace Nexus.Core
         private NexusOptions _options;
         private DatabaseManager _databaseManager;
         private ExportParameters _exportParameters;
-        private ProjectContainer _projectContainer;
+        private CatalogContainer _catalogContainer;
         private CodeDefinitionViewModel _codeDefinition;
         private JobControl<ExportJob> _exportJobControl;
         private AuthenticationStateProvider _authenticationStateProvider;
@@ -101,9 +101,9 @@ namespace Nexus.Core
 #warning Make this more efficient. Maybe by tracking changes.
                 if (_isEditEnabled && !value)
                 {
-                    _databaseManager.Database.ProjectContainers.ForEach(projectContainer =>
+                    _databaseManager.Database.CatalogContainers.ForEach(catalogContainer =>
                     {
-                        _databaseManager.SaveProjectMeta(projectContainer.ProjectMeta);
+                        _databaseManager.SaveCatalogMeta(catalogContainer.CatalogMeta);
                     });
                 }
 
@@ -253,25 +253,25 @@ namespace Nexus.Core
 
         #region Properties - Channel Selection
 
-        public ProjectContainer ProjectContainer
+        public CatalogContainer CatalogContainer
         {
             get
             {
-                return _projectContainer;
+                return _catalogContainer;
             }
             set
             {
-                // When database is updated and then the selected project is changed
-                // "value" refers to an old project container that does not exist in 
+                // When database is updated and then the selected catalog is changed
+                // "value" refers to an old catalog container that does not exist in 
                 // the database anymore.
-                if (value != null && !_databaseManager.Database.ProjectContainers.Contains(value))
-                    value = _databaseManager.Database.ProjectContainers.FirstOrDefault(container => container.Id == value.Id);
+                if (value != null && !_databaseManager.Database.CatalogContainers.Contains(value))
+                    value = _databaseManager.Database.CatalogContainers.FirstOrDefault(container => container.Id == value.Id);
 
-                this.SetProperty(ref _projectContainer, value);
+                this.SetProperty(ref _catalogContainer, value);
 
                 _searchString = string.Empty;
 
-                if (this.ProjectContainersInfo.Accessible.Contains(value))
+                if (this.CatalogContainersInfo.Accessible.Contains(value))
                 {
                     this.UpdateGroupedChannels();
                     this.UpdateAttachments();
@@ -286,7 +286,7 @@ namespace Nexus.Core
 
         public List<string> Attachments { get; private set; }
 
-        public SplittedProjectContainers ProjectContainersInfo { get; private set; }
+        public SplittedCatalogContainers CatalogContainersInfo { get; private set; }
 
         public Dictionary<string, List<ChannelViewModel>> GroupedChannels { get; private set; }
 
@@ -398,8 +398,8 @@ namespace Nexus.Core
 
             var code = codeType switch
             {
-                CodeType.Filter => RoslynProject.DefaultFilterCode,
-                CodeType.Shared => RoslynProject.DefaultSharedCode,
+                CodeType.Filter => RoslynCatalog.DefaultFilterCode,
+                CodeType.Shared => RoslynCatalog.DefaultSharedCode,
                 _ => throw new Exception($"The code type '{codeType}' is not supported.")
             };
 
@@ -457,12 +457,12 @@ namespace Nexus.Core
                 var selectedDatasets = this.GetSelectedDatasets().Select(dataset => dataset.Model).ToList();
 
                 // security check
-                var projectIds = selectedDatasets.Select(dataset => dataset.Channel.Project.Id).Distinct();
+                var catalogIds = selectedDatasets.Select(dataset => dataset.Channel.Catalog.Id).Distinct();
 
-                foreach (var projectId in projectIds)
+                foreach (var catalogId in catalogIds)
                 {
-                    if (!Utilities.IsProjectAccessible(_userIdService.User, projectId, _databaseManager.Database))
-                        throw new UnauthorizedAccessException($"The current user is not authorized to access project '{projectId}'.");
+                    if (!Utilities.IsCatalogAccessible(_userIdService.User, catalogId, _databaseManager.Database))
+                        throw new UnauthorizedAccessException($"The current user is not authorized to access catalog '{catalogId}'.");
                 }
 
                 //
@@ -541,10 +541,10 @@ namespace Nexus.Core
         public async Task<List<AvailabilityResult>> GetAvailabilityAsync(AvailabilityGranularity granularity)
         {
             // security check
-            if (!Utilities.IsProjectAccessible(_userIdService.User, this.ProjectContainer.Id, _databaseManager.Database))
-                throw new UnauthorizedAccessException($"The current user is not authorized to access project '{this.ProjectContainer.Id}'.");
+            if (!Utilities.IsCatalogAccessible(_userIdService.User, this.CatalogContainer.Id, _databaseManager.Database))
+                throw new UnauthorizedAccessException($"The current user is not authorized to access catalog '{this.CatalogContainer.Id}'.");
 
-            return await _dataService.GetAvailabilityAsync(this.ProjectContainer.Id, this.DateTimeBegin, this.DateTimeEnd, granularity);
+            return await _dataService.GetAvailabilityAsync(this.CatalogContainer.Id, this.DateTimeBegin, this.DateTimeEnd, granularity);
         }
 
         public void SetExportParameters(ExportParameters exportParameters)
@@ -566,15 +566,15 @@ namespace Nexus.Core
             exportParameters.ChannelPaths.ForEach(value =>
             {
                 var pathSegments = value.Split('/');
-                var projectName = $"/{pathSegments[1]}/{pathSegments[2]}/{pathSegments[3]}";
+                var catalogName = $"/{pathSegments[1]}/{pathSegments[2]}/{pathSegments[3]}";
                 var channelName = pathSegments[4];
                 var datasetName = pathSegments[5];
 
-                var projectContainer = this.ProjectContainersInfo.Accessible.FirstOrDefault(current => current.Id == projectName);
+                var catalogContainer = this.CatalogContainersInfo.Accessible.FirstOrDefault(current => current.Id == catalogName);
 
-                if (projectContainer != null)
+                if (catalogContainer != null)
                 {
-                    var channels = _appState.GetChannels(projectContainer);
+                    var channels = _appState.GetChannels(catalogContainer);
                     var channel = channels.FirstOrDefault(current => current.Id.ToString() == channelName);
 
                     if (channel != null)
@@ -623,16 +623,16 @@ namespace Nexus.Core
 
         private void Initialize(NexusDatabase database)
         {
-            var projectContainers = database.ProjectContainers;
+            var catalogContainers = database.CatalogContainers;
 
-            this.ProjectContainersInfo = this.SplitCampainContainersAsync(projectContainers, database).Result;
+            this.CatalogContainersInfo = this.SplitCampainContainersAsync(catalogContainers, database).Result;
 
             // this triggers a search to find the new container instance
-            this.ProjectContainer = this.ProjectContainer;
+            this.CatalogContainer = this.CatalogContainer;
 
-            this.SampleRateValues = this.ProjectContainersInfo.Accessible.SelectMany(projectContainer =>
+            this.SampleRateValues = this.CatalogContainersInfo.Accessible.SelectMany(catalogContainer =>
             {
-                return projectContainer.Project.Channels.SelectMany(channel =>
+                return catalogContainer.Catalog.Channels.SelectMany(channel =>
                 {
                     return channel.Datasets.Select(dataset => dataset.Id.Split('_')[0]);
                 });
@@ -649,9 +649,9 @@ namespace Nexus.Core
         {
             this.Attachments = null;
 
-            if (this.ProjectContainer != null)
+            if (this.CatalogContainer != null)
             {
-                var folderPath = Path.Combine(_options.DataBaseFolderPath, "ATTACHMENTS", this.ProjectContainer.PhysicalName);
+                var folderPath = Path.Combine(_options.DataBaseFolderPath, "ATTACHMENTS", this.CatalogContainer.PhysicalName);
 
                 if (Directory.Exists(folderPath))
                     this.Attachments = Directory.GetFiles(folderPath, "*").ToList();
@@ -660,11 +660,11 @@ namespace Nexus.Core
 
         private void UpdateGroupedChannels()
         {
-            if (this.ProjectContainer is not null)
+            if (this.CatalogContainer is not null)
             {
                 this.GroupedChannels = new Dictionary<string, List<ChannelViewModel>>();
 
-                foreach (var channel in _appState.GetChannels(this.ProjectContainer))
+                foreach (var channel in _appState.GetChannels(this.CatalogContainer))
                 {
                     if (this.ChannelMatchesFilter(channel))
                     {
@@ -742,29 +742,29 @@ namespace Nexus.Core
                 return new List<DatasetViewModel>();
         }
 
-        private async Task<SplittedProjectContainers> SplitCampainContainersAsync(List<ProjectContainer> projectContainers,
+        private async Task<SplittedCatalogContainers> SplitCampainContainersAsync(List<CatalogContainer> catalogContainers,
                                                                                   NexusDatabase database)
         {
             var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
             var principal = authState.User;
 
-            var accessible = projectContainers.Where(projectContainer =>
+            var accessible = catalogContainers.Where(catalogContainer =>
             {
-                var isProjectAccessible = Utilities.IsProjectAccessible(principal, projectContainer.Id, database);
-                var isProjectVisible = Utilities.IsProjectVisible(principal, projectContainer.ProjectMeta, isProjectAccessible);
+                var isCatalogAccessible = Utilities.IsCatalogAccessible(principal, catalogContainer.Id, database);
+                var isCatalogVisible = Utilities.IsCatalogVisible(principal, catalogContainer.CatalogMeta, isCatalogAccessible);
 
-                return isProjectAccessible && isProjectVisible;
-            }).OrderBy(projectContainer => projectContainer.Id).ToList();
+                return isCatalogAccessible && isCatalogVisible;
+            }).OrderBy(catalogContainer => catalogContainer.Id).ToList();
 
-            var restricted = projectContainers.Where(projectContainer =>
+            var restricted = catalogContainers.Where(catalogContainer =>
             {
-                var isProjectAccessible = Utilities.IsProjectAccessible(principal, projectContainer.Id, database);
-                var isProjectVisible = Utilities.IsProjectVisible(principal, projectContainer.ProjectMeta, isProjectAccessible);
+                var isCatalogAccessible = Utilities.IsCatalogAccessible(principal, catalogContainer.Id, database);
+                var isCatalogVisible = Utilities.IsCatalogVisible(principal, catalogContainer.CatalogMeta, isCatalogAccessible);
 
-                return !isProjectAccessible && isProjectVisible;
-            }).OrderBy(projectContainer => projectContainer.Id).ToList();
+                return !isCatalogAccessible && isCatalogVisible;
+            }).OrderBy(catalogContainer => catalogContainer.Id).ToList();
 
-            return new SplittedProjectContainers(accessible, restricted);
+            return new SplittedCatalogContainers(accessible, restricted);
         }
 
         #endregion
@@ -782,7 +782,7 @@ namespace Nexus.Core
 
         #region Records
 
-        public record SplittedProjectContainers(List<ProjectContainer> Accessible, List<ProjectContainer> Restricted);
+        public record SplittedCatalogContainers(List<CatalogContainer> Accessible, List<CatalogContainer> Restricted);
 
         #endregion
 

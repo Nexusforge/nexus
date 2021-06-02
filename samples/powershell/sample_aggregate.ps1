@@ -22,7 +22,7 @@ $aggregationParameters = @{
     force = $false
     aggregations = @(
         @{
-            projectId = '/AIRPORT/AD8_PROTOTYPE/GENERAL_DAQ'
+            catalogId = '/AIRPORT/AD8_PROTOTYPE/GENERAL_DAQ'
             method = 'Mean'
             argument = 'none'
             filters = @{

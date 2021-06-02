@@ -1,5 +1,5 @@
 ﻿using GraphQL.Types;
-using static Nexus.Controllers.ProjectsController;
+using static Nexus.Controllers.CatalogsController;
 
 namespace Nexus.API
 {

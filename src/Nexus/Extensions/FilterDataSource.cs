@@ -111,22 +111,22 @@ namespace Nexus.Extensions
             status.AsSpan().Fill(1);
 
             // fill database
-            Func<string, string, string, DateTime, DateTime, double[]> getData = (string projectId, string channelId, string datasetId, DateTime begin, DateTime end) =>
+            Func<string, string, string, DateTime, DateTime, double[]> getData = (string catalogId, string channelId, string datasetId, DateTime begin, DateTime end) =>
             {
 #warning improve this (PhysicalName)
-                var project = this.DatabaseManager.Database.ProjectContainers
-                    .FirstOrDefault(container => container.Id == projectId || container.PhysicalName == projectId);
+                var catalog = this.DatabaseManager.Database.CatalogContainers
+                    .FirstOrDefault(container => container.Id == catalogId || container.PhysicalName == catalogId);
 
-                if (project == null)
-                    throw new Exception($"Unable to find project with id '{projectId}'.");
+                if (catalog == null)
+                    throw new Exception($"Unable to find catalog with id '{catalogId}'.");
 
-                if (!this.DatabaseManager.Database.TryFindDatasetById(project.Id, channelId, datasetId, out var dataset))
+                if (!this.DatabaseManager.Database.TryFindDatasetById(catalog.Id, channelId, datasetId, out var dataset))
                 {
-                    var path = $"{project.Id}/{channelId}/{datasetId}";
+                    var path = $"{catalog.Id}/{channelId}/{datasetId}";
                     throw new Exception($"Unable to find dataset with path '{path}'.");
                 }
 
-                if (!Utilities.IsProjectAccessible(this.User, dataset.Channel.Project.Id, this.DatabaseManager.Database))
+                if (!Utilities.IsCatalogAccessible(this.User, dataset.Channel.Catalog.Id, this.DatabaseManager.Database))
                     throw new UnauthorizedAccessException("The current user is not allowed to access this filter.");
 
                 var dataReader = this.DatabaseManager.GetDataReader(this.User, dataset.Registration);
@@ -143,9 +143,9 @@ namespace Nexus.Extensions
             return ((T[])(object)result, status);
         }
 
-        protected override List<Project> LoadProjects()
+        protected override List<Catalog> LoadCatalogs()
         {
-            var projects = new Dictionary<string, Project>();
+            var catalogs = new Dictionary<string, Catalog>();
 
             if (this.TryGetFilterSettings(out var filterSettings))
             {
@@ -167,7 +167,7 @@ namespace Nexus.Extensions
                         var localFilterChannel = filterChannel;
 
                         // enforce group
-                        if (localFilterChannel.ProjectId == FilterConstants.SharedProjectID)
+                        if (localFilterChannel.CatalogId == FilterConstants.SharedCatalogID)
                         {
                             localFilterChannel = localFilterChannel with
                             {
@@ -182,11 +182,11 @@ namespace Nexus.Extensions
                             };
                         }
 
-                        // get or create project
-                        if (!projects.TryGetValue(localFilterChannel.ProjectId, out var project))
+                        // get or create catalog
+                        if (!catalogs.TryGetValue(localFilterChannel.CatalogId, out var catalog))
                         {
-                            project = new Project(localFilterChannel.ProjectId);
-                            projects[localFilterChannel.ProjectId] = project;
+                            catalog = new Catalog(localFilterChannel.CatalogId);
+                            catalogs[localFilterChannel.CatalogId] = catalog;
                         }
 
                         // create channel
@@ -196,7 +196,7 @@ namespace Nexus.Extensions
                             continue;
                         }
 
-                        var channel = new Channel(localFilterChannel.ToGuid(cacheEntry.FilterCodeDefinition), project)
+                        var channel = new Channel(localFilterChannel.ToGuid(cacheEntry.FilterCodeDefinition), catalog)
                         {
                             Name = localFilterChannel.ChannelName,
                             Group = localFilterChannel.Group,
@@ -215,19 +215,19 @@ namespace Nexus.Extensions
 
                         // append
                         channel.Datasets.AddRange(datasets);
-                        project.Channels.Add(channel);
+                        catalog.Channels.Add(channel);
 
                         // set begin and end
-                        project.ProjectStart = DateTime.MaxValue;
-                        project.ProjectEnd = DateTime.MinValue;
+                        catalog.CatalogStart = DateTime.MaxValue;
+                        catalog.CatalogEnd = DateTime.MinValue;
                     }
                 }
             }
 
-            return projects.Values.ToList();
+            return catalogs.Values.ToList();
         }
 
-        protected override double GetAvailability(string projectId, DateTime Day)
+        protected override double GetAvailability(string catalogId, DateTime Day)
         {
             return 1;
         }
@@ -280,10 +280,10 @@ namespace Nexus.Extensions
                     .Select(codeDefinition => codeDefinition.Code)
                     .ToList();
 
-                var roslynProject = new RoslynProject(filterCodeDefinition, additionalCodeFiles);
+                var roslynCatalog = new RoslynCatalog(filterCodeDefinition, additionalCodeFiles);
                 using var peStream = new MemoryStream();
 
-                var emitResult = roslynProject.Workspace.CurrentSolution.Projects.First()
+                var emitResult = roslynCatalog.Workspace.CurrentSolution.Catalogs.First()
                     .GetCompilationAsync().Result
                     .Emit(peStream);
 
@@ -332,38 +332,38 @@ namespace Nexus.Extensions
             var pattern1 = @"=\s*dataProvider\.([a-zA-Z_0-9]+)\.([a-zA-Z_0-9]+)\.DATASET_([a-zA-Z_0-9]+);";
             code = Regex.Replace(code, pattern1, match =>
             {
-                var projectId = match.Groups[1].Value;
+                var catalogId = match.Groups[1].Value;
                 var channelId = match.Groups[2].Value;
 
 #warning: Whenever the space in the dataset name is removed, update this code
                 var regex = new Regex("_");
                 var datasetId = regex.Replace(match.Groups[3].Value, " ", 1);
 
-                return $"= (double[])getData(\"{projectId}\", \"{channelId}\", \"{datasetId}\", begin, end);";
+                return $"= (double[])getData(\"{catalogId}\", \"{channelId}\", \"{datasetId}\", begin, end);";
             });
 
             // matches strings like "= dataProvider.Read(campaignId, channelId, datasetId, begin, end);"
             var pattern3 = @"=\s*dataProvider\.Read\((.*?),(.*?),(.*?),(.*?),(.*?)\);";
             code = Regex.Replace(code, pattern3, match =>
             {
-                var projectId = match.Groups[1].Value;
+                var catalogId = match.Groups[1].Value;
                 var channelId = match.Groups[2].Value;
                 var datasetId = match.Groups[3].Value;
                 var begin = match.Groups[4].Value;
                 var end = match.Groups[5].Value;
 
-                return $"= (double[])getData({projectId}, {channelId}, {datasetId}, {begin}, {end});";
+                return $"= (double[])getData({catalogId}, {channelId}, {datasetId}, {begin}, {end});";
             });
 
             // matches strings like "= dataProvider.Read(campaignId, channelId, datasetId);"
             var pattern2 = @"=\s*dataProvider\.Read\((.*?),(.*?),(.*?)\);";
             code = Regex.Replace(code, pattern2, match =>
             {
-                var projectId = match.Groups[1].Value;
+                var catalogId = match.Groups[1].Value;
                 var channelId = match.Groups[2].Value;
                 var datasetId = match.Groups[3].Value;
 
-                return $"= (double[])getData({projectId}, {channelId}, {datasetId}, begin, end);";
+                return $"= (double[])getData({catalogId}, {channelId}, {datasetId}, begin, end);";
             });
 
             return code;

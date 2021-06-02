@@ -51,7 +51,7 @@ namespace Nexus
             return type.GetCustomAttributes(false).OfType<T>().FirstOrDefault();
         }
 
-        public static bool CheckProjectNamingConvention(string value, out string errorDescription, bool includeValue = false)
+        public static bool CheckCatalogNamingConvention(string value, out string errorDescription, bool includeValue = false)
         {
             var valueAsString = string.Empty;
 

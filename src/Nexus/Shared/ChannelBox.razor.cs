@@ -24,7 +24,7 @@ namespace Nexus.Shared
 						this.StateHasChanged();
 					});
 				}
-				else if (e.PropertyName == nameof(UserState.ProjectContainer))
+				else if (e.PropertyName == nameof(UserState.CatalogContainer))
 				{
 					this.InvokeAsync(() =>
 					{

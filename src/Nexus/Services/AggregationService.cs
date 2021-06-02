@@ -67,19 +67,19 @@ namespace Nexus.Services
 
         public static List<AggregationInstruction> ComputeInstructions(AggregationSetup setup, DatabaseManagerState state, ILogger logger)
         {
-            var projectIds = setup.Aggregations
-                .Select(aggregation => aggregation.ProjectId)
+            var catalogIds = setup.Aggregations
+                .Select(aggregation => aggregation.CatalogId)
                 .Distinct().ToList();
 
-            return projectIds.Select(projectId =>
+            return catalogIds.Select(catalogId =>
             {
-                var container = state.Database.ProjectContainers.FirstOrDefault(container => container.Id == projectId);
+                var container = state.Database.CatalogContainers.FirstOrDefault(container => container.Id == catalogId);
 
                 if (container is null)
                     return null;
 
                 var DataSourceRegistrations = container
-                    .Project
+                    .Catalog
                     .Channels
                     .SelectMany(channel => channel.Datasets.Select(dataset => dataset.Registration))
                     .Distinct()
@@ -88,19 +88,19 @@ namespace Nexus.Services
 
                 return new AggregationInstruction(container, DataSourceRegistrations.ToDictionary(registration => registration, registration =>
                 {
-                    // find aggregations for project ID
+                    // find aggregations for catalog ID
                     var potentialAggregations = setup.Aggregations
-                        .Where(parameters => parameters.ProjectId == container.Project.Id)
+                        .Where(parameters => parameters.CatalogId == container.Catalog.Id)
                         .ToList();
 
                     // create channel to aggregations map
-                    var aggregationChannels = container.Project.Channels
+                    var aggregationChannels = container.Catalog.Channels
                         // find all channels for current reader registration
                         .Where(channel => channel.Datasets.Any(dataset => dataset.Registration == registration))
                         // find all aggregations for current channel
                         .Select(channel =>
                         {
-                            var channelMeta = container.ProjectMeta.Channels
+                            var channelMeta = container.CatalogMeta.Channels
                                 .First(current => current.Id == channel.Id);
 
                             return new AggregationChannel()
@@ -144,19 +144,19 @@ namespace Nexus.Services
 
                     foreach (var instruction in instructions)
                     {
-                        var projectId = instruction.Container.Id;
+                        var catalogId = instruction.Container.Id;
 
                         for (int j = 0; j < days; j++)
                         {
                             cancellationToken.ThrowIfCancellationRequested();
 
                             var currentDay = setup.Begin.AddDays(j);
-                            var progressMessage = $"Processing project '{projectId}': {currentDay.ToString("yyyy-MM-dd")}";
+                            var progressMessage = $"Processing catalog '{catalogId}': {currentDay.ToString("yyyy-MM-dd")}";
                             var progressValue = (i * days + j) / totalDays;
                             var eventArgs = new ProgressUpdatedEventArgs(progressValue, progressMessage);
                             progress.Report(eventArgs);
 
-                            this.AggregateProject(userIdService.User, databaseFolderPath, projectId, currentDay, setup, instruction, cancellationToken);
+                            this.AggregateCatalog(userIdService.User, databaseFolderPath, catalogId, currentDay, setup, instruction, cancellationToken);
                         }
 
                         i++;
@@ -174,9 +174,9 @@ namespace Nexus.Services
             }, cancellationToken);
         }
 
-        private void AggregateProject(ClaimsPrincipal user,
+        private void AggregateCatalog(ClaimsPrincipal user,
                                       string databaseFolderPath,
-                                      string projectId,
+                                      string catalogId,
                                       DateTime date,
                                       AggregationSetup setup,
                                       AggregationInstruction instruction,
@@ -187,14 +187,14 @@ namespace Nexus.Services
                 using var dataReader = _databaseManager.GetDataReader(user, registration);
 
                 // get files
-                if (!dataReader.IsDataOfDayAvailable(projectId, date))
+                if (!dataReader.IsDataOfDayAvailable(catalogId, date))
                     return;
 
-                // project
-                var container = _databaseManager.Database.ProjectContainers.FirstOrDefault(container => container.Id == projectId);
+                // catalog
+                var container = _databaseManager.Database.CatalogContainers.FirstOrDefault(container => container.Id == catalogId);
 
                 if (container == null)
-                    throw new Exception($"The requested project '{projectId}' could not be found.");
+                    throw new Exception($"The requested catalog '{catalogId}' could not be found.");
 
                 var targetDirectoryPath = Path.Combine(databaseFolderPath, "DATA", WebUtility.UrlEncode(container.Id), date.ToString("yyyy-MM"), date.ToString("dd"));
 

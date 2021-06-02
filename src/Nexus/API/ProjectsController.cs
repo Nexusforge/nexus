@@ -15,9 +15,9 @@ using System.Net;
 
 namespace Nexus.Controllers
 {
-    [Route("api/v1/projects")]
+    [Route("api/v1/catalogs")]
     [ApiController]
-    public class ProjectsController : ControllerBase
+    public class CatalogsController : ControllerBase
     {
         #region Fields
 
@@ -29,7 +29,7 @@ namespace Nexus.Controllers
 
         #region Constructors
 
-        public ProjectsController(DatabaseManager databaseManager,
+        public CatalogsController(DatabaseManager databaseManager,
                                     UserIdService userIdService,
                                     ILoggerFactory loggerFactory)
         {
@@ -43,52 +43,52 @@ namespace Nexus.Controllers
         #region Methods
 
         /// <summary>
-        /// Gets a list of all accessible projects.
+        /// Gets a list of all accessible catalogs.
         /// </summary>
         [HttpGet]
-        public ActionResult<List<Project>> GetProjects()
+        public ActionResult<List<Catalog>> GetCatalogs()
         {
             if (_databaseManager.Database == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
 
-            var projectContainers = _databaseManager.Database.ProjectContainers;
+            var catalogContainers = _databaseManager.Database.CatalogContainers;
 
-            projectContainers = projectContainers.Where(projectContainer =>
+            catalogContainers = catalogContainers.Where(catalogContainer =>
             {
-                var isProjectAccessible = Utilities.IsProjectAccessible(this.User, projectContainer.Id, _databaseManager.Database);
-                var isProjectVisible = Utilities.IsProjectVisible(this.User, projectContainer.ProjectMeta, isProjectAccessible);
+                var isCatalogAccessible = Utilities.IsCatalogAccessible(this.User, catalogContainer.Id, _databaseManager.Database);
+                var isCatalogVisible = Utilities.IsCatalogVisible(this.User, catalogContainer.CatalogMeta, isCatalogAccessible);
 
-                return isProjectAccessible && isProjectVisible;
+                return isCatalogAccessible && isCatalogVisible;
             }).ToList();
 
-            return projectContainers.Select(projectContainer
-                => this.CreateProjectResponse(projectContainer.Project, projectContainer.ProjectMeta))
+            return catalogContainers.Select(catalogContainer
+                => this.CreateCatalogResponse(catalogContainer.Catalog, catalogContainer.CatalogMeta))
                 .ToList();
         }
 
         /// <summary>
-        /// Gets the specified project.
+        /// Gets the specified catalog.
         /// </summary>
-        /// <param name="projectId">The project identifier.</param>
-        [HttpGet("{projectId}")]
-        public ActionResult<Project> GetProject(string projectId)
+        /// <param name="catalogId">The catalog identifier.</param>
+        [HttpGet("{catalogId}")]
+        public ActionResult<Catalog> GetCatalog(string catalogId)
         {
             if (_databaseManager.Database == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
 
-            projectId = WebUtility.UrlDecode(projectId);
+            catalogId = WebUtility.UrlDecode(catalogId);
 
             // log
-            var message = $"User '{_userIdService.GetUserId()}' requests project '{projectId}' ...";
+            var message = $"User '{_userIdService.GetUserId()}' requests catalog '{catalogId}' ...";
             _logger.LogInformation(message);
 
             try
             {
-                return this.ProcessProjectId<Project>(projectId, message,
-                    (project, projectMeta) =>
+                return this.ProcessCatalogId<Catalog>(catalogId, message,
+                    (catalog, catalogMeta) =>
                     {
                         _logger.LogInformation($"{message} Done.");
-                        return this.CreateProjectResponse(project, projectMeta);
+                        return this.CreateCatalogResponse(catalog, catalogMeta);
                     });
             }
             catch (Exception ex)
@@ -99,28 +99,28 @@ namespace Nexus.Controllers
         }
 
         /// <summary>
-        /// Gets the specified project time range.
+        /// Gets the specified catalog time range.
         /// </summary>
-        /// <param name="projectId">The project identifier.</param>
-        [HttpGet("{projectId}/timerange")]
-        public ActionResult<List<AvailabilityResult>> GetProjectTimeRange(string projectId)
+        /// <param name="catalogId">The catalog identifier.</param>
+        [HttpGet("{catalogId}/timerange")]
+        public ActionResult<List<AvailabilityResult>> GetCatalogTimeRange(string catalogId)
         {
             if (_databaseManager.Database == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
 
-            projectId = WebUtility.UrlDecode(projectId);
+            catalogId = WebUtility.UrlDecode(catalogId);
 
             // log
-            var message = $"User '{_userIdService.GetUserId()}' requests time range of project '{projectId}' ...";
+            var message = $"User '{_userIdService.GetUserId()}' requests time range of catalog '{catalogId}' ...";
             _logger.LogInformation(message);
 
             try
             {
-                return this.ProcessProjectId<TimeRangeResult>(projectId, message,
-                    (project, projectMeta) =>
+                return this.ProcessCatalogId<TimeRangeResult>(catalogId, message,
+                    (catalog, catalogMeta) =>
                     {
                         _logger.LogInformation($"{message} Done.");
-                        return this.CreateTimeRangeResponse(project);
+                        return this.CreateTimeRangeResponse(catalog);
                     });
             }
             catch (Exception ex)
@@ -132,14 +132,14 @@ namespace Nexus.Controllers
 
 
         /// <summary>
-        /// Gets the specified project availability.
+        /// Gets the specified catalog availability.
         /// </summary>
-        /// <param name="projectId">The project identifier.</param>
+        /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="begin">Start date.</param>
         /// <param name="end">End date.</param>
         /// <param name="granularity">Granularity of the resulting array.</param>
-        [HttpGet("{projectId}/availability")]
-        public ActionResult<List<AvailabilityResult>> GetProjectAvailability(string projectId,
+        [HttpGet("{catalogId}/availability")]
+        public ActionResult<List<AvailabilityResult>> GetCatalogAvailability(string catalogId,
                                                                              [BindRequired][JsonSchemaDate] DateTime begin,
                                                                              [BindRequired][JsonSchemaDate] DateTime end,
                                                                              [BindRequired] AvailabilityGranularity granularity)
@@ -147,19 +147,19 @@ namespace Nexus.Controllers
             if (_databaseManager.Database == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
 
-            projectId = WebUtility.UrlDecode(projectId);
+            catalogId = WebUtility.UrlDecode(catalogId);
 
             // log
-            var message = $"User '{_userIdService.GetUserId()}' requests availability of project '{projectId}' ...";
+            var message = $"User '{_userIdService.GetUserId()}' requests availability of catalog '{catalogId}' ...";
             _logger.LogInformation(message);
 
             try
             {
-                return this.ProcessProjectId<List<AvailabilityResult>>(projectId, message,
-                    (project, projectMeta) =>
+                return this.ProcessCatalogId<List<AvailabilityResult>>(catalogId, message,
+                    (catalog, catalogMeta) =>
                     {
                         _logger.LogInformation($"{message} Done.");
-                        return this.CreateAvailabilityResponse(project, begin, end, granularity);
+                        return this.CreateAvailabilityResponse(catalog, begin, end, granularity);
                     });
             }
             catch (Exception ex)
@@ -170,18 +170,18 @@ namespace Nexus.Controllers
         }
 
         /// <summary>
-        /// Gets a list of all channels in the specified project.
+        /// Gets a list of all channels in the specified catalog.
         /// </summary>
-        /// <param name="projectId">The project identifier.</param>
+        /// <param name="catalogId">The catalog identifier.</param>
         /// <returns></returns>
-        [HttpGet("{projectId}/channels")]
+        [HttpGet("{catalogId}/channels")]
         public ActionResult<List<Channel>> GetChannels(
-            string projectId)
+            string catalogId)
         {
             if (_databaseManager.Database == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
 
-            projectId = WebUtility.UrlDecode(projectId);
+            catalogId = WebUtility.UrlDecode(catalogId);
 
             var remoteIpAddress = this.HttpContext.Connection.RemoteIpAddress;
 
@@ -193,17 +193,17 @@ namespace Nexus.Controllers
             else
                 userName = "anonymous";
 
-            var message = $"User '{userName}' ({remoteIpAddress}) requests channels for project '{projectId}' ...";
+            var message = $"User '{userName}' ({remoteIpAddress}) requests channels for catalog '{catalogId}' ...";
             _logger.LogInformation(message);
 
             try
             {
-                return this.ProcessProjectId<List<Channel>>(projectId, message,
-                    (project, projectMeta) =>
+                return this.ProcessCatalogId<List<Channel>>(catalogId, message,
+                    (catalog, catalogMeta) =>
                     {
-                        var channels = project.Channels.Select(channel =>
+                        var channels = catalog.Channels.Select(channel =>
                         {
-                            var channelMeta = projectMeta.Channels.First(
+                            var channelMeta = catalogMeta.Channels.First(
                                 current => current.Id == channel.Id);
 
                             return this.CreateChannelResponse(channel, channelMeta);
@@ -224,40 +224,40 @@ namespace Nexus.Controllers
         /// <summary>
         /// Gets the specified channel.
         /// </summary>
-        /// <param name="projectId">The project identifier.</param>
+        /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="channelId">The channel identifier.</param>
         /// <returns></returns>
-        [HttpGet("{projectId}/channels/{channelId}")]
+        [HttpGet("{catalogId}/channels/{channelId}")]
         public ActionResult<Channel> GetChannel(
-            string projectId,
+            string catalogId,
             string channelId)
         {
             if (_databaseManager.Database == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
 
-            projectId = WebUtility.UrlDecode(projectId);
+            catalogId = WebUtility.UrlDecode(catalogId);
             channelId = WebUtility.UrlDecode(channelId);
 
             // log
-            var message = $"User '{_userIdService.GetUserId()}' requests channel '{projectId}/{channelId}' ...";
+            var message = $"User '{_userIdService.GetUserId()}' requests channel '{catalogId}/{channelId}' ...";
             _logger.LogInformation(message);
 
             try
             {
-                return this.ProcessProjectId<Channel>(projectId, message,
-                    (project, projectMeta) =>
+                return this.ProcessCatalogId<Channel>(catalogId, message,
+                    (catalog, catalogMeta) =>
                     {
-                        var channel = project.Channels.FirstOrDefault(
+                        var channel = catalog.Channels.FirstOrDefault(
                             current => current.Id.ToString() == channelId);
 
                         if (channel == null)
-                            channel = project.Channels.FirstOrDefault(
+                            channel = catalog.Channels.FirstOrDefault(
                                 current => current.Name == channelId);
 
                         if (channel == null)
-                            return this.NotFound($"{projectId}/{channelId}");
+                            return this.NotFound($"{catalogId}/{channelId}");
 
-                        var channelMeta = projectMeta.Channels.First(
+                        var channelMeta = catalogMeta.Channels.First(
                             current => current.Id == channel.Id);
 
                         _logger.LogInformation($"{message} Done.");
@@ -273,40 +273,40 @@ namespace Nexus.Controllers
         }
 
         /// <summary>
-        /// Gets a list of all datasets in the specified project and channel.
+        /// Gets a list of all datasets in the specified catalog and channel.
         /// </summary>
-        /// <param name="projectId">The project identifier.</param>
+        /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="channelId">The channel identifier.</param>
         /// <returns></returns>
-        [HttpGet("{projectId}/channels/{channelId}/datasets")]
+        [HttpGet("{catalogId}/channels/{channelId}/datasets")]
         public ActionResult<List<Dataset>> GetDatasets(
-            string projectId,
+            string catalogId,
             string channelId)
         {
             if (_databaseManager.Database == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
 
-            projectId = WebUtility.UrlDecode(projectId);
+            catalogId = WebUtility.UrlDecode(catalogId);
             channelId = WebUtility.UrlDecode(channelId);
 
             // log
-            var message = $"User '{_userIdService.GetUserId()}' requests datasets for channel '{projectId}/{channelId}' ...";
+            var message = $"User '{_userIdService.GetUserId()}' requests datasets for channel '{catalogId}/{channelId}' ...";
             _logger.LogInformation(message);
 
             try
             {
-                return this.ProcessProjectId<List<Dataset>>(projectId, message,
-                    (project, projectMeta) =>
+                return this.ProcessCatalogId<List<Dataset>>(catalogId, message,
+                    (catalog, catalogMeta) =>
                     {
-                        var channel = project.Channels.FirstOrDefault(
+                        var channel = catalog.Channels.FirstOrDefault(
                             current => current.Id.ToString() == channelId);
 
                         if (channel == null)
-                            channel = project.Channels.FirstOrDefault(
+                            channel = catalog.Channels.FirstOrDefault(
                                 current => current.Name == channelId);
 
                         if (channel == null)
-                            return this.NotFound($"{projectId}/{channelId}");
+                            return this.NotFound($"{catalogId}/{channelId}");
 
                         _logger.LogInformation($"{message} Done.");
 
@@ -325,47 +325,47 @@ namespace Nexus.Controllers
         /// <summary>
         /// Gets the specified dataset.
         /// </summary>
-        /// <param name="projectId">The project identifier.</param>
+        /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="channelId">The channel identifier.</param>
         /// <param name="datasetId">The dataset identifier.</param>
         /// <returns></returns>
-        [HttpGet("{projectId}/channels/{channelId}/datasets/{datasetId}")]
+        [HttpGet("{catalogId}/channels/{channelId}/datasets/{datasetId}")]
         public ActionResult<Dataset> GetDataset(
-            string projectId,
+            string catalogId,
             string channelId,
             string datasetId)
         {
             if (_databaseManager.Database == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
 
-            projectId = WebUtility.UrlDecode(projectId);
+            catalogId = WebUtility.UrlDecode(catalogId);
             channelId = WebUtility.UrlDecode(channelId);
             datasetId = WebUtility.UrlDecode(datasetId);
 
             // log
-            var message = $"User '{_userIdService.GetUserId()}' requests dataset '{projectId}/{channelId}/{datasetId}' ...";
+            var message = $"User '{_userIdService.GetUserId()}' requests dataset '{catalogId}/{channelId}/{datasetId}' ...";
             _logger.LogInformation(message);
 
             try
             {
-                return this.ProcessProjectId<Dataset>(projectId, message,
-                    (project, projectMeta) =>
+                return this.ProcessCatalogId<Dataset>(catalogId, message,
+                    (catalog, catalogMeta) =>
                     {
-                        var channel = project.Channels.FirstOrDefault(
+                        var channel = catalog.Channels.FirstOrDefault(
                             current => current.Id.ToString() == channelId);
 
                         if (channel == null)
-                            channel = project.Channels.FirstOrDefault(
+                            channel = catalog.Channels.FirstOrDefault(
                                 current => current.Name == channelId);
 
                         if (channel == null)
-                            return this.NotFound($"{projectId}/{channelId}");
+                            return this.NotFound($"{catalogId}/{channelId}");
 
                         var dataset = channel.Datasets.FirstOrDefault(
                            current => current.Id == datasetId);
 
                         if (dataset == null)
-                            return this.NotFound($"{projectId}/{channelId}/{dataset}");
+                            return this.NotFound($"{catalogId}/{channelId}/{dataset}");
 
                         _logger.LogInformation($"{message} Done.");
 
@@ -379,28 +379,28 @@ namespace Nexus.Controllers
             }
         }
 
-        private Project CreateProjectResponse(DataModel.Project project, ProjectMeta projectMeta)
+        private Catalog CreateCatalogResponse(DataModel.Catalog catalog, CatalogMeta catalogMeta)
         {
-            return new Project()
+            return new Catalog()
             {
-                Id = project.Id,
-                Contact = projectMeta.Contact,
-                ShortDescription = projectMeta.ShortDescription,
-                LongDescription = projectMeta.LongDescription,
-                IsQualityControlled = projectMeta.IsQualityControlled,
-                License = projectMeta.License,
-                LogBook = projectMeta.Logbook
+                Id = catalog.Id,
+                Contact = catalogMeta.Contact,
+                ShortDescription = catalogMeta.ShortDescription,
+                LongDescription = catalogMeta.LongDescription,
+                IsQualityControlled = catalogMeta.IsQualityControlled,
+                License = catalogMeta.License,
+                LogBook = catalogMeta.Logbook
             };
         }
 
-        private List<AvailabilityResult> CreateTimeRangeResponse(DataModel.Project project)
+        private List<AvailabilityResult> CreateTimeRangeResponse(DataModel.Catalog catalog)
         {
-            var dataReaders = _databaseManager.GetDataReaders(_userIdService.User, project.Id);
+            var dataReaders = _databaseManager.GetDataReaders(_userIdService.User, catalog.Id);
 
             return dataReaders.Select(dataReaderForUsing =>
             {
                 using var dataReader = dataReaderForUsing;
-                (var begin, var end) = dataReader.GetTimeRange(project.Id);
+                (var begin, var end) = dataReader.GetTimeRange(catalog.Id);
 
                 return new TimeRangeResult()
                 {
@@ -410,14 +410,14 @@ namespace Nexus.Controllers
             }).ToList();
         }
 
-        private List<AvailabilityResult> CreateAvailabilityResponse(DataModel.Project project, DateTime begin, DateTime end, AvailabilityGranularity granularity)
+        private List<AvailabilityResult> CreateAvailabilityResponse(DataModel.Catalog catalog, DateTime begin, DateTime end, AvailabilityGranularity granularity)
         {
-            var dataReaders = _databaseManager.GetDataReaders(_userIdService.User, project.Id);
+            var dataReaders = _databaseManager.GetDataReaders(_userIdService.User, catalog.Id);
 
             return dataReaders.Select(dataReaderForUsing =>
             {
                 using var dataReader = dataReaderForUsing;
-                var availability = dataReader.GetAvailability(project.Id, begin, end, granularity);
+                var availability = dataReader.GetAvailability(catalog.Id, begin, end, granularity);
 
                 var registration = new DataSourceRegistration()
                 {
@@ -459,30 +459,30 @@ namespace Nexus.Controllers
             };
         }
 
-        private ActionResult<T> ProcessProjectId<T>(
-            string projectId,
+        private ActionResult<T> ProcessCatalogId<T>(
+            string catalogId,
             string message,
-            Func<DataModel.Project, ProjectMeta, ActionResult<T>> action)
+            Func<DataModel.Catalog, CatalogMeta, ActionResult<T>> action)
         {
-            if (!Utilities.IsProjectAccessible(this.User, projectId, _databaseManager.Database))
-                return this.Unauthorized($"The current user is not authorized to access the project '{projectId}'.");
+            if (!Utilities.IsCatalogAccessible(this.User, catalogId, _databaseManager.Database))
+                return this.Unauthorized($"The current user is not authorized to access the catalog '{catalogId}'.");
 
-            var projectContainer = _databaseManager
+            var catalogContainer = _databaseManager
                .Database
-               .ProjectContainers
-               .FirstOrDefault(container => container.Id == projectId);
+               .CatalogContainers
+               .FirstOrDefault(container => container.Id == catalogId);
 
-            if (projectContainer != null)
+            if (catalogContainer != null)
             {
-                var project = projectContainer.Project;
-                var projectMeta = projectContainer.ProjectMeta;
+                var catalog = catalogContainer.Catalog;
+                var catalogMeta = catalogContainer.CatalogMeta;
 
-                return action.Invoke(project, projectMeta);
+                return action.Invoke(catalog, catalogMeta);
             }
             else
             {
                 _logger.LogInformation($"{message} Not found.");
-                return this.NotFound(projectId);
+                return this.NotFound(catalogId);
             }
         }
 
@@ -508,14 +508,14 @@ namespace Nexus.Controllers
             public Dictionary<DateTime, double> Data { get; set; }
         }
 
-        public record Project
+        public record Catalog
         {
             public string Id { get; set; }
             public string Contact { get; set; }
             public string ShortDescription { get; set; }
             public string LongDescription { get; set; }
             public bool IsQualityControlled { get; set; }
-            public ProjectLicense License { get;set;}
+            public CatalogLicense License { get;set;}
             public List<string> LogBook { get; set; }
         }
 

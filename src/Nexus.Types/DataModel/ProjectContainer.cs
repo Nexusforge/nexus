@@ -5,17 +5,17 @@ using System.Linq;
 namespace Nexus.DataModel
 {
     [DebuggerDisplay("{Id,nq}")]
-    public class ProjectContainer
+    public class CatalogContainer
     {
         #region "Constructors"
 
-        public ProjectContainer(string id)
+        public CatalogContainer(string id)
         {
             this.Id = id;
-            this.Project = new Project(id);
+            this.Catalog = new Catalog(id);
         }
 
-        private ProjectContainer()
+        private CatalogContainer()
         {
             //
         }
@@ -28,9 +28,9 @@ namespace Nexus.DataModel
 
         public string PhysicalName => this.Id.TrimStart('/').Replace('/', '_');
 
-        public Project Project { get; set; }
+        public Catalog Catalog { get; set; }
 
-        public ProjectMeta ProjectMeta { get; set; }
+        public CatalogMeta CatalogMeta { get; set; }
 
         #endregion
 
@@ -38,19 +38,19 @@ namespace Nexus.DataModel
 
         public void Initialize()
         {
-            this.Project.Initialize();
+            this.Catalog.Initialize();
         }
 
-        public SparseProject ToSparseProject(List<Dataset> datasets)
+        public SparseCatalog ToSparseCatalog(List<Dataset> datasets)
         {
-            var project = new SparseProject(this.Id, this.ProjectMeta.License);
+            var catalog = new SparseCatalog(this.Id, this.CatalogMeta.License);
             var channels = datasets.Select(dataset => dataset.Channel).Distinct().ToList();
 
-            project.Channels = channels.Select(reference =>
+            catalog.Channels = channels.Select(reference =>
             {
-                var channelMeta = this.ProjectMeta.Channels.First(channelMeta => channelMeta.Id == reference.Id);
+                var channelMeta = this.CatalogMeta.Channels.First(channelMeta => channelMeta.Id == reference.Id);
 
-                var channel = new Channel(reference.Id, project)
+                var channel = new Channel(reference.Id, catalog)
                 {
                     Name = reference.Name,
                     Group = reference.Group,
@@ -78,7 +78,7 @@ namespace Nexus.DataModel
                 return channel;
             }).ToList();
 
-            return project;
+            return catalog;
         }
 
         #endregion

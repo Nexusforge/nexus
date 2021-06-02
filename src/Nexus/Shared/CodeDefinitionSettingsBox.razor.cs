@@ -15,20 +15,20 @@ namespace Nexus.Shared
         [Parameter]
         public Action OnSave { get; set; }
 
-        private bool CodeDefinitionProjectRequestDialogIsOpen { get; set; }
+        private bool CodeDefinitionCatalogRequestDialogIsOpen { get; set; }
 
         #endregion
 
         #region Commands
 
-        private void SelectProjectIds(List<string> projectIds)
+        private void SelectCatalogIds(List<string> catalogIds)
         {
-            this.UserState.CodeDefinition.RequestedProjectIds = projectIds;
+            this.UserState.CodeDefinition.RequestedCatalogIds = catalogIds;
         }
 
-        public void OpenCodeDefinitionProjectRequestDialog()
+        public void OpenCodeDefinitionCatalogRequestDialog()
         {
-            this.CodeDefinitionProjectRequestDialogIsOpen = true;
+            this.CodeDefinitionCatalogRequestDialogIsOpen = true;
         }
 
         #endregion

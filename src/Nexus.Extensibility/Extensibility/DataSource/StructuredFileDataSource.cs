@@ -37,7 +37,7 @@ namespace Nexus.Extensibility
         // (3) Most nested folders are not empty.
         //
         // (4) UtcOffset is only considered when reading data, not to determine the
-        // availability or the project time range.
+        // availability or the catalog time range.
         //
         // (5) Files periods are constant (except for partially written files). The current
         // implementation recognizes the first of two or more partially written files within
@@ -46,7 +46,7 @@ namespace Nexus.Extensibility
         #region Fields
 
         private bool _isInitialized;
-        private List<Project> _projects;
+        private List<Catalog> _catalogs;
 
         #endregion
 
@@ -68,13 +68,13 @@ namespace Nexus.Extensibility
         }
 
         protected abstract Task<Configuration>
-            GetConfigurationAsync(string projectId, CancellationToken cancellationToken);
+            GetConfigurationAsync(string catalogId, CancellationToken cancellationToken);
 
-        protected abstract Task<List<Project>>
-            GetDataModelAsync(CancellationToken cancellationToken);
+        protected abstract Task<List<Catalog>>
+            GetCatalogsAsync(CancellationToken cancellationToken);
 
         protected virtual async Task<(DateTime Begin, DateTime End)> 
-            GetProjectTimeRangeAsync(string projectId, CancellationToken cancellationToken)
+            GetCatalogTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
         {
             return await Task.Run(async () =>
             {
@@ -83,7 +83,7 @@ namespace Nexus.Extensibility
 
                 if (Directory.Exists(this.RootPath))
                 {
-                    var configs = (await this.GetConfigurationAsync(projectId, cancellationToken).ConfigureAwait(false)).All;
+                    var configs = (await this.GetConfigurationAsync(catalogId, cancellationToken).ConfigureAwait(false)).All;
 
                     foreach (var config in configs)
                     {
@@ -122,7 +122,7 @@ namespace Nexus.Extensibility
         }
 
         protected virtual Task<double>
-            GetAvailabilityAsync(string projectId, DateTime begin, DateTime end, CancellationToken cancellationToken)
+            GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
             if (begin >= end)
                 throw new ArgumentException("The start time must be before the end time.");
@@ -133,7 +133,7 @@ namespace Nexus.Extensibility
                 if (!Directory.Exists(this.RootPath))
                     return 0;
 
-                var configurations = (await this.GetConfigurationAsync(projectId, cancellationToken).ConfigureAwait(false)).All;
+                var configurations = (await this.GetConfigurationAsync(catalogId, cancellationToken).ConfigureAwait(false)).All;
                 var summedAvailability = 0.0;
 
                 foreach (var config in configurations)
@@ -185,8 +185,8 @@ namespace Nexus.Extensibility
             if (begin >= end)
                 throw new ArgumentException("The start time must be before the end time.");
 
-            var project = dataset.Channel.Project;
-            var config = (await this.GetConfigurationAsync(project.Id, cancellationToken).ConfigureAwait(false)).Single(dataset);
+            var catalog = dataset.Channel.Catalog;
+            var config = (await this.GetConfigurationAsync(catalog.Id, cancellationToken).ConfigureAwait(false)).Single(dataset);
             var samplesPerDay = dataset.GetSampleRate().SamplesPerDay;
             var fileLength = (long)Math.Round(config.FilePeriod.TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
 
@@ -326,26 +326,26 @@ namespace Nexus.Extensibility
             return this.OnParametersSetAsync();
         }
 
-        async Task<List<Project>> 
-            IDataSource.GetDataModelAsync(CancellationToken cancellationToken)
+        async Task<List<Catalog>> 
+            IDataSource.GetCatalogsAsync(CancellationToken cancellationToken)
         {
             await this
-                .EnsureProjectsAsync(cancellationToken)
+                .EnsureCatalogsAsync(cancellationToken)
                 .ConfigureAwait(false);
 
-            return _projects;
+            return _catalogs;
         }
 
         Task<(DateTime Begin, DateTime End)> 
-            IDataSource.GetProjectTimeRangeAsync(string projectId, CancellationToken cancellationToken)
+            IDataSource.GetCatalogTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
         {
-            return this.GetProjectTimeRangeAsync(projectId, cancellationToken);
+            return this.GetCatalogTimeRangeAsync(catalogId, cancellationToken);
         }
 
         Task<double> 
-            IDataSource.GetAvailabilityAsync(string projectId, DateTime begin, DateTime end, CancellationToken cancellationToken)
+            IDataSource.GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
-            return this.GetAvailabilityAsync(projectId, begin, end, cancellationToken);
+            return this.GetAvailabilityAsync(catalogId, begin, end, cancellationToken);
         }
 
         Task 
@@ -359,12 +359,12 @@ namespace Nexus.Extensibility
         #region Helpers
 
         private async Task
-            EnsureProjectsAsync(CancellationToken cancellationToken)
+            EnsureCatalogsAsync(CancellationToken cancellationToken)
         {
             if (!_isInitialized)
             {
-                _projects = await this
-                    .GetDataModelAsync(cancellationToken)
+                _catalogs = await this
+                    .GetCatalogsAsync(cancellationToken)
                     .ConfigureAwait(false);
 
                 _isInitialized = true;

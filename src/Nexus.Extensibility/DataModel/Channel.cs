@@ -11,10 +11,10 @@ namespace Nexus.DataModel
     {
         #region "Constructors"
 
-        public Channel(Guid id, Project project)
+        public Channel(Guid id, Catalog catalog)
         {
             this.Id = id;
-            this.Project = project;
+            this.Catalog = catalog;
         }
 
         private Channel()
@@ -39,7 +39,7 @@ namespace Nexus.DataModel
         public List<Dataset> Datasets { get; set; } = new List<Dataset>();
 
         [JsonIgnore]
-        public Project Project { get; internal set; }
+        public Catalog Catalog { get; internal set; }
 
         #endregion
 
@@ -47,7 +47,7 @@ namespace Nexus.DataModel
 
         public void Merge(Channel channel, ChannelMergeMode mergeMode)
         {
-            if (this.Project.Id != channel.Project.Id)
+            if (this.Catalog.Id != channel.Catalog.Id)
                 throw new Exception("The channel to be merged has a different parent.");
 
             // merge properties
@@ -100,7 +100,7 @@ namespace Nexus.DataModel
 
         public string GetPath()
         {
-            return $"{this.Project.GetPath()}/{this.Id}";
+            return $"{this.Catalog.GetPath()}/{this.Id}";
         }
 
         public void Initialize()

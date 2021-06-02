@@ -88,12 +88,12 @@ namespace Nexus.Controllers
                 return this.BadRequest("The list of channel paths is empty.");
 
             // security check
-            var projectIds = datasets.Select(dataset => dataset.Channel.Project.Id).Distinct();
+            var catalogIds = datasets.Select(dataset => dataset.Channel.Catalog.Id).Distinct();
 
-            foreach (var projectId in projectIds)
+            foreach (var catalogId in catalogIds)
             {
-                if (!Utilities.IsProjectAccessible(this.HttpContext.User, projectId, _databaseManager.Database))
-                    return this.Unauthorized($"The current user is not authorized to access project '{projectId}'.");
+                if (!Utilities.IsCatalogAccessible(this.HttpContext.User, catalogId, _databaseManager.Database))
+                    return this.Unauthorized($"The current user is not authorized to access catalog '{catalogId}'.");
             }
 
             //

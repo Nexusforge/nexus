@@ -3,6 +3,6 @@
     public enum CustomMetadataEntryLevel
     {
         File = 1,
-        Project = 2
+        Catalog = 2
     }
 }

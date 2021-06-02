@@ -53,7 +53,7 @@ namespace Nexus.Extension.Csv
 
             foreach (var contextGroup in channelContextGroupSet)
             {
-                var dataFilePath = Path.Combine(this.DataWriterContext.DataDirectoryPath, $"{this.DataWriterContext.ProjectDescription.PrimaryGroupName}_{this.DataWriterContext.ProjectDescription.SecondaryGroupName}_{this.DataWriterContext.ProjectDescription.ProjectName}_V{this.DataWriterContext.ProjectDescription.Version}_{startDateTime.ToString("yyyy-MM-ddTHH-mm-ss")}Z_{contextGroup.SampleRate.SamplesPerDay}_samples_per_day.csv");
+                var dataFilePath = Path.Combine(this.DataWriterContext.DataDirectoryPath, $"{this.DataWriterContext.CatalogDescription.PrimaryGroupName}_{this.DataWriterContext.CatalogDescription.SecondaryGroupName}_{this.DataWriterContext.CatalogDescription.CatalogName}_V{this.DataWriterContext.CatalogDescription.Version}_{startDateTime.ToString("yyyy-MM-ddTHH-mm-ss")}Z_{contextGroup.SampleRate.SamplesPerDay}_samples_per_day.csv");
 
                 if (!File.Exists(dataFilePath))
                 {
@@ -70,12 +70,12 @@ namespace Nexus.Extension.Csv
                             streamWriter.WriteLine($"# { customMetadataEntry.Key }: { customMetadataEntry.Value };");
                         }
 
-                        streamWriter.WriteLine($"# project_first_level: { this.DataWriterContext.ProjectDescription.PrimaryGroupName };");
-                        streamWriter.WriteLine($"# project_second_level: { this.DataWriterContext.ProjectDescription.SecondaryGroupName };");
-                        streamWriter.WriteLine($"# project_name: { this.DataWriterContext.ProjectDescription.ProjectName };");
-                        streamWriter.WriteLine($"# project_version: { this.DataWriterContext.ProjectDescription.Version };");
+                        streamWriter.WriteLine($"# catalog_first_level: { this.DataWriterContext.CatalogDescription.PrimaryGroupName };");
+                        streamWriter.WriteLine($"# catalog_second_level: { this.DataWriterContext.CatalogDescription.SecondaryGroupName };");
+                        streamWriter.WriteLine($"# catalog_name: { this.DataWriterContext.CatalogDescription.CatalogName };");
+                        streamWriter.WriteLine($"# catalog_version: { this.DataWriterContext.CatalogDescription.Version };");
 
-                        foreach (var customMetadataEntry in this.DataWriterContext.CustomMetadataEntrySet.Where(customMetadataEntry => customMetadataEntry.CustomMetadataEntryLevel == CustomMetadataEntryLevel.Project))
+                        foreach (var customMetadataEntry in this.DataWriterContext.CustomMetadataEntrySet.Where(customMetadataEntry => customMetadataEntry.CustomMetadataEntryLevel == CustomMetadataEntryLevel.Catalog))
                         {
                             streamWriter.WriteLine($"# { customMetadataEntry.Key }: { customMetadataEntry.Value };");
                         }
@@ -132,8 +132,8 @@ namespace Nexus.Extension.Csv
 
         protected override void OnWrite(ChannelContextGroup contextGroup, ulong fileOffset, ulong bufferOffset, ulong length)
         {
-            var projectDescription = this.DataWriterContext.ProjectDescription;
-            var dataFilePath = Path.Combine(this.DataWriterContext.DataDirectoryPath, $"{projectDescription.PrimaryGroupName}_{projectDescription.SecondaryGroupName}_{projectDescription.ProjectName}_V{projectDescription.Version }_{_lastFileStartDateTime.ToString("yyyy-MM-ddTHH-mm-ss")}Z_{contextGroup.SampleRate.SamplesPerDay}_samples_per_day.csv");
+            var catalogDescription = this.DataWriterContext.CatalogDescription;
+            var dataFilePath = Path.Combine(this.DataWriterContext.DataDirectoryPath, $"{catalogDescription.PrimaryGroupName}_{catalogDescription.SecondaryGroupName}_{catalogDescription.CatalogName}_V{catalogDescription.Version }_{_lastFileStartDateTime.ToString("yyyy-MM-ddTHH-mm-ss")}Z_{contextGroup.SampleRate.SamplesPerDay}_samples_per_day.csv");
 
             if (length <= 0)
                 throw new Exception(ErrorMessage.CsvWriter_SampleRateTooLow);

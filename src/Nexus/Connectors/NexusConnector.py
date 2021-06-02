@@ -85,13 +85,13 @@ class NexusConnector():
     async def _getChannel(self, channelPath) -> Channel :
 
         channelPathSegments = channelPath.split("/")
-        projectId = quote("/" + channelPathSegments[1] + "/" + channelPathSegments[2] + "/" + channelPathSegments[3], safe="")
+        catalogId = quote("/" + channelPathSegments[1] + "/" + channelPathSegments[2] + "/" + channelPathSegments[3], safe="")
         channelId = quote(channelPathSegments[4], safe="")
 
         url = urlunsplit(( \
             self.scheme, \
             f"{self.host}:{str(self.port)}", \
-            "/api/v1" + "/projects/" + projectId + "/channels/" + channelId, \
+            "/api/v1" + "/catalogs/" + catalogId + "/channels/" + channelId, \
             None, \
             None))
 
@@ -105,12 +105,12 @@ class NexusConnector():
 
         channelPathSegments = channelPath.split("/")
 
-        projectId = quote(\
+        catalogId = quote(\
             "/" + channelPathSegments[2] + \
             "/" + channelPathSegments[3] + \
             "/" + channelPathSegments[4], safe="")
 
-        projectId = quote("/" + channelPathSegments[1] + "/" + channelPathSegments[2] + "/" + channelPathSegments[3], safe="")
+        catalogId = quote("/" + channelPathSegments[1] + "/" + channelPathSegments[2] + "/" + channelPathSegments[3], safe="")
         channelId = quote(channelPathSegments[4], safe="")
         datasetId = quote(channelPathSegments[5], safe="")
         begin = params["Begin"]
@@ -120,7 +120,7 @@ class NexusConnector():
             self.scheme, \
             f"{self.host}:{str(self.port)}", \
             "/api/v1/data" + \
-            "?projectId=" + projectId +
+            "?catalogId=" + catalogId +
             "&channelId=" + channelId +
             "&datasetId=" + datasetId +
             "&begin=" + params["Begin"] +

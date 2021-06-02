@@ -75,7 +75,7 @@ namespace Nexus.Services
 
             foreach (var instruction in instructions)
             {
-                sb.AppendLine($"Project '{instruction.Container.Id}'");
+                sb.AppendLine($"Catalog '{instruction.Container.Id}'");
 
                 foreach (var (registration, aggregationChannels) in instruction.DataReaderToAggregationsMap)
                 {

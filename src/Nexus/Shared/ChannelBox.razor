@@ -1,7 +1,7 @@
 ﻿@inherits StateComponentBase
 @inject IHttpContextAccessor ContextAccessor
 
-@if (this.UserState.GroupedChannels != null) // user has access to project
+@if (this.UserState.GroupedChannels != null) // user has access to catalog
 {
     <div class="available-groups">
 
@@ -41,23 +41,23 @@
         }
     </div>
 }
-else if (this.UserState.ProjectContainer != null) // user has no access to project
+else if (this.UserState.CatalogContainer != null) // user has no access to catalog
 {
     <div class="flex-centered h-100 w-100">
         @if (this.ContextAccessor.HttpContext.User.Identity.IsAuthenticated)
         {
-            @if (this.UserState.ProjectContainer.ProjectMeta.License.LicensingScheme == DataModel.ProjectLicensingScheme.ManualRequest)
+            @if (this.UserState.CatalogContainer.CatalogMeta.License.LicensingScheme == DataModel.CatalogLicensingScheme.ManualRequest)
             {
-                <span>You do not have access to this project.@(!string.IsNullOrWhiteSpace(this.UserState.ProjectContainer.ProjectMeta.Contact) ? $" Please contact {this.UserState.ProjectContainer.ProjectMeta.Contact} to request permission." : "")</span>
+                <span>You do not have access to this catalog.@(!string.IsNullOrWhiteSpace(this.UserState.CatalogContainer.CatalogMeta.Contact) ? $" Please contact {this.UserState.CatalogContainer.CatalogMeta.Contact} to request permission." : "")</span>
             }
-            else if (this.UserState.ProjectContainer.ProjectMeta.License.LicensingScheme == DataModel.ProjectLicensingScheme.AcceptLicense)
+            else if (this.UserState.CatalogContainer.CatalogMeta.License.LicensingScheme == DataModel.CatalogLicensingScheme.AcceptLicense)
             {
                 <MatButton Outlined="true" Icon="@MatIconNames.Lock_open" @onclick="this.OpenLicenseDialog">Unlock</MatButton>
             }
         }
         else
         {
-            <span>You are not logged in. Access to project denied.</span>
+            <span>You are not logged in. Access to catalog denied.</span>
         }
     </div>
 

@@ -37,7 +37,7 @@ namespace Nexus.Extension.Famos
 
         protected override void OnPrepareFile(DateTime startDateTime, List<ChannelContextGroup> channelContextGroupSet)
         {
-            _dataFilePath = Path.Combine(this.DataWriterContext.DataDirectoryPath, $"{this.DataWriterContext.ProjectDescription.PrimaryGroupName}_{this.DataWriterContext.ProjectDescription.SecondaryGroupName}_{this.DataWriterContext.ProjectDescription.ProjectName}_V{ this.DataWriterContext.ProjectDescription.Version}_{startDateTime.ToString("yyyy-MM-ddTHH-mm-ss")}Z.dat");
+            _dataFilePath = Path.Combine(this.DataWriterContext.DataDirectoryPath, $"{this.DataWriterContext.CatalogDescription.PrimaryGroupName}_{this.DataWriterContext.CatalogDescription.SecondaryGroupName}_{this.DataWriterContext.CatalogDescription.CatalogName}_V{ this.DataWriterContext.CatalogDescription.Version}_{startDateTime.ToString("yyyy-MM-ddTHH-mm-ss")}Z.dat");
 
             if (_famosFile != null)
                 _famosFile.Dispose();
@@ -91,20 +91,20 @@ namespace Nexus.Extension.Famos
 
             famosFile.Groups.Add(metadataGroup);
 
-            // file -> project
-            var projectGroup = new FamosFileGroup($"{this.DataWriterContext.ProjectDescription.PrimaryGroupName} / {this.DataWriterContext.ProjectDescription.SecondaryGroupName} / {this.DataWriterContext.ProjectDescription.ProjectName}");
+            // file -> catalog
+            var catalogGroup = new FamosFileGroup($"{this.DataWriterContext.CatalogDescription.PrimaryGroupName} / {this.DataWriterContext.CatalogDescription.SecondaryGroupName} / {this.DataWriterContext.CatalogDescription.CatalogName}");
 
-            projectGroup.PropertyInfo = new FamosFilePropertyInfo(new List<FamosFileProperty>()
+            catalogGroup.PropertyInfo = new FamosFilePropertyInfo(new List<FamosFileProperty>()
             {
-                new FamosFileProperty("project_version", this.DataWriterContext.ProjectDescription.Version)
+                new FamosFileProperty("catalog_version", this.DataWriterContext.CatalogDescription.Version)
             });
 
-            foreach (var customMetadataEntry in this.DataWriterContext.CustomMetadataEntrySet.Where(customMetadataEntry => customMetadataEntry.CustomMetadataEntryLevel == CustomMetadataEntryLevel.Project))
+            foreach (var customMetadataEntry in this.DataWriterContext.CustomMetadataEntrySet.Where(customMetadataEntry => customMetadataEntry.CustomMetadataEntryLevel == CustomMetadataEntryLevel.Catalog))
             {
-                projectGroup.PropertyInfo.Properties.Add(new FamosFileProperty(customMetadataEntry.Key, customMetadataEntry.Value));
+                catalogGroup.PropertyInfo.Properties.Add(new FamosFileProperty(customMetadataEntry.Key, customMetadataEntry.Value));
             }
 
-            famosFile.Groups.Add(projectGroup);
+            famosFile.Groups.Add(catalogGroup);
 
             // for each context group
             foreach (var contextGroup in channelContextGroupSet)
@@ -115,7 +115,7 @@ namespace Nexus.Extension.Famos
                 if (totalLength * (double)NexusUtilities.SizeOf(NexusDataType.FLOAT64) > 2 * Math.Pow(10, 9))
                     throw new Exception(ErrorMessage.FamosWriter_DataSizeExceedsLimit);
 
-                // file -> project -> channels
+                // file -> catalog -> channels
                 var field = new FamosFileField(FamosFileFieldType.MultipleYToSingleEquidistantTime);
 
                 foreach (ChannelContext channelContext in contextGroup.ChannelContextSet)
@@ -123,7 +123,7 @@ namespace Nexus.Extension.Famos
                     var dx = contextGroup.SampleRate.Period.TotalSeconds;
                     var channel = this.PrepareChannel(field, channelContext.ChannelDescription, (int)totalLength, startDateTime, dx);
 
-                    projectGroup.Channels.Add(channel);
+                    catalogGroup.Channels.Add(channel);
                 }
 
                 famosFile.Fields.Add(field);

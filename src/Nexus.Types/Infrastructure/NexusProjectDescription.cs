@@ -2,15 +2,15 @@
 
 namespace Nexus.Infrastructure
 {
-    public class NexusProjectDescription
+    public class NexusCatalogDescription
     {
-        public NexusProjectDescription(Guid guid, int version, string primaryGroupName, string secondaryGroupName, string projectName)
+        public NexusCatalogDescription(Guid guid, int version, string primaryGroupName, string secondaryGroupName, string catalogName)
         {
             this.Guid = guid;
             this.Version = version;
             this.PrimaryGroupName = primaryGroupName;
             this.SecondaryGroupName = secondaryGroupName;
-            this.ProjectName = projectName;
+            this.CatalogName = catalogName;
         }
 
         public Guid Guid { get; set; }
@@ -21,7 +21,7 @@ namespace Nexus.Infrastructure
 
         public string SecondaryGroupName { get; set; }
 
-        public string ProjectName { get; set; }
+        public string CatalogName { get; set; }
 
         public void Validate()
         {
@@ -29,7 +29,7 @@ namespace Nexus.Infrastructure
 
             if (this.Version < 0)
             {
-                throw new Exception(ErrorMessage.NexusProjectDescription_InvalidVersion);
+                throw new Exception(ErrorMessage.NexusCatalogDescription_InvalidVersion);
             }
 
             if (!NexusUtilities.CheckNamingConvention(this.PrimaryGroupName, out errorMessage))
@@ -42,9 +42,9 @@ namespace Nexus.Infrastructure
                 throw new Exception($"The SecondaryGroupName is invalid: { errorMessage }");
             }
 
-            if (!NexusUtilities.CheckNamingConvention(this.ProjectName, out errorMessage))
+            if (!NexusUtilities.CheckNamingConvention(this.CatalogName, out errorMessage))
             {
-                throw new Exception($"The ProjectName is invalid: { errorMessage }");
+                throw new Exception($"The CatalogName is invalid: { errorMessage }");
             }
         }
     }

@@ -10,7 +10,7 @@ namespace Nexus.Extensibility
     {
         private string errorDescription;
 
-        public DataWriterContext(string systemName, string dataDirectoryPath, NexusProjectDescription projectDescription, IList<CustomMetadataEntry> customMetadataEntrySet)
+        public DataWriterContext(string systemName, string dataDirectoryPath, NexusCatalogDescription catalogDescription, IList<CustomMetadataEntry> customMetadataEntrySet)
         {
             Contract.Requires(customMetadataEntrySet != null);
 
@@ -22,7 +22,7 @@ namespace Nexus.Extensibility
 
             this.SystemName = systemName;
             this.DataDirectoryPath = dataDirectoryPath;
-            this.ProjectDescription = projectDescription;
+            this.CatalogDescription = catalogDescription;
             this.CustomMetadataEntrySet = customMetadataEntrySet;
         }
 
@@ -30,7 +30,7 @@ namespace Nexus.Extensibility
 
         public string DataDirectoryPath { get; private set; }
 
-        public NexusProjectDescription ProjectDescription { get; private set; }
+        public NexusCatalogDescription CatalogDescription { get; private set; }
 
         public IList<CustomMetadataEntry> CustomMetadataEntrySet { get; private set; }
     }

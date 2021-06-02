@@ -90,7 +90,7 @@ namespace Nexus.Roslyn
                 this.Workspace.AddDocument(project.Id, "FilterTypesShared.cs", SourceText.From(sharedCode));
 
                 // database code
-                var databaseCode = this.GenerateDatabaseCode(database, filter.SampleRate, filter.RequestedProjectIds);
+                var databaseCode = this.GenerateDatabaseCode(database, filter.SampleRate, filter.RequestedCatalogIds);
                 this.Workspace.AddDocument(project.Id, "DatabaseCode.cs", SourceText.From(databaseCode));
             }
         }
@@ -124,7 +124,7 @@ namespace Nexus.Roslyn
             } while (!this.Workspace.TryApplyChanges(updatedSolution));
         }
 
-        private string GenerateDatabaseCode(NexusDatabase database, string sampleRate, List<string> requestedProjectIds)
+        private string GenerateDatabaseCode(NexusDatabase database, string sampleRate, List<string> requestedCatalogIds)
         {
             // generate code
             var classStringBuilder = new StringBuilder();
@@ -137,31 +137,31 @@ namespace Nexus.Roslyn
             classStringBuilder.AppendLine($"{{");
 
             // add Read() method
-            classStringBuilder.AppendLine($"public double[] Read(string projectId, string channelName, string datasetId)");
+            classStringBuilder.AppendLine($"public double[] Read(string catalogId, string channelName, string datasetId)");
             classStringBuilder.AppendLine($"{{");
             classStringBuilder.AppendLine($"return new double[0];");
             classStringBuilder.AppendLine($"}}");
 
-            classStringBuilder.AppendLine($"public double[] Read(string projectId, string channelName, string datasetId, DateTime begin, DateTime end)");
+            classStringBuilder.AppendLine($"public double[] Read(string catalogId, string channelName, string datasetId, DateTime begin, DateTime end)");
             classStringBuilder.AppendLine($"{{");
             classStringBuilder.AppendLine($"return new double[0];");
             classStringBuilder.AppendLine($"}}");
 
             if (sampleRate is not null)
             {
-                var filteredProjectContainer = database.ProjectContainers
-                    .Where(projectContainer => requestedProjectIds.Contains(projectContainer.Id));
+                var filteredCatalogContainer = database.CatalogContainers
+                    .Where(catalogContainer => requestedCatalogIds.Contains(catalogContainer.Id));
 
-                foreach (var projectContainer in filteredProjectContainer)
+                foreach (var catalogContainer in filteredCatalogContainer)
                 {
-                    var addProject = false;
-                    var projectStringBuilder = new StringBuilder();
+                    var addCatalog = false;
+                    var catalogStringBuilder = new StringBuilder();
 
-                    // project class definition
-                    projectStringBuilder.AppendLine($"public class {projectContainer.PhysicalName}_TYPE");
-                    projectStringBuilder.AppendLine($"{{");
+                    // catalog class definition
+                    catalogStringBuilder.AppendLine($"public class {catalogContainer.PhysicalName}_TYPE");
+                    catalogStringBuilder.AppendLine($"{{");
 
-                    foreach (var channel in projectContainer.Project.Channels)
+                    foreach (var channel in catalogContainer.Catalog.Channels)
                     {
                         var addChannel = false;
                         var channelStringBuilder = new StringBuilder();
@@ -176,7 +176,7 @@ namespace Nexus.Roslyn
                             channelStringBuilder.AppendLine($"public double[] {ExtensibilityUtilities.EnforceNamingConvention(dataset.Id, prefix: "DATASET")} {{ get; set; }}");
 
                             addChannel = true;
-                            addProject = true;
+                            addCatalog = true;
                         }
 
                         channelStringBuilder.AppendLine($"}}");
@@ -185,16 +185,16 @@ namespace Nexus.Roslyn
                         channelStringBuilder.AppendLine($"public {channel.Name}_TYPE {channel.Name} {{ get; }}");
 
                         if (addChannel)
-                            projectStringBuilder.AppendLine(channelStringBuilder.ToString());
+                            catalogStringBuilder.AppendLine(channelStringBuilder.ToString());
                     }
 
-                    projectStringBuilder.AppendLine($"}}");
+                    catalogStringBuilder.AppendLine($"}}");
 
-                    // project property
-                    projectStringBuilder.AppendLine($"public {projectContainer.PhysicalName}_TYPE {projectContainer.PhysicalName} {{ get; }}");
+                    // catalog property
+                    catalogStringBuilder.AppendLine($"public {catalogContainer.PhysicalName}_TYPE {catalogContainer.PhysicalName} {{ get; }}");
 
-                    if (addProject)
-                        classStringBuilder.AppendLine(projectStringBuilder.ToString());
+                    if (addCatalog)
+                        classStringBuilder.AppendLine(catalogStringBuilder.ToString());
                 }
             }
 

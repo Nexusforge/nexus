@@ -48,12 +48,12 @@ async function UpdateChart(userState, chartEntries, start, end, count, dt, begin
             var channelData = Array(count);
 
             var channelPathSegments = chartEntry.path.split("/");
-            var projectId = encodeURIComponent('/' + channelPathSegments[1] + '/' + channelPathSegments[2] + '/' + channelPathSegments[3]);
+            var catalogId = encodeURIComponent('/' + channelPathSegments[1] + '/' + channelPathSegments[2] + '/' + channelPathSegments[3]);
             var channelId = encodeURIComponent(channelPathSegments[4]);
             var datasetId = encodeURIComponent(channelPathSegments[5]);
 
             url = "/api/v1/data" +
-                  "?projectId=" + projectId +
+                  "?catalogId=" + catalogId +
                   "&channelId=" + channelId +
                   "&datasetId=" + datasetId +
                   "&begin=" + start +

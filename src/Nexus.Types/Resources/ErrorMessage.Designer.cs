@@ -144,81 +144,81 @@ namespace Nexus {
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die One or more channel names are invalid ähnelt.
         /// </summary>
-        internal static string NexusProject_ChannelHubNameInvalid {
+        internal static string NexusCatalog_ChannelHubNameInvalid {
             get {
-                return ResourceManager.GetString("NexusProject_ChannelHubNameInvalid", resourceCulture);
+                return ResourceManager.GetString("NexusCatalog_ChannelHubNameInvalid", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die The channel set is invalid: A channel must be unique. ähnelt.
         /// </summary>
-        internal static string NexusProject_ChannelHubNotUnqiue {
+        internal static string NexusCatalog_ChannelHubNotUnqiue {
             get {
-                return ResourceManager.GetString("NexusProject_ChannelHubNotUnqiue", resourceCulture);
+                return ResourceManager.GetString("NexusCatalog_ChannelHubNotUnqiue", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die The data gateway settings IDs are not unique. ähnelt.
         /// </summary>
-        internal static string NexusProject_DataGatewaySettingsIdNotUnique {
+        internal static string NexusCatalog_DataGatewaySettingsIdNotUnique {
             get {
-                return ResourceManager.GetString("NexusProject_DataGatewaySettingsIdNotUnique", resourceCulture);
+                return ResourceManager.GetString("NexusCatalog_DataGatewaySettingsIdNotUnique", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die The data writer settings IDs are not unique. ähnelt.
         /// </summary>
-        internal static string NexusProject_DataWriterSettingsIdNotUnique {
+        internal static string NexusCatalog_DataWriterSettingsIdNotUnique {
             get {
-                return ResourceManager.GetString("NexusProject_DataWriterSettingsIdNotUnique", resourceCulture);
+                return ResourceManager.GetString("NexusCatalog_DataWriterSettingsIdNotUnique", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die The 1st level group name is invalid. ähnelt.
         /// </summary>
-        internal static string NexusProject_PrimaryGroupNameInvalid {
+        internal static string NexusCatalog_PrimaryGroupNameInvalid {
             get {
-                return ResourceManager.GetString("NexusProject_PrimaryGroupNameInvalid", resourceCulture);
+                return ResourceManager.GetString("NexusCatalog_PrimaryGroupNameInvalid", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die The project name is invalid. ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die The catalog name is invalid. ähnelt.
         /// </summary>
-        internal static string NexusProject_ProjectNameInvalid {
+        internal static string NexusCatalog_CatalogNameInvalid {
             get {
-                return ResourceManager.GetString("NexusProject_ProjectNameInvalid", resourceCulture);
+                return ResourceManager.GetString("NexusCatalog_CatalogNameInvalid", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die The 2nd level group name is invalid. ähnelt.
         /// </summary>
-        internal static string NexusProject_SecondaryGroupNameInvalid {
+        internal static string NexusCatalog_SecondaryGroupNameInvalid {
             get {
-                return ResourceManager.GetString("NexusProject_SecondaryGroupNameInvalid", resourceCulture);
+                return ResourceManager.GetString("NexusCatalog_SecondaryGroupNameInvalid", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die The format version must be equal or greater zero. ähnelt.
         /// </summary>
-        internal static string NexusProjectDescription_InvalidFormatVersion {
+        internal static string NexusCatalogDescription_InvalidFormatVersion {
             get {
-                return ResourceManager.GetString("NexusProjectDescription_InvalidFormatVersion", resourceCulture);
+                return ResourceManager.GetString("NexusCatalogDescription_InvalidFormatVersion", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die The project version must be equal or greater zero. ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die The catalog version must be equal or greater zero. ähnelt.
         /// </summary>
-        internal static string NexusProjectDescription_InvalidVersion {
+        internal static string NexusCatalogDescription_InvalidVersion {
             get {
-                return ResourceManager.GetString("NexusProjectDescription_InvalidVersion", resourceCulture);
+                return ResourceManager.GetString("NexusCatalogDescription_InvalidVersion", resourceCulture);
             }
         }
         
@@ -241,7 +241,7 @@ namespace Nexus {
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die A project id must start with a &apos;/&apos; as first character. ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die A catalog id must start with a &apos;/&apos; as first character. ähnelt.
         /// </summary>
         internal static string NexusUtilities_InvalidLeadingCharacter2 {
             get {
@@ -250,7 +250,7 @@ namespace Nexus {
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die A project id must contain three &apos;/&apos; path separators. ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die A catalog id must contain three &apos;/&apos; path separators. ähnelt.
         /// </summary>
         internal static string NexusUtilities_InvalidPathSeparatorCount {
             get {
@@ -270,9 +270,9 @@ namespace Nexus {
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Invalid group identifier. ähnelt.
         /// </summary>
-        internal static string Project {
+        internal static string Catalog {
             get {
-                return ResourceManager.GetString("Project", resourceCulture);
+                return ResourceManager.GetString("Catalog", resourceCulture);
             }
         }
     }

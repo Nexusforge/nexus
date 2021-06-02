@@ -40,15 +40,15 @@ namespace Nexus.Tests
             var root = Path.Combine(Path.GetTempPath(), $"Nexus.Tests.{Guid.NewGuid()}");
             Directory.CreateDirectory(root);
 
-            var project1 = "/A/B/C";
-            var project2 = "/A2/B/C";
+            var catalog1 = "/A/B/C";
+            var catalog2 = "/A2/B/C";
 
-            var monthFolderProject1 = Path.Combine(root, "DATA", WebUtility.UrlEncode(project1));
-            var dataFolderPathEmpty1 = Path.Combine(monthFolderProject1, "2020-06");
+            var monthFolderCatalog1 = Path.Combine(root, "DATA", WebUtility.UrlEncode(catalog1));
+            var dataFolderPathEmpty1 = Path.Combine(monthFolderCatalog1, "2020-06");
             Directory.CreateDirectory(dataFolderPathEmpty1);
 
-            var monthFolderProject2 = Path.Combine(root, "DATA", WebUtility.UrlEncode(project2));
-            var dataFolderPathEmpty2 = Path.Combine(monthFolderProject2, "2020-06");
+            var monthFolderCatalog2 = Path.Combine(root, "DATA", WebUtility.UrlEncode(catalog2));
+            var dataFolderPathEmpty2 = Path.Combine(monthFolderCatalog2, "2020-06");
             Directory.CreateDirectory(dataFolderPathEmpty2);
 
             // create files
@@ -61,7 +61,7 @@ namespace Nexus.Tests
 
             // day 1
             var dateTime1 = new DateTime(2020, 07, 08);
-            var folderPath1 = Path.Combine(monthFolderProject1, dateTime1.ToString("yyyy-MM"), dateTime1.ToString("dd"));
+            var folderPath1 = Path.Combine(monthFolderCatalog1, dateTime1.ToString("yyyy-MM"), dateTime1.ToString("dd"));
             var filePath1 = Path.Combine(folderPath1, $"{id1}_100_Hz_mean.nex");
 
             Directory.CreateDirectory(folderPath1);
@@ -76,7 +76,7 @@ namespace Nexus.Tests
 
             // day 2
             var dateTime2 = new DateTime(2020, 07, 09);
-            var folderPath2 = Path.Combine(monthFolderProject1, dateTime2.ToString("yyyy-MM"), dateTime2.ToString("dd"));
+            var folderPath2 = Path.Combine(monthFolderCatalog1, dateTime2.ToString("yyyy-MM"), dateTime2.ToString("dd"));
             var filePath2 = Path.Combine(folderPath2, $"{id1}_100_Hz_mean.nex");
 
             Directory.CreateDirectory(folderPath2);
@@ -92,8 +92,8 @@ namespace Nexus.Tests
 
             AggregationFile.Create<double>(filePath2, buffer2);
 
-            // second project
-            var folderPath3 = Path.Combine(monthFolderProject2, dateTime1.ToString("yyyy-MM"), dateTime1.ToString("dd"));
+            // second catalog
+            var folderPath3 = Path.Combine(monthFolderCatalog2, dateTime1.ToString("yyyy-MM"), dateTime1.ToString("dd"));
             var filePath3 = Path.Combine(folderPath3, $"{id2}_100_Hz_mean.nex");
 
             Directory.CreateDirectory(folderPath3);

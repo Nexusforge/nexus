@@ -22,7 +22,7 @@ namespace Nexus.Core
     public record DataSourceConfiguration
     {
         /// <example>/IN_MEMORY/TEST/ACCESSIBLE</example>
-        public string ProjectId { get; set; } = string.Empty;
+        public string CatalogId { get; set; } = string.Empty;
 
         /// <example>Nexus.InMemory</example>
         public string DataSourceId { get; set; } = string.Empty;
@@ -34,7 +34,7 @@ namespace Nexus.Core
     public record Aggregation
     {
         /// <example>/IN_MEMORY/TEST/ACCESSIBLE</example>
-        public string ProjectId { get; set; } = string.Empty;
+        public string CatalogId { get; set; } = string.Empty;
 
         /// <example>{ Mean: null, MeanPolar: "360" }</example>
         public Dictionary<AggregationMethod, string> Methods { get; set; } = new Dictionary<AggregationMethod, string>();
@@ -94,5 +94,5 @@ namespace Nexus.Core
         public string TargetFilePath { get; init; }
     }
 
-    public record AggregationInstruction(ProjectContainer Container, Dictionary<DataSourceRegistration, List<AggregationChannel>> DataReaderToAggregationsMap);
+    public record AggregationInstruction(CatalogContainer Container, Dictionary<DataSourceRegistration, List<AggregationChannel>> DataReaderToAggregationsMap);
 }

@@ -26,12 +26,12 @@ namespace Nexus.Extensibility
             return Task.CompletedTask;
         }
 
-        Task<List<Project>> GetDataModelAsync(CancellationToken cancellationToken);
+        Task<List<Catalog>> GetCatalogsAsync(CancellationToken cancellationToken);
 
-        Task<(DateTime Begin, DateTime End)> GetProjectTimeRangeAsync(string projectId,
+        Task<(DateTime Begin, DateTime End)> GetCatalogTimeRangeAsync(string catalogId,
                                                                       CancellationToken cancellationToken);
 
-        Task<double> GetAvailabilityAsync(string projectId,
+        Task<double> GetAvailabilityAsync(string catalogId,
                                           DateTime begin,
                                           DateTime end,
                                           CancellationToken cancellationToken);

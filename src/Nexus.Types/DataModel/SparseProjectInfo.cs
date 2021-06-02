@@ -6,11 +6,11 @@ using System.Linq;
 
 namespace Nexus.DataModel
 {
-    public class SparseProject : Project
+    public class SparseCatalog : Catalog
     {
         #region "Constructors"
 
-        public SparseProject(string id, ProjectLicense license) : base(id)
+        public SparseCatalog(string id, CatalogLicense license) : base(id)
         {
             this.License = license;
         }
@@ -19,7 +19,7 @@ namespace Nexus.DataModel
 
         #region Properties
 
-        public ProjectLicense License { get; }
+        public CatalogLicense License { get; }
 
         #endregion
 

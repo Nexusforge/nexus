@@ -83,15 +83,15 @@ namespace Nexus.ViewModels
             }
         }
 
-        public List<string> RequestedProjectIds
+        public List<string> RequestedCatalogIds
         {
             get
             {
-                return this.Model.RequestedProjectIds;
+                return this.Model.RequestedCatalogIds;
             }
             set
             {
-                this.Model.RequestedProjectIds = value;
+                this.Model.RequestedCatalogIds = value;
                 this.RaisePropertyChanged();
             }
         }

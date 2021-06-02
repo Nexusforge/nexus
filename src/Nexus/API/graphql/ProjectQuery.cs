@@ -5,32 +5,32 @@ using System.Linq;
 
 namespace Nexus.API
 {
-    public class ProjectQuery : ObjectGraphType
+    public class CatalogQuery : ObjectGraphType
     {
-        public ProjectQuery(DatabaseManager databaseManager)
+        public CatalogQuery(DatabaseManager databaseManager)
         {
-            this.Field<ProjectType>(
-                "Project",
+            this.Field<CatalogType>(
+                "Catalog",
                 arguments: new QueryArguments(
-                    new QueryArgument<IdGraphType> { Name = "id", Description = "The ID of the project." }),
+                    new QueryArgument<IdGraphType> { Name = "id", Description = "The ID of the catalog." }),
                 resolve: context =>
                 {
                     var id = context.GetArgument<string>("id");
-                    var projectContainer = databaseManager.Database.ProjectContainers
-                        .FirstOrDefault(projectContainer => projectContainer.Id == id);
+                    var catalogContainer = databaseManager.Database.CatalogContainers
+                        .FirstOrDefault(catalogContainer => catalogContainer.Id == id);
 
-                    if (projectContainer != null)
-                        return (projectContainer.Project, projectContainer.ProjectMeta);
+                    if (catalogContainer != null)
+                        return (catalogContainer.Catalog, catalogContainer.CatalogMeta);
                     else
                         return null;
                 });
 
-            this.Field<ProjectType>(
-                "Projects",
+            this.Field<CatalogType>(
+                "Catalogs",
                 resolve: context =>
                 {
-                    return databaseManager.Database.ProjectContainers
-                        .Select(projectContainer => (projectContainer.Project, projectContainer.ProjectMeta));
+                    return databaseManager.Database.CatalogContainers
+                        .Select(catalogContainer => (catalogContainer.Catalog, catalogContainer.CatalogMeta));
                 });
         }
     }

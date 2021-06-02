@@ -59,16 +59,16 @@ namespace Nexus.Services
 
         #region Methods
 
-        public Task<List<AvailabilityResult>> GetAvailabilityAsync(string projectId, DateTime begin, DateTime end, AvailabilityGranularity granularity)
+        public Task<List<AvailabilityResult>> GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, AvailabilityGranularity granularity)
         {
             return Task.Run(() =>
             {
-                var dataReaders = _databaseManager.GetDataReaders(_userIdService.User, projectId);
+                var dataReaders = _databaseManager.GetDataReaders(_userIdService.User, catalogId);
 
                 return dataReaders.Select(dataReaderForUsing =>
                 {
                     using var dataReader = dataReaderForUsing;
-                    return dataReader.GetAvailability(projectId, begin, end, granularity);
+                    return dataReader.GetAvailability(catalogId, begin, end, granularity);
                 }).ToList();
             });
         }
@@ -98,15 +98,15 @@ namespace Nexus.Services
 
                 try
                 {
-                    // convert datasets into projects
-                    var projectIds = datasets.Select(dataset => dataset.Channel.Project.Id).Distinct();
-                    var projectContainers = _databaseManager.Database.ProjectContainers
-                        .Where(projectContainer => projectIds.Contains(projectContainer.Id));
+                    // convert datasets into catalogs
+                    var catalogIds = datasets.Select(dataset => dataset.Channel.Catalog.Id).Distinct();
+                    var catalogContainers = _databaseManager.Database.CatalogContainers
+                        .Where(catalogContainer => catalogIds.Contains(catalogContainer.Id));
 
-                    var sparseProjects = projectContainers.Select(projectContainer =>
+                    var sparseCatalogs = catalogContainers.Select(catalogContainer =>
                     {
-                        var currentDatasets = datasets.Where(dataset => dataset.Channel.Project.Id == projectContainer.Id).ToList();
-                        return projectContainer.ToSparseProject(currentDatasets);
+                        var currentDatasets = datasets.Where(dataset => dataset.Channel.Catalog.Id == catalogContainer.Id).ToList();
+                        return catalogContainer.ToSparseCatalog(currentDatasets);
                     });
 
                     // start
@@ -123,9 +123,9 @@ namespace Nexus.Services
 
                     Directory.CreateDirectory(directoryPath);
 
-                    foreach (var sparseProject in sparseProjects)
+                    foreach (var sparseCatalog in sparseCatalogs)
                     {
-                        this.CreateFiles(_userIdService.User, exportParameters, sparseProject, directoryPath, cancellationToken);
+                        this.CreateFiles(_userIdService.User, exportParameters, sparseCatalog, directoryPath, cancellationToken);
                     }
 
                     switch (exportParameters.ExportMode)
@@ -185,11 +185,11 @@ namespace Nexus.Services
 
         private void CreateFiles(ClaimsPrincipal user, 
                                  ExportParameters exportParameters,
-                                 SparseProject sparseProject,
+                                 SparseCatalog sparseCatalog,
                                  string directoryPath,
                                  CancellationToken cancellationToken)
         {
-            var channelDescriptionSet = sparseProject.ToChannelDescriptions();
+            var channelDescriptionSet = sparseCatalog.ToChannelDescriptions();
             var singleFile = exportParameters.FileGranularity == FileGranularity.SingleFile;
 
             TimeSpan filePeriod;
@@ -250,18 +250,18 @@ namespace Nexus.Services
             var customMetadataEntrySet = new List<CustomMetadataEntry>();
             //customMetadataEntrySet.Add(new CustomMetadataEntry("system_name", "Nexus", CustomMetadataEntryLevel.File));
 
-            if (!string.IsNullOrWhiteSpace(sparseProject.License.FileMessage))
-                customMetadataEntrySet.Add(new CustomMetadataEntry("license", sparseProject.License.FileMessage, CustomMetadataEntryLevel.Project));
+            if (!string.IsNullOrWhiteSpace(sparseCatalog.License.FileMessage))
+                customMetadataEntrySet.Add(new CustomMetadataEntry("license", sparseCatalog.License.FileMessage, CustomMetadataEntryLevel.Catalog));
 
             // initialize data writer
-            var projectName_splitted = sparseProject.Id.Split('/');
-            var dataWriterContext = new DataWriterContext("Nexus", directoryPath, new NexusProjectDescription(Guid.Empty, 0, projectName_splitted[1], projectName_splitted[2], projectName_splitted[3]), customMetadataEntrySet);
+            var catalogName_splitted = sparseCatalog.Id.Split('/');
+            var dataWriterContext = new DataWriterContext("Nexus", directoryPath, new NexusCatalogDescription(Guid.Empty, 0, catalogName_splitted[1], catalogName_splitted[2], catalogName_splitted[3]), customMetadataEntrySet);
             dataWriter.Configure(dataWriterContext, channelDescriptionSet);
 
             try
             {
                 // create temp files
-                this.CreateFiles(user, dataWriter, exportParameters, sparseProject, cancellationToken);
+                this.CreateFiles(user, dataWriter, exportParameters, sparseCatalog, cancellationToken);
                 dataWriter.Dispose();               
             }
             finally
@@ -273,10 +273,10 @@ namespace Nexus.Services
         private void CreateFiles(ClaimsPrincipal user,
                                  DataWriterExtensionLogicBase dataWriter,
                                  ExportParameters exportParameters,
-                                 SparseProject sparseProject,
+                                 SparseCatalog sparseCatalog,
                                  CancellationToken cancellationToken)
         {
-            var datasets = sparseProject.Channels.SelectMany(channel => channel.Datasets);
+            var datasets = sparseCatalog.Channels.SelectMany(channel => channel.Datasets);
             var registrationToDatasetsMap = new Dictionary<DataSourceRegistration, List<Dataset>>();
 
             foreach (var dataset in datasets)

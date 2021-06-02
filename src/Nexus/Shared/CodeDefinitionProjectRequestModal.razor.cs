@@ -6,11 +6,11 @@ using System.Linq;
 
 namespace Nexus.Shared
 {
-    public partial class CodeDefinitionProjectRequestModal
+    public partial class CodeDefinitionCatalogRequestModal
     {
         #region Records
 
-        public record ProjectState()
+        public record CatalogState()
         {
             public string Id { get; set; }
             public bool IsSelected { get; set; }
@@ -30,12 +30,12 @@ namespace Nexus.Shared
         public EventCallback<bool> IsOpenChanged { get; set; }
 
         [Parameter]
-        public Action<List<string>> OnProjectIdsSelected { get; set; }
+        public Action<List<string>> OnCatalogIdsSelected { get; set; }
 
         [Parameter]
-        public List<string> SelectedProjectIds { get; set; }
+        public List<string> SelectedCatalogIds { get; set; }
 
-        private List<ProjectState> ProjectContainerStates { get; set; }
+        private List<CatalogState> CatalogContainerStates { get; set; }
 
         #endregion
 
@@ -43,14 +43,14 @@ namespace Nexus.Shared
 
         protected override void OnParametersSet()
         {
-            var accessibleProjects = this.UserState.ProjectContainersInfo.Accessible;
+            var accessibleCatalogs = this.UserState.CatalogContainersInfo.Accessible;
 
-            this.ProjectContainerStates = accessibleProjects.Select(projectContainer =>
+            this.CatalogContainerStates = accessibleCatalogs.Select(catalogContainer =>
             {
-                var isSelected = this.SelectedProjectIds.Contains(projectContainer.Id);
-                return new ProjectState() 
+                var isSelected = this.SelectedCatalogIds.Contains(catalogContainer.Id);
+                return new CatalogState() 
                 { 
-                    Id = projectContainer.Id,
+                    Id = catalogContainer.Id,
                     IsSelected = isSelected
                 };
             }).ToList();
@@ -62,11 +62,11 @@ namespace Nexus.Shared
         {
             this.OnIsOpenChanged(false);
 
-            var newSelectedProjectIds = this.ProjectContainerStates
+            var newSelectedCatalogIds = this.CatalogContainerStates
                 .Where(state => state.IsSelected)
                 .Select(state => state.Id).ToList();
 
-            this.OnProjectIdsSelected?.Invoke(newSelectedProjectIds);
+            this.OnCatalogIdsSelected?.Invoke(newSelectedCatalogIds);
         }
 
         private void Cancel()

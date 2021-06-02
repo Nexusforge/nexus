@@ -3,11 +3,11 @@ using System.Linq;
 
 namespace Nexus.DataModel
 {
-    public class ProjectMeta
+    public class CatalogMeta
     {
         #region Constructors
 
-        public ProjectMeta(string id)
+        public CatalogMeta(string id)
         {
             this.Id = id;
             this.Contact = string.Empty;
@@ -15,13 +15,13 @@ namespace Nexus.DataModel
             this.LongDescription = string.Empty;
             this.IsQualityControlled = false;
             this.IsHidden = false;
-            this.License = new ProjectLicense();
+            this.License = new CatalogLicense();
             this.Logbook = new List<string>();
             this.GroupMemberships = new List<string>();
             this.Channels = new List<ChannelMeta>();
         }
 
-        private ProjectMeta()
+        private CatalogMeta()
         {
             //
         }
@@ -42,7 +42,7 @@ namespace Nexus.DataModel
 
         public bool IsHidden { get; set; }
 
-        public ProjectLicense License { get; set; }
+        public CatalogLicense License { get; set; }
 
         public List<string> Logbook { get; set; }
 
@@ -54,7 +54,7 @@ namespace Nexus.DataModel
 
         #region Methods
 
-        public void Initialize(Project project)
+        public void Initialize(Catalog catalog)
         {
             if (string.IsNullOrWhiteSpace(this.ShortDescription))
                 this.ShortDescription = "<no description available>";
@@ -65,7 +65,7 @@ namespace Nexus.DataModel
             // create missing channel meta instances
             var channelsToAdd = new List<ChannelMeta>();
 
-            foreach (var referenceChannel in project.Channels)
+            foreach (var referenceChannel in catalog.Channels)
             {
                 var exists = this.Channels.Any(channel => channel.Id == referenceChannel.Id);
 

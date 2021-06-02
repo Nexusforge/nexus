@@ -10,16 +10,16 @@ namespace Nexus.DataModel
         Month
     }
 
-    public enum ProjectLicensingScheme
+    public enum CatalogLicensingScheme
     {
         None = 0,
         ManualRequest = 1,
         AcceptLicense = 2
     }
 
-    public record ProjectLicense
+    public record CatalogLicense
     {
-        public ProjectLicensingScheme LicensingScheme { get; init; } = ProjectLicensingScheme.None;
+        public CatalogLicensingScheme LicensingScheme { get; init; } = CatalogLicensingScheme.None;
         public string DisplayMessage { get; init; } = string.Empty;
         public string FileMessage { get; init; } = string.Empty;
         public string Url { get; init; } = string.Empty;

@@ -1,10 +1,10 @@
 ﻿namespace Nexus.Shared
 {
-    public partial class ProjectBox
+    public partial class CatalogBox
     {
 		#region Constructors
 
-		public ProjectBox()
+		public CatalogBox()
 		{
 			this.PropertyChanged = (sender, e) =>
 			{

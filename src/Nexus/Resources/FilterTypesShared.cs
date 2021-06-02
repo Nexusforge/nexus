@@ -7,7 +7,7 @@ namespace Nexus.Filters
 {
     public static class FilterConstants
     {
-        public static string SharedProjectID { get; } = "/IN_MEMORY/FILTERS/SHARED";
+        public static string SharedCatalogID { get; } = "/IN_MEMORY/FILTERS/SHARED";
     }
 
     public record FilterChannel
@@ -19,9 +19,9 @@ namespace Nexus.Filters
             //
         }
 
-        public FilterChannel(string projectId, string channelName, string group, string unit, string description)
+        public FilterChannel(string catalogId, string channelName, string group, string unit, string description)
         {
-            this.ProjectId = projectId;
+            this.CatalogId = catalogId;
             this.ChannelName = channelName;
             this.Group = group;
             this.Unit = unit;
@@ -32,7 +32,7 @@ namespace Nexus.Filters
 
         #region Properties
 
-        public string ProjectId { get; init; } = FilterConstants.SharedProjectID;
+        public string CatalogId { get; init; } = FilterConstants.SharedCatalogID;
         public string ChannelName { get; init; } = string.Empty;
         public string Group { get; init; } = string.Empty;
         public string Unit { get; init; } = string.Empty;

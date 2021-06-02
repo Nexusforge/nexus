@@ -70,7 +70,7 @@ namespace Nexus.ViewModels
             set { _channelMeta.SpecialInfo = value; }
         }
 
-        public Project Parent => (Project)_channel.Project;
+        public Catalog Parent => (Catalog)_channel.Catalog;
 
         public List<DatasetViewModel> Datasets { get; private set; }
 

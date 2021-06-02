@@ -131,7 +131,7 @@ namespace Nexus.Shared
                 {
                     await this.UpdateChart();
                 }
-                else if (e.PropertyName == nameof(UserState.ProjectContainer))
+                else if (e.PropertyName == nameof(UserState.CatalogContainer))
                 {
                     await this.UpdateChart();
                 }

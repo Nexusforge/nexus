@@ -6,10 +6,10 @@ namespace Nexus.Filters
     class FilterProvider : FilterProviderBase
     {
         /* Use this method to do the calculations for a filter that can be based on one or more
-         * channels of available and accessible projects.
+         * channels of available and accessible catalogs.
          *   begin:  Start of the current time period.
          *   end:    End of the current time period.
-         *   data:   Contains data of the preselected projects.
+         *   data:   Contains data of the preselected catalogs.
          *   result: The resulting double array with length matching the time period and sample rate.
          */
         public override void Filter(DateTime begin, DateTime end, FilterChannel filter, DataProvider dataProvider, double[] result)

@@ -148,7 +148,7 @@ namespace Nexus
 
             // graphql
             services
-                .AddSingleton<ProjectSchema>()
+                .AddSingleton<CatalogSchema>()
                 .AddGraphQL((options, provider) =>
                 {
                     options.EnableMetrics = false;
@@ -159,7 +159,7 @@ namespace Nexus
                 })
                 .AddErrorInfoProvider(opt => opt.ExposeExceptionStackTrace = true)
                 .AddSystemTextJson(deserializerSettings => { }, serializerSettings => { })
-                .AddGraphTypes(typeof(ProjectSchema));
+                .AddGraphTypes(typeof(CatalogSchema));
 
             // custom
 #warning replace httpcontextaccessor by async authenticationStateProvider (https://github.com/dotnet/aspnetcore/issues/17585)
@@ -237,7 +237,7 @@ namespace Nexus
             app.UseSwaggerUi3();
 
             // graphql
-            app.UseGraphQL<ProjectSchema>("/graphql");
+            app.UseGraphQL<CatalogSchema>("/graphql");
             app.UseGraphQLPlayground();
 
             // routing (for REST API)

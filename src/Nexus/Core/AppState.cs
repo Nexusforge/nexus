@@ -28,7 +28,7 @@ namespace Nexus.Core
         private SemaphoreSlim _updateDatabaseSemaphore;
         private CancellationTokenSource _updateDatabaseCancellationTokenSource;
         private DatabaseManager _databaseManager;
-        private Dictionary<ProjectContainer, List<ChannelViewModel>> _channelCache;
+        private Dictionary<CatalogContainer, List<ChannelViewModel>> _channelCache;
 
         #endregion
 
@@ -128,7 +128,7 @@ namespace Nexus.Core
                 this.FilterSettings = new FilterSettingsViewModel(filterSettingsFilePath);
                 this.InitializeFilterSettings(this.FilterSettings.Model, filterSettingsFilePath);
 
-                _channelCache = new Dictionary<ProjectContainer, List<ChannelViewModel>>();
+                _channelCache = new Dictionary<CatalogContainer, List<ChannelViewModel>>();
                 _updateDatabaseSemaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
 
                 _userManager.Initialize();
@@ -173,17 +173,17 @@ namespace Nexus.Core
             }
         }
 
-        public List<ChannelViewModel> GetChannels(ProjectContainer projectContainer)
+        public List<ChannelViewModel> GetChannels(CatalogContainer catalogContainer)
         {
-            if (!_channelCache.TryGetValue(projectContainer, out var channels))
+            if (!_channelCache.TryGetValue(catalogContainer, out var channels))
             {
-                channels = projectContainer.Project.Channels.Select(channel =>
+                channels = catalogContainer.Catalog.Channels.Select(channel =>
                 {
-                    var channelMeta = projectContainer.ProjectMeta.Channels.First(channelMeta => channelMeta.Id == channel.Id);
+                    var channelMeta = catalogContainer.CatalogMeta.Channels.First(channelMeta => channelMeta.Id == channel.Id);
                     return new ChannelViewModel(channel, channelMeta);
                 }).ToList();
 
-                _channelCache[projectContainer] = channels;
+                _channelCache[catalogContainer] = channels;
             }
 
             return channels;
@@ -207,7 +207,7 @@ namespace Nexus.Core
                     IsEnabled = true,
                     Name = "Simple filter (C#)",
                     Owner = "test@nexus.org",
-                    RequestedProjectIds = new List<string>() { "/IN_MEMORY/TEST/ACCESSIBLE" },
+                    RequestedCatalogIds = new List<string>() { "/IN_MEMORY/TEST/ACCESSIBLE" },
                     SampleRate = "1 s"
                 });
 
@@ -227,7 +227,7 @@ namespace Nexus.Core
                     IsEnabled = true,
                     Name = "Simple shared (C#)",
                     Owner = "test@nexus.org",
-                    RequestedProjectIds = new List<string>(),
+                    RequestedCatalogIds = new List<string>(),
                     SampleRate = string.Empty
                 });
 

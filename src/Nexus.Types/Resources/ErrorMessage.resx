@@ -144,31 +144,31 @@
   <data name="ExtensionSettingsBase_ExtensionDescriptionAttributeNotDefined" xml:space="preserve">
     <value>ExtensionDescriptionAttribute is not defined.</value>
   </data>
-  <data name="NexusProjectDescription_InvalidFormatVersion" xml:space="preserve">
+  <data name="NexusCatalogDescription_InvalidFormatVersion" xml:space="preserve">
     <value>The format version must be equal or greater zero.</value>
   </data>
-  <data name="NexusProjectDescription_InvalidVersion" xml:space="preserve">
-    <value>The project version must be equal or greater zero.</value>
+  <data name="NexusCatalogDescription_InvalidVersion" xml:space="preserve">
+    <value>The catalog version must be equal or greater zero.</value>
   </data>
-  <data name="NexusProject_ChannelHubNameInvalid" xml:space="preserve">
+  <data name="NexusCatalog_ChannelHubNameInvalid" xml:space="preserve">
     <value>One or more channel names are invalid</value>
   </data>
-  <data name="NexusProject_ChannelHubNotUnqiue" xml:space="preserve">
+  <data name="NexusCatalog_ChannelHubNotUnqiue" xml:space="preserve">
     <value>The channel set is invalid: A channel must be unique.</value>
   </data>
-  <data name="NexusProject_DataGatewaySettingsIdNotUnique" xml:space="preserve">
+  <data name="NexusCatalog_DataGatewaySettingsIdNotUnique" xml:space="preserve">
     <value>The data gateway settings IDs are not unique.</value>
   </data>
-  <data name="NexusProject_DataWriterSettingsIdNotUnique" xml:space="preserve">
+  <data name="NexusCatalog_DataWriterSettingsIdNotUnique" xml:space="preserve">
     <value>The data writer settings IDs are not unique.</value>
   </data>
-  <data name="NexusProject_PrimaryGroupNameInvalid" xml:space="preserve">
+  <data name="NexusCatalog_PrimaryGroupNameInvalid" xml:space="preserve">
     <value>The 1st level group name is invalid.</value>
   </data>
-  <data name="NexusProject_ProjectNameInvalid" xml:space="preserve">
-    <value>The project name is invalid.</value>
+  <data name="NexusCatalog_CatalogNameInvalid" xml:space="preserve">
+    <value>The catalog name is invalid.</value>
   </data>
-  <data name="NexusProject_SecondaryGroupNameInvalid" xml:space="preserve">
+  <data name="NexusCatalog_SecondaryGroupNameInvalid" xml:space="preserve">
     <value>The 2nd level group name is invalid.</value>
   </data>
   <data name="NexusUtilities_InvalidCharacters" xml:space="preserve">
@@ -178,15 +178,15 @@
     <value>Use A-Z or a-z as first character.</value>
   </data>
   <data name="NexusUtilities_InvalidLeadingCharacter2" xml:space="preserve">
-    <value>A project id must start with a '/' as first character.</value>
+    <value>A catalog id must start with a '/' as first character.</value>
   </data>
   <data name="NexusUtilities_InvalidPathSeparatorCount" xml:space="preserve">
-    <value>A project id must contain three '/' path separators.</value>
+    <value>A catalog id must contain three '/' path separators.</value>
   </data>
   <data name="NexusUtilities_NameEmpty" xml:space="preserve">
     <value>The name must not be empty.</value>
   </data>
-  <data name="Project" xml:space="preserve">
+  <data name="Catalog" xml:space="preserve">
     <value>Invalid group identifier.</value>
   </data>
 </root>

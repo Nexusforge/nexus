@@ -40,7 +40,7 @@ namespace Nexus.Controllers
         /// <summary>
         /// Gets the requested data.
         /// </summary>
-        /// <param name="projectId">The project identifier.</param>
+        /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="channelId">The channel identifier.</param>
         /// <param name="datasetId">The dataset identifier.</param>
         /// <param name="begin">Start date/time.</param>
@@ -50,7 +50,7 @@ namespace Nexus.Controllers
 
         [HttpGet]
         public IActionResult GetStream(
-            [BindRequired] string projectId,
+            [BindRequired] string catalogId,
             [BindRequired] string channelId,
             [BindRequired] string datasetId,
             [BindRequired] DateTime begin,
@@ -60,7 +60,7 @@ namespace Nexus.Controllers
             if (_databaseManager.Database == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
 
-            projectId = WebUtility.UrlDecode(projectId);
+            catalogId = WebUtility.UrlDecode(catalogId);
             channelId = WebUtility.UrlDecode(channelId);
             datasetId = WebUtility.UrlDecode(datasetId);
 
@@ -83,16 +83,16 @@ namespace Nexus.Controllers
             try
             {
                 // dataset
-                var path = $"{projectId}/{channelId}/{datasetId}";
+                var path = $"{catalogId}/{channelId}/{datasetId}";
 
                 if (!_databaseManager.Database.TryFindDataset(path, out var dataset))
                     return this.NotFound($"Could not find dataset with name '{path}'.");
 
-                var project = dataset.Channel.Project;
+                var catalog = dataset.Channel.Catalog;
 
                 // security check
-                if (!Utilities.IsProjectAccessible(this.User, project.Id, _databaseManager.Database))
-                    return this.Unauthorized($"The current user is not authorized to access the project '{project.Id}'.");
+                if (!Utilities.IsCatalogAccessible(this.User, catalog.Id, _databaseManager.Database))
+                    return this.Unauthorized($"The current user is not authorized to access the catalog '{catalog.Id}'.");
 
                 // dataReader
                 using var dataReader = _databaseManager.GetDataReader(_userIdService.User, dataset.Registration);

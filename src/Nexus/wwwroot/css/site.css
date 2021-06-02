@@ -288,7 +288,7 @@ app {
         margin: 0px 15px 10px 15px;
     }
 
-.project-box {
+.catalog-box {
     display: flex;
     flex-direction: row;
     min-height: 0;
@@ -302,14 +302,14 @@ app {
     color: green;
 }
 
-.project-box-available {
+.catalog-box-available {
     display: flex;
     flex-direction: column;
     flex: 1;
     padding: 10px;
 }
 
-    .project-box-available ul {
+    .catalog-box-available ul {
         padding: 0;
         padding-bottom: 10px;
         overflow-y: scroll;
@@ -317,45 +317,45 @@ app {
         scrollbar-width: thin;
     }
 
-.project-item .small-text {
+.catalog-item .small-text {
     font-size: 0.875rem;
 }
 
-.project-item {
+.catalog-item {
     cursor: pointer;
     padding: 5px 15px 5px 15px;
 }
 
-.project-item:hover {
+.catalog-item:hover {
     background-color: var(--hover-bg-color);
 }
 
-.project-item.active {
+.catalog-item.active {
     color: var(--active-color);
 }
 
-.project-item.disabled {
+.catalog-item.disabled {
     color: var(--disabled-color);
 }
 
-    .project-item.disabled div {
+    .catalog-item.disabled div {
         color: var(--disabled-color) !important;
     }
 
-.project-box-selected {
+.catalog-box-selected {
     display: flex;
     flex-direction: column;
     flex: 1;
     padding: 10px;
 }
 
-    .project-box-selected > span {
+    .catalog-box-selected > span {
         margin-top: auto;
         margin-bottom: auto;
         align-self: center;
     }
 
-.project-box-selected-footer {
+.catalog-box-selected-footer {
     display: flex;
     flex-direction: row;
     margin-top: auto;
@@ -365,16 +365,16 @@ app {
     color: var(--font-color-subtitle);
 }
 
-.project-box-selected-footer-date {
+.catalog-box-selected-footer-date {
     margin-bottom: 0.8rem;
 }
 
-.project-box-selected-footer-icons {
+.catalog-box-selected-footer-icons {
     display: flex;
     flex-direction: row;
 }
 
-    .project-box-selected-footer-icons .selected {
+    .catalog-box-selected-footer-icons .selected {
         color: #880e4f;
     }
 
@@ -709,7 +709,7 @@ app {
     margin-bottom: 3px;
 }
 
-.selected-channel-project {
+.selected-channel-catalog {
     font-size: 0.8rem;
     color: var(--font-color-subtitle);
     text-overflow: ellipsis;

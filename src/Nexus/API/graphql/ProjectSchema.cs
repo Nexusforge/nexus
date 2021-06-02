@@ -4,11 +4,11 @@ using System;
 
 namespace Nexus.API
 {
-    public class ProjectSchema : Schema
+    public class CatalogSchema : Schema
     {
-        public ProjectSchema(DatabaseManager databaseManager, IServiceProvider provider) : base(provider)
+        public CatalogSchema(DatabaseManager databaseManager, IServiceProvider provider) : base(provider)
         {
-            Query = new ProjectQuery(databaseManager);
+            Query = new CatalogQuery(databaseManager);
         }
     }
 }

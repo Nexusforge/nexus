@@ -4,19 +4,19 @@ using Nexus.DataModel;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Channel = Nexus.Controllers.ProjectsController.Channel;
-using Project = Nexus.DataModel.Project;
+using Channel = Nexus.Controllers.CatalogsController.Channel;
+using Catalog = Nexus.DataModel.Catalog;
 
 namespace Nexus.API
 {
-    public class ProjectType : ObjectGraphType<(Project Project, ProjectMeta Meta)>
+    public class CatalogType : ObjectGraphType<(Catalog Catalog, CatalogMeta Meta)>
     {
-        public ProjectType()
+        public CatalogType()
         {
-            this.Name = "Project";
+            this.Name = "Catalog";
 
-            this.Field(x => x.Project.Id, type: typeof(IdGraphType))
-                .Description("The project ID.");
+            this.Field(x => x.Catalog.Id, type: typeof(IdGraphType))
+                .Description("The catalog ID.");
 
             this.Field<ChannelType>(
                 "Channel",
@@ -25,13 +25,13 @@ namespace Nexus.API
                 resolve: context =>
             {
                 var id = context.GetArgument<Guid>("id");
-                var project = context.Source.Project;
-                var projectMeta = context.Source.Meta;
+                var catalog = context.Source.Catalog;
+                var catalogMeta = context.Source.Meta;
 
-                var channel = project.Channels.First(current => current.Id == id);
-                var channelMeta = projectMeta.Channels.First(current => current.Id == id);
+                var channel = catalog.Channels.First(current => current.Id == id);
+                var channelMeta = catalogMeta.Channels.First(current => current.Id == id);
 
-#warning taken from ProjectsController, unify this
+#warning taken from CatalogsController, unify this
                 var channel2 = new Channel()
                 {
                     Id = channel.Id,
@@ -48,19 +48,19 @@ namespace Nexus.API
 
                 return channel2;
             });
-            //.Description("A list of channels defined in the project.");
+            //.Description("A list of channels defined in the catalog.");
 
             this.Field<ListGraphType<ChannelType>>("Channels", resolve: context =>
             {
                 var result = new List<Channel>();
-                var project = context.Source.Project;
-                var projectMeta = context.Source.Meta;
+                var catalog = context.Source.Catalog;
+                var catalogMeta = context.Source.Meta;
 
-                foreach (var channel in project.Channels)
+                foreach (var channel in catalog.Channels)
                 {
-                    var channelMeta = projectMeta.Channels.First(current => current.Id == channel.Id);
+                    var channelMeta = catalogMeta.Channels.First(current => current.Id == channel.Id);
 
-#warning taken from ProjectsController, unify this
+#warning taken from CatalogsController, unify this
                     var channel2 = new Channel()
                     {
                         Id = channel.Id,
@@ -78,16 +78,16 @@ namespace Nexus.API
 
                 return result;
             });
-              //.Description("A list of channels defined in the project.");
+              //.Description("A list of channels defined in the catalog.");
 
             this.Field(x => x.Meta.ShortDescription)
-                .Description("A short project description.");
+                .Description("A short catalog description.");
 
             this.Field(x => x.Meta.LongDescription)
-                .Description("A long project description.");
+                .Description("A long catalog description.");
 
             this.Field(x => x.Meta.Contact)
-                .Description("A project contact.");
+                .Description("A catalog contact.");
         }
     }
 }

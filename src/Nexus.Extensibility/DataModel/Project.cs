@@ -6,16 +6,16 @@ using System.Linq;
 namespace Nexus.DataModel
 {
     [DebuggerDisplay("{Id,nq}")]
-    public class Project
+    public class Catalog
     {
         #region "Constructors"
 
-        public Project(string id)
+        public Catalog(string id)
         {
             this.Id = id;
         }
 
-        private Project()
+        private Catalog()
         {
             //
         }
@@ -32,15 +32,15 @@ namespace Nexus.DataModel
 
         #region "Methods"
 
-        public void Merge(Project project, ChannelMergeMode mergeMode)
+        public void Merge(Catalog catalog, ChannelMergeMode mergeMode)
         {
-            if (this.Id != project.Id)
-                throw new Exception("The project to be merged has a different ID.");
+            if (this.Id != catalog.Id)
+                throw new Exception("The catalog to be merged has a different ID.");
 
             // merge channels
             var newChannels = new List<Channel>();
 
-            foreach (var channel in project.Channels)
+            foreach (var channel in catalog.Channels)
             {
                 var referenceChannel = this.Channels.FirstOrDefault(current => current.Id == channel.Id);
 
@@ -49,7 +49,7 @@ namespace Nexus.DataModel
                 else
                     newChannels.Add(channel);
 
-                channel.Project = this;
+                channel.Catalog = this;
             }
 
             this.Channels.AddRange(newChannels);
@@ -64,7 +64,7 @@ namespace Nexus.DataModel
         {
             foreach (var channel in this.Channels)
             {
-                channel.Project = this;
+                channel.Catalog = this;
                 channel.Initialize();
             }
         }

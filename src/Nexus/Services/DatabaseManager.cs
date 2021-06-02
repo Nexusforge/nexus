@@ -25,11 +25,11 @@ namespace Nexus.Services
      * 02. load and instantiate data reader extensions (_rootPathToDataReaderMap)
      * 03. call Update() method
      * 04.   for each data reader in _rootPathToDataReaderMap
-     * 05.       get project names
-     * 06.           for each project name
-     * 07.               find project container in current database or create new one
-     * 08.               get an up-to-date project instance from the data reader
-     * 09.               merge both projects
+     * 05.       get catalog names
+     * 06.           for each catalog name
+     * 07.               find catalog container in current database or create new one
+     * 08.               get an up-to-date catalog instance from the data reader
+     * 09.               merge both catalogs
      * 10. save updated database
      * *******************************************************************************
      */
@@ -49,7 +49,7 @@ namespace Nexus.Services
             public DataSourceRegistration AggregationRegistration { get; init; }
             public NexusDatabase Database { get; init; }
             public Dictionary<DataSourceRegistration, Type> RegistrationToDataReaderTypeMap { get; init; }
-            public Dictionary<DataSourceRegistration, List<Project>> RegistrationToProjectsMap { get; init; }
+            public Dictionary<DataSourceRegistration, List<Catalog>> RegistrationToCatalogsMap { get; init; }
         }
 
         #endregion
@@ -104,10 +104,10 @@ namespace Nexus.Services
 
             // Concept:
             //
-            // 1) registrationToProjectsMap, registrationToDataReaderTypeMap and database are instantiated in this method,
+            // 1) registrationToCatalogsMap, registrationToDataReaderTypeMap and database are instantiated in this method,
             // combined into a new DatabaseManagerState and then set in an atomic operation to the State propery.
             // 
-            // 2) Within this method, the registrationToProjectsMap cache gets filled
+            // 2) Within this method, the registrationToCatalogsMap cache gets filled
             //
             // 3) It may happen that during this process, which might take a while, an external caller calls 
             // GetDataReader. To divide both processes (external call vs this method),the State property is introduced, 
@@ -116,8 +116,8 @@ namespace Nexus.Services
             FilterDataSource.ClearCache();
             var database = new NexusDatabase();
 
-            // create new empty projects map
-            var registrationToProjectsMap = new Dictionary<DataSourceRegistration, List<Project>>();
+            // create new empty catalogs map
+            var registrationToCatalogsMap = new Dictionary<DataSourceRegistration, List<Catalog>>();
 
             // load data readers
             var registrationToDataReaderTypeMap = this.LoadDataReaders(this.Config.DataSourceRegistrations);
@@ -135,7 +135,7 @@ namespace Nexus.Services
 
             // instantiate data readers
             var dataReaders = registrationToDataReaderTypeMap
-                                .Select(entry => this.InstantiateDataReader(entry.Key, entry.Value, registrationToProjectsMap))
+                                .Select(entry => this.InstantiateDataReader(entry.Key, entry.Value, registrationToCatalogsMap))
                                 .ToList();
 
             foreach (var dataReader in dataReaders)
@@ -147,29 +147,29 @@ namespace Nexus.Services
                 catch { }
             }
 
-            // get project meta data
-            var projectMetas = registrationToProjectsMap
+            // get catalog meta data
+            var catalogMetas = registrationToCatalogsMap
                 .SelectMany(entry => entry.Value)
-                .Select(project => project.Id)
+                .Select(catalog => catalog.Id)
                 .Distinct()
-                .Select(projectId =>
+                .Select(catalogId =>
                 {
-                    var filePath = this.GetProjectMetaPath(projectId);
+                    var filePath = this.GetCatalogMetaPath(catalogId);
 
                     if (File.Exists(filePath))
                     {
                         var jsonString = File.ReadAllText(filePath);
-                        return JsonSerializer.Deserialize<ProjectMeta>(jsonString);
+                        return JsonSerializer.Deserialize<CatalogMeta>(jsonString);
                     }
                     else
                     {
-                        return new ProjectMeta(projectId);
+                        return new CatalogMeta(catalogId);
                     }
                 })
                 .ToList();
 
-            // ensure that the filter data reader plugin does not create projects and channels without permission
-            var filterProjects = registrationToProjectsMap
+            // ensure that the filter data reader plugin does not create catalogs and channels without permission
+            var filterCatalogs = registrationToCatalogsMap
                 .Where(entry => entry.Key.DataSourceId == FilterDataSource.Id)
                 .SelectMany(entry => entry.Value)
                 .ToList();
@@ -177,61 +177,61 @@ namespace Nexus.Services
             using (var scope = _serviceProvider.CreateScope())
             {
                 var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
-                this.CleanUpFilterProjects(filterProjects, projectMetas, userManager, cancellationToken);
+                this.CleanUpFilterCatalogs(filterCatalogs, catalogMetas, userManager, cancellationToken);
             }
 
-            // merge all projects
-            foreach (var entry in registrationToProjectsMap)
+            // merge all catalogs
+            foreach (var entry in registrationToCatalogsMap)
             {
-                foreach (var project in entry.Value)
+                foreach (var catalog in entry.Value)
                 {
                     if (cancellationToken.IsCancellationRequested)
                         return;
 
-                    // find project container or create a new one
-                    var container = database.ProjectContainers.FirstOrDefault(container => container.Id == project.Id);
+                    // find catalog container or create a new one
+                    var container = database.CatalogContainers.FirstOrDefault(container => container.Id == catalog.Id);
 
                     if (container == null)
                     {
-                        var projectMeta = projectMetas.First(projectMeta => projectMeta.Id == project.Id);
+                        var catalogMeta = catalogMetas.First(catalogMeta => catalogMeta.Id == catalog.Id);
 
-                        container = new ProjectContainer(project.Id);
-                        container.ProjectMeta = projectMeta;
-                        database.ProjectContainers.Add(container);
+                        container = new CatalogContainer(catalog.Id);
+                        container.CatalogMeta = catalogMeta;
+                        database.CatalogContainers.Add(container);
                     }
 
-                    container.Project.Merge(project, ChannelMergeMode.OverwriteMissing);
+                    container.Catalog.Merge(catalog, ChannelMergeMode.OverwriteMissing);
                 }
             }
 
             // the purpose of this block is to initalize empty properties,
             // add missing channels and clean up empty channels
-            foreach (var projectContainer in database.ProjectContainers)
+            foreach (var catalogContainer in database.CatalogContainers)
             {
                 if (cancellationToken.IsCancellationRequested)
                     return;
 
                 // remove all channels where no native datasets are available
                 // because only these provide metadata like name and group
-                var channels = projectContainer.Project.Channels;
+                var channels = catalogContainer.Catalog.Channels;
 
                 channels
                     .Where(channel => string.IsNullOrWhiteSpace(channel.Name))
                     .ToList()
                     .ForEach(channel => channels.Remove(channel));
 
-                // initalize project meta
-                projectContainer.ProjectMeta.Initialize(projectContainer.Project);
+                // initalize catalog meta
+                catalogContainer.CatalogMeta.Initialize(catalogContainer.Catalog);
 
-                // save project meta to disk
-                this.SaveProjectMeta(projectContainer.ProjectMeta);
+                // save catalog meta to disk
+                this.SaveCatalogMeta(catalogContainer.CatalogMeta);
             }
 
             this.State = new DatabaseManagerState()
             {
                 AggregationRegistration = registration,
                 Database = database,
-                RegistrationToProjectsMap = registrationToProjectsMap,
+                RegistrationToCatalogsMap = registrationToCatalogsMap,
                 RegistrationToDataReaderTypeMap = registrationToDataReaderTypeMap
             };
 
@@ -239,13 +239,13 @@ namespace Nexus.Services
             _logger.LogInformation("Database loaded.");
         }
 
-        public List<DataReaderExtensionBase> GetDataReaders(ClaimsPrincipal user, string projectId)
+        public List<DataReaderExtensionBase> GetDataReaders(ClaimsPrincipal user, string catalogId)
         {
             var state = this.State;
 
-            return state.RegistrationToProjectsMap
-                // where the project list contains the project ID
-                .Where(entry => entry.Value.Any(project => project.Id == projectId))
+            return state.RegistrationToCatalogsMap
+                // where the catalog list contains the catalog ID
+                .Where(entry => entry.Value.Any(catalog => catalog.Id == catalogId))
                 // select the registration and get a brand new data reader from it
                 .Select(entry => this.GetDataReader(user, entry.Key, state))
                 // to list
@@ -263,7 +263,7 @@ namespace Nexus.Services
             if (!state.RegistrationToDataReaderTypeMap.TryGetValue(registration, out var dataReaderType))
                 throw new KeyNotFoundException("The requested data reader could not be found.");
 
-            var dataReader = this.InstantiateDataReader(registration, dataReaderType, state.RegistrationToProjectsMap);
+            var dataReader = this.InstantiateDataReader(registration, dataReaderType, state.RegistrationToCatalogsMap);
 
             // special case checks
             if (dataReaderType == typeof(FilterDataSource))
@@ -275,10 +275,10 @@ namespace Nexus.Services
             return dataReader;
         }
 
-        public void SaveProjectMeta(ProjectMeta projectMeta)
+        public void SaveCatalogMeta(CatalogMeta catalogMeta)
         {
-            var filePath = this.GetProjectMetaPath(projectMeta.Id);
-            var jsonString = JsonSerializer.Serialize(projectMeta, new JsonSerializerOptions() { WriteIndented = true });
+            var filePath = this.GetCatalogMetaPath(catalogMeta.Id);
+            var jsonString = JsonSerializer.Serialize(catalogMeta, new JsonSerializerOptions() { WriteIndented = true });
             File.WriteAllText(filePath, jsonString);
         }
 
@@ -355,7 +355,7 @@ namespace Nexus.Services
 
         private DataReaderExtensionBase InstantiateDataReader(
             DataSourceRegistration registration, Type type,
-            Dictionary<DataSourceRegistration, List<Project>> registrationToProjectsMap)
+            Dictionary<DataSourceRegistration, List<Catalog>> registrationToCatalogsMap)
         {
             var logger = _loggerFactory.CreateLogger($"{registration.DataSourceId} - {registration.RootPath}");
             var dataReader = (DataReaderExtensionBase)Activator.CreateInstance(type, registration, logger);
@@ -367,28 +367,28 @@ namespace Nexus.Services
                 ((AggregationDataSource)dataReader).FileAccessManager = fileAccessManger;
             }
 
-            // initialize projects property
-            if (registrationToProjectsMap.TryGetValue(registration, out var value))
+            // initialize catalogs property
+            if (registrationToCatalogsMap.TryGetValue(registration, out var value))
             {
-                dataReader.InitializeProjects(value);
+                dataReader.InitializeCatalogs(value);
             }
             else
             {
                 _logger.LogInformation($"Loading {registration.DataSourceId} on path {registration.RootPath} ...");
-                dataReader.InitializeProjects();
+                dataReader.InitializeCatalogs();
 
-                registrationToProjectsMap[registration] = dataReader
-                    .Projects
-                    .Where(current => NexusUtilities.CheckProjectNamingConvention(current.Id, out var _))
+                registrationToCatalogsMap[registration] = dataReader
+                    .Catalogs
+                    .Where(current => NexusUtilities.CheckCatalogNamingConvention(current.Id, out var _))
                     .ToList();
             }
 
             return dataReader;
         }
 
-        private string GetProjectMetaPath(string projectName)
+        private string GetCatalogMetaPath(string catalogName)
         {
-            return Path.Combine(_options.DataBaseFolderPath, "META", $"{projectName.TrimStart('/').Replace('/', '_')}.json");
+            return Path.Combine(_options.DataBaseFolderPath, "META", $"{catalogName.TrimStart('/').Replace('/', '_')}.json");
         }
 
         private Dictionary<DataSourceRegistration, Type> LoadDataReaders(List<DataSourceRegistration> DataSourceRegistrations)
@@ -439,23 +439,23 @@ namespace Nexus.Services
             return assembly.ExportedTypes.Where(type => type.IsClass && !type.IsAbstract && type.IsSubclassOf(typeof(DataReaderExtensionBase))).ToList();
         }
 
-        private void CleanUpFilterProjects(List<Project> filterProjects,
-                                           List<ProjectMeta> projectMetas,
+        private void CleanUpFilterCatalogs(List<Catalog> filterCatalogs,
+                                           List<CatalogMeta> catalogMetas,
                                            UserManager<IdentityUser> userManager,
                                            CancellationToken cancellationToken)
         {
             var usersMap = new Dictionary<string, ClaimsPrincipal>();
-            var projectsToRemove = new List<Project>();
+            var catalogsToRemove = new List<Catalog>();
 
-            foreach (var project in filterProjects)
+            foreach (var catalog in filterCatalogs)
             {
                 if (cancellationToken.IsCancellationRequested)
                     return;
 
-                var projectMeta = projectMetas.First(projectMeta => projectMeta.Id == project.Id);
+                var catalogMeta = catalogMetas.First(catalogMeta => catalogMeta.Id == catalog.Id);
                 var channelsToRemove = new List<Channel>();
 
-                foreach (var channel in project.Channels)
+                foreach (var channel in catalog.Channels)
                 {
                     var datasetsToRemove = new List<Dataset>();
 
@@ -475,7 +475,7 @@ namespace Nexus.Services
                                 usersMap[codeDefinition.Owner] = user;
                             }
 
-                            keep = projectMeta.Id == FilterConstants.SharedProjectID || Utilities.IsProjectEditable(user, projectMeta);
+                            keep = catalogMeta.Id == FilterConstants.SharedCatalogID || Utilities.IsCatalogEditable(user, catalogMeta);
                         }
 
                         if (!keep)
@@ -493,16 +493,16 @@ namespace Nexus.Services
 
                 foreach (var channelToRemove in channelsToRemove)
                 {
-                    project.Channels.Remove(channelToRemove);
+                    catalog.Channels.Remove(channelToRemove);
 
-                    if (!project.Channels.Any())
-                        projectsToRemove.Add(project);
+                    if (!catalog.Channels.Any())
+                        catalogsToRemove.Add(catalog);
                 }
             }
 
-            foreach (var projectToRemove in projectsToRemove)
+            foreach (var catalogToRemove in catalogsToRemove)
             {
-                filterProjects.Remove(projectToRemove);
+                filterCatalogs.Remove(catalogToRemove);
             }
         }
 

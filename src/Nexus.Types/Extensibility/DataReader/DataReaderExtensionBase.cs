@@ -34,7 +34,7 @@ namespace Nexus.Extensibility
 
         public Progress<double> Progress { get; }
 
-        public List<Project> Projects { get; private set; }
+        public List<Catalog> Catalogs { get; private set; }
 
         public Dictionary<string, string> OptionalParameters { get; set; }
 
@@ -44,13 +44,13 @@ namespace Nexus.Extensibility
 
         #region Methods
 
-        public void InitializeProjects()
+        public void InitializeCatalogs()
         {
-            var projects = this.LoadProjects();
+            var catalogs = this.LoadCatalogs();
 
-            foreach (var project in projects)
+            foreach (var catalog in catalogs)
             {
-                foreach (var channel in project.Channels)
+                foreach (var channel in catalog.Channels)
                 {
                     foreach (var dataset in channel.Datasets)
                     {
@@ -59,12 +59,12 @@ namespace Nexus.Extensibility
                 }
             }
 
-            this.Projects = projects;
+            this.Catalogs = catalogs;
         }
 
-        public void InitializeProjects(List<Project> projects)
+        public void InitializeCatalogs(List<Catalog> catalogs)
         {
-            this.Projects = projects;
+            this.Catalogs = catalogs;
         }
 
         public DataReaderDoubleStream ReadAsDoubleStream(
@@ -254,7 +254,7 @@ namespace Nexus.Extensibility
             }
         }
 
-        public AvailabilityResult GetAvailability(string projectId, DateTime begin, DateTime end, AvailabilityGranularity granularity)
+        public AvailabilityResult GetAvailability(string catalogId, DateTime begin, DateTime end, AvailabilityGranularity granularity)
         {
             var dateBegin = begin.Date;
             var dateEnd = end.Date;
@@ -272,7 +272,7 @@ namespace Nexus.Extensibility
                     Parallel.For(0, totalDays, day =>
                     {
                         var date = dateBegin.AddDays(day);
-                        var availability = this.GetAvailability(projectId, date);
+                        var availability = this.GetAvailability(catalogId, date);
                         aggregatedData.TryAdd(date, availability);
                     });
 
@@ -291,7 +291,7 @@ namespace Nexus.Extensibility
                         var month = new DateTime(date.Year, date.Month, 1);
 
                         months[day] = month;
-                        datasets[day] = this.GetAvailability(projectId, date);
+                        datasets[day] = this.GetAvailability(catalogId, date);
                     });
 
                     var uniqueMonths = months
@@ -329,25 +329,25 @@ namespace Nexus.Extensibility
             };
         }
 
-        public List<string> GetProjectIds()
+        public List<string> GetCatalogIds()
         {
-            return this.Projects.Select(project => project.Id).ToList();
+            return this.Catalogs.Select(catalog => catalog.Id).ToList();
         }
 
-        public bool TryGetProject(string projectId, out Project projectInfo)
+        public bool TryGetCatalog(string catalogId, out Catalog catalogInfo)
         {
-            projectInfo = this.Projects.FirstOrDefault(project => project.Id == projectId);
-            return projectInfo != null;
+            catalogInfo = this.Catalogs.FirstOrDefault(catalog => catalog.Id == catalogId);
+            return catalogInfo != null;
         }
 
-        public Project GetProject(string projectId)
+        public Catalog GetCatalog(string catalogId)
         {
-            return this.Projects.First(project => project.Id == projectId);
+            return this.Catalogs.First(catalog => catalog.Id == catalogId);
         }
 
-        public bool IsDataOfDayAvailable(string projectId, DateTime day)
+        public bool IsDataOfDayAvailable(string catalogId, DateTime day)
         {
-            return this.GetAvailability(projectId, day) > 0;
+            return this.GetAvailability(catalogId, day) > 0;
         }
 
 #warning Why generic?
@@ -380,9 +380,9 @@ namespace Nexus.Extensibility
             //
         }
 
-        protected abstract List<Project> LoadProjects();
+        protected abstract List<Catalog> LoadCatalogs();
 
-        protected abstract double GetAvailability(string projectId, DateTime Day);
+        protected abstract double GetAvailability(string catalogId, DateTime Day);
 
         #endregion
     }

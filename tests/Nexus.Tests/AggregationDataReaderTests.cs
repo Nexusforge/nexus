@@ -20,14 +20,14 @@ namespace Nexus.Tests
         }
 
         [Fact]
-        public void ProvidesProjectIds()
+        public void ProvidesCatalogIds()
         {
             // arrange
             var dataReader = new AggregationDataSource(_fixture.DataSourceRegistration, _logger);
-            dataReader.InitializeProjects();
+            dataReader.InitializeCatalogs();
 
             // act
-            var actual = dataReader.GetProjectIds();
+            var actual = dataReader.GetCatalogIds();
             actual.Sort();
 
             // assert
@@ -36,14 +36,14 @@ namespace Nexus.Tests
         }
 
         [Fact]
-        public void ProvidesProject()
+        public void ProvidesCatalog()
         {
             // arrange
             var dataReader = new AggregationDataSource(_fixture.DataSourceRegistration, _logger);
-            dataReader.InitializeProjects();
+            dataReader.InitializeCatalogs();
 
             // act
-            var actual = dataReader.GetProject("/A/B/C");
+            var actual = dataReader.GetCatalog("/A/B/C");
 
             // assert
             var expectedStartDate = new DateTime(2020, 07, 08, 00, 00, 00);
@@ -51,8 +51,8 @@ namespace Nexus.Tests
 
             Assert.Single(actual.Channels);
             Assert.Equal("100 Hz_mean", actual.Channels.First().Datasets.First().Id);
-            Assert.Equal(expectedStartDate, actual.ProjectStart);
-            Assert.Equal(expectedEndDate, actual.ProjectEnd);
+            Assert.Equal(expectedStartDate, actual.CatalogStart);
+            Assert.Equal(expectedEndDate, actual.CatalogEnd);
         }
 
         [Fact]
@@ -60,7 +60,7 @@ namespace Nexus.Tests
         {
             // arrange
             var dataReader = new AggregationDataSource(_fixture.DataSourceRegistration, _logger);
-            dataReader.InitializeProjects();
+            dataReader.InitializeCatalogs();
 
             // act
             var actual = dataReader.GetAvailability("/A/B/C", new DateTime(2020, 07, 07, 0, 0, 0, DateTimeKind.Utc), new DateTime(2020, 07, 10, 0, 0, 0, DateTimeKind.Utc), DataModel.AvailabilityGranularity.Day);
@@ -81,11 +81,11 @@ namespace Nexus.Tests
         {
             // arrange
             var dataReader = new AggregationDataSource(_fixture.DataSourceRegistration, _logger);
-            dataReader.InitializeProjects();
+            dataReader.InitializeCatalogs();
 
             // act
-            var project = dataReader.GetProject("/A/B/C");
-            var dataset = project.Channels.First().Datasets.First();
+            var catalog = dataReader.GetCatalog("/A/B/C");
+            var dataset = catalog.Channels.First().Datasets.First();
 
             var begin = new DateTime(2020, 07, 07, 23, 00, 00, DateTimeKind.Utc);
             var end = new DateTime(2020, 07, 10, 00, 00, 00, DateTimeKind.Utc);

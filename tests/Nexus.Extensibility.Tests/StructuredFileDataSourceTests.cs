@@ -40,8 +40,8 @@ namespace Nexus.Extensibility.Tests
 
             await dataSource.OnParametersSetAsync();
 
-            var projects = await dataSource.GetDataModelAsync(CancellationToken.None);
-            var actual = await dataSource.GetAvailabilityAsync(projects.First().Id, begin, end, CancellationToken.None);
+            var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
+            var actual = await dataSource.GetAvailabilityAsync(catalogs.First().Id, begin, end, CancellationToken.None);
 
             Assert.Equal(expected, actual, precision);
         }
@@ -74,7 +74,7 @@ namespace Nexus.Extensibility.Tests
         [InlineData("DATABASES/F", "2019-12-31", "2020-01-02")]
         [InlineData("DATABASES/G", "2019-12-31", "2020-01-01")]
         [InlineData("DATABASES/H", "2019-12-31", "2020-01-02")]
-        public async Task CanProvideProjectTimeRange(string rootPath, DateTime expectedBegin, DateTime expectedEnd)
+        public async Task CanProvideCatalogTimeRange(string rootPath, DateTime expectedBegin, DateTime expectedEnd)
         {
             var dataSource = new StructuredFileDataSourceTester()
             {
@@ -85,8 +85,8 @@ namespace Nexus.Extensibility.Tests
 
             await dataSource.OnParametersSetAsync();
 
-            var projects = await dataSource.GetDataModelAsync(CancellationToken.None);
-            var actual = await dataSource.GetProjectTimeRangeAsync(projects.First().Id, CancellationToken.None);
+            var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
+            var actual = await dataSource.GetCatalogTimeRangeAsync(catalogs.First().Id, CancellationToken.None);
 
             Assert.Equal(expectedBegin, actual.Begin);
             Assert.Equal(expectedEnd, actual.End);
@@ -104,7 +104,7 @@ namespace Nexus.Extensibility.Tests
                 Parameters = null,
             } as IDataSource;
 
-            var dataModel = await dataSource.GetDataModelAsync(CancellationToken.None);
+            var dataModel = await dataSource.GetCatalogsAsync(CancellationToken.None);
             var dataset = dataModel.First().Channels.First().Datasets.First();
 
             var begin = new DateTime(2019, 12, 31, 0, 0, 0, DateTimeKind.Utc);

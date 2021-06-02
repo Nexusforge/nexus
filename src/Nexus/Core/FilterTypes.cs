@@ -43,7 +43,7 @@ namespace Nexus.Core
 
         public string SampleRate { get; set; }
 
-        public List<string> RequestedProjectIds { get; set; } = new List<string>();
+        public List<string> RequestedCatalogIds { get; set; } = new List<string>();
 
         public DateTime CreationDate { get; set; } = DateTime.UtcNow;
     }
@@ -102,10 +102,10 @@ namespace Nexus.Core
             // is no way to generate an ID once and store it somewhere. Therefore the 
             // ID must be generated each time the filter code is instantiated. To avoid 
             // having ever changing IDs, the ID is effectively a good hash code based 
-            // on the project ID and channel name. In the end this means that the 
+            // on the catalog ID and channel name. In the end this means that the 
             // channel name determines the ID. And so renaming a channel means changing 
             // the ID.
-            var value = $"({codeDefinition.Id}) {filterChannel.ProjectId}/{filterChannel.ChannelName}";
+            var value = $"({codeDefinition.Id}) {filterChannel.CatalogId}/{filterChannel.ChannelName}";
             var md5 = MD5.Create(); // compute hash is not thread safe!
             var hash = md5.ComputeHash(Encoding.UTF8.GetBytes(value)); // 
             return new Guid(hash);

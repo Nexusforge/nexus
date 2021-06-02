@@ -92,7 +92,7 @@ namespace Nexus.Services
                         userManager.ConfirmEmailAsync(user, token);
 
                         // add claim
-                        var claim = new Claim(Claims.CAN_ACCESS_PROJECT, "/IN_MEMORY/TEST/ACCESSIBLE;/IN_MEMORY/TEST/RESTRICTED");
+                        var claim = new Claim(Claims.CAN_ACCESS_CATALOG, "/IN_MEMORY/TEST/ACCESSIBLE;/IN_MEMORY/TEST/RESTRICTED");
                         userManager.AddClaimAsync(user, claim).Wait();
                     }
                 }

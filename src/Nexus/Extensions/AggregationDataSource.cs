@@ -38,15 +38,15 @@ namespace Nexus.Extensions
 #warning Unify this with other readers
         public override (T[] Dataset, byte[] Status) ReadSingle<T>(Dataset dataset, DateTime begin, DateTime end)
         {
-            var project = dataset.Channel.Project;
+            var catalog = dataset.Channel.Catalog;
             var channel = dataset.Channel;
-            var projectFolderPath = Path.Combine(this.RootPath, "DATA", WebUtility.UrlEncode(project.Id));
+            var catalogFolderPath = Path.Combine(this.RootPath, "DATA", WebUtility.UrlEncode(catalog.Id));
             var samplesPerDay = new SampleRateContainer(dataset.Id).SamplesPerDay;
             var length = (long)Math.Round((end - begin).TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
             var data = new T[length];
             var status = new byte[length];
 
-            if (!Directory.Exists(projectFolderPath))
+            if (!Directory.Exists(catalogFolderPath))
                 return (data, status);
 
             var periodPerFile = TimeSpan.FromDays(1);
@@ -61,7 +61,7 @@ namespace Nexus.Extensions
             while (remainingBufferLength > 0)
             {
                 var filePath = Path.Combine(
-                    projectFolderPath, 
+                    catalogFolderPath, 
                     currentBegin.ToString("yyyy-MM"), 
                     currentBegin.ToString("dd"),
                     $"{channel.Id}_{dataset.Id.Replace(" ", "_")}.nex");
@@ -103,7 +103,7 @@ namespace Nexus.Extensions
             return (data, status);
         }
 
-        protected override List<Project> LoadProjects()
+        protected override List<Catalog> LoadCatalogs()
         {
             // (0) load versioning file
             var versioningFilePath = Path.Combine(this.RootPath, "versioning.json");
@@ -118,12 +118,12 @@ namespace Nexus.Extensions
 
             var firstMonth = DateTime.MaxValue;
 
-            foreach (var projectDirectory in Directory.EnumerateDirectories(dataFolderPath))
+            foreach (var catalogDirectory in Directory.EnumerateDirectories(dataFolderPath))
             {
-                var projectFirstMonth = this.GetProjectFirstMonthWithData(projectDirectory);
+                var catalogFirstMonth = this.GetCatalogFirstMonthWithData(catalogDirectory);
 
-                if (projectFirstMonth != DateTime.MinValue && projectFirstMonth < firstMonth)
-                    firstMonth = projectFirstMonth;
+                if (catalogFirstMonth != DateTime.MinValue && catalogFirstMonth < firstMonth)
+                    firstMonth = catalogFirstMonth;
             }
 
             // (2) for each month
@@ -139,8 +139,8 @@ namespace Nexus.Extensions
 
             for (int i = 0; i < months; i++)
             {
-                // (3) find available project ids
-                var projectIds = Directory
+                // (3) find available catalog ids
+                var catalogIds = Directory
                     .EnumerateDirectories(dataFolderPath)
                     .Select(current => WebUtility.UrlDecode(Path.GetFileName(current)))
                     .ToList();
@@ -148,34 +148,34 @@ namespace Nexus.Extensions
                 // (4) find corresponding cache file
                 var cacheFilePath = Path.Combine(cacheFolderPath, $"{currentMonth.ToString("yyyy-MM")}.json");
                
-                List<Project> cache;
+                List<Catalog> cache;
 
                 // (5.a) cache file exists
                 if (File.Exists(cacheFilePath))
                 {
-                    cache = JsonSerializerHelper.Deserialize<List<Project>>(cacheFilePath);
-                    cache.ForEach(project => project.Initialize());
+                    cache = JsonSerializerHelper.Deserialize<List<Catalog>>(cacheFilePath);
+                    cache.ForEach(catalog => catalog.Initialize());
 
-                    foreach (var projectId in projectIds)
+                    foreach (var catalogId in catalogIds)
                     {
-                        var project = cache.FirstOrDefault(project => project.Id == projectId);
-                        var currentMonthFolder = Path.Combine(dataFolderPath, WebUtility.UrlEncode(projectId), currentMonth.ToString("yyyy-MM"));
+                        var catalog = cache.FirstOrDefault(catalog => catalog.Id == catalogId);
+                        var currentMonthFolder = Path.Combine(dataFolderPath, WebUtility.UrlEncode(catalogId), currentMonth.ToString("yyyy-MM"));
 
-                        // project is in cache ...
-                        if (project != null)
+                        // catalog is in cache ...
+                        if (catalog != null)
                         {
                             // ... but cache is outdated
-                            if (this.IsCacheOutdated(projectId, currentMonthFolder, versioning))
+                            if (this.IsCacheOutdated(catalogId, currentMonthFolder, versioning))
                             {
-                                project = this.ScanFiles(projectId, currentMonthFolder, versioning);
+                                catalog = this.ScanFiles(catalogId, currentMonthFolder, versioning);
                                 cacheChanged = true;
                             }
                         }
-                        // project is not in cache
+                        // catalog is not in cache
                         else
                         {
-                            project = this.ScanFiles(projectId, currentMonthFolder, versioning);
-                            cache.Add(project);
+                            catalog = this.ScanFiles(catalogId, currentMonthFolder, versioning);
+                            cache.Add(catalog);
                             cacheChanged = true;
                         }
                     }
@@ -183,12 +183,12 @@ namespace Nexus.Extensions
                 // (5.b) cache file does not exist
                 else
                 {
-                    cache = projectIds.Select(projectId =>
+                    cache = catalogIds.Select(catalogId =>
                     {
-                        var currentMonthFolder = Path.Combine(dataFolderPath, WebUtility.UrlEncode(projectId), currentMonth.ToString("yyyy-MM"));
-                        var project = this.ScanFiles(projectId, currentMonthFolder, versioning);
+                        var currentMonthFolder = Path.Combine(dataFolderPath, WebUtility.UrlEncode(catalogId), currentMonth.ToString("yyyy-MM"));
+                        var catalog = this.ScanFiles(catalogId, currentMonthFolder, versioning);
                         cacheChanged = true;
-                        return project;
+                        return catalog;
                     }).ToList();
                 }
 
@@ -203,12 +203,12 @@ namespace Nexus.Extensions
             }
 
             // (7) update main cache
-            List<Project> mainCache;
+            List<Catalog> mainCache;
 
             if (cacheChanged || !File.Exists(mainCacheFilePath))
             {
                 var cacheFiles = Directory.EnumerateFiles(cacheFolderPath, "*-*.json");
-                mainCache = new List<Project>();
+                mainCache = new List<Catalog>();
 
                 var message = "Merging cache files into main cache ...";
 
@@ -218,17 +218,17 @@ namespace Nexus.Extensions
 
                     foreach (var cacheFile in cacheFiles)
                     {
-                        var cache = JsonSerializerHelper.Deserialize<List<Project>>(cacheFile);
-                        cache.ForEach(project => project.Initialize());
+                        var cache = JsonSerializerHelper.Deserialize<List<Catalog>>(cacheFile);
+                        cache.ForEach(catalog => catalog.Initialize());
 
-                        foreach (var project in cache)
+                        foreach (var catalog in cache)
                         {
-                            var reference = mainCache.FirstOrDefault(current => current.Id == project.Id);
+                            var reference = mainCache.FirstOrDefault(current => current.Id == catalog.Id);
 
                             if (reference != null)
-                                reference.Merge(project, ChannelMergeMode.NewWins);
+                                reference.Merge(catalog, ChannelMergeMode.NewWins);
                             else
-                                mainCache.Add(project);
+                                mainCache.Add(catalog);
                         }
                     }
 
@@ -244,35 +244,35 @@ namespace Nexus.Extensions
             }
             else
             {
-                mainCache = JsonSerializerHelper.Deserialize<List<Project>>(mainCacheFilePath);
-                mainCache.ForEach(project => project.Initialize());
+                mainCache = JsonSerializerHelper.Deserialize<List<Catalog>>(mainCacheFilePath);
+                mainCache.ForEach(catalog => catalog.Initialize());
             }
 
-            // update project start and end
-            foreach (var project in mainCache)
+            // update catalog start and end
+            foreach (var catalog in mainCache)
             {
-                var projectFolderPath = Path.Combine(dataFolderPath, WebUtility.UrlEncode(project.Id));
-                var projectFirstMonth = this.GetProjectFirstMonthWithData(projectFolderPath);
-                var currentMonthFolder = Path.Combine(dataFolderPath, WebUtility.UrlEncode(project.Id), projectFirstMonth.ToString("yyyy-MM"));
+                var catalogFolderPath = Path.Combine(dataFolderPath, WebUtility.UrlEncode(catalog.Id));
+                var catalogFirstMonth = this.GetCatalogFirstMonthWithData(catalogFolderPath);
+                var currentMonthFolder = Path.Combine(dataFolderPath, WebUtility.UrlEncode(catalog.Id), catalogFirstMonth.ToString("yyyy-MM"));
                 var folders = Directory.EnumerateDirectories(currentMonthFolder);
                 var firstDateTime = this.GetFirstDateTime(folders);
 
-                project.ProjectStart = firstDateTime;
-                project.ProjectEnd = versioning.ScannedUntilMap[project.Id];
+                catalog.CatalogStart = firstDateTime;
+                catalog.CatalogEnd = versioning.ScannedUntilMap[catalog.Id];
             }
 
             return mainCache;
         }
 
-        protected override double GetAvailability(string projectId, DateTime day)
+        protected override double GetAvailability(string catalogId, DateTime day)
         {
-            if (!this.Projects.Any(project => project.Id == projectId))
-                throw new Exception($"The project '{projectId}' could not be found.");
+            if (!this.Catalogs.Any(catalog => catalog.Id == catalogId))
+                throw new Exception($"The catalog '{catalogId}' could not be found.");
 
             var folderPath = Path.Combine(
                 this.RootPath, 
                 "DATA", 
-                WebUtility.UrlEncode(projectId),
+                WebUtility.UrlEncode(catalogId),
                 day.ToString("yyyy-MM"),
                 day.ToString("dd")
             );
@@ -280,7 +280,7 @@ namespace Nexus.Extensions
             return Directory.Exists(folderPath) ? 1 : 0;
         }
 
-        private bool IsCacheOutdated(string projectId, string monthFolder, AggregationVersioning versioning)
+        private bool IsCacheOutdated(string catalogId, string monthFolder, AggregationVersioning versioning)
         {
             if (Directory.Exists(monthFolder))
             {
@@ -288,7 +288,7 @@ namespace Nexus.Extensions
                .EnumerateDirectories(monthFolder);
 
                 var lastDateTime = this.GetLastDateTime(folders);
-                return lastDateTime > versioning.ScannedUntilMap[projectId];
+                return lastDateTime > versioning.ScannedUntilMap[catalogId];
             }
             else
             {
@@ -296,9 +296,9 @@ namespace Nexus.Extensions
             }
         }
 
-        private Project ScanFiles(string projectId, string currentMonthFolder, AggregationVersioning versioning)
+        private Catalog ScanFiles(string catalogId, string currentMonthFolder, AggregationVersioning versioning)
         {
-            var project = new Project(projectId);
+            var catalog = new Catalog(catalogId);
 
             if (Directory.Exists(currentMonthFolder))
             {
@@ -311,21 +311,21 @@ namespace Nexus.Extensions
                 {
                     foreach (var dayFolder in dayFolders)
                     {
-                        var newProject = this.GetProject(projectId, dayFolder);
-                        project.Merge(newProject, ChannelMergeMode.NewWins);
+                        var newCatalog = this.GetCatalog(catalogId, dayFolder);
+                        catalog.Merge(newCatalog, ChannelMergeMode.NewWins);
                     }
 
                     // update scanned until
                     var scannedUntil = this.GetLastDateTime(dayFolders);
 
-                    if (versioning.ScannedUntilMap.TryGetValue(projectId, out var value))
+                    if (versioning.ScannedUntilMap.TryGetValue(catalogId, out var value))
                     {
                         if (scannedUntil > value)
-                            versioning.ScannedUntilMap[projectId] = scannedUntil;
+                            versioning.ScannedUntilMap[catalogId] = scannedUntil;
                     }
                     else
                     {
-                        versioning.ScannedUntilMap[projectId] = scannedUntil;
+                        versioning.ScannedUntilMap[catalogId] = scannedUntil;
                     }
 
                     this.Logger.LogInformation($"{message} Done.");
@@ -336,13 +336,13 @@ namespace Nexus.Extensions
                 }
             }
 
-            return project;
+            return catalog;
         }
 
-        private DateTime GetProjectFirstMonthWithData(string projectFolderPath)
+        private DateTime GetCatalogFirstMonthWithData(string catalogFolderPath)
         {
             var monthFolders = Directory
-                    .EnumerateDirectories(projectFolderPath);
+                    .EnumerateDirectories(catalogFolderPath);
 
             if (monthFolders.Any())
             {
@@ -416,9 +416,9 @@ namespace Nexus.Extensions
             }
         }
 
-        private Project GetProject(string projectId, string dayFolder)
+        private Catalog GetCatalog(string catalogId, string dayFolder)
         {
-            var project = new Project(projectId);
+            var catalog = new Catalog(catalogId);
             var channelMap = new Dictionary<Guid, Channel>();
 
             Directory
@@ -433,7 +433,7 @@ namespace Nexus.Extensions
 
                     if (!channelMap.TryGetValue(id, out var channel))
                     {
-                        channel = new Channel(id, project);
+                        channel = new Channel(id, catalog);
                         channelMap[id] = channel;
                     }
 
@@ -445,9 +445,9 @@ namespace Nexus.Extensions
                     channel.Datasets.Add(dataset);
                 });
 
-            project.Channels.AddRange(channelMap.Values.ToList());
+            catalog.Channels.AddRange(channelMap.Values.ToList());
 
-            return project;
+            return catalog;
         }
 
         #endregion

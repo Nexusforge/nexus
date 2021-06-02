@@ -23,26 +23,26 @@ namespace Nexus.Core
             return principal;
         }
 
-        public static bool IsProjectAccessible(ClaimsPrincipal principal, string projectId, NexusDatabase database)
+        public static bool IsCatalogAccessible(ClaimsPrincipal principal, string catalogId, NexusDatabase database)
         {
             if (principal == null)
                 return false;
 
             var identity = principal.Identity;
-            var projectContainer = database.ProjectContainers.First(current => current.Id == projectId);
-            var projectMeta = projectContainer.ProjectMeta;
+            var catalogContainer = database.CatalogContainers.First(current => current.Id == catalogId);
+            var catalogMeta = catalogContainer.CatalogMeta;
 
-            return Utilities.IsProjectAccessible(principal, projectMeta);
+            return Utilities.IsCatalogAccessible(principal, catalogMeta);
         }
 
-        public static bool IsProjectAccessible(ClaimsPrincipal principal, ProjectMeta projectMeta)
+        public static bool IsCatalogAccessible(ClaimsPrincipal principal, CatalogMeta catalogMeta)
         {
             if (principal == null)
                 return false;
 
             var identity = principal.Identity;
 
-            if (projectMeta.License.LicensingScheme == ProjectLicensingScheme.None)
+            if (catalogMeta.License.LicensingScheme == CatalogLicensingScheme.None)
             {
                 return true;
             }
@@ -50,19 +50,19 @@ namespace Nexus.Core
             {
                 var isAdmin = principal.HasClaim(claim => claim.Type == Claims.IS_ADMIN && claim.Value == "true");
 
-                var canAccessProject = principal.HasClaim(claim => claim.Type == Claims.CAN_ACCESS_PROJECT &&
-                                                          claim.Value.Split(";").Any(current => current == projectMeta.Id));
+                var canAccessCatalog = principal.HasClaim(claim => claim.Type == Claims.CAN_ACCESS_CATALOG &&
+                                                          claim.Value.Split(";").Any(current => current == catalogMeta.Id));
 
                 var canAccessGroup = principal.HasClaim(claim => claim.Type == Claims.CAN_ACCESS_GROUP &&
-                                                        claim.Value.Split(";").Any(group => projectMeta.GroupMemberships.Contains(group)));
+                                                        claim.Value.Split(";").Any(group => catalogMeta.GroupMemberships.Contains(group)));
 
-                return isAdmin || canAccessProject || canAccessGroup;
+                return isAdmin || canAccessCatalog || canAccessGroup;
             }
 
             return false;
         }
 
-        public static bool IsProjectEditable(ClaimsPrincipal principal, ProjectMeta projectMeta)
+        public static bool IsCatalogEditable(ClaimsPrincipal principal, CatalogMeta catalogMeta)
         {
             if (principal == null)
                 return false;
@@ -73,20 +73,20 @@ namespace Nexus.Core
             {
                 var isAdmin = principal.HasClaim(claim => claim.Type == Claims.IS_ADMIN && claim.Value == "true");
 
-                var canEditProject = principal.HasClaim(claim => claim.Type == Claims.CAN_EDIT_PROJECT
-                                                       && claim.Value.Split(";").Any(current => current == projectMeta.Id));
+                var canEditCatalog = principal.HasClaim(claim => claim.Type == Claims.CAN_EDIT_CATALOG
+                                                       && claim.Value.Split(";").Any(current => current == catalogMeta.Id));
 
-                return isAdmin || canEditProject;
+                return isAdmin || canEditCatalog;
             }
 
             return false;
         }
 
-        public static bool IsProjectVisible(ClaimsPrincipal principal, ProjectMeta projectMeta, bool isProjectAccessible)
+        public static bool IsCatalogVisible(ClaimsPrincipal principal, CatalogMeta catalogMeta, bool isCatalogAccessible)
         {
             var identity = principal.Identity;
 
-            // 1. project is visible if user is admin (this check must come before 2.)
+            // 1. catalog is visible if user is admin (this check must come before 2.)
             if (identity.IsAuthenticated)
             {
                 var isAdmin = principal.HasClaim(claim => claim.Type == Claims.IS_ADMIN && claim.Value == "true");
@@ -95,18 +95,18 @@ namespace Nexus.Core
                     return true; // not "return isAdmin"!!
             }
 
-            // 2. test projects are hidden by default
-            if (Constants.HiddenProjects.Contains(projectMeta.Id))
+            // 2. test catalogs are hidden by default
+            if (Constants.HiddenCatalogs.Contains(catalogMeta.Id))
                 return false;
 
-            // 3. other projects
+            // 3. other catalogs
 
-            // project is hidden, addtional checks required
-            if (projectMeta.IsHidden)
-                // ignore hidden property in case user has access to project
-                return isProjectAccessible;
+            // catalog is hidden, addtional checks required
+            if (catalogMeta.IsHidden)
+                // ignore hidden property in case user has access to catalog
+                return isCatalogAccessible;
 
-            // project is visible
+            // catalog is visible
             else
                 return true;
         }

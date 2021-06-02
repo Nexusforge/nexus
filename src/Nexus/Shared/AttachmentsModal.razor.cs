@@ -46,7 +46,7 @@ namespace Nexus.Shared
 
         public string GetHref(string filePath)
         {
-            return $"/attachments/{this.UserState.ProjectContainer.PhysicalName}/{this.GetFileName(filePath)}";
+            return $"/attachments/{this.UserState.CatalogContainer.PhysicalName}/{this.GetFileName(filePath)}";
         }
 
         private void OnIsOpenChanged(bool value)
