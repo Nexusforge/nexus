@@ -20,17 +20,20 @@ namespace Nexus.Extensibility.Tests
         }
 
         [Theory]
-        [InlineData("DATABASES/A", "2020-01-02", "2020-01-03", 2 / 144.0, 4)]
-        [InlineData("DATABASES/A", "2019-12-30", "2020-01-03", 3 / (4 * 144.0), 4)]
-        [InlineData("DATABASES/B", "2020-01-02", "2020-01-03", 2 / 144.0, 4)]
-        [InlineData("DATABASES/C", "2020-01-02", "2020-01-03", 2 / 144.0, 4)]
-        [InlineData("DATABASES/D", "2020-01-02", "2020-01-03", (2 / 144.0 + 2 / 24.0) / 2, 4)]
-        [InlineData("DATABASES/E", "2020-01-02", "2020-01-03", (1 + 2 / 48.0) / 2, 4)]
-        [InlineData("DATABASES/F", "2020-01-02", "2020-01-03", 2 / 24.0, 4)]
-        [InlineData("DATABASES/G", "2020-01-01", "2020-01-02", 2 / 86400.0, 6)]
-        [InlineData("DATABASES/H", "2020-01-02", "2020-01-03", 2 / 144.0, 4)]
-        public async Task CanProvideAvailability(string rootPath, DateTime begin, DateTime end, double expected, int precision)
+        [InlineData("DATABASES/A", "2020-01-02T00-00-00Z", "2020-01-03T00-00-00Z", 2 / 144.0, 4)]
+        [InlineData("DATABASES/A", "2019-12-30T00-00-00Z", "2020-01-03T00-00-00Z", 3 / (4 * 144.0), 4)]
+        [InlineData("DATABASES/B", "2020-01-02T00-00-00Z", "2020-01-03T00-00-00Z", 2 / 144.0, 4)]
+        [InlineData("DATABASES/C", "2020-01-02T00-00-00Z", "2020-01-03T00-00-00Z", 2 / 144.0, 4)]
+        [InlineData("DATABASES/D", "2020-01-02T00-00-00Z", "2020-01-03T00-00-00Z", (2 / 144.0 + 2 / 24.0) / 2, 4)]
+        [InlineData("DATABASES/E", "2020-01-02T00-00-00Z", "2020-01-03T00-00-00Z", (1 + 2 / 48.0) / 2, 4)]
+        [InlineData("DATABASES/F", "2020-01-02T00-00-00Z", "2020-01-03T00-00-00Z", 2 / 24.0, 4)]
+        [InlineData("DATABASES/G", "2020-01-01T00-00-00Z", "2020-01-02T00-00-00Z", 2 / 86400.0, 6)]
+        [InlineData("DATABASES/H", "2020-01-02T00-00-00Z", "2020-01-03T00-00-00Z", 2 / 144.0, 4)]
+        public async Task CanProvideAvailability(string rootPath, string beginString, string endString, double expected, int precision)
         {
+            var begin = DateTime.ParseExact(beginString, "yyyy-MM-ddTHH-mm-ssZ", default, DateTimeStyles.AdjustToUniversal);
+            var end = DateTime.ParseExact(endString, "yyyy-MM-ddTHH-mm-ssZ", default, DateTimeStyles.AdjustToUniversal);
+
             var dataSource = new StructuredFileDataSourceTester()
             {
                 RootPath = rootPath,
@@ -51,8 +54,8 @@ namespace Nexus.Extensibility.Tests
         [InlineData("2020-01-02T00-00-00Z", "2020-01-01T00-00-00Z")]
         public async Task GetAvailabilityThrowsForInvalidTimePeriod(string beginString, string endString)
         {
-            var begin = DateTime.ParseExact(beginString, "yyyy-MM-ddTHH-mm-ssZ", default);
-            var end = DateTime.ParseExact(endString, "yyyy-MM-ddTHH-mm-ssZ", default);
+            var begin = DateTime.ParseExact(beginString, "yyyy-MM-ddTHH-mm-ssZ", default, DateTimeStyles.AdjustToUniversal);
+            var end = DateTime.ParseExact(endString, "yyyy-MM-ddTHH-mm-ssZ", default, DateTimeStyles.AdjustToUniversal);
 
             var dataSource = new StructuredFileDataSourceTester()
             {
@@ -66,16 +69,19 @@ namespace Nexus.Extensibility.Tests
         }
 
         [Theory]
-        [InlineData("DATABASES/A", "2019-12-31", "2020-01-02")]
-        [InlineData("DATABASES/B", "2019-12-31", "2020-01-02")]
-        [InlineData("DATABASES/C", "2019-12-31", "2020-01-02")]
-        [InlineData("DATABASES/D", "2019-12-31", "2020-01-02")]
-        [InlineData("DATABASES/E", "2019-12-31", "2020-01-02")]
-        [InlineData("DATABASES/F", "2019-12-31", "2020-01-02")]
-        [InlineData("DATABASES/G", "2019-12-31", "2020-01-01")]
-        [InlineData("DATABASES/H", "2019-12-31", "2020-01-02")]
-        public async Task CanProvideCatalogTimeRange(string rootPath, DateTime expectedBegin, DateTime expectedEnd)
+        [InlineData("DATABASES/A", "2019-12-31T12-00-00Z", "2020-01-02T00-20-00Z")]
+        [InlineData("DATABASES/B", "2019-12-31T12-00-00Z", "2020-01-02T00-20-00Z")]
+        [InlineData("DATABASES/C", "2019-12-31T12-00-00Z", "2020-01-02T00-20-00Z")]
+        [InlineData("DATABASES/D", "2019-12-31T10-00-00Z", "2020-01-02T01-00-00Z")]
+        [InlineData("DATABASES/E", "2019-12-31T12-00-00Z", "2020-01-03T00-00-00Z")]
+        [InlineData("DATABASES/F", "2019-12-31T12-00-00Z", "2020-01-02T02-00-00Z")]
+        [InlineData("DATABASES/G", "2019-12-31T00-40-22Z", "2020-01-01T01-39-23Z")]
+        [InlineData("DATABASES/H", "2019-12-31T12-00-00Z", "2020-01-02T00-20-00Z")]
+        public async Task CanProvideCatalogTimeRange(string rootPath, string expectedBeginString, string expectedEndString)
         {
+            var expectedBegin = DateTime.ParseExact(expectedBeginString, "yyyy-MM-ddTHH-mm-ssZ", null, DateTimeStyles.AdjustToUniversal);
+            var expectedEnd = DateTime.ParseExact(expectedEndString, "yyyy-MM-ddTHH-mm-ssZ", null, DateTimeStyles.AdjustToUniversal);
+
             var dataSource = new StructuredFileDataSourceTester()
             {
                 RootPath = rootPath,
@@ -145,8 +151,8 @@ namespace Nexus.Extensibility.Tests
         [InlineData("2020-01-02T00-00-00Z", "2020-01-01T00-00-00Z")]
         public async Task ReadSingleThrowsForInvalidTimePeriod(string beginString, string endString)
         {
-            var begin = DateTime.ParseExact(beginString, "yyyy-MM-ddTHH-mm-ssZ", default);
-            var end = DateTime.ParseExact(endString, "yyyy-MM-ddTHH-mm-ssZ", default);
+            var begin = DateTime.ParseExact(beginString, "yyyy-MM-ddTHH-mm-ssZ", default, DateTimeStyles.AdjustToUniversal);
+            var end = DateTime.ParseExact(endString, "yyyy-MM-ddTHH-mm-ssZ", default, DateTimeStyles.AdjustToUniversal);
 
             var dataSource = new StructuredFileDataSourceTester()
             {

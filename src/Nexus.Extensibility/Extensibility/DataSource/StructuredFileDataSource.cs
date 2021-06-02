@@ -42,6 +42,10 @@ namespace Nexus.Extensibility
         // (5) Files periods are constant (except for partially written files). The current
         // implementation recognizes the first of two or more partially written files within
         // a file period but ignores the rest.
+        //
+        // (6) UTC offset is a correction factor that should be selected so that the parsed
+        // date/time of a file points to the UTC date/time of the very first dataset within
+        // that file.
 
         #region Fields
 
@@ -62,7 +66,8 @@ namespace Nexus.Extensibility
 
         #region Protected API as seen by subclass
 
-        protected virtual Task OnParametersSetAsync()
+        protected virtual Task 
+            OnParametersSetAsync()
         {
             return Task.CompletedTask;
         }
@@ -73,13 +78,13 @@ namespace Nexus.Extensibility
         protected abstract Task<List<Catalog>>
             GetCatalogsAsync(CancellationToken cancellationToken);
 
-        protected virtual async Task<(DateTime Begin, DateTime End)> 
+        protected virtual Task<(DateTime Begin, DateTime End)> 
             GetCatalogTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
         {
-            return await Task.Run(async () =>
+            return Task.Run(async () =>
             {
-                var minDate = DateTime.MaxValue;
-                var maxDate = DateTime.MinValue;
+                var minDateTime = DateTime.MaxValue;
+                var maxDateTime = DateTime.MinValue;
 
                 if (Directory.Exists(this.RootPath))
                 {
@@ -99,8 +104,10 @@ namespace Nexus.Extensibility
                         if (firstDateTime == default)
                             firstDateTime = DateTime.MaxValue;
 
-                        if (firstDateTime.Date < minDate)
-                            minDate = firstDateTime.Date;
+                        firstDateTime = this.AdjustToUtc(firstDateTime, config.UtcOffset);
+
+                        if (firstDateTime < minDateTime)
+                            minDateTime = firstDateTime;
 
                         // last
                         var lastDateTime = StructuredFileDataSource
@@ -112,13 +119,16 @@ namespace Nexus.Extensibility
                         if (lastDateTime == default)
                             lastDateTime = DateTime.MinValue;
 
-                        if (lastDateTime.Date > maxDate)
-                            maxDate = lastDateTime.Date;
+                        lastDateTime = this.AdjustToUtc(lastDateTime, config.UtcOffset);
+                        lastDateTime = lastDateTime.Add(config.FilePeriod);
+
+                        if (lastDateTime > maxDateTime)
+                            maxDateTime = lastDateTime;
                     }
                 }
 
-                return (minDate, maxDate);
-            }).ConfigureAwait(false);
+                return (minDateTime, maxDateTime);
+            });
         }
 
         protected virtual Task<double>
@@ -126,6 +136,9 @@ namespace Nexus.Extensibility
         {
             if (begin >= end)
                 throw new ArgumentException("The start time must be before the end time.");
+
+            this.EnsureUtc(begin);
+            this.EnsureUtc(end);
 
             // no true async file enumeration available: https://github.com/dotnet/runtime/issues/809
             return Task.Run(async () =>
@@ -184,6 +197,9 @@ namespace Nexus.Extensibility
         {
             if (begin >= end)
                 throw new ArgumentException("The start time must be before the end time.");
+
+            this.EnsureUtc(begin);
+            this.EnsureUtc(end);
 
             var catalog = dataset.Channel.Catalog;
             var config = (await this.GetConfigurationAsync(catalog.Id, cancellationToken).ConfigureAwait(false)).Single(dataset);
@@ -282,8 +298,11 @@ namespace Nexus.Extensibility
             ReadSingleAsync<T>(ReadInfo<T> readInfo, CancellationToken cancellationToken)
             where T : unmanaged;
 
-        protected virtual Task<(string[], DateTime)> FindFilePathsAsync(DateTime begin, ConfigurationUnit config)
+        protected virtual Task<(string[], DateTime)> 
+            FindFilePathsAsync(DateTime begin, ConfigurationUnit config)
         {
+            this.EnsureUtc(begin);
+
             // This implementation assumes that the file start times are aligned to multiples
             // of the file period. Depending on the file template, it is possible to find more
             // than one matching file. There is one special case where two files are expected:
@@ -321,7 +340,8 @@ namespace Nexus.Extensibility
 
         #region Public API as seen by Nexus and unit tests
 
-        Task IDataSource.OnParametersSetAsync()
+        Task 
+            IDataSource.OnParametersSetAsync()
         {
             return this.OnParametersSetAsync();
         }
@@ -371,12 +391,10 @@ namespace Nexus.Extensibility
             }
         }
 
-        private static 
-            IEnumerable<(string FilePath, DateTime DateTime)> GetCandidateFiles(string rootPath, DateTime begin, DateTime end, ConfigurationUnit config, CancellationToken cancellationToken)
+        private static IEnumerable<(string FilePath, DateTime DateTime)> 
+            GetCandidateFiles(string rootPath, DateTime begin, DateTime end, ConfigurationUnit config, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-
-            // (could also be named "GetCandidateFiles", since it is similar to the "GetCandidateFolders" method)
 
             // initial check
             if (!Directory.Exists(rootPath))
@@ -409,8 +427,8 @@ namespace Nexus.Extensibility
             });
         }
 
-        private static 
-            IEnumerable<(string FolderPath, DateTime DateTime)> GetCandidateFolders(string root, DateTime rootDate, DateTime begin, DateTime end, string[] pathSegments, CancellationToken cancellationToken)
+        private static IEnumerable<(string FolderPath, DateTime DateTime)> 
+            GetCandidateFolders(string root, DateTime rootDate, DateTime begin, DateTime end, string[] pathSegments, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -432,7 +450,7 @@ namespace Nexus.Extensibility
                             folderName,
                             pathSegments.First(),
                             default,
-                            DateTimeStyles.NoCurrentDateDefault,
+                            DateTimeStyles.NoCurrentDateDefault | DateTimeStyles.AdjustToUniversal,
                             out var parsedDateTime
                         );
 
@@ -453,7 +471,7 @@ namespace Nexus.Extensibility
              * (2) for "filter by exact match" where any date/time can be put into
              * the ToString() method to remove the quotation marks from the path segment
              */
-                var expectedSegmentName = begin.ToString(pathSegments.First());
+            var expectedSegmentName = begin.ToString(pathSegments.First());
 
             var folderCandidates = hasDateTimeInformation
 
@@ -475,7 +493,8 @@ namespace Nexus.Extensibility
                         current.Value,
                         begin,
                         end,
-                        pathSegments.Skip(1).ToArray(), cancellationToken
+                        pathSegments.Skip(1).ToArray(), 
+                        cancellationToken
                     )
                 );
             }
@@ -487,8 +506,8 @@ namespace Nexus.Extensibility
             }
         }
 
-        private static 
-            IEnumerable<(string Key, DateTime Value)> FilterBySearchDate(DateTime begin, DateTime end, Dictionary<string, DateTime> folderNameToDateTimeMap, string expectedSegmentName)
+        private static IEnumerable<(string Key, DateTime Value)> 
+            FilterBySearchDate(DateTime begin, DateTime end, Dictionary<string, DateTime> folderNameToDateTimeMap, string expectedSegmentName)
         {
             if (begin == DateTime.MinValue && end == DateTime.MinValue)
             {
@@ -528,25 +547,29 @@ namespace Nexus.Extensibility
             }
         }
 
-        private static bool TryGetFileBeginByPath(string filePath, ConfigurationUnit config, out DateTime fileBegin, DateTime folderBegin = default)
+        private static bool 
+            TryGetFileBeginByPath(string filePath, ConfigurationUnit config, out DateTime fileBegin, DateTime folderBegin = default)
         {
             var fileName = Path.GetFileName(filePath);
 
             if (StructuredFileDataSource.TryGetFileBeginByName(fileName, config, out fileBegin))
             {
-                // use file date/time
+                // When TryGetFileBeginByName == true, then the input string was parsed successfully and the
+                // result contains date/time information of either kind: date+time, time-only, default.
+
+                // date+time: use file date/time
                 if (fileBegin.Date != default)
                 {
                     return true;
                 }
 
-                // use combined folder and file date/time
-                else if (fileBegin.TimeOfDay != default)
+                // time-only: use combined folder and file date/time
+                else if (fileBegin != default)
                 {
                     // short cut
                     if (folderBegin != default)
                     {
-                        fileBegin = new DateTime(folderBegin.Date.Ticks + fileBegin.TimeOfDay.Ticks);
+                        fileBegin = new DateTime(folderBegin.Date.Ticks + fileBegin.TimeOfDay.Ticks, fileBegin.Kind);
                         return true;
                     }
 
@@ -569,7 +592,7 @@ namespace Nexus.Extensibility
                                 folderName,
                                 folderTemplate,
                                 default,
-                                DateTimeStyles.NoCurrentDateDefault,
+                                DateTimeStyles.NoCurrentDateDefault | DateTimeStyles.AdjustToUniversal,
                                 out var currentFolderBegin
                             );
 
@@ -577,27 +600,26 @@ namespace Nexus.Extensibility
                                 folderBegin = currentFolderBegin;
                         }
 
-                        if (folderBegin == default)
-                            return false;
-
-                        return true;
+                        fileBegin = folderBegin;
+                        return fileBegin != default;
                     }
                 }
-
-                // use folder date/time
+                // default: use folder date/time
                 else
                 {
                     fileBegin = folderBegin;
-                    return true;
+                    return fileBegin != default;
                 }
             }
+            // no date + no time: failed
             else
             {
                 return false;
             }
         }
 
-        private static bool TryGetFileBeginByName(string fileName, ConfigurationUnit config, out DateTime fileBegin)
+        private static bool 
+            TryGetFileBeginByName(string fileName, ConfigurationUnit config, out DateTime fileBegin)
         {
             /* (1) Regex is required in scenarios when there are more complex
              * file names, i.e. file names containing an opaque string that
@@ -605,7 +627,7 @@ namespace Nexus.Extensibility
              * number or some other unpredictable proprietary string.
              *
              * (2) It is also required as a filter if there is more than one
-             * file type in the containing folder, i.e. high frequent and
+             * file type in the containing folder, e.g. high frequent and
              * averaged data files that are being treated as different sources.
              */
 
@@ -632,13 +654,32 @@ namespace Nexus.Extensibility
                 fileName,
                 fileTemplate,
                 default,
-                DateTimeStyles.NoCurrentDateDefault,
+                DateTimeStyles.NoCurrentDateDefault | DateTimeStyles.AdjustToUniversal,
                 out fileBegin
             );
 
-            // Parsing "xyz" with format "'xyz'" will succeed,
-            // but returns DateTime.MinValue, so filter it out:
-            return success && fileBegin != DateTime.MinValue;
+            return success;
+        }
+
+        private void 
+            EnsureUtc(DateTime dateTime)
+        {
+            if (dateTime.Kind != DateTimeKind.Utc)
+                throw new ArgumentException("UTC date/times are required.");
+        }
+
+        private DateTime 
+            AdjustToUtc(DateTime dateTime, TimeSpan utcOffset)
+        {
+            var result = dateTime;
+
+            if (dateTime != DateTime.MinValue && dateTime != DateTime.MaxValue)
+            {
+                if (dateTime.Kind != DateTimeKind.Utc)
+                    result = DateTime.SpecifyKind(dateTime.Subtract(utcOffset), DateTimeKind.Utc);
+            }
+
+            return result;
         }
 
         #endregion
