@@ -39,7 +39,9 @@ namespace Nexus.Extensibility
         // (4) UtcOffset is only considered when reading data, not to determine the
         // availability or the project time range.
         //
-        // (5) Files periods are constant (except for partially written files)
+        // (5) Files periods are constant (except for partially written files). The current
+        // implementation recognizes the first of two or more partially written files within
+        // a file period but ignores the rest.
 
         #region Fields
 
@@ -54,7 +56,7 @@ namespace Nexus.Extensibility
 
         public ILogger Logger { get; set; }
 
-        public Dictionary<string, string> Options { get; set; }
+        public Dictionary<string, string> Parameters { get; set; }
 
         #endregion
 
@@ -65,8 +67,8 @@ namespace Nexus.Extensibility
             return Task.CompletedTask;
         }
 
-        protected abstract Task<DataAccessDescriptions>
-            GetDataAccessDescriptionsAsync(string projectId, CancellationToken cancellationToken);
+        protected abstract Task<Configuration>
+            GetConfigurationAsync(string projectId, CancellationToken cancellationToken);
 
         protected abstract Task<List<Project>>
             GetDataModelAsync(CancellationToken cancellationToken);
@@ -81,15 +83,15 @@ namespace Nexus.Extensibility
 
                 if (Directory.Exists(this.RootPath))
                 {
-                    var dataAccessDescriptions = (await this.GetDataAccessDescriptionsAsync(projectId, cancellationToken)).All;
+                    var configs = (await this.GetConfigurationAsync(projectId, cancellationToken).ConfigureAwait(false)).All;
 
-                    foreach (var dataAccessDescription in dataAccessDescriptions)
+                    foreach (var config in configs)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
 
                         // first
                         var firstDateTime = StructuredFileDataSource
-                            .GetCandidateFiles(this.RootPath, DateTime.MinValue, DateTime.MinValue, dataAccessDescription, cancellationToken)
+                            .GetCandidateFiles(this.RootPath, DateTime.MinValue, DateTime.MinValue, config, cancellationToken)
                             .Select(file => file.DateTime)
                             .OrderBy(current => current)
                             .FirstOrDefault();
@@ -102,7 +104,7 @@ namespace Nexus.Extensibility
 
                         // last
                         var lastDateTime = StructuredFileDataSource
-                            .GetCandidateFiles(this.RootPath, DateTime.MaxValue, DateTime.MaxValue, dataAccessDescription, cancellationToken)
+                            .GetCandidateFiles(this.RootPath, DateTime.MaxValue, DateTime.MaxValue, config, cancellationToken)
                             .Select(file => file.DateTime)
                             .OrderByDescending(current => current)
                             .FirstOrDefault();
@@ -131,14 +133,14 @@ namespace Nexus.Extensibility
                 if (!Directory.Exists(this.RootPath))
                     return 0;
 
-                var dataAccesses = (await this.GetDataAccessDescriptionsAsync(projectId, cancellationToken)).All;
+                var configurations = (await this.GetConfigurationAsync(projectId, cancellationToken).ConfigureAwait(false)).All;
                 var summedAvailability = 0.0;
 
-                foreach (var dataAccess in dataAccesses)
+                foreach (var config in configurations)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    var candidateFiles = StructuredFileDataSource.GetCandidateFiles(this.RootPath, begin, end, dataAccess, cancellationToken);
+                    var candidateFiles = StructuredFileDataSource.GetCandidateFiles(this.RootPath, begin, end, config, cancellationToken);
 
                     var files = candidateFiles
                         .Where(current => begin <= current.DateTime && current.DateTime < end)
@@ -161,12 +163,12 @@ namespace Nexus.Extensibility
                     await Task.WhenAll(tasks);
 
                     var actual = tasks.Sum(task => task.IsCompletedSuccessfully ? task.Result : 0.0);
-                    var total = (end - begin).Ticks / dataAccess.FilePeriod.Ticks;
+                    var total = (end - begin).Ticks / config.FilePeriod.Ticks;
 
                     summedAvailability += actual / total;
                 }
 
-                return summedAvailability / dataAccesses.Count;
+                return summedAvailability / configurations.Count;
             });
         }
 
@@ -184,9 +186,9 @@ namespace Nexus.Extensibility
                 throw new ArgumentException("The start time must be before the end time.");
 
             var project = dataset.Channel.Project;
-            var dataAccess = (await this.GetDataAccessDescriptionsAsync(project.Id, cancellationToken)).Single(dataset);
+            var config = (await this.GetConfigurationAsync(project.Id, cancellationToken).ConfigureAwait(false)).Single(dataset);
             var samplesPerDay = dataset.GetSampleRate().SamplesPerDay;
-            var fileLength = (long)Math.Round(dataAccess.FilePeriod.TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
+            var fileLength = (long)Math.Round(config.FilePeriod.TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
 
             var bufferOffset = 0;
             var currentBegin = begin;
@@ -197,12 +199,12 @@ namespace Nexus.Extensibility
                 cancellationToken.ThrowIfCancellationRequested();
 
                 // get file path and begin
-                (var filePaths, var fileBegin) = await this.FindFilePathsAsync(currentBegin, dataAccess);
+                (var filePaths, var fileBegin) = await this.FindFilePathsAsync(currentBegin, config);
 
                 // determine file begin if not yet done using the first file name returned
                 if (filePaths is not null && fileBegin == default)
                 {
-                    if (!StructuredFileDataSource.TryGetFileBeginByPath(filePaths.First(), dataAccess, out fileBegin, default))
+                    if (!StructuredFileDataSource.TryGetFileBeginByPath(filePaths.First(), config, out fileBegin, default))
                         throw new Exception("Unable to determine file date/time.");
                 }
 
@@ -211,8 +213,8 @@ namespace Nexus.Extensibility
                  *  begin    CB-FP        CB         CB+FP                 end
                  *    |--------|-----------|-----------|-----------|--------|
                  */
-                var CB_MINUS_FP = currentBegin - dataAccess.FilePeriod;
-                var CB_PLUS_FP = currentBegin + dataAccess.FilePeriod;
+                var CB_MINUS_FP = currentBegin - config.FilePeriod;
+                var CB_PLUS_FP = currentBegin + config.FilePeriod;
 
                 int fileBlock;
                 TimeSpan consumedPeriod;
@@ -221,7 +223,7 @@ namespace Nexus.Extensibility
                 {
                     var fileBeginOffset = currentBegin - fileBegin;
                     var fileOffset = (long)Math.Round(fileBeginOffset.TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
-                    consumedPeriod = TimeSpan.FromTicks(Math.Min(dataAccess.FilePeriod.Ticks - fileBeginOffset.Ticks, remainingPeriod.Ticks));
+                    consumedPeriod = TimeSpan.FromTicks(Math.Min(config.FilePeriod.Ticks - fileBeginOffset.Ticks, remainingPeriod.Ticks));
                     fileBlock = (int)(fileLength - fileOffset);
 
                     foreach (var filePath in filePaths)
@@ -280,7 +282,7 @@ namespace Nexus.Extensibility
             ReadSingleAsync<T>(ReadInfo<T> readInfo, CancellationToken cancellationToken)
             where T : unmanaged;
 
-        protected virtual Task<(string[], DateTime)> FindFilePathsAsync(DateTime begin, DataAccessDescription dataAccess)
+        protected virtual Task<(string[], DateTime)> FindFilePathsAsync(DateTime begin, ConfigurationUnit config)
         {
             // This implementation assumes that the file start times are aligned to multiples
             // of the file period. Depending on the file template, it is possible to find more
@@ -291,9 +293,9 @@ namespace Nexus.Extensibility
             // 2020-01-01T00-00-00Z_v1.dat (contains data from midnight to time t0)
             // 2020-01-01T00-00-00Z_v2.dat (contains data from time t0 + x to next midnight)
             // Where x is the time period the system was offline to apply the new version.
-            var fileBegin = ExtensibilityUtilities.RoundDown(begin, dataAccess.FilePeriod);
+            var fileBegin = ExtensibilityUtilities.RoundDown(begin, config.FilePeriod);
 
-            var folderNames = dataAccess
+            var folderNames = config
                 .PathSegments
                 .Select(segment => begin.ToString(segment));
 
@@ -302,7 +304,7 @@ namespace Nexus.Extensibility
                 .ToArray();
 
             var folderPath = Path.Combine(folderNameArray);
-            var fileName = begin.Add(dataAccess.UtcOffset).ToString(dataAccess.FileTemplate);
+            var fileName = begin.Add(config.UtcOffset).ToString(config.FileTemplate);
             var filePaths = new string[] { Path.Combine(folderPath, fileName) };
 
             if (fileName.Contains("?") || fileName.Contains("*") && Directory.Exists(folderPath))
@@ -370,7 +372,7 @@ namespace Nexus.Extensibility
         }
 
         private static 
-            IEnumerable<(string FilePath, DateTime DateTime)> GetCandidateFiles(string rootPath, DateTime begin, DateTime end, DataAccessDescription dataAccessDescription, CancellationToken cancellationToken)
+            IEnumerable<(string FilePath, DateTime DateTime)> GetCandidateFiles(string rootPath, DateTime begin, DateTime end, ConfigurationUnit config, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -381,10 +383,10 @@ namespace Nexus.Extensibility
                 return new List<(string, DateTime)>();
 
             // get all candidate folders
-            var candidateFolders = dataAccessDescription.PathSegments.Length >= 1
+            var candidateFolders = config.PathSegments.Length >= 1
 
                 ? StructuredFileDataSource
-                    .GetCandidateFolders(rootPath, default, begin, end, dataAccessDescription.PathSegments, cancellationToken)
+                    .GetCandidateFolders(rootPath, default, begin, end, config.PathSegments, cancellationToken)
 
                 : new List<(string, DateTime)>() { (rootPath, default) };
 
@@ -396,7 +398,7 @@ namespace Nexus.Extensibility
                     .Select(filePath =>
                     {
                         var success = StructuredFileDataSource
-                            .TryGetFileBeginByPath(filePath, dataAccessDescription, out var fileBegin, currentFolder.DateTime);
+                            .TryGetFileBeginByPath(filePath, config, out var fileBegin, currentFolder.DateTime);
 
                         return (success, filePath, fileBegin);
                     })
@@ -526,11 +528,11 @@ namespace Nexus.Extensibility
             }
         }
 
-        private static bool TryGetFileBeginByPath(string filePath, DataAccessDescription dataAccessDescription, out DateTime fileBegin, DateTime folderBegin = default)
+        private static bool TryGetFileBeginByPath(string filePath, ConfigurationUnit config, out DateTime fileBegin, DateTime folderBegin = default)
         {
             var fileName = Path.GetFileName(filePath);
 
-            if (StructuredFileDataSource.TryGetFileBeginByName(fileName, dataAccessDescription, out fileBegin))
+            if (StructuredFileDataSource.TryGetFileBeginByName(fileName, config, out fileBegin))
             {
                 // use file date/time
                 if (fileBegin.Date != default)
@@ -555,13 +557,13 @@ namespace Nexus.Extensibility
                             .Split('/', '\\');
 
                         pathSegments = pathSegments
-                            .Skip(pathSegments.Length - dataAccessDescription.PathSegments.Length)
+                            .Skip(pathSegments.Length - config.PathSegments.Length)
                             .ToArray();
 
                         for (int i = 0; i < pathSegments.Length; i++)
                         {
                             var folderName = pathSegments[i];
-                            var folderTemplate = dataAccessDescription.PathSegments[i];
+                            var folderTemplate = config.PathSegments[i];
 
                             var success = DateTime.TryParseExact(
                                 folderName,
@@ -595,7 +597,7 @@ namespace Nexus.Extensibility
             }
         }
 
-        private static bool TryGetFileBeginByName(string fileName, DataAccessDescription dataAccessDescription, out DateTime fileBegin)
+        private static bool TryGetFileBeginByName(string fileName, ConfigurationUnit config, out DateTime fileBegin)
         {
             /* (1) Regex is required in scenarios when there are more complex
              * file names, i.e. file names containing an opaque string that
@@ -607,15 +609,15 @@ namespace Nexus.Extensibility
              * averaged data files that are being treated as different sources.
              */
 
-            var fileTemplate = dataAccessDescription.FileTemplate;
+            var fileTemplate = config.FileTemplate;
 
-            if (!string.IsNullOrWhiteSpace(dataAccessDescription.FileDateTimePreselector))
+            if (!string.IsNullOrWhiteSpace(config.FileDateTimePreselector))
             {
-                if (string.IsNullOrEmpty(dataAccessDescription.FileDateTimeSelector))
+                if (string.IsNullOrEmpty(config.FileDateTimeSelector))
                     throw new Exception("When a file date/time preselector is provided, the selector itself must be provided too.");
 
-                fileTemplate = dataAccessDescription.FileDateTimeSelector;
-                var regex = new Regex(dataAccessDescription.FileDateTimePreselector);
+                fileTemplate = config.FileDateTimeSelector;
+                var regex = new Regex(config.FileDateTimePreselector);
 
                 fileName = string.Join("", regex
                     .Match(fileName)

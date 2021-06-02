@@ -16,12 +16,10 @@ namespace Nexus.Core
         /// <example>false</example>
         public bool Force { get; set; } = false;
 
-        public List<ReaderConfiguration> ReaderConfigurations { get; set; } = new List<ReaderConfiguration>();
-
         public List<Aggregation> Aggregations { get; set; } = new List<Aggregation>();
     }
 
-    public record ReaderConfiguration
+    public record DataSourceConfiguration
     {
         /// <example>/IN_MEMORY/TEST/ACCESSIBLE</example>
         public string ProjectId { get; set; } = string.Empty;
@@ -31,9 +29,6 @@ namespace Nexus.Core
 
         /// <example>:memory:</example>
         public string DataReaderRootPath { get; set; } = string.Empty;
-
-        /// <example>{ "myParameter1": "myParameterValue1", "myParameter2": "myParameterValue2" }</example>
-        public Dictionary<string, string> Parameters { get; set; } = new Dictionary<string, string>();
     }
 
     public record Aggregation

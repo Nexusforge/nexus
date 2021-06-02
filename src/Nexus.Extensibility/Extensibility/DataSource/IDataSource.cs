@@ -15,7 +15,7 @@ namespace Nexus.Extensibility
 
         ILogger Logger { set; }
 
-        Dictionary<string, string> Options { set; }
+        Dictionary<string, string> Parameters { set; }
 
         #endregion
 

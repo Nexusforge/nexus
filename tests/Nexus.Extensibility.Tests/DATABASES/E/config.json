@@ -1,6 +1,6 @@
 {
   "/A/B/C": {
-    "DataAccess": {
+    "Config": {
       "average": {
         "PathSegments": [
           "'DATA'",

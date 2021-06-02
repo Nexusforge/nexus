@@ -4,13 +4,13 @@ using System.Collections.Generic;
 
 namespace Nexus.Extensibility
 {
-    public record DataAccessDescriptions()
+    public record Configuration()
     {
-        public GetDataAccessDescriptionDelegate Single { get; set; }
-        public List<DataAccessDescription> All { get; set; }
+        public GetConfigurationUnitDelegate Single { get; set; }
+        public List<ConfigurationUnit> All { get; set; }
     }
 
-    public delegate DataAccessDescription GetDataAccessDescriptionDelegate(Dataset dataset);
+    public delegate ConfigurationUnit GetConfigurationUnitDelegate(Dataset dataset);
 
     public record ReadInfo<T>(
         string FilePath,
@@ -28,7 +28,7 @@ namespace Nexus.Extensibility
         public string DataSourceId { get; set; }
     }
 
-    public record DataAccessDescription(
+    public record ConfigurationUnit(
         string[] PathSegments,
         string FileTemplate,
         string? FileDateTimePreselector,

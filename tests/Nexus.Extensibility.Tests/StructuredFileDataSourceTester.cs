@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -16,7 +17,7 @@ namespace Nexus.Extensibility.Tests
 
         public record ProjectDescription()
         {
-            public Dictionary<string, DataAccessDescription> DataAccess { get; init; }
+            public Dictionary<string, ConfigurationUnit> Config { get; init; }
         }
 
         class TimeSpanConverter : JsonConverter<TimeSpan>
@@ -36,7 +37,18 @@ namespace Nexus.Extensibility.Tests
 
         #region Fields
 
+        private bool _overrideFindFilePathsWithNoDateTime;
         private Dictionary<string, ProjectDescription> _config;
+
+        #endregion
+
+        #region Constructors
+
+        public StructuredFileDataSourceTester(
+            bool overrideFindFilePathsWithNoDateTime = false)
+        {
+            _overrideFindFilePathsWithNoDateTime = overrideFindFilePathsWithNoDateTime;
+        }
 
         #endregion
 
@@ -52,15 +64,15 @@ namespace Nexus.Extensibility.Tests
             _config = await DeserializeAsync<Dictionary<string, ProjectDescription>>(configFilePath);
         }
 
-        protected override Task<DataAccessDescriptions> GetDataAccessDescriptionsAsync(string projectId, CancellationToken cancellationToken)
+        protected override Task<Configuration> GetConfigurationAsync(string projectId, CancellationToken cancellationToken)
         {
             var all = _config[projectId]
-                .DataAccess
+                .Config
                 .Values
-                .Cast<DataAccessDescription>()
+                .Cast<ConfigurationUnit>()
                 .ToList();
 
-            return Task.FromResult(new DataAccessDescriptions
+            return Task.FromResult(new Configuration
             {
                 All = all,
                 Single = dataset => all.First(),
@@ -69,12 +81,42 @@ namespace Nexus.Extensibility.Tests
 
         protected override Task<List<Project>> GetDataModelAsync(CancellationToken cancellationToken)
         {
-            return Task.FromResult(new List<Project>() { new Project("/A/B/C") });
+            var project = new Project("/A/B/C");
+            var channel = new Channel(Guid.NewGuid(), project);
+            var dataset = new Dataset("1 Hz_mean", channel);
+
+            channel.Datasets.Add(dataset);
+            project.Channels.Add(channel);
+
+            return Task.FromResult(new List<Project>() { project });
         }
 
-        protected override Task ReadSingleAsync<T>(ReadInfo<T> readInfo, CancellationToken cancellationToken)
+        protected override async Task ReadSingleAsync<T>(ReadInfo<T> readInfo, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            var bytes = await File
+                .ReadAllBytesAsync(readInfo.FilePath);
+
+            MemoryMarshal
+                .Cast<byte, T>(bytes)
+                .CopyTo(readInfo.Data.Span);
+
+            readInfo
+                .Status
+                .Span
+                .Fill(1);
+        }
+
+        protected override async Task<(string[], DateTime)> FindFilePathsAsync(DateTime begin, ConfigurationUnit config)
+        {
+            if (_overrideFindFilePathsWithNoDateTime)
+            {
+                var result = await base.FindFilePathsAsync(begin, config).ConfigureAwait(false);
+                return (result.Item1, default);
+            }
+            else
+            {
+                return await base.FindFilePathsAsync(begin, config);
+            }
         }
 
         #endregion

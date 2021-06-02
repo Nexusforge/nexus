@@ -140,6 +140,24 @@
     <None Update="DATABASES\H\config.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="DATABASES\TESTDATA\config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="DATABASES\TESTDATA\DATA\test\2019-12\2019-12-31\2019-12-31_12-00-00.dat">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="DATABASES\TESTDATA\DATA\test\2019-12\2019-12-31\2019-12-31_12-20-00.dat">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="DATABASES\TESTDATA\DATA\test\2020-01\2020-01-01\2020-01-01_00-00-00.dat">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="DATABASES\TESTDATA\DATA\test\2020-01\2020-01-02\2020-01-02_09-40-00.dat">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="DATABASES\TESTDATA\DATA\test\2020-01\2020-01-02\2020-01-02_09-50-00.dat">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

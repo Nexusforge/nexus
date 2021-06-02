@@ -186,23 +186,6 @@ namespace Nexus.Services
             {
                 using var dataReader = _databaseManager.GetDataReader(user, registration);
 
-                // find reader configurations
-                foreach (var configuration in setup.ReaderConfigurations
-                    .Where(configuration => configuration.ProjectId == projectId))
-                {
-                    var tmpRegistration = new DataSourceRegistration()
-                    {
-                        RootPath = configuration.DataReaderRootPath,
-                        DataSourceId = configuration.DataSourceId
-                    };
-
-                    if (dataReader.Registration.Equals(tmpRegistration))
-                    {
-                        dataReader.OptionalParameters = configuration.Parameters;
-                        break;
-                    }
-                }                   
-
                 // get files
                 if (!dataReader.IsDataOfDayAvailable(projectId, date))
                     return;

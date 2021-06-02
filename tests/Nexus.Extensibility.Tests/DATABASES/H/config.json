@@ -1,6 +1,6 @@
 {
   "/A/B/C": {
-    "DataAccess": {
+    "Config": {
       "default": {
         "PathSegments": [],
         "FileTemplate": "yyyy-MM-dd_HH-mm-ss'.dat'",

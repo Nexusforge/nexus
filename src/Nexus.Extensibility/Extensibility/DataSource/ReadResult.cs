@@ -21,7 +21,10 @@ namespace Nexus.Extensibility
 
             this.Length = length;
 
+            this.Data = _dataOwner.Memory.Slice(0, this.Length);
             this.Data.Span.Clear();
+
+            this.Status = _statusOwner.Memory.Slice(0, this.Length);
             this.Status.Span.Clear();
         }
 
@@ -29,9 +32,9 @@ namespace Nexus.Extensibility
 
         #region Properties
 
-        public Memory<T> Data => _dataOwner.Memory;
+        public Memory<T> Data { get; }
 
-        public Memory<byte> Status => _statusOwner.Memory;
+        public Memory<byte> Status { get; }
 
         public int Length { get; }
 
