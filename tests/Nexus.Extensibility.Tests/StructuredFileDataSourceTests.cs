@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Nexus.DataModel;
 using System;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -29,14 +30,14 @@ namespace Nexus.Extensibility.Tests
         [InlineData("DATABASES/F", "2020-01-02T00-00-00Z", "2020-01-03T00-00-00Z", 2 / 24.0, 4)]
         [InlineData("DATABASES/G", "2020-01-01T00-00-00Z", "2020-01-02T00-00-00Z", 2 / 86400.0, 6)]
         [InlineData("DATABASES/H", "2020-01-02T00-00-00Z", "2020-01-03T00-00-00Z", 2 / 144.0, 4)]
-        public async Task CanProvideAvailability(string rootPath, string beginString, string endString, double expected, int precision)
+        public async Task CanProvideAvailability(string root, string beginString, string endString, double expected, int precision)
         {
             var begin = DateTime.ParseExact(beginString, "yyyy-MM-ddTHH-mm-ssZ", default, DateTimeStyles.AdjustToUniversal);
             var end = DateTime.ParseExact(endString, "yyyy-MM-ddTHH-mm-ssZ", default, DateTimeStyles.AdjustToUniversal);
 
             var dataSource = new StructuredFileDataSourceTester()
             {
-                RootPath = rootPath,
+                ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), root)),
                 Logger = _logger,
                 Parameters = null,
             } as IDataSource;
@@ -59,7 +60,7 @@ namespace Nexus.Extensibility.Tests
 
             var dataSource = new StructuredFileDataSourceTester()
             {
-                RootPath = string.Empty,
+                ResourceLocator = new Uri(string.Empty, UriKind.Relative),
                 Logger = _logger,
                 Parameters = null,
             } as IDataSource;
@@ -77,14 +78,14 @@ namespace Nexus.Extensibility.Tests
         [InlineData("DATABASES/F", "2019-12-31T12-00-00Z", "2020-01-02T02-00-00Z")]
         [InlineData("DATABASES/G", "2019-12-31T00-40-22Z", "2020-01-01T01-39-23Z")]
         [InlineData("DATABASES/H", "2019-12-31T12-00-00Z", "2020-01-02T00-20-00Z")]
-        public async Task CanProvideCatalogTimeRange(string rootPath, string expectedBeginString, string expectedEndString)
+        public async Task CanProvideCatalogTimeRange(string root, string expectedBeginString, string expectedEndString)
         {
             var expectedBegin = DateTime.ParseExact(expectedBeginString, "yyyy-MM-ddTHH-mm-ssZ", null, DateTimeStyles.AdjustToUniversal);
             var expectedEnd = DateTime.ParseExact(expectedEndString, "yyyy-MM-ddTHH-mm-ssZ", null, DateTimeStyles.AdjustToUniversal);
 
             var dataSource = new StructuredFileDataSourceTester()
             {
-                RootPath = rootPath,
+                ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), root)),
                 Logger = _logger,
                 Parameters = null,
             } as IDataSource;
@@ -105,7 +106,7 @@ namespace Nexus.Extensibility.Tests
         {
             var dataSource = new StructuredFileDataSourceTester(overrideFindFilePathsWithNoDateTime)
             {
-                RootPath = "DATABASES/TESTDATA",
+                ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), "DATABASES/TESTDATA")),
                 Logger = _logger,
                 Parameters = null,
             } as IDataSource;
@@ -156,7 +157,7 @@ namespace Nexus.Extensibility.Tests
 
             var dataSource = new StructuredFileDataSourceTester()
             {
-                RootPath = string.Empty,
+                ResourceLocator = new Uri(string.Empty, UriKind.Relative),
                 Logger = _logger,
                 Parameters = null,
             } as IDataSource;

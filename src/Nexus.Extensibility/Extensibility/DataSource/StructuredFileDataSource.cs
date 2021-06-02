@@ -43,6 +43,8 @@ namespace Nexus.Extensibility
         // (5) UTC offset is a correction factor that should be selected so that the parsed
         // date/time of a file points to the UTC date/time of the very first dataset within
         // that file.
+        //
+        // (6) Only file URLs are supported
 
         #region Fields
 
@@ -53,11 +55,28 @@ namespace Nexus.Extensibility
 
         #region Properties
 
-        public string RootPath { get; set; }
+        public Uri ResourceLocator
+        {
+            set
+            {
+                if (!value.IsAbsoluteUri || value.IsFile)
+                {
+                    this.Root = value.IsAbsoluteUri
+                    ? value.AbsolutePath
+                    : value.ToString();
+                }
+                else
+                {
+                    throw new Exception("Only file URIs are supported.");
+                }
+            }
+        }
 
         public ILogger Logger { get; set; }
 
         public Dictionary<string, string> Parameters { get; set; }
+
+        protected string Root { get; private set; }
 
         #endregion
 
@@ -83,7 +102,7 @@ namespace Nexus.Extensibility
                 var minDateTime = DateTime.MaxValue;
                 var maxDateTime = DateTime.MinValue;
 
-                if (Directory.Exists(this.RootPath))
+                if (Directory.Exists(this.Root))
                 {
                     var configs = (await this.GetConfigurationAsync(catalogId, cancellationToken).ConfigureAwait(false)).All;
 
@@ -93,7 +112,7 @@ namespace Nexus.Extensibility
 
                         // first
                         var firstDateTime = StructuredFileDataSource
-                            .GetCandidateFiles(this.RootPath, DateTime.MinValue, DateTime.MinValue, config, cancellationToken)
+                            .GetCandidateFiles(this.Root, DateTime.MinValue, DateTime.MinValue, config, cancellationToken)
                             .Select(file => file.DateTime)
                             .OrderBy(current => current)
                             .FirstOrDefault();
@@ -108,7 +127,7 @@ namespace Nexus.Extensibility
 
                         // last
                         var lastDateTime = StructuredFileDataSource
-                            .GetCandidateFiles(this.RootPath, DateTime.MaxValue, DateTime.MaxValue, config, cancellationToken)
+                            .GetCandidateFiles(this.Root, DateTime.MaxValue, DateTime.MaxValue, config, cancellationToken)
                             .Select(file => file.DateTime)
                             .OrderByDescending(current => current)
                             .FirstOrDefault();
@@ -140,7 +159,7 @@ namespace Nexus.Extensibility
             // no true async file enumeration available: https://github.com/dotnet/runtime/issues/809
             return Task.Run(async () =>
             {
-                if (!Directory.Exists(this.RootPath))
+                if (!Directory.Exists(this.Root))
                     return 0;
 
                 var configurations = (await this.GetConfigurationAsync(catalogId, cancellationToken).ConfigureAwait(false)).All;
@@ -153,7 +172,7 @@ namespace Nexus.Extensibility
                     var localBegin = begin.Add(config.UtcOffset);
                     var localEnd = end.Add(config.UtcOffset);
 
-                    var candidateFiles = StructuredFileDataSource.GetCandidateFiles(this.RootPath, localBegin, localEnd, config, cancellationToken);
+                    var candidateFiles = StructuredFileDataSource.GetCandidateFiles(this.Root, localBegin, localEnd, config, cancellationToken);
 
                     var files = candidateFiles
                         .Where(current => localBegin <= current.DateTime && current.DateTime < localEnd)
@@ -324,7 +343,7 @@ namespace Nexus.Extensibility
                 .PathSegments
                 .Select(segment => localBegin.ToString(segment));
 
-            var folderNameArray = new List<string>() { this.RootPath }
+            var folderNameArray = new List<string>() { this.Root }
                 .Concat(folderNames)
                 .ToArray();
 

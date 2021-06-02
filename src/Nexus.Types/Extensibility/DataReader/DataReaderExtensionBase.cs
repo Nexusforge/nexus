@@ -28,7 +28,7 @@ namespace Nexus.Extensibility
 
         #region Properties
 
-        public string RootPath => this.Registration.RootPath;
+        public string RootPath => "";
 
         public ILogger Logger { get; }
 

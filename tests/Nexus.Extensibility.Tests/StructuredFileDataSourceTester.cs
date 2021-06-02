@@ -56,7 +56,7 @@ namespace Nexus.Extensibility.Tests
 
         protected override async Task OnParametersSetAsync()
         {
-            var configFilePath = Path.Combine(this.RootPath, "config.json");
+            var configFilePath = Path.Combine(this.Root, "config.json");
 
             if (!File.Exists(configFilePath))
                 throw new Exception($"The configuration file does not exist on path '{configFilePath}'.");

@@ -24,8 +24,9 @@ namespace Nexus.Extensibility
 
     public record DataSourceRegistration
     {
-        public string RootPath { get; set; }
-        public string DataSourceId { get; set; }
+        public string DataSourceId { get; init; }
+        public Uri ResourceLocator { get; init; }
+        public Dictionary<string, string>? Parameters { get; init; }
     }
 
     public record ConfigurationUnit(

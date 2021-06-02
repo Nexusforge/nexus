@@ -14,7 +14,7 @@ namespace Nexus.Tests
             var registration = new DataSourceRegistration()
             {
                 DataSourceId = "",
-                RootPath = rootPath
+                ResourceLocator = new Uri(rootPath)
             };
 
             this.DataSourceRegistration = registration;
@@ -26,7 +26,7 @@ namespace Nexus.Tests
         {
             try
             {
-                Directory.Delete(this.DataSourceRegistration.RootPath, true);
+                Directory.Delete(this.DataSourceRegistration.ResourceLocator.AbsolutePath, true);
             }
             catch
             {

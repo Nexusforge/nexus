@@ -11,7 +11,7 @@ namespace Nexus.Extensibility
     {
         #region Properties
 
-        string RootPath { set; }
+        Uri ResourceLocator { set; }
 
         ILogger Logger { set; }
 
