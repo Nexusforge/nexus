@@ -36,14 +36,11 @@ namespace Nexus.Extensibility
         //
         // (3) Most nested folders are not empty.
         //
-        // (4) UtcOffset is only considered when reading data, not to determine the
-        // availability or the catalog time range.
-        //
-        // (5) Files periods are constant (except for partially written files). The current
+        // (4) Files periods are constant (except for partially written files). The current
         // implementation recognizes the first of two or more partially written files within
         // a file period but ignores the rest.
         //
-        // (6) UTC offset is a correction factor that should be selected so that the parsed
+        // (5) UTC offset is a correction factor that should be selected so that the parsed
         // date/time of a file points to the UTC date/time of the very first dataset within
         // that file.
 
@@ -153,10 +150,13 @@ namespace Nexus.Extensibility
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    var candidateFiles = StructuredFileDataSource.GetCandidateFiles(this.RootPath, begin, end, config, cancellationToken);
+                    var localBegin = begin.Add(config.UtcOffset);
+                    var localEnd = end.Add(config.UtcOffset);
+
+                    var candidateFiles = StructuredFileDataSource.GetCandidateFiles(this.RootPath, localBegin, localEnd, config, cancellationToken);
 
                     var files = candidateFiles
-                        .Where(current => begin <= current.DateTime && current.DateTime < end)
+                        .Where(current => localBegin <= current.DateTime && current.DateTime < localEnd)
                         .ToList();
 
                     var tasks = new List<Task<double>>();
@@ -176,7 +176,7 @@ namespace Nexus.Extensibility
                     await Task.WhenAll(tasks);
 
                     var actual = tasks.Sum(task => task.IsCompletedSuccessfully ? task.Result : 0.0);
-                    var total = (end - begin).Ticks / config.FilePeriod.Ticks;
+                    var total = (end - begin).Ticks / (double)config.FilePeriod.Ticks;
 
                     summedAvailability += actual / total;
                 }
@@ -301,8 +301,6 @@ namespace Nexus.Extensibility
         protected virtual Task<(string[], DateTime)> 
             FindFilePathsAsync(DateTime begin, ConfigurationUnit config)
         {
-            this.EnsureUtc(begin);
-
             // This implementation assumes that the file start times are aligned to multiples
             // of the file period. Depending on the file template, it is possible to find more
             // than one matching file. There is one special case where two files are expected:
@@ -312,18 +310,26 @@ namespace Nexus.Extensibility
             // 2020-01-01T00-00-00Z_v1.dat (contains data from midnight to time t0)
             // 2020-01-01T00-00-00Z_v2.dat (contains data from time t0 + x to next midnight)
             // Where x is the time period the system was offline to apply the new version.
+
+            var localBegin = begin.Kind switch
+            {
+                DateTimeKind.Local => begin,
+                DateTimeKind.Utc => DateTime.SpecifyKind(begin.Add(config.UtcOffset), DateTimeKind.Local),
+                _ => throw new ArgumentException("The begin parameter must have its kind property specified.")
+            };
+
             var fileBegin = ExtensibilityUtilities.RoundDown(begin, config.FilePeriod);
 
             var folderNames = config
                 .PathSegments
-                .Select(segment => begin.ToString(segment));
+                .Select(segment => localBegin.ToString(segment));
 
             var folderNameArray = new List<string>() { this.RootPath }
                 .Concat(folderNames)
                 .ToArray();
 
             var folderPath = Path.Combine(folderNameArray);
-            var fileName = begin.Add(config.UtcOffset).ToString(config.FileTemplate);
+            var fileName = localBegin.ToString(config.FileTemplate);
             var filePaths = new string[] { Path.Combine(folderPath, fileName) };
 
             if (fileName.Contains("?") || fileName.Contains("*") && Directory.Exists(folderPath))
