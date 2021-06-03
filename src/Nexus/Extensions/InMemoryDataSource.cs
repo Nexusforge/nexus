@@ -9,11 +9,11 @@ using System.Linq;
 namespace Nexus.Extensions
 {
     [ExtensionIdentification("Nexus.InMemory", "Nexus in-memory", "Provides an in-memory database.")]
-    public class InMemoryDataReader : DataReaderExtensionBase
+    public class InMemoryDataSource : DataReaderExtensionBase
     {
         #region Constructors
 
-        public InMemoryDataReader(DataSourceRegistration registration, ILogger logger) : base(registration, logger)
+        public InMemoryDataSource(DataSourceRegistration registration, ILogger logger) : base(registration, logger)
         {
             //
         }

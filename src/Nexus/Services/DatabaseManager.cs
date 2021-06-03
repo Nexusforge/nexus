@@ -414,7 +414,7 @@ namespace Nexus.Services
 #warning Improve this.
             // add additional data readers
             types.Add(typeof(AggregationDataSource));
-            types.Add(typeof(InMemoryDataReader));
+            types.Add(typeof(InMemoryDataSource));
             types.Add(typeof(FilterDataSource));
 
             // get ID for each extension
