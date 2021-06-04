@@ -1,83 +1,15 @@
-import array
-import base64
-import enum
-import json
-import struct
-import sys
-import time
-from uuid import UUID, uuid3
-from abc import ABC, abstractmethod
-from typing import List
+import asyncio
+from datetime import datetime, timezone
+from typing import Awaitable, List, Tuple
+from uuid import uuid3
 
+from PythonPipeExtensibility import (Catalog, Channel, Dataset, IDataSource,
+                                     NexusDataType, PipeCommunicator)
 
-class NexusDataType(enum.Enum):
-	BOOLEAN = 0x008
-	UINT8 = 0x108
-	INT8 = 0x208
-	UINT16 = 0x110
-	INT16 = 0x210
-	UINT32 = 0x120
-	INT32 = 0x220
-	UINT64 = 0x140
-	INT64 = 0x240
-	FLOAT32 = 0x320
-	FLOAT64 = 0x340
-
-class Dataset:
-
-	Id: str
-	DataType: NexusDataType
-
-	def __init__(self, id: str):
-		self.Id = id
-
-class Channel:
-
-	Id: UUID
-	Name: str
-	Group: str
-	Unit: str
-	Description: str
-	Datasets: List[Dataset]
-
-	def __init__(self, id: UUID):
-		self.Id = id
-		self.Datasets = []
-
-class Catalog:
-	
-	Id: str
-	Channels: List[Channel]
-
-	def __init__(self, id: str):
-		self.Id = id
-		self.Channels = []
-
-class IDataSource(ABC):
-
-	@abstractmethod
-	def get_catalogs_async(self) -> List[Catalog]:
-		pass
-
-def FromBase64Bytes(base64Bytes) -> int:
-	normalBytes = base64.b64decode(base64Bytes)
-	return int.from_bytes(normalBytes, 'little')
-
-def ToBase64Bytes(length) -> bytes:
-	normalBytes = struct.pack('<I', length)
-	return base64.b64encode(normalBytes)
-
-def ValidateRequest(readCount, expectedCount):
-
-	if readCount == 0:
-		raise Exception("The connection aborted unexpectedly.")
-
-	elif readCount != expectedCount:
-		raise Exception("Invalid number of bytes received.")
 
 class PythonDataSource(IDataSource):
 	
-	def get_catalogs_async(self) -> List[Catalog]:
+	async def get_catalogs_async(self) -> Awaitable[List[Catalog]]:
 
 		class NULL_NAMESPACE:
 			bytes = b''
@@ -124,59 +56,22 @@ class PythonDataSource(IDataSource):
 		# return
 		return [catalog1, catalog2]
 
-def SerializeJson(x):
+	async def get_time_range_async(self) -> Awaitable[Tuple[datetime, datetime]]:
+		# LOCAL_TIMEZONE = datetime.now().astimezone().tzinfo
+		begin = datetime(2019, 12, 31, 12, 0, 0, 0, tzinfo = timezone.utc)
+		end = datetime(2020, 1, 2, 0, 20, 0, 0, tzinfo = timezone.utc)
 
-	if isinstance(x, enum.Enum):
-		return x._name_
+		return (begin, end)
 
-	else:
-		return x.__dict__
-	#äraise Exception(x.Channels[0].Datasets[0].DataType.__dict__)
+	async def get_availability_async(self, begin: datetime, end: datetime) -> Awaitable[float]:
+		return 2 / 144.0
 
-try:
-	dataSource = PythonDataSource()
+	async def read_single_async(self, dataset: Dataset, length: int, begin: datetime, end: datetime) -> Awaitable[float]:
+		return [1, 2, 3, 4]
 
-	# It is very important to read the correct number of bytes.
-	# simple buffer.read() will return data but subsequent buffer.write
-	# will fail with error 22.
-
-	# get request length
-	requestLengthBase64 = sys.stdin.buffer.read(8)
-	ValidateRequest(len(requestLengthBase64), 8)
-	requestLength = FromBase64Bytes(requestLengthBase64)
-
-	# get request message
-	requestBytes = sys.stdin.buffer.read(requestLength)
-	ValidateRequest(len(requestBytes), requestLength)
-	request = json.loads(requestBytes)
-	
-	# process message
-	if (request["Type"] == "CatalogsRequest" and \
-		request["Version"] == 1):
-
-		catalogs = dataSource.get_catalogs_async()
-
-		response = {
-			"Type": "CatalogsResponse",
-			"Version": 1,
-			"Catalogs": catalogs
-		}
-
-	else:
-		raise Exception("Not supported.")
-
-	# send response length and response message
-	responseString = json.dumps(response, default=lambda x: SerializeJson(x))
-	responseBytes = bytes(responseString, "utf-8")
-	responseLengthBase64 = ToBase64Bytes(len(responseBytes))
-	
-	sys.stdout.buffer.write(responseLengthBase64)
-	sys.stdout.buffer.write(responseBytes)
-	sys.stdout.flush()
-
-	time.sleep(10)
-
-except Exception as exception:
-	with open("D:/Git/Test/namedpipes/namedpipeserver/error.txt", "w") as text_file:
-		import traceback
-		print(traceback.format_exc(), file=text_file)
+async def main() -> Awaitable:
+    
+	communicator = PipeCommunicator(PythonDataSource())
+	await communicator.run()
+    
+asyncio.run(main())

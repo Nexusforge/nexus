@@ -21,6 +21,36 @@ namespace Nexus.Extensibility.Tests
         }
 
         [Theory]
+        [InlineData("DATABASES/A", "2019-12-31T12-00-00Z", "2020-01-02T00-20-00Z")]
+        [InlineData("DATABASES/B", "2019-12-31T12-00-00Z", "2020-01-02T00-20-00Z")]
+        [InlineData("DATABASES/C", "2019-12-31T12-00-00Z", "2020-01-02T00-20-00Z")]
+        [InlineData("DATABASES/D", "2019-12-31T10-00-00Z", "2020-01-02T01-00-00Z")]
+        [InlineData("DATABASES/E", "2019-12-31T12-00-00Z", "2020-01-03T00-00-00Z")]
+        [InlineData("DATABASES/F", "2019-12-31T12-00-00Z", "2020-01-02T02-00-00Z")]
+        [InlineData("DATABASES/G", "2019-12-31T00-40-22Z", "2020-01-01T01-39-23Z")]
+        [InlineData("DATABASES/H", "2019-12-31T12-00-00Z", "2020-01-02T00-20-00Z")]
+        public async Task CanProvideTimeRange(string root, string expectedBeginString, string expectedEndString)
+        {
+            var expectedBegin = DateTime.ParseExact(expectedBeginString, "yyyy-MM-ddTHH-mm-ssZ", null, DateTimeStyles.AdjustToUniversal);
+            var expectedEnd = DateTime.ParseExact(expectedEndString, "yyyy-MM-ddTHH-mm-ssZ", null, DateTimeStyles.AdjustToUniversal);
+
+            var dataSource = new StructuredFileDataSourceTester()
+            {
+                ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), root)),
+                Logger = _logger,
+                Parameters = null,
+            } as IDataSource;
+
+            await dataSource.OnParametersSetAsync();
+
+            var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
+            var actual = await dataSource.GetTimeRangeAsync(catalogs.First().Id, CancellationToken.None);
+
+            Assert.Equal(expectedBegin, actual.Begin);
+            Assert.Equal(expectedEnd, actual.End);
+        }
+
+        [Theory]
         [InlineData("DATABASES/A", "2020-01-02T00-00-00Z", "2020-01-03T00-00-00Z", 2 / 144.0, 4)]
         [InlineData("DATABASES/A", "2019-12-30T00-00-00Z", "2020-01-03T00-00-00Z", 3 / (4 * 144.0), 4)]
         [InlineData("DATABASES/B", "2020-01-02T00-00-00Z", "2020-01-03T00-00-00Z", 2 / 144.0, 4)]
@@ -67,36 +97,6 @@ namespace Nexus.Extensibility.Tests
            
             await Assert.ThrowsAsync<ArgumentException>(() => 
                 dataSource.GetAvailabilityAsync("/A/B/C", begin, end, CancellationToken.None));
-        }
-
-        [Theory]
-        [InlineData("DATABASES/A", "2019-12-31T12-00-00Z", "2020-01-02T00-20-00Z")]
-        [InlineData("DATABASES/B", "2019-12-31T12-00-00Z", "2020-01-02T00-20-00Z")]
-        [InlineData("DATABASES/C", "2019-12-31T12-00-00Z", "2020-01-02T00-20-00Z")]
-        [InlineData("DATABASES/D", "2019-12-31T10-00-00Z", "2020-01-02T01-00-00Z")]
-        [InlineData("DATABASES/E", "2019-12-31T12-00-00Z", "2020-01-03T00-00-00Z")]
-        [InlineData("DATABASES/F", "2019-12-31T12-00-00Z", "2020-01-02T02-00-00Z")]
-        [InlineData("DATABASES/G", "2019-12-31T00-40-22Z", "2020-01-01T01-39-23Z")]
-        [InlineData("DATABASES/H", "2019-12-31T12-00-00Z", "2020-01-02T00-20-00Z")]
-        public async Task CanProvideCatalogTimeRange(string root, string expectedBeginString, string expectedEndString)
-        {
-            var expectedBegin = DateTime.ParseExact(expectedBeginString, "yyyy-MM-ddTHH-mm-ssZ", null, DateTimeStyles.AdjustToUniversal);
-            var expectedEnd = DateTime.ParseExact(expectedEndString, "yyyy-MM-ddTHH-mm-ssZ", null, DateTimeStyles.AdjustToUniversal);
-
-            var dataSource = new StructuredFileDataSourceTester()
-            {
-                ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), root)),
-                Logger = _logger,
-                Parameters = null,
-            } as IDataSource;
-
-            await dataSource.OnParametersSetAsync();
-
-            var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
-            var actual = await dataSource.GetCatalogTimeRangeAsync(catalogs.First().Id, CancellationToken.None);
-
-            Assert.Equal(expectedBegin, actual.Begin);
-            Assert.Equal(expectedEnd, actual.End);
         }
 
         [Theory]
@@ -154,8 +154,7 @@ namespace Nexus.Extensibility.Tests
         {
             var begin = DateTime.ParseExact(beginString, "yyyy-MM-ddTHH-mm-ssZ", default, DateTimeStyles.AdjustToUniversal);
             var end = DateTime.ParseExact(endString, "yyyy-MM-ddTHH-mm-ssZ", default, DateTimeStyles.AdjustToUniversal);
-
-            var dataSource = new StructuredFileDataSourceTester()
+            var dataSource = new StructuredFileDataSourceTester()
             {
                 ResourceLocator = new Uri(string.Empty, UriKind.Relative),
                 Logger = _logger,

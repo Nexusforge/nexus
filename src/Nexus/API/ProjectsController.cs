@@ -103,7 +103,7 @@ namespace Nexus.Controllers
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
         [HttpGet("{catalogId}/timerange")]
-        public ActionResult<List<AvailabilityResult>> GetCatalogTimeRange(string catalogId)
+        public ActionResult<List<AvailabilityResult>> GetTimeRange(string catalogId)
         {
             if (_databaseManager.Database == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");

@@ -1,7 +1,10 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -13,6 +16,26 @@ namespace Nexus.Extensions
     public class PipeCommunicator
     {
         #region Types
+
+        internal class CastMemoryManager<TFrom, TTo> : MemoryManager<TTo>
+            where TFrom : struct
+            where TTo : struct
+        {
+            private readonly Memory<TFrom> _from;
+
+            public CastMemoryManager(Memory<TFrom> from) => _from = from;
+
+            public override Span<TTo> GetSpan() => MemoryMarshal.Cast<TFrom, TTo>(_from.Span);
+
+            protected override void Dispose(bool disposing)
+            {
+                //
+            }
+
+            public override MemoryHandle Pin(int elementIndex = 0) => throw new NotSupportedException();
+
+            public override void Unpin() => throw new NotSupportedException();
+        }
 
         class TimeSpanConverter : JsonConverter<TimeSpan>
         {
@@ -31,6 +54,10 @@ namespace Nexus.Extensions
 
         #region Fields
 
+        private string[] AVAILABLE_PROTOCOLS = new string[] { "nexus_pipes_v1" };
+
+        private ILogger _logger;
+
         private string _command;
         private string _arguments;
 
@@ -46,10 +73,11 @@ namespace Nexus.Extensions
 
         #region Constructors
 
-        public PipeCommunicator(string command, string arguments)
+        public PipeCommunicator(string command, string arguments, ILogger logger)
         {
             _command = command;
             _arguments = arguments;
+            _logger = logger;
 
             _jsonOptions = new JsonSerializerOptions();
             _jsonOptions.Converters.Add(new TimeSpanConverter());
@@ -66,7 +94,7 @@ namespace Nexus.Extensions
 
         #region Methods
 
-        public void Connect()
+        public async Task ConnectAsync(CancellationToken cancellationToken)
         {
             // start process
             var psi = new ProcessStartInfo(_command)
@@ -74,7 +102,8 @@ namespace Nexus.Extensions
                 Arguments = _arguments,
                 UseShellExecute = false,
                 RedirectStandardInput = true,
-                RedirectStandardOutput = true
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
             };
 
             _process = new Process() { StartInfo = psi };
@@ -82,8 +111,33 @@ namespace Nexus.Extensions
 
             _pipeInput = _process.StandardInput.BaseStream;
             _pipeOutput = _process.StandardOutput.BaseStream;
+            
+            _process.ErrorDataReceived += (sender, e) =>
+            {
+                if (e.Data is not null)
+                {
+                    try
+                    {
+                        var logMessage = JsonSerializer.Deserialize<LogMessage>(e.Data, _jsonOptions);
+                        _logger.Log(logMessage.LogLevel, logMessage.Message);
+                    }
+                    catch (Exception)
+                    {
+                        _logger.LogError(e.Data);
+                        this.IsConnected = false;
+                    }
+                }
+            };
+
+            _process.BeginErrorReadLine();
 
             this.IsConnected = true;
+
+            var request = new ProtocolRequest(AVAILABLE_PROTOCOLS);
+            var response = await this.TranceiveAsync<ProtocolRequest, ProtocolResponse>(request, cancellationToken);
+
+            if (response.SelectedProtocol != "nexus_pipes_v1")
+                throw new PipeProtocolException("The child process does not support protocol 'nexus_pipes_v1'.");
         }
 
         public async Task SendAsync<TRequest>(TRequest request, CancellationToken cancellationToken)
@@ -98,9 +152,9 @@ namespace Nexus.Extensions
 
                 // send request
                 var requestBytes = JsonSerializer.SerializeToUtf8Bytes(request, _jsonOptions);
-                var base64Bytes = this.ToBase64Bytes(requestBytes.Length);
+                var requestLengthBytes = BitConverter.GetBytes(requestBytes.Length);
 
-                await _pipeInput.WriteAsync(base64Bytes);
+                await _pipeInput.WriteAsync(requestLengthBytes);
                 await _pipeInput.WriteAsync(requestBytes);
                 await _pipeInput.FlushAsync();
 
@@ -125,20 +179,18 @@ namespace Nexus.Extensions
 
                 // send request
                 var requestBytes = JsonSerializer.SerializeToUtf8Bytes(request, _jsonOptions);
-                var requestLengthBase64 = this.ToBase64Bytes(requestBytes.Length);
+                var requestLengthBytes = BitConverter.GetBytes(requestBytes.Length);
 
-                await _pipeInput.WriteAsync(requestLengthBase64, cancellationToken);
+                await _pipeInput.WriteAsync(requestLengthBytes, cancellationToken);
                 await _pipeInput.WriteAsync(requestBytes, cancellationToken);
                 await _pipeInput.FlushAsync();
 
                 cancellationToken.ThrowIfCancellationRequested();
 
-                // read response length
-                var responseLengthBytes = new byte[8];
-                var responseLengthCount = await _pipeOutput.ReadAsync(responseLengthBytes, cancellationToken);
-                this.ValidateResponse(responseLengthCount, expectedCount: 8);
-
-                var responseLength = this.FromBase64Bytes(responseLengthBytes);
+                // read response
+                var responseLengthBuffer = new byte[4];
+                await this.ReadInternalAsync<byte>(responseLengthBuffer, cancellationToken);
+                var responseLength = BitConverter.ToInt32(responseLengthBuffer);
 
                 if (responseLength == 0)
                 {
@@ -146,14 +198,11 @@ namespace Nexus.Extensions
                     throw new PipeProtocolException("Invalid number of bytes received.");
                 }
 
-                // read response
-                using var responseBytes = MemoryPool<byte>.Shared.Rent(responseLength);
-                var responseCount = await _pipeOutput.ReadAsync(responseBytes.Memory, cancellationToken);
-                this.ValidateResponse(responseCount, expectedCount: responseLength);
+                using var response_bytes = MemoryPool<byte>.Shared.Rent(responseLength);
+                var responseBuffer = response_bytes.Memory.Slice(0, responseLength);
+                await this.ReadInternalAsync(responseBuffer, cancellationToken);
+                var reponse = JsonSerializer.Deserialize<TResponse>(response_bytes.Memory.Slice(0, responseLength).Span, _jsonOptions);
 
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var reponse = JsonSerializer.Deserialize<TResponse>(responseBytes.Memory.Span.Slice(0, responseCount), _jsonOptions);
                 return reponse;
             }
             finally
@@ -162,7 +211,34 @@ namespace Nexus.Extensions
             }
         }
 
-        private void ValidateResponse(int readCount, int expectedCount)
+        public async Task ReadAsync<T>(Memory<T> buffer, CancellationToken cancellationToken)
+           where T : unmanaged
+        {
+            try
+            {
+                await _semaphore.WaitAsync(cancellationToken);
+                await this.ReadInternalAsync(buffer, cancellationToken);
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }
+
+        private async Task ReadInternalAsync<T>(Memory<T> buffer, CancellationToken cancellationToken)
+            where T : unmanaged
+        {
+            while (buffer.Length > 0)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var memory = new CastMemoryManager<T, byte>(buffer).Memory;
+                var byteCount = await _pipeOutput.ReadAsync(memory, cancellationToken);
+                this.ValidateResponse(byteCount);
+                buffer = buffer.Slice(byteCount);
+            }
+        }
+
+        private void ValidateResponse(int readCount)
         {
             if (readCount == 0)
             {
@@ -170,32 +246,6 @@ namespace Nexus.Extensions
                 _process?.Kill();
                 throw new PipeProtocolException("The connection aborted unexpectedly.");
             }
-            else if (readCount != expectedCount)
-            {
-                throw new PipeProtocolException("Invalid number of bytes received.");
-            }
-        }
-
-        private int FromBase64Bytes(byte[] base64Bytes)
-        {
-            var base64 = Encoding.ASCII.GetString(base64Bytes);
-            var normalBytes = Convert.FromBase64String(base64);
-
-            if (!BitConverter.IsLittleEndian)
-                Array.Reverse(normalBytes);
-
-            return BitConverter.ToInt32(normalBytes);
-        }
-
-        private byte[] ToBase64Bytes(int length)
-        {
-            var normalBytes = BitConverter.GetBytes(length);
-
-            if (!BitConverter.IsLittleEndian)
-                Array.Reverse(normalBytes);
-
-            var base64 = Convert.ToBase64String(normalBytes);
-            return Encoding.ASCII.GetBytes(base64);
         }
 
         #endregion
@@ -211,7 +261,18 @@ namespace Nexus.Extensions
                 if (disposing)
                 {
                     var request = new ShutdownRequest();
-                    _ = this.SendAsync(request, CancellationToken.None);
+
+                    try
+                    {
+                        if (this.IsConnected)
+                            _ = this.SendAsync(request, CancellationToken.None);
+                    }
+                    catch (Exception)
+                    {
+                        //
+                    }
+
+                    //_process?.WaitForExitAsync();
                     this.IsConnected = false;
                 }
 

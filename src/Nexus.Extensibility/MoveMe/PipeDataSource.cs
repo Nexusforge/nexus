@@ -40,35 +40,66 @@ namespace Nexus.Extensions
                 ? this.Parameters["arguments"]
                 : string.Empty;
 
-            _communicator = new PipeCommunicator(command, arguments);
-            _communicator.Connect();
+            var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromSeconds(10));
+
+            _communicator = new PipeCommunicator(command, arguments, this.Logger);
+            await _communicator.ConnectAsync(timeoutTokenSource.Token);
         }
 
         public async Task<List<Catalog>> GetCatalogsAsync(CancellationToken cancellationToken)
         {
-            var timeoutToken = new CancellationTokenSource();
-            timeoutToken.CancelAfter(TimeSpan.FromMinutes(1));
-            cancellationToken.Register(() => timeoutToken.Cancel());
+            var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromMinutes(1));
+            cancellationToken.Register(() => timeoutTokenSource.Cancel());
 
             var request = new CatalogsRequest();
-            var response = await _communicator.TranceiveAsync<CatalogsRequest, CatalogResponse>(request, cancellationToken);
+            var response = await _communicator.TranceiveAsync<CatalogsRequest, CatalogsResponse>(request, cancellationToken);
 
             return response.Catalogs;
         }
 
-        public Task<(DateTime Begin, DateTime End)> GetCatalogTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
+        public async Task<(DateTime Begin, DateTime End)> GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromMinutes(1));
+            cancellationToken.Register(() => timeoutTokenSource.Cancel());
+
+            var request = new TimeRangeRequest(catalogId);
+            var response = await _communicator.TranceiveAsync<TimeRangeRequest, TimeRangeResponse>(request, cancellationToken);
+
+            var begin = response.Begin.ToUniversalTime();
+            var end = response.End.ToUniversalTime();
+
+            return (begin, end);
         }
 
-        public Task<double> GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken)
+        public async Task<double> GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromMinutes(1));
+            cancellationToken.Register(() => timeoutTokenSource.Cancel());
+
+            var request = new AvailabilityRequest(catalogId, begin, end);
+            var response = await _communicator.TranceiveAsync<AvailabilityRequest, AvailabilityResponse>(request, cancellationToken);
+
+            return response.Availability;
         }
 
-        public Task ReadSingleAsync<T>(Dataset dataset, ReadResult<T> readResult, DateTime begin, DateTime end, CancellationToken cancellationToken) where T : unmanaged
+        public async Task ReadSingleAsync<T>(Dataset dataset, ReadResult<T> readResult, DateTime begin, DateTime end, CancellationToken cancellationToken) where T : unmanaged
         {
-            throw new NotImplementedException();
+            var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromMinutes(1));
+            cancellationToken.Register(() => timeoutTokenSource.Cancel());
+
+            var request = new ReadSingleRequest(dataset, readResult.Length, begin, end);
+            var response = await _communicator.TranceiveAsync<ReadSingleRequest, ReadSingleResponse>(request, cancellationToken);
+
+            var data = _communicator.ReadAsync(readResult.Data, cancellationToken);
+            var status = _communicator.ReadAsync(readResult.Status, cancellationToken);
+        }
+
+        private CancellationTokenSource GetTimeoutTokenSource(TimeSpan timeout)
+        {
+            var timeoutToken = new CancellationTokenSource();
+            timeoutToken.CancelAfter(timeout);
+
+            return timeoutToken;
         }
 
         #endregion
@@ -83,7 +114,7 @@ namespace Nexus.Extensions
             {
                 if (disposing)
                 {
-                    _communicator.Dispose();
+                    _communicator?.Dispose();
                 }
 
                 disposedValue = true;

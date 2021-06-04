@@ -95,7 +95,7 @@ namespace Nexus.Extensibility
             GetCatalogsAsync(CancellationToken cancellationToken);
 
         protected virtual Task<(DateTime Begin, DateTime End)> 
-            GetCatalogTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
+            GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
         {
             return Task.Run(async () =>
             {
@@ -382,9 +382,9 @@ namespace Nexus.Extensibility
         }
 
         Task<(DateTime Begin, DateTime End)> 
-            IDataSource.GetCatalogTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
+            IDataSource.GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
         {
-            return this.GetCatalogTimeRangeAsync(catalogId, cancellationToken);
+            return this.GetTimeRangeAsync(catalogId, cancellationToken);
         }
 
         Task<double> 

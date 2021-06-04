@@ -28,7 +28,7 @@ namespace Nexus.Extensibility
 
         Task<List<Catalog>> GetCatalogsAsync(CancellationToken cancellationToken);
 
-        Task<(DateTime Begin, DateTime End)> GetCatalogTimeRangeAsync(string catalogId,
+        Task<(DateTime Begin, DateTime End)> GetTimeRangeAsync(string catalogId,
                                                                       CancellationToken cancellationToken);
 
         Task<double> GetAvailabilityAsync(string catalogId,
