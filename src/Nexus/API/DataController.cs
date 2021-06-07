@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using Nexus.DataModel;
 using Nexus.Core;
 using Nexus.Services;
-using Nexus.Types;
+using Nexus.Core;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Net;

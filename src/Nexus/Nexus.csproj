@@ -6,22 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Resources\DefaultFilterCodeTemplate.cs" />
-    <Compile Remove="Resources\DefaultSharedCodeTemplate.cs" />
-    <Compile Remove="Resources\TestUserFilterCodeTemplateSimple.cs" />
-    <Compile Remove="Resources\TestUserSharedCodeTemplateSimple.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\TestUserSharedCodeTemplateSimple.cs" />
-    <EmbeddedResource Include="Resources\TestUserFilterCodeTemplateSimple.cs" />
-    <EmbeddedResource Include="Resources\DefaultSharedCodeTemplate.cs" />
-    <EmbeddedResource Include="Resources\DefaultFilterCodeTemplate.cs" />
-    <EmbeddedResource Include="Resources\FilterTypesShared.cs" />
-    <EmbeddedResource Include="Resources\RandomWords.json" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="ChartJs.Blazor.Fork" Version="2.0.0" />
     <PackageReference Include="GraphQL" Version="4.5.0" />
     <PackageReference Include="GraphQL.Server.Transports.AspNetCore" Version="5.0.2" />
@@ -40,11 +24,7 @@
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="5.0.0" />
-    <!-- needed for Generate.ps1 script -->
-    <PackageReference Include="Microsoft.NETCore.App.Ref" Version="5.0.0" IncludeAssets="none" PrivateAssets="all" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="5.0.2" />
     <PackageReference Include="NSwag.AspNetCore" Version="13.11.1" />
-    <PackageReference Include="OmniSharp.Roslyn.CSharp" Version="1.37.4" />
     <PackageReference Include="Prism.Core" Version="8.0.0.1909" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.21216.1" />
   </ItemGroup>
@@ -56,80 +36,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Resources\RandomWords.json" />
     <Resource Include="Templates\DefaultFilterCodeTemplate.cs" />
   </ItemGroup>
-
-  <ItemGroup>
-    <Compile Update="Resources\EnumerationDescription.cs">
-      <DependentUpon>EnumerationDescription.resx</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
-    <Compile Update="Resources\EnumerationDescription.Designer.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>EnumerationDescription.resx</DependentUpon>
-    </Compile>
-    <Compile Update="Resources\EnumerationIconName.Designer.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>EnumerationIconName.resx</DependentUpon>
-    </Compile>
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Update="Resources\EnumerationIconName.resx">
-      <CustomToolNamespace>Nexus</CustomToolNamespace>
-      <LastGenOutput>EnumerationIconName.Designer.cs</LastGenOutput>
-      <Generator>ResXFileCodeGenerator</Generator>
-    </EmbeddedResource>
-    <EmbeddedResource Update="Resources\EnumerationDescription.resx">
-      <CustomToolNamespace>Nexus</CustomToolNamespace>
-      <LastGenOutput>EnumerationDescription.Designer.cs</LastGenOutput>
-      <Generator>ResXFileCodeGenerator</Generator>
-    </EmbeddedResource>
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="Connectors\NexusConnector.m">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Connectors\NexusConnector.py">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="OmniSharp\OmniSharpQuickInfoProvider.tt">
-      <LastGenOutput>OmniSharpQuickInfoProvider.cs</LastGenOutput>
-      <Generator>TextTemplatingFileGenerator</Generator>
-    </None>
-    <None Update="OmniSharp\OmniSharpSignatureHelpService.tt">
-      <LastGenOutput>OmniSharpSignatureHelpService.cs</LastGenOutput>
-      <Generator>TextTemplatingFileGenerator</Generator>
-    </None>
-    <None Update="OmniSharp\OmniSharpCompletionService.tt">
-      <LastGenOutput>OmniSharpCompletionService.cs</LastGenOutput>
-      <Generator>TextTemplatingFileGenerator</Generator>
-    </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Update="OmniSharp\OmniSharpCompletionService.cs">
-      <DependentUpon>OmniSharpCompletionService.tt</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
-    <Compile Update="OmniSharp\OmniSharpSignatureHelpService.cs">
-      <DependentUpon>OmniSharpSignatureHelpService.tt</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
-    <Compile Update="OmniSharp\OmniSharpQuickInfoProvider.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>OmniSharpQuickInfoProvider.tt</DependentUpon>
-    </Compile>
-  </ItemGroup>
-
-  <Import Project="./Roslyn/Generated.targets" />
 
 </Project>

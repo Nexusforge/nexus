@@ -5,7 +5,7 @@ using Microsoft.JSInterop;
 using Nexus.Core;
 using Nexus.Services;
 using Nexus.Infrastructure;
-using Nexus.Types;
+using Nexus.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;

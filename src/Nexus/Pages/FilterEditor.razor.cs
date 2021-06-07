@@ -198,7 +198,7 @@ namespace Nexus.Pages
                 });
             }
 
-            else if (e.PropertyName == nameof(CodeDefinitionViewModel.RequestedProjectIds))
+            else if (e.PropertyName == nameof(CodeDefinitionViewModel.RequestedCatalogIds))
             {
                 this.InvokeAsync(async () =>
                 {
@@ -242,7 +242,7 @@ namespace Nexus.Pages
             this.UserState.CodeDefinition = this.UserState.CreateCodeDefinition(codeType);
 
             if (codeType == CodeType.Filter)
-                this.CodeDefinitionSettingsBox.OpenCodeDefinitionProjectRequestDialog();
+                this.CodeDefinitionSettingsBox.OpenCodeDefinitionCatalogRequestDialog();
         }
 
         private async Task SaveCodeDefinitionAsync()

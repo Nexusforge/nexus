@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 using Nexus.DataModel;
 using Nexus.Core;
 using Nexus.Services;
-using Nexus.Types;
+using Nexus.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -183,7 +183,7 @@ namespace Nexus.Shared
 
                         dataset = new BarDataset<TimePoint>
                         {
-                            Label = isAggregation ? "Aggregations" : $"Raw ({registration.RootPath} - {registration.DataSourceId})",
+                            Label = isAggregation ? "Aggregations" : $"Raw ({registration.ResourceLocator} - {registration.DataSourceId})",
                             BackgroundColor = _backgroundColors[i % _backgroundColors.Count()],
                             BorderColor = _borderColors[i % _borderColors.Count()],
                             BorderWidth = 2

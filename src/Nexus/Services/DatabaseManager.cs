@@ -126,9 +126,12 @@ namespace Nexus.Services
             var registration = new DataSourceRegistration()
             {
                 DataSourceId = "Nexus.Aggregation",
-                RootPath = !string.IsNullOrWhiteSpace(this.Config.AggregationDataReaderRootPath) 
-                    ? this.Config.AggregationDataReaderRootPath
-                    : _options.DataBaseFolderPath
+                ResourceLocator = new Uri(
+                    !string.IsNullOrWhiteSpace(this.Config.AggregationDataReaderRootPath) 
+                        ? this.Config.AggregationDataReaderRootPath
+                        : _options.DataBaseFolderPath, 
+                    UriKind.RelativeOrAbsolute
+                )
             };
 
             registrationToDataReaderTypeMap[registration] = typeof(AggregationDataSource);
@@ -326,7 +329,7 @@ namespace Nexus.Services
                     var inMemoryRegistration = new DataSourceRegistration()
                     {
                         DataSourceId = "Nexus.InMemory",
-                        RootPath = ":memory:"
+                        ResourceLocator = null
                     };
 
                     if (!this.Config.DataSourceRegistrations.Contains(inMemoryRegistration))
@@ -335,7 +338,7 @@ namespace Nexus.Services
                     var filterRegistration = new DataSourceRegistration()
                     {
                         DataSourceId = "Nexus.Filters",
-                        RootPath = _options.DataBaseFolderPath
+                        ResourceLocator = new Uri(_options.DataBaseFolderPath, UriKind.RelativeOrAbsolute)
                     };
 
                     if (!this.Config.DataSourceRegistrations.Contains(filterRegistration))
@@ -357,7 +360,7 @@ namespace Nexus.Services
             DataSourceRegistration registration, Type type,
             Dictionary<DataSourceRegistration, List<Catalog>> registrationToCatalogsMap)
         {
-            var logger = _loggerFactory.CreateLogger($"{registration.DataSourceId} - {registration.RootPath}");
+            var logger = _loggerFactory.CreateLogger($"{registration.DataSourceId} - {registration.ResourceLocator}");
             var dataReader = (DataReaderExtensionBase)Activator.CreateInstance(type, registration, logger);
 
             // special case checks
@@ -374,7 +377,7 @@ namespace Nexus.Services
             }
             else
             {
-                _logger.LogInformation($"Loading {registration.DataSourceId} on path {registration.RootPath} ...");
+                _logger.LogInformation($"Instantiating {registration.DataSourceId} for URI {registration.ResourceLocator} ...");
                 dataReader.InitializeCatalogs();
 
                 registrationToCatalogsMap[registration] = dataReader

@@ -5,7 +5,7 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Nexus.Types\Nexus.Types.csproj" />
+    <ProjectReference Include="..\..\src\Nexus.Core\Nexus.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

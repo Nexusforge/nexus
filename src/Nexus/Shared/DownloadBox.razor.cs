@@ -5,7 +5,7 @@ using Microsoft.JSInterop;
 using Nexus.Core;
 using Nexus.Services;
 using Nexus.ViewModels;
-using Nexus.Types;
+using Nexus.Core;
 using System;
 using System.Threading.Tasks;
 

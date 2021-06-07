@@ -4,7 +4,7 @@ using Nexus.Services;
 using Nexus.ViewModels;
 using Nexus.Infrastructure;
 using Nexus.Extension.Csv;
-using Nexus.Types;
+using Nexus.Core;
 using Prism.Mvvm;
 using System;
 using System.Collections.Generic;

@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Nexus.Core;
-using Nexus.Types;
+using Nexus.Core;
 
 namespace Nexus.Shared
 {

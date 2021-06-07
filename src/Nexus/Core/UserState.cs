@@ -398,8 +398,8 @@ namespace Nexus.Core
 
             var code = codeType switch
             {
-                CodeType.Filter => RoslynCatalog.DefaultFilterCode,
-                CodeType.Shared => RoslynCatalog.DefaultSharedCode,
+                CodeType.Filter => RoslynProject.DefaultFilterCode,
+                CodeType.Shared => RoslynProject.DefaultSharedCode,
                 _ => throw new Exception($"The code type '{codeType}' is not supported.")
             };
 

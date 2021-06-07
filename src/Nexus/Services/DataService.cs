@@ -8,7 +8,7 @@ using Nexus.Extensibility;
 using Nexus.Extension.Csv;
 using Nexus.Extension.Famos;
 using Nexus.Extension.Mat73;
-using Nexus.Types;
+using Nexus.Core;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;

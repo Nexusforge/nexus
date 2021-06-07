@@ -158,10 +158,7 @@
     <None Update="DATABASES\TESTDATA\DATA\test\2020-01\2020-01-02\2020-01-02_09-50-00.dat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="PythonPipeDataSource.py">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="PythonPipeExtensibility.py">
+    <None Update="PythonRpcDataModel.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

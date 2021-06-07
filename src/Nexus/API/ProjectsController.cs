@@ -5,7 +5,7 @@ using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Infrastructure;
 using Nexus.Services;
-using Nexus.Types;
+using Nexus.Core;
 using NJsonSchema.Annotations;
 using System;
 using System.Collections.Generic;
@@ -103,7 +103,7 @@ namespace Nexus.Controllers
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
         [HttpGet("{catalogId}/timerange")]
-        public ActionResult<List<AvailabilityResult>> GetTimeRange(string catalogId)
+        public ActionResult<List<TimeRangeResult>> GetTimeRange(string catalogId)
         {
             if (_databaseManager.Database == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
@@ -116,7 +116,7 @@ namespace Nexus.Controllers
 
             try
             {
-                return this.ProcessCatalogId<TimeRangeResult>(catalogId, message,
+                return this.ProcessCatalogId<List<TimeRangeResult>>(catalogId, message,
                     (catalog, catalogMeta) =>
                     {
                         _logger.LogInformation($"{message} Done.");
@@ -393,7 +393,7 @@ namespace Nexus.Controllers
             };
         }
 
-        private List<AvailabilityResult> CreateTimeRangeResponse(DataModel.Catalog catalog)
+        private List<TimeRangeResult> CreateTimeRangeResponse(DataModel.Catalog catalog)
         {
             var dataReaders = _databaseManager.GetDataReaders(_userIdService.User, catalog.Id);
 
@@ -421,7 +421,7 @@ namespace Nexus.Controllers
 
                 var registration = new DataSourceRegistration()
                 {
-                    RootPath = availability.DataSourceRegistration.RootPath,
+                    ResourceLocator = availability.DataSourceRegistration.ResourceLocator,
                     DataSourceId = availability.DataSourceRegistration.DataSourceId,
                 };
 
@@ -492,7 +492,7 @@ namespace Nexus.Controllers
 
         public record DataSourceRegistration
         {
-            public string RootPath { get; set; }
+            public Uri ResourceLocator { get; set; }
             public string DataSourceId { get; set; }
         }
 
