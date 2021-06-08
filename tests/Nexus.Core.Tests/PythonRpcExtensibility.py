@@ -71,10 +71,6 @@ class IDataSource(ABC):
 
 class RpcCommunicator:
 
-    # It is very important to read the correct number of bytes.
-    # simple buffer.read() will return data but subsequent buffer.write
-    # will fail with error 22.
-
     _dataSource: IDataSource
     _isConnected: bool
 
@@ -89,15 +85,10 @@ class RpcCommunicator:
             # sys.stdin.buffer.read returns requested bytes or zero bytes when reaching EOF:
             # (https://docs.python.org/3/library/io.html#io.BufferedIOBase.read)
 
-            # get request length
-            requestLengthBytes = sys.stdin.buffer.read(4)
-            self._validateRequest(len(requestLengthBytes))
-            requestLength = int.from_bytes(requestLengthBytes, 'little')
-
             # get request message
-            requestBytes = sys.stdin.buffer.read(requestLength)
-            self._validateRequest(len(requestBytes))
-            request = json.loads(requestBytes)
+            jsonRequest = sys.stdin.readline()
+            self._validateRequest(len(jsonRequest))
+            request = json.loads(jsonRequest)
             
             # process message
             data = None
@@ -143,14 +134,11 @@ class RpcCommunicator:
             else:
                 raise Exception(f"Protocol message expected, but something else.") 
             
-            # send response length and response message
+            # send response
             if response is not None:
-                responseString = json.dumps(response, default=lambda x: self._serializeJson(x))
-                responseBytes = bytes(responseString, "utf-8")
-                responseLengthBytes = int.to_bytes(len(responseBytes), 4, "little")
-
-                sys.stdout.buffer.write(responseLengthBytes)
-                sys.stdout.buffer.write(responseBytes)
+                jsonResponse = json.dumps(response, default=lambda x: self._serializeJson(x))
+                sys.stdout.write(jsonResponse)
+                sys.stdout.write("\n")
                 sys.stdout.flush()
 
             if data is not None and status is not None:

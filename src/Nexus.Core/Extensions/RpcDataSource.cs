@@ -110,8 +110,8 @@ namespace Nexus.Extensions
                 timeoutTokenSource.Token
             );
 
-            await _communicator.ReadAsync(readResult.Data, timeoutTokenSource.Token);
-            await _communicator.ReadAsync(readResult.Status, timeoutTokenSource.Token);
+            await _communicator.ReadRawAsync(readResult.Data, timeoutTokenSource.Token);
+            await _communicator.ReadRawAsync(readResult.Status, timeoutTokenSource.Token);
         }
 
         private CancellationTokenSource GetTimeoutTokenSource(TimeSpan timeout)

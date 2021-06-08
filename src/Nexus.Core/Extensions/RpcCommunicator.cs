@@ -3,6 +3,7 @@ using System;
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -22,8 +23,9 @@ namespace Nexus.Extensions
         private object _lock = new object();
 
         private Process _process;
-        private Stream _pipeInput;
-        private Stream _pipeOutput;
+
+        private StreamWriter _pipeInput;
+        private StreamReader _pipeOutput;
 
         private JsonSerializerOptions _jsonOptions;
 
@@ -69,9 +71,9 @@ namespace Nexus.Extensions
             _process = new Process() { StartInfo = psi };
             _process.Start();
 
-            _pipeInput = _process.StandardInput.BaseStream;
-            _pipeOutput = _process.StandardOutput.BaseStream;
-            
+            _pipeInput = _process.StandardInput;
+            _pipeOutput = _process.StandardOutput;
+
             _process.ErrorDataReceived += (sender, e) =>
             {
                 if (e.Data is not null)
@@ -92,7 +94,7 @@ namespace Nexus.Extensions
             _process.BeginErrorReadLine();
 
             var request = new HandshakeRequest();
-            var response = await this.InvokeInternalAsync<HandshakeRequest, HandshakeResponse>(request, cancellationToken);
+            var response = await this.InternalInvokeAsync<HandshakeRequest, HandshakeResponse>(request, cancellationToken);
 
             if (!string.IsNullOrWhiteSpace(response.Error))
                 throw new RpcException(response.Error);
@@ -106,7 +108,7 @@ namespace Nexus.Extensions
                 throw new InvalidOperationException("Cannot communicate in disconnected state.");
 
             var request = new Invocation(this.GetInvocationId(), methodName, args);
-            var response = await this.InvokeInternalAsync<Invocation, Completion<T>>(request, cancellationToken);
+            var response = await this.InternalInvokeAsync<Invocation, Completion<T>>(request, cancellationToken);
 
             if (response.Type != response.Type)
                 throw new RpcException("The reponse message type does not match the expected message type.");
@@ -143,11 +145,9 @@ namespace Nexus.Extensions
                 await _semaphore.WaitAsync(cancellationToken);
 
                 // send request
-                var requestBytes = JsonSerializer.SerializeToUtf8Bytes(request, _jsonOptions);
-                var requestLengthBytes = BitConverter.GetBytes(requestBytes.Length);
+                var jsonRequest = JsonSerializer.Serialize(request, _jsonOptions);
 
-                await _pipeInput.WriteAsync(requestLengthBytes);
-                await _pipeInput.WriteAsync(requestBytes);
+                await _pipeInput.WriteLineAsync(jsonRequest);
                 await _pipeInput.FlushAsync();
 
                 cancellationToken.ThrowIfCancellationRequested();
@@ -158,37 +158,23 @@ namespace Nexus.Extensions
             }
         }
 
-        private async Task<TResponse> InvokeInternalAsync<TRequest, TResponse>(TRequest request, CancellationToken cancellationToken) 
+        private async Task<TResponse> InternalInvokeAsync<TRequest, TResponse>(TRequest request, CancellationToken cancellationToken) 
         {
             try
             {
                 await _semaphore.WaitAsync(cancellationToken);
 
                 // send request
-                var requestBytes = JsonSerializer.SerializeToUtf8Bytes(request, _jsonOptions);
-                var requestLengthBytes = BitConverter.GetBytes(requestBytes.Length);
+                var jsonRequest = JsonSerializer.Serialize(request, _jsonOptions);
 
-                await _pipeInput.WriteAsync(requestLengthBytes, cancellationToken);
-                await _pipeInput.WriteAsync(requestBytes, cancellationToken);
+                await _pipeInput.WriteLineAsync(jsonRequest);
                 await _pipeInput.FlushAsync();
 
                 cancellationToken.ThrowIfCancellationRequested();
 
                 // read response
-                var responseLengthBuffer = new byte[4];
-                await this.ReadInternalAsync<byte>(responseLengthBuffer, cancellationToken);
-                var responseLength = BitConverter.ToInt32(responseLengthBuffer);
-
-                if (responseLength == 0)
-                {
-                    this.IsConnected = false;
-                    throw new RpcException("Invalid number of bytes received.");
-                }
-
-                using var response_bytes = MemoryPool<byte>.Shared.Rent(responseLength);
-                var responseBuffer = response_bytes.Memory.Slice(0, responseLength);
-                await this.ReadInternalAsync(responseBuffer, cancellationToken);
-                var reponse = JsonSerializer.Deserialize<TResponse>(response_bytes.Memory.Slice(0, responseLength).Span, _jsonOptions);
+                var jsonResponse = await _pipeOutput.ReadLineAsync();
+                var reponse = JsonSerializer.Deserialize<TResponse>(jsonResponse, _jsonOptions);
 
                 return reponse;
             }
@@ -198,33 +184,28 @@ namespace Nexus.Extensions
             }
         }
 
-        public async Task ReadAsync<T>(Memory<T> buffer, CancellationToken cancellationToken)
+        public async Task ReadRawAsync<T>(Memory<T> buffer, CancellationToken cancellationToken)
            where T : unmanaged
         {
             try
             {
                 await _semaphore.WaitAsync(cancellationToken);
-                await this.ReadInternalAsync(buffer, cancellationToken);
+
+                // Cancellation token only works when the child process writes data,
+                // otherwise it hangs forever.
+                var memory = new CastMemoryManager<T, byte>(buffer).Memory;
+
+                while (memory.Length > 0)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var byteCount = await _pipeOutput.BaseStream.ReadAsync(memory, cancellationToken).ConfigureAwait(false);
+                    this.ValidateResponse(byteCount);
+                    memory = memory.Slice(byteCount);
+                }
             }
             finally
             {
                 _semaphore.Release();
-            }
-        }
-
-        private async Task ReadInternalAsync<T>(Memory<T> buffer, CancellationToken cancellationToken)
-            where T : unmanaged
-        {
-            // Cancellation token only works when the child process writes data,
-            // otherwise it hangs forever.
-            var memory = new CastMemoryManager<T, byte>(buffer).Memory;
-
-            while (memory.Length > 0)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                var byteCount = await _pipeOutput.ReadAsync(memory, cancellationToken).ConfigureAwait(false);
-                this.ValidateResponse(byteCount);
-                memory = memory.Slice(byteCount);
             }
         }
 
