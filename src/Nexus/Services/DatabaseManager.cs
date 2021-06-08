@@ -36,12 +36,6 @@ namespace Nexus.Services
 
     public class DatabaseManager
     {
-        #region Events
-
-        public event EventHandler<NexusDatabase> DatabaseUpdated;
-
-        #endregion
-
         #region Records
 
         public record DatabaseManagerState
@@ -54,12 +48,18 @@ namespace Nexus.Services
 
         #endregion
 
+        #region Events
+
+        public event EventHandler<NexusDatabase> DatabaseUpdated;
+
+        #endregion
+
         #region Fields
 
         private NexusOptions _options;
 
         private bool _isInitialized;
-        private ILogger<DatabaseManager>  _logger;
+        private ILogger<DatabaseManager> _logger;
         private ILoggerFactory _loggerFactory;
         private IServiceProvider _serviceProvider;
 
@@ -127,9 +127,9 @@ namespace Nexus.Services
             {
                 DataSourceId = "Nexus.Aggregation",
                 ResourceLocator = new Uri(
-                    !string.IsNullOrWhiteSpace(this.Config.AggregationDataReaderRootPath) 
+                    !string.IsNullOrWhiteSpace(this.Config.AggregationDataReaderRootPath)
                         ? this.Config.AggregationDataReaderRootPath
-                        : _options.DataBaseFolderPath, 
+                        : _options.DataBaseFolderPath,
                     UriKind.RelativeOrAbsolute
                 )
             };
@@ -271,8 +271,14 @@ namespace Nexus.Services
             // special case checks
             if (dataReaderType == typeof(FilterDataSource))
             {
-                ((FilterDataSource)dataReader).User = user;
-                ((FilterDataSource)dataReader).DatabaseManager = this;
+                var current = ((FilterDataSource)dataReader);
+
+                current.Database = this.Database;
+
+                current.IsCatalogAccessible = 
+                    catalogId => Utilities.IsCatalogAccessible(user, catalogId, this.Database);
+
+                current.GetDataReader = registration => this.GetDataReader(user, registration);
             }
 
             return dataReader;
@@ -366,7 +372,7 @@ namespace Nexus.Services
             // special case checks
             if (type == typeof(AggregationDataSource))
             {
-                var fileAccessManger = _serviceProvider.GetRequiredService<FileAccessManager>();
+                var fileAccessManger = _serviceProvider.GetRequiredService<IFileAccessManager>();
                 ((AggregationDataSource)dataReader).FileAccessManager = fileAccessManger;
             }
 

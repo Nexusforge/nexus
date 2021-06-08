@@ -48,9 +48,11 @@ namespace Nexus.Extensions
 
         #region Properties
 
-        public ClaimsPrincipal User { get; set; }
+        public NexusDatabase Database { get; set; }
 
-        public DatabaseManager DatabaseManager { get; set; }
+        public Func<string, bool> IsCatalogAccessible { get; set; }
+
+        public Func<DataSourceRegistration, DataReaderExtensionBase> GetDataReader { get; set; }
 
         private static ConcurrentDictionary<DataSourceRegistration, FilterSettings> FilterSettingsCache { get; }
 
@@ -114,22 +116,22 @@ namespace Nexus.Extensions
             Func<string, string, string, DateTime, DateTime, double[]> getData = (string catalogId, string channelId, string datasetId, DateTime begin, DateTime end) =>
             {
 #warning improve this (PhysicalName)
-                var catalog = this.DatabaseManager.Database.CatalogContainers
+                var catalog = this.Database.CatalogContainers
                     .FirstOrDefault(container => container.Id == catalogId || container.PhysicalName == catalogId);
 
                 if (catalog == null)
                     throw new Exception($"Unable to find catalog with id '{catalogId}'.");
 
-                if (!this.DatabaseManager.Database.TryFindDatasetById(catalog.Id, channelId, datasetId, out var dataset))
+                if (!this.Database.TryFindDatasetById(catalog.Id, channelId, datasetId, out var dataset))
                 {
                     var path = $"{catalog.Id}/{channelId}/{datasetId}";
                     throw new Exception($"Unable to find dataset with path '{path}'.");
                 }
 
-                if (!Utilities.IsCatalogAccessible(this.User, dataset.Channel.Catalog.Id, this.DatabaseManager.Database))
+                if (!this.IsCatalogAccessible(dataset.Channel.Catalog.Id))
                     throw new UnauthorizedAccessException("The current user is not allowed to access this filter.");
 
-                var dataReader = this.DatabaseManager.GetDataReader(this.User, dataset.Registration);
+                var dataReader = this.GetDataReader(dataset.Registration);
                 (var rawData, var status) = dataReader.ReadSingle(dataset, begin, end);
                 var data = BufferUtilities.ApplyDatasetStatus2(rawData, status);
 

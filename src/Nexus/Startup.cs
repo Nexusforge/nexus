@@ -178,7 +178,7 @@ namespace Nexus
 
             services.AddSingleton(Program.Options);
             services.AddSingleton<AppState>();
-            services.AddSingleton<FileAccessManager>();
+            services.AddSingleton<IFileAccessManager, FileAccessManager>();
             services.AddSingleton<JobService<ExportJob>>();
             services.AddSingleton<JobService<AggregationJob>>();
             services.AddSingleton<DatabaseManager>();

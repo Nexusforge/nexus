@@ -28,7 +28,7 @@ namespace Nexus.Extensions
 
         #region Properties
 
-        public FileAccessManager FileAccessManager { get; set; }
+        public IFileAccessManager FileAccessManager { get; set; }
 
         #endregion
 
