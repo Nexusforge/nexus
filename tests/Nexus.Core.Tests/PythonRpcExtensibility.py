@@ -152,7 +152,16 @@ class RpcCommunicator:
         data = None
         status = None
 
-        if request["target"] == "SetParameters":
+        if request["target"] == "GetApiLevel":
+
+            response = {
+                "invocationId": request["invocationId"],
+                "result": {
+                    "ApiLevel": 1
+                }
+            }
+
+        elif request["target"] == "SetParameters":
 
             resourceLocator = urlparse(request["arguments"][0])
             parameters = request["arguments"][1]

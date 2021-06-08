@@ -15,11 +15,29 @@ namespace Nexus.Extensions
     {
         #region Fields
 
+        private static int API_LEVEL = 1;
         private RpcCommunicator _communicator;
 
         #endregion
 
         #region Properties
+
+        /* Possible features to be implemented for this data source:
+         * 
+         * Transports: 
+         *      - anonymous pipes (done)
+         *      - named pipes client
+         *      - tcp client
+         *      - shared memory
+         *      - ...
+         *      
+         * Protocols:
+         *      - simplified SignalR + binary data stream (done)
+         *      - 0mq
+         *      - messagepack
+         *      - gRPC
+         *      - ...
+         */
 
         public Uri ResourceLocator { private get; set; }
 
@@ -45,6 +63,16 @@ namespace Nexus.Extensions
             _communicator = new RpcCommunicator(command, arguments, this.Logger);
 
             await _communicator.ConnectAsync(timeoutTokenSource.Token);
+
+            var apiLevel = (await _communicator.InvokeAsync<ApiLevelResponse>(
+                "GetApiLevel",
+                new object[0], 
+                timeoutTokenSource.Token
+            )).ApiLevel;
+
+            if (apiLevel < 1 || apiLevel > RpcDataSource.API_LEVEL)
+                throw new Exception($"The API level '{apiLevel}' is not supported.");
+
             await _communicator.SendAsync("SetParameters", new object[]
             {
                 this.ResourceLocator.ToString(),

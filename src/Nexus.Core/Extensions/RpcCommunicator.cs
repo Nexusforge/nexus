@@ -174,6 +174,7 @@ namespace Nexus.Extensions
 
                 // read response
                 var jsonResponse = await _pipeOutput.ReadLineAsync();
+                this.ValidateResponse(jsonResponse);
                 var reponse = JsonSerializer.Deserialize<TResponse>(jsonResponse, _jsonOptions);
 
                 return reponse;
@@ -206,6 +207,16 @@ namespace Nexus.Extensions
             finally
             {
                 _semaphore.Release();
+            }
+        }
+
+        private void ValidateResponse(string json)
+        {
+            if (json is null)
+            {
+                this.IsConnected = false;
+                _process?.Kill();
+                throw new RpcException("The connection aborted unexpectedly.");
             }
         }
 
