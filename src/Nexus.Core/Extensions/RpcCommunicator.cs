@@ -215,13 +215,16 @@ namespace Nexus.Extensions
         private async Task ReadInternalAsync<T>(Memory<T> buffer, CancellationToken cancellationToken)
             where T : unmanaged
         {
-            while (buffer.Length > 0)
+            // Cancellation token only works when the child process writes data,
+            // otherwise it hangs forever.
+            var memory = new CastMemoryManager<T, byte>(buffer).Memory;
+
+            while (memory.Length > 0)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var memory = new CastMemoryManager<T, byte>(buffer).Memory;
-                var byteCount = await _pipeOutput.ReadAsync(memory, cancellationToken);
+                var byteCount = await _pipeOutput.ReadAsync(memory, cancellationToken).ConfigureAwait(false);
                 this.ValidateResponse(byteCount);
-                buffer = buffer.Slice(byteCount);
+                memory = memory.Slice(byteCount);
             }
         }
 

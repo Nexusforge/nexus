@@ -111,8 +111,8 @@ namespace Nexus.Extensibility.Tests
                 Parameters = null,
             } as IDataSource;
 
-            var dataModel = await dataSource.GetCatalogsAsync(CancellationToken.None);
-            var dataset = dataModel.First().Channels.First().Datasets.First();
+            var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
+            var dataset = catalogs.First().Channels.First().Datasets.First();
 
             var begin = new DateTime(2019, 12, 31, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 03, 0, 0, 0, DateTimeKind.Utc);

@@ -41,11 +41,6 @@ namespace Nexus.DataModel
 
         #region Methods
 
-        public void Initialize()
-        {
-            this.Catalog.Initialize();
-        }
-
         public SparseCatalog ToSparseCatalog(List<Dataset> datasets)
         {
             var catalog = new SparseCatalog(this.Id, this.CatalogMeta.License);

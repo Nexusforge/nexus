@@ -3,6 +3,8 @@ using Nexus.DataModel;
 using Nexus.Extensibility;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -55,7 +57,14 @@ namespace Nexus.Extensions
             var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromMinutes(1));
             cancellationToken.Register(() => timeoutTokenSource.Cancel());
 
-            var response = await _communicator.InvokeAsync<CatalogsResponse>("GetCatalogs", null, cancellationToken);
+            var response = await _communicator.InvokeAsync<CatalogsResponse>(
+                "GetCatalogs",
+                null, 
+                timeoutTokenSource.Token
+            );
+
+            response.Catalogs.ForEach(catalog => catalog.Initialize());
+
             return response.Catalogs;
         }
 
@@ -64,7 +73,12 @@ namespace Nexus.Extensions
             var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromMinutes(1));
             cancellationToken.Register(() => timeoutTokenSource.Cancel());
 
-            var response = await _communicator.InvokeAsync<TimeRangeResponse>("GetTimeRange", new object[] { catalogId }, cancellationToken);
+            var response = await _communicator.InvokeAsync<TimeRangeResponse>(
+                "GetTimeRange",
+                new object[] { catalogId },
+                timeoutTokenSource.Token
+            );
+
             var begin = response.Begin.ToUniversalTime();
             var end = response.End.ToUniversalTime();
 
@@ -76,7 +90,12 @@ namespace Nexus.Extensions
             var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromMinutes(1));
             cancellationToken.Register(() => timeoutTokenSource.Cancel());
 
-            var response = await _communicator.InvokeAsync<AvailabilityResponse>("GetAvailability", new object[] { catalogId, begin, end }, cancellationToken);
+            var response = await _communicator.InvokeAsync<AvailabilityResponse>(
+                "GetAvailability", 
+                new object[] { catalogId, begin, end },
+                timeoutTokenSource.Token
+            );
+
             return response.Availability;
         }
 
@@ -85,9 +104,14 @@ namespace Nexus.Extensions
             var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromMinutes(1));
             cancellationToken.Register(() => timeoutTokenSource.Cancel());
 
-            var response = await _communicator.InvokeAsync<ReadSingleResponse>("ReadSingle", new object[] { dataset, readResult.Length, begin, end }, cancellationToken);
-            var data = _communicator.ReadAsync(readResult.Data, cancellationToken);
-            var status = _communicator.ReadAsync(readResult.Status, cancellationToken);
+            var response = await _communicator.InvokeAsync<ReadSingleResponse>(
+                "ReadSingle", 
+                new object[] { dataset.GetPath(), readResult.Length, begin, end },
+                timeoutTokenSource.Token
+            );
+
+            await _communicator.ReadAsync(readResult.Data, timeoutTokenSource.Token);
+            await _communicator.ReadAsync(readResult.Status, timeoutTokenSource.Token);
         }
 
         private CancellationTokenSource GetTimeoutTokenSource(TimeSpan timeout)

@@ -5,6 +5,7 @@ using Nexus.Extensions;
 using Nexus.Infrastructure;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -51,7 +52,7 @@ namespace Nexus.Extensibility.Tests
             // assert
             var expectedNames = new List<string>() { "channel1", "channel2" };
             var expectedGroups = new List<string>() { "group1", "group2" };
-            var expectedUnits = new List<string>() { "°C", "bar" };
+            var expectedUnits = new List<string>() { "Â°C", "bar" };
             var expectedDataTypes = new List<NexusDataType>() { NexusDataType.FLOAT32, NexusDataType.FLOAT64 };
 
             Assert.True(expectedNames.SequenceEqual(actualNames));
@@ -127,25 +128,71 @@ namespace Nexus.Extensibility.Tests
             await dataSource.OnParametersSetAsync();
 
             var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
-            var catalog = catalogs.First();
-            var dataset = catalog.Channels.First().Datasets.First();
+            var dataset = catalogs.First().Channels.First().Datasets.First();
 
-            var begin = new DateTime(2020, 10, 05, 0, 0, 0, DateTimeKind.Utc);
-            var end = new DateTime(2020, 10, 06, 0, 0, 0, DateTimeKind.Utc);
+            var begin = new DateTime(2019, 12, 31, 0, 0, 0, DateTimeKind.Utc);
+            var end = new DateTime(2020, 01, 03, 0, 0, 0, DateTimeKind.Utc);
+            var readResult = ExtensibilityUtilities.CreateReadResult<long>(dataset, begin, end);
 
-            using var result = ExtensibilityUtilities.CreateReadResult<float>(dataset, begin, end);
-            await dataSource.ReadSingleAsync(dataset, result, begin, end, CancellationToken.None);
+            var expectedLength = 3 * 86400;
+            var expectedData = new long[expectedLength];
+            var expectedStatus = new byte[expectedLength];
 
-            // assert
-            Assert.Equal(0, result.Data.Span[864000 - 1]);
-            Assert.Equal(8.590, result.Data.Span[864000 + 0], precision: 3);
-            Assert.Equal(6.506, result.Data.Span[1008000 - 1], precision: 3);
-            Assert.Equal(0, result.Data.Span[1008000 + 0]);
+            void GenerateData(DateTimeOffset dateTime)
+            {
+                var data = Enumerable.Range(0, 600)
+                    .Select(value => dateTime.Add(TimeSpan.FromSeconds(value)).ToUnixTimeSeconds())
+                    .ToArray();
 
-            Assert.Equal(0, result.Status.Span[864000 - 1]);
-            Assert.Equal(1, result.Status.Span[864000 + 0]);
-            Assert.Equal(1, result.Status.Span[1008000 - 1]);
-            Assert.Equal(0, result.Status.Span[1008000 + 0]);
+                var offset = (int)(dateTime - begin).TotalSeconds;
+                data.CopyTo(expectedData.AsSpan().Slice(offset));
+                expectedStatus.AsSpan().Slice(offset, 600).Fill(1);
+            }
+
+            GenerateData(new DateTimeOffset(2019, 12, 31, 12, 00, 0, 0, TimeSpan.Zero));
+            GenerateData(new DateTimeOffset(2019, 12, 31, 12, 20, 0, 0, TimeSpan.Zero));
+            GenerateData(new DateTimeOffset(2020, 01, 01, 00, 00, 0, 0, TimeSpan.Zero));
+            GenerateData(new DateTimeOffset(2020, 01, 02, 09, 40, 0, 0, TimeSpan.Zero));
+            GenerateData(new DateTimeOffset(2020, 01, 02, 09, 50, 0, 0, TimeSpan.Zero));
+
+            await dataSource.OnParametersSetAsync();
+            await dataSource.ReadSingleAsync(dataset, readResult, begin, end, CancellationToken.None);
+
+
+            var enabled = false;
+            for (int i = 0; i < readResult.Length; i++)
+            {
+                if (!enabled && readResult.Status.Span[i] != 0)
+                {
+                    Debug.WriteLine("Status ena: " + i);
+                    enabled = true;
+                }
+                else if (enabled && readResult.Status.Span[i] == 0)
+                {
+                    Debug.WriteLine("Status dis: " + i);
+                    enabled = false;
+                }
+            }
+
+            enabled = false;
+            for (int i = 0; i < readResult.Length; i++)
+            {
+                if (!enabled && readResult.Data.Span[i] != 0)
+                {
+                    Debug.WriteLine("Data ena: " + i);
+                    enabled = true;
+                }
+                else if (enabled && readResult.Data.Span[i] == 0)
+                {
+                    Debug.WriteLine("Data dis: " + i);
+                    enabled = false;
+                }
+            }
+
+
+            Assert.Equal(expectedLength, readResult.Length);
+            Assert.True(expectedData.SequenceEqual(readResult.Data.ToArray()));
+            Assert.True(expectedStatus.SequenceEqual(readResult.Status.ToArray()));
         }
 
         [Fact]

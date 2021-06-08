@@ -16,221 +16,230 @@ from PythonRpcDataModel import Catalog, Dataset
 
 
 class LogLevel(enum.Enum):
-	Trace = 0
-	Debug = 1
-	Information = 2
-	Warning = 3
-	Error = 4
-	Critical = 5
+    Trace = 0
+    Debug = 1
+    Information = 2
+    Warning = 3
+    Error = 4
+    Critical = 5
 
 class Logger():
 
-	_stream: TextIOWrapper
+    _stream: TextIOWrapper
 
-	def __init__(self, stream: TextIOWrapper):
-		self._stream = stream
+    def __init__(self, stream: TextIOWrapper):
+        self._stream = stream
 
-	def Log(self, log_level: LogLevel, message: str):
+    def Log(self, log_level: LogLevel, message: str):
 
-		message = {
-			"LogLevel": log_level.name,
-			"Message": message
-		}
+        message = {
+            "LogLevel": log_level.name,
+            "Message": message
+        }
 
-		self._stream.write(json.dumps(message))
-		self._stream.write("\n")
-		self._stream.flush()
+        self._stream.write(json.dumps(message))
+        self._stream.write("\n")
+        self._stream.flush()
 
 class IDataSource(ABC):
 
-	resource_locator: ParseResult
-	parameters: Dict[str, str]
-	logger: Logger
+    resource_locator: ParseResult
+    parameters: Dict[str, str]
+    logger: Logger
 
-	async def on_parameters_set_async(self):
-		pass
+    async def on_parameters_set_async(self):
+        pass
 
-	@abstractmethod
-	async def get_catalogs_async(self) -> Awaitable[List[Catalog]]:
-		pass
+    @abstractmethod
+    async def get_catalogs_async(self) -> Awaitable[List[Catalog]]:
+        pass
 
-	@abstractmethod
-	async def get_time_range_async(self, catalogId: str) -> Awaitable[Tuple[datetime, datetime]]:
-		pass
+    @abstractmethod
+    async def get_time_range_async(self, catalogId: str) -> Awaitable[Tuple[datetime, datetime]]:
+        pass
 
-	@abstractmethod
-	async def get_availability_async(self, catalogId: str, begin: datetime, end: datetime) -> Awaitable[float]:
-		pass
+    @abstractmethod
+    async def get_availability_async(self, catalogId: str, begin: datetime, end: datetime) -> Awaitable[float]:
+        pass
 
-	@abstractmethod
-	async def read_single_async(self, dataset: Dataset, length: int, begin: datetime, end: datetime) -> Awaitable[Tuple[List[float], bytes]]:
-		pass
+    @abstractmethod
+    async def read_single_async(self, channelPath: str, length: int, begin: datetime, end: datetime) -> Awaitable[Tuple[List[float], bytes]]:
+        pass
 
-	def dispose(self):
-		pass
+    def dispose(self):
+        pass
 
 class RpcCommunicator:
 
-	# It is very important to read the correct number of bytes.
-	# simple buffer.read() will return data but subsequent buffer.write
-	# will fail with error 22.
+    # It is very important to read the correct number of bytes.
+    # simple buffer.read() will return data but subsequent buffer.write
+    # will fail with error 22.
 
-	_dataSource: IDataSource
-	_isConnected: bool
+    _dataSource: IDataSource
+    _isConnected: bool
 
-	def __init__(self, dataSource: IDataSource):
-		self._dataSource = dataSource
-		self._isConnected = False
+    def __init__(self, dataSource: IDataSource):
+        self._dataSource = dataSource
+        self._isConnected = False
 
-	async def run(self):
+    async def run(self):
 
-		while (True):
+        while (True):
 
-			# sys.stdin.buffer.read returns requested bytes or zero bytes when reaching EOF:
-			# (https://docs.python.org/3/library/io.html#io.BufferedIOBase.read)
+            # sys.stdin.buffer.read returns requested bytes or zero bytes when reaching EOF:
+            # (https://docs.python.org/3/library/io.html#io.BufferedIOBase.read)
 
-			# get request length
-			requestLengthBytes = sys.stdin.buffer.read(4)
-			self._validateRequest(len(requestLengthBytes))
-			requestLength = int.from_bytes(requestLengthBytes, 'little')
+            # get request length
+            requestLengthBytes = sys.stdin.buffer.read(4)
+            self._validateRequest(len(requestLengthBytes))
+            requestLength = int.from_bytes(requestLengthBytes, 'little')
 
-			# get request message
-			requestBytes = sys.stdin.buffer.read(requestLength)
-			self._validateRequest(len(requestBytes))
-			request = json.loads(requestBytes)
-			
-			# process message
-			if not self._isConnected:
+            # get request message
+            requestBytes = sys.stdin.buffer.read(requestLength)
+            self._validateRequest(len(requestBytes))
+            request = json.loads(requestBytes)
+            
+            # process message
+            data = None
+            status = None
 
-				if ("protocol" in request and "version" in request):
+            if not self._isConnected:
 
-					if (request["protocol"] == "json" and \
-					    request["version"] == 1):
+                if ("protocol" in request and "version" in request):
 
-						response = {}
-						self._isConnected = True
+                    if (request["protocol"] == "json" and \
+                        request["version"] == 1):
 
-					else:
-						response = {
-							"error": "Only protocol 'json' of version 1 is supported.",
-						}
-					
-				else:
-					raise Exception(f"Handshake message expected, but got something else.")
+                        response = {}
+                        self._isConnected = True
 
-			elif "type" in request:
+                    else:
+                        response = {
+                            "error": "Only protocol 'json' of version 1 is supported.",
+                        }
+                    
+                else:
+                    raise Exception(f"Handshake message expected, but got something else.")
 
-				if request["type"] == 1:
+            elif "type" in request:
 
-					if "target" in request and \
-					   "arguments" in request:
+                if request["type"] == 1:
 
-						response = await self._processInvocationAsync(request)
+                    if "target" in request and \
+                       "arguments" in request:
 
-					else:
-						raise Exception(f"Invalid invocation message received.")
+                        (response, data, status) = await self._processInvocationAsync(request)
 
-				elif request["type"] == 7:
-					self._dataSource.dispose()
-					exit()
+                    else:
+                        raise Exception(f"Invalid invocation message received.")
 
-				else:
-					raise Exception(f"Protocol message type '{request['type']}' is not supported.")
+                elif request["type"] == 7:
+                    self._dataSource.dispose()
+                    exit()
 
-			else:
-				raise Exception(f"Protocol message expected, but something else.") 
-			
-			# send response length and response message
-			if response is not None:
-				responseString = json.dumps(response, default=lambda x: self._serializeJson(x))
-				responseBytes = bytes(responseString, "utf-8")
-				responseLengthBytes = int.to_bytes(len(responseBytes), 4, "little")
+                else:
+                    raise Exception(f"Protocol message type '{request['type']}' is not supported.")
 
-				sys.stdout.buffer.write(responseLengthBytes)
-				sys.stdout.buffer.write(responseBytes)
-				sys.stdout.flush()
+            else:
+                raise Exception(f"Protocol message expected, but something else.") 
+            
+            # send response length and response message
+            if response is not None:
+                responseString = json.dumps(response, default=lambda x: self._serializeJson(x))
+                responseBytes = bytes(responseString, "utf-8")
+                responseLengthBytes = int.to_bytes(len(responseBytes), 4, "little")
 
-	async def _processInvocationAsync(self, request: any):
+                sys.stdout.buffer.write(responseLengthBytes)
+                sys.stdout.buffer.write(responseBytes)
+                sys.stdout.flush()
 
-		if request["target"] == "SetParameters":
+            if data is not None and status is not None:
+                sys.stdout.buffer.write(data)
+                sys.stdout.buffer.write(status)
+                sys.stdout.flush()
 
-			resourceLocator = urlparse(request["arguments"][0])
-			parameters = request["arguments"][1]
-			logger = Logger(sys.stderr)
+    async def _processInvocationAsync(self, request: any):
 
-			self._dataSource.resource_locator = resourceLocator
-			self._dataSource.parameters = parameters
-			self._dataSource.logger = logger
+        response = None
+        data = None
+        status = None
 
-			await self._dataSource.on_parameters_set_async()
+        if request["target"] == "SetParameters":
 
-		elif request["target"] == "GetCatalogs":
+            resourceLocator = urlparse(request["arguments"][0])
+            parameters = request["arguments"][1]
+            logger = Logger(sys.stderr)
 
-			catalogs = await self._dataSource.get_catalogs_async()
+            self._dataSource.resource_locator = resourceLocator
+            self._dataSource.parameters = parameters
+            self._dataSource.logger = logger
 
-			return {
-				"invocationId": request["invocationId"],
-				"result": {
-					"Catalogs": catalogs
-				}
-			}
+            await self._dataSource.on_parameters_set_async()
 
-		elif request["target"] == "GetTimeRange":
+        elif request["target"] == "GetCatalogs":
 
-			catalogId = request["arguments"][0]
-			(begin, end) = await self._dataSource.get_time_range_async(catalogId)
+            catalogs = await self._dataSource.get_catalogs_async()
 
-			return{
-				"invocationId": request["invocationId"],
-				"result": {
-					"Begin": begin,
-					"End": end,
-				}
-			}
+            response = {
+                "invocationId": request["invocationId"],
+                "result": {
+                    "Catalogs": catalogs
+                }
+            }
 
-		elif request["target"] == "GetAvailability":
+        elif request["target"] == "GetTimeRange":
 
-			catalogId = request["arguments"][0]
-			begin = datetime.strptime(request["arguments"][1], "%Y-%m-%dT%H:%M:%SZ")
-			end = datetime.strptime(request["arguments"][2], "%Y-%m-%dT%H:%M:%SZ")
-			availability = await self._dataSource.get_availability_async(catalogId, begin, end)
+            catalogId = request["arguments"][0]
+            (begin, end) = await self._dataSource.get_time_range_async(catalogId)
 
-			return {
-				"invocationId": request["invocationId"],
-				"result": {
-					"Availability": availability
-				}
-			}
+            response = {
+                "invocationId": request["invocationId"],
+                "result": {
+                    "Begin": begin,
+                    "End": end,
+                }
+            }
 
-		elif request["target"] == "ReadSingle":
+        elif request["target"] == "GetAvailability":
 
-			jsonDataset = request["arguments"][0]
-			dataset = Dataset(jsonDataset["Id"])
-			dataset.DataType = jsonDataset["DataType"]
+            catalogId = request["arguments"][0]
+            begin = datetime.strptime(request["arguments"][1], "%Y-%m-%dT%H:%M:%SZ")
+            end = datetime.strptime(request["arguments"][2], "%Y-%m-%dT%H:%M:%SZ")
+            availability = await self._dataSource.get_availability_async(catalogId, begin, end)
 
-			raise Exception(dataset.DataType)
+            response = {
+                "invocationId": request["invocationId"],
+                "result": {
+                    "Availability": availability
+                }
+            }
 
-			length = request["Length"]
-			begin = datetime.strptime(request["arguments"][1], "%Y-%m-%dT%H:%M:%SZ")
-			end = datetime.strptime(request["arguments"][2], "%Y-%m-%dT%H:%M:%SZ")
-			(data, status) = await self._dataSource.read_single_async(dataset, length, begin, end)
+        elif request["target"] == "ReadSingle":
 
-			return {
-				"invocationId": request["invocationId"],
-				"result": {}
-			}
+            channelPath = request["arguments"][0]
+            length = request["arguments"][1]
+            begin = datetime.strptime(request["arguments"][2], "%Y-%m-%dT%H:%M:%SZ")
+            end = datetime.strptime(request["arguments"][3], "%Y-%m-%dT%H:%M:%SZ")
+            (data, status) = await self._dataSource.read_single_async(channelPath, length, begin, end)
 
-	def _validateRequest(self, readCount: int):
-		if readCount == 0:
-			raise Exception("The connection aborted unexpectedly.")
+            response =  ({
+                "invocationId": request["invocationId"],
+                "result": {}
+            })
 
-	def _serializeJson(self, x):
+        return (response, data, status)
 
-		if isinstance(x, enum.Enum):
-			return x._name_
+    def _validateRequest(self, readCount: int):
+        if readCount == 0:
+            raise Exception("The connection aborted unexpectedly.")
 
-		if isinstance(x, datetime):
-			return x.isoformat()
+    def _serializeJson(self, x):
 
-		else:
-			return x.__dict__
+        if isinstance(x, enum.Enum):
+            return x._name_
+
+        if isinstance(x, datetime):
+            return x.isoformat()
+
+        else:
+            return x.__dict__
