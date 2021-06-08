@@ -62,8 +62,8 @@ namespace Nexus.Extensibility
                 if (!value.IsAbsoluteUri || value.IsFile)
                 {
                     this.Root = value.IsAbsoluteUri
-                    ? value.AbsolutePath
-                    : value.ToString();
+                        ? value.AbsolutePath
+                        : value.ToString();
                 }
                 else
                 {

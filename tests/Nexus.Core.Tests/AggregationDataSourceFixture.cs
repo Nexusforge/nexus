@@ -4,11 +4,11 @@ using System;
 using System.IO;
 using System.Net;
 
-namespace Nexus.Tests
+namespace Nexus.Core.Tests
 {
-    public class AggregationDataReaderFixture : IDisposable
+    public class AggregationDataSourceFixture : IDisposable
     {
-        public AggregationDataReaderFixture()
+        public AggregationDataSourceFixture()
         {
             var rootPath = this.InitializeDatabase();
             var registration = new DataSourceRegistration()

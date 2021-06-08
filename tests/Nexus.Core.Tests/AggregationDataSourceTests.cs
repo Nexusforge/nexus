@@ -6,17 +6,17 @@ using System.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Nexus.Tests
+namespace Nexus.Core.Tests
 {
-    public class AggregationDataReaderTests : IClassFixture<AggregationDataReaderFixture>
+    public class AggregationDataSourceTests : IClassFixture<AggregationDataSourceFixture>
     {
         private ILogger _logger;
-        private AggregationDataReaderFixture _fixture;
+        private AggregationDataSourceFixture _fixture;
 
-        public AggregationDataReaderTests(AggregationDataReaderFixture fixture, ITestOutputHelper xunitLogger)
+        public AggregationDataSourceTests(AggregationDataSourceFixture fixture, ITestOutputHelper xunitLogger)
         {
             _fixture = fixture;
-            _logger = new XunitLoggerProvider(xunitLogger).CreateLogger(nameof(AggregationDataReaderTests));
+            _logger = new XunitLoggerProvider(xunitLogger).CreateLogger(nameof(AggregationDataSourceTests));
         }
 
         [Fact]
