@@ -238,6 +238,7 @@ namespace Nexus.Extensibility
                     if (cancellationToken.IsCancellationRequested)
                         yield break;
 
+#warning add Try/Catch + Logging block at this point when implementing new IDataSource. Catching all ReadSingle Errors and return NaN should be easy then
 #warning redesign
                     //#error ReadSingle returns ReadResult ... and that read result should be disposable using the IMemoryOwners
                     //#error every consumer that is done with the specific read result must dispose it!
