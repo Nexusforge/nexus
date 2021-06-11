@@ -13,6 +13,13 @@ from zipfile import ZipFile
 import aiohttp
 from aiohttp.client import ClientResponseError
 
+# fix for https://github.com/aio-libs/aiohttp/issues/4600
+from attr import dataclass
+
+@dataclass
+class ClientResponseMessage:
+    reason: str
+    body: str
 
 class Channel():
 
@@ -95,7 +102,7 @@ class NexusConnector():
             None, \
             None))
 
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
+        async with aiohttp.ClientSession() as session:
             response = await self._send(session, lambda session: session.get(url))
             jsonString = await response.text()
             response.close()
@@ -128,7 +135,7 @@ class NexusConnector():
             None, \
             None))
 
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
+        async with aiohttp.ClientSession() as session:
             response = await self._send(session, lambda session: session.get(url))
             contentLength = int(response.headers.get('content-length'))
             buffer = bytearray(contentLength)
@@ -163,7 +170,7 @@ class NexusConnector():
             None, \
             None))
 
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
+        async with aiohttp.ClientSession() as session:
             headers = {
                 "Content-Type": "application/json"
             }
@@ -197,7 +204,7 @@ class NexusConnector():
             # download
             self.logger.info(f"Downloading ...")
 
-            async with aiohttp.ClientSession(raise_for_status=True) as session:
+            async with aiohttp.ClientSession() as session:
                 response = await self._send(session, lambda session: session.get(downloadUrl))
                 
                 async for source, _ in response.content.iter_chunks():
@@ -217,7 +224,7 @@ class NexusConnector():
 
     async def _getJobStatus(self, url):
 
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
+        async with aiohttp.ClientSession() as session:
             response = await self._send(session, lambda session: session.get(url))
             jsonString = await response.text()
             jobStatus = json.loads(jsonString)
@@ -245,7 +252,7 @@ class NexusConnector():
 
         data = json.dumps(data)
 
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
+        async with aiohttp.ClientSession() as session:
             async with session.post(url, data=data, headers=headers) as response:
                 token = await response.text()
                 return token[1:-1]
@@ -261,7 +268,9 @@ class NexusConnector():
             session.headers["Authorization"] =  f"Bearer {self.token}"
 
             try:
-                return await action(session)
+                response = await action(session)
+                await self._raise_for_status(response)
+                return response
 
             except ClientResponseError as ex:
                 
@@ -276,3 +285,20 @@ class NexusConnector():
 
         else:
             return await action(session)
+
+    # fix for https://github.com/aio-libs/aiohttp/issues/4600
+    from aiohttp import ClientSession, ClientResponseError, ClientResponse
+
+    async def _raise_for_status(self, response: ClientResponse) -> None:
+        
+        if response.status >= 400:
+
+            message = ClientResponseMessage(reason=response.reason, body=await response.text())
+            response.release()
+
+            raise ClientResponseError(
+                response.request_info,
+                response.history,
+                status=response.status,
+                message=message,
+                headers=response.headers)
