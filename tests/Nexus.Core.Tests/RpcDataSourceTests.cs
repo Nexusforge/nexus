@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Moq;
 using Nexus.Core.Tests;
+using Nexus.Extensibility;
 using Nexus.Extensions;
 using Nexus.Infrastructure;
 using System;
@@ -8,12 +9,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Nexus.Extensibility.Tests
+namespace Nexus.Core.Tests
 {
     public class RpcDataSourceTests
     {
@@ -43,13 +45,14 @@ namespace Nexus.Extensibility.Tests
 
             // act
             var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
+
+            // assert
             var actual = catalogs.First(catalog => catalog.Id == "/A/B/C");
             var actualNames = actual.Channels.Select(channel => channel.Name).ToList();
             var actualGroups = actual.Channels.Select(channel => channel.Group).ToList();
             var actualUnits = actual.Channels.Select(channel => channel.Unit).ToList();
             var actualDataTypes = actual.Channels.SelectMany(channel => channel.Datasets.Select(dataset => dataset.DataType)).ToList();
 
-            // assert
             var expectedNames = new List<string>() { "channel1", "channel2" };
             var expectedGroups = new List<string>() { "group1", "group2" };
             var expectedUnits = new List<string>() { "°C", "bar" };
@@ -80,8 +83,7 @@ namespace Nexus.Extensibility.Tests
 
             await dataSource.OnParametersSetAsync();
 
-            var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
-            var actual = await dataSource.GetTimeRangeAsync(catalogs.First().Id, CancellationToken.None);
+            var actual = await dataSource.GetTimeRangeAsync("/A/B/C", CancellationToken.None);
 
             Assert.Equal(expectedBegin, actual.Begin);
             Assert.Equal(expectedEnd, actual.End);
@@ -103,10 +105,9 @@ namespace Nexus.Extensibility.Tests
 
             await dataSource.OnParametersSetAsync();
 
-            var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
             var begin = new DateTime(2020, 01, 02, 00, 00, 00, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 03, 00, 00, 00, DateTimeKind.Utc);
-            var actual = await dataSource.GetAvailabilityAsync(catalogs.First().Id, begin, end, CancellationToken.None);
+            var actual = await dataSource.GetAvailabilityAsync("/A/B/C", begin, end, CancellationToken.None);
 
             Assert.Equal(2 / 144.0, actual, precision: 4);
         }
@@ -132,7 +133,7 @@ namespace Nexus.Extensibility.Tests
 
             var begin = new DateTime(2019, 12, 31, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 03, 0, 0, 0, DateTimeKind.Utc);
-            var readResult = ExtensibilityUtilities.CreateReadResult<long>(dataset, begin, end);
+            var result = ExtensibilityUtilities.CreateReadResult(dataset, begin, end);
 
             var expectedLength = 3 * 86400;
             var expectedData = new long[expectedLength];
@@ -155,44 +156,13 @@ namespace Nexus.Extensibility.Tests
             GenerateData(new DateTimeOffset(2020, 01, 02, 09, 40, 0, 0, TimeSpan.Zero));
             GenerateData(new DateTimeOffset(2020, 01, 02, 09, 50, 0, 0, TimeSpan.Zero));
 
-            await dataSource.OnParametersSetAsync();
-            await dataSource.ReadSingleAsync(dataset, readResult, begin, end, CancellationToken.None);
+            await dataSource.ReadSingleAsync(dataset, result, begin, end, CancellationToken.None);
 
+            var data = new CastMemoryManager<byte, long>(result.Data).Memory;
 
-            var enabled = false;
-            for (int i = 0; i < readResult.Length; i++)
-            {
-                if (!enabled && readResult.Status.Span[i] != 0)
-                {
-                    Debug.WriteLine("Status ena: " + i);
-                    enabled = true;
-                }
-                else if (enabled && readResult.Status.Span[i] == 0)
-                {
-                    Debug.WriteLine("Status dis: " + i);
-                    enabled = false;
-                }
-            }
-
-            enabled = false;
-            for (int i = 0; i < readResult.Length; i++)
-            {
-                if (!enabled && readResult.Data.Span[i] != 0)
-                {
-                    Debug.WriteLine("Data ena: " + i);
-                    enabled = true;
-                }
-                else if (enabled && readResult.Data.Span[i] == 0)
-                {
-                    Debug.WriteLine("Data dis: " + i);
-                    enabled = false;
-                }
-            }
-
-
-            Assert.Equal(expectedLength, readResult.Length);
-            Assert.True(expectedData.SequenceEqual(readResult.Data.ToArray()));
-            Assert.True(expectedStatus.SequenceEqual(readResult.Status.ToArray()));
+            Assert.Equal(expectedLength, data.Length);
+            Assert.True(expectedData.SequenceEqual(data.ToArray()));
+            Assert.True(expectedStatus.SequenceEqual(result.Status.ToArray()));
         }
 
         [Fact]

@@ -11,22 +11,16 @@ namespace Nexus.Core.Tests
         public AggregationDataSourceFixture()
         {
             var rootPath = this.InitializeDatabase();
-            var registration = new DataSourceRegistration()
-            {
-                DataSourceId = "",
-                ResourceLocator = new Uri(rootPath)
-            };
-
-            this.DataSourceRegistration = registration;
+            this.ResourceLocator = new Uri(rootPath);
         }
 
-        public DataSourceRegistration DataSourceRegistration { get; }
+        public Uri ResourceLocator { get; }
 
         public void Dispose()
         {
             try
             {
-                Directory.Delete(this.DataSourceRegistration.ResourceLocator.AbsolutePath, true);
+                Directory.Delete(this.ResourceLocator.AbsolutePath, true);
             }
             catch
             {
