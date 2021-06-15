@@ -13,7 +13,6 @@ namespace Nexus
         {
             return dataType switch
             {
-                NexusDataType.BOOLEAN => typeof(bool),
                 NexusDataType.UINT8 => typeof(Byte),
                 NexusDataType.INT8 => typeof(SByte),
                 NexusDataType.UINT16 => typeof(UInt16),

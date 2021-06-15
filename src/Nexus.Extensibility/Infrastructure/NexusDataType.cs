@@ -2,7 +2,6 @@
 {
     public enum NexusDataType
     {
-        BOOLEAN = 0x008,
         UINT8 = 0x108,
         INT8 = 0x208,
         UINT16 = 0x110,

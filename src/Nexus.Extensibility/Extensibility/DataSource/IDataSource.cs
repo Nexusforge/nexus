@@ -36,12 +36,11 @@ namespace Nexus.Extensibility
                                           DateTime end,
                                           CancellationToken cancellationToken);
 
-        Task ReadSingleAsync<T>(Dataset dataset,
-                                ReadResult<T> readResult,
-                                DateTime begin,
-                                DateTime end,
-                                CancellationToken cancellationToken)
-            where T : unmanaged;
+        Task ReadSingleAsync(Dataset dataset,
+                             ReadResult result,
+                             DateTime begin,
+                             DateTime end,
+                             CancellationToken cancellationToken);
 
         #endregion
     }

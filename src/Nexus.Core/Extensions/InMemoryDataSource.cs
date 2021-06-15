@@ -5,60 +5,28 @@ using Nexus.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Nexus.Extensions
 {
     [ExtensionIdentification("Nexus.InMemory", "Nexus in-memory", "Provides an in-memory database.")]
-    public class InMemoryDataSource : DataReaderExtensionBase
+    public class InMemoryDataSource : IDataSource
     {
-        #region Constructors
+        #region Fields
 
-        public InMemoryDataSource(DataSourceRegistration registration, ILogger logger) : base(registration, logger)
-        {
-            //
-        }
+        public Uri ResourceLocator { get; set; }
+
+        public ILogger Logger { get; set; }
+
+        public Dictionary<string, string> Parameters { get; set; }
 
         #endregion
 
         #region Methods
 
-        public override (T[] Dataset, byte[] Status) ReadSingle<T>(Dataset dataset, DateTime begin, DateTime end)
-        {
-            double[] dataDouble;
-
-            var beginTime = begin.ToUnixTimeStamp();
-            var endTime = end.ToUnixTimeStamp();
-
-            var length = (int)((end - begin).TotalSeconds * (double)dataset.GetSampleRate().SamplesPerSecond);
-            var dt = (double)(1 / dataset.GetSampleRate().SamplesPerSecond);
-
-            if (dataset.Channel.Name.Contains("unix_time"))
-            {
-                dataDouble = Enumerable.Range(0, length).Select(i => i * dt + beginTime).ToArray();
-            }
-            else // temperature or wind speed
-            {
-                var kernelSize = 1000;
-                var movingAverage = new double[kernelSize];
-                var random = new Random((int)begin.Ticks);
-                var mean = 15;
-
-                dataDouble = new double[length];
-
-                for (int i = 0; i < length; i++)
-                {
-                    movingAverage[i % kernelSize] = (random.NextDouble() - 0.5) * mean * 10 + mean;
-                    dataDouble[i] = movingAverage.Sum() / kernelSize;
-                }
-            }
-
-            var data = dataDouble.Select(value => (T)Convert.ChangeType(value, typeof(T))).ToArray();
-            var status = Enumerable.Range(0, length).Select(value => (byte)1).ToArray();
-
-            return (data, status);
-        }
-
-        protected override List<Catalog> LoadCatalogs()
+        public Task<List<Catalog>> GetCatalogsAsync(CancellationToken cancellationToken)
         {
             var id11 = Guid.Parse("f01b6a96-1de6-4caa-9205-184d8a3eb2f8");
             var id12 = Guid.Parse("d549a4dd-e003-4d24-98de-4d5bc8c72aca");
@@ -72,15 +40,60 @@ namespace Nexus.Extensions
             var id24 = Guid.Parse("99b85689-5373-4a9a-8fd7-be04a89c9da8");
             var catalog_restricted = this.LoadCatalog("/IN_MEMORY/TEST/RESTRICTED", id21, id22, id23, id24);
 
-            return new List<Catalog>() { catalog_allowed, catalog_restricted };
+            return Task.FromResult(new List<Catalog>() { catalog_allowed, catalog_restricted });
         }
 
-        protected override double GetAvailability(string catalogId, DateTime day)
+        public Task<(DateTime Begin, DateTime End)> GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
         {
-            if (!this.Catalogs.Any(catalog => catalog.Id == catalogId))
-                throw new Exception($"The requested catalog with name '{catalogId}' could not be found.");
+            return Task.FromResult((DateTime.MinValue, DateTime.MaxValue));
+        }
 
-            return new Random((int)day.Ticks).NextDouble() / 10 + 0.9;
+        public Task<double> GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(new Random((int)begin.Ticks).NextDouble() / 10 + 0.9);
+        }
+
+        public Task ReadSingleAsync(Dataset dataset, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
+        {
+            return Task.Run(() =>
+            {
+                double[] dataDouble;
+
+                var beginTime = begin.ToUnixTimeStamp();
+                var endTime = end.ToUnixTimeStamp();
+
+                var elementCount = result.Data.Length / dataset.ElementSize;
+                var dt = (double)(1 / dataset.GetSampleRate().SamplesPerSecond);
+
+                if (dataset.Channel.Name.Contains("unix_time"))
+                {
+                    dataDouble = Enumerable.Range(0, elementCount).Select(i => i * dt + beginTime).ToArray();
+                }
+                else // temperature or wind speed
+                {
+                    var kernelSize = 1000;
+                    var movingAverage = new double[kernelSize];
+                    var random = new Random((int)begin.Ticks);
+                    var mean = 15;
+
+                    dataDouble = new double[elementCount];
+
+                    for (int i = 0; i < elementCount; i++)
+                    {
+                        movingAverage[i % kernelSize] = (random.NextDouble() - 0.5) * mean * 10 + mean;
+                        dataDouble[i] = movingAverage.Sum() / kernelSize;
+                    }
+                }
+
+                var data = dataDouble.Select(value => (double)Convert.ChangeType(value, typeof(double))).ToArray();
+
+                MemoryMarshal
+                    .AsBytes(data.AsSpan())
+                    .CopyTo(result.Data.Span);
+
+                result.Status.Span
+                    .Fill(1);
+            });
         }
 
         private Catalog LoadCatalog(string catalogId, Guid id1, Guid id2, Guid id3, Guid id4)

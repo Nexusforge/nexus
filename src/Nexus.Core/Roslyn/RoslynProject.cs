@@ -85,7 +85,7 @@ namespace Nexus.Roslyn
 
                 var sharedCode = streamReader
                     .ReadToEnd()
-                    .Replace("Func<string, string, string, DateTime, DateTime, double[]> getData", "DataProvider dataProvider");
+                    .Replace("GetFilterData getData", "DataProvider dataProvider");
 
                 this.Workspace.AddDocument(project.Id, "FilterTypesShared.cs", SourceText.From(sharedCode));
 
@@ -137,14 +137,14 @@ namespace Nexus.Roslyn
             classStringBuilder.AppendLine($"{{");
 
             // add Read() method
-            classStringBuilder.AppendLine($"public double[] Read(string catalogId, string channelName, string datasetId)");
+            classStringBuilder.AppendLine($"public Span<double> Read(string catalogId, string channelName, string datasetId)");
             classStringBuilder.AppendLine($"{{");
-            classStringBuilder.AppendLine($"return new double[0];");
+            classStringBuilder.AppendLine($"return default;");
             classStringBuilder.AppendLine($"}}");
 
-            classStringBuilder.AppendLine($"public double[] Read(string catalogId, string channelName, string datasetId, DateTime begin, DateTime end)");
+            classStringBuilder.AppendLine($"public Span<double> Read(string catalogId, string channelName, string datasetId, DateTime begin, DateTime end)");
             classStringBuilder.AppendLine($"{{");
-            classStringBuilder.AppendLine($"return new double[0];");
+            classStringBuilder.AppendLine($"return default;");
             classStringBuilder.AppendLine($"}}");
 
             if (sampleRate is not null)
@@ -173,7 +173,7 @@ namespace Nexus.Roslyn
                         foreach (var dataset in channel.Datasets.Where(dataset => dataset.Id.Contains(sampleRate)))
                         {
                             // dataset property
-                            channelStringBuilder.AppendLine($"public double[] {ExtensibilityUtilities.EnforceNamingConvention(dataset.Id, prefix: "DATASET")} {{ get; set; }}");
+                            channelStringBuilder.AppendLine($"public Span<double> {ExtensibilityUtilities.EnforceNamingConvention(dataset.Id, prefix: "DATASET")} {{ get; set; }}");
 
                             addChannel = true;
                             addCatalog = true;

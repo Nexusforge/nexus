@@ -6,7 +6,7 @@ namespace Nexus.Filters
     class FilterProvider : FilterProviderBase
     {
         /* Use this method to do the calculations for a filter */
-        public override void Filter(DateTime begin, DateTime end, FilterChannel filter, DataProvider dataProvider, double[] result)
+        public override void Filter(DateTime begin, DateTime end, FilterChannel filter, DataProvider dataProvider, Span<double> result)
         {
 
         }

@@ -1,33 +1,34 @@
 ﻿using Microsoft.Extensions.Logging;
 using Nexus.Buffers;
+using Nexus.Core;
 using Nexus.DataModel;
-using Nexus.Core;
-using Nexus.Filters;
-using Nexus.Roslyn;
-using Nexus.Services;
 using Nexus.Extensibility;
+using Nexus.Filters;
 using Nexus.Infrastructure;
-using Nexus.Core;
+using Nexus.Roslyn;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Claims;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nexus.Extensions
 {
     [ExtensionIdentification(FilterDataSource.Id, "Nexus filters", "Dynamically loads and compiles user-defined filters.")]
-    public class FilterDataSource : DataReaderExtensionBase
+    public class FilterDataSource : IDataSource
     {
         #region Fields
 
         public const string Id = "Nexus.Filters";
 
-        private List<FilterDataReaderCacheEntry> _cacheEntries;
+        private Uri _resourceLocator { get; set; }
+
+        private List<FilterDataSourceCacheEntry> _cacheEntries;
 
         #endregion
 
@@ -35,41 +36,71 @@ namespace Nexus.Extensions
 
         static FilterDataSource()
         {
-            FilterDataSource.FilterSettingsCache = new ConcurrentDictionary<DataSourceRegistration, FilterSettings>();
-            FilterDataSource.FilterDataReaderCache = new ConcurrentDictionary<DataSourceRegistration, List<FilterDataReaderCacheEntry>>();
-        }
-
-        public FilterDataSource(DataSourceRegistration registration, ILogger logger) : base(registration, logger)
-        {
-            _cacheEntries = FilterDataSource.FilterDataReaderCache.GetOrAdd(registration, new List<FilterDataReaderCacheEntry>());
+            FilterDataSource.FilterSettingsCache = new ConcurrentDictionary<Uri, FilterSettings>();
+            FilterDataSource.FilterDataSourceCache = new ConcurrentDictionary<Uri, List<FilterDataSourceCacheEntry>>();
         }
 
         #endregion
 
         #region Properties
 
+        public Uri ResourceLocator
+        {
+            set
+            {
+                _resourceLocator = value;
+
+                if (!value.IsAbsoluteUri || value.IsFile)
+                {
+                    this.Root = value.IsAbsoluteUri
+                        ? value.AbsolutePath
+                        : value.ToString();
+                }
+                else
+                {
+                    throw new Exception("Only file URIs are supported.");
+                }
+            }
+            get
+            {
+                return _resourceLocator;
+            }
+        }
+
+        public ILogger Logger { get; set; }
+
+        public Dictionary<string, string> Parameters { get; set; }
+
+        private string Root { get; set; }
+
         public NexusDatabase Database { get; set; }
 
         public Func<string, bool> IsCatalogAccessible { get; set; }
 
-        public Func<DataSourceRegistration, DataReaderExtensionBase> GetDataReader { get; set; }
+        public Func<DataSourceRegistration, DataSourceController> GetDataReader { get; set; }
 
-        private static ConcurrentDictionary<DataSourceRegistration, FilterSettings> FilterSettingsCache { get; }
+        private static ConcurrentDictionary<Uri, FilterSettings> FilterSettingsCache { get; }
 
-        private static ConcurrentDictionary<DataSourceRegistration, List<FilterDataReaderCacheEntry>> FilterDataReaderCache { get; }
+        private static ConcurrentDictionary<Uri, List<FilterDataSourceCacheEntry>> FilterDataSourceCache { get; }
 
         #endregion
 
         #region Methods
 
-        public static bool TryGetFilterCodeDefinition(Dataset datasetInfo, out CodeDefinition codeDefinition)
+        public Task OnParametersSetAsync()
+        {
+            _cacheEntries = FilterDataSource.FilterDataSourceCache.GetOrAdd(this.ResourceLocator, new List<FilterDataSourceCacheEntry>());
+            return Task.CompletedTask;
+        }
+
+        public static bool TryGetFilterCodeDefinition(Dataset dataset, out CodeDefinition codeDefinition)
         {
             codeDefinition = default;
 
-            if (FilterDataSource.FilterDataReaderCache.TryGetValue(datasetInfo.Registration, out var cacheEntries))
+            if (FilterDataSource.FilterDataSourceCache.TryGetValue(dataset.Registration.ResourceLocator, out var cacheEntries))
             {
                 var cacheEntry = cacheEntries
-                    .FirstOrDefault(entry => entry.SupportedChanneIds.Contains(datasetInfo.Channel.Id));
+                    .FirstOrDefault(entry => entry.SupportedChanneIds.Contains(dataset.Channel.Id));
 
                 if (cacheEntry is not null)
                 {
@@ -86,11 +117,11 @@ namespace Nexus.Extensions
             FilterDataSource.FilterSettingsCache.Clear();
 
             // unload DLLs
-            var loadContexts = FilterDataSource.FilterDataReaderCache
+            var loadContexts = FilterDataSource.FilterDataSourceCache
                 .SelectMany(entry => entry.Value.Select(cacheEntry => cacheEntry.LoadContext))
                 .ToList();
 
-            FilterDataSource.FilterDataReaderCache.Clear();
+            FilterDataSource.FilterDataSourceCache.Clear();
 
             foreach (var loadContext in loadContexts)
             {
@@ -98,153 +129,157 @@ namespace Nexus.Extensions
             }
         }
 
-        public override (T[] Dataset, byte[] Status) ReadSingle<T>(Dataset dataset, DateTime begin, DateTime end)
+        public Task<List<Catalog>> GetCatalogsAsync(CancellationToken cancellationToken)
         {
-            var samplesPerDay = new SampleRateContainer(dataset.Id).SamplesPerDay;
-            var length = (long)Math.Round((end - begin).TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
-            var cacheEntry = _cacheEntries.FirstOrDefault(current => current.SupportedChanneIds.Contains(dataset.Channel.Id));
-
-            if (cacheEntry is null)
-                throw new Exception("The requested filter channel ID could not be found.");
-
-            // prepare data
-            var result = new double[length];
-            var status = new byte[length];
-            status.AsSpan().Fill(1);
-
-            // fill database
-            Func<string, string, string, DateTime, DateTime, double[]> getData = (string catalogId, string channelId, string datasetId, DateTime begin, DateTime end) =>
+            return Task.Run(() =>
             {
-#warning improve this (PhysicalName)
-                var catalog = this.Database.CatalogContainers
-                    .FirstOrDefault(container => container.Id == catalogId || container.PhysicalName == catalogId);
+                var catalogs = new Dictionary<string, Catalog>();
 
-                if (catalog == null)
-                    throw new Exception($"Unable to find catalog with id '{catalogId}'.");
-
-                if (!this.Database.TryFindDatasetById(catalog.Id, channelId, datasetId, out var dataset))
+                if (this.TryGetFilterSettings(out var filterSettings))
                 {
-                    var path = $"{catalog.Id}/{channelId}/{datasetId}";
-                    throw new Exception($"Unable to find dataset with path '{path}'.");
-                }
+                    this.PopulateCache(filterSettings);
+                    var filterCodeDefinitions = filterSettings.CodeDefinitions.Where(filter => filter.CodeType == CodeType.Filter);
 
-                if (!this.IsCatalogAccessible(dataset.Channel.Catalog.Id))
-                    throw new UnauthorizedAccessException("The current user is not allowed to access this filter.");
-
-                var dataReader = this.GetDataReader(dataset.Registration);
-                (var rawData, var status) = dataReader.ReadSingle(dataset, begin, end);
-                var data = BufferUtilities.ApplyDatasetStatus2(rawData, status);
-
-                return data;
-            };
-
-            // execute
-            var filter = cacheEntry.FilterProvider.Filters.First(filter => filter.ToGuid(cacheEntry.FilterCodeDefinition) == dataset.Channel.Id);
-            cacheEntry.FilterProvider.Filter(begin, end, filter, getData, result);
-
-            return ((T[])(object)result, status);
-        }
-
-        protected override List<Catalog> LoadCatalogs()
-        {
-            var catalogs = new Dictionary<string, Catalog>();
-
-            if (this.TryGetFilterSettings(out var filterSettings))
-            {
-                this.PopulateCache(filterSettings);
-                var filterCodeDefinitions = filterSettings.CodeDefinitions.Where(filter => filter.CodeType == CodeType.Filter);
-
-                foreach (var filterCodeDefinition in filterCodeDefinitions)
-                {
-                    var cacheEntry = _cacheEntries.FirstOrDefault(current => current.FilterCodeDefinition == filterCodeDefinition);
-
-                    if (cacheEntry is null)
-                        continue;
-                   
-                    var filterProvider = cacheEntry.FilterProvider;
-                    var filterChannels = filterProvider.Filters;
-
-                    foreach (var filterChannel in filterChannels)
+                    foreach (var filterCodeDefinition in filterCodeDefinitions)
                     {
-                        var localFilterChannel = filterChannel;
+                        var cacheEntry = _cacheEntries.FirstOrDefault(current => current.FilterCodeDefinition == filterCodeDefinition);
 
-                        // enforce group
-                        if (localFilterChannel.CatalogId == FilterConstants.SharedCatalogID)
-                        {
-                            localFilterChannel = localFilterChannel with
-                            {
-                                Group = filterCodeDefinition.Owner.Split('@')[0]
-                            };
-                        }
-                        else if (string.IsNullOrWhiteSpace(localFilterChannel.Group))
-                        {
-                            localFilterChannel = localFilterChannel with
-                            {
-                                Group = "General"
-                            };
-                        }
-
-                        // get or create catalog
-                        if (!catalogs.TryGetValue(localFilterChannel.CatalogId, out var catalog))
-                        {
-                            catalog = new Catalog(localFilterChannel.CatalogId);
-                            catalogs[localFilterChannel.CatalogId] = catalog;
-                        }
-
-                        // create channel
-                        if (!NexusUtilities.CheckNamingConvention(localFilterChannel.ChannelName, out var message))
-                        {
-                            this.Logger.LogWarning($"Skipping channel '{localFilterChannel.ChannelName}' due to the following reason: {message}.");
+                        if (cacheEntry is null)
                             continue;
-                        }
 
-                        var channel = new Channel(localFilterChannel.ToGuid(cacheEntry.FilterCodeDefinition), catalog)
+                        var filterProvider = cacheEntry.FilterProvider;
+                        var filterChannels = filterProvider.Filters;
+
+                        foreach (var filterChannel in filterChannels)
                         {
-                            Name = localFilterChannel.ChannelName,
-                            Group = localFilterChannel.Group,
-                            Unit = localFilterChannel.Unit,
-                            Description = localFilterChannel.Description
-                        };
+                            var localFilterChannel = filterChannel;
 
-                        // create datasets
-                        var datasets = new List<Dataset>()
+                            // enforce group
+                            if (localFilterChannel.CatalogId == FilterConstants.SharedCatalogID)
+                            {
+                                localFilterChannel = localFilterChannel with
+                                {
+                                    Group = filterCodeDefinition.Owner.Split('@')[0]
+                                };
+                            }
+                            else if (string.IsNullOrWhiteSpace(localFilterChannel.Group))
+                            {
+                                localFilterChannel = localFilterChannel with
+                                {
+                                    Group = "General"
+                                };
+                            }
+
+                            // get or create catalog
+                            if (!catalogs.TryGetValue(localFilterChannel.CatalogId, out var catalog))
+                            {
+                                catalog = new Catalog(localFilterChannel.CatalogId);
+                                catalogs[localFilterChannel.CatalogId] = catalog;
+                            }
+
+                            // create channel
+                            if (!NexusUtilities.CheckNamingConvention(localFilterChannel.ChannelName, out var message))
+                            {
+                                this.Logger.LogWarning($"Skipping channel '{localFilterChannel.ChannelName}' due to the following reason: {message}.");
+                                continue;
+                            }
+
+                            var channel = new Channel(localFilterChannel.ToGuid(cacheEntry.FilterCodeDefinition), catalog)
+                            {
+                                Name = localFilterChannel.ChannelName,
+                                Group = localFilterChannel.Group,
+                                Unit = localFilterChannel.Unit,
+                                Description = localFilterChannel.Description
+                            };
+
+                            // create datasets
+                            var datasets = new List<Dataset>()
                         {
                             new Dataset(filterCodeDefinition.SampleRate, channel)
                             {
-                                DataType = NexusDataType.FLOAT64                              
+                                DataType = NexusDataType.FLOAT64
                             }
                         };
 
-                        // append
-                        channel.Datasets.AddRange(datasets);
-                        catalog.Channels.Add(channel);
-
-                        // set begin and end
-#warning redesign
-                        //catalog.CatalogStart = DateTime.MaxValue;
-                        //catalog.CatalogEnd = DateTime.MinValue;
+                            // append
+                            channel.Datasets.AddRange(datasets);
+                            catalog.Channels.Add(channel);
+                        }
                     }
                 }
-            }
 
-            return catalogs.Values.ToList();
+                return catalogs.Values.ToList();
+            });
         }
 
-        protected override double GetAvailability(string catalogId, DateTime Day)
+        public Task<(DateTime Begin, DateTime End)> GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
         {
-            return 1;
+            return Task.FromResult((DateTime.MaxValue, DateTime.MinValue));
+        }
+
+        public Task<double> GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(1.0);
+        }
+
+        public Task ReadSingleAsync(Dataset dataset, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
+        {
+            return Task.Run(() =>
+            {
+                var samplesPerDay = new SampleRateContainer(dataset.Id).SamplesPerDay;
+                var length = (long)Math.Round((end - begin).TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
+                var cacheEntry = _cacheEntries.FirstOrDefault(current => current.SupportedChanneIds.Contains(dataset.Channel.Id));
+
+                if (cacheEntry is null)
+                    throw new Exception("The requested filter channel ID could not be found.");
+
+                // fill database
+                GetFilterData getData = (string catalogId, string channelId, string datasetId, DateTime begin, DateTime end) =>
+                {
+#warning improve this (PhysicalName)
+                    var catalog = this.Database.CatalogContainers
+                         .FirstOrDefault(container => container.Id == catalogId || container.PhysicalName == catalogId);
+
+                    if (catalog == null)
+                        throw new Exception($"Unable to find catalog with id '{catalogId}'.");
+
+                    if (!this.Database.TryFindDatasetById(catalog.Id, channelId, datasetId, out var dataset))
+                    {
+                        var path = $"{catalog.Id}/{channelId}/{datasetId}";
+                        throw new Exception($"Unable to find dataset with path '{path}'.");
+                    }
+
+                    if (!this.IsCatalogAccessible(dataset.Channel.Catalog.Id))
+                        throw new UnauthorizedAccessException("The current user is not allowed to access this filter.");
+
+                    var dataReader = this.GetDataReader(dataset.Registration);
+
+#warning GetData Should be Async! Deadlock may happen
+                    dataReader.ReadSingleAsync(dataset, result, begin, end, cancellationToken).Wait();
+                    var data = BufferUtilities.ApplyDatasetStatusByDataType(dataset.DataType, result);
+
+                    return data;
+                };
+
+                // execute
+                var filter = cacheEntry.FilterProvider.Filters.First(filter => filter.ToGuid(cacheEntry.FilterCodeDefinition) == dataset.Channel.Id);
+                var filterResult = MemoryMarshal.Cast<byte, double>(result.Data.Span);
+
+                cacheEntry.FilterProvider.Filter(begin, end, filter, getData, filterResult);
+                result.Status.Span.Fill(1);
+            });
         }
 
         private bool TryGetFilterSettings(out FilterSettings filterSettings)
         {
             // search in cache
-            if (FilterDataSource.FilterSettingsCache.TryGetValue(this.Registration, out filterSettings))
+            if (FilterDataSource.FilterSettingsCache.TryGetValue(this.ResourceLocator, out filterSettings))
             {
                 return true;   
             }
             else
             {
-                var filePath = Path.Combine(this.RootPath, "filters.json");
+                var filePath = Path.Combine(this.Root, "filters.json");
 
                 // read from disk
                 if (File.Exists(filePath))
@@ -254,7 +289,7 @@ namespace Nexus.Extensions
 
                     // add to cache
                     var filterSettings2 = filterSettings; // to make compiler happy
-                    FilterDataSource.FilterSettingsCache.AddOrUpdate(this.Registration, filterSettings, (key, value) => filterSettings2);
+                    FilterDataSource.FilterSettingsCache.AddOrUpdate(this.ResourceLocator, filterSettings, (key, value) => filterSettings2);
 
                     return true;
                 }
@@ -272,7 +307,7 @@ namespace Nexus.Extensions
             var message = $"Compiling {filterCodeDefinitions.Count} filter(s) ...";
             this.Logger.LogInformation(message);
 
-            var cacheEntries = new FilterDataReaderCacheEntry[filterCodeDefinitions.Count];
+            var cacheEntries = new FilterDataSourceCacheEntry[filterCodeDefinitions.Count];
 
             Parallel.For(0, filterCodeDefinitions.Count, i =>
             {
@@ -295,7 +330,7 @@ namespace Nexus.Extensions
 
                 peStream.Seek(0, SeekOrigin.Begin);
 
-                var loadContext = new FilterDataReaderLoadContext();
+                var loadContext = new FilterDataSourceLoadContext();
                 var assembly = loadContext.LoadFromStream(peStream);
                 var assemblyType = assembly.GetType();
 
@@ -312,7 +347,7 @@ namespace Nexus.Extensions
                 {
                     var filterProvider = (FilterProviderBase)Activator.CreateInstance(filterType);
                     var supportedChanneIds = filterProvider.Filters.Select(filter => filter.ToGuid(filterCodeDefinition)).ToList();
-                    cacheEntries[i] = new FilterDataReaderCacheEntry(filterCodeDefinition, loadContext, filterProvider, supportedChanneIds);
+                    cacheEntries[i] = new FilterDataSourceCacheEntry(filterCodeDefinition, loadContext, filterProvider, supportedChanneIds);
                 }
                 catch (Exception ex)
                 {
@@ -329,7 +364,7 @@ namespace Nexus.Extensions
             // change signature
             code = code.Replace(
                 "DataProvider dataProvider",
-                "System.Func<string, string, string, System.DateTime, System.DateTime, double[]> getData");
+                "GetFilterData getData");
 
             // matches strings like "= dataProvider.IN_MEMORY_TEST_ACCESSIBLE.T1.DATASET_1_s_mean;"
             var pattern1 = @"=\s*dataProvider\.([a-zA-Z_0-9]+)\.([a-zA-Z_0-9]+)\.DATASET_([a-zA-Z_0-9]+);";
@@ -342,7 +377,7 @@ namespace Nexus.Extensions
                 var regex = new Regex("_");
                 var datasetId = regex.Replace(match.Groups[3].Value, " ", 1);
 
-                return $"= (double[])getData(\"{catalogId}\", \"{channelId}\", \"{datasetId}\", begin, end);";
+                return $"= getData(\"{catalogId}\", \"{channelId}\", \"{datasetId}\", begin, end);";
             });
 
             // matches strings like "= dataProvider.Read(campaignId, channelId, datasetId, begin, end);"
@@ -355,7 +390,7 @@ namespace Nexus.Extensions
                 var begin = match.Groups[4].Value;
                 var end = match.Groups[5].Value;
 
-                return $"= (double[])getData({catalogId}, {channelId}, {datasetId}, {begin}, {end});";
+                return $"= getData({catalogId}, {channelId}, {datasetId}, {begin}, {end});";
             });
 
             // matches strings like "= dataProvider.Read(campaignId, channelId, datasetId);"
@@ -366,7 +401,7 @@ namespace Nexus.Extensions
                 var channelId = match.Groups[2].Value;
                 var datasetId = match.Groups[3].Value;
 
-                return $"= (double[])getData({catalogId}, {channelId}, {datasetId}, begin, end);";
+                return $"= getData({catalogId}, {channelId}, {datasetId}, begin, end);";
             });
 
             return code;

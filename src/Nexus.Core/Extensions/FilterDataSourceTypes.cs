@@ -6,17 +6,17 @@ using System.Runtime.Loader;
 
 namespace Nexus.Extensions
 {
-    public class FilterDataReaderLoadContext : AssemblyLoadContext
+    public class FilterDataSourceLoadContext : AssemblyLoadContext
     {
-        public FilterDataReaderLoadContext() : base(isCollectible: true) 
+        public FilterDataSourceLoadContext() : base(isCollectible: true) 
         {
             //
         }
     }
 
-    public record FilterDataReaderCacheEntry(
+    public record FilterDataSourceCacheEntry(
         CodeDefinition FilterCodeDefinition,
-        FilterDataReaderLoadContext LoadContext,
+        FilterDataSourceLoadContext LoadContext,
         FilterProviderBase FilterProvider,
         List<Guid> SupportedChanneIds);
 }

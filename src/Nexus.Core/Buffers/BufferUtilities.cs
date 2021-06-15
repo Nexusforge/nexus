@@ -1,12 +1,16 @@
+using Nexus.Extensibility;
 using Nexus.Infrastructure;
 using System;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace Nexus.Buffers
 {
     public static class BufferUtilities
     {
+        private static object targetType;
+
         public static unsafe double[] ToDouble<T>(Span<T> dataset) where T : unmanaged
         {
             var doubleData = new double[dataset.Length];
@@ -19,11 +23,27 @@ namespace Nexus.Buffers
             return doubleData;
         }
 
-        public unsafe static double[] ApplyDatasetStatus<T>(Span<T> dataset, Span<byte> status) where T : unmanaged
+        public static double[] ApplyDatasetStatusByDataType(NexusDataType dataType, ReadResult result)
         {
-            var doubleData = new double[dataset.Length];
+            var targetType = NexusUtilities.GetTypeFromNexusDataType(dataType);
 
-            fixed (T* dataPtr = dataset)
+            // Invoke xxx
+            var method = typeof(MemoryMarshal).GetMethod(nameof(MemoryMarshal.Cast), BindingFlags.Public | BindingFlags.Static);
+            method = method.MakeGenericMethod(typeof(byte), targetType);
+            var castedData = method.Invoke(null, new object[] { result.Data });
+
+            // Invoke ApplyDatasetStatus
+            var method2 = typeof(BufferUtilities).GetMethod(nameof(BufferUtilities.ApplyDatasetStatus), BindingFlags.Public | BindingFlags.Static);
+            var doubleData = (double[])method2.Invoke(null, new object[] { castedData, result.Status });
+
+            return doubleData;
+        }
+
+        public unsafe static double[] ApplyDatasetStatus<T>(Span<T> data, Span<byte> status) where T : unmanaged
+        {
+            var doubleData = new double[data.Length];
+
+            fixed (T* dataPtr = data)
             {
                 fixed (byte* statusPtr = status)
                 {
@@ -32,18 +52,6 @@ namespace Nexus.Buffers
             }
 
             return doubleData;
-        }
-
-        public static double[] ApplyDatasetStatus2(Array dataset, byte[] status)
-        {
-            var methodName = nameof(BufferUtilities.ForwardApplyDatasetStatus);
-            var flags = BindingFlags.NonPublic | BindingFlags.Static;
-            var genericType = dataset.GetType().GetElementType();
-            var parameters = new object[] { dataset, status };
-
-            var result = NexusUtilities.InvokeGenericMethod(typeof(BufferUtilities), null, methodName, flags, genericType, parameters);
-
-            return (double[])result;
         }
 
         public static ISimpleBuffer CreateSimpleBuffer(double[] data)
@@ -74,14 +82,6 @@ namespace Nexus.Buffers
                 else
                     doubleData[i] = GenericToDouble<T>.ToDouble(dataPtr[i]);
             });
-        }
-
-        private static double[] ForwardApplyDatasetStatus<T>(T[] dataset, byte[] status) where T : unmanaged
-        {
-            // This method is only required to correctly cast:
-            // dataset: Array  -> Span<T>    (desired)         Array  -> object -> T[]    -> Span<T> (actual)   
-            //  status: byte[] -> Span<byte> (desired)         byte[] -> object -> byte[] -> Span<T> (actual)   
-            return BufferUtilities.ApplyDatasetStatus<T>(dataset, status);
         }
     }
 }

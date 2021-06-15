@@ -31,6 +31,9 @@ namespace Nexus.DataModel
         public NexusDataType DataType { get; set; }
 
         [JsonIgnore]
+        public int ElementSize => ((int)this.DataType & 0xFF) >> 3;
+
+        [JsonIgnore]
         public Channel Channel { get; internal set; }
 
         internal DataSourceRegistration Registration { get; set; }

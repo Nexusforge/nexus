@@ -59,17 +59,21 @@ namespace Nexus.Services
 
         #region Methods
 
-        public Task<List<AvailabilityResult>> GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, AvailabilityGranularity granularity)
+        public Task<List<AvailabilityResult>> GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, AvailabilityGranularity granularity, CancellationToken cancellationToken)
         {
-            return Task.Run(() =>
+            return Task.Run(async () =>
             {
                 var dataReaders = _databaseManager.GetDataReaders(_userIdService.User, catalogId);
 
-                return dataReaders.Select(dataReaderForUsing =>
+                var tasks = dataReaders.Select(dataReaderForUsing =>
                 {
                     using var dataReader = dataReaderForUsing;
-                    return dataReader.GetAvailability(catalogId, begin, end, granularity);
+                    return dataReader.GetAvailabilityAsync(catalogId, begin, end, granularity, cancellationToken);
                 }).ToList();
+
+                await Task.WhenAll(tasks);
+
+                return tasks.Select(task => task.Result).ToList();
             });
         }
 
@@ -270,11 +274,11 @@ namespace Nexus.Services
             }
         }
 
-        private void CreateFiles(ClaimsPrincipal user,
-                                 DataWriterExtensionLogicBase dataWriter,
-                                 ExportParameters exportParameters,
-                                 SparseCatalog sparseCatalog,
-                                 CancellationToken cancellationToken)
+        private async Task CreateFilesAsync(ClaimsPrincipal user,
+                                     DataWriterExtensionLogicBase dataWriter,
+                                     ExportParameters exportParameters,
+                                     SparseCatalog sparseCatalog,
+                                     CancellationToken cancellationToken)
         {
             var datasets = sparseCatalog.Channels.SelectMany(channel => channel.Datasets);
             var registrationToDatasetsMap = new Dictionary<DataSourceRegistration, List<Dataset>>();
@@ -297,16 +301,14 @@ namespace Nexus.Services
                 if (entry.Value.Any())
                 {
                     var registration = entry.Key;
-                    var dataReader = _databaseManager.GetDataReader(user, registration);
+                    var dataReader = _databaseManager.GetDataSourceController(user, registration);
                     dataReader.Progress.ProgressChanged += progressHandler;
 
                     try
                     {
-                        var isAggregation = dataReader.Registration.Equals(_databaseManager.State.AggregationRegistration);
-
-                        foreach (var progressRecord in dataReader.Read(entry.Value, exportParameters.Begin, exportParameters.End, _blockSizeLimit, cancellationToken))
+                        await foreach (var progressRecord in dataReader.ReadAsync(entry.Value, exportParameters.Begin, exportParameters.End, _blockSizeLimit, cancellationToken))
                         {
-                            this.ProcessData(dataWriter, progressRecord, applyStatus: !isAggregation);
+                            this.ProcessData(dataWriter, progressRecord);
                         }
                     }
                     finally
@@ -319,19 +321,11 @@ namespace Nexus.Services
             cancellationToken.ThrowIfCancellationRequested();
         }
 
-        private void ProcessData(DataWriterExtensionLogicBase dataWriter, DataReaderProgressRecord progressRecord, bool applyStatus)
+        private void ProcessData(DataWriterExtensionLogicBase dataWriter, DataSourceProgressRecord progressRecord)
         {
-            var buffers = progressRecord.DatasetToRecordMap.Values.Select(dataRecord =>
+            var buffers = progressRecord.DatasetToResultMap.Select(entry =>
             {
-                double[] data;
-
-                var elementType = dataRecord.Dataset.GetType().GetElementType();
-
-                if (applyStatus || elementType != typeof(double))
-                    data = BufferUtilities.ApplyDatasetStatus2(dataRecord.Dataset, dataRecord.Status);
-                else
-                    data = (double[])dataRecord.Dataset;
-
+                var data = BufferUtilities.ApplyDatasetStatusByDataType(entry.Key.DataType, entry.Value);
                 return (IBuffer)BufferUtilities.CreateSimpleBuffer(data);
             }).ToList();
 

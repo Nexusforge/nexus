@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace Nexus.Extensibility
 {
-    public class DataReaderDoubleStream : Stream
+    public class DataSourceDoubleStream : Stream
     {
         #region Fields
 
@@ -17,16 +17,16 @@ namespace Nexus.Extensibility
         private int _remaining;
 
         private long _length;
-        private IEnumerator<DataReaderProgressRecord> _enumerator;
+        private IAsyncEnumerator<DataSourceProgressRecord> _enumerator;
 
         #endregion
 
         #region Constructors
 
-        public DataReaderDoubleStream(long length, IEnumerable<DataReaderProgressRecord> progressRecords)
+        public DataSourceDoubleStream(long length, IAsyncEnumerable<DataSourceProgressRecord> progressRecords)
         {
             _length = length;
-            _enumerator = progressRecords.GetEnumerator();
+            _enumerator = progressRecords.GetAsyncEnumerator();
 
             this._buffer = new double[0];
         }
@@ -120,19 +120,15 @@ namespace Nexus.Extensibility
 
         private double[] GetNext()
         {
-            var success = _enumerator.MoveNext();
+#warning risk of deadlock
+            var success = _enumerator.MoveNextAsync().Result;
 
             if (success)
             {
-                double[] doubleData;
-
-                var entry = _enumerator.Current.DatasetToRecordMap.First();
-                var dataRecord = entry.Value;
-
-                if (dataRecord.Dataset.GetType().GetElementType() != typeof(double))
-                    doubleData = BufferUtilities.ApplyDatasetStatus2(dataRecord.Dataset, dataRecord.Status);
-                else
-                    doubleData = (double[])dataRecord.Dataset;
+                var entry = _enumerator.Current.DatasetToResultMap.First();
+                var dataset = entry.Key;
+                var result = entry.Value;
+                var doubleData = BufferUtilities.ApplyDatasetStatusByDataType(dataset.DataType, result);
 
                 return doubleData;
             }

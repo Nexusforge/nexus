@@ -211,8 +211,7 @@ namespace Nexus.Extensibility
         }
 
         protected virtual async Task 
-            ReadSingleAsync<T>(Dataset dataset, ReadResult<T> readResult, DateTime begin, DateTime end, CancellationToken cancellationToken)
-            where T : unmanaged
+            ReadSingleAsync(Dataset dataset, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
             if (begin >= end)
                 throw new ArgumentException("The start time must be before the end time.");
@@ -223,7 +222,7 @@ namespace Nexus.Extensibility
             var catalog = dataset.Channel.Catalog;
             var config = (await this.GetConfigurationAsync(catalog.Id, cancellationToken).ConfigureAwait(false)).Single(dataset);
             var samplesPerDay = dataset.GetSampleRate().SamplesPerDay;
-            var fileLength = (long)Math.Round(config.FilePeriod.TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
+            var fileTotalLength = (long)Math.Round(config.FilePeriod.TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
 
             var bufferOffset = 0;
             var currentBegin = begin;
@@ -259,7 +258,7 @@ namespace Nexus.Extensibility
                     var fileBeginOffset = currentBegin - fileBegin;
                     var fileOffset = (long)Math.Round(fileBeginOffset.TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
                     consumedPeriod = TimeSpan.FromTicks(Math.Min(config.FilePeriod.Ticks - fileBeginOffset.Ticks, remainingPeriod.Ticks));
-                    fileBlock = (int)(fileLength - fileOffset);
+                    fileBlock = (int)(fileTotalLength - fileOffset);
 
                     foreach (var filePath in filePaths)
                     {
@@ -267,22 +266,25 @@ namespace Nexus.Extensibility
                         {
                             try
                             {
-                                var slicedData = readResult
+                                var slicedData = result
                                     .Data
-                                    .Slice(bufferOffset, fileBlock);
+                                    .Slice(bufferOffset * dataset.ElementSize, fileBlock * dataset.ElementSize);
 
-                                var slicedStatus = readResult
+                                var slicedStatus = result
                                     .Status
                                     .Slice(bufferOffset, fileBlock);
 
-                                var readParameters = new ReadInfo<T>(
+                                var fileLength = slicedData.Length / dataset.ElementSize;
+
+                                var readParameters = new ReadInfo(
                                     filePath,
                                     dataset,
                                     slicedData,
                                     slicedStatus,
                                     fileBegin,
                                     fileOffset,
-                                    fileLength
+                                    fileLength,
+                                    fileTotalLength
                                 );
 
                                 await this
@@ -313,9 +315,8 @@ namespace Nexus.Extensibility
             }
         }
 
-        protected abstract Task 
-            ReadSingleAsync<T>(ReadInfo<T> readInfo, CancellationToken cancellationToken)
-            where T : unmanaged;
+        protected abstract Task
+            ReadSingleAsync(ReadInfo info, CancellationToken cancellationToken);
 
         protected virtual Task<(string[], DateTime)> 
             FindFilePathsAsync(DateTime begin, ConfigurationUnit config)
@@ -394,9 +395,9 @@ namespace Nexus.Extensibility
         }
 
         Task 
-            IDataSource.ReadSingleAsync<T>(Dataset dataset, ReadResult<T> readResult, DateTime begin, DateTime end, CancellationToken cancellationToken)
+            IDataSource.ReadSingleAsync(Dataset dataset, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
-            return this.ReadSingleAsync(dataset, readResult, begin, end, cancellationToken);
+            return this.ReadSingleAsync(dataset, result, begin, end, cancellationToken);
         }
 
         #endregion

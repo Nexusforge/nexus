@@ -5,6 +5,8 @@ using System.Collections.Generic;
 
 namespace Nexus.Filters
 {
+    public delegate Span<double> GetFilterData(string catalogId, string channelId, string datasetId, DateTime begin, DateTime end);
+
     public static class FilterConstants
     {
         public static string SharedCatalogID { get; } = "/IN_MEMORY/FILTERS/SHARED";
@@ -66,7 +68,12 @@ namespace Nexus.Filters
 
         #region Methods
 
-        public abstract void Filter(DateTime begin, DateTime end, FilterChannel filterChannel, Func<string, string, string, DateTime, DateTime, double[]> getData, double[] result);
+        public abstract void Filter(
+            DateTime begin,
+            DateTime end, 
+            FilterChannel filterChannel, 
+            GetFilterData getData,
+            Span<double> result);
 
         protected abstract List<FilterChannel> GetFilters();
 

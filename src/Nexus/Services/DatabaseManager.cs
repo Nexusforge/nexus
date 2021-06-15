@@ -136,16 +136,16 @@ namespace Nexus.Services
 
             registrationToDataReaderTypeMap[registration] = typeof(AggregationDataSource);
 
-            // instantiate data readers
-            var dataReaders = registrationToDataReaderTypeMap
-                                .Select(entry => this.InstantiateDataReader(entry.Key, entry.Value, registrationToCatalogsMap))
+            // get catalogs
+            var dataSources = registrationToDataReaderTypeMap
+                                .Select(entry => this.InstantiateDataSource(entry.Key, entry.Value, registrationToCatalogsMap))
                                 .ToList();
 
-            foreach (var dataReader in dataReaders)
+            foreach (var dataSource in dataSources)
             {
                 try
                 {
-                    dataReader.Dispose();
+                    dataSource.Dispose();
                 }
                 catch { }
             }
@@ -242,7 +242,7 @@ namespace Nexus.Services
             _logger.LogInformation("Database loaded.");
         }
 
-        public List<DataReaderExtensionBase> GetDataReaders(ClaimsPrincipal user, string catalogId)
+        public List<DataSourceController> GetDataReaders(ClaimsPrincipal user, string catalogId)
         {
             var state = this.State;
 
@@ -250,38 +250,38 @@ namespace Nexus.Services
                 // where the catalog list contains the catalog ID
                 .Where(entry => entry.Value.Any(catalog => catalog.Id == catalogId))
                 // select the registration and get a brand new data reader from it
-                .Select(entry => this.GetDataReader(user, entry.Key, state))
+                .Select(entry => this.GetDataSourceController(user, entry.Key, state))
                 // to list
                 .ToList();
         }
 
-        public DataReaderExtensionBase GetDataReader(
-                    ClaimsPrincipal user,
-                    DataSourceRegistration registration,
-                    DatabaseManagerState state = null)
+        public DataSourceController GetDataSourceController(
+                ClaimsPrincipal user,
+                DataSourceRegistration registration,
+                DatabaseManagerState state = null)
         {
             if (state == null)
                 state = this.State;
 
-            if (!state.RegistrationToDataReaderTypeMap.TryGetValue(registration, out var dataReaderType))
-                throw new KeyNotFoundException("The requested data reader could not be found.");
+            if (!state.RegistrationToDataReaderTypeMap.TryGetValue(registration, out var dataSourceType))
+                throw new KeyNotFoundException("The requested data source could not be found.");
 
-            var dataReader = this.InstantiateDataReader(registration, dataReaderType, state.RegistrationToCatalogsMap);
+            var dataSource = this.InstantiateDataSource(registration, dataSourceType, state.RegistrationToCatalogsMap);
 
             // special case checks
-            if (dataReaderType == typeof(FilterDataSource))
+            if (dataSourceType == typeof(FilterDataSource))
             {
-                var current = ((FilterDataSource)dataReader);
+                var filterDataSource = (FilterDataSource)dataSource;
 
-                current.Database = this.Database;
+                filterDataSource.Database = this.Database;
 
-                current.IsCatalogAccessible = 
+                filterDataSource.IsCatalogAccessible = 
                     catalogId => Utilities.IsCatalogAccessible(user, catalogId, this.Database);
 
-                current.GetDataReader = registration => this.GetDataReader(user, registration);
+                filterDataSource.GetDataReader = registration => this.GetDataSourceController(user, registration);
             }
 
-            return dataReader;
+            return dataSource;
         }
 
         public void SaveCatalogMeta(CatalogMeta catalogMeta)
@@ -362,37 +362,46 @@ namespace Nexus.Services
             _isInitialized = true;
         }
 
-        private DataReaderExtensionBase InstantiateDataReader(
-            DataSourceRegistration registration, Type type,
-            Dictionary<DataSourceRegistration, List<Catalog>> registrationToCatalogsMap)
+        private async Task<DataSourceController> 
+            InstantiateDataSourceAsync(DataSourceRegistration registration, Type type, Dictionary<DataSourceRegistration, List<Catalog>> registrationToCatalogsMap)
         {
+            _logger.LogInformation($"Instantiating {registration.DataSourceId} for URI {registration.ResourceLocator} ...");
+
             var logger = _loggerFactory.CreateLogger($"{registration.DataSourceId} - {registration.ResourceLocator}");
-            var dataReader = (DataReaderExtensionBase)Activator.CreateInstance(type, registration, logger);
+            var dataSource = (IDataSource)Activator.CreateInstance(type);
+
+            // set parameters
+            dataSource.ResourceLocator = registration.ResourceLocator;
+            dataSource.Parameters = registration.Parameters;
+            dataSource.Logger = logger;
+
+            await dataSource.OnParametersSetAsync();
 
             // special case checks
             if (type == typeof(AggregationDataSource))
             {
                 var fileAccessManger = _serviceProvider.GetRequiredService<IFileAccessManager>();
-                ((AggregationDataSource)dataReader).FileAccessManager = fileAccessManger;
+                ((AggregationDataSource)dataSource).FileAccessManager = fileAccessManger;
             }
 
-            // initialize catalogs property
+            // create controller 
+            var controller = new DataSourceController(dataSource);
+
             if (registrationToCatalogsMap.TryGetValue(registration, out var value))
             {
-                dataReader.InitializeCatalogs(value);
+                controller.InitializeCatalogs(value);
             }
             else
             {
-                _logger.LogInformation($"Instantiating {registration.DataSourceId} for URI {registration.ResourceLocator} ...");
-                dataReader.InitializeCatalogs();
+                controller.InitializeCatalogs();
 
-                registrationToCatalogsMap[registration] = dataReader
+                registrationToCatalogsMap[registration] = controller
                     .Catalogs
                     .Where(current => NexusUtilities.CheckCatalogNamingConvention(current.Id, out var _))
                     .ToList();
             }
 
-            return dataReader;
+            return controller;
         }
 
         private string GetCatalogMetaPath(string catalogName)
@@ -445,7 +454,7 @@ namespace Nexus.Services
 
         private List<Type> ScanAssembly(Assembly assembly)
         {
-            return assembly.ExportedTypes.Where(type => type.IsClass && !type.IsAbstract && type.IsSubclassOf(typeof(DataReaderExtensionBase))).ToList();
+            return assembly.ExportedTypes.Where(type => type.IsClass && !type.IsAbstract && type.IsSubclassOf(typeof(DataSourceController))).ToList();
         }
 
         private void CleanUpFilterCatalogs(List<Catalog> filterCatalogs,

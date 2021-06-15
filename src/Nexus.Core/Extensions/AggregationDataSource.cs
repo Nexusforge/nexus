@@ -11,273 +11,313 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Nexus.Extensions
 {
     [ExtensionIdentification("Nexus.Aggregation", "Nexus Aggregation", "Provides access to databases with Nexus aggregation files.")]
-    public class AggregationDataSource : DataReaderExtensionBase
+    public class AggregationDataSource : IDataSource
     {
-        #region Constructors
-
-        public AggregationDataSource(DataSourceRegistration registration, ILogger logger) : base(registration, logger)
-        {
-            //
-        }
-
-        #endregion
-
         #region Properties
 
         public IFileAccessManager FileAccessManager { get; set; }
+
+        public Uri ResourceLocator
+        {
+            set
+            {
+                if (!value.IsAbsoluteUri || value.IsFile)
+                {
+                    this.Root = value.IsAbsoluteUri
+                        ? value.AbsolutePath
+                        : value.ToString();
+                }
+                else
+                {
+                    throw new Exception("Only file URIs are supported.");
+                }
+            }
+        }
+
+        public ILogger Logger { get; set; }
+
+        public Dictionary<string, string> Parameters { get; set; }
+
+        private string Root { get; set; }
 
         #endregion
 
         #region Methods
 
-#warning Unify this with other readers
-        public override (T[] Dataset, byte[] Status) ReadSingle<T>(Dataset dataset, DateTime begin, DateTime end)
+        public Task<List<Catalog>> GetCatalogsAsync(CancellationToken cancellationToken)
         {
-            var catalog = dataset.Channel.Catalog;
-            var channel = dataset.Channel;
-            var catalogFolderPath = Path.Combine(this.RootPath, "DATA", WebUtility.UrlEncode(catalog.Id));
-            var samplesPerDay = new SampleRateContainer(dataset.Id).SamplesPerDay;
-            var length = (long)Math.Round((end - begin).TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
-            var data = new T[length];
-            var status = new byte[length];
-
-            if (!Directory.Exists(catalogFolderPath))
-                return (data, status);
-
-            var periodPerFile = TimeSpan.FromDays(1);
-
-            // read data
-            var currentBegin = begin.RoundDown(periodPerFile);
-            var fileLength = (int)Math.Round(periodPerFile.TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
-            var fileOffset = (int)Math.Round((begin - currentBegin).TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
-            var bufferOffset = 0;
-            var remainingBufferLength = (int)length;
-
-            while (remainingBufferLength > 0)
+            return Task.Run(() =>
             {
-                var filePath = Path.Combine(
-                    catalogFolderPath, 
-                    currentBegin.ToString("yyyy-MM"), 
-                    currentBegin.ToString("dd"),
-                    $"{channel.Id}_{dataset.Id.Replace(" ", "_")}.nex");
+                // (0) load versioning file
+                var versioningFilePath = Path.Combine(this.Root, "versioning.json");
 
-                var fileBlock = fileLength - fileOffset;
-                var currentBlock = Math.Min(remainingBufferLength, fileBlock);
+                var versioning = File.Exists(versioningFilePath)
+                    ? AggregationVersioning.Load(versioningFilePath)
+                    : new AggregationVersioning();
 
-                if (File.Exists(filePath))
+                // (1) find beginning of database
+                var dataFolderPath = Path.Combine(this.Root, "DATA");
+                Directory.CreateDirectory(dataFolderPath);
+
+                var firstMonth = DateTime.MaxValue;
+
+                foreach (var catalogDirectory in Directory.EnumerateDirectories(dataFolderPath))
                 {
-                    try
-                    {
-                        this.FileAccessManager?.Register(filePath, CancellationToken.None);
-                        var aggregationData = AggregationFile.Read<T>(filePath);
+                    var catalogFirstMonth = this.GetCatalogFirstMonthWithData(catalogDirectory);
 
-                        // write data
-                        if (aggregationData.Length == fileLength)
-                        {
-                            aggregationData.Slice(fileOffset, currentBlock).CopyTo(data.AsSpan(bufferOffset));
-                            status.AsSpan(bufferOffset, currentBlock).Fill(1);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        this.Logger.LogWarning($"Could not process file '{filePath}'. Reason: {ex.Message}");
-                    }
-                    finally
-                    {
-                        this.FileAccessManager?.Unregister(filePath);
-                    }
+                    if (catalogFirstMonth != DateTime.MinValue && catalogFirstMonth < firstMonth)
+                        firstMonth = catalogFirstMonth;
                 }
 
-                // update loop state
-                fileOffset = 0; // Only the data in the first file may have an offset.
-                bufferOffset += currentBlock;
-                remainingBufferLength -= currentBlock;
-                currentBegin += periodPerFile;
-            }
+                // (2) for each month
+                var now = DateTime.UtcNow;
+                var months = ((now.Year - firstMonth.Year) * 12) + now.Month - firstMonth.Month + 1;
+                var currentMonth = firstMonth;
 
-            return (data, status);
-        }
+                var cacheFolderPath = Path.Combine(this.Root, "CACHE");
+                var mainCacheFilePath = Path.Combine(cacheFolderPath, "main.json");
+                Directory.CreateDirectory(cacheFolderPath);
 
-        protected override List<Catalog> LoadCatalogs()
-        {
-            // (0) load versioning file
-            var versioningFilePath = Path.Combine(this.RootPath, "versioning.json");
+                bool cacheChanged = false;
 
-            var versioning = File.Exists(versioningFilePath)
-                ? AggregationVersioning.Load(versioningFilePath)
-                : new AggregationVersioning();
-
-            // (1) find beginning of database
-            var dataFolderPath = Path.Combine(this.RootPath, "DATA");
-            Directory.CreateDirectory(dataFolderPath);
-
-            var firstMonth = DateTime.MaxValue;
-
-            foreach (var catalogDirectory in Directory.EnumerateDirectories(dataFolderPath))
-            {
-                var catalogFirstMonth = this.GetCatalogFirstMonthWithData(catalogDirectory);
-
-                if (catalogFirstMonth != DateTime.MinValue && catalogFirstMonth < firstMonth)
-                    firstMonth = catalogFirstMonth;
-            }
-
-            // (2) for each month
-            var now = DateTime.UtcNow;
-            var months = ((now.Year - firstMonth.Year) * 12) + now.Month - firstMonth.Month + 1;
-            var currentMonth = firstMonth;
-
-            var cacheFolderPath = Path.Combine(this.RootPath, "CACHE");
-            var mainCacheFilePath = Path.Combine(cacheFolderPath, "main.json");
-            Directory.CreateDirectory(cacheFolderPath);
-
-            bool cacheChanged = false;
-
-            for (int i = 0; i < months; i++)
-            {
-                // (3) find available catalog ids
-                var catalogIds = Directory
-                    .EnumerateDirectories(dataFolderPath)
-                    .Select(current => WebUtility.UrlDecode(Path.GetFileName(current)))
-                    .ToList();
-
-                // (4) find corresponding cache file
-                var cacheFilePath = Path.Combine(cacheFolderPath, $"{currentMonth.ToString("yyyy-MM")}.json");
-               
-                List<Catalog> cache;
-
-                // (5.a) cache file exists
-                if (File.Exists(cacheFilePath))
+                for (int i = 0; i < months; i++)
                 {
-                    cache = JsonSerializerHelper.Deserialize<List<Catalog>>(cacheFilePath);
-                    cache.ForEach(catalog => catalog.Initialize());
+                    // (3) find available catalog ids
+                    var catalogIds = Directory
+                        .EnumerateDirectories(dataFolderPath)
+                        .Select(current => WebUtility.UrlDecode(Path.GetFileName(current)))
+                        .ToList();
 
-                    foreach (var catalogId in catalogIds)
+                    // (4) find corresponding cache file
+                    var cacheFilePath = Path.Combine(cacheFolderPath, $"{currentMonth.ToString("yyyy-MM")}.json");
+
+                    List<Catalog> cache;
+
+                    // (5.a) cache file exists
+                    if (File.Exists(cacheFilePath))
                     {
-                        var catalog = cache.FirstOrDefault(catalog => catalog.Id == catalogId);
-                        var currentMonthFolder = Path.Combine(dataFolderPath, WebUtility.UrlEncode(catalogId), currentMonth.ToString("yyyy-MM"));
+                        cache = JsonSerializerHelper.Deserialize<List<Catalog>>(cacheFilePath);
+                        cache.ForEach(catalog => catalog.Initialize());
 
-                        // catalog is in cache ...
-                        if (catalog != null)
+                        foreach (var catalogId in catalogIds)
                         {
-                            // ... but cache is outdated
-                            if (this.IsCacheOutdated(catalogId, currentMonthFolder, versioning))
+                            var catalog = cache.FirstOrDefault(catalog => catalog.Id == catalogId);
+                            var currentMonthFolder = Path.Combine(dataFolderPath, WebUtility.UrlEncode(catalogId), currentMonth.ToString("yyyy-MM"));
+
+                            // catalog is in cache ...
+                            if (catalog != null)
+                            {
+                                // ... but cache is outdated
+                                if (this.IsCacheOutdated(catalogId, currentMonthFolder, versioning))
+                                {
+                                    catalog = this.ScanFiles(catalogId, currentMonthFolder, versioning);
+                                    cacheChanged = true;
+                                }
+                            }
+                            // catalog is not in cache
+                            else
                             {
                                 catalog = this.ScanFiles(catalogId, currentMonthFolder, versioning);
+                                cache.Add(catalog);
                                 cacheChanged = true;
                             }
                         }
-                        // catalog is not in cache
-                        else
-                        {
-                            catalog = this.ScanFiles(catalogId, currentMonthFolder, versioning);
-                            cache.Add(catalog);
-                            cacheChanged = true;
-                        }
                     }
+                    // (5.b) cache file does not exist
+                    else
+                    {
+                        cache = catalogIds.Select(catalogId =>
+                        {
+                            var currentMonthFolder = Path.Combine(dataFolderPath, WebUtility.UrlEncode(catalogId), currentMonth.ToString("yyyy-MM"));
+                            var catalog = this.ScanFiles(catalogId, currentMonthFolder, versioning);
+                            cacheChanged = true;
+                            return catalog;
+                        }).ToList();
+                    }
+
+                    // (6) save cache and versioning files
+                    if (cacheChanged)
+                    {
+                        JsonSerializerHelper.Serialize(cache, cacheFilePath);
+                        JsonSerializerHelper.Serialize(versioning, versioningFilePath);
+                    }
+
+                    currentMonth = currentMonth.AddMonths(1);
                 }
-                // (5.b) cache file does not exist
+
+                // (7) update main cache
+                List<Catalog> catalogs;
+
+                if (cacheChanged || !File.Exists(mainCacheFilePath))
+                {
+                    var cacheFiles = Directory.EnumerateFiles(cacheFolderPath, "*-*.json");
+                    catalogs = new List<Catalog>();
+
+                    var message = "Merging cache files into main cache ...";
+
+                    try
+                    {
+                        this.Logger.LogInformation(message);
+
+                        foreach (var cacheFile in cacheFiles)
+                        {
+                            var cache = JsonSerializerHelper.Deserialize<List<Catalog>>(cacheFile);
+                            cache.ForEach(catalog => catalog.Initialize());
+
+                            foreach (var catalog in cache)
+                            {
+                                var reference = catalogs.FirstOrDefault(current => current.Id == catalog.Id);
+
+                                if (reference != null)
+                                    reference.Merge(catalog, ChannelMergeMode.NewWins);
+                                else
+                                    catalogs.Add(catalog);
+                            }
+                        }
+
+                        this.Logger.LogInformation($"{message} Done.");
+                    }
+                    catch (Exception ex)
+                    {
+                        this.Logger.LogError($"{message} Error: {ex.GetFullMessage()}");
+                        throw;
+                    }
+
+                    JsonSerializerHelper.Serialize(catalogs, mainCacheFilePath);
+                }
                 else
                 {
-                    cache = catalogIds.Select(catalogId =>
-                    {
-                        var currentMonthFolder = Path.Combine(dataFolderPath, WebUtility.UrlEncode(catalogId), currentMonth.ToString("yyyy-MM"));
-                        var catalog = this.ScanFiles(catalogId, currentMonthFolder, versioning);
-                        cacheChanged = true;
-                        return catalog;
-                    }).ToList();
+                    catalogs = JsonSerializerHelper.Deserialize<List<Catalog>>(mainCacheFilePath);
+                    catalogs.ForEach(catalog => catalog.Initialize());
                 }
 
-                // (6) save cache and versioning files
-                if (cacheChanged)
-                {
-                    JsonSerializerHelper.Serialize(cache, cacheFilePath);
-                    JsonSerializerHelper.Serialize(versioning, versioningFilePath);
-                }
+                return catalogs;
+            });
+        }
 
-                currentMonth = currentMonth.AddMonths(1);
-            }
+        public Task<(DateTime Begin, DateTime End)> GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
+        {
+            var catalogFolderPath = Path.Combine(this.Root, "DATA", WebUtility.UrlEncode(catalogId));
 
-            // (7) update main cache
-            List<Catalog> mainCache;
+            // first
+            var catalogFirstMonth = this.GetCatalogFirstMonthWithData(catalogFolderPath);
+            var currentMonthFolder = Path.Combine(catalogFolderPath, catalogFirstMonth.ToString("yyyy-MM"));
+            var firstDateTime = this.GetFirstDateTime(Directory.EnumerateDirectories(currentMonthFolder));
 
-            if (cacheChanged || !File.Exists(mainCacheFilePath))
+            // last
+            var catalogLastMonth = this.GetCatalogLastMonthWithData(catalogFolderPath);
+            currentMonthFolder = Path.Combine(catalogFolderPath, catalogLastMonth.ToString("yyyy-MM"));
+            var lastDateTime = this.GetFirstDateTime(Directory.EnumerateDirectories(currentMonthFolder));
+
+            return Task.FromResult((firstDateTime, lastDateTime));
+        }
+
+        public Task<double> GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken)
+        {
+            return Task.Run(() =>
             {
-                var cacheFiles = Directory.EnumerateFiles(cacheFolderPath, "*-*.json");
-                mainCache = new List<Catalog>();
+                var count = 0;
+                var result = 0.0;
 
-                var message = "Merging cache files into main cache ...";
+                var currentBegin = begin;
 
-                try
+                while (currentBegin < end)
                 {
-                    this.Logger.LogInformation(message);
+                    var folderPath = Path.Combine(
+                        this.Root,
+                        "DATA",
+                        WebUtility.UrlEncode(catalogId),
+                        currentBegin.ToString("yyyy-MM"),
+                        currentBegin.ToString("dd")
+                    );
 
-                    foreach (var cacheFile in cacheFiles)
+                    result += Directory.Exists(folderPath)
+                        ? 1
+                        : 0;
+
+                    count++;
+                    currentBegin += TimeSpan.FromDays(1);
+                }
+
+                return result / count;
+            });
+        }
+
+        public Task ReadSingleAsync(Dataset dataset, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
+        {
+            return Task.Run(() =>
+            {
+                var catalog = dataset.Channel.Catalog;
+                var channel = dataset.Channel;
+                var catalogFolderPath = Path.Combine(this.Root, "DATA", WebUtility.UrlEncode(catalog.Id));
+                var samplesPerDay = new SampleRateContainer(dataset.Id).SamplesPerDay;
+
+                if (!Directory.Exists(catalogFolderPath))
+                    return Task.CompletedTask;
+
+                var periodPerFile = TimeSpan.FromDays(1);
+
+                // read data
+                var currentBegin = begin.RoundDown(periodPerFile);
+                var fileLength = (int)Math.Round(periodPerFile.TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
+                var fileOffset = (int)Math.Round((begin - currentBegin).TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
+                var bufferOffset = 0;
+                var remainingBufferLength = result.Data.Length / dataset.ElementSize;
+
+                while (remainingBufferLength > 0)
+                {
+                    var filePath = Path.Combine(
+                        catalogFolderPath,
+                        currentBegin.ToString("yyyy-MM"),
+                        currentBegin.ToString("dd"),
+                        $"{channel.Id}_{dataset.Id.Replace(" ", "_")}.nex");
+
+                    var fileBlock = fileLength - fileOffset;
+                    var currentBlock = Math.Min(remainingBufferLength, fileBlock);
+
+                    if (File.Exists(filePath))
                     {
-                        var cache = JsonSerializerHelper.Deserialize<List<Catalog>>(cacheFile);
-                        cache.ForEach(catalog => catalog.Initialize());
-
-                        foreach (var catalog in cache)
+                        try
                         {
-                            var reference = mainCache.FirstOrDefault(current => current.Id == catalog.Id);
+                            this.FileAccessManager?.Register(filePath, CancellationToken.None);
+                            var aggregationData = AggregationFile.Read<byte>(filePath);
 
-                            if (reference != null)
-                                reference.Merge(catalog, ChannelMergeMode.NewWins);
-                            else
-                                mainCache.Add(catalog);
+                            // write data
+                            if (aggregationData.Length == fileLength * dataset.ElementSize)
+                            {
+                                aggregationData
+                                    .Slice(fileOffset * dataset.ElementSize, currentBlock * dataset.ElementSize)
+                                    .CopyTo(result.Data.Span.Slice(bufferOffset * dataset.ElementSize));
+
+                                result.Status.Span
+                                    .Slice(bufferOffset, currentBlock)
+                                    .Fill(1);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            this.Logger.LogWarning($"Could not process file '{filePath}'. Reason: {ex.Message}");
+                        }
+                        finally
+                        {
+                            this.FileAccessManager?.Unregister(filePath);
                         }
                     }
 
-                    this.Logger.LogInformation($"{message} Done.");
+                    // update loop state
+                    fileOffset = 0; // Only the data in the first file may have an offset.
+                    bufferOffset += currentBlock;
+                    remainingBufferLength -= currentBlock;
+                    currentBegin += periodPerFile;
                 }
-                catch (Exception ex)
-                {
-                    this.Logger.LogError($"{message} Error: {ex.GetFullMessage()}");
-                    throw;
-                }
 
-                JsonSerializerHelper.Serialize(mainCache, mainCacheFilePath);
-            }
-            else
-            {
-                mainCache = JsonSerializerHelper.Deserialize<List<Catalog>>(mainCacheFilePath);
-                mainCache.ForEach(catalog => catalog.Initialize());
-            }
-
-            // update catalog start and end
-            foreach (var catalog in mainCache)
-            {
-                var catalogFolderPath = Path.Combine(dataFolderPath, WebUtility.UrlEncode(catalog.Id));
-                var catalogFirstMonth = this.GetCatalogFirstMonthWithData(catalogFolderPath);
-                var currentMonthFolder = Path.Combine(dataFolderPath, WebUtility.UrlEncode(catalog.Id), catalogFirstMonth.ToString("yyyy-MM"));
-                var folders = Directory.EnumerateDirectories(currentMonthFolder);
-                var firstDateTime = this.GetFirstDateTime(folders);
-
-#warning redesign
-                //catalog.CatalogStart = firstDateTime;
-                //catalog.CatalogEnd = versioning.ScannedUntilMap[catalog.Id];
-            }
-
-            return mainCache;
-        }
-
-        protected override double GetAvailability(string catalogId, DateTime day)
-        {
-            if (!this.Catalogs.Any(catalog => catalog.Id == catalogId))
-                throw new Exception($"The catalog '{catalogId}' could not be found.");
-
-            var folderPath = Path.Combine(
-                this.RootPath, 
-                "DATA", 
-                WebUtility.UrlEncode(catalogId),
-                day.ToString("yyyy-MM"),
-                day.ToString("dd")
-            );
-
-            return Directory.Exists(folderPath) ? 1 : 0;
+                return Task.CompletedTask;
+            });
         }
 
         private bool IsCacheOutdated(string catalogId, string monthFolder, AggregationVersioning versioning)
@@ -373,6 +413,43 @@ namespace Nexus.Extensions
             else
             {
                 return DateTime.MaxValue;
+            }
+        }
+
+        private DateTime GetCatalogLastMonthWithData(string catalogFolderPath)
+        {
+            var monthFolders = Directory
+                    .EnumerateDirectories(catalogFolderPath);
+
+            if (monthFolders.Any())
+            {
+                var result = monthFolders
+                    // convert path to date/time
+                    .Select(monthDirectory =>
+                    {
+                        var dateTime = DateTime.ParseExact(
+                            Path.GetFileName(monthDirectory),
+                            "yyyy-MM",
+                            CultureInfo.InvariantCulture,
+                            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal
+                        );
+
+                        return (monthDirectory, dateTime);
+                    })
+                    // order by date/time
+                    .OrderBy(value => value.dateTime)
+                    // find first folder that contains files
+                    .LastOrDefault(value => Directory.EnumerateFiles(value.monthDirectory, "*", SearchOption.AllDirectories).Any())
+                    // return only date/time
+                    .dateTime;
+
+                return result == default
+                    ? DateTime.MinValue
+                    : result;
+            }
+            else
+            {
+                return DateTime.MinValue;
             }
         }
 

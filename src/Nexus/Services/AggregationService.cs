@@ -127,7 +127,7 @@ namespace Nexus.Services
             if (setup.End != setup.End.Date)
                 throw new ValidationException("The end parameter must have no time component.");
 
-            return Task.Run(() =>
+            return Task.Run(async () =>
             {
                 // log
                 var message = $"User '{userIdService.GetUserId()}' aggregates data: {setup.Begin.ToISO8601()} to {setup.End.ToISO8601()} ... ";
@@ -155,7 +155,7 @@ namespace Nexus.Services
                             var eventArgs = new ProgressUpdatedEventArgs(progressValue, progressMessage);
                             progress.Report(eventArgs);
 
-                            this.AggregateCatalog(userIdService.User, databaseFolderPath, catalogId, currentDay, setup, instruction, cancellationToken);
+                            await this.AggregateCatalogAsync(userIdService.User, databaseFolderPath, catalogId, currentDay, setup, instruction, cancellationToken);
                         }
 
                         i++;
@@ -173,7 +173,7 @@ namespace Nexus.Services
             }, cancellationToken);
         }
 
-        private void AggregateCatalog(ClaimsPrincipal user,
+        private async Task AggregateCatalogAsync(ClaimsPrincipal user,
                                       string databaseFolderPath,
                                       string catalogId,
                                       DateTime date,
@@ -183,10 +183,10 @@ namespace Nexus.Services
         {
             foreach (var (registration, aggregationChannels) in instruction.DataReaderToAggregationsMap)
             {
-                using var dataReader = _databaseManager.GetDataReader(user, registration);
+                using var dataReader = _databaseManager.GetDataSourceController(user, registration);
 
                 // get files
-                if (!dataReader.IsDataOfDayAvailable(catalogId, date))
+                if (!await dataReader.IsDataOfDayAvailableAsync(catalogId, date, cancellationToken))
                     return;
 
                 // catalog
@@ -206,7 +206,7 @@ namespace Nexus.Services
                     {
                         var dataset = aggregationChannel.Channel.Datasets.First();
 
-                        NexusUtilities.InvokeGenericMethod(this, nameof(this.OrchestrateAggregation),
+                        await (Task)NexusUtilities.InvokeGenericMethod(this, nameof(this.OrchestrateAggregationAsync),
                                                             BindingFlags.Instance | BindingFlags.NonPublic,
                                                             NexusUtilities.GetTypeFromNexusDataType(dataset.DataType),
                                                             new object[] 
@@ -232,13 +232,13 @@ namespace Nexus.Services
             }
         }
 
-        private void OrchestrateAggregation<T>(string targetDirectoryPath,
-                                               DataReaderExtensionBase dataReader,
-                                               Dataset dataset,
-                                               List<Aggregation> aggregations,
-                                               DateTime date,
-                                               bool force,
-                                               CancellationToken cancellationToken) where T : unmanaged
+        private async Task OrchestrateAggregationAsync<T>(string targetDirectoryPath,
+                                                           DataSourceController dataReader,
+                                                           Dataset dataset,
+                                                           List<Aggregation> aggregations,
+                                                           DateTime date,
+                                                           bool force,
+                                                           CancellationToken cancellationToken) where T : unmanaged
         {
             // check source sample rate
             var sampleRate = new SampleRateContainer(dataset.Id, ensureNonZeroIntegerHz: true);
@@ -313,12 +313,12 @@ namespace Nexus.Services
             var blockSizeLimit = _aggregationChunkSizeMb * 1000 * 1000;
 
             // read raw data
-            foreach (var progressRecord in dataReader.Read(dataset, date, endDate, blockSizeLimit, fundamentalPeriod, cancellationToken))
+            await foreach (var progressRecord in dataReader.ReadAsync(dataset, date, endDate, blockSizeLimit, fundamentalPeriod, cancellationToken))
             {
-                var dataRecord = progressRecord.DatasetToRecordMap.First().Value;
+                var result = progressRecord.DatasetToResultMap.First().Value;
 
                 // aggregate data
-                var partialBuffersMap = this.ApplyAggregationFunction(dataset, (T[])dataRecord.Dataset, dataRecord.Status, units);
+                var partialBuffersMap = this.ApplyAggregationFunction(dataset, (T[])result.Data, result.Status, units);
 
                 foreach (var entry in partialBuffersMap)
                 {

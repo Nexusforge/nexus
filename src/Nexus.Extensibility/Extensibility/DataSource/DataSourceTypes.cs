@@ -12,15 +12,16 @@ namespace Nexus.Extensibility
 
     public delegate ConfigurationUnit GetConfigurationUnitDelegate(Dataset dataset);
 
-    public record ReadInfo<T>(
+    public record ReadInfo(
         string FilePath,
         Dataset Dataset,
-        Memory<T> Data,
+        Memory<byte> Data,
         Memory<byte> Status,
         DateTime FileBegin,
-        long Offset,
-        long ExpectedTotalSize
-    ) where T : unmanaged;
+        long FileOffset,
+        long FileLength,
+        long FileTotalLength
+    );
 
     public record DataSourceRegistration
     {

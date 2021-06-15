@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using Nexus.DataModel;
-using Nexus.DataModel;
 using Nexus.Infrastructure;
 using System;
 using System.Collections.Concurrent;
@@ -8,19 +7,27 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nexus.Extensibility
 {
-    public abstract class DataReaderExtensionBase : IDisposable
+    public class DataSourceController : IDisposable
     {
+        #region Fields
+
+        private IDataSource _dataSource;
+
+        #endregion
+
         #region Constructors
 
-        public DataReaderExtensionBase(DataSourceRegistration registration, ILogger logger)
+        public DataSourceController(IDataSource dataSource, DataSourceRegistration registration)
         {
+            _dataSource = dataSource;
+
             this.Registration = registration;
-            this.Logger = logger;
             this.Progress = new Progress<double>();
         }
 
@@ -28,15 +35,9 @@ namespace Nexus.Extensibility
 
         #region Properties
 
-        public string RootPath => "";
-
-        public ILogger Logger { get; }
-
         public Progress<double> Progress { get; }
 
         public List<Catalog> Catalogs { get; private set; }
-
-        public Dictionary<string, string> OptionalParameters { get; set; }
 
         internal DataSourceRegistration Registration { get; }
 
@@ -44,15 +45,9 @@ namespace Nexus.Extensibility
 
         #region Methods
 
-#warning Fake Method
-        public (DateTime, DateTime) GetTimeRange(string id)
+        public async Task InitializeCatalogsAsync(CancellationToken cancellationToken)
         {
-            return default;
-        }
-
-        public void InitializeCatalogs()
-        {
-            var catalogs = this.LoadCatalogs();
+            var catalogs = await _dataSource.GetCatalogsAsync(cancellationToken);
 
             foreach (var catalog in catalogs)
             {
@@ -73,23 +68,23 @@ namespace Nexus.Extensibility
             this.Catalogs = catalogs;
         }
 
-        public DataReaderDoubleStream ReadAsDoubleStream(
+        public DataSourceDoubleStream ReadAsDoubleStream(
             Dataset dataset,
             DateTime begin,
             DateTime end,
             ulong upperBlockSize,
             CancellationToken cancellationToken)
         {
-            var progressRecords = this.Read(new List<Dataset>() { dataset }, begin, end, upperBlockSize, TimeSpan.FromMinutes(1), cancellationToken);
+            var progressRecords = this.ReadAsync(new List<Dataset>() { dataset }, begin, end, upperBlockSize, TimeSpan.FromMinutes(1), cancellationToken);
             var samplesPerSecond = new SampleRateContainer(dataset.Id).SamplesPerSecond;
             var length = (long)Math.Round(samplesPerSecond * 
                 (decimal)(end - begin).TotalSeconds, MidpointRounding.AwayFromZero) * 
                 NexusUtilities.SizeOf(NexusDataType.FLOAT64);
 
-            return new DataReaderDoubleStream(length, progressRecords);
+            return new DataSourceDoubleStream(length, progressRecords);
         }
 
-        public IEnumerable<DataReaderProgressRecord> Read(
+        public IAsyncEnumerable<DataSourceProgressRecord> ReadAsync(
             Dataset dataset,
             DateTime begin,
             DateTime end,
@@ -101,10 +96,10 @@ namespace Nexus.Extensibility
                 ? TimeSpan.FromMinutes(10)
                 : TimeSpan.FromMinutes(1);
 
-            return this.Read(new List<Dataset>() { dataset }, begin, end, upperBlockSize, fundamentalPeriod, cancellationToken);
+            return this.ReadAsync(new List<Dataset>() { dataset }, begin, end, upperBlockSize, fundamentalPeriod, cancellationToken);
         }
 
-        public IEnumerable<DataReaderProgressRecord> Read(
+        public IAsyncEnumerable<DataSourceProgressRecord> ReadAsync(
             List<Dataset> datasets,
             DateTime begin,
             DateTime end,
@@ -117,10 +112,10 @@ namespace Nexus.Extensibility
                 ? TimeSpan.FromMinutes(10) 
                 : TimeSpan.FromMinutes(1);
 
-            return this.Read(datasets, begin, end, upperBlockSize, fundamentalPeriod, cancellationToken);
+            return this.ReadAsync(datasets, begin, end, upperBlockSize, fundamentalPeriod, cancellationToken);
         }
 
-        public IEnumerable<DataReaderProgressRecord> Read(
+        public IAsyncEnumerable<DataSourceProgressRecord> ReadAsync(
             Dataset dataset,
             DateTime begin,
             DateTime end,
@@ -128,10 +123,10 @@ namespace Nexus.Extensibility
             TimeSpan fundamentalPeriod,
             CancellationToken cancellationToken)
         {
-            return this.Read(new List<Dataset>() { dataset }, begin, end, upperBlockSize, fundamentalPeriod, cancellationToken);
+            return this.ReadAsync(new List<Dataset>() { dataset }, begin, end, upperBlockSize, fundamentalPeriod, cancellationToken);
         }
 
-        public IEnumerable<DataReaderProgressRecord> Read(
+        public IAsyncEnumerable<DataSourceProgressRecord> ReadAsync(
             List<Dataset> datasets,
             DateTime begin,
             DateTime end,
@@ -161,16 +156,17 @@ namespace Nexus.Extensibility
             if (blockSizeLimit == 0)
                 throw new ValidationException("The upper block size must be > 0 bytes.");
 
-            return this.InternalRead(datasets, begin, end, blockSizeLimit, basePeriod, fundamentalPeriod, cancellationToken);
+            return this.InternalReadAsync(datasets, begin, end, blockSizeLimit, basePeriod, fundamentalPeriod, cancellationToken);
         }
 
-        private IEnumerable<DataReaderProgressRecord> InternalRead(
+        private async IAsyncEnumerable<DataSourceProgressRecord> InternalReadAsync(
             List<Dataset> datasets,
             DateTime begin,
             DateTime end,
             ulong blockSizeLimit,
             TimeSpan basePeriod,
             TimeSpan fundamentalPeriod,
+            [EnumeratorCancellation]
             CancellationToken cancellationToken)
         {
             /* 
@@ -227,7 +223,7 @@ namespace Nexus.Extensibility
 
             while (remainingPeriod > TimeSpan.Zero)
             {
-                var datasetToRecordMap = new Dictionary<Dataset, DataRecord>();
+                var datasetToResultMap = new Dictionary<Dataset, ReadResult>();
                 var currentPeriod = TimeSpan.FromTicks(Math.Min(remainingPeriod.Ticks, maxPeriodPerRequest.Ticks));
                 var currentEnd = currentBegin + currentPeriod;
                 var index = 1;
@@ -242,8 +238,10 @@ namespace Nexus.Extensibility
 #warning redesign
                     //#error ReadSingle returns ReadResult ... and that read result should be disposable using the IMemoryOwners
                     //#error every consumer that is done with the specific read result must dispose it!
-                    (var data, var status) = this.ReadSingle(dataset, currentBegin, currentEnd);
-                    datasetToRecordMap[dataset] = new DataRecord(data, status);
+
+                    var readResult = ExtensibilityUtilities.CreateReadResult(dataset, begin, end);
+                    await _dataSource.ReadSingleAsync(dataset, readResult, currentBegin, currentEnd, cancellationToken);
+                    datasetToResultMap[dataset] = readResult;
 
                     // update progress
                     var localProgress = TimeSpan.FromTicks(currentPeriod.Ticks * index / count);
@@ -254,7 +252,7 @@ namespace Nexus.Extensibility
                 }
 
                 // notify about new data
-                yield return new DataReaderProgressRecord(datasetToRecordMap, currentBegin, currentEnd);
+                yield return new DataSourceProgressRecord(datasetToResultMap, currentBegin, currentEnd);
 
                 // continue in time
                 currentBegin += currentPeriod;
@@ -262,65 +260,39 @@ namespace Nexus.Extensibility
             }
         }
 
-        public AvailabilityResult GetAvailability(string catalogId, DateTime begin, DateTime end, AvailabilityGranularity granularity)
+        public async Task<AvailabilityResult> 
+            GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, AvailabilityGranularity granularity, CancellationToken cancellationToken)
         {
             var dateBegin = begin.Date;
             var dateEnd = end.Date;
-
-            ConcurrentDictionary<DateTime, double> aggregatedData = default;
-            
-            var totalDays = (int)(dateEnd - dateBegin).TotalDays;
+            var aggregatedData = new ConcurrentDictionary<DateTime, double>();
 
             switch (granularity)
             {
                 case AvailabilityGranularity.Day:
 
-                    aggregatedData = new ConcurrentDictionary<DateTime, double>();
+                    var totalDays = (int)(dateEnd - dateBegin).TotalDays;
 
-                    Parallel.For(0, totalDays, day =>
+                    var tasks = Enumerable.Range(0, totalDays).Select(async day =>
                     {
                         var date = dateBegin.AddDays(day);
-                        var availability = this.GetAvailability(catalogId, date);
+                        var availability = await _dataSource.GetAvailabilityAsync(catalogId, date, date.AddDays(1), cancellationToken);
                         aggregatedData.TryAdd(date, availability);
                     });
+
+                    await Task.WhenAll(tasks);
 
                     break;
 
                 case AvailabilityGranularity.Month:
 
-                    granularity = AvailabilityGranularity.Month;
+                    var currentBegin = new DateTime(begin.Year, begin.Month, 1, 0, 0, 0, DateTimeKind.Utc);
 
-                    var months = new DateTime[totalDays];
-                    var datasets = new double[totalDays];
-
-                    Parallel.For(0, totalDays, day =>
+                    while (currentBegin < end)
                     {
-                        var date = dateBegin.AddDays(day);
-                        var month = new DateTime(date.Year, date.Month, 1);
-
-                        months[day] = month;
-                        datasets[day] = this.GetAvailability(catalogId, date);
-                    });
-
-                    var uniqueMonths = months
-                        .Distinct()
-                        .OrderBy(month => month)
-                        .ToList();
-
-                    var zipData = months
-                        .Zip(datasets, (month, dataset) => (month, dataset))
-                        .ToList();
-
-                    aggregatedData = new ConcurrentDictionary<DateTime, double>();
-
-                    for (int i = 0; i < uniqueMonths.Count; i++)
-                    {
-                        var currentMonth = uniqueMonths[i];
-                        var availability = (int)zipData
-                            .Where(current => current.month == currentMonth)
-                            .Average(current => current.dataset);
-
-                        aggregatedData.TryAdd(currentMonth, availability);
+                        var availability = await _dataSource.GetAvailabilityAsync(catalogId, currentBegin, currentBegin.AddMonths(1), cancellationToken);
+                        aggregatedData.TryAdd(currentBegin, availability);
+                        currentBegin = currentBegin.AddMonths(1);
                     }
 
                     break;
@@ -353,44 +325,26 @@ namespace Nexus.Extensibility
             return this.Catalogs.First(catalog => catalog.Id == catalogId);
         }
 
-        public bool IsDataOfDayAvailable(string catalogId, DateTime day)
+        public async Task<bool> IsDataOfDayAvailableAsync(string catalogId, DateTime day, CancellationToken cancellationToken)
         {
-            return this.GetAvailability(catalogId, day) > 0;
+            return (await _dataSource.GetAvailabilityAsync(catalogId, day, day.AddDays(1), cancellationToken)) > 0;
         }
 
-#warning Why generic?
-        public abstract (T[] Dataset, byte[] Status) ReadSingle<T>(Dataset dataset, DateTime begin, DateTime end) where T : unmanaged;
-
-        public (Array Dataset, byte[] Status) ReadSingle(Dataset dataset, DateTime begin, DateTime end)
+        public async Task ReadSingleAsync(Dataset dataset, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
             // invoke generic method
-            var type = typeof(DataReaderExtensionBase);
+            var type = typeof(DataSourceController);
             var flags = BindingFlags.Instance | BindingFlags.Public;
             var genericType = NexusUtilities.GetTypeFromNexusDataType(dataset.DataType);
-            var parameters = new object[] { dataset, begin, end };
+            var parameters = new object[] { dataset, result, begin, end, cancellationToken };
 
-            var result = NexusUtilities.InvokeGenericMethod(type, this, nameof(this.ReadSingle), flags, genericType, parameters);
-
-            // cast result
-            var resultType = result.GetType();
-            var propertyInfo1 = resultType.GetField("Item1");
-            var propertyInfo2 = resultType.GetField("Item2");
-
-            var data = propertyInfo1.GetValue(result) as Array;
-            var status = propertyInfo2.GetValue(result) as byte[];
-
-            // return
-            return (data, status);
+            await (Task)NexusUtilities.InvokeGenericMethod(type, this, nameof(_dataSource.ReadSingleAsync), flags, genericType, parameters);
         }
 
         public virtual void Dispose()
         {
             //
         }
-
-        protected abstract List<Catalog> LoadCatalogs();
-
-        protected abstract double GetAvailability(string catalogId, DateTime Day);
 
         #endregion
     }

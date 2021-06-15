@@ -127,19 +127,21 @@ namespace Nexus.Extensions
             return response.Availability;
         }
 
-        public async Task ReadSingleAsync<T>(Dataset dataset, ReadResult<T> readResult, DateTime begin, DateTime end, CancellationToken cancellationToken) where T : unmanaged
+        public async Task ReadSingleAsync(Dataset dataset, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
             var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromMinutes(1));
             cancellationToken.Register(() => timeoutTokenSource.Cancel());
 
+            var elementCount = result.Data.Length / dataset.ElementSize;
+
             var response = await _communicator.InvokeAsync<ReadSingleResponse>(
                 "ReadSingle", 
-                new object[] { dataset.GetPath(), readResult.Length, begin, end },
+                new object[] { dataset.GetPath(), elementCount, begin, end },
                 timeoutTokenSource.Token
             );
 
-            await _communicator.ReadRawAsync(readResult.Data, timeoutTokenSource.Token);
-            await _communicator.ReadRawAsync(readResult.Status, timeoutTokenSource.Token);
+            await _communicator.ReadRawAsync(result.Data, timeoutTokenSource.Token);
+            await _communicator.ReadRawAsync(result.Status, timeoutTokenSource.Token);
         }
 
         private CancellationTokenSource GetTimeoutTokenSource(TimeSpan timeout)

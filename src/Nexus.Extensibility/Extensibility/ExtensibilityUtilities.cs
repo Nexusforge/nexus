@@ -7,12 +7,12 @@ namespace Nexus.Extensibility
 {
     public static class ExtensibilityUtilities
     {
-        public static ReadResult<T> CreateReadResult<T>(Dataset dataset, DateTime begin, DateTime end)
+        public static ReadResult CreateReadResult(Dataset dataset, DateTime begin, DateTime end)
         {
             var samplesPerDay = new SampleRateContainer(dataset.Id).SamplesPerDay;
             var length = (int)Math.Round((end - begin).TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
 
-            return new ReadResult<T>(length);
+            return new ReadResult(length, dataset.ElementSize);
         }
 
         public static string EnforceNamingConvention(string value, string prefix = "X")
