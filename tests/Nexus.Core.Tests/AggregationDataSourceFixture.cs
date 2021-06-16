@@ -1,6 +1,4 @@
-﻿using Nexus.Core;
-using Nexus.Extensibility;
-using System;
+﻿using System;
 using System.IO;
 using System.Net;
 

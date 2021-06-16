@@ -73,11 +73,11 @@ namespace Nexus.Extensions
 
         private string Root { get; set; }
 
-        public NexusDatabase Database { get; set; }
+        public INexusDatabase Database { get; set; }
 
         public Func<string, bool> IsCatalogAccessible { get; set; }
 
-        public Func<DataSourceRegistration, DataSourceController> GetDataReader { get; set; }
+        public Func<DataSourceRegistration, DataSourceController> GetDataSource { get; set; }
 
         private static ConcurrentDictionary<Uri, FilterSettings> FilterSettingsCache { get; }
 
@@ -194,12 +194,12 @@ namespace Nexus.Extensions
 
                             // create datasets
                             var datasets = new List<Dataset>()
-                        {
-                            new Dataset(filterCodeDefinition.SampleRate, channel)
                             {
-                                DataType = NexusDataType.FLOAT64
-                            }
-                        };
+                                new Dataset(filterCodeDefinition.SampleRate, channel)
+                                {
+                                    DataType = NexusDataType.FLOAT64
+                                }
+                            };
 
                             // append
                             channel.Datasets.AddRange(datasets);
@@ -252,7 +252,7 @@ namespace Nexus.Extensions
                     if (!this.IsCatalogAccessible(dataset.Channel.Catalog.Id))
                         throw new UnauthorizedAccessException("The current user is not allowed to access this filter.");
 
-                    var dataReader = this.GetDataReader(dataset.Registration);
+                    var dataReader = this.GetDataSource(dataset.Registration);
 
 #warning GetData Should be Async! Deadlock may happen
                     dataReader.ReadSingleAsync(dataset, result, begin, end, cancellationToken).Wait();

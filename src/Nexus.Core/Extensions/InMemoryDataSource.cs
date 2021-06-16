@@ -35,7 +35,7 @@ namespace Nexus.Extensions
             var catalog_allowed = this.LoadCatalog("/IN_MEMORY/TEST/ACCESSIBLE", id11, id12, id13, id14);
 
             var id21 = Guid.Parse("50d38fe5-a7a8-49e8-8bd4-3e98a48a951f");
-            var id22 = Guid.Parse("d47d1adc6-7c38-4b75-9459-742fa570ef9d");
+            var id22 = Guid.Parse("d47d1dc6-7c38-4b75-9459-742fa570ef9d");
             var id23 = Guid.Parse("511d6e9c-9075-41ee-bac7-891d359f0dda");
             var id24 = Guid.Parse("99b85689-5373-4a9a-8fd7-be04a89c9da8");
             var catalog_restricted = this.LoadCatalog("/IN_MEMORY/TEST/RESTRICTED", id21, id22, id23, id24);

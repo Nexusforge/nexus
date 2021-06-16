@@ -1,6 +1,7 @@
 using Nexus.Extensibility;
 using Nexus.Infrastructure;
 using System;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -27,14 +28,12 @@ namespace Nexus.Buffers
         {
             var targetType = NexusUtilities.GetTypeFromNexusDataType(dataType);
 
-            // Invoke xxx
-            var method = typeof(MemoryMarshal).GetMethod(nameof(MemoryMarshal.Cast), BindingFlags.Public | BindingFlags.Static);
-            method = method.MakeGenericMethod(typeof(byte), targetType);
-            var castedData = method.Invoke(null, new object[] { result.Data });
+            var method = typeof(BufferUtilities)
+                .GetMethod(nameof(BufferUtilities.InternalApplyDatasetStatusByDataType), BindingFlags.NonPublic | BindingFlags.Static)
+                .MakeGenericMethod(targetType);
 
-            // Invoke ApplyDatasetStatus
-            var method2 = typeof(BufferUtilities).GetMethod(nameof(BufferUtilities.ApplyDatasetStatus), BindingFlags.Public | BindingFlags.Static);
-            var doubleData = (double[])method2.Invoke(null, new object[] { castedData, result.Status });
+            var doubleData = (double[])method
+                .Invoke(null, new object[] { result });
 
             return doubleData;
         }
@@ -71,6 +70,12 @@ namespace Nexus.Buffers
             {
                 doubleData[i] = GenericToDouble<T>.ToDouble(dataPtr[i]);
             });
+        }
+
+        private static double[] InternalApplyDatasetStatusByDataType<T>(ReadResult result)
+            where T : unmanaged
+        {
+            return BufferUtilities.ApplyDatasetStatus(result.GetData<T>().Span, result.Status.Span);
         }
 
         private unsafe static void InternalApplyDatasetStatus<T>(T* dataPtr, byte* statusPtr, double[] doubleData) where T : unmanaged

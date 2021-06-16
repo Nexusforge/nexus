@@ -1,10 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Logging;
-using Nexus.DataModel;
 using Nexus.Core;
 using Nexus.Services;
-using Nexus.Core;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Net;

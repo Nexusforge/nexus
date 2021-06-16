@@ -26,10 +26,10 @@ namespace Nexus.Roslyn
 
         static RoslynProject()
         {
-            using var streamReader1 = new StreamReader(ResourceLoader.GetResourceStream("Nexus.Resources.DefaultFilterCodeTemplate.cs"));
+            using var streamReader1 = new StreamReader(ResourceLoader.GetResourceStream("Nexus.Core.Resources.DefaultFilterCodeTemplate.cs"));
             RoslynProject.DefaultFilterCode = streamReader1.ReadToEnd();
 
-            using var streamReader2 = new StreamReader(ResourceLoader.GetResourceStream("Nexus.Resources.DefaultSharedCodeTemplate.cs"));
+            using var streamReader2 = new StreamReader(ResourceLoader.GetResourceStream("Nexus.Core.Resources.DefaultSharedCodeTemplate.cs"));
             RoslynProject.DefaultSharedCode = streamReader2.ReadToEnd();
         }
 
@@ -81,7 +81,7 @@ namespace Nexus.Roslyn
             if (database is not null)
             {
                 // shared code
-                using var streamReader = new StreamReader(ResourceLoader.GetResourceStream("Nexus.Resources.FilterTypesShared.cs"));
+                using var streamReader = new StreamReader(ResourceLoader.GetResourceStream("Nexus.Core.Resources.FilterTypesShared.cs"));
 
                 var sharedCode = streamReader
                     .ReadToEnd()

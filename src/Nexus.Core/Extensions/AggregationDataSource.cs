@@ -212,7 +212,7 @@ namespace Nexus.Extensions
             // last
             var catalogLastMonth = this.GetCatalogLastMonthWithData(catalogFolderPath);
             currentMonthFolder = Path.Combine(catalogFolderPath, catalogLastMonth.ToString("yyyy-MM"));
-            var lastDateTime = this.GetFirstDateTime(Directory.EnumerateDirectories(currentMonthFolder));
+            var lastDateTime = this.GetLastDateTime(Directory.EnumerateDirectories(currentMonthFolder));
 
             return Task.FromResult((firstDateTime, lastDateTime));
         }

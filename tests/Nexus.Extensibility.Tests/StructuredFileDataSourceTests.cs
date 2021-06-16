@@ -1,9 +1,9 @@
 using Microsoft.Extensions.Logging;
-using Nexus.DataModel;
 using System;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -116,7 +116,7 @@ namespace Nexus.Extensibility.Tests
 
             var begin = new DateTime(2019, 12, 31, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 03, 0, 0, 0, DateTimeKind.Utc);
-            var readResult = ExtensibilityUtilities.CreateReadResult<long>(dataset, begin, end);
+            var readResult = ExtensibilityUtilities.CreateReadResult(dataset, begin, end);
 
             var expectedLength = 3 * 86400;
             var expectedData = new long[expectedLength];
@@ -142,8 +142,7 @@ namespace Nexus.Extensibility.Tests
             await dataSource.OnParametersSetAsync();
             await dataSource.ReadSingleAsync(dataset, readResult, begin, end, CancellationToken.None);
 
-            Assert.Equal(expectedLength, readResult.Length);
-            Assert.True(expectedData.SequenceEqual(readResult.Data.ToArray()));
+            Assert.True(expectedData.SequenceEqual(MemoryMarshal.Cast<byte, long>(readResult.Data.Span).ToArray()));
             Assert.True(expectedStatus.SequenceEqual(readResult.Status.ToArray()));
         }
 
@@ -162,7 +161,7 @@ namespace Nexus.Extensibility.Tests
             } as IDataSource;
 
             await Assert.ThrowsAsync<ArgumentException>(() =>
-                dataSource.ReadSingleAsync<byte>(default, default, begin, end, CancellationToken.None));
+                dataSource.ReadSingleAsync(default, default, begin, end, CancellationToken.None));
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Nexus.DataModel;
+using Nexus.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -83,7 +84,7 @@ namespace Nexus.Extensibility.Tests
         {
             var catalog = new Catalog("/A/B/C");
             var channel = new Channel(Guid.NewGuid(), catalog);
-            var dataset = new Dataset("1 Hz_mean", channel);
+            var dataset = new Dataset("1 Hz_mean", channel) { DataType = NexusDataType.INT64 };
 
             channel.Datasets.Add(dataset);
             catalog.Channels.Add(channel);
@@ -91,13 +92,12 @@ namespace Nexus.Extensibility.Tests
             return Task.FromResult(new List<Catalog>() { catalog });
         }
 
-        protected override async Task ReadSingleAsync<T>(ReadInfo<T> readInfo, CancellationToken cancellationToken)
+        protected override async Task ReadSingleAsync(ReadInfo readInfo, CancellationToken cancellationToken)
         {
             var bytes = await File
                 .ReadAllBytesAsync(readInfo.FilePath);
 
-            MemoryMarshal
-                .Cast<byte, T>(bytes)
+            bytes
                 .CopyTo(readInfo.Data.Span);
 
             readInfo

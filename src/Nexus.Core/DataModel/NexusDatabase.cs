@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Nexus.DataModel
 {
-    public class NexusDatabase
+    public class NexusDatabase : INexusDatabase
     {
         #region Constructors
 

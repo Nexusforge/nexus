@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.Extensions.Logging;
-using Nexus.Core;
 using System;
 using System.Net.Mail;
 using System.Threading.Tasks;

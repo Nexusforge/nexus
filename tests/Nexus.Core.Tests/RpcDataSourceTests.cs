@@ -1,15 +1,12 @@
 using Microsoft.Extensions.Logging;
 using Moq;
-using Nexus.Core.Tests;
 using Nexus.Extensibility;
 using Nexus.Extensions;
 using Nexus.Infrastructure;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -129,15 +126,15 @@ namespace Nexus.Core.Tests
             await dataSource.OnParametersSetAsync();
 
             var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
-            var dataset = catalogs.First().Channels.First().Datasets.First();
+            var dataset = catalogs[1].Channels.First().Datasets.First();
 
             var begin = new DateTime(2019, 12, 31, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 03, 0, 0, 0, DateTimeKind.Utc);
             var result = ExtensibilityUtilities.CreateReadResult(dataset, begin, end);
 
-            var expectedLength = 3 * 86400;
-            var expectedData = new long[expectedLength];
-            var expectedStatus = new byte[expectedLength];
+            var length = 3 * 86400;
+            var expectedData = new long[length];
+            var expectedStatus = new byte[length];
 
             void GenerateData(DateTimeOffset dateTime)
             {
@@ -157,11 +154,9 @@ namespace Nexus.Core.Tests
             GenerateData(new DateTimeOffset(2020, 01, 02, 09, 50, 0, 0, TimeSpan.Zero));
 
             await dataSource.ReadSingleAsync(dataset, result, begin, end, CancellationToken.None);
+            var longData = result.GetData<long>();
 
-            var data = new CastMemoryManager<byte, long>(result.Data).Memory;
-
-            Assert.Equal(expectedLength, data.Length);
-            Assert.True(expectedData.SequenceEqual(data.ToArray()));
+            Assert.True(expectedData.SequenceEqual(longData.ToArray()));
             Assert.True(expectedStatus.SequenceEqual(result.Status.ToArray()));
         }
 

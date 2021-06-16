@@ -105,6 +105,7 @@ namespace Nexus.Core.Tests
             var result = ExtensibilityUtilities.CreateReadResult(dataset, begin, end);
 
             await dataSource.ReadSingleAsync(dataset, result, begin, end, CancellationToken.None);
+            var doubleData = result.GetData<double>();
 
             // assert
             var samplesPerDay = 86400 * 100;
@@ -118,23 +119,23 @@ namespace Nexus.Core.Tests
             Assert.Equal(0, result.Status.Span[baseOffset - 1]);
             Assert.Equal(1, result.Status.Span[baseOffset + 0]);
             Assert.Equal(1, result.Status.Span[baseOffset + 86400 * 100 - 1]);
-            Assert.Equal(99.27636, result.Data.Span[baseOffset + 0], precision: 5);
-            Assert.Equal(double.NaN, result.Data.Span[baseOffset + 1]);
-            Assert.Equal(99.27626, result.Data.Span[baseOffset + 2], precision: 5);
-            Assert.Equal(2323e-3, result.Data.Span[baseOffset + 86400 * 100 - 1]);
+            Assert.Equal(99.27636, doubleData.Span[baseOffset + 0], precision: 5);
+            Assert.Equal(double.NaN, doubleData.Span[baseOffset + 1]);
+            Assert.Equal(99.27626, doubleData.Span[baseOffset + 2], precision: 5);
+            Assert.Equal(2323e-3, doubleData.Span[baseOffset + 86400 * 100 - 1]);
 
             // day 2
             Assert.Equal(1, result.Status.Span[baseOffset + dayOffset + 0]);
             Assert.Equal(1, result.Status.Span[baseOffset + dayOffset + dayOffset - hourOffset - 1]);
-            Assert.Equal(98.27636, result.Data.Span[baseOffset + dayOffset + 0], precision: 5);
-            Assert.Equal(97.27626, result.Data.Span[baseOffset + dayOffset + 2], precision: 5);
-            Assert.Equal(2323e-6, result.Data.Span[baseOffset + dayOffset + dayOffset - hourOffset - 1]);
+            Assert.Equal(98.27636, doubleData.Span[baseOffset + dayOffset + 0], precision: 5);
+            Assert.Equal(97.27626, doubleData.Span[baseOffset + dayOffset + 2], precision: 5);
+            Assert.Equal(2323e-6, doubleData.Span[baseOffset + dayOffset + dayOffset - hourOffset - 1]);
 
             Assert.Equal(1, result.Status.Span[baseOffset + dayOffset + dayOffset - halfHourOffset + 0]);
             Assert.Equal(1, result.Status.Span[baseOffset + dayOffset + dayOffset - 1]);
-            Assert.Equal(90.27636, result.Data.Span[baseOffset + dayOffset + dayOffset - halfHourOffset + 0], precision: 5);
-            Assert.Equal(90.27626, result.Data.Span[baseOffset + dayOffset + dayOffset - halfHourOffset + 2], precision: 5);
-            Assert.Equal(2323e-9, result.Data.Span[baseOffset + dayOffset + dayOffset - 1]);
+            Assert.Equal(90.27636, doubleData.Span[baseOffset + dayOffset + dayOffset - halfHourOffset + 0], precision: 5);
+            Assert.Equal(90.27626, doubleData.Span[baseOffset + dayOffset + dayOffset - halfHourOffset + 2], precision: 5);
+            Assert.Equal(2323e-9, doubleData.Span[baseOffset + dayOffset + dayOffset - 1]);
         }
     }
 }

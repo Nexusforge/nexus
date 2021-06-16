@@ -278,7 +278,7 @@ namespace Nexus.Services
                 filterDataSource.IsCatalogAccessible = 
                     catalogId => Utilities.IsCatalogAccessible(user, catalogId, this.Database);
 
-                filterDataSource.GetDataReader = registration => this.GetDataSourceController(user, registration);
+                filterDataSource.GetDataSource = registration => this.GetDataSourceController(user, registration);
             }
 
             return dataSource;
@@ -335,7 +335,7 @@ namespace Nexus.Services
                     var inMemoryRegistration = new DataSourceRegistration()
                     {
                         DataSourceId = "Nexus.InMemory",
-                        ResourceLocator = null
+                        ResourceLocator = new Uri("memory://localhost")
                     };
 
                     if (!this.Config.DataSourceRegistrations.Contains(inMemoryRegistration))

@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Nexus.DataModel;
+﻿using Nexus.DataModel;
 using Nexus.Infrastructure;
 using System;
 using System.Collections.Concurrent;
@@ -332,13 +331,7 @@ namespace Nexus.Extensibility
 
         public async Task ReadSingleAsync(Dataset dataset, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
-            // invoke generic method
-            var type = typeof(DataSourceController);
-            var flags = BindingFlags.Instance | BindingFlags.Public;
-            var genericType = NexusUtilities.GetTypeFromNexusDataType(dataset.DataType);
-            var parameters = new object[] { dataset, result, begin, end, cancellationToken };
-
-            await (Task)NexusUtilities.InvokeGenericMethod(type, this, nameof(_dataSource.ReadSingleAsync), flags, genericType, parameters);
+            await _dataSource.ReadSingleAsync(dataset, result, begin, end, cancellationToken);
         }
 
         public virtual void Dispose()
