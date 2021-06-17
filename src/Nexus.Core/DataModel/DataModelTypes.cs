@@ -30,4 +30,11 @@ namespace Nexus.DataModel
         public DataSourceRegistration DataSourceRegistration { get; set; }
         public Dictionary<DateTime, double> Data { get; set; }
     }
+
+    public record TimeRangeResult
+    {
+        public DataSourceRegistration DataSourceRegistration { get; set; }
+        public DateTime Begin { get; set; }
+        public DateTime End { get; set; }
+    }
 }

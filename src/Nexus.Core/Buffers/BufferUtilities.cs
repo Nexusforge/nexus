@@ -38,13 +38,13 @@ namespace Nexus.Buffers
             return doubleData;
         }
 
-        public unsafe static double[] ApplyDatasetStatus<T>(Span<T> data, Span<byte> status) where T : unmanaged
+        public unsafe static double[] ApplyDatasetStatus<T>(Memory<T> data, Memory<byte> status) where T : unmanaged
         {
             var doubleData = new double[data.Length];
 
-            fixed (T* dataPtr = data)
+            fixed (T* dataPtr = data.Span)
             {
-                fixed (byte* statusPtr = status)
+                fixed (byte* statusPtr = status.Span)
                 {
                     BufferUtilities.InternalApplyDatasetStatus(dataPtr, statusPtr, doubleData);
                 }
@@ -75,7 +75,7 @@ namespace Nexus.Buffers
         private static double[] InternalApplyDatasetStatusByDataType<T>(ReadResult result)
             where T : unmanaged
         {
-            return BufferUtilities.ApplyDatasetStatus(result.GetData<T>().Span, result.Status.Span);
+            return BufferUtilities.ApplyDatasetStatus(result.GetData<T>(), result.Status);
         }
 
         private unsafe static void InternalApplyDatasetStatus<T>(T* dataPtr, byte* statusPtr, double[] doubleData) where T : unmanaged

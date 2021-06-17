@@ -14,6 +14,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -30,8 +31,7 @@ namespace Nexus.Services
 
         private ILogger _logger;
 
-        private FileAccessManager _fileAccessManager;
-        private SignInManager<IdentityUser> _signInManager;
+        private IFileAccessManager _fileAccessManager;
         private DatabaseManager _databaseManager;
 
         #endregion
@@ -39,14 +39,12 @@ namespace Nexus.Services
         #region Constructors
 
         public AggregationService(
-            FileAccessManager fileAccessManager,
-            SignInManager<IdentityUser> signInManager,
+            IFileAccessManager fileAccessManager,
             DatabaseManager databaseManager, 
             NexusOptions options, 
             ILoggerFactory loggerFactory)
         {
             _fileAccessManager = fileAccessManager;
-            _signInManager = signInManager;
             _databaseManager = databaseManager;
             _aggregationChunkSizeMb = options.AggregationChunkSizeMB;
             _logger = loggerFactory.CreateLogger("Nexus");
@@ -183,7 +181,7 @@ namespace Nexus.Services
         {
             foreach (var (registration, aggregationChannels) in instruction.DataReaderToAggregationsMap)
             {
-                using var dataReader = _databaseManager.GetDataSourceController(user, registration);
+                using var dataReader = await _databaseManager.GetDataSourceControllerAsync(user, registration, cancellationToken);
 
                 // get files
                 if (!await dataReader.IsDataOfDayAvailableAsync(catalogId, date, cancellationToken))
@@ -318,7 +316,8 @@ namespace Nexus.Services
                 var result = progressRecord.DatasetToResultMap.First().Value;
 
                 // aggregate data
-                var partialBuffersMap = this.ApplyAggregationFunction(dataset, (T[])result.Data, result.Status, units);
+                var data = result.GetData<T>();
+                var partialBuffersMap = this.ApplyAggregationFunction(dataset, data, result.Status, units);
 
                 foreach (var entry in partialBuffersMap)
                 {
@@ -352,9 +351,9 @@ namespace Nexus.Services
         }
 
         private Dictionary<AggregationUnit, double[]> ApplyAggregationFunction<T>(Dataset dataset,
-                                                                              T[] data,
-                                                                              byte[] status,
-                                                                              List<AggregationUnit> aggregationUnits) where T : unmanaged
+                                                                                  Memory<T> data,
+                                                                                  Memory<byte> status,
+                                                                                  List<AggregationUnit> aggregationUnits) where T : unmanaged
         {
             var nanLimit = 0.99;
             var dataset_double = default(double[]);
@@ -380,7 +379,7 @@ namespace Nexus.Services
                     case AggregationMethod.Sum:
 
                         if (dataset_double == null)
-                            dataset_double = BufferUtilities.ApplyDatasetStatus<T>(data, status);
+                            dataset_double = BufferUtilities.ApplyDatasetStatus(data, status);
 
                         partialBuffersMap[unit] = this.ApplyAggregationFunction(method, argument, (int)sampleCount, dataset_double, nanLimit, _logger);
 
@@ -407,7 +406,7 @@ namespace Nexus.Services
         private double[] ApplyAggregationFunction(AggregationMethod method,
                                                   string argument,
                                                   int kernelSize,
-                                                  double[] data,
+                                                  Memory<double> data,
                                                   double nanLimit,
                                                   ILogger logger)
         {
@@ -575,8 +574,8 @@ namespace Nexus.Services
         private double[] ApplyAggregationFunction<T>(AggregationMethod method,
                                                      string argument,
                                                      int kernelSize,
-                                                     T[] data,
-                                                     byte[] status,
+                                                     Memory<T> data,
+                                                     Memory<byte> status,
                                                      double nanLimit,
                                                      ILogger logger) where T : unmanaged
         {
@@ -591,7 +590,7 @@ namespace Nexus.Services
 
                     Parallel.For(0, targetDatasetLength, x =>
                     {
-                        var chunkData = this.GetNaNFreeData(data, status, x, kernelSize);
+                        var chunkData = this.GetNaNFreeData(data.Span, status.Span, x, kernelSize);
                         var length = chunkData.Length;
                         var isHighQuality = (length / (double)kernelSize) >= nanLimit;
 
@@ -621,7 +620,7 @@ namespace Nexus.Services
 
                     Parallel.For(0, targetDatasetLength, x =>
                     {
-                        var chunkData = this.GetNaNFreeData(data, status, x, kernelSize);
+                        var chunkData = this.GetNaNFreeData(data.Span, status.Span, x, kernelSize);
                         var length = chunkData.Length;
                         var isHighQuality = (length / (double)kernelSize) >= nanLimit;
 
@@ -651,7 +650,7 @@ namespace Nexus.Services
             return result;
         }
 
-        private unsafe T[] GetNaNFreeData<T>(T[] data, byte[] status, int index, int kernelSize) where T : unmanaged
+        private unsafe T[] GetNaNFreeData<T>(Span<T> data, Span<byte> status, int index, int kernelSize) where T : unmanaged
         {
             var sourceIndex = index * kernelSize;
             var length = data.Length;
@@ -666,11 +665,11 @@ namespace Nexus.Services
             return chunkData.ToArray();
         }
 
-        private double[] GetNaNFreeData(IEnumerable<double> data, int index, int kernelSize)
+        private double[] GetNaNFreeData(Memory<double> data, int index, int kernelSize)
         {
             var sourceIndex = index * kernelSize;
 
-            return data
+            return MemoryMarshal.ToEnumerable<double>(data)
                 .Skip(sourceIndex)
                 .Take(kernelSize)
                 .Where(value => !double.IsNaN(value))

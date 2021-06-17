@@ -15,6 +15,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Nexus.Shared
 {
@@ -162,7 +163,7 @@ namespace Nexus.Shared
                     ? AvailabilityGranularity.Day
                     : AvailabilityGranularity.Month;
 
-                var availability = await this.UserState.GetAvailabilityAsync(granularity);
+                var availability = await this.UserState.GetAvailabilityAsync(granularity, CancellationToken.None);
                 var hasCleared = false;
 
                 if (availability.Count != this.Config.Data.Datasets.Count)

@@ -30,7 +30,7 @@ namespace Nexus.Buffers
 
         public override Span<byte> RawBuffer => MemoryMarshal.Cast<T, byte>(_buffer.Memory.Span);
 
-        public Span<T> Buffer => _buffer.Memory.Span;
+        public Memory<T> Buffer => _buffer.Memory;
 
         #endregion
 
@@ -43,7 +43,7 @@ namespace Nexus.Buffers
 
         public override void Clear()
         {
-            this.Buffer.Clear();
+            this.Buffer.Span.Clear();
             base.Clear();
         }
 

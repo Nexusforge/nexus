@@ -89,15 +89,7 @@ namespace Nexus.Services
 
         #region Methods
 
-        public Task UpdateAsync(CancellationToken cancellationToken)
-        {
-            return Task.Run(async () =>
-            {
-                this.Update(cancellationToken);
-            });
-        }
-
-        public void Update(CancellationToken cancellationToken)
+        public async Task UpdateAsync(CancellationToken cancellationToken)
         {
             if (!_isInitialized)
                 this.Initialize();
@@ -137,9 +129,12 @@ namespace Nexus.Services
             registrationToDataReaderTypeMap[registration] = typeof(AggregationDataSource);
 
             // get catalogs
-            var dataSources = registrationToDataReaderTypeMap
-                                .Select(entry => this.InstantiateDataSource(entry.Key, entry.Value, registrationToCatalogsMap))
+            var tasks = registrationToDataReaderTypeMap
+                                .Select(entry => this.InstantiateDataSourceAsync(entry.Key, entry.Value, registrationToCatalogsMap, cancellationToken))
                                 .ToList();
+
+            await Task.WhenAll(tasks);
+            var dataSources = tasks.Select(task => task.Result);
 
             foreach (var dataSource in dataSources)
             {
@@ -242,22 +237,27 @@ namespace Nexus.Services
             _logger.LogInformation("Database loaded.");
         }
 
-        public List<DataSourceController> GetDataReaders(ClaimsPrincipal user, string catalogId)
+        public async Task<List<DataSourceController>> GetDataSourcesAsync(ClaimsPrincipal user, string catalogId, CancellationToken cancellationToken)
         {
             var state = this.State;
 
-            return state.RegistrationToCatalogsMap
+            var tasks = state.RegistrationToCatalogsMap
                 // where the catalog list contains the catalog ID
                 .Where(entry => entry.Value.Any(catalog => catalog.Id == catalogId))
                 // select the registration and get a brand new data reader from it
-                .Select(entry => this.GetDataSourceController(user, entry.Key, state))
-                // to list
+                .Select(entry => this.GetDataSourceControllerAsync(user, entry.Key, cancellationToken, state));
+
+            await Task.WhenAll(tasks);
+
+            return tasks
+                .Select(task => task.Result)
                 .ToList();
         }
 
-        public DataSourceController GetDataSourceController(
+        public async Task<DataSourceController> GetDataSourceControllerAsync(
                 ClaimsPrincipal user,
                 DataSourceRegistration registration,
+                CancellationToken cancellationToken,
                 DatabaseManagerState state = null)
         {
             if (state == null)
@@ -266,22 +266,23 @@ namespace Nexus.Services
             if (!state.RegistrationToDataReaderTypeMap.TryGetValue(registration, out var dataSourceType))
                 throw new KeyNotFoundException("The requested data source could not be found.");
 
-            var dataSource = this.InstantiateDataSource(registration, dataSourceType, state.RegistrationToCatalogsMap);
+            var controller = await this.InstantiateDataSourceAsync(registration, dataSourceType, state.RegistrationToCatalogsMap, cancellationToken);
 
             // special case checks
             if (dataSourceType == typeof(FilterDataSource))
             {
-                var filterDataSource = (FilterDataSource)dataSource;
+                var filterDataSource = (FilterDataSource)controller.DataSource;
 
                 filterDataSource.Database = this.Database;
 
                 filterDataSource.IsCatalogAccessible = 
                     catalogId => Utilities.IsCatalogAccessible(user, catalogId, this.Database);
 
-                filterDataSource.GetDataSource = registration => this.GetDataSourceController(user, registration);
+                filterDataSource.GetDataSourceAsync = 
+                    registration => this.GetDataSourceControllerAsync(user, registration, cancellationToken);
             }
 
-            return dataSource;
+            return controller;
         }
 
         public void SaveCatalogMeta(CatalogMeta catalogMeta)
@@ -363,7 +364,7 @@ namespace Nexus.Services
         }
 
         private async Task<DataSourceController> 
-            InstantiateDataSourceAsync(DataSourceRegistration registration, Type type, Dictionary<DataSourceRegistration, List<Catalog>> registrationToCatalogsMap)
+            InstantiateDataSourceAsync(DataSourceRegistration registration, Type type, Dictionary<DataSourceRegistration, List<Catalog>> registrationToCatalogsMap, CancellationToken cancellationToken)
         {
             _logger.LogInformation($"Instantiating {registration.DataSourceId} for URI {registration.ResourceLocator} ...");
 
@@ -385,7 +386,7 @@ namespace Nexus.Services
             }
 
             // create controller 
-            var controller = new DataSourceController(dataSource);
+            var controller = new DataSourceController(dataSource, registration);
 
             if (registrationToCatalogsMap.TryGetValue(registration, out var value))
             {
@@ -393,7 +394,7 @@ namespace Nexus.Services
             }
             else
             {
-                controller.InitializeCatalogs();
+                await controller.InitializeCatalogsAsync(cancellationToken);
 
                 registrationToCatalogsMap[registration] = controller
                     .Catalogs

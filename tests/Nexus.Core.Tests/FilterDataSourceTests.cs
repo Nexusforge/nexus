@@ -144,7 +144,7 @@ namespace Nexus.Core.Tests
                 Parameters = new Dictionary<string, string>(),
                 IsCatalogAccessible = _ => true,
                 Database = database,
-                GetDataSource = id => new DataSourceController(subDataSource, null)
+                GetDataSourceAsync = id => Task.FromResult(new DataSourceController(subDataSource, null))
             } as IDataSource;
 
             await dataSource.OnParametersSetAsync();

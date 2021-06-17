@@ -25,7 +25,7 @@ namespace Nexus.Buffers
 
         public BufferType Type => BufferType.Extended;
 
-        public Span<byte> StatusBuffer => _statusBuffer.Memory.Span;
+        public Memory<byte> StatusBuffer => _statusBuffer.Memory;
 
         public abstract int ElementSize { get; }
 
@@ -39,7 +39,7 @@ namespace Nexus.Buffers
 
         public virtual void Clear()
         {
-            this.StatusBuffer.Clear();
+            this.StatusBuffer.Span.Clear();
         }
 
         #endregion

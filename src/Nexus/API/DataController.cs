@@ -7,6 +7,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.Net;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Nexus.Controllers
 {
@@ -47,7 +48,7 @@ namespace Nexus.Controllers
         /// <returns></returns>
 
         [HttpGet]
-        public IActionResult GetStream(
+        public async Task<IActionResult> GetStream(
             [BindRequired] string catalogId,
             [BindRequired] string channelId,
             [BindRequired] string datasetId,
@@ -92,11 +93,11 @@ namespace Nexus.Controllers
                 if (!Utilities.IsCatalogAccessible(this.User, catalog.Id, _databaseManager.Database))
                     return this.Unauthorized($"The current user is not authorized to access the catalog '{catalog.Id}'.");
 
-                // dataReader
-                using var dataReader = _databaseManager.GetDataSourceController(_userIdService.User, dataset.Registration);
+                // controller
+                using var controller = await _databaseManager.GetDataSourceControllerAsync(_userIdService.User, dataset.Registration, cancellationToken);
 
                 // read data
-                var stream = dataReader.ReadAsDoubleStream(dataset, begin, end, 1 * 1000 * 1000UL, cancellationToken);
+                var stream = controller.ReadAsDoubleStream(dataset, begin, end, 1 * 1000 * 1000UL, cancellationToken);
 
                 _logger.LogInformation($"{message} Done.");
 

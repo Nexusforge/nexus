@@ -11,6 +11,8 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Nexus.Controllers
 {
@@ -60,9 +62,11 @@ namespace Nexus.Controllers
                 return isCatalogAccessible && isCatalogVisible;
             }).ToList();
 
-            return catalogContainers.Select(catalogContainer
+            var response = catalogContainers.Select(catalogContainer
                 => this.CreateCatalogResponse(catalogContainer.Catalog, catalogContainer.CatalogMeta))
                 .ToList();
+
+            return response;
         }
 
         /// <summary>
@@ -70,7 +74,7 @@ namespace Nexus.Controllers
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
         [HttpGet("{catalogId}")]
-        public ActionResult<Catalog> GetCatalog(string catalogId)
+        public async Task<ActionResult<Catalog>> GetCatalog(string catalogId)
         {
             if (_databaseManager.Database == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
@@ -83,11 +87,11 @@ namespace Nexus.Controllers
 
             try
             {
-                return this.ProcessCatalogId<Catalog>(catalogId, message,
+                return await this.ProcessCatalogIdAsync(catalogId, message,
                     (catalog, catalogMeta) =>
                     {
                         _logger.LogInformation($"{message} Done.");
-                        return this.CreateCatalogResponse(catalog, catalogMeta);
+                        return Task.FromResult((ActionResult<Catalog>)this.CreateCatalogResponse(catalog, catalogMeta));
                     });
             }
             catch (Exception ex)
@@ -101,8 +105,12 @@ namespace Nexus.Controllers
         /// Gets the specified catalog time range.
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpGet("{catalogId}/timerange")]
-        public ActionResult<List<TimeRangeResult>> GetTimeRange(string catalogId)
+        public async Task<ActionResult<List<TimeRangeResult>>> 
+            GetTimeRange(
+                string catalogId, 
+                CancellationToken cancellationToken)
         {
             if (_databaseManager.Database == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
@@ -115,11 +123,11 @@ namespace Nexus.Controllers
 
             try
             {
-                return this.ProcessCatalogId<List<TimeRangeResult>>(catalogId, message,
-                    (catalog, catalogMeta) =>
+                return await this.ProcessCatalogIdAsync<List<TimeRangeResult>>(catalogId, message,
+                    async (catalog, catalogMeta) =>
                     {
                         _logger.LogInformation($"{message} Done.");
-                        return this.CreateTimeRangeResponse(catalog);
+                        return await this.CreateTimeRangeResponseAsync(catalog, cancellationToken);
                     });
             }
             catch (Exception ex)
@@ -129,7 +137,6 @@ namespace Nexus.Controllers
             }
         }
 
-
         /// <summary>
         /// Gets the specified catalog availability.
         /// </summary>
@@ -137,11 +144,15 @@ namespace Nexus.Controllers
         /// <param name="begin">Start date.</param>
         /// <param name="end">End date.</param>
         /// <param name="granularity">Granularity of the resulting array.</param>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpGet("{catalogId}/availability")]
-        public ActionResult<List<AvailabilityResult>> GetCatalogAvailability(string catalogId,
-                                                                             [BindRequired][JsonSchemaDate] DateTime begin,
-                                                                             [BindRequired][JsonSchemaDate] DateTime end,
-                                                                             [BindRequired] AvailabilityGranularity granularity)
+        public async Task<ActionResult<List<AvailabilityResult>>> 
+            GetCatalogAvailability(
+                [BindRequired] string catalogId,
+                [BindRequired][JsonSchemaDate] DateTime begin,
+                [BindRequired][JsonSchemaDate] DateTime end,
+                [BindRequired] AvailabilityGranularity granularity,
+                CancellationToken cancellationToken)
         {
             if (_databaseManager.Database == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
@@ -154,11 +165,11 @@ namespace Nexus.Controllers
 
             try
             {
-                return this.ProcessCatalogId<List<AvailabilityResult>>(catalogId, message,
-                    (catalog, catalogMeta) =>
+                return await this.ProcessCatalogIdAsync<List<AvailabilityResult>>(catalogId, message,
+                    async (catalog, catalogMeta) =>
                     {
                         _logger.LogInformation($"{message} Done.");
-                        return this.CreateAvailabilityResponse(catalog, begin, end, granularity);
+                        return await this.CreateAvailabilityResponseAsync(catalog, begin, end, granularity, cancellationToken);
                     });
             }
             catch (Exception ex)
@@ -174,8 +185,8 @@ namespace Nexus.Controllers
         /// <param name="catalogId">The catalog identifier.</param>
         /// <returns></returns>
         [HttpGet("{catalogId}/channels")]
-        public ActionResult<List<Channel>> GetChannels(
-            string catalogId)
+        public async Task<ActionResult<List<Channel>>> GetChannels(
+            [BindRequired] string catalogId)
         {
             if (_databaseManager.Database == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
@@ -197,7 +208,7 @@ namespace Nexus.Controllers
 
             try
             {
-                return this.ProcessCatalogId<List<Channel>>(catalogId, message,
+                return await this.ProcessCatalogIdAsync(catalogId, message,
                     (catalog, catalogMeta) =>
                     {
                         var channels = catalog.Channels.Select(channel =>
@@ -210,7 +221,7 @@ namespace Nexus.Controllers
 
                         _logger.LogInformation($"{message} Done.");
 
-                        return channels;
+                        return Task.FromResult((ActionResult<List<Channel>>)channels);
                     });
             }
             catch (Exception ex)
@@ -227,7 +238,7 @@ namespace Nexus.Controllers
         /// <param name="channelId">The channel identifier.</param>
         /// <returns></returns>
         [HttpGet("{catalogId}/channels/{channelId}")]
-        public ActionResult<Channel> GetChannel(
+        public async Task<ActionResult<Channel>> GetChannel(
             string catalogId,
             string channelId)
         {
@@ -243,7 +254,7 @@ namespace Nexus.Controllers
 
             try
             {
-                return this.ProcessCatalogId<Channel>(catalogId, message,
+                return await this.ProcessCatalogIdAsync(catalogId, message,
                     (catalog, catalogMeta) =>
                     {
                         var channel = catalog.Channels.FirstOrDefault(
@@ -254,14 +265,14 @@ namespace Nexus.Controllers
                                 current => current.Name == channelId);
 
                         if (channel == null)
-                            return this.NotFound($"{catalogId}/{channelId}");
+                            return Task.FromResult((ActionResult<Channel>)this.NotFound($"{catalogId}/{channelId}"));
 
                         var channelMeta = catalogMeta.Channels.First(
                             current => current.Id == channel.Id);
 
                         _logger.LogInformation($"{message} Done.");
 
-                        return this.CreateChannelResponse(channel, channelMeta);
+                        return Task.FromResult((ActionResult<Channel>)this.CreateChannelResponse(channel, channelMeta));
                     });
             }
             catch (Exception ex)
@@ -278,7 +289,7 @@ namespace Nexus.Controllers
         /// <param name="channelId">The channel identifier.</param>
         /// <returns></returns>
         [HttpGet("{catalogId}/channels/{channelId}/datasets")]
-        public ActionResult<List<Dataset>> GetDatasets(
+        public async Task<ActionResult<List<Dataset>>> GetDatasets(
             string catalogId,
             string channelId)
         {
@@ -294,7 +305,7 @@ namespace Nexus.Controllers
 
             try
             {
-                return this.ProcessCatalogId<List<Dataset>>(catalogId, message,
+                return await this.ProcessCatalogIdAsync(catalogId, message,
                     (catalog, catalogMeta) =>
                     {
                         var channel = catalog.Channels.FirstOrDefault(
@@ -305,13 +316,15 @@ namespace Nexus.Controllers
                                 current => current.Name == channelId);
 
                         if (channel == null)
-                            return this.NotFound($"{catalogId}/{channelId}");
+                            return Task.FromResult((ActionResult<List<Dataset>>)this.NotFound($"{catalogId}/{channelId}"));
 
                         _logger.LogInformation($"{message} Done.");
 
-                        return channel.Datasets.Select(dataset 
+                        var response = channel.Datasets.Select(dataset 
                             => this.CreateDatasetResponse(dataset))
                             .ToList();
+
+                        return Task.FromResult((ActionResult<List<Dataset>>)response);
                     });
             }
             catch (Exception ex)
@@ -329,7 +342,7 @@ namespace Nexus.Controllers
         /// <param name="datasetId">The dataset identifier.</param>
         /// <returns></returns>
         [HttpGet("{catalogId}/channels/{channelId}/datasets/{datasetId}")]
-        public ActionResult<Dataset> GetDataset(
+        public async Task<ActionResult<Dataset>> GetDataset(
             string catalogId,
             string channelId,
             string datasetId)
@@ -347,7 +360,7 @@ namespace Nexus.Controllers
 
             try
             {
-                return this.ProcessCatalogId<Dataset>(catalogId, message,
+                return await this.ProcessCatalogIdAsync<Dataset>(catalogId, message,
                     (catalog, catalogMeta) =>
                     {
                         var channel = catalog.Channels.FirstOrDefault(
@@ -358,17 +371,17 @@ namespace Nexus.Controllers
                                 current => current.Name == channelId);
 
                         if (channel == null)
-                            return this.NotFound($"{catalogId}/{channelId}");
+                            return Task.FromResult((ActionResult<Dataset>)this.NotFound($"{catalogId}/{channelId}"));
 
                         var dataset = channel.Datasets.FirstOrDefault(
                            current => current.Id == datasetId);
 
                         if (dataset == null)
-                            return this.NotFound($"{catalogId}/{channelId}/{dataset}");
+                            return Task.FromResult((ActionResult<Dataset>)this.NotFound($"{catalogId}/{channelId}/{dataset}"));
 
                         _logger.LogInformation($"{message} Done.");
 
-                        return this.CreateDatasetResponse(dataset);
+                        return Task.FromResult((ActionResult<Dataset>)this.CreateDatasetResponse(dataset));
                     });
             }
             catch (Exception ex)
@@ -392,31 +405,44 @@ namespace Nexus.Controllers
             };
         }
 
-        private List<TimeRangeResult> CreateTimeRangeResponse(DataModel.Catalog catalog)
+        private async Task<List<TimeRangeResult>> 
+            CreateTimeRangeResponseAsync(DataModel.Catalog catalog, CancellationToken cancellationToken)
         {
-            var dataReaders = _databaseManager.GetDataReaders(_userIdService.User, catalog.Id);
+            var dataSources = await _databaseManager.GetDataSourcesAsync(_userIdService.User, catalog.Id, cancellationToken);
 
-            return dataReaders.Select(dataReaderForUsing =>
+            var tasks = dataSources.Select(async dataSourceForUsing =>
             {
-                using var dataReader = dataReaderForUsing;
-                (var begin, var end) = dataReader.GetTimeRange(catalog.Id);
+                using var dataSource = dataSourceForUsing;
+                var timeRange = await dataSource.GetTimeRangeAsync(catalog.Id, cancellationToken);
+
+                var registration = new DataSourceRegistration()
+                {
+                    ResourceLocator = timeRange.DataSourceRegistration.ResourceLocator,
+                    DataSourceId = timeRange.DataSourceRegistration.DataSourceId,
+                };
 
                 return new TimeRangeResult()
                 {
-                    Begin = begin,
-                    End = end
+                    DataSourceRegistration = registration,
+                    Begin = timeRange.Begin,
+                    End = timeRange.End
                 };
             }).ToList();
+
+            await Task.WhenAll(tasks);
+
+            return tasks.Select(task => task.Result).ToList();
         }
 
-        private List<AvailabilityResult> CreateAvailabilityResponse(DataModel.Catalog catalog, DateTime begin, DateTime end, AvailabilityGranularity granularity)
+        private async Task<List<AvailabilityResult>> 
+            CreateAvailabilityResponseAsync(DataModel.Catalog catalog, DateTime begin, DateTime end, AvailabilityGranularity granularity, CancellationToken cancellationToken)
         {
-            var dataReaders = _databaseManager.GetDataReaders(_userIdService.User, catalog.Id);
+            var dataSources = await _databaseManager.GetDataSourcesAsync(_userIdService.User, catalog.Id, cancellationToken);
 
-            return dataReaders.Select(dataReaderForUsing =>
+            var tasks = dataSources.Select(async dataSourceForUsing =>
             {
-                using var dataReader = dataReaderForUsing;
-                var availability = dataReader.GetAvailability(catalog.Id, begin, end, granularity);
+                using var dataSource = dataSourceForUsing;
+                var availability = await dataSource.GetAvailabilityAsync(catalog.Id, begin, end, granularity, cancellationToken);
 
                 var registration = new DataSourceRegistration()
                 {
@@ -430,6 +456,10 @@ namespace Nexus.Controllers
                     Data = availability.Data
                 };
             }).ToList();
+
+            await Task.WhenAll(tasks);
+
+            return tasks.Select(task => task.Result).ToList();
         }
 
         private Channel CreateChannelResponse(DataModel.Channel channel, ChannelMeta channelMeta)
@@ -458,10 +488,10 @@ namespace Nexus.Controllers
             };
         }
 
-        private ActionResult<T> ProcessCatalogId<T>(
+        private async Task<ActionResult<T>> ProcessCatalogIdAsync<T>(
             string catalogId,
             string message,
-            Func<DataModel.Catalog, CatalogMeta, ActionResult<T>> action)
+            Func<DataModel.Catalog, CatalogMeta, Task<ActionResult<T>>> action)
         {
             if (!Utilities.IsCatalogAccessible(this.User, catalogId, _databaseManager.Database))
                 return this.Unauthorized($"The current user is not authorized to access the catalog '{catalogId}'.");
@@ -476,7 +506,7 @@ namespace Nexus.Controllers
                 var catalog = catalogContainer.Catalog;
                 var catalogMeta = catalogContainer.CatalogMeta;
 
-                return action.Invoke(catalog, catalogMeta);
+                return await action.Invoke(catalog, catalogMeta);
             }
             else
             {
@@ -495,16 +525,17 @@ namespace Nexus.Controllers
             public string DataSourceId { get; set; }
         }
 
-        public record TimeRangeResult
-        {
-            public DateTime Begin { get; set; }
-            public DateTime End { get; set; }
-        }
-
         public record AvailabilityResult
         {
             public DataSourceRegistration DataSourceRegistration { get; set; }
             public Dictionary<DateTime, double> Data { get; set; }
+        }
+
+        public record TimeRangeResult
+        {
+            public DataSourceRegistration DataSourceRegistration { get; set; }
+            public DateTime Begin { get; set; }
+            public DateTime End { get; set; }
         }
 
         public record Catalog

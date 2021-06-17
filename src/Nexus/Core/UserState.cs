@@ -14,6 +14,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Nexus.Core
 {
@@ -538,13 +539,13 @@ namespace Nexus.Core
             this.VisualizeProgress = progress;
         }
 
-        public async Task<List<AvailabilityResult>> GetAvailabilityAsync(AvailabilityGranularity granularity)
+        public async Task<List<AvailabilityResult>> GetAvailabilityAsync(AvailabilityGranularity granularity, CancellationToken cancellationToken)
         {
             // security check
             if (!Utilities.IsCatalogAccessible(_userIdService.User, this.CatalogContainer.Id, _databaseManager.Database))
                 throw new UnauthorizedAccessException($"The current user is not authorized to access catalog '{this.CatalogContainer.Id}'.");
 
-            return await _dataService.GetAvailabilityAsync(this.CatalogContainer.Id, this.DateTimeBegin, this.DateTimeEnd, granularity);
+            return await _dataService.GetAvailabilityAsync(this.CatalogContainer.Id, this.DateTimeBegin, this.DateTimeEnd, granularity, cancellationToken);
         }
 
         public void SetExportParameters(ExportParameters exportParameters)

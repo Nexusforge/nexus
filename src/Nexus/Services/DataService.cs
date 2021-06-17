@@ -62,12 +62,12 @@ namespace Nexus.Services
         {
             return Task.Run(async () =>
             {
-                var dataReaders = _databaseManager.GetDataReaders(_userIdService.User, catalogId);
+                var dataSources = await _databaseManager.GetDataSourcesAsync(_userIdService.User, catalogId, cancellationToken);
 
-                var tasks = dataReaders.Select(dataReaderForUsing =>
+                var tasks = dataSources.Select(dataSourceForUsing =>
                 {
-                    using var dataReader = dataReaderForUsing;
-                    return dataReader.GetAvailabilityAsync(catalogId, begin, end, granularity, cancellationToken);
+                    using var dataSource = dataSourceForUsing;
+                    return dataSource.GetAvailabilityAsync(catalogId, begin, end, granularity, cancellationToken);
                 }).ToList();
 
                 await Task.WhenAll(tasks);
@@ -76,12 +76,12 @@ namespace Nexus.Services
             });
         }
 
-        public Task<string> ExportDataAsync(ExportParameters exportParameters,
-                                            List<Dataset> datasets,
-                                            CancellationToken cancellationToken)
+        public async Task<string> ExportDataAsync(ExportParameters exportParameters,
+                                                List<Dataset> datasets,
+                                                CancellationToken cancellationToken)
         {
             if (!datasets.Any() || exportParameters.Begin == exportParameters.End)
-                return Task.FromResult(string.Empty);
+                return string.Empty;
 
             var username = _userIdService.GetUserId();
 
@@ -91,69 +91,66 @@ namespace Nexus.Services
             if (sampleRates.Select(sampleRate => sampleRate.SamplesPerSecond).Distinct().Count() > 1)
                 throw new ValidationException("Channels with different sample rates have been requested.");
 
-            return Task.Run(() =>
+            var sampleRate = sampleRates.First();
+
+            // log
+            var message = $"User '{username}' exports data: {exportParameters.Begin.ToISO8601()} to {exportParameters.End.ToISO8601()} ... ";
+            _logger.LogInformation(message);
+
+            try
             {
-                var sampleRate = sampleRates.First();
+                // convert datasets into catalogs
+                var catalogIds = datasets.Select(dataset => dataset.Channel.Catalog.Id).Distinct();
+                var catalogContainers = _databaseManager.Database.CatalogContainers
+                    .Where(catalogContainer => catalogIds.Contains(catalogContainer.Id));
 
-                // log
-                var message = $"User '{username}' exports data: {exportParameters.Begin.ToISO8601()} to {exportParameters.End.ToISO8601()} ... ";
-                _logger.LogInformation(message);
-
-                try
+                var sparseCatalogs = catalogContainers.Select(catalogContainer =>
                 {
-                    // convert datasets into catalogs
-                    var catalogIds = datasets.Select(dataset => dataset.Channel.Catalog.Id).Distinct();
-                    var catalogContainers = _databaseManager.Database.CatalogContainers
-                        .Where(catalogContainer => catalogIds.Contains(catalogContainer.Id));
+                    var currentDatasets = datasets.Where(dataset => dataset.Channel.Catalog.Id == catalogContainer.Id).ToList();
+                    return catalogContainer.ToSparseCatalog(currentDatasets);
+                });
 
-                    var sparseCatalogs = catalogContainers.Select(catalogContainer =>
-                    {
-                        var currentDatasets = datasets.Where(dataset => dataset.Channel.Catalog.Id == catalogContainer.Id).ToList();
-                        return catalogContainer.ToSparseCatalog(currentDatasets);
-                    });
+                // start
+                var zipFilePath = Path.Combine(_options.ExportDirectoryPath, $"Nexus_{exportParameters.Begin.ToString("yyyy-MM-ddTHH-mm")}_{sampleRate.ToUnitString(underscore: true)}_{Guid.NewGuid().ToString().Substring(0, 8)}.zip");
+                using var zipArchive = ZipFile.Open(zipFilePath, ZipArchiveMode.Create);
 
-                    // start
-                    var zipFilePath = Path.Combine(_options.ExportDirectoryPath, $"Nexus_{exportParameters.Begin.ToString("yyyy-MM-ddTHH-mm")}_{sampleRate.ToUnitString(underscore: true)}_{Guid.NewGuid().ToString().Substring(0, 8)}.zip");
-                    using var zipArchive = ZipFile.Open(zipFilePath, ZipArchiveMode.Create);
-
-                    // create tmp/target directory
-                    var directoryPath = exportParameters.ExportMode switch
-                    {
-                        ExportMode.Web => Path.Combine(Path.GetTempPath(), "Nexus", Guid.NewGuid().ToString()),
-                        ExportMode.Local => Path.Combine(_options.ExportDirectoryPath, $"Nexus_{exportParameters.Begin.ToString("yyyy-MM-ddTHH-mm")}_{sampleRate.ToUnitString(underscore: true)}_{Guid.NewGuid().ToString().Substring(0, 8)}"),
-                        _ => throw new Exception("Unsupported export mode.")
-                    };
-
-                    Directory.CreateDirectory(directoryPath);
-
-                    foreach (var sparseCatalog in sparseCatalogs)
-                    {
-                        this.CreateFiles(_userIdService.User, exportParameters, sparseCatalog, directoryPath, cancellationToken);
-                    }
-
-                    switch (exportParameters.ExportMode)
-                    {
-                        case ExportMode.Web:
-                            this.WriteZipArchiveEntries(zipArchive, directoryPath, cancellationToken);
-                            break;
-
-                        case ExportMode.Local:
-                            break;
-
-                        default:
-                            break;
-                    }
-
-                    _logger.LogInformation($"{message} Done.");
-
-                    return $"export/{Path.GetFileName(zipFilePath)}";
-                }
-                catch (Exception ex)
+                // create tmp/target directory
+                var directoryPath = exportParameters.ExportMode switch
                 {
-                    _logger.LogError($"{message} Fail. Reason: {ex.GetFullMessage()}");
-                    throw;
+                    ExportMode.Web => Path.Combine(Path.GetTempPath(), "Nexus", Guid.NewGuid().ToString()),
+                    ExportMode.Local => Path.Combine(_options.ExportDirectoryPath, $"Nexus_{exportParameters.Begin.ToString("yyyy-MM-ddTHH-mm")}_{sampleRate.ToUnitString(underscore: true)}_{Guid.NewGuid().ToString().Substring(0, 8)}"),
+                    _ => throw new Exception("Unsupported export mode.")
+                };
+
+                Directory.CreateDirectory(directoryPath);
+
+                foreach (var sparseCatalog in sparseCatalogs)
+                {
+                    await this.CreateFilesAsync(_userIdService.User, exportParameters, sparseCatalog, directoryPath, cancellationToken);
                 }
-            }, cancellationToken);
+
+                switch (exportParameters.ExportMode)
+                {
+                    case ExportMode.Web:
+                        this.WriteZipArchiveEntries(zipArchive, directoryPath, cancellationToken);
+                        break;
+
+                    case ExportMode.Local:
+                        break;
+
+                    default:
+                        break;
+                }
+
+                _logger.LogInformation($"{message} Done.");
+
+                return $"export/{Path.GetFileName(zipFilePath)}";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"{message} Fail. Reason: {ex.GetFullMessage()}");
+                throw;
+            }
         }
 
         private void WriteZipArchiveEntries(ZipArchive zipArchive, string directoryPath, CancellationToken cancellationToken)
@@ -186,7 +183,7 @@ namespace Nexus.Services
             }
         }
 
-        private void CreateFiles(ClaimsPrincipal user, 
+        private async Task CreateFilesAsync(ClaimsPrincipal user, 
                                  ExportParameters exportParameters,
                                  SparseCatalog sparseCatalog,
                                  string directoryPath,
@@ -264,7 +261,7 @@ namespace Nexus.Services
             try
             {
                 // create temp files
-                this.CreateFiles(user, dataWriter, exportParameters, sparseCatalog, cancellationToken);
+                await this.CreateFilesAsync(user, dataWriter, exportParameters, sparseCatalog, cancellationToken);
                 dataWriter.Dispose();               
             }
             finally
@@ -274,10 +271,10 @@ namespace Nexus.Services
         }
 
         private async Task CreateFilesAsync(ClaimsPrincipal user,
-                                     DataWriterExtensionLogicBase dataWriter,
-                                     ExportParameters exportParameters,
-                                     SparseCatalog sparseCatalog,
-                                     CancellationToken cancellationToken)
+                                             DataWriterExtensionLogicBase dataWriter,
+                                             ExportParameters exportParameters,
+                                             SparseCatalog sparseCatalog,
+                                             CancellationToken cancellationToken)
         {
             var datasets = sparseCatalog.Channels.SelectMany(channel => channel.Datasets);
             var registrationToDatasetsMap = new Dictionary<DataSourceRegistration, List<Dataset>>();
@@ -300,19 +297,19 @@ namespace Nexus.Services
                 if (entry.Value.Any())
                 {
                     var registration = entry.Key;
-                    var dataReader = _databaseManager.GetDataSourceController(user, registration);
-                    dataReader.Progress.ProgressChanged += progressHandler;
+                    var controller = await _databaseManager.GetDataSourceControllerAsync(user, registration, cancellationToken);
+                    controller.Progress.ProgressChanged += progressHandler;
 
                     try
                     {
-                        await foreach (var progressRecord in dataReader.ReadAsync(entry.Value, exportParameters.Begin, exportParameters.End, _blockSizeLimit, cancellationToken))
+                        await foreach (var progressRecord in controller.ReadAsync(entry.Value, exportParameters.Begin, exportParameters.End, _blockSizeLimit, cancellationToken))
                         {
                             this.ProcessData(dataWriter, progressRecord);
                         }
                     }
                     finally
                     {
-                        dataReader.Progress.ProgressChanged -= progressHandler;
+                        controller.Progress.ProgressChanged -= progressHandler;
                     }
                 }
             }

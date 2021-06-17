@@ -14,18 +14,11 @@ namespace Nexus.Extensibility
 {
     public class DataSourceController : IDisposable
     {
-        #region Fields
-
-        private IDataSource _dataSource;
-
-        #endregion
-
         #region Constructors
 
         public DataSourceController(IDataSource dataSource, DataSourceRegistration registration)
         {
-            _dataSource = dataSource;
-
+            this.DataSource = dataSource;
             this.Registration = registration;
             this.Progress = new Progress<double>();
         }
@@ -33,6 +26,8 @@ namespace Nexus.Extensibility
         #endregion
 
         #region Properties
+
+        public IDataSource DataSource { get; }
 
         public Progress<double> Progress { get; }
 
@@ -46,7 +41,7 @@ namespace Nexus.Extensibility
 
         public async Task InitializeCatalogsAsync(CancellationToken cancellationToken)
         {
-            var catalogs = await _dataSource.GetCatalogsAsync(cancellationToken);
+            var catalogs = await this.DataSource.GetCatalogsAsync(cancellationToken);
 
             foreach (var catalog in catalogs)
             {
@@ -239,7 +234,7 @@ namespace Nexus.Extensibility
                     //#error every consumer that is done with the specific read result must dispose it!
 
                     var readResult = ExtensibilityUtilities.CreateReadResult(dataset, begin, end);
-                    await _dataSource.ReadSingleAsync(dataset, readResult, currentBegin, currentEnd, cancellationToken);
+                    await this.DataSource.ReadSingleAsync(dataset, readResult, currentBegin, currentEnd, cancellationToken);
                     datasetToResultMap[dataset] = readResult;
 
                     // update progress
@@ -275,7 +270,7 @@ namespace Nexus.Extensibility
                     var tasks = Enumerable.Range(0, totalDays).Select(async day =>
                     {
                         var date = dateBegin.AddDays(day);
-                        var availability = await _dataSource.GetAvailabilityAsync(catalogId, date, date.AddDays(1), cancellationToken);
+                        var availability = await this.DataSource.GetAvailabilityAsync(catalogId, date, date.AddDays(1), cancellationToken);
                         aggregatedData.TryAdd(date, availability);
                     });
 
@@ -289,7 +284,7 @@ namespace Nexus.Extensibility
 
                     while (currentBegin < end)
                     {
-                        var availability = await _dataSource.GetAvailabilityAsync(catalogId, currentBegin, currentBegin.AddMonths(1), cancellationToken);
+                        var availability = await this.DataSource.GetAvailabilityAsync(catalogId, currentBegin, currentBegin.AddMonths(1), cancellationToken);
                         aggregatedData.TryAdd(currentBegin, availability);
                         currentBegin = currentBegin.AddMonths(1);
                     }
@@ -305,6 +300,19 @@ namespace Nexus.Extensibility
                 DataSourceRegistration = this.Registration,
                 Data = aggregatedData
                     .ToDictionary(entry => entry.Key, entry => entry.Value)
+            };
+        }
+
+        public async Task<TimeRangeResult>
+            GetTimeRangeAsync(string catalogId,  CancellationToken cancellationToken)
+        {
+            (var begin, var end) = await this.DataSource.GetTimeRangeAsync(catalogId, cancellationToken);
+
+            return new TimeRangeResult() 
+            {
+                DataSourceRegistration = this.Registration,
+                Begin = begin, 
+                End = end 
             };
         }
 
@@ -326,12 +334,12 @@ namespace Nexus.Extensibility
 
         public async Task<bool> IsDataOfDayAvailableAsync(string catalogId, DateTime day, CancellationToken cancellationToken)
         {
-            return (await _dataSource.GetAvailabilityAsync(catalogId, day, day.AddDays(1), cancellationToken)) > 0;
+            return (await this.DataSource.GetAvailabilityAsync(catalogId, day, day.AddDays(1), cancellationToken)) > 0;
         }
 
         public async Task ReadSingleAsync(Dataset dataset, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
-            await _dataSource.ReadSingleAsync(dataset, result, begin, end, cancellationToken);
+            await this.DataSource.ReadSingleAsync(dataset, result, begin, end, cancellationToken);
         }
 
         public virtual void Dispose()
