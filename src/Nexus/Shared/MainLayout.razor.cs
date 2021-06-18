@@ -6,6 +6,6 @@ namespace Nexus.Shared
     public partial class MainLayout
     {
         [Inject]
-        public NexusOptions Options { get; set; }
+        public NexusOptionsOld Options { get; set; }
     }
 }

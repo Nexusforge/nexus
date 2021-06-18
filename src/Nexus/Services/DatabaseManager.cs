@@ -2,9 +2,10 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nexus.Core;
-using Nexus.Filters;
+using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Extensions;
+using Nexus.Filters;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,7 +15,6 @@ using System.Security.Claims;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Nexus.DataModel;
 
 namespace Nexus.Services
 {
@@ -34,7 +34,7 @@ namespace Nexus.Services
      * *******************************************************************************
      */
 
-    public class DatabaseManager
+    public class DatabaseManager : IDatabaseManager
     {
         #region Records
 
@@ -56,7 +56,7 @@ namespace Nexus.Services
 
         #region Fields
 
-        private NexusOptions _options;
+        private NexusOptionsOld _options;
 
         private bool _isInitialized;
         private ILogger<DatabaseManager> _logger;
@@ -67,7 +67,7 @@ namespace Nexus.Services
 
         #region Constructors
 
-        public DatabaseManager(IServiceProvider serviceProvider, ILogger<DatabaseManager> logger, ILoggerFactory loggerFactory, NexusOptions options)
+        public DatabaseManager(IServiceProvider serviceProvider, ILogger<DatabaseManager> logger, ILoggerFactory loggerFactory, NexusOptionsOld options)
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
@@ -81,9 +81,9 @@ namespace Nexus.Services
 
         public NexusDatabase Database => this.State?.Database;
 
-        public NexusDatabaseConfig Config { get; private set; }
-
         public DatabaseManagerState State { get; private set; }
+
+        private NexusDatabaseConfig Config { get; set; }
 
         #endregion
 
@@ -275,10 +275,10 @@ namespace Nexus.Services
 
                 filterDataSource.Database = this.Database;
 
-                filterDataSource.IsCatalogAccessible = 
+                filterDataSource.IsCatalogAccessible =
                     catalogId => Utilities.IsCatalogAccessible(user, catalogId, this.Database);
 
-                filterDataSource.GetDataSourceAsync = 
+                filterDataSource.GetDataSourceAsync =
                     registration => this.GetDataSourceControllerAsync(user, registration, cancellationToken);
             }
 
@@ -363,7 +363,7 @@ namespace Nexus.Services
             _isInitialized = true;
         }
 
-        private async Task<DataSourceController> 
+        private async Task<DataSourceController>
             InstantiateDataSourceAsync(DataSourceRegistration registration, Type type, Dictionary<DataSourceRegistration, List<Catalog>> registrationToCatalogsMap, CancellationToken cancellationToken)
         {
             _logger.LogInformation($"Instantiating {registration.DataSourceId} for URI {registration.ResourceLocator} ...");

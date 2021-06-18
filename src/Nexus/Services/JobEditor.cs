@@ -25,7 +25,7 @@ namespace Nexus.Services
 
         #region Constructors
 
-        public JobEditor(DatabaseManager databaseManager)
+        public JobEditor(IDatabaseManager databaseManager)
         {
             _state = databaseManager.State;
             this.Update();

@@ -20,7 +20,7 @@ namespace Nexus.Shared
         public SettingsViewModel Settings { get; set; }
 
         [Inject]
-        public NexusOptions Options { get; set; }
+        public NexusOptionsOld Options { get; set; }
 
         [Inject]
         public JobEditor JobEditor { get; set; }

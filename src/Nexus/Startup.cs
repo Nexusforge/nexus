@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Nexus.API;
 using Nexus.Core;
@@ -181,14 +182,19 @@ namespace Nexus
             services.AddSingleton<IFileAccessManager, FileAccessManager>();
             services.AddSingleton<JobService<ExportJob>>();
             services.AddSingleton<JobService<AggregationJob>>();
-            services.AddSingleton<DatabaseManager>();
+            services.AddSingleton<IDatabaseManager, DatabaseManager>();
             services.AddSingleton<UserManager>();
+
+            services.Configure<DefaultOptions>(Configuration.GetSection(DefaultOptions.Section));
+            services.Configure<ServerOptions>(Configuration.GetSection(ServerOptions.Section));
         }
 
         public void Configure(IApplicationBuilder app,
                               IWebHostEnvironment env,
                               AppState appState, // needs to be called to initialize the database
-                              NexusOptions options)
+                              NexusOptionsOld options,
+                              IOptions<DefaultOptions> defaultOptions,
+                              IOptions<ServerOptions> serverOptions)
         {
             // https://docs.microsoft.com/en-us/aspnet/core/fundamentals/middleware/?view=aspnetcore-5.0
 

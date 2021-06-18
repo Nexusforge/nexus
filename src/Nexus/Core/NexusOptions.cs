@@ -1,69 +1,19 @@
-﻿using System.IO;
-using System.Runtime.Serialization;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-
-namespace Nexus.Core
+﻿namespace Nexus.Core
 {
-    [DataContract]
-    public class NexusOptions
+    // good idea: https://grafana.com/docs/grafana/latest/administration/configuration/
+
+    public record DefaultOptions()
     {
-        public NexusOptions()
-        {
-            // unset, mutable
-            this.DataBaseFolderPath = string.Empty;
-
-            // preset, mutable
-            this.AggregationChunkSizeMB = 200;
-            this.DisplayName = "Nexus";
-            this.AspBaseUrl = "http://0.0.0.0:8080";
-            this.Language = "en";
-        }
-
-        // unset, mutable
-        public string DataBaseFolderPath { get; set; }
-        public EmailOptions Email { get; set; }
-
-        // preset, mutable
-
-        public uint AggregationChunkSizeMB { get; set; }
-
+        public static string Section { get; } = "Nexus:Default";
+        public int AggregationChunkSizeMB { get; set; }
         public string DisplayName { get; set; }
+    }
 
-        public string AspBaseUrl { get; set; }
-
-        public string Language { get; set; }
-
-        // preset, immutable
-        [JsonIgnore]
-        public bool RequireConfirmedAccount => this.Email != null;
-
-        [JsonIgnore]
-        public string ExportDirectoryPath => Path.Combine(this.DataBaseFolderPath, "EXPORT");
-
-        public static NexusOptions Load(string filePath)
-        {
-            var jsonString = File.ReadAllText(filePath);
-            var options = new JsonSerializerOptions();
-            options.Converters.Add(new TimeSpanConverter());
-
-            return JsonSerializer.Deserialize<NexusOptions>(jsonString, options);
-        }
-
-        public void Save(string filePath)
-        {
-            var folderPath = Path.GetDirectoryName(filePath);
-            Directory.CreateDirectory(folderPath);
-
-            var options = new JsonSerializerOptions()
-            {
-                WriteIndented = true
-            };
-
-            options.Converters.Add(new TimeSpanConverter());
-
-            var jsonString = JsonSerializer.Serialize(this, options);
-            File.WriteAllText(filePath, jsonString);
-        }
+    public record ServerOptions()
+    {
+        public static string Section { get; } = "Nexus:Server";
+        public string HttpScheme { get; set; }
+        public string HttpAddress { get; set; }
+        public int HttpPort { get; set; }
     }
 }

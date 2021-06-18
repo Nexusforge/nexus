@@ -41,8 +41,8 @@ namespace Nexus.Core
         private AppState _appState;
         private DataService _dataService;
         private UserIdService _userIdService;
-        private NexusOptions _options;
-        private DatabaseManager _databaseManager;
+        private NexusOptionsOld _options;
+        private IDatabaseManager _databaseManager;
         private ExportParameters _exportParameters;
         private CatalogContainer _catalogContainer;
         private CodeDefinitionViewModel _codeDefinition;
@@ -62,8 +62,8 @@ namespace Nexus.Core
                          AppState appState,
                          UserIdService userIdService,
                          AuthenticationStateProvider authenticationStateProvider,
-                         DatabaseManager databaseManager,
-                         NexusOptions options,
+                         IDatabaseManager databaseManager,
+                         NexusOptionsOld options,
                          DataService dataService)
         {
             this.Logger = logger;

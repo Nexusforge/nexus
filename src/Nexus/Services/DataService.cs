@@ -26,18 +26,18 @@ namespace Nexus.Services
 
         private ILogger _logger;
         private UserIdService _userIdService;
-        private DatabaseManager _databaseManager;
-        private NexusOptions _options;
+        private IDatabaseManager _databaseManager;
+        private NexusOptionsOld _options;
         private ulong _blockSizeLimit;
 
         #endregion
 
         #region Constructors
 
-        public DataService(DatabaseManager databaseManager,
+        public DataService(IDatabaseManager databaseManager,
                            UserIdService userIdService,
                            ILoggerFactory loggerFactory,
-                           NexusOptions options)
+                           NexusOptionsOld options)
         {
             _databaseManager = databaseManager;
             _userIdService = userIdService;

@@ -51,7 +51,7 @@ namespace Nexus.Services
 
         private ILoggerFactory _loggerFactory;
         private FormattingOptions _formattingOptions;
-        private DatabaseManager _databaseManager;
+        private IDatabaseManager _databaseManager;
         private RoslynProject _completionProject;
         private RoslynProject _diagnosticProject;
         private OmniSharpCompletionService _completionService;
@@ -74,7 +74,7 @@ namespace Nexus.Services
 
         #region Constructors
 
-        public MonacoService(DatabaseManager databaseManager)
+        public MonacoService(IDatabaseManager databaseManager)
         {
             _databaseManager = databaseManager;
             _loggerFactory = LoggerFactory.Create(configure => { });

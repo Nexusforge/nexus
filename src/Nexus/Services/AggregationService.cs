@@ -27,12 +27,9 @@ namespace Nexus.Services
     {
         #region Fields
 
-        private uint _aggregationChunkSizeMb;
-
         private ILogger _logger;
 
         private IFileAccessManager _fileAccessManager;
-        private DatabaseManager _databaseManager;
 
         #endregion
 
@@ -40,14 +37,10 @@ namespace Nexus.Services
 
         public AggregationService(
             IFileAccessManager fileAccessManager,
-            DatabaseManager databaseManager, 
-            NexusOptions options, 
-            ILoggerFactory loggerFactory)
+            ILogger<AggregationService> logger)
         {
             _fileAccessManager = fileAccessManager;
-            _databaseManager = databaseManager;
-            _aggregationChunkSizeMb = options.AggregationChunkSizeMB;
-            _logger = loggerFactory.CreateLogger("Nexus");
+            _logger = logger;
 
             this.Progress = new Progress<ProgressUpdatedEventArgs>();
         }
@@ -114,9 +107,11 @@ namespace Nexus.Services
             }).Where(instruction => instruction != null).ToList();
         }
 
-        public Task<string> AggregateDataAsync(UserIdService userIdService,
-                                               string databaseFolderPath,
+        public Task<string> AggregateDataAsync(string databaseFolderPath,
+                                               uint aggregationChunkSizeMB,
                                                AggregationSetup setup,
+                                               DatabaseManagerState state,
+                                               Func<DataSourceRegistration, Task<DataSourceController>> getControllerAsync,
                                                CancellationToken cancellationToken)
         {
             if (setup.Begin != setup.Begin.Date)
@@ -127,68 +122,65 @@ namespace Nexus.Services
 
             return Task.Run(async () =>
             {
-                // log
-                var message = $"User '{userIdService.GetUserId()}' aggregates data: {setup.Begin.ToISO8601()} to {setup.End.ToISO8601()} ... ";
-                _logger.LogInformation(message);
+                var progress = (IProgress<ProgressUpdatedEventArgs>)this.Progress;
+                var instructions = AggregationService.ComputeInstructions(setup, state, _logger);
+                var days = (setup.End - setup.Begin).TotalDays;
+                var totalDays = instructions.Count() * days;
+                var i = 0;
 
-                try
+                foreach (var instruction in instructions)
                 {
-                    var progress = (IProgress<ProgressUpdatedEventArgs>)this.Progress;
-                    var instructions = AggregationService.ComputeInstructions(setup, _databaseManager.State, _logger);
-                    var days = (setup.End - setup.Begin).TotalDays;
-                    var totalDays = instructions.Count() * days;
-                    var i = 0;
+                    var catalogId = instruction.Container.Id;
 
-                    foreach (var instruction in instructions)
+                    for (int j = 0; j < days; j++)
                     {
-                        var catalogId = instruction.Container.Id;
+                        cancellationToken.ThrowIfCancellationRequested();
 
-                        for (int j = 0; j < days; j++)
-                        {
-                            cancellationToken.ThrowIfCancellationRequested();
+                        var currentDay = setup.Begin.AddDays(j);
+                        var progressMessage = $"Processing catalog '{catalogId}': {currentDay.ToString("yyyy-MM-dd")}";
+                        var progressValue = (i * days + j) / totalDays;
+                        var eventArgs = new ProgressUpdatedEventArgs(progressValue, progressMessage);
+                        progress.Report(eventArgs);
 
-                            var currentDay = setup.Begin.AddDays(j);
-                            var progressMessage = $"Processing catalog '{catalogId}': {currentDay.ToString("yyyy-MM-dd")}";
-                            var progressValue = (i * days + j) / totalDays;
-                            var eventArgs = new ProgressUpdatedEventArgs(progressValue, progressMessage);
-                            progress.Report(eventArgs);
-
-                            await this.AggregateCatalogAsync(userIdService.User, databaseFolderPath, catalogId, currentDay, setup, instruction, cancellationToken);
-                        }
-
-                        i++;
+                        await this.AggregateCatalogAsync(
+                            databaseFolderPath,
+                            catalogId,
+                            aggregationChunkSizeMB,
+                            currentDay,
+                            state,
+                            setup,
+                            instruction,
+                            getControllerAsync,
+                            cancellationToken);
                     }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex.GetFullMessage());
-                    throw;
-                }
 
-                _logger.LogInformation($"{message} Done.");
+                    i++;
+                }
 
                 return string.Empty;
             }, cancellationToken);
         }
 
-        private async Task AggregateCatalogAsync(ClaimsPrincipal user,
-                                      string databaseFolderPath,
-                                      string catalogId,
-                                      DateTime date,
-                                      AggregationSetup setup,
-                                      AggregationInstruction instruction,
-                                      CancellationToken cancellationToken)
+        private async Task AggregateCatalogAsync(string databaseFolderPath,
+                                                 string catalogId,
+                                                 uint aggregationChunkSizeMB,
+                                                 DateTime date,
+                                                 DatabaseManagerState state,
+                                                 AggregationSetup setup,
+                                                 AggregationInstruction instruction,
+                                                 Func<DataSourceRegistration, Task<DataSourceController>> getControllerAsync,
+                                                 CancellationToken cancellationToken)
         {
             foreach (var (registration, aggregationChannels) in instruction.DataReaderToAggregationsMap)
             {
-                using var dataReader = await _databaseManager.GetDataSourceControllerAsync(user, registration, cancellationToken);
+                using var controller = await getControllerAsync(registration);
 
                 // get files
-                if (!await dataReader.IsDataOfDayAvailableAsync(catalogId, date, cancellationToken))
+                if (!await controller.IsDataOfDayAvailableAsync(catalogId, date, cancellationToken))
                     return;
 
                 // catalog
-                var container = _databaseManager.Database.CatalogContainers.FirstOrDefault(container => container.Id == catalogId);
+                var container = state.Database.CatalogContainers.FirstOrDefault(container => container.Id == catalogId);
 
                 if (container == null)
                     throw new Exception($"The requested catalog '{catalogId}' could not be found.");
@@ -210,10 +202,11 @@ namespace Nexus.Services
                                                             new object[] 
                                                             {
                                                                 targetDirectoryPath,
-                                                                dataReader, 
+                                                                controller, 
                                                                 dataset, 
                                                                 aggregationChannel.Aggregations, 
-                                                                date, 
+                                                                date,
+                                                                aggregationChunkSizeMB,
                                                                 setup.Force, 
                                                                 cancellationToken
                                                             });
@@ -235,11 +228,12 @@ namespace Nexus.Services
                                                            Dataset dataset,
                                                            List<Aggregation> aggregations,
                                                            DateTime date,
+                                                           uint aggregationChunkSizeMB,
                                                            bool force,
                                                            CancellationToken cancellationToken) where T : unmanaged
         {
             // check source sample rate
-            var sampleRate = new SampleRateContainer(dataset.Id, ensureNonZeroIntegerHz: true);
+            var _ = new SampleRateContainer(dataset.Id, ensureNonZeroIntegerHz: true);
 
             // prepare variables
             var units = new List<AggregationUnit>();
@@ -308,7 +302,7 @@ namespace Nexus.Services
             // process data
             var fundamentalPeriod = TimeSpan.FromMinutes(10); // required to ensure that the aggregation functions get data with a multiple length of 10 minutes
             var endDate = date.AddDays(1);
-            var blockSizeLimit = _aggregationChunkSizeMb * 1000 * 1000;
+            var blockSizeLimit = aggregationChunkSizeMB * 1000 * 1000;
 
             // read raw data
             await foreach (var progressRecord in dataReader.ReadAsync(dataset, date, endDate, blockSizeLimit, fundamentalPeriod, cancellationToken))
@@ -403,12 +397,12 @@ namespace Nexus.Services
             return partialBuffersMap;
         }
 
-        private double[] ApplyAggregationFunction(AggregationMethod method,
-                                                  string argument,
-                                                  int kernelSize,
-                                                  Memory<double> data,
-                                                  double nanLimit,
-                                                  ILogger logger)
+        internal double[] ApplyAggregationFunction(AggregationMethod method,
+                                                   string argument,
+                                                   int kernelSize,
+                                                   Memory<double> data,
+                                                   double nanLimit,
+                                                   ILogger logger)
         {
             var targetDatasetLength = data.Length / kernelSize;
             var result = new double[targetDatasetLength];
@@ -571,13 +565,13 @@ namespace Nexus.Services
             return result;
         }
 
-        private double[] ApplyAggregationFunction<T>(AggregationMethod method,
-                                                     string argument,
-                                                     int kernelSize,
-                                                     Memory<T> data,
-                                                     Memory<byte> status,
-                                                     double nanLimit,
-                                                     ILogger logger) where T : unmanaged
+        internal double[] ApplyAggregationFunction<T>(AggregationMethod method,
+                                                      string argument,
+                                                      int kernelSize,
+                                                      Memory<T> data,
+                                                      Memory<byte> status,
+                                                      double nanLimit,
+                                                      ILogger logger) where T : unmanaged
         {
             var targetDatasetLength = data.Length / kernelSize;
             var result = new double[targetDatasetLength];

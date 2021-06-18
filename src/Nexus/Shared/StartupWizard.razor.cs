@@ -6,7 +6,7 @@ namespace Nexus.Shared
     public partial class StartupWizard
     {
         [Inject]
-        public NexusOptions Options { get; set; }
+        public NexusOptionsOld Options { get; set; }
 
         [Inject]
         public AppState AppState { get; set; }

@@ -20,13 +20,13 @@ namespace Nexus.Core
         #region Fields
 
         private UserManager _userManager;
-        private NexusOptions _options;
+        private NexusOptionsOld _options;
         private bool _isAppInitialized;
         private bool _isDatabaseInitialized;
         private bool _isDatabaseUpdating;
         private SemaphoreSlim _updateDatabaseSemaphore;
         private CancellationTokenSource _updateDatabaseCancellationTokenSource;
-        private DatabaseManager _databaseManager;
+        private IDatabaseManager _databaseManager;
         private Dictionary<CatalogContainer, List<ChannelViewModel>> _channelCache;
 
         #endregion
@@ -34,9 +34,9 @@ namespace Nexus.Core
         #region Constructors
 
         public AppState(ILogger<AppState> logger,
-                        DatabaseManager databaseManager,
+                        IDatabaseManager databaseManager,
                         UserManager userManager,
-                        NexusOptions options)
+                        NexusOptionsOld options)
         {
             this.Logger = logger;
             _databaseManager = databaseManager;

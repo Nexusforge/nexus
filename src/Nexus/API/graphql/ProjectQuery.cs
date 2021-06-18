@@ -7,7 +7,7 @@ namespace Nexus.API
 {
     public class CatalogQuery : ObjectGraphType
     {
-        public CatalogQuery(DatabaseManager databaseManager)
+        public CatalogQuery(IDatabaseManager databaseManager)
         {
             this.Field<CatalogType>(
                 "Catalog",

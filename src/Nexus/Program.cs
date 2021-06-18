@@ -14,17 +14,11 @@ namespace Nexus
 {
     public class Program
     {
-        #region Fields
-
-        private static ILoggerFactory _loggerFactory;
-
-        #endregion
-
         #region Properties
 
         public static string OptionsFilePath { get; private set; }
 
-        public static NexusOptions Options { get; private set; }
+        public static NexusOptionsOld Options { get; private set; }
 
         #endregion
 
@@ -50,22 +44,16 @@ namespace Nexus
 
             Directory.CreateDirectory(appdataFolderPath);
 
-            // configure logging
-            _loggerFactory = LoggerFactory.Create(builder =>
-            {
-                builder.AddConsole();
-            });
-
             // load configuration
             Program.OptionsFilePath = Path.Combine(appdataFolderPath, "settings.json");
 
             if (File.Exists(Program.OptionsFilePath))
             {
-                Program.Options = NexusOptions.Load(Program.OptionsFilePath);
+                Program.Options = NexusOptionsOld.Load(Program.OptionsFilePath);
             }
             else
             {
-                Program.Options = new NexusOptions();
+                Program.Options = new NexusOptionsOld();
                 Program.Options.Save(Program.OptionsFilePath);
             }
 

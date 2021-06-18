@@ -6,9 +6,9 @@ namespace Nexus.Core
 {
     public class ApplicationDbContext : IdentityDbContext
     {
-        private NexusOptions _options;
+        private NexusOptionsOld _options;
 
-        public ApplicationDbContext(NexusOptions options)
+        public ApplicationDbContext(NexusOptionsOld options)
         {
             _options = options;
         }

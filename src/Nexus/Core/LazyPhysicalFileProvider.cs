@@ -7,10 +7,10 @@ namespace Nexus.Core
     public class LazyPhysicalFileProvider : IFileProvider
     {
         private string _relativePath;
-        private NexusOptions _options;
+        private NexusOptionsOld _options;
         private PhysicalFileProvider _physicalFileProvider;
 
-        public LazyPhysicalFileProvider(NexusOptions options, string relativePath)
+        public LazyPhysicalFileProvider(NexusOptionsOld options, string relativePath)
         {
             _options = options;
             _relativePath = relativePath;

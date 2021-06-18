@@ -108,7 +108,7 @@ namespace Nexus.Shared
         #region Properties
 
         [Inject]
-        public DatabaseManager DatabaseManager { get; set; }
+        public IDatabaseManager DatabaseManager { get; set; }
 
         [Inject]
         public ToasterService ToasterService { get; set; }

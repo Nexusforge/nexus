@@ -24,13 +24,13 @@ namespace Nexus.Controllers
 
         private ILogger _logger;
         private UserIdService _userIdService;
-        private DatabaseManager _databaseManager;
+        private IDatabaseManager _databaseManager;
 
         #endregion
 
         #region Constructors
 
-        public CatalogsController(DatabaseManager databaseManager,
+        public CatalogsController(IDatabaseManager databaseManager,
                                     UserIdService userIdService,
                                     ILoggerFactory loggerFactory)
         {

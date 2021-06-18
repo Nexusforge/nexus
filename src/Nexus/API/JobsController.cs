@@ -2,8 +2,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Nexus.DataModel;
 using Nexus.Core;
+using Nexus.DataModel;
 using Nexus.Services;
 using System;
 using System.Collections.Generic;
@@ -21,8 +21,8 @@ namespace Nexus.Controllers
 
         private ILogger _logger;
         private IServiceProvider _serviceProvider;
-        private DatabaseManager _databaseManager;
-        private NexusOptions _options;
+        private IDatabaseManager _databaseManager;
+        private NexusOptionsOld _options;
         private JobService<ExportJob> _exportJobService;
         private JobService<AggregationJob> _aggregationJobService;
 
@@ -31,8 +31,8 @@ namespace Nexus.Controllers
         #region Constructors
 
         public JobsController(
-            DatabaseManager databaseManager,
-            NexusOptions options,
+            IDatabaseManager databaseManager,
+            NexusOptionsOld options,
             JobService<ExportJob> exportJobService,
             JobService<AggregationJob> aggregationJobService,
             IServiceProvider serviceProvider,
@@ -223,7 +223,7 @@ namespace Nexus.Controllers
         /// <summary>
         /// Creates a new aggregation job.
         /// </summary>
-        /// <param name="parameters">Aggregation parameters.</param>
+        /// <param name="setup">Aggregation setup.</param>
         /// <returns></returns>
         [HttpPost("aggregation")]
         public ActionResult<AggregationJob> CreateAggregationJob(AggregationSetup setup)
@@ -246,18 +246,40 @@ namespace Nexus.Controllers
             };
 
             var aggregationService = _serviceProvider.GetRequiredService<AggregationService>();
+            var databaseManager = _serviceProvider.GetRequiredService<IDatabaseManager>();
 
             try
             {
                 var jobControl = _aggregationJobService.AddJob(job, aggregationService.Progress, (jobControl, cts) =>
                 {
                     var userIdService = _serviceProvider.GetRequiredService<UserIdService>();
+                    var state = databaseManager.State;
 
-                    var task = aggregationService.AggregateDataAsync(
-                        userIdService,
-                        _options.DataBaseFolderPath,
-                        setup,
-                        cts.Token);
+                    var task = Task.Run(async () =>
+                    {
+                        var message = $"User '{userIdService.GetUserId()}' aggregates data: {setup.Begin.ToISO8601()} to {setup.End.ToISO8601()} ... ";
+                        _logger.LogInformation(message);
+
+                        try
+                        {
+                            var result = await aggregationService.AggregateDataAsync(
+                                _options.DataBaseFolderPath,
+                                _options.AggregationChunkSizeMB,
+                                setup,
+                                state,
+                                registration => databaseManager.GetDataSourceControllerAsync(userIdService.User, registration, cts.Token, state),
+                                cts.Token);
+
+                            _logger.LogInformation($"{message} Done.");
+
+                            return result;
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex.GetFullMessage());
+                            throw;
+                        }
+                    });
 
                     return task;
                 });
