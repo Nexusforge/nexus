@@ -12,6 +12,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
 
 namespace Nexus.Core
 {
@@ -20,8 +21,6 @@ namespace Nexus.Core
         #region Fields
 
         private UserManager _userManager;
-        private NexusOptionsOld _options;
-        private bool _isAppInitialized;
         private bool _isDatabaseInitialized;
         private bool _isDatabaseUpdating;
         private SemaphoreSlim _updateDatabaseSemaphore;
@@ -36,12 +35,11 @@ namespace Nexus.Core
         public AppState(ILogger<AppState> logger,
                         IDatabaseManager databaseManager,
                         UserManager userManager,
-                        NexusOptionsOld options)
+                        IOptions<PathsOptions> pathsOptions)
         {
             this.Logger = logger;
             _databaseManager = databaseManager;
             _userManager = userManager;
-            _options = options;
 
             this.CsvRowIndexFormatValues = Utilities.GetEnumValues<CsvRowIndexFormat>();
             this.CodeLanguageValues = Utilities.GetEnumValues<CodeLanguage>();
@@ -50,22 +48,12 @@ namespace Nexus.Core
             this.FileGranularityValues = Utilities.GetEnumValues<FileGranularity>();
             this.Version = Assembly.GetEntryAssembly().GetName().Version.ToString();
 
-            if (!string.IsNullOrWhiteSpace(options.DataBaseFolderPath))
-            {
-                if (!this.TryInitializeApp(out var ex))
-                    throw ex;
-            }           
+            this.InitializeApp(pathsOptions.Value);
         }
 
         #endregion
 
         #region Properties - General
-
-        public bool IsAppInitialized
-        {
-            get { return _isAppInitialized; }
-            set { this.SetProperty(ref _isAppInitialized, value); }
-        }
 
         public bool IsDatabaseInitialized
         {
@@ -113,37 +101,29 @@ namespace Nexus.Core
 
         #region Methods
 
-        public bool TryInitializeApp(out Exception exception)
+        public void InitializeApp(PathsOptions pathOptions)
         {
-            exception = null;
-
             try
             {
-                Directory.CreateDirectory(_options.DataBaseFolderPath);
+                Directory.CreateDirectory(pathOptions.Data);
 
-                this.NewsPaper = NewsPaper.Load(Path.Combine(_options.DataBaseFolderPath, "news.json"));
+                this.NewsPaper = NewsPaper.Load(Path.Combine(pathOptions.Data, "news.json"));
 
-                var filterSettingsFilePath = Path.Combine(_options.DataBaseFolderPath, "filters.json");
+                var filterSettingsFilePath = Path.Combine(pathOptions.Data, "filters.json");
                 this.FilterSettings = new FilterSettingsViewModel(filterSettingsFilePath);
                 this.InitializeFilterSettings(this.FilterSettings.Model, filterSettingsFilePath);
 
                 _channelCache = new Dictionary<CatalogContainer, List<ChannelViewModel>>();
                 _updateDatabaseSemaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
-
                 _userManager.Initialize();
-                _options.Save(Program.OptionsFilePath);
 
                 _ = this.UpdateDatabaseAsync();
             }
             catch (Exception ex)
             {
-                exception = ex;
                 this.Logger.LogError(ex.GetFullMessage());
-                return false;
+                throw;
             }
-
-            this.IsAppInitialized = true;
-            return true;
         }
 
         public async Task UpdateDatabaseAsync()

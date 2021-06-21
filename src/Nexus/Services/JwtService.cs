@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Nexus.Core;
 using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
-namespace Nexus.Core
+namespace Nexus.Services
 {
     public class JwtService<TUser> where TUser : class
     {
@@ -14,15 +16,17 @@ namespace Nexus.Core
         private static JwtSecurityTokenHandler _tokenHandler = new JwtSecurityTokenHandler();
         private SignInManager<TUser> _signInManager;
         private UserManager<TUser> _userManager;
+        private UsersOptions _usersOptions;
 
         #endregion
 
         #region Constructors
 
-        public JwtService(SignInManager<TUser> signInManager, UserManager<TUser> userManager)
+        public JwtService(SignInManager<TUser> signInManager, UserManager<TUser> userManager, IOptions<UsersOptions> usersOptions)
         {
             _signInManager = signInManager;
             _userManager = userManager;
+            _usersOptions = usersOptions.Value;
         }
 
         #endregion
@@ -40,7 +44,7 @@ namespace Nexus.Core
                 var signInResult = await _signInManager.CheckPasswordSignInAsync(user, credentials.Password, false);
                 
                 var isConfirmed = 
-                    !Program.Options.RequireConfirmedAccount ||
+                    !_usersOptions.VerifyEmail ||
                     await _userManager.IsEmailConfirmedAsync(user);
 
                 if (isConfirmed)

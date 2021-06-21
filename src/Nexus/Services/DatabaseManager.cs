@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
@@ -56,7 +57,7 @@ namespace Nexus.Services
 
         #region Fields
 
-        private NexusOptionsOld _options;
+        private PathsOptions _pathsOptions;
 
         private bool _isInitialized;
         private ILogger<DatabaseManager> _logger;
@@ -67,12 +68,12 @@ namespace Nexus.Services
 
         #region Constructors
 
-        public DatabaseManager(IServiceProvider serviceProvider, ILogger<DatabaseManager> logger, ILoggerFactory loggerFactory, NexusOptionsOld options)
+        public DatabaseManager(IServiceProvider serviceProvider, ILogger<DatabaseManager> logger, ILoggerFactory loggerFactory, IOptions<PathsOptions> pathsOptions)
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
             _loggerFactory = loggerFactory;
-            _options = options;
+            _pathsOptions = pathsOptions.Value;
         }
 
         #endregion
@@ -121,7 +122,7 @@ namespace Nexus.Services
                 ResourceLocator = new Uri(
                     !string.IsNullOrWhiteSpace(this.Config.AggregationDataReaderRootPath)
                         ? this.Config.AggregationDataReaderRootPath
-                        : _options.DataBaseFolderPath,
+                        : _pathsOptions.Data,
                     UriKind.RelativeOrAbsolute
                 )
             };
@@ -302,7 +303,7 @@ namespace Nexus.Services
 
         private void Initialize()
         {
-            var dbFolderPath = _options.DataBaseFolderPath;
+            var dbFolderPath = _pathsOptions.Data;
 
             if (string.IsNullOrWhiteSpace(dbFolderPath))
             {
@@ -316,7 +317,6 @@ namespace Nexus.Services
                     Directory.CreateDirectory(Path.Combine(dbFolderPath, "ATTACHMENTS"));
                     Directory.CreateDirectory(Path.Combine(dbFolderPath, "DATA"));
                     Directory.CreateDirectory(Path.Combine(dbFolderPath, "EXPORT"));
-                    Directory.CreateDirectory(Path.Combine(dbFolderPath, "EXTENSION"));
                     Directory.CreateDirectory(Path.Combine(dbFolderPath, "META"));
                     Directory.CreateDirectory(Path.Combine(dbFolderPath, "PRESETS"));
 
@@ -345,7 +345,7 @@ namespace Nexus.Services
                     var filterRegistration = new DataSourceRegistration()
                     {
                         DataSourceId = "Nexus.Filters",
-                        ResourceLocator = new Uri(_options.DataBaseFolderPath, UriKind.RelativeOrAbsolute)
+                        ResourceLocator = new Uri(_pathsOptions.Data, UriKind.RelativeOrAbsolute)
                     };
 
                     if (!this.Config.DataSourceRegistrations.Contains(filterRegistration))
@@ -407,14 +407,12 @@ namespace Nexus.Services
 
         private string GetCatalogMetaPath(string catalogName)
         {
-            return Path.Combine(_options.DataBaseFolderPath, "META", $"{catalogName.TrimStart('/').Replace('/', '_')}.json");
+            return Path.Combine(_pathsOptions.Data, "META", $"{catalogName.TrimStart('/').Replace('/', '_')}.json");
         }
 
         private Dictionary<DataSourceRegistration, Type> LoadDataReaders(List<DataSourceRegistration> DataSourceRegistrations)
         {
-            var extensionDirectoryPath = Path.Combine(_options.DataBaseFolderPath, "EXTENSION");
-
-            var extensionFilePaths = Directory.EnumerateFiles(extensionDirectoryPath, "*.deps.json", SearchOption.AllDirectories)
+            var extensionFilePaths = Directory.EnumerateFiles(_pathsOptions.Extensions, "*.deps.json", SearchOption.AllDirectories)
                                               .Select(filePath => filePath.Replace(".deps.json", ".dll")).ToList();
 
             var idToDataReaderTypeMap = new Dictionary<string, Type>();

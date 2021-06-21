@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
@@ -9,19 +10,12 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Environment;
 
 namespace Nexus
 {
     public class Program
     {
-        #region Properties
-
-        public static string OptionsFilePath { get; private set; }
-
-        public static NexusOptionsOld Options { get; private set; }
-
-        #endregion
-
         #region Methods
 
         public static async Task<int> Main(string[] args)
@@ -34,47 +28,45 @@ namespace Nexus
             // check interactivity
             var isWindowsService = args.Contains("--non-interactive");
 
-            // paths
-            var appdataFolderPath = Environment.GetEnvironmentVariable("NEXUS_APPDATA");
+            // configuration
+            var settingsPath = Environment.GetEnvironmentVariable("NEXUS:PATHS:SETTINGS");
 
-            if (string.IsNullOrWhiteSpace(appdataFolderPath))
-                appdataFolderPath = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "Nexus");
+            if (string.IsNullOrWhiteSpace(settingsPath))
+                settingsPath = Environment.GetEnvironmentVariable("NEXUS__PATHS__SETTINGS");
 
-            Directory.CreateDirectory(appdataFolderPath);
+            if (string.IsNullOrWhiteSpace(settingsPath))
+                settingsPath = PathsOptions.DefaultSettingsPath;
 
-            // load configuration
-            Program.OptionsFilePath = Path.Combine(appdataFolderPath, "settings.json");
-
-            if (File.Exists(Program.OptionsFilePath))
-            {
-                Program.Options = NexusOptionsOld.Load(Program.OptionsFilePath);
-            }
-            else
-            {
-                Program.Options = new NexusOptionsOld();
-                Program.Options.Save(Program.OptionsFilePath);
-            }
+            var configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .AddIniFile(settingsPath, optional: true)
+                .AddEnvironmentVariables()
+                .AddCommandLine(args)
+                .Build();
 
             // service vs. interactive
+            var hostBuilder = Program.CreateHostBuilder(Environment.CurrentDirectory, configuration);
+
             if (isWindowsService)
-                await Program
-                    .CreateHostBuilder(Environment.CurrentDirectory)
+                await hostBuilder
                     .UseWindowsService()
                     .Build()
                     .RunAsync();
             else
-                await Program
-                    .CreateHostBuilder(Environment.CurrentDirectory)
+                await hostBuilder
                     .Build()
                     .RunAsync();
 
             return 0;
         }
 
-        public static IHostBuilder CreateHostBuilder(string currentDirectory) => 
+        public static IHostBuilder CreateHostBuilder(string currentDirectory, IConfiguration configuration) => 
             Host.CreateDefaultBuilder()
+                .ConfigureAppConfiguration(builder =>
+                {
+                    builder.Sources.Clear();
+                    builder.AddConfiguration(configuration);
+                })
                 .ConfigureLogging(logging =>
                 {
                     logging.ClearProviders();
@@ -86,7 +78,13 @@ namespace Nexus
                     webBuilder.UseStartup<Startup>();
 
                     if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") != "Development")
-                        webBuilder.UseUrls(Program.Options.AspBaseUrl);
+                    {
+                        var serverOptions = new ServerOptions();
+                        configuration.GetSection(ServerOptions.Section).Bind(serverOptions);
+
+                        var baseUrl = $"{serverOptions.HttpScheme}://{serverOptions.HttpAddress}:{serverOptions.HttpPort}";
+                        webBuilder.UseUrls(baseUrl);
+                    }
 
                     webBuilder.UseContentRoot(currentDirectory);
                     webBuilder.SuppressStatusMessages(true);

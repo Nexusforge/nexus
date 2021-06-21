@@ -20,9 +20,6 @@ namespace Nexus.Shared
         public SettingsViewModel Settings { get; set; }
 
         [Inject]
-        public NexusOptionsOld Options { get; set; }
-
-        [Inject]
         public JobEditor JobEditor { get; set; }
 
         #endregion
@@ -35,11 +32,6 @@ namespace Nexus.Shared
             this.JobEditor.Changed += _handler;
 
             base.OnParametersSet();
-        }
-
-        public void SaveOptions()
-        {
-            this.Options.Save(Program.OptionsFilePath);
         }
 
         public void Dipose()

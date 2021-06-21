@@ -3,7 +3,7 @@
 <div class="nav">
     <a class="nav-logo" href="/">
         <img src="images/network_icon.png" />
-        @Program.Options.DisplayName
+        @this.GeneralOptions.Value.InstanceName
     </a>
     @if (this.AppState.IsDatabaseUpdating)
     {

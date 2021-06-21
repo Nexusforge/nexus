@@ -46,7 +46,7 @@ namespace Nexus
 
         public IConfiguration Configuration { get; }
 
-        public void ConfigureServices(IServiceCollection services)
+        public void ConfigureServices(IServiceCollection services, IOptions<UsersOptions> usersOptions)
         {
             // database
             services.AddDbContext<ApplicationDbContext>();
@@ -67,10 +67,10 @@ namespace Nexus
             services.Configure<IdentityOptions>(options =>
             {
                 // Instead of RequireConfirmedEmail, this one has the desired effect!
-                options.SignIn.RequireConfirmedAccount = Program.Options.RequireConfirmedAccount;
+                options.SignIn.RequireConfirmedAccount = usersOptions.Value.VerifyEmail;
             });
 
-            if (Program.Options.RequireConfirmedAccount)
+            if (usersOptions.Value.VerifyEmail)
                 services.AddTransient<IEmailSender, EmailSender>();
 
             // blazor
@@ -177,7 +177,6 @@ namespace Nexus
             services.AddTransient<DataService>();
             services.AddTransient<AggregationService>();
 
-            services.AddSingleton(Program.Options);
             services.AddSingleton<AppState>();
             services.AddSingleton<IFileAccessManager, FileAccessManager>();
             services.AddSingleton<JobService<ExportJob>>();
@@ -185,16 +184,19 @@ namespace Nexus
             services.AddSingleton<IDatabaseManager, DatabaseManager>();
             services.AddSingleton<UserManager>();
 
-            services.Configure<DefaultOptions>(Configuration.GetSection(DefaultOptions.Section));
+            services.Configure<GeneralOptions>(Configuration.GetSection(GeneralOptions.Section));
             services.Configure<ServerOptions>(Configuration.GetSection(ServerOptions.Section));
+            services.Configure<PathsOptions>(Configuration.GetSection(PathsOptions.Section));
+            services.Configure<SecurityOptions>(Configuration.GetSection(SecurityOptions.Section));
+            services.Configure<UsersOptions>(Configuration.GetSection(UsersOptions.Section));
+            services.Configure<SmtpOptions>(Configuration.GetSection(SmtpOptions.Section));
+            services.Configure<AggregationOptions>(Configuration.GetSection(AggregationOptions.Section));
         }
 
         public void Configure(IApplicationBuilder app,
                               IWebHostEnvironment env,
                               AppState appState, // needs to be called to initialize the database
-                              NexusOptionsOld options,
-                              IOptions<DefaultOptions> defaultOptions,
-                              IOptions<ServerOptions> serverOptions)
+                              IOptions<PathsOptions> pathOptions)
         {
             // https://docs.microsoft.com/en-us/aspnet/core/fundamentals/middleware/?view=aspnetcore-5.0
 
@@ -214,7 +216,7 @@ namespace Nexus
 
             app.UseStaticFiles(new StaticFileOptions
             {
-                FileProvider = new LazyPhysicalFileProvider(options, "ATTACHMENTS"),
+                FileProvider = new LazyPhysicalFileProvider(pathOptions.Value.Data, "ATTACHMENTS"),
                 RequestPath = "/attachments",
                 ServeUnknownFileTypes = true
             });
@@ -228,13 +230,13 @@ namespace Nexus
 
             app.UseStaticFiles(new StaticFileOptions
             {
-                FileProvider = new LazyPhysicalFileProvider(options, "EXPORT"),
+                FileProvider = new LazyPhysicalFileProvider(pathOptions.Value.Data, "EXPORT"),
                 RequestPath = "/export"
             });
 
             app.UseStaticFiles(new StaticFileOptions
             {
-                FileProvider = new LazyPhysicalFileProvider(options, "PRESETS"),
+                FileProvider = new LazyPhysicalFileProvider(pathOptions.Value.Data, "PRESETS"),
                 RequestPath = "/presets"
             });
 

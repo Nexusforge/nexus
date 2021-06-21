@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nexus.Core;
 using System;
 using System.Security.Claims;
@@ -11,12 +12,14 @@ namespace Nexus.Services
     {
         private ILogger _logger;
         private IServiceProvider _serviceProvider;
+        private SecurityOptions _securityOptions;
 
         // Both, userDB and userManager, cannot be pulled in here because they are scoped
-        public UserManager(IServiceProvider serviceProvider, ILoggerFactory loggerFactory)
+        public UserManager(IServiceProvider serviceProvider, ILoggerFactory loggerFactory, IOptions<SecurityOptions> securityOptions)
         {
             _serviceProvider = serviceProvider;
             _logger = loggerFactory.CreateLogger("Nexus");
+            _securityOptions = securityOptions.Value;
         }
 
         public void Initialize()
@@ -31,19 +34,8 @@ namespace Nexus.Services
                     _logger.LogInformation($"SQLite database initialized.");
 
                 // ensure there is a root user
-                var defaultRootUsername = "root@nexus.org";
-                var defaultRootPassword = "#root0/User1";
-
-                string rootUsername = Environment.GetEnvironmentVariable("NEXUS_ROOT_USERNAME");
-                string rootPassword = Environment.GetEnvironmentVariable("NEXUS_ROOT_PASSWORD");
-
-                // fallback to default user
-                if (string.IsNullOrWhiteSpace(rootUsername))
-                    rootUsername = defaultRootUsername;
-                
-                // fallback to default password
-                if (string.IsNullOrWhiteSpace(rootPassword))
-                    rootPassword = defaultRootPassword;
+                var rootUsername = _securityOptions.RootUser;
+                var rootPassword = _securityOptions.RootPassword;
 
                 // ensure there is a root user
                 if (userManager.FindByNameAsync(rootUsername).Result == null)
@@ -62,9 +54,9 @@ namespace Nexus.Services
                         userManager.AddClaimAsync(user, claim).Wait();
 
                         // remove default root user
-                        if (rootUsername != defaultRootUsername)
+                        if (rootUsername != SecurityOptions.DefaultRootUser)
                         {
-                            var userToDelete = userManager.FindByNameAsync(defaultRootUsername).Result;
+                            var userToDelete = userManager.FindByNameAsync(SecurityOptions.DefaultRootUser).Result;
 
                             if (userToDelete != null)
                                 userManager.DeleteAsync(userToDelete);
@@ -72,7 +64,8 @@ namespace Nexus.Services
                     }
                     else
                     {
-                        var _ = userManager.CreateAsync(new IdentityUser(defaultRootUsername), defaultRootPassword).Result;
+                        var _ = userManager.CreateAsync(
+                            new IdentityUser(SecurityOptions.DefaultRootUser), SecurityOptions.DefaultRootPassword).Result;
                     }
                 }
 

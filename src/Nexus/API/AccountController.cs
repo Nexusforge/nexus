@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Nexus.Core;
+using Nexus.Services;
 using System.Threading.Tasks;
 
 namespace Nexus.Controllers

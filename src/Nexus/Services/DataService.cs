@@ -17,6 +17,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
 
 namespace Nexus.Services
 {
@@ -27,7 +28,8 @@ namespace Nexus.Services
         private ILogger _logger;
         private UserIdService _userIdService;
         private IDatabaseManager _databaseManager;
-        private NexusOptionsOld _options;
+        private PathsOptions _pathsOptions;
+
         private ulong _blockSizeLimit;
 
         #endregion
@@ -37,12 +39,12 @@ namespace Nexus.Services
         public DataService(IDatabaseManager databaseManager,
                            UserIdService userIdService,
                            ILoggerFactory loggerFactory,
-                           NexusOptionsOld options)
+                           IOptions<PathsOptions> pathsOptions)
         {
             _databaseManager = databaseManager;
             _userIdService = userIdService;
             _logger = loggerFactory.CreateLogger("Nexus");
-            _options = options;
+            _pathsOptions = pathsOptions.Value;
             _blockSizeLimit = 5 * 1000 * 1000UL;
 
             this.Progress = new Progress<ProgressUpdatedEventArgs>();
@@ -111,14 +113,14 @@ namespace Nexus.Services
                 });
 
                 // start
-                var zipFilePath = Path.Combine(_options.ExportDirectoryPath, $"Nexus_{exportParameters.Begin.ToString("yyyy-MM-ddTHH-mm")}_{sampleRate.ToUnitString(underscore: true)}_{Guid.NewGuid().ToString().Substring(0, 8)}.zip");
+                var zipFilePath = Path.Combine(_pathsOptions.Export, $"Nexus_{exportParameters.Begin.ToString("yyyy-MM-ddTHH-mm")}_{sampleRate.ToUnitString(underscore: true)}_{Guid.NewGuid().ToString().Substring(0, 8)}.zip");
                 using var zipArchive = ZipFile.Open(zipFilePath, ZipArchiveMode.Create);
 
                 // create tmp/target directory
                 var directoryPath = exportParameters.ExportMode switch
                 {
                     ExportMode.Web => Path.Combine(Path.GetTempPath(), "Nexus", Guid.NewGuid().ToString()),
-                    ExportMode.Local => Path.Combine(_options.ExportDirectoryPath, $"Nexus_{exportParameters.Begin.ToString("yyyy-MM-ddTHH-mm")}_{sampleRate.ToUnitString(underscore: true)}_{Guid.NewGuid().ToString().Substring(0, 8)}"),
+                    ExportMode.Local => Path.Combine(_pathsOptions.Export, $"Nexus_{exportParameters.Begin.ToString("yyyy-MM-ddTHH-mm")}_{sampleRate.ToUnitString(underscore: true)}_{Guid.NewGuid().ToString().Substring(0, 8)}"),
                     _ => throw new Exception("Unsupported export mode.")
                 };
 

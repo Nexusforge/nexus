@@ -37,35 +37,6 @@
 
         </MatTab>
 
-        <MatTab Label="Settings">
-
-            <MatButton Icon="@MatIconNames.Autorenew" @onclick="async () => await this.AppState.UpdateDatabaseAsync()">Reload Database</MatButton>
-
-            <MatTextField @bind-Value="@this.Options.DataBaseFolderPath"
-                          Label="Database Location">
-            </MatTextField>
-
-            <MatNumericUpDownField @bind-Value="@this.Options.AggregationChunkSizeMB"
-                                   Label="Aggregation chunk size (MB)"
-                                   PlaceHolder="e.g. 200">
-            </MatNumericUpDownField>
-
-            <MatTextField @bind-Value="@this.Options.AspBaseUrl"
-                          Label="URL"
-                          PlaceHolder="e.g. 0.0.0.0:8080">
-            </MatTextField>
-
-            <MatTextField @bind-Value="@this.Options.Language"
-                          Label="Language"
-                          PlaceHolder="e.g. en">
-            </MatTextField>
-
-            <MatButton @onclick="this.SaveOptions">
-                <i class="fa fa-save"></i> &nbsp; Save
-            </MatButton>
-
-        </MatTab>
-
         <MatTab Label="Job Creator">
 
             <div class="flex-row h-100">

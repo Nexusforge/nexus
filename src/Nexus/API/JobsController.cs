@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Services;
@@ -22,9 +23,10 @@ namespace Nexus.Controllers
         private ILogger _logger;
         private IServiceProvider _serviceProvider;
         private IDatabaseManager _databaseManager;
-        private NexusOptionsOld _options;
         private JobService<ExportJob> _exportJobService;
         private JobService<AggregationJob> _aggregationJobService;
+        private PathsOptions _pathsOptions;
+        private AggregationOptions _aggregationOptions;
 
         #endregion
 
@@ -32,18 +34,20 @@ namespace Nexus.Controllers
 
         public JobsController(
             IDatabaseManager databaseManager,
-            NexusOptionsOld options,
             JobService<ExportJob> exportJobService,
             JobService<AggregationJob> aggregationJobService,
             IServiceProvider serviceProvider,
-            ILoggerFactory loggerFactory)
+            ILogger<JobsController> logger,
+            IOptions<PathsOptions> pathOptions,
+            IOptions<AggregationOptions> aggregationOptions)
         {
             _databaseManager = databaseManager;
-            _options = options;
             _serviceProvider = serviceProvider;
             _exportJobService = exportJobService;
             _aggregationJobService = aggregationJobService;
-            _logger = loggerFactory.CreateLogger("Nexus");
+            _logger = logger;
+            _pathsOptions = pathOptions.Value;
+            _aggregationOptions = aggregationOptions.Value;
         }
 
         #endregion
@@ -263,8 +267,8 @@ namespace Nexus.Controllers
                         try
                         {
                             var result = await aggregationService.AggregateDataAsync(
-                                _options.DataBaseFolderPath,
-                                _options.AggregationChunkSizeMB,
+                                _pathsOptions.Data,
+                                _aggregationOptions.ChunkSizeMB,
                                 setup,
                                 state,
                                 registration => databaseManager.GetDataSourceControllerAsync(userIdService.User, registration, cts.Token, state),

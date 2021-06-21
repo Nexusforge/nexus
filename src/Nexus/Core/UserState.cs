@@ -15,6 +15,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Threading;
+using Microsoft.Extensions.Options;
 
 namespace Nexus.Core
 {
@@ -41,7 +42,7 @@ namespace Nexus.Core
         private AppState _appState;
         private DataService _dataService;
         private UserIdService _userIdService;
-        private NexusOptionsOld _options;
+        private PathsOptions _pathsOptions;
         private IDatabaseManager _databaseManager;
         private ExportParameters _exportParameters;
         private CatalogContainer _catalogContainer;
@@ -63,7 +64,7 @@ namespace Nexus.Core
                          UserIdService userIdService,
                          AuthenticationStateProvider authenticationStateProvider,
                          IDatabaseManager databaseManager,
-                         NexusOptionsOld options,
+                         IOptions<PathsOptions> pathsOptions,
                          DataService dataService)
         {
             this.Logger = logger;
@@ -74,7 +75,7 @@ namespace Nexus.Core
             _userIdService = userIdService;
             _authenticationStateProvider = authenticationStateProvider;
             _databaseManager = databaseManager;
-            _options = options;
+            _pathsOptions = pathsOptions.Value;
             _dataService = dataService;
             _codeDefinition = this.CreateCodeDefinition(CodeType.Filter);
 
@@ -417,7 +418,7 @@ namespace Nexus.Core
 
         public List<string> GetPresets()
         {
-            var folderPath = Path.Combine(_options.DataBaseFolderPath, "PRESETS");
+            var folderPath = Path.Combine(_pathsOptions.Data, "PRESETS");
 
             if (!Directory.Exists(folderPath))
                 Directory.CreateDirectory(folderPath);
@@ -652,7 +653,7 @@ namespace Nexus.Core
 
             if (this.CatalogContainer != null)
             {
-                var folderPath = Path.Combine(_options.DataBaseFolderPath, "ATTACHMENTS", this.CatalogContainer.PhysicalName);
+                var folderPath = Path.Combine(_pathsOptions.Data, "ATTACHMENTS", this.CatalogContainer.PhysicalName);
 
                 if (Directory.Exists(folderPath))
                     this.Attachments = Directory.GetFiles(folderPath, "*").ToList();
