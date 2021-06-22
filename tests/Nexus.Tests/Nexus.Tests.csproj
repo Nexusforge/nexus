@@ -21,4 +21,10 @@
     <ProjectReference Include="..\..\src\Nexus\Nexus.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="appsettings.ini">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

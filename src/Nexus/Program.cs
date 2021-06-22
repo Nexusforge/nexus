@@ -6,11 +6,9 @@ using Microsoft.Extensions.Logging.Console;
 using Nexus.Core;
 using System;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static System.Environment;
 
 namespace Nexus
 {
@@ -29,20 +27,7 @@ namespace Nexus
             var isWindowsService = args.Contains("--non-interactive");
 
             // configuration
-            var settingsPath = Environment.GetEnvironmentVariable("NEXUS:PATHS:SETTINGS");
-
-            if (string.IsNullOrWhiteSpace(settingsPath))
-                settingsPath = Environment.GetEnvironmentVariable("NEXUS__PATHS__SETTINGS");
-
-            if (string.IsNullOrWhiteSpace(settingsPath))
-                settingsPath = PathsOptions.DefaultSettingsPath;
-
-            var configuration = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json")
-                .AddIniFile(settingsPath, optional: true)
-                .AddEnvironmentVariables()
-                .AddCommandLine(args)
-                .Build();
+            var configuration = Program.BuildConfiguration(args);
 
             // service vs. interactive
             var hostBuilder = Program.CreateHostBuilder(Environment.CurrentDirectory, configuration);
@@ -60,7 +45,22 @@ namespace Nexus
             return 0;
         }
 
-        public static IHostBuilder CreateHostBuilder(string currentDirectory, IConfiguration configuration) => 
+        internal static IConfiguration BuildConfiguration(string[] args)
+        {
+            var settingsPath = Environment.GetEnvironmentVariable("NEXUS_PATHS_SETTINGS");
+
+            if (string.IsNullOrWhiteSpace(settingsPath))
+                settingsPath = PathsOptions.DefaultSettingsPath;
+
+            return new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .AddIniFile(settingsPath, optional: true)
+                .AddImprovedEnvironmentVariables(prefix: "NEXUS_")
+                .AddCommandLine(args)
+                .Build();
+        }
+
+        private static IHostBuilder CreateHostBuilder(string currentDirectory, IConfiguration configuration) => 
             Host.CreateDefaultBuilder()
                 .ConfigureAppConfiguration(builder =>
                 {

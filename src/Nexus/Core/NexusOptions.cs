@@ -8,24 +8,30 @@ namespace Nexus.Core
 {
     // template: https://grafana.com/docs/grafana/latest/administration/configuration/
 
-    public record GeneralOptions()
+    public abstract record NexusOptionsBase()
     {
-        public static string Section { get; } = "Nexus.General";
+        // for testing only
+        public string BlindSample { get; set; }
+    }
+
+    public record GeneralOptions() : NexusOptionsBase
+    {
+        public const string Section = "General";
         public string InstanceName { get; } = Dns.GetHostName();
         public string Language { get; }
     }
 
-    public record ServerOptions()
+    public record ServerOptions() : NexusOptionsBase
     {
-        public static string Section { get; } = "Nexus:Server";
+        public const string Section = "Server";
         public string HttpScheme { get; set; }
         public string HttpAddress { get; set; }
         public int HttpPort { get; set; }
     }
 
-    public record PathsOptions()
+    public record PathsOptions() : NexusOptionsBase
     {
-        public static string Section { get; } = "Nexus:Paths";
+        public const string Section = "Paths";
 
         public static string DefaultSettingsPath { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
             ? Path.Combine(Environment.GetFolderPath(SpecialFolder.ApplicationData), "Nexus", "nexus.conf")
@@ -42,33 +48,33 @@ namespace Nexus.Core
         public string Export => Path.Combine(this.Data, "EXPORT");
     }
 
-    public record SecurityOptions()
+    public record SecurityOptions() : NexusOptionsBase
     {
-        public static string Section { get; } = "Nexus:Security";
+        public const string Section = "Security";
         public static string DefaultRootUser { get; } = "root@nexus.localhost";
         public static string DefaultRootPassword { get; } = "#root0/User1";
         public string RootUser { get; set; } = SecurityOptions.DefaultRootPassword;
         public string RootPassword { get; set; } = SecurityOptions.DefaultRootPassword;
     }
 
-    public record UsersOptions()
+    public record UsersOptions() : NexusOptionsBase
     {
-        public static string Section { get; } = "Nexus:Users";
+        public const string Section = "Users";
         public bool VerifyEmail { get; set; }
     }
 
-    public record SmtpOptions
+    public record SmtpOptions : NexusOptionsBase
     {
-        public static string Section { get; } = "Nexus:Smtp";
+        public const string Section = "Smtp";
         public string Host { get; set; }
         public ushort Port { get; set; }
         public string FromAddress { get; set; }
         public string FromName { get; set; }
     }
 
-    public record AggregationOptions()
+    public record AggregationOptions() : NexusOptionsBase
     {
-        public static string Section { get; } = "Nexus:Aggregation";
+        public const string Section = "Aggregation";
         public uint ChunkSizeMB { get; set; }
     }
 }
