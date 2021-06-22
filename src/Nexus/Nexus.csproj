@@ -30,7 +30,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\extensions\Nexus.Extension.Csv\Nexus.Extension.Csv.csproj" />
     <ProjectReference Include="..\..\extensions\Nexus.Extension.Famos\Nexus.Extension.Famos.csproj" />
     <ProjectReference Include="..\..\extensions\Nexus.Extension.Mat73\Nexus.Extension.Mat73.csproj" />
   </ItemGroup>

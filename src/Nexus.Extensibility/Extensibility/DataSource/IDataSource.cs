@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Nexus.DataModel;
 using System;
 using System.Collections.Generic;
@@ -16,7 +15,7 @@ namespace Nexus.Extensibility
 
         ILogger Logger { set; }
 
-        IConfiguration Configuration { set; }
+        Dictionary<string, string> Configuration { set; }
 
         #endregion
 

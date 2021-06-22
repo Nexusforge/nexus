@@ -16,11 +16,6 @@ namespace Nexus.DataModel
             this.Catalog = new Catalog(id);
         }
 
-        private CatalogContainer()
-        {
-            //
-        }
-
         #endregion
 
         #region "Properties"
@@ -35,6 +30,8 @@ namespace Nexus.DataModel
 
         public Catalog Catalog { get; set; }
 
+        public Catalog CatalogMeta { get; set; }
+
         public CatalogSettings CatalogSettings { get; set; }
 
         #endregion
@@ -48,7 +45,7 @@ namespace Nexus.DataModel
 
             catalog.Channels = channels.Select(reference =>
             {
-                var channelMeta = this.CatalogSettings.Channels.First(channelMeta => channelMeta.Id == reference.Id);
+                var channelMeta = this.CatalogMeta.Channels.First(channelMeta => channelMeta.Id == reference.Id);
 
                 var channel = new Channel(reference.Id, catalog)
                 {
@@ -64,7 +61,7 @@ namespace Nexus.DataModel
                         : reference.Description
                 };
 
-                var referenceDatasets = datasets.Where(dataset => (Channel)dataset.Channel == reference);
+                var referenceDatasets = datasets.Where(dataset => dataset.Channel == reference);
 
                 channel.Datasets = referenceDatasets.Select(referenceDataset =>
                 {

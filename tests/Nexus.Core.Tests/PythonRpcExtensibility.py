@@ -44,7 +44,7 @@ class Logger():
 class IDataSource(ABC):
 
     resource_locator: ParseResult
-    parameters: Dict[str, str]
+    configuration: Dict[str, str]
     logger: Logger
 
     async def on_parameters_set_async(self):
@@ -164,11 +164,11 @@ class RpcCommunicator:
         elif request["target"] == "SetParameters":
 
             resourceLocator = urlparse(request["arguments"][0])
-            parameters = request["arguments"][1]
+            configuration = request["arguments"][1]
             logger = Logger(sys.stderr)
 
             self._dataSource.resource_locator = resourceLocator
-            self._dataSource.parameters = parameters
+            self._dataSource.configuration = configuration
             self._dataSource.logger = logger
 
             await self._dataSource.on_parameters_set_async()

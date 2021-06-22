@@ -38,7 +38,7 @@ namespace Nexus.Extensibility.Tests
             {
                 ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), root)),
                 Logger = _logger,
-                Parameters = null,
+                Configuration = null,
             } as IDataSource;
 
             await dataSource.OnParametersSetAsync();
@@ -69,7 +69,7 @@ namespace Nexus.Extensibility.Tests
             {
                 ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), root)),
                 Logger = _logger,
-                Parameters = null,
+                Configuration = null,
             } as IDataSource;
 
             await dataSource.OnParametersSetAsync();
@@ -92,7 +92,7 @@ namespace Nexus.Extensibility.Tests
             {
                 ResourceLocator = new Uri(string.Empty, UriKind.Relative),
                 Logger = _logger,
-                Parameters = null,
+                Configuration = null,
             } as IDataSource;
            
             await Assert.ThrowsAsync<ArgumentException>(() => 
@@ -108,7 +108,7 @@ namespace Nexus.Extensibility.Tests
             {
                 ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), "DATABASES/TESTDATA")),
                 Logger = _logger,
-                Parameters = null,
+                Configuration = null,
             } as IDataSource;
 
             var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
@@ -157,7 +157,7 @@ namespace Nexus.Extensibility.Tests
             {
                 ResourceLocator = new Uri(string.Empty, UriKind.Relative),
                 Logger = _logger,
-                Parameters = null,
+                Configuration = null,
             } as IDataSource;
 
             await Assert.ThrowsAsync<ArgumentException>(() =>

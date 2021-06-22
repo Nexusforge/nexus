@@ -74,7 +74,7 @@ namespace Nexus.Extensibility
 
         public ILogger Logger { get; set; }
 
-        public Dictionary<string, string> Parameters { get; set; }
+        public Dictionary<string, string> Configuration { get; set; }
 
         protected string Root { get; private set; }
 

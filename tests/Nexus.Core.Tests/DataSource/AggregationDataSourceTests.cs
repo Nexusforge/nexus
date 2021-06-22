@@ -29,7 +29,7 @@ namespace Nexus.Core.Tests
             {
                 ResourceLocator = _fixture.ResourceLocator,
                 Logger = _logger,
-                Parameters = new Dictionary<string, string>()
+                Configuration = new Dictionary<string, string>()
             } as IDataSource;
 
             await dataSource.OnParametersSetAsync();
@@ -53,7 +53,7 @@ namespace Nexus.Core.Tests
             {
                 ResourceLocator = _fixture.ResourceLocator,
                 Logger = _logger,
-                Parameters = new Dictionary<string, string>()
+                Configuration = new Dictionary<string, string>()
             } as IDataSource;
 
             await dataSource.OnParametersSetAsync();
@@ -71,7 +71,7 @@ namespace Nexus.Core.Tests
             {
                 ResourceLocator = _fixture.ResourceLocator,
                 Logger = _logger,
-                Parameters = new Dictionary<string, string>()
+                Configuration = new Dictionary<string, string>()
             } as IDataSource;
 
             await dataSource.OnParametersSetAsync();
@@ -91,7 +91,7 @@ namespace Nexus.Core.Tests
             {
                 ResourceLocator = _fixture.ResourceLocator,
                 Logger = _logger,
-                Parameters = new Dictionary<string, string>()
+                Configuration = new Dictionary<string, string>()
             } as IDataSource;
 
             await dataSource.OnParametersSetAsync();

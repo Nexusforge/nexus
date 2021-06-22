@@ -117,48 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="ChannelContext_BufferTypeInvalid" xml:space="preserve">
-    <value>The buffer type is invalid.</value>
-  </data>
-  <data name="ChannelDescription_BufferTypeInvalid" xml:space="preserve">
-    <value>The provided type must be assignable to IBuffer.</value>
-  </data>
-  <data name="DataReaderExtensionSettingsBase_MaximumDatasetAgeInvalid" xml:space="preserve">
-    <value>The MaximumDatasetAge must be between 0 and 10000.</value>
-  </data>
-  <data name="DataWriterExtensionLogicBase_DateTimeAlreadyWritten" xml:space="preserve">
-    <value>The requested period has already been written before.</value>
-  </data>
-  <data name="DataWriterExtensionLogicBase_DateTimeGranularityTooHigh" xml:space="preserve">
-    <value>DateTime and TimeSpan arguments must have a granularity &gt;= 1 s.</value>
-  </data>
-  <data name="DataWriterExtensionLogicBase_FileGranularityTooHigh" xml:space="preserve">
-    <value>The file granularity is higher than the sample period.</value>
-  </data>
-  <data name="ExtensionSettingsBase_ExtensionContextAttributeNotDefined" xml:space="preserve">
-    <value>ExtensionContextAttribute is not defined.</value>
-  </data>
-  <data name="ExtensionSettingsBase_ExtensionDescriptionAttributeNotDefined" xml:space="preserve">
-    <value>ExtensionDescriptionAttribute is not defined.</value>
-  </data>
-  <data name="NexusCatalogDescription_InvalidFormatVersion" xml:space="preserve">
-    <value>The format version must be equal or greater zero.</value>
-  </data>
-  <data name="NexusCatalogDescription_InvalidVersion" xml:space="preserve">
-    <value>The catalog version must be equal or greater zero.</value>
-  </data>
-  <data name="NexusCatalog_ChannelHubNameInvalid" xml:space="preserve">
-    <value>One or more channel names are invalid</value>
-  </data>
-  <data name="NexusCatalog_ChannelHubNotUnqiue" xml:space="preserve">
-    <value>The channel set is invalid: A channel must be unique.</value>
-  </data>
-  <data name="NexusCatalog_DataGatewaySettingsIdNotUnique" xml:space="preserve">
-    <value>The data gateway settings IDs are not unique.</value>
-  </data>
-  <data name="NexusCatalog_DataWriterSettingsIdNotUnique" xml:space="preserve">
-    <value>The data writer settings IDs are not unique.</value>
-  </data>
   <data name="NexusCatalog_PrimaryGroupNameInvalid" xml:space="preserve">
     <value>The 1st level group name is invalid.</value>
   </data>
@@ -182,8 +140,5 @@
   </data>
   <data name="NexusUtilities_NameEmpty" xml:space="preserve">
     <value>The name must not be empty.</value>
-  </data>
-  <data name="Catalog" xml:space="preserve">
-    <value>Invalid group identifier.</value>
   </data>
 </root>

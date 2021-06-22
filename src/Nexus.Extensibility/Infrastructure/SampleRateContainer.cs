@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace Nexus.Infrastructure
@@ -123,14 +125,28 @@ namespace Nexus.Infrastructure
 
         public string ToUnitString(bool underscore = false)
         {
-            var frequency = this.SamplesPerDay / 86400.0;
-            var period = 86400.0 / this.SamplesPerDay;
-            var fillChar = underscore ? '_' : ' ';
+            var postFixes = new List<string>()
+            {
+                "s",
+                "ms",
+                "us",
+                "ns"
+            };
 
-            if (frequency > 1)
-                return $"{frequency:0.##}{fillChar}Hz";
-            else
-                return $"{period:0.##}{fillChar}s";
+            var fillChar = underscore ? '_' : ' ';
+            var samplePeriod = 86400.0M / this.SamplesPerDay;
+            var currentValue = samplePeriod;
+
+            for (int i = 0; i < postFixes.Count; i++)
+            {
+                if (currentValue < 1)
+                    currentValue *= 1000;
+
+                else
+                    return $"{(int)currentValue}{fillChar}{postFixes[i]}";
+            }
+
+            return $"{(int)currentValue}{fillChar}{postFixes.Last()}";
         }
 
         #endregion

@@ -1,150 +1,150 @@
-﻿using Microsoft.Extensions.Logging;
-using Nexus.Buffers;
-using Nexus.DataModel;
-using Nexus.Infrastructure;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿//using Microsoft.Extensions.Logging;
+//using Nexus.Buffers;
+//using Nexus.DataModel;
+//using Nexus.Infrastructure;
+//using System;
+//using System.Collections.Generic;
+//using System.Linq;
 
-namespace Nexus.Extensibility
-{
-#warning Add "CheckFileSize" method (e.g. for Famos).
-    public abstract class DataWriterController : IDataWriter
-    {
-        #region "Fields"
+//namespace Nexus.Extensibility
+//{
+//#warning Add "CheckFileSize" method (e.g. for Famos).
+//    public abstract class DataWriterController : IDataWriter
+//    {
+//        #region "Fields"
 
-        private DateTime _lastFileBegin;
-        private DateTime _lastWrite;
+//        private DateTime _lastFileBegin;
+//        private DateTime _lastWrite;
 
-        private List<Dataset> _datasets;
+//        private List<Dataset> _datasets;
 
-        #endregion
+//        #endregion
 
-        #region "Constructors"
+//        #region "Constructors"
 
-        public DataWriterController(ILogger logger)
-        {
-            this.BasePeriod = TimeSpan.FromSeconds(1);
-        }
+//        public DataWriterController(ILogger logger)
+//        {
+//            this.BasePeriod = TimeSpan.FromSeconds(1);
+//        }
 
-        #endregion
+//        #endregion
 
-        #region "Properties"
+//        #region "Properties"
 
-        protected DataWriterContext DataWriterContext { get; private set; }
+//        protected DataWriterContext DataWriterContext { get; private set; }
 
-        protected TimeSpan BasePeriod { get; }
+//        protected TimeSpan BasePeriod { get; }
 
-        #endregion
+//        #endregion
 
-        #region "Methods"
+//        #region "Methods"
 
-        public void Configure(DataWriterContext dataWriterContext, List<Dataset> datasets)
-        {
-            this.DataWriterContext = dataWriterContext;
-            _datasets = datasets;
+//        public void Configure(DataWriterContext dataWriterContext, List<Dataset> datasets)
+//        {
+//            this.DataWriterContext = dataWriterContext;
+//            _datasets = datasets;
 
-            this.OnConfigure();
-        }
+//            this.OnConfigure();
+//        }
 
-        public void Write(DateTime begin, TimeSpan bufferPeriod, IList<IBuffer> buffers)
-        {
-            if (begin < _lastWrite)
-                throw new ArgumentException(ErrorMessage.DataWriterExtensionLogicBase_DateTimeAlreadyWritten);
+//        public void Write(DateTime begin, TimeSpan bufferPeriod, IList<IBuffer> buffers)
+//        {
+//            if (begin < _lastWrite)
+//                throw new ArgumentException(ErrorMessage.DataWriterExtensionLogicBase_DateTimeAlreadyWritten);
 
-            if (begin != begin.RoundDown(this.BasePeriod))
-                throw new ArgumentException(ErrorMessage.DataWriterExtensionLogicBase_DateTimeGranularityTooHigh);
+//            if (begin != begin.RoundDown(this.BasePeriod))
+//                throw new ArgumentException(ErrorMessage.DataWriterExtensionLogicBase_DateTimeGranularityTooHigh);
 
-            if (bufferPeriod.Milliseconds > 0)
-                throw new ArgumentException(ErrorMessage.DataWriterExtensionLogicBase_DateTimeGranularityTooHigh);
+//            if (bufferPeriod.Milliseconds > 0)
+//                throw new ArgumentException(ErrorMessage.DataWriterExtensionLogicBase_DateTimeGranularityTooHigh);
 
-            var bufferOffset = TimeSpan.Zero;
+//            var bufferOffset = TimeSpan.Zero;
 
-            var channelContexts = _datasets
-                .Zip(buffers, (channelDescription, buffer) => new ChannelContext(channelDescription, buffer))
-                .ToList();
+//            var channelContexts = _datasets
+//                .Zip(buffers, (channelDescription, buffer) => new ChannelContext(channelDescription, buffer))
+//                .ToList();
 
-            var channelContextGroups = channelContexts
-                .GroupBy(channelContext => channelContext.ChannelDescription.SampleRate)
-                .Select(group => new ChannelContextGroup(group.Key, group.ToList()))
-                .ToList();
+//            var channelContextGroups = channelContexts
+//                .GroupBy(channelContext => channelContext.ChannelDescription.SampleRate)
+//                .Select(group => new ChannelContextGroup(group.Key, group.ToList()))
+//                .ToList();
 
-            while (bufferOffset < bufferPeriod)
-            {
-                var currentBegin = begin + bufferOffset;
+//            while (bufferOffset < bufferPeriod)
+//            {
+//                var currentBegin = begin + bufferOffset;
 
-                DateTime fileBegin;
+//                DateTime fileBegin;
 
-                if (this.Settings.SingleFile)
-                    fileBegin = _lastFileBegin != DateTime.MinValue ? _lastFileBegin : begin;
-                else
-                    fileBegin = currentBegin.RoundDown(this.Settings.FilePeriod);
+//                if (this.Settings.SingleFile)
+//                    fileBegin = _lastFileBegin != DateTime.MinValue ? _lastFileBegin : begin;
+//                else
+//                    fileBegin = currentBegin.RoundDown(this.Settings.FilePeriod);
 
-                var fileOffset = currentBegin - fileBegin;
+//                var fileOffset = currentBegin - fileBegin;
 
-                var remainingFilePeriod = this.Settings.FilePeriod - fileOffset;
-                var remainingBufferPeriod = bufferPeriod - bufferOffset;
+//                var remainingFilePeriod = this.Settings.FilePeriod - fileOffset;
+//                var remainingBufferPeriod = bufferPeriod - bufferOffset;
 
-                var period = new TimeSpan(Math.Min(remainingFilePeriod.Ticks, remainingBufferPeriod.Ticks));
+//                var period = new TimeSpan(Math.Min(remainingFilePeriod.Ticks, remainingBufferPeriod.Ticks));
 
-                // ensure that file granularity is low enough for all sample rates
-                foreach (var contextGroup in channelContextGroups)
-                {
-                    var sampleRate = contextGroup.SampleRate;
-                    var totalSeconds = (int)Math.Round(this.Settings.FilePeriod.TotalSeconds, MidpointRounding.AwayFromZero);
-                    var length = totalSeconds * sampleRate.SamplesPerSecond;
+//                // ensure that file granularity is low enough for all sample rates
+//                foreach (var contextGroup in channelContextGroups)
+//                {
+//                    var sampleRate = contextGroup.SampleRate;
+//                    var totalSeconds = (int)Math.Round(this.Settings.FilePeriod.TotalSeconds, MidpointRounding.AwayFromZero);
+//                    var length = totalSeconds * sampleRate.SamplesPerSecond;
 
-                    if (length < 1)
-                        throw new Exception(ErrorMessage.DataWriterExtensionLogicBase_FileGranularityTooHigh);
-                }
+//                    if (length < 1)
+//                        throw new Exception(ErrorMessage.DataWriterExtensionLogicBase_FileGranularityTooHigh);
+//                }
 
-                // check if file must be created or updated
-                if (fileBegin != _lastFileBegin)
-                {
-                    this.OnPrepareFile(fileBegin, channelContextGroups);
+//                // check if file must be created or updated
+//                if (fileBegin != _lastFileBegin)
+//                {
+//                    this.OnPrepareFile(fileBegin, channelContextGroups);
 
-                    _lastFileBegin = fileBegin;
-                }
+//                    _lastFileBegin = fileBegin;
+//                }
 
-                // write data
-                foreach (var contextGroup in channelContextGroups)
-                {
-                    var sampleRate = contextGroup.SampleRate;
+//                // write data
+//                foreach (var contextGroup in channelContextGroups)
+//                {
+//                    var sampleRate = contextGroup.SampleRate;
 
-                    var actualFileOffset = this.TimeSpanToIndex(fileOffset, sampleRate);
-                    var actualBufferOffset = this.TimeSpanToIndex(bufferOffset, sampleRate);
-                    var actualPeriod = this.TimeSpanToIndex(period, sampleRate);
+//                    var actualFileOffset = this.TimeSpanToIndex(fileOffset, sampleRate);
+//                    var actualBufferOffset = this.TimeSpanToIndex(bufferOffset, sampleRate);
+//                    var actualPeriod = this.TimeSpanToIndex(period, sampleRate);
 
-                    this.OnWrite(
-                        contextGroup,
-                        actualFileOffset,
-                        actualBufferOffset,
-                        actualPeriod
-                    );
+//                    this.OnWrite(
+//                        contextGroup,
+//                        actualFileOffset,
+//                        actualBufferOffset,
+//                        actualPeriod
+//                    );
 
-                    this.Logger.LogInformation($"data written to file");
-                }
+//                    this.Logger.LogInformation($"data written to file");
+//                }
 
-                bufferOffset += period;
-            }
+//                bufferOffset += period;
+//            }
 
-            _lastWrite = begin + bufferPeriod;
-        }
+//            _lastWrite = begin + bufferPeriod;
+//        }
 
-        protected virtual void OnConfigure()
-        {
-            //
-        }
+//        protected virtual void OnConfigure()
+//        {
+//            //
+//        }
 
-        protected abstract void OnPrepareFile(DateTime startDateTime, List<ChannelContextGroup> channelContextGroupSet);
+//        protected abstract void OnPrepareFile(DateTime startDateTime, List<ChannelContextGroup> channelContextGroupSet);
 
-        protected abstract void OnWrite(ChannelContextGroup contextGroup, ulong fileOffset, ulong bufferOffset, ulong length);
+//        protected abstract void OnWrite(ChannelContextGroup contextGroup, ulong fileOffset, ulong bufferOffset, ulong length);
 
-        private ulong TimeSpanToIndex(TimeSpan timeSpan, SampleRateContainer sampleRate)
-        {
-            return (ulong)(timeSpan.TotalSeconds * (double)sampleRate.SamplesPerSecond);
-        }
+//        private ulong TimeSpanToIndex(TimeSpan timeSpan, SampleRateContainer sampleRate)
+//        {
+//            return (ulong)(timeSpan.TotalSeconds * (double)sampleRate.SamplesPerSecond);
+//        }
 
-        #endregion
-    }
-}
+//        #endregion
+//    }
+//}

@@ -61,128 +61,11 @@ namespace Nexus {
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Invalid group identifier. ähnelt.
-        /// </summary>
-        internal static string Catalog {
-            get {
-                return ResourceManager.GetString("Catalog", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die The buffer type is invalid. ähnelt.
-        /// </summary>
-        internal static string ChannelContext_BufferTypeInvalid {
-            get {
-                return ResourceManager.GetString("ChannelContext_BufferTypeInvalid", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die The provided type must be assignable to IBuffer. ähnelt.
-        /// </summary>
-        internal static string ChannelDescription_BufferTypeInvalid {
-            get {
-                return ResourceManager.GetString("ChannelDescription_BufferTypeInvalid", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die The MaximumDatasetAge must be between 0 and 10000. ähnelt.
-        /// </summary>
-        internal static string DataReaderExtensionSettingsBase_MaximumDatasetAgeInvalid {
-            get {
-                return ResourceManager.GetString("DataReaderExtensionSettingsBase_MaximumDatasetAgeInvalid", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die The requested period has already been written before. ähnelt.
-        /// </summary>
-        internal static string DataWriterExtensionLogicBase_DateTimeAlreadyWritten {
-            get {
-                return ResourceManager.GetString("DataWriterExtensionLogicBase_DateTimeAlreadyWritten", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die DateTime and TimeSpan arguments must have a granularity &gt;= 1 s. ähnelt.
-        /// </summary>
-        internal static string DataWriterExtensionLogicBase_DateTimeGranularityTooHigh {
-            get {
-                return ResourceManager.GetString("DataWriterExtensionLogicBase_DateTimeGranularityTooHigh", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die The file granularity is higher than the sample period. ähnelt.
-        /// </summary>
-        internal static string DataWriterExtensionLogicBase_FileGranularityTooHigh {
-            get {
-                return ResourceManager.GetString("DataWriterExtensionLogicBase_FileGranularityTooHigh", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die ExtensionContextAttribute is not defined. ähnelt.
-        /// </summary>
-        internal static string ExtensionSettingsBase_ExtensionContextAttributeNotDefined {
-            get {
-                return ResourceManager.GetString("ExtensionSettingsBase_ExtensionContextAttributeNotDefined", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die ExtensionDescriptionAttribute is not defined. ähnelt.
-        /// </summary>
-        internal static string ExtensionSettingsBase_ExtensionDescriptionAttributeNotDefined {
-            get {
-                return ResourceManager.GetString("ExtensionSettingsBase_ExtensionDescriptionAttributeNotDefined", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die The catalog name is invalid. ähnelt.
         /// </summary>
         internal static string NexusCatalog_CatalogNameInvalid {
             get {
                 return ResourceManager.GetString("NexusCatalog_CatalogNameInvalid", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die One or more channel names are invalid ähnelt.
-        /// </summary>
-        internal static string NexusCatalog_ChannelHubNameInvalid {
-            get {
-                return ResourceManager.GetString("NexusCatalog_ChannelHubNameInvalid", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die The channel set is invalid: A channel must be unique. ähnelt.
-        /// </summary>
-        internal static string NexusCatalog_ChannelHubNotUnqiue {
-            get {
-                return ResourceManager.GetString("NexusCatalog_ChannelHubNotUnqiue", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die The data gateway settings IDs are not unique. ähnelt.
-        /// </summary>
-        internal static string NexusCatalog_DataGatewaySettingsIdNotUnique {
-            get {
-                return ResourceManager.GetString("NexusCatalog_DataGatewaySettingsIdNotUnique", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die The data writer settings IDs are not unique. ähnelt.
-        /// </summary>
-        internal static string NexusCatalog_DataWriterSettingsIdNotUnique {
-            get {
-                return ResourceManager.GetString("NexusCatalog_DataWriterSettingsIdNotUnique", resourceCulture);
             }
         }
         
@@ -201,24 +84,6 @@ namespace Nexus {
         internal static string NexusCatalog_SecondaryGroupNameInvalid {
             get {
                 return ResourceManager.GetString("NexusCatalog_SecondaryGroupNameInvalid", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die The format version must be equal or greater zero. ähnelt.
-        /// </summary>
-        internal static string NexusCatalogDescription_InvalidFormatVersion {
-            get {
-                return ResourceManager.GetString("NexusCatalogDescription_InvalidFormatVersion", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die The catalog version must be equal or greater zero. ähnelt.
-        /// </summary>
-        internal static string NexusCatalogDescription_InvalidVersion {
-            get {
-                return ResourceManager.GetString("NexusCatalogDescription_InvalidVersion", resourceCulture);
             }
         }
         

@@ -39,7 +39,7 @@ namespace Nexus.Extensions
 
         public Uri ResourceLocator { private get; set; }
 
-        public Dictionary<string, string> Parameters { private get; set; }
+        public Dictionary<string, string> Configuration { private get; set; }
 
         public ILogger Logger { private get; set; }
 
@@ -49,11 +49,11 @@ namespace Nexus.Extensions
 
         public async Task OnParametersSetAsync()
         {
-            if (!this.Parameters.TryGetValue("command", out var command))
+            if (!this.Configuration.TryGetValue("command", out var command))
                 throw new KeyNotFoundException("The command parameter must be provided.");
 
-            var arguments = this.Parameters.ContainsKey("arguments")
-                ? this.Parameters["arguments"]
+            var arguments = this.Configuration.ContainsKey("arguments")
+                ? this.Configuration["arguments"]
                 : string.Empty;
 
             var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromSeconds(10));
@@ -74,7 +74,7 @@ namespace Nexus.Extensions
             await _communicator.SendAsync("SetParameters", new object[]
             {
                 this.ResourceLocator.ToString(),
-                this.Parameters
+                this.Configuration
             }, timeoutTokenSource.Token);
         }
 

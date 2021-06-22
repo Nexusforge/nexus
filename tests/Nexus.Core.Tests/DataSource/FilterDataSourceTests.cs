@@ -32,7 +32,7 @@ namespace Nexus.Core.Tests
             {
                 ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), "FILTERDATA")),
                 Logger = _logger,
-                Parameters = new Dictionary<string, string>()
+                Configuration = new Dictionary<string, string>()
             } as IDataSource;
 
             await dataSource.OnParametersSetAsync();
@@ -65,7 +65,7 @@ namespace Nexus.Core.Tests
             {
                 ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), "FILTERDATA")),
                 Logger = _logger,
-                Parameters = new Dictionary<string, string>()
+                Configuration = new Dictionary<string, string>()
             } as IDataSource;
 
             await dataSource.OnParametersSetAsync();
@@ -83,7 +83,7 @@ namespace Nexus.Core.Tests
             {
                 ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), "FILTERDATA")),
                 Logger = _logger,
-                Parameters = new Dictionary<string, string>()
+                Configuration = new Dictionary<string, string>()
             } as IDataSource;
 
             await dataSource.OnParametersSetAsync();
@@ -141,7 +141,7 @@ namespace Nexus.Core.Tests
             {
                 ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), "FILTERDATA")),
                 Logger = _logger,
-                Parameters = new Dictionary<string, string>(),
+                Configuration = new Dictionary<string, string>(),
                 IsCatalogAccessible = _ => true,
                 Database = database,
                 GetDataSourceAsync = id => Task.FromResult(new DataSourceController(subDataSource, null))

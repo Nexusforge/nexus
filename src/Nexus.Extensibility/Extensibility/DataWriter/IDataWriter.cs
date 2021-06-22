@@ -1,7 +1,7 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nexus.Extensibility
@@ -10,15 +10,13 @@ namespace Nexus.Extensibility
     {
         #region Properties
 
+        string TargetFolder { set; }
+
         ILogger Logger { set; }
 
-        IConfiguration Configuration { set; }
+        Dictionary<string, string> Configuration { set; }
 
         #endregion
-
-#error TODO 1: Repair plugins (IConfiguration)
-#error TODO 2: Reimplement data writers, i.e. no more 1 minute limit
-#error TODO 3: Make this interface async
 
         #region Methods
 
@@ -27,9 +25,9 @@ namespace Nexus.Extensibility
             return Task.CompletedTask;
         }
 
-        void OnPrepareFile(DateTime startDateTime, List<ChannelContextGroup> channelContextGroupSet);
+        Task OpenAsync(DateTime begin, List<CatalogWriteInfo> writeInfoGroups, CancellationToken cancellationToken);
 
-        void OnWrite(ChannelContextGroup contextGroup, ulong fileOffset, ulong bufferOffset, ulong length);
+        Task WriteAsync(ulong fileOffset, ulong bufferOffset, ulong length, CatalogWriteInfo writeInfoGroup, CancellationToken cancellationToken);
 
         #endregion
     }

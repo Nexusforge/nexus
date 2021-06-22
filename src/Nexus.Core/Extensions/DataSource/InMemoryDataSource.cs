@@ -20,7 +20,7 @@ namespace Nexus.Extensions
 
         public ILogger Logger { get; set; }
 
-        public Dictionary<string, string> Parameters { get; set; }
+        public Dictionary<string, string> Configuration { get; set; }
 
         #endregion
 

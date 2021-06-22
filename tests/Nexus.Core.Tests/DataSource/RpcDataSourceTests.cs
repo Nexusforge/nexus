@@ -31,7 +31,7 @@ namespace Nexus.Core.Tests
             {
                 ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), "TESTDATA")),
                 Logger = _logger,
-                Parameters = new Dictionary<string, string>() 
+                Configuration = new Dictionary<string, string>() 
                 { 
                     ["command"] = "python.exe",
                     ["arguments"] =  "PythonRpcDataSource.py"
@@ -71,7 +71,7 @@ namespace Nexus.Core.Tests
             {
                 ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), "TESTDATA")),
                 Logger = _logger,
-                Parameters = new Dictionary<string, string>()
+                Configuration = new Dictionary<string, string>()
                 {
                     ["command"] = "python.exe",
                     ["arguments"] = "PythonRpcDataSource.py"
@@ -93,7 +93,7 @@ namespace Nexus.Core.Tests
             {
                 ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), "TESTDATA")),
                 Logger = _logger,
-                Parameters = new Dictionary<string, string>()
+                Configuration = new Dictionary<string, string>()
                 {
                     ["command"] = "python.exe",
                     ["arguments"] = "PythonRpcDataSource.py"
@@ -116,7 +116,7 @@ namespace Nexus.Core.Tests
             {
                 ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), "TESTDATA")),
                 Logger = _logger,
-                Parameters = new Dictionary<string, string>()
+                Configuration = new Dictionary<string, string>()
                 {
                     ["command"] = "python.exe",
                     ["arguments"] = "PythonRpcDataSource.py"
@@ -169,7 +169,7 @@ namespace Nexus.Core.Tests
             {
                 ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), "TESTDATA")),
                 Logger = loggerMock.Object,
-                Parameters = new Dictionary<string, string>()
+                Configuration = new Dictionary<string, string>()
                 {
                     ["command"] = "python.exe",
                     ["arguments"] = "PythonRpcDataSource.py"
