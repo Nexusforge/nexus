@@ -202,7 +202,7 @@ namespace Nexus.Services
                 filePeriod = TimeSpan.FromSeconds((int)exportParameters.FileGranularity);
 
             DataWriterExtensionSettingsBase settings;
-            DataWriterExtensionLogicBase dataWriter;
+            DataWriterController dataWriter;
 
             switch (exportParameters.FileFormat)
             {
@@ -273,7 +273,7 @@ namespace Nexus.Services
         }
 
         private async Task CreateFilesAsync(ClaimsPrincipal user,
-                                             DataWriterExtensionLogicBase dataWriter,
+                                             DataWriterController dataWriter,
                                              ExportParameters exportParameters,
                                              SparseCatalog sparseCatalog,
                                              CancellationToken cancellationToken)
@@ -319,7 +319,7 @@ namespace Nexus.Services
             cancellationToken.ThrowIfCancellationRequested();
         }
 
-        private void ProcessData(DataWriterExtensionLogicBase dataWriter, DataSourceProgressRecord progressRecord)
+        private void ProcessData(DataWriterController dataWriter, DataSourceProgressRecord progressRecord)
         {
             var buffers = progressRecord.DatasetToResultMap.Select(entry =>
             {

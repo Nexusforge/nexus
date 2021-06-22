@@ -124,15 +124,6 @@ namespace Nexus {
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die The file granularity value is invalid. ähnelt.
-        /// </summary>
-        internal static string DataWriterExtensionSettingsBase_FileGranularityInvalid {
-            get {
-                return ResourceManager.GetString("DataWriterExtensionSettingsBase_FileGranularityInvalid", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die ExtensionContextAttribute is not defined. ähnelt.
         /// </summary>
         internal static string ExtensionSettingsBase_ExtensionContextAttributeNotDefined {

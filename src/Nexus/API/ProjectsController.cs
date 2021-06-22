@@ -57,13 +57,13 @@ namespace Nexus.Controllers
             catalogContainers = catalogContainers.Where(catalogContainer =>
             {
                 var isCatalogAccessible = Utilities.IsCatalogAccessible(this.User, catalogContainer.Id, _databaseManager.Database);
-                var isCatalogVisible = Utilities.IsCatalogVisible(this.User, catalogContainer.CatalogMeta, isCatalogAccessible);
+                var isCatalogVisible = Utilities.IsCatalogVisible(this.User, catalogContainer.CatalogSettings, isCatalogAccessible);
 
                 return isCatalogAccessible && isCatalogVisible;
             }).ToList();
 
             var response = catalogContainers.Select(catalogContainer
-                => this.CreateCatalogResponse(catalogContainer.Catalog, catalogContainer.CatalogMeta))
+                => this.CreateCatalogResponse(catalogContainer.Catalog, catalogContainer.CatalogSettings))
                 .ToList();
 
             return response;
@@ -504,7 +504,7 @@ namespace Nexus.Controllers
             if (catalogContainer != null)
             {
                 var catalog = catalogContainer.Catalog;
-                var catalogMeta = catalogContainer.CatalogMeta;
+                var catalogMeta = catalogContainer.CatalogSettings;
 
                 return await action.Invoke(catalog, catalogMeta);
             }

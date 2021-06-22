@@ -135,9 +135,6 @@
   <data name="DataWriterExtensionLogicBase_FileGranularityTooHigh" xml:space="preserve">
     <value>The file granularity is higher than the sample period.</value>
   </data>
-  <data name="DataWriterExtensionSettingsBase_FileGranularityInvalid" xml:space="preserve">
-    <value>The file granularity value is invalid.</value>
-  </data>
   <data name="ExtensionSettingsBase_ExtensionContextAttributeNotDefined" xml:space="preserve">
     <value>ExtensionContextAttribute is not defined.</value>
   </data>

@@ -35,7 +35,7 @@ namespace Nexus.DataModel
 
         public Catalog Catalog { get; set; }
 
-        public CatalogMeta CatalogMeta { get; set; }
+        public CatalogSettings CatalogSettings { get; set; }
 
         #endregion
 
@@ -43,12 +43,12 @@ namespace Nexus.DataModel
 
         public SparseCatalog ToSparseCatalog(List<Dataset> datasets)
         {
-            var catalog = new SparseCatalog(this.Id, this.CatalogMeta.License);
+            var catalog = new SparseCatalog(this.Id, this.CatalogSettings.License);
             var channels = datasets.Select(dataset => dataset.Channel).Distinct().ToList();
 
             catalog.Channels = channels.Select(reference =>
             {
-                var channelMeta = this.CatalogMeta.Channels.First(channelMeta => channelMeta.Id == reference.Id);
+                var channelMeta = this.CatalogSettings.Channels.First(channelMeta => channelMeta.Id == reference.Id);
 
                 var channel = new Channel(reference.Id, catalog)
                 {

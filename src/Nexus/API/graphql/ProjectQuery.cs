@@ -20,7 +20,7 @@ namespace Nexus.API
                         .FirstOrDefault(catalogContainer => catalogContainer.Id == id);
 
                     if (catalogContainer != null)
-                        return (catalogContainer.Catalog, catalogContainer.CatalogMeta);
+                        return (catalogContainer.Catalog, catalogContainer.CatalogSettings);
                     else
                         return null;
                 });
@@ -30,7 +30,7 @@ namespace Nexus.API
                 resolve: context =>
                 {
                     return databaseManager.Database.CatalogContainers
-                        .Select(catalogContainer => (catalogContainer.Catalog, catalogContainer.CatalogMeta));
+                        .Select(catalogContainer => (catalogContainer.Catalog, CatalogMeta:catalogContainer.CatalogSettings));
                 });
         }
     }

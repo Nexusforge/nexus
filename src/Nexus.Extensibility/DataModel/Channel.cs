@@ -36,6 +36,10 @@ namespace Nexus.DataModel
 
         public string? Description { get; set; }
 
+        public string? SpecialInfo { get; set; }
+
+        public Dictionary<string, string>? Metadata { get; set; }
+
         public List<Dataset> Datasets { get; set; } = new List<Dataset>();
 
         [JsonIgnore]

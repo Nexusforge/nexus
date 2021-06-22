@@ -105,7 +105,7 @@ namespace Nexus.Core
                 {
                     _databaseManager.Database.CatalogContainers.ForEach(catalogContainer =>
                     {
-                        _databaseManager.SaveCatalogMeta(catalogContainer.CatalogMeta);
+                        _databaseManager.SaveCatalogMeta(catalogContainer.CatalogSettings);
                     });
                 }
 
@@ -753,7 +753,7 @@ namespace Nexus.Core
             var accessible = catalogContainers.Where(catalogContainer =>
             {
                 var isCatalogAccessible = Utilities.IsCatalogAccessible(principal, catalogContainer.Id, database);
-                var isCatalogVisible = Utilities.IsCatalogVisible(principal, catalogContainer.CatalogMeta, isCatalogAccessible);
+                var isCatalogVisible = Utilities.IsCatalogVisible(principal, catalogContainer.CatalogSettings, isCatalogAccessible);
 
                 return isCatalogAccessible && isCatalogVisible;
             }).OrderBy(catalogContainer => catalogContainer.Id).ToList();
@@ -761,7 +761,7 @@ namespace Nexus.Core
             var restricted = catalogContainers.Where(catalogContainer =>
             {
                 var isCatalogAccessible = Utilities.IsCatalogAccessible(principal, catalogContainer.Id, database);
-                var isCatalogVisible = Utilities.IsCatalogVisible(principal, catalogContainer.CatalogMeta, isCatalogAccessible);
+                var isCatalogVisible = Utilities.IsCatalogVisible(principal, catalogContainer.CatalogSettings, isCatalogAccessible);
 
                 return !isCatalogAccessible && isCatalogVisible;
             }).OrderBy(catalogContainer => catalogContainer.Id).ToList();

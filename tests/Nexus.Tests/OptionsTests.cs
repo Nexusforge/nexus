@@ -19,9 +19,12 @@ namespace Nexus.Tests
         [Theory]
         public void CanBindOptions<T>(string section, Type optionsType)
         {
-            var options = (NexusOptionsBase)Activator.CreateInstance(optionsType);
-            var configuration = Program.BuildConfiguration(new string[0]);
-            configuration.GetSection(section).Bind(options);
+            var configuration = Program
+                .BuildConfiguration(new string[0]);
+
+            var options = (NexusOptionsBase)configuration
+                .GetSection(section)
+                .Get(optionsType);
 
             Assert.Equal(section, options.BlindSample);
         }
@@ -29,9 +32,12 @@ namespace Nexus.Tests
         [Fact]
         public void CanReadAppsettingsJson()
         {
-            var configuration = Program.BuildConfiguration(new string[0]);
-            var options = new SmtpOptions();
-            configuration.GetSection(SmtpOptions.Section).Bind(options);
+            var configuration = Program
+                .BuildConfiguration(new string[0]);
+
+            var options = configuration
+                .GetSection(SmtpOptions.Section)
+                .Get<SmtpOptions>();
 
             Assert.Equal(25, options.Port);
         }
@@ -43,9 +49,12 @@ namespace Nexus.Tests
             {
                 Environment.SetEnvironmentVariable("NEXUS_PATHS_SETTINGS", "appsettings.ini");
 
-                var configuration = Program.BuildConfiguration(new string[0]);
-                var options = new SmtpOptions();
-                configuration.GetSection(SmtpOptions.Section).Bind(options);
+                var configuration = Program
+                    .BuildConfiguration(new string[0]);
+
+                var options = configuration
+                    .GetSection(SmtpOptions.Section)
+                    .Get<SmtpOptions>();
 
                 Environment.SetEnvironmentVariable("NEXUS_PATHS_SETTINGS", null);
 
@@ -61,9 +70,12 @@ namespace Nexus.Tests
                 Environment.SetEnvironmentVariable("NEXUS_PATHS_SETTINGS", "appsettings.ini");
                 Environment.SetEnvironmentVariable("NEXUS_SMTP_PORT", "27");
 
-                var configuration = Program.BuildConfiguration(new string[0]);
-                var options = new SmtpOptions();
-                configuration.GetSection(SmtpOptions.Section).Bind(options);
+                var configuration = Program
+                   .BuildConfiguration(new string[0]);
+
+                var options = configuration
+                    .GetSection(SmtpOptions.Section)
+                    .Get<SmtpOptions>();
 
                 Environment.SetEnvironmentVariable("NEXUS_PATHS_SETTINGS", null);
                 Environment.SetEnvironmentVariable("NEXUS_SMTP_PORT", null);
@@ -87,9 +99,12 @@ namespace Nexus.Tests
             {
                 Environment.SetEnvironmentVariable("NEXUS_SMTP_PORT", "27");
 
-                var configuration = Program.BuildConfiguration(new string[] { arg });
-                var options = new SmtpOptions();
-                configuration.GetSection(SmtpOptions.Section).Bind(options);
+                var configuration = Program
+                    .BuildConfiguration(new string[] { arg });
+
+                var options = configuration
+                    .GetSection(SmtpOptions.Section)
+                    .Get<SmtpOptions>();
 
                 Environment.SetEnvironmentVariable("NEXUS_SMTP_PORT", null);
 

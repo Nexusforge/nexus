@@ -79,8 +79,9 @@ namespace Nexus
 
                     if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") != "Development")
                     {
-                        var serverOptions = new ServerOptions();
-                        configuration.GetSection(ServerOptions.Section).Bind(serverOptions);
+                        var serverOptions = configuration
+                            .GetSection(ServerOptions.Section)
+                            .Get<ServerOptions>();
 
                         var baseUrl = $"{serverOptions.HttpScheme}://{serverOptions.HttpAddress}:{serverOptions.HttpPort}";
                         webBuilder.UseUrls(baseUrl);

@@ -13,9 +13,7 @@ using System.Text;
 
 namespace Nexus.Extension.Mat73
 {
-    // v1: initial version
-    [DataWriterFormatVersion(1)]
-    public class Mat73Writer : DataWriterExtensionLogicBase
+    public class Mat73Writer : IDataWriter
     {
         #region "Fields"
 

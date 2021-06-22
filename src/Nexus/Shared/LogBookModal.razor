@@ -4,7 +4,7 @@
         @if (this.IsOpen)
         {
             <div class="logbook">
-                @foreach (var entry in this.UserState.CatalogContainer.CatalogMeta.Logbook)
+                @foreach (var entry in this.UserState.CatalogContainer.CatalogSettings.Logbook)
                 {
                     <p class="logbook-entry">
                         @entry  

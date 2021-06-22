@@ -9,9 +9,7 @@ using System.Linq;
 
 namespace Nexus.Extension.Famos
 {
-    // v1: initial version
-    [DataWriterFormatVersion(1)]
-    public class FamosWriter : DataWriterExtensionLogicBase
+    public class FamosWriter : IDataWriter
     {
         #region "Fields"
 

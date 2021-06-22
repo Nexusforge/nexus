@@ -30,7 +30,7 @@ namespace Nexus.Core
 
             var identity = principal.Identity;
             var catalogContainer = database.CatalogContainers.First(current => current.Id == catalogId);
-            var catalogMeta = catalogContainer.CatalogMeta;
+            var catalogMeta = catalogContainer.CatalogSettings;
 
             return Utilities.IsCatalogAccessible(principal, catalogMeta);
         }

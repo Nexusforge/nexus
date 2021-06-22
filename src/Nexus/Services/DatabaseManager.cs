@@ -195,7 +195,7 @@ namespace Nexus.Services
                         var catalogMeta = catalogMetas.First(catalogMeta => catalogMeta.Id == catalog.Id);
 
                         container = new CatalogContainer(catalog.Id);
-                        container.CatalogMeta = catalogMeta;
+                        container.CatalogSettings = catalogMeta;
                         database.CatalogContainers.Add(container);
                     }
 
@@ -220,10 +220,10 @@ namespace Nexus.Services
                     .ForEach(channel => channels.Remove(channel));
 
                 // initalize catalog meta
-                catalogContainer.CatalogMeta.Initialize(catalogContainer.Catalog);
+                catalogContainer.CatalogSettings.Initialize(catalogContainer.Catalog);
 
                 // save catalog meta to disk
-                this.SaveCatalogMeta(catalogContainer.CatalogMeta);
+                this.SaveCatalogMeta(catalogContainer.CatalogSettings);
             }
 
             this.State = new DatabaseManagerState()

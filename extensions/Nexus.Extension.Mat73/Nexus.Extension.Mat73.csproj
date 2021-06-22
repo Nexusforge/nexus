@@ -9,7 +9,7 @@
   </ItemGroup>
   
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Nexus.Core\Nexus.Core.csproj" />
+    <ProjectReference Include="..\..\src\Nexus.Extensibility\Nexus.Extensibility.csproj" />
   </ItemGroup>
 
   <ItemGroup>

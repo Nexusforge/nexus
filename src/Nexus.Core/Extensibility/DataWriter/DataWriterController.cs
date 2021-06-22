@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Nexus.Buffers;
+using Nexus.DataModel;
 using Nexus.Infrastructure;
 using System;
 using System.Collections.Generic;
@@ -8,34 +9,27 @@ using System.Linq;
 namespace Nexus.Extensibility
 {
 #warning Add "CheckFileSize" method (e.g. for Famos).
-    public abstract class DataWriterExtensionLogicBase : ExtensionLogicBase
+    public abstract class DataWriterController : IDataWriter
     {
         #region "Fields"
 
         private DateTime _lastFileBegin;
         private DateTime _lastWrite;
 
-        private IList<ChannelDescription> _channelDescriptions;
+        private List<Dataset> _datasets;
 
         #endregion
 
         #region "Constructors"
 
-        public DataWriterExtensionLogicBase(DataWriterExtensionSettingsBase settings, ILogger logger)
-            : base(settings, logger)
+        public DataWriterController(ILogger logger)
         {
-            this.Settings = settings;
             this.BasePeriod = TimeSpan.FromSeconds(1);
-            this.FormatVersion = this.GetType().GetFirstAttribute<DataWriterFormatVersionAttribute>().FormatVersion;
         }
 
         #endregion
 
         #region "Properties"
-
-        public new DataWriterExtensionSettingsBase Settings { get; }
-
-        public int FormatVersion { get; }
 
         protected DataWriterContext DataWriterContext { get; private set; }
 
@@ -45,10 +39,10 @@ namespace Nexus.Extensibility
 
         #region "Methods"
 
-        public void Configure(DataWriterContext dataWriterContext, IList<ChannelDescription> channelDescriptions)
+        public void Configure(DataWriterContext dataWriterContext, List<Dataset> datasets)
         {
             this.DataWriterContext = dataWriterContext;
-            _channelDescriptions = channelDescriptions;
+            _datasets = datasets;
 
             this.OnConfigure();
         }
@@ -66,7 +60,7 @@ namespace Nexus.Extensibility
 
             var bufferOffset = TimeSpan.Zero;
 
-            var channelContexts = _channelDescriptions
+            var channelContexts = _datasets
                 .Zip(buffers, (channelDescription, buffer) => new ChannelContext(channelDescription, buffer))
                 .ToList();
 

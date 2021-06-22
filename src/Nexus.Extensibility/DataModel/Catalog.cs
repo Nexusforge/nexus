@@ -26,6 +26,12 @@ namespace Nexus.DataModel
 
         public string Id { get; }
 
+        public string? ShortDescription { get; set; }
+
+        public string? LongDescription { get; set; }
+
+        public Dictionary<string, string>? Metadata { get; set; }
+
         public List<Channel> Channels { get; set; } = new List<Channel>();
 
         #endregion

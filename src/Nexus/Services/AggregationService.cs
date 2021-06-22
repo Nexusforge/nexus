@@ -90,7 +90,7 @@ namespace Nexus.Services
                         // find all aggregations for current channel
                         .Select(channel =>
                         {
-                            var channelMeta = container.CatalogMeta.Channels
+                            var channelMeta = container.CatalogSettings.Channels
                                 .First(current => current.Id == channel.Id);
 
                             return new AggregationChannel()

@@ -158,7 +158,7 @@ namespace Nexus.Core
             {
                 channels = catalogContainer.Catalog.Channels.Select(channel =>
                 {
-                    var channelMeta = catalogContainer.CatalogMeta.Channels.First(channelMeta => channelMeta.Id == channel.Id);
+                    var channelMeta = catalogContainer.CatalogSettings.Channels.First(channelMeta => channelMeta.Id == channel.Id);
                     return new ChannelViewModel(channel, channelMeta);
                 }).ToList();
 

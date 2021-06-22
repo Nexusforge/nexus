@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Nexus.DataModel;
 using System;
 using System.Collections.Generic;
@@ -15,7 +16,7 @@ namespace Nexus.Extensibility
 
         ILogger Logger { set; }
 
-        Dictionary<string, string> Parameters { set; }
+        IConfiguration Configuration { set; }
 
         #endregion
 
@@ -29,7 +30,7 @@ namespace Nexus.Extensibility
         Task<List<Catalog>> GetCatalogsAsync(CancellationToken cancellationToken);
 
         Task<(DateTime Begin, DateTime End)> GetTimeRangeAsync(string catalogId,
-                                                                      CancellationToken cancellationToken);
+                                                               CancellationToken cancellationToken);
 
         Task<double> GetAvailabilityAsync(string catalogId,
                                           DateTime begin,

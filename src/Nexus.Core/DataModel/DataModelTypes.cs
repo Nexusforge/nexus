@@ -4,6 +4,12 @@ using System.Collections.Generic;
 
 namespace Nexus.DataModel
 {
+    public record NexusDatabaseConfig()
+    {
+        public string AggregationDataReaderRootPath { get; set; }
+        public List<DataSourceRegistration> DataSourceRegistrations { get; set; }
+    }
+
     public enum AvailabilityGranularity
     {
         Day,
@@ -15,6 +21,16 @@ namespace Nexus.DataModel
         None = 0,
         ManualRequest = 1,
         AcceptLicense = 2
+    }
+
+    public record CatalogSettings(string Id)
+    {
+        public string Contact { get; set; }
+        public bool IsQualityControlled { get; set; }
+        public bool IsHidden { get; set; }
+        public CatalogLicense License { get; set; }
+        public List<string> Logbook { get; set; }
+        public List<string> GroupMemberships { get; set; }
     }
 
     public record CatalogLicense
