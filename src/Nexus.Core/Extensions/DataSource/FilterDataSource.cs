@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Nexus.Buffers;
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
@@ -25,6 +24,8 @@ namespace Nexus.Extensions
         #region Fields
 
         public const string Id = "Nexus.Filters";
+
+        private List<Catalog> _catalogs;
 
         private Uri _resourceLocator { get; set; }
 
@@ -170,12 +171,15 @@ namespace Nexus.Extensions
                                 };
                             }
 
-                            // get or create catalog
-                            if (!catalogs.TryGetValue(localFilterChannel.CatalogId, out var catalog))
+                            // create datasets
+                            var datasets = new List<Dataset>()
                             {
-                                catalog = new Catalog(localFilterChannel.CatalogId);
-                                catalogs[localFilterChannel.CatalogId] = catalog;
-                            }
+                                new Dataset()
+                                {
+                                    Id = filterCodeDefinition.SampleRate,
+                                    DataType = NexusDataType.FLOAT64
+                                }
+                            };
 
                             // create channel
                             if (!NexusUtilities.CheckNamingConvention(localFilterChannel.ChannelName, out var message))
@@ -184,31 +188,36 @@ namespace Nexus.Extensions
                                 continue;
                             }
 
-                            var channel = new Channel(localFilterChannel.ToGuid(cacheEntry.FilterCodeDefinition), catalog)
+                            var channel = new Channel()
                             {
+                                Id = localFilterChannel.ToGuid(cacheEntry.FilterCodeDefinition),
                                 Name = localFilterChannel.ChannelName,
                                 Group = localFilterChannel.Group,
                                 Unit = localFilterChannel.Unit,
-                                Description = localFilterChannel.Description
+                                Datasets = datasets,
                             };
 
-                            // create datasets
-                            var datasets = new List<Dataset>()
+                            channel.Metadata["Description"] = localFilterChannel.Description;
+
+                            // get or create catalog
+                            if (!catalogs.TryGetValue(localFilterChannel.CatalogId, out var catalog))
                             {
-                                new Dataset(filterCodeDefinition.SampleRate, channel)
-                                {
-                                    DataType = NexusDataType.FLOAT64
-                                }
-                            };
+                                catalog = new Catalog() { Id = localFilterChannel.CatalogId };
+                                catalogs[localFilterChannel.CatalogId] = catalog;
+                            }
 
-                            // append
-                            channel.Datasets.AddRange(datasets);
                             catalog.Channels.Add(channel);
                         }
                     }
                 }
 
-                return catalogs.Values.ToList();
+                foreach (var catalog in catalogs.Values)
+                {
+                    catalog.Initialize();
+                }
+
+                _catalogs = catalogs.Values.ToList();
+                return _catalogs;
             });
         }
 
@@ -222,10 +231,11 @@ namespace Nexus.Extensions
             return Task.FromResult(1.0);
         }
 
-        public Task ReadSingleAsync(Dataset dataset, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
+        public Task ReadSingleAsync(string datasetPath, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
             return Task.Run(() =>
             {
+                var dataset = Catalog.FindDataset(datasetPath, _catalogs);
                 var samplesPerDay = new SampleRateContainer(dataset.Id).SamplesPerDay;
                 var length = (long)Math.Round((end - begin).TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
                 var cacheEntry = _cacheEntries.FirstOrDefault(current => current.SupportedChanneIds.Contains(dataset.Channel.Id));

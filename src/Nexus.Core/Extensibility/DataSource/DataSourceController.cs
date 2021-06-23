@@ -234,7 +234,7 @@ namespace Nexus.Extensibility
                     //#error every consumer that is done with the specific read result must dispose it!
 
                     var readResult = ExtensibilityUtilities.CreateReadResult(dataset, begin, end);
-                    await this.DataSource.ReadSingleAsync(dataset, readResult, currentBegin, currentEnd, cancellationToken);
+                    await this.DataSource.ReadSingleAsync(dataset.GetPath(), readResult, currentBegin, currentEnd, cancellationToken);
                     datasetToResultMap[dataset] = readResult;
 
                     // update progress
@@ -339,7 +339,7 @@ namespace Nexus.Extensibility
 
         public async Task ReadSingleAsync(Dataset dataset, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
-            await this.DataSource.ReadSingleAsync(dataset, result, begin, end, cancellationToken);
+            await this.DataSource.ReadSingleAsync(dataset.GetPath(), result, begin, end, cancellationToken);
         }
 
         public virtual void Dispose()

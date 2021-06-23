@@ -394,10 +394,15 @@ namespace Nexus.Extensibility
             return this.GetAvailabilityAsync(catalogId, begin, end, cancellationToken);
         }
 
-        Task 
-            IDataSource.ReadSingleAsync(Dataset dataset, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
+        async Task
+            IDataSource.ReadSingleAsync(string datasetPath, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
-            return this.ReadSingleAsync(dataset, result, begin, end, cancellationToken);
+            await this
+                .EnsureCatalogsAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            var dataset = Catalog.FindDataset(datasetPath, _catalogs);
+            await this.ReadSingleAsync(dataset, result, begin, end, cancellationToken);
         }
 
         #endregion
@@ -412,6 +417,11 @@ namespace Nexus.Extensibility
                 _catalogs = await this
                     .GetCatalogsAsync(cancellationToken)
                     .ConfigureAwait(false);
+
+                foreach (var catalog in _catalogs)
+                {
+                    catalog.Initialize();
+                }
 
                 _isInitialized = true;
             }

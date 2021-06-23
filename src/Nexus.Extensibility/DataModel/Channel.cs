@@ -7,34 +7,16 @@ using System.Text.Json.Serialization;
 namespace Nexus.DataModel
 {
     [DebuggerDisplay("{Name,nq}")]
-    public class Channel
+    public record Channel
     {
-        #region "Constructors"
-
-        public Channel(Guid id, Catalog catalog)
-        {
-            this.Id = id;
-            this.Catalog = catalog;
-        }
-
-        private Channel()
-        {
-            //
-        }
-
-        #endregion
-
-        #region "Properties"
+        #region Properties
 
         public Guid Id { get; init; }
-
-        public string Name { get; set; }
-
-        public string Group { get; set; }
-
-        public Dictionary<string, string>? Metadata { get; set; }
-
-        public List<Dataset> Datasets { get; set; } = new List<Dataset>();
+        public string Name { get; init; }
+        public string Group { get; init; }
+        public string Unit { get; init; }
+        public Dictionary<string, string> Metadata { get; set; } = new Dictionary<string, string>();
+        public List<Dataset> Datasets { get; init; } = new List<Dataset>();
 
         [JsonIgnore]
         public Catalog Catalog { get; internal set; }
@@ -43,57 +25,79 @@ namespace Nexus.DataModel
 
         #region "Methods"
 
-        public void Merge(Channel channel, ChannelMergeMode mergeMode)
+        internal Channel Merge(Channel channel, ChannelMergeMode mergeMode)
         {
-            if (this.Catalog.Id != channel.Catalog.Id)
-                throw new Exception("The channel to be merged has a different parent.");
-
-            // merge properties
-            switch (mergeMode)
-            {
-                case ChannelMergeMode.OverwriteMissing:
-                    
-                    if (string.IsNullOrWhiteSpace(this.Name))
-                        this.Name = channel.Name;
-
-                    if (string.IsNullOrWhiteSpace(this.Group))
-                        this.Group = channel.Group;
-
-                    if (string.IsNullOrWhiteSpace(this.Unit))
-                        this.Unit = channel.Unit;
-
-                    if (string.IsNullOrWhiteSpace(this.Description))
-                        this.Description = channel.Description;
-
-                    break;
-
-                case ChannelMergeMode.NewWins:
-                    this.Name = channel.Name;
-                    this.Group = channel.Group;
-                    this.Unit = channel.Unit;
-                    this.Description = channel.Description;
-                    break;
-
-                default:
-                    throw new NotSupportedException();
-            }
-
             // merge datasets
-            var newDatasets = new List<Dataset>();
+            var mergedDatasets = this.Datasets
+                .Select(dataset => dataset with { })
+                .ToList();
 
             foreach (var dataset in channel.Datasets)
             {
                 var referenceDataset = this.Datasets.FirstOrDefault(current => current.Id == dataset.Id);
 
                 if (referenceDataset != null)
-                    referenceDataset.Merge(dataset);
-                else
-                    newDatasets.Add(dataset);
+                    mergedDatasets.Add(referenceDataset.Merge(dataset));
 
-                dataset.Channel = this;
+                else
+                    mergedDatasets.Add(dataset);
             }
 
-            this.Datasets.AddRange(newDatasets);
+            // merge properties
+            Channel merged;
+
+            switch (mergeMode)
+            {
+                case ChannelMergeMode.OverwriteMissing:
+
+                    var mergedMetaData1 = this.Metadata
+                        .ToDictionary(entry => entry.Key, entry => entry.Value);
+
+                    foreach (var (key, value) in channel.Metadata)
+                    {
+                        if (!mergedMetaData1.ContainsKey(key))
+                            mergedMetaData1[key] = value;
+                    }
+
+                    merged = new Channel()
+                    {
+                        Id = this.Id,
+                        Name = string.IsNullOrWhiteSpace(this.Name) ? channel.Name : this.Name,
+                        Group = string.IsNullOrWhiteSpace(this.Group) ? channel.Group : this.Group,
+                        Unit = string.IsNullOrWhiteSpace(this.Unit) ? channel.Unit : this.Unit,
+                        Metadata = mergedMetaData1,
+                        Datasets = mergedDatasets
+                    };
+
+                    break;
+
+                case ChannelMergeMode.NewWins:
+
+                    var mergedMetaData2 = this.Metadata
+                        .ToDictionary(entry => entry.Key, entry => entry.Value);
+
+                    foreach (var (key, value) in channel.Metadata)
+                    {
+                        mergedMetaData2[key] = value;
+                    }
+
+                    merged = new Channel()
+                    {
+                        Id = this.Id,
+                        Name = channel.Name,
+                        Group = channel.Group,
+                        Unit = channel.Unit,
+                        Metadata = mergedMetaData2,
+                        Datasets = mergedDatasets
+                    };
+
+                    break;
+
+                default:
+                    throw new NotSupportedException();
+            }
+
+            return merged;
         }
 
         public string GetPath()

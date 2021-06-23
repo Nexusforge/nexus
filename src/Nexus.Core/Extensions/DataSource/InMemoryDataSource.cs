@@ -16,6 +16,12 @@ namespace Nexus.Extensions
     {
         #region Fields
 
+        private List<Catalog> _catalogs;
+
+        #endregion
+
+        #region Properties
+
         public Uri ResourceLocator { get; set; }
 
         public ILogger Logger { get; set; }
@@ -40,7 +46,9 @@ namespace Nexus.Extensions
             var id24 = Guid.Parse("99b85689-5373-4a9a-8fd7-be04a89c9da8");
             var catalog_restricted = this.LoadCatalog("/IN_MEMORY/TEST/RESTRICTED", id21, id22, id23, id24);
 
-            return Task.FromResult(new List<Catalog>() { catalog_allowed, catalog_restricted });
+            _catalogs = new List<Catalog>() { catalog_allowed, catalog_restricted };
+
+            return Task.FromResult(_catalogs);
         }
 
         public Task<(DateTime Begin, DateTime End)> GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
@@ -53,10 +61,12 @@ namespace Nexus.Extensions
             return Task.FromResult(new Random((int)begin.Ticks).NextDouble() / 10 + 0.9);
         }
 
-        public Task ReadSingleAsync(Dataset dataset, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
+        public Task ReadSingleAsync(string datasetPath, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
             return Task.Run(() =>
             {
+                var dataset = Catalog.FindDataset(datasetPath, _catalogs);
+
                 double[] dataDouble;
 
                 var beginTime = begin.ToUnixTimeStamp();
@@ -98,60 +108,43 @@ namespace Nexus.Extensions
 
         private Catalog LoadCatalog(string catalogId, Guid id1, Guid id2, Guid id3, Guid id4)
         {
-            var catalog = new Catalog(catalogId);
+            var catalog = new Catalog() { Id = catalogId };
 
-            var channelA = new Channel(id1, catalog);
-            var channelB = new Channel(id2, catalog);
-            var channelC = new Channel(id3, catalog);
-            var channelD = new Channel(id4, catalog);
+            var channelA = new Channel() { Id = id1, Name = "T1", Group = "Group 1", Unit = "°C" };
+            channelA.Metadata["Description"] = "Test channel.";
 
-            var dataset1 = new Dataset("1 s_mean", channelA) { DataType = NexusDataType.FLOAT64 };
-            var dataset2 = new Dataset("1 s_mean", channelB) { DataType = NexusDataType.FLOAT64 };
-            var dataset3 = new Dataset("25 Hz", channelC) { DataType = NexusDataType.INT32 };
-            var dataset4 = new Dataset("1 s_max", channelD) { DataType = NexusDataType.FLOAT64 };
-            var dataset5 = new Dataset("1 s_mean", channelD) { DataType = NexusDataType.FLOAT64 };
+            var channelB = new Channel() { Id = id2, Name = "V1", Group = "Group 1", Unit = "m/s" };
+            channelB.Metadata["Description"] = "Test channel.";
+
+            var channelC = new Channel() { Id = id3, Name = "unix_time1", Group = "Group 2", Unit = "" };
+            channelC.Metadata["Description"] = "Test channel.";
+
+            var channelD = new Channel() { Id = id4, Name = "unix_time2", Group = "Group 2", Unit = "" };
+            channelD.Metadata["Description"] = "Test channel.";
+
+            var dataset1 = new Dataset() { Id = "1 s_mean", DataType = NexusDataType.FLOAT64 };
+            var dataset2 = new Dataset() { Id = "1 s_mean", DataType = NexusDataType.FLOAT64 };
+            var dataset3 = new Dataset() { Id = "25 Hz", DataType = NexusDataType.INT32 };
+            var dataset4 = new Dataset() { Id = "1 s_max", DataType = NexusDataType.FLOAT64 };
+            var dataset5 = new Dataset() { Id = "1 s_mean", DataType = NexusDataType.FLOAT64 };
 
             // channel A
-            channelA.Name = "T1";
-            channelA.Group = "Group 1";
-            channelA.Unit = "°C";
-            channelA.Description = "Test channel.";
-
             channelA.Datasets.Add(dataset1);
-
-            // channel B
-            channelB.Name = "V1";
-            channelB.Group = "Group 1";
-            channelB.Unit = "m/s";
-            channelB.Description = "Test channel.";
-
             channelB.Datasets.Add(dataset2);
-
-            // channel C
-            channelC.Name = "unix_time1";
-            channelC.Group = "Group 2";
-            channelC.Unit = "";
-            channelC.Description = "Test channel.";
-
             channelC.Datasets.Add(dataset3);
-
-            // channel D
-            channelD.Name = "unix_time2";
-            channelD.Group = "Group 2";
-            channelD.Unit = string.Empty;
-            channelD.Description = "Test channel.";
-
             channelD.Datasets.Add(dataset4);
             channelD.Datasets.Add(dataset5);
 
             // catalog
-            catalog.Channels = new List<Channel>()
+            catalog.Channels.AddRange(new List<Channel>()
             {
                 channelA,
                 channelB,
                 channelC,
                 channelD
-            };
+            });
+
+            catalog.Initialize();
 
             return catalog;
         }

@@ -18,6 +18,12 @@ namespace Nexus.Extensions
     [ExtensionIdentification("Nexus.Aggregation", "Nexus Aggregation", "Provides access to databases with Nexus aggregation files.")]
     public class AggregationDataSource : IDataSource
     {
+        #region Fields
+
+        private List<Catalog> _catalogs;
+
+        #endregion
+
         #region Properties
 
         public IFileAccessManager FileAccessManager { get; set; }
@@ -196,6 +202,12 @@ namespace Nexus.Extensions
                     catalogs.ForEach(catalog => catalog.Initialize());
                 }
 
+                foreach (var catalog in catalogs)
+                {
+                    catalog.Initialize();
+                }
+
+                _catalogs = catalogs;
                 return catalogs;
             });
         }
@@ -248,10 +260,11 @@ namespace Nexus.Extensions
             });
         }
 
-        public Task ReadSingleAsync(Dataset dataset, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
+        public Task ReadSingleAsync(string datasetPath, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
             return Task.Run(() =>
             {
+                var dataset = Catalog.FindDataset(datasetPath, _catalogs);
                 var catalog = dataset.Channel.Catalog;
                 var channel = dataset.Channel;
                 var catalogFolderPath = Path.Combine(this.Root, "DATA", WebUtility.UrlEncode(catalog.Id));
@@ -338,7 +351,7 @@ namespace Nexus.Extensions
 
         private Catalog ScanFiles(string catalogId, string currentMonthFolder, AggregationVersioning versioning)
         {
-            var catalog = new Catalog(catalogId);
+            var catalog = new Catalog() { Id = catalogId };
 
             if (Directory.Exists(currentMonthFolder))
             {
@@ -352,7 +365,7 @@ namespace Nexus.Extensions
                     foreach (var dayFolder in dayFolders)
                     {
                         var newCatalog = this.GetCatalog(catalogId, dayFolder);
-                        catalog.Merge(newCatalog, ChannelMergeMode.NewWins);
+                        catalog = catalog.Merge(newCatalog, ChannelMergeMode.NewWins);
                     }
 
                     // update scanned until
@@ -495,7 +508,7 @@ namespace Nexus.Extensions
 
         private Catalog GetCatalog(string catalogId, string dayFolder)
         {
-            var catalog = new Catalog(catalogId);
+            var catalog = new Catalog() { Id = catalogId };
             var channelMap = new Dictionary<Guid, Channel>();
 
             Directory
@@ -510,12 +523,13 @@ namespace Nexus.Extensions
 
                     if (!channelMap.TryGetValue(id, out var channel))
                     {
-                        channel = new Channel(id, catalog);
+                        channel = new Channel() { Id = id };
                         channelMap[id] = channel;
                     }
 
-                    var dataset = new Dataset(datasetName, channel)
+                    var dataset = new Dataset()
                     {
+                        Id = datasetName,
                         DataType = NexusDataType.FLOAT64
                     };
 

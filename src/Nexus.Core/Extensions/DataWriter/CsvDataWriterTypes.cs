@@ -1,4 +1,4 @@
-﻿namespace Nexus.Extension.Csv
+﻿namespace Nexus.Extensions
 {
     public enum CsvRowIndexFormat
     {

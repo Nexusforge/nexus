@@ -140,7 +140,7 @@ namespace Nexus.Extensibility.Tests
             GenerateData(new DateTimeOffset(2020, 01, 02, 09, 50, 0, 0, TimeSpan.Zero));
 
             await dataSource.OnParametersSetAsync();
-            await dataSource.ReadSingleAsync(dataset, readResult, begin, end, CancellationToken.None);
+            await dataSource.ReadSingleAsync(dataset.GetPath(), readResult, begin, end, CancellationToken.None);
 
             Assert.True(expectedData.SequenceEqual(MemoryMarshal.Cast<byte, long>(readResult.Data.Span).ToArray()));
             Assert.True(expectedStatus.SequenceEqual(readResult.Status.ToArray()));
@@ -160,8 +160,11 @@ namespace Nexus.Extensibility.Tests
                 Configuration = null,
             } as IDataSource;
 
+            var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
+            var dataset = catalogs.First().Channels.First().Datasets.First();
+
             await Assert.ThrowsAsync<ArgumentException>(() =>
-                dataSource.ReadSingleAsync(default, default, begin, end, CancellationToken.None));
+                dataSource.ReadSingleAsync(dataset.GetPath(), default, begin, end, CancellationToken.None));
         }
     }
 }

@@ -27,43 +27,25 @@ class PythonDataSource(IDataSource):
     async def get_catalogs_async(self):
 
         # catalog 1
-        catalog1_channel1_dataset1 = Dataset("1 Hz_mean")
-        catalog1_channel1_dataset1.DataType = NexusDataType.FLOAT32
+        catalog1_channel1_id = str(uuid3(NULL_NAMESPACE, "catalog1_channel1"))
+        catalog1_channel1_meta = { "Description": "description1" }
+        catalog1_channel1_datasets = [Dataset("1 Hz_mean", NexusDataType.FLOAT32)]
+        catalog1_channel1 = Channel(catalog1_channel1_id, "channel1", "group1", "°C", catalog1_channel1_meta, catalog1_channel1_datasets)
 
-        catalog1_channel1 = Channel(str(uuid3(NULL_NAMESPACE, "catalog1_channel1")))
-        catalog1_channel1.Name = "channel1"
-        catalog1_channel1.Group = "group1"
-        catalog1_channel1.Description = "description1"
-        catalog1_channel1.Unit = "°C"
-        catalog1_channel1.Datasets.append(catalog1_channel1_dataset1)
+        catalog1_channel2_id = str(uuid3(NULL_NAMESPACE, "catalog1_channel2"))
+        catalog1_channel2_meta = { "Description": "description2" }
+        catalog1_channel2_datasets = [Dataset("1 Hz_mean", NexusDataType.FLOAT64)]
+        catalog1_channel2 = Channel(catalog1_channel2_id, "channel2", "group2", "bar", catalog1_channel2_meta, catalog1_channel2_datasets)
 
-        catalog1_channel2_dataset1 = Dataset("1 Hz_mean")
-        catalog1_channel2_dataset1.DataType = NexusDataType.FLOAT64
-
-        catalog1_channel2 = Channel(str(uuid3(NULL_NAMESPACE, "catalog1_channel2")))
-        catalog1_channel2.Name = "channel2"
-        catalog1_channel2.Group = "group2"
-        catalog1_channel2.Description = "description2"
-        catalog1_channel2.Unit = "bar"
-        catalog1_channel2.Datasets.append(catalog1_channel2_dataset1)
-
-        catalog1 = Catalog("/A/B/C")
-        catalog1.Channels.append(catalog1_channel1)
-        catalog1.Channels.append(catalog1_channel2)
+        catalog1 = Catalog("/A/B/C", metadata = {}, channels = [catalog1_channel1, catalog1_channel2])
 
         # catalog 2
-        catalog2_channel1_dataset1 = Dataset("1 Hz_mean")
-        catalog2_channel1_dataset1.DataType = NexusDataType.INT64
+        catalog2_channel1_id = str(uuid3(NULL_NAMESPACE, "catalog2_channel1"))
+        catalog2_channel1_meta = { "Description": "description1" }
+        catalog2_channel1_datasets = [Dataset("1 Hz_mean", NexusDataType.INT64)]
+        catalog2_channel1 = Channel(catalog2_channel1_id, "channel1", "group1", "m/s", catalog2_channel1_meta, catalog2_channel1_datasets)
 
-        catalog2_channel1 = Channel(str(uuid3(NULL_NAMESPACE, "catalog2_channel1")))
-        catalog2_channel1.Name = "channel1"
-        catalog2_channel1.Group = "group1"
-        catalog2_channel1.Description = "description1"
-        catalog2_channel1.Unit = "m/s"
-        catalog2_channel1.Datasets.append(catalog2_channel1_dataset1)
-
-        catalog2 = Catalog("/D/E/F")
-        catalog2.Channels.append(catalog2_channel1)
+        catalog2 = Catalog("/D/E/F", metadata = {}, channels = [catalog2_channel1])
 
         # return
         self._catalogs = [catalog1, catalog2]
@@ -97,14 +79,14 @@ class PythonDataSource(IDataSource):
 
         return actualFileCount / maxFileCount
 
-    async def read_single_async(self, channelPath: str, length: int, begin: datetime, end: datetime):
+    async def read_single_async(self, datasetPath: str, length: int, begin: datetime, end: datetime):
 
         # ############################################################################
         # Warning! This is a simplified implementation and not generally applicable! #
         # ############################################################################
 
-        # The test files are located in a folder hierarchy and have an individual 
-        # length of 10-minutes (600 s):
+        # The test files are located in a folder hierarchy where each has a length of 
+        # 10-minutes (600 s):
         # ...
         # TESTDATA/DATA/test/2020-01/2020-01-02/2020-01-02_00-00-00.dat
         # TESTDATA/DATA/test/2020-01/2020-01-02/2020-01-02_00-10-00.dat
@@ -115,7 +97,7 @@ class PythonDataSource(IDataSource):
         # ensure the catalogs have already been loaded
         await self._ensureCatalogsAsync()
 
-        (catalog, channel, dataset) = self._find(channelPath)
+        (catalog, channel, dataset) = self._find(datasetPath)
 
         # dataset ID = "1 Hz_mean" -> extract "1"
         samplesPerSecond = int(dataset.Id.split(" ")[0])
@@ -170,9 +152,9 @@ class PythonDataSource(IDataSource):
         if (self._catalogs is None):
             await self.get_catalogs_async()
 
-    def _find(self, channelPath):
+    def _find(self, datasetPath):
 
-        pathParts = channelPath.split("/")
+        pathParts = datasetPath.split("/")
 
         datasetId = pathParts[-1]
         channelId = pathParts[-2]

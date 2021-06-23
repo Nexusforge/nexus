@@ -29,8 +29,9 @@ class Dataset:
     Id: str
     DataType: NexusDataType
 
-    def __init__(self, id: str):
+    def __init__(self, id: str, dataType: NexusDataType):
         self.Id = id
+        self.DataType = dataType
 
 class Channel:
 
@@ -38,18 +39,24 @@ class Channel:
     Name: str
     Group: str
     Unit: str
-    Description: str
+    Metadata: Dict[str, str]
     Datasets: List[Dataset]
 
-    def __init__(self, id: UUID):
+    def __init__(self, id: UUID, name: str, group: str, unit: str, metadata: Dict[str, str], datasets: List[Dataset]):
         self.Id = id
-        self.Datasets = []
+        self.Name = name
+        self.Group = group
+        self.Unit = unit
+        self.Metadata = metadata
+        self.Datasets = datasets
 
 class Catalog:
     
     Id: str
+    Metadata: Dict[str, str]
     Channels: List[Channel]
 
-    def __init__(self, id: str):
+    def __init__(self, id: str, metadata: Dict[str, str], channels: List[Channel]):
         self.Id = id
-        self.Channels = []
+        self.Metadata = metadata
+        self.Channels = channels

@@ -153,7 +153,7 @@ namespace Nexus.Core.Tests
             GenerateData(new DateTimeOffset(2020, 01, 02, 09, 40, 0, 0, TimeSpan.Zero));
             GenerateData(new DateTimeOffset(2020, 01, 02, 09, 50, 0, 0, TimeSpan.Zero));
 
-            await dataSource.ReadSingleAsync(dataset, result, begin, end, CancellationToken.None);
+            await dataSource.ReadSingleAsync(dataset.GetPath(), result, begin, end, CancellationToken.None);
             var longData = result.GetData<long>();
 
             Assert.True(expectedData.SequenceEqual(longData.ToArray()));

@@ -79,8 +79,8 @@ namespace Nexus.Services
         }
 
         public async Task<string> ExportDataAsync(ExportParameters exportParameters,
-                                                List<Dataset> datasets,
-                                                CancellationToken cancellationToken)
+                                                  List<Dataset> datasets,
+                                                  CancellationToken cancellationToken)
         {
             if (!datasets.Any() || exportParameters.Begin == exportParameters.End)
                 return string.Empty;

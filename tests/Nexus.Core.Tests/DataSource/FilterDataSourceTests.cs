@@ -104,9 +104,14 @@ namespace Nexus.Core.Tests
                 new CatalogContainer("/IN_MEMORY/TEST/ACCESSIBLE")
             });
 
-            var catalog = new Catalog("/IN_MEMORY/TEST/ACCESSIBLE");
-            var channel = new Channel(Guid.NewGuid(), catalog);
-            var dataset = new Dataset("1 Hz", channel) { DataType = NexusDataType.FLOAT64 };
+            var dataset = new Dataset() { Id = "1 Hz", DataType = NexusDataType.FLOAT64 };
+
+            var channel = new Channel() { Id = Guid.NewGuid() };
+            channel.Datasets.Add(dataset);
+
+            var catalog = new Catalog() { Id = "/IN_MEMORY/TEST/ACCESSIBLE" };
+            catalog.Channels.Add(channel);
+            catalog.Initialize();
 
             Mock.Get(database)
                 .Setup(s => s.TryFindDatasetById(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), out dataset))
@@ -117,13 +122,13 @@ namespace Nexus.Core.Tests
 
             Mock.Get(subDataSource)
                 .Setup(s => s.ReadSingleAsync(
-                    It.IsAny<Dataset>(), 
+                    It.IsAny<string>(), 
                     It.IsAny<ReadResult>(),
                     It.IsAny<DateTime>(), 
                     It.IsAny<DateTime>(),
                     It.IsAny<CancellationToken>())
                 )
-                .Callback<Dataset, ReadResult, DateTime, DateTime, CancellationToken>((dataset, result, begin, end, cancellationToken) =>
+                .Callback<string, ReadResult, DateTime, DateTime, CancellationToken>((dataset, result, begin, end, cancellationToken) =>
                 {
                     var data = result.GetData<double>();
                     data.Span[0] = 2;
@@ -156,7 +161,7 @@ namespace Nexus.Core.Tests
             var end = new DateTime(2020, 01, 02, 0, 0, 0, DateTimeKind.Utc);
             var result = ExtensibilityUtilities.CreateReadResult(dataset, begin, end);
 
-            await dataSource.ReadSingleAsync(dataset, result, begin, end, CancellationToken.None);
+            await dataSource.ReadSingleAsync(dataset.GetPath(), result, begin, end, CancellationToken.None);
             var doubleData = result.GetData<double>();
 
             Assert.Equal(Math.Pow(2, 2), doubleData.Span[0]);

@@ -82,9 +82,9 @@ namespace Nexus.Extensibility.Tests
 
         protected override Task<List<Catalog>> GetCatalogsAsync(CancellationToken cancellationToken)
         {
-            var catalog = new Catalog("/A/B/C");
-            var channel = new Channel(Guid.NewGuid(), catalog);
-            var dataset = new Dataset("1 Hz_mean", channel) { DataType = NexusDataType.INT64 };
+            var catalog = new Catalog() { Id = "/A/B/C" };
+            var channel = new Channel() { Id = Guid.NewGuid() };
+            var dataset = new Dataset() { Id = "1 Hz_mean", DataType = NexusDataType.INT64 };
 
             channel.Datasets.Add(dataset);
             catalog.Channels.Add(channel);

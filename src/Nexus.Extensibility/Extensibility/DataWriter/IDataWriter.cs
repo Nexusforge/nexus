@@ -1,7 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
+using Nexus.DataModel;
+using Nexus.Infrastructure;
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nexus.Extensibility
@@ -20,14 +21,14 @@ namespace Nexus.Extensibility
 
         #region Methods
 
-        Task OnParametersSetAsync()
+        void OnParametersSet()
         {
-            return Task.CompletedTask;
+            //
         }
 
-        Task OpenAsync(DateTime begin, List<CatalogWriteInfo> writeInfoGroups, CancellationToken cancellationToken);
+        void Open(DateTime begin, Dictionary<Catalog, SampleRateContainer> catalogMap);
 
-        Task WriteAsync(ulong fileOffset, ulong bufferOffset, ulong length, CatalogWriteInfo writeInfoGroup, CancellationToken cancellationToken);
+        void Write(ulong fileOffset, ulong bufferOffset, ulong length, CatalogWriteInfo writeInfoGroup);
 
         #endregion
     }

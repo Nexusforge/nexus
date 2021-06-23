@@ -13,7 +13,7 @@ namespace Nexus.DataModel
         public CatalogContainer(string id)
         {
             this.Id = id;
-            this.Catalog = new Catalog(id);
+            this.Catalog = new Catalog() { Id = id };
         }
 
         #endregion
@@ -38,44 +38,21 @@ namespace Nexus.DataModel
 
         #region Methods
 
-        public SparseCatalog ToSparseCatalog(List<Dataset> datasets)
+        public Catalog ToSparseCatalog(List<Dataset> datasets)
         {
-            var catalog = new SparseCatalog(this.Id, this.CatalogSettings.License);
-            var channels = datasets.Select(dataset => dataset.Channel).Distinct().ToList();
+            var channels = new List<Channel>();
 
-            catalog.Channels = channels.Select(reference =>
+            foreach (var dataset in datasets)
             {
-                var channelMeta = this.CatalogMeta.Channels.First(channelMeta => channelMeta.Id == reference.Id);
+                var channel = channels.FirstOrDefault(channel => channel.Id == dataset.Channel.Id);
 
-                var channel = new Channel(reference.Id, catalog)
-                {
-                    Name = reference.Name,
-                    Group = reference.Group,
+                if (channel is null)
+                    channels.Add(dataset.Channel with { Datasets = new List<Dataset>() });
 
-                    Unit = !string.IsNullOrWhiteSpace(channelMeta.Unit) 
-                        ? channelMeta.Unit
-                        : reference.Unit,
+                channel.Datasets.Add(dataset);
+            }
 
-                    Description = !string.IsNullOrWhiteSpace(channelMeta.Description)
-                        ? channelMeta.Description
-                        : reference.Description
-                };
-
-                var referenceDatasets = datasets.Where(dataset => dataset.Channel == reference);
-
-                channel.Datasets = referenceDatasets.Select(referenceDataset =>
-                {
-                    return new Dataset(referenceDataset.Id, channel)
-                    {
-                        DataType = referenceDataset.DataType,
-                        Registration = referenceDataset.Registration
-                    };
-                }).ToList();
-
-                return channel;
-            }).ToList();
-
-            return catalog;
+            return this.Catalog with { Channels = channels };
         }
 
         #endregion

@@ -63,7 +63,7 @@ class IDataSource(ABC):
         pass
 
     @abstractmethod
-    async def read_single_async(self, channelPath: str, length: int, begin: datetime, end: datetime) -> Awaitable[Tuple[List[float], bytes]]:
+    async def read_single_async(self, datasetPath: str, length: int, begin: datetime, end: datetime) -> Awaitable[Tuple[List[float], bytes]]:
         pass
 
     def dispose(self):
@@ -147,7 +147,7 @@ class RpcCommunicator:
                 sys.stdout.flush()
 
     async def _processInvocationAsync(self, request: any):
-
+        
         response = None
         data = None
         status = None
@@ -213,11 +213,11 @@ class RpcCommunicator:
 
         elif request["target"] == "ReadSingle":
 
-            channelPath = request["arguments"][0]
+            datasetPath = request["arguments"][0]
             length = request["arguments"][1]
             begin = datetime.strptime(request["arguments"][2], "%Y-%m-%dT%H:%M:%SZ")
             end = datetime.strptime(request["arguments"][3], "%Y-%m-%dT%H:%M:%SZ")
-            (data, status) = await self._dataSource.read_single_async(channelPath, length, begin, end)
+            (data, status) = await self._dataSource.read_single_async(datasetPath, length, begin, end)
 
             response =  ({
                 "invocationId": request["invocationId"],

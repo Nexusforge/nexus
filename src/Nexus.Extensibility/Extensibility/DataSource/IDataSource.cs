@@ -36,7 +36,7 @@ namespace Nexus.Extensibility
                                           DateTime end,
                                           CancellationToken cancellationToken);
 
-        Task ReadSingleAsync(Dataset dataset,
+        Task ReadSingleAsync(string datasetPath,
                              ReadResult result,
                              DateTime begin,
                              DateTime end,

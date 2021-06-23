@@ -1,12 +1,10 @@
 using Nexus.Extensibility;
 using Nexus.Infrastructure;
 using System;
-using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
-namespace Nexus.Buffers
+namespace Nexus
 {
     public static class BufferUtilities
     {
@@ -51,17 +49,6 @@ namespace Nexus.Buffers
             }
 
             return doubleData;
-        }
-
-        public static ISimpleBuffer CreateSimpleBuffer(double[] data)
-        {
-            return new SimpleBuffer(data);
-        }
-
-        public static IExtendedBuffer CreateExtendedBuffer(NexusDataType dataType, int length)
-        {
-            var type = typeof(ExtendedBuffer<>).MakeGenericType(new Type[] { NexusUtilities.GetTypeFromNexusDataType(dataType) });
-            return (IExtendedBuffer)Activator.CreateInstance(type, length);
         }
 
         internal static unsafe void InternalToDouble<T>(T* dataPtr, double[] doubleData) where T : unmanaged

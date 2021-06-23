@@ -13,6 +13,7 @@ namespace Nexus.Extensions
     {
         #region Fields
 
+        private List<Catalog> _catalogs;
         private static int API_LEVEL = 1;
         private RpcCommunicator _communicator;
 
@@ -91,6 +92,7 @@ namespace Nexus.Extensions
 
             response.Catalogs.ForEach(catalog => catalog.Initialize());
 
+            _catalogs = response.Catalogs;
             return response.Catalogs;
         }
 
@@ -125,8 +127,10 @@ namespace Nexus.Extensions
             return response.Availability;
         }
 
-        public async Task ReadSingleAsync(Dataset dataset, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
+        public async Task ReadSingleAsync(string datasetPath, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
+            var dataset = Catalog.FindDataset(datasetPath, _catalogs);
+
             var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromMinutes(1));
             cancellationToken.Register(() => timeoutTokenSource.Cancel());
 

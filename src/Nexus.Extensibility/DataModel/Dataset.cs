@@ -7,28 +7,13 @@ using System.Text.Json.Serialization;
 namespace Nexus.DataModel
 {
     [DebuggerDisplay("{Id,nq}")]
-    public class Dataset
+    public record Dataset
     {
-        #region "Constructors"
-
-        public Dataset(string id, Channel channel)
-        {
-            this.Id = id;
-            this.Channel = channel;
-        }
-
-        private Dataset()
-        {
-            //
-        }
-
-        #endregion
-
         #region Properties
 
-        public string Id { get; }
+        public string Id { get; init; }
 
-        public NexusDataType DataType { get; set; }
+        public NexusDataType DataType { get; init; }
 
         [JsonIgnore]
         public int ElementSize => ((int)this.DataType & 0xFF) >> 3;
@@ -54,11 +39,17 @@ namespace Nexus.DataModel
             return $"{this.Channel.GetPath()}/{this.Id}";
         }
 
-        public void Merge(Dataset dataset)
+        internal Dataset Merge(Dataset dataset)
         {
-            if (this.Channel.Id != dataset.Channel.Id
-                || this.DataType != dataset.DataType)
+            if (this.Channel.Id != dataset.Channel.Id ||
+                this.DataType != dataset.DataType)
                 throw new Exception("The datasets to be merged are not equal.");
+
+            return new Dataset()
+            {
+                Id = this.Id,
+                DataType = this.DataType
+            };
         }
 
         #endregion

@@ -104,7 +104,7 @@ namespace Nexus.Core.Tests
             var end = new DateTime(2020, 07, 10, 00, 00, 00, DateTimeKind.Utc);
             var result = ExtensibilityUtilities.CreateReadResult(dataset, begin, end);
 
-            await dataSource.ReadSingleAsync(dataset, result, begin, end, CancellationToken.None);
+            await dataSource.ReadSingleAsync(dataset.GetPath(), result, begin, end, CancellationToken.None);
             var doubleData = result.GetData<double>();
 
             // assert

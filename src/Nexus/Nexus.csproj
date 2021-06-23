@@ -32,6 +32,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\extensions\Nexus.Extension.Famos\Nexus.Extension.Famos.csproj" />
     <ProjectReference Include="..\..\extensions\Nexus.Extension.Mat73\Nexus.Extension.Mat73.csproj" />
+    <ProjectReference Include="..\Nexus.Core\Nexus.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>
