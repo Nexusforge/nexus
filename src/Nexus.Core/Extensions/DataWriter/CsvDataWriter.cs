@@ -69,11 +69,10 @@ namespace Nexus.Extensions
                     using (StreamWriter streamWriter = new StreamWriter(File.Open(filePath, FileMode.Append, FileAccess.Write)))
                     {
                         // comment
-                        streamWriter.WriteLine($"# format_version: 1;");
-                        streamWriter.WriteLine($"# system_name: Nexus;");
-                        streamWriter.WriteLine($"# date_time: { begin.ToISO8601() };");
-                        streamWriter.WriteLine($"# sample_period: {sampleRate.ToUnitString()};");
-
+                        streamWriter.WriteLine($"# format_version=1;");
+                        streamWriter.WriteLine($"# system_name=Nexus;");
+                        streamWriter.WriteLine($"# date_time={begin.ToISO8601()};");
+                        streamWriter.WriteLine($"# sample_period={sampleRate.ToUnitString()};");
                         streamWriter.WriteLine($"# catalog_id={catalog.Id};");
 
                         foreach (var entry in catalog.Metadata)
@@ -84,19 +83,21 @@ namespace Nexus.Extensions
                         var datasets = catalog.Channels.SelectMany(catalog => catalog.Datasets);
 
                         /* channel name */
-                        var rowIndexFormat = Enum.Parse<CsvRowIndexFormat>(this.Configuration["RowIndexFormat"]);
+                        var rowIndexFormat = this.Configuration.TryGetValue("RowIndexFormat", out var value)
+                            ? value 
+                            : "Index";
 
                         switch (rowIndexFormat)
                         {
-                            case CsvRowIndexFormat.Index:
+                            case "Index":
                                 streamWriter.Write("index;");
                                 break;
 
-                            case CsvRowIndexFormat.Unix:
+                            case "Unix":
                                 streamWriter.Write("Unix time;");
                                 break;
 
-                            case CsvRowIndexFormat.Excel:
+                            case "Excel":
                                 streamWriter.Write("Excel time;");
                                 break;
 
@@ -135,44 +136,50 @@ namespace Nexus.Extensions
             }
         }
 
-        public void Write(ulong fileOffset, ulong bufferOffset, ulong length, CatalogWriteInfo writeInfoGroup)
+        public void Write(ulong fileOffset, ulong bufferOffset, ulong length, CatalogWriteInfo writeInfo)
         {
-            //var catalogDescription = this.DataWriterContext.CatalogDescription;
-            //var dataFilePath = Path.Combine(this.DataWriterContext.DataDirectoryPath, $"{catalogDescription.PrimaryGroupName}_{catalogDescription.SecondaryGroupName}_{catalogDescription.CatalogName}_V{catalogDescription.Version }_{_lastFileBegin.ToString("yyyy-MM-ddTHH-mm-ss")}Z_{contextGroup.SampleRate.SamplesPerDay}_samples_per_day.csv");
+            var sampleRate = writeInfo.SampleRate;
+            var physicalId = writeInfo.CatalogId.TrimStart('/').Replace('/', '_');
+            var filePath = Path.Combine(this.TargetFolder, $"{physicalId}_{_lastFileBegin.ToISO8601()}_{sampleRate.ToUnitString(underscore: true)}.csv");
 
-            //if (length <= 0)
-            //    throw new Exception(ErrorMessage.CsvWriter_SampleRateTooLow);
+            var simpleBuffers = writeInfo.DatasetInfos..ChannelContextSet.Select(channelContext => channelContext.Buffer.ToSimpleBuffer()).ToList();
 
-            //var simpleBuffers = contextGroup.ChannelContextSet.Select(channelContext => channelContext.Buffer.ToSimpleBuffer()).ToList();
+            var rowIndexFormat = this.Configuration.TryGetValue("RowIndexFormat", out var value1)
+                ? value1
+                : "Index";
 
-            //using (StreamWriter streamWriter = new StreamWriter(File.Open(dataFilePath, FileMode.Append, FileAccess.Write)))
-            //{
-            //    for (ulong rowIndex = 0; rowIndex < length; rowIndex++)
-            //    {
-            //        switch (_settings.RowIndexFormat)
-            //        {
-            //            case CsvRowIndexFormat.Index:
-            //                streamWriter.Write($"{string.Format(_nfi, "{0:N0}", fileOffset + rowIndex)};");
-            //                break;
-            //            case CsvRowIndexFormat.Unix:
-            //                streamWriter.Write($"{string.Format(_nfi, "{0:N5}", _unixStart + ((fileOffset + rowIndex) / contextGroup.SampleRate.SamplesPerSecond))};");
-            //                break;
-            //            case CsvRowIndexFormat.Excel:
-            //                streamWriter.Write($"{string.Format(_nfi, "{0:N9}", _excelStart + ((fileOffset + rowIndex) / (decimal)contextGroup.SampleRate.SamplesPerDay))};");
-            //                break;
-            //            default:
-            //                throw new NotSupportedException($"The row index format '{_settings.RowIndexFormat}' is not supported.");
-            //        }
+            var significantFigures = uint.Parse(this.Configuration.TryGetValue("SignificantFigures", out var value2)
+                ? value2
+                : "4");
 
-            //        for (int i = 0; i < simpleBuffers.Count; i++)
-            //        {
-            //            var value = simpleBuffers[i].Buffer[(int)(bufferOffset + rowIndex)];
-            //            streamWriter.Write($"{string.Format(_nfi, $"{{0:G{_settings.SignificantFigures}}}", value)};");
-            //        }
+            using (StreamWriter streamWriter = new StreamWriter(File.Open(filePath, FileMode.Append, FileAccess.Write)))
+            {
+                for (ulong rowIndex = 0; rowIndex < length; rowIndex++)
+                {
+                    switch (rowIndexFormat)
+                    {
+                        case "Index":
+                            streamWriter.Write($"{string.Format(_nfi, "{0:N0}", fileOffset + rowIndex)};");
+                            break;
+                        case "Unix":
+                            streamWriter.Write($"{string.Format(_nfi, "{0:N5}", _unixStart + ((fileOffset + rowIndex) / sampleRate.SamplesPerSecond))};");
+                            break;
+                        case "Excel":
+                            streamWriter.Write($"{string.Format(_nfi, "{0:N9}", _excelStart + ((fileOffset + rowIndex) / (decimal)sampleRate.SamplesPerDay))};");
+                            break;
+                        default:
+                            throw new NotSupportedException($"The row index format '{rowIndexFormat}' is not supported.");
+                    }
 
-            //        streamWriter.WriteLine();
-            //    }
-            //}
+                    for (int i = 0; i < simpleBuffers.Count; i++)
+                    {
+                        var value = simpleBuffers[i].Buffer[(int)(bufferOffset + rowIndex)];
+                        streamWriter.Write($"{string.Format(_nfi, $"{{0:G{significantFigures}}}", value)};");
+                    }
+
+                    streamWriter.WriteLine();
+                }
+            }
         }
 
         #endregion

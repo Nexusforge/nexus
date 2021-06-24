@@ -8,6 +8,12 @@ namespace Nexus.DataModel
     [DebuggerDisplay("{Id,nq}")]
     public record Catalog
     {
+        #region Fields
+
+        private bool _isInitialized;
+
+        #endregion
+
         #region Properties
 
         public string Id { get; init; }
@@ -25,14 +31,19 @@ namespace Nexus.DataModel
 
         public void Initialize()
         {
-            foreach (var channel in this.Channels)
+            if (!_isInitialized)
             {
-                channel.Catalog = this;
-                channel.Initialize();
+                foreach (var channel in this.Channels)
+                {
+                    channel.Catalog = this;
+                    channel.Initialize();
+                }
+
+                _isInitialized = true;
             }
         }
 
-        internal Catalog Merge(Catalog catalog, MergeMode mergeMode)
+        public Catalog Merge(Catalog catalog, MergeMode mergeMode)
         {
             if (this.Id != catalog.Id)
                 throw new Exception("The catalog to be merged has a different ID.");

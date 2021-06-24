@@ -28,7 +28,7 @@ namespace Nexus.Extensibility
 
         void Open(DateTime begin, Dictionary<Catalog, SampleRateContainer> catalogMap);
 
-        void Write(ulong fileOffset, ulong bufferOffset, ulong length, CatalogWriteInfo writeInfoGroup);
+        void Write(ulong fileOffset, ulong bufferOffset, ulong length, CatalogWriteInfo writeInfo);
 
         #endregion
     }

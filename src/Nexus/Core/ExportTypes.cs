@@ -1,5 +1,4 @@
 ﻿using Nexus.Infrastructure;
-using Nexus.Extension.Csv;
 using System;
 using System.Collections.Generic;
 
@@ -25,11 +24,8 @@ namespace Nexus.Core
         /// <example>["/IN_MEMORY/TEST/ACCESSIBLE/T1/1 s_mean", "/IN_MEMORY/TEST/ACCESSIBLE/V1/1 s_mean"]</example>
         public List<string> ChannelPaths { get; set; } = new List<string>();
 
-        /// <example>4</example>
-        public uint CsvSignificantFigures { get; set; } = 4;
-
-        /// <example>Index</example>
-        public CsvRowIndexFormat CsvRowIndexFormat { get; set; } = CsvRowIndexFormat.Index;
+        /// <example>{ "RowIndexFormat": "Index", "SignificantFigures": "4" }</example>
+        public Dictionary<string, string> Configuration { get; set; } = new Dictionary<string, string>();
     }
 
     public static class ExportParametersExtensions

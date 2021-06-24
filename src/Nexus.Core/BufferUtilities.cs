@@ -8,8 +8,6 @@ namespace Nexus
 {
     public static class BufferUtilities
     {
-        private static object targetType;
-
         public static unsafe double[] ToDouble<T>(Span<T> dataset) where T : unmanaged
         {
             var doubleData = new double[dataset.Length];

@@ -42,8 +42,10 @@ params = {
     "ChannelPaths": channel_paths,
 
     # CSV-only:
-    # "CsvSignificantFigures": 4,
-    # "CsvRowIndexFormat": "Index"  # Index, Unix, Excel
+    "Configuration": {
+        "SignificantFigures": "4",
+        "RowIndexFormat": "Index" # Index, Unix, Excel
+    }
 }
 
 asyncio.run(connector.export(begin, end, params, target_folder))
