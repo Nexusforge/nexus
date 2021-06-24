@@ -41,10 +41,10 @@ namespace Nexus.Services
 
         public record DatabaseManagerState
         {
-            public DataSourceRegistration AggregationRegistration { get; init; }
+            public BackendSource AggregationBackendSource { get; init; }
             public NexusDatabase Database { get; init; }
-            public Dictionary<DataSourceRegistration, Type> RegistrationToDataReaderTypeMap { get; init; }
-            public Dictionary<DataSourceRegistration, List<Catalog>> RegistrationToCatalogsMap { get; init; }
+            public Dictionary<BackendSource, Type> BackendSourceToDataReaderTypeMap { get; init; }
+            public Dictionary<BackendSource, List<Catalog>> BackendSourceToCatalogsMap { get; init; }
         }
 
         #endregion
@@ -97,10 +97,10 @@ namespace Nexus.Services
 
             // Concept:
             //
-            // 1) registrationToCatalogsMap, registrationToDataReaderTypeMap and database are instantiated in this method,
+            // 1) backendSourceToCatalogsMap, backendSourceToDataSourceTypeMap and database are instantiated in this method,
             // combined into a new DatabaseManagerState and then set in an atomic operation to the State propery.
             // 
-            // 2) Within this method, the registrationToCatalogsMap cache gets filled
+            // 2) Within this method, the backendSourceToCatalogsMap cache gets filled
             //
             // 3) It may happen that during this process, which might take a while, an external caller calls 
             // GetDataReader. To divide both processes (external call vs this method),the State property is introduced, 
@@ -110,15 +110,15 @@ namespace Nexus.Services
             var database = new NexusDatabase();
 
             // create new empty catalogs map
-            var registrationToCatalogsMap = new Dictionary<DataSourceRegistration, List<Catalog>>();
+            var backendSourceToCatalogsMap = new Dictionary<BackendSource, List<Catalog>>();
 
             // load data readers
-            var registrationToDataReaderTypeMap = this.LoadDataReaders(this.Config.DataSourceRegistrations);
+            var backendSourceToDataReaderTypeMap = this.LoadDataReaders(this.Config.BackendSources);
 
             // register aggregation data reader
-            var registration = new DataSourceRegistration()
+            var backendSource = new BackendSource()
             {
-                DataSourceId = "Nexus.Aggregation",
+                Type = "Nexus.Aggregation",
                 ResourceLocator = new Uri(
                     !string.IsNullOrWhiteSpace(this.Config.AggregationDataReaderRootPath)
                         ? this.Config.AggregationDataReaderRootPath
@@ -127,11 +127,11 @@ namespace Nexus.Services
                 )
             };
 
-            registrationToDataReaderTypeMap[registration] = typeof(AggregationDataSource);
+            backendSourceToDataReaderTypeMap[backendSource] = typeof(AggregationDataSource);
 
             // get catalogs
-            var tasks = registrationToDataReaderTypeMap
-                                .Select(entry => this.InstantiateDataSourceAsync(entry.Key, entry.Value, registrationToCatalogsMap, cancellationToken))
+            var tasks = backendSourceToDataReaderTypeMap
+                                .Select(entry => this.InstantiateDataSourceAsync(entry.Key, entry.Value, backendSourceToCatalogsMap, cancellationToken))
                                 .ToList();
 
             await Task.WhenAll(tasks);
@@ -147,7 +147,7 @@ namespace Nexus.Services
             }
 
             // get catalog meta data
-            var catalogMetas = registrationToCatalogsMap
+            var catalogMetas = backendSourceToCatalogsMap
                 .SelectMany(entry => entry.Value)
                 .Select(catalog => catalog.Id)
                 .Distinct()
@@ -168,8 +168,8 @@ namespace Nexus.Services
                 .ToList();
 
             // ensure that the filter data reader plugin does not create catalogs and channels without permission
-            var filterCatalogs = registrationToCatalogsMap
-                .Where(entry => entry.Key.DataSourceId == FilterDataSource.Id)
+            var filterCatalogs = backendSourceToCatalogsMap
+                .Where(entry => entry.Key.Type == FilterDataSource.Id)
                 .SelectMany(entry => entry.Value)
                 .ToList();
 
@@ -180,7 +180,7 @@ namespace Nexus.Services
             }
 
             // merge all catalogs
-            foreach (var entry in registrationToCatalogsMap)
+            foreach (var entry in backendSourceToCatalogsMap)
             {
                 foreach (var catalog in entry.Value)
                 {
@@ -199,7 +199,7 @@ namespace Nexus.Services
                         database.CatalogContainers.Add(container);
                     }
 
-                    container.Catalog.Merge(catalog, ChannelMergeMode.OverwriteMissing);
+                    container.Catalog.Merge(catalog, MergeMode.ExclusiveOr);
                 }
             }
 
@@ -228,10 +228,10 @@ namespace Nexus.Services
 
             this.State = new DatabaseManagerState()
             {
-                AggregationRegistration = registration,
+                AggregationBackendSource = backendSource,
                 Database = database,
-                RegistrationToCatalogsMap = registrationToCatalogsMap,
-                RegistrationToDataReaderTypeMap = registrationToDataReaderTypeMap
+                BackendSourceToCatalogsMap = backendSourceToCatalogsMap,
+                BackendSourceToDataReaderTypeMap = backendSourceToDataReaderTypeMap
             };
 
             this.DatabaseUpdated?.Invoke(this, database);
@@ -242,10 +242,10 @@ namespace Nexus.Services
         {
             var state = this.State;
 
-            var tasks = state.RegistrationToCatalogsMap
+            var tasks = state.BackendSourceToCatalogsMap
                 // where the catalog list contains the catalog ID
                 .Where(entry => entry.Value.Any(catalog => catalog.Id == catalogId))
-                // select the registration and get a brand new data reader from it
+                // select the backend source and get a brand new data source from it
                 .Select(entry => this.GetDataSourceControllerAsync(user, entry.Key, cancellationToken, state));
 
             await Task.WhenAll(tasks);
@@ -257,17 +257,17 @@ namespace Nexus.Services
 
         public async Task<DataSourceController> GetDataSourceControllerAsync(
                 ClaimsPrincipal user,
-                DataSourceRegistration registration,
+                BackendSource backendSource,
                 CancellationToken cancellationToken,
                 DatabaseManagerState state = null)
         {
             if (state == null)
                 state = this.State;
 
-            if (!state.RegistrationToDataReaderTypeMap.TryGetValue(registration, out var dataSourceType))
+            if (!state.BackendSourceToDataReaderTypeMap.TryGetValue(backendSource, out var dataSourceType))
                 throw new KeyNotFoundException("The requested data source could not be found.");
 
-            var controller = await this.InstantiateDataSourceAsync(registration, dataSourceType, state.RegistrationToCatalogsMap, cancellationToken);
+            var controller = await this.InstantiateDataSourceAsync(backendSource, dataSourceType, state.BackendSourceToCatalogsMap, cancellationToken);
 
             // special case checks
             if (dataSourceType == typeof(FilterDataSource))
@@ -280,7 +280,7 @@ namespace Nexus.Services
                     catalogId => Utilities.IsCatalogAccessible(user, catalogId, this.Database);
 
                 filterDataSource.GetDataSourceAsync =
-                    registration => this.GetDataSourceControllerAsync(user, registration, cancellationToken);
+                    backendSource => this.GetDataSourceControllerAsync(user, backendSource, cancellationToken);
             }
 
             return controller;
@@ -333,23 +333,23 @@ namespace Nexus.Services
                     }
 
                     // extend config with more data readers
-                    var inMemoryRegistration = new DataSourceRegistration()
+                    var inMemoryBackendSource = new BackendSource()
                     {
-                        DataSourceId = "Nexus.InMemory",
+                        Type = "Nexus.InMemory",
                         ResourceLocator = new Uri("memory://localhost")
                     };
 
-                    if (!this.Config.DataSourceRegistrations.Contains(inMemoryRegistration))
-                        this.Config.DataSourceRegistrations.Add(inMemoryRegistration);
+                    if (!this.Config.BackendSources.Contains(inMemoryBackendSource))
+                        this.Config.BackendSources.Add(inMemoryBackendSource);
 
-                    var filterRegistration = new DataSourceRegistration()
+                    var filterBackendSource = new BackendSource()
                     {
-                        DataSourceId = "Nexus.Filters",
+                        Type = "Nexus.Filters",
                         ResourceLocator = new Uri(_pathsOptions.Data, UriKind.RelativeOrAbsolute)
                     };
 
-                    if (!this.Config.DataSourceRegistrations.Contains(filterRegistration))
-                        this.Config.DataSourceRegistrations.Add(filterRegistration);
+                    if (!this.Config.BackendSources.Contains(filterBackendSource))
+                        this.Config.BackendSources.Add(filterBackendSource);
 
                     // save config to disk
                     this.SaveConfig(dbFolderPath, this.Config);
@@ -364,16 +364,16 @@ namespace Nexus.Services
         }
 
         private async Task<DataSourceController>
-            InstantiateDataSourceAsync(DataSourceRegistration registration, Type type, Dictionary<DataSourceRegistration, List<Catalog>> registrationToCatalogsMap, CancellationToken cancellationToken)
+            InstantiateDataSourceAsync(BackendSource backendSource, Type type, Dictionary<BackendSource, List<Catalog>> backendSourceToCatalogsMap, CancellationToken cancellationToken)
         {
-            _logger.LogInformation($"Instantiating {registration.DataSourceId} for URI {registration.ResourceLocator} ...");
+            _logger.LogInformation($"Instantiating {backendSource.Type} for URI {backendSource.ResourceLocator} ...");
 
-            var logger = _loggerFactory.CreateLogger($"{registration.DataSourceId} - {registration.ResourceLocator}");
+            var logger = _loggerFactory.CreateLogger($"{backendSource.Type} - {backendSource.ResourceLocator}");
             var dataSource = (IDataSource)Activator.CreateInstance(type);
 
             // set parameters
-            dataSource.ResourceLocator = registration.ResourceLocator;
-            dataSource.Parameters = registration.Parameters;
+            dataSource.ResourceLocator = backendSource.ResourceLocator;
+            dataSource.Parameters = backendSource.Configuration;
             dataSource.Logger = logger;
 
             await dataSource.OnParametersSetAsync();
@@ -386,9 +386,9 @@ namespace Nexus.Services
             }
 
             // create controller 
-            var controller = new DataSourceController(dataSource, registration);
+            var controller = new DataSourceController(dataSource, backendSource);
 
-            if (registrationToCatalogsMap.TryGetValue(registration, out var value))
+            if (backendSourceToCatalogsMap.TryGetValue(backendSource, out var value))
             {
                 controller.InitializeCatalogs(value);
             }
@@ -396,7 +396,7 @@ namespace Nexus.Services
             {
                 await controller.InitializeCatalogsAsync(cancellationToken);
 
-                registrationToCatalogsMap[registration] = controller
+                backendSourceToCatalogsMap[backendSource] = controller
                     .Catalogs
                     .Where(current => NexusUtilities.CheckCatalogNamingConvention(current.Id, out var _))
                     .ToList();
@@ -410,7 +410,7 @@ namespace Nexus.Services
             return Path.Combine(_pathsOptions.Data, "META", $"{catalogName.TrimStart('/').Replace('/', '_')}.json");
         }
 
-        private Dictionary<DataSourceRegistration, Type> LoadDataReaders(List<DataSourceRegistration> DataSourceRegistrations)
+        private Dictionary<BackendSource, Type> LoadDataReaders(List<BackendSource> backendSources)
         {
             var extensionFilePaths = Directory.EnumerateFiles(_pathsOptions.Extensions, "*.deps.json", SearchOption.AllDirectories)
                                               .Select(filePath => filePath.Replace(".deps.json", ".dll")).ToList();
@@ -442,10 +442,10 @@ namespace Nexus.Services
             }
 
             // return root path to type map
-            return DataSourceRegistrations.ToDictionary(registration => registration, registration =>
+            return backendSources.ToDictionary(backendSource => backendSource, backendSource =>
             {
-                if (!idToDataReaderTypeMap.TryGetValue(registration.DataSourceId, out var type))
-                    throw new Exception($"No data reader extension with ID '{registration.DataSourceId}' could be found.");
+                if (!idToDataReaderTypeMap.TryGetValue(backendSource.Type, out var type))
+                    throw new Exception($"No data reader extension with ID '{backendSource.Type}' could be found.");
 
                 return type;
             });

@@ -1,8 +1,8 @@
 ﻿namespace Nexus.DataModel
 {
-    public enum ChannelMergeMode
+    public enum MergeMode
     {
-        OverwriteMissing,
+        ExclusiveOr,
         NewWins
     }
 }

@@ -32,25 +32,23 @@ namespace Nexus.DataModel
             }
         }
 
-        internal Catalog Merge(Catalog catalog, ChannelMergeMode mergeMode)
+        internal Catalog Merge(Catalog catalog, MergeMode mergeMode)
         {
             if (this.Id != catalog.Id)
                 throw new Exception("The catalog to be merged has a different ID.");
 
             // merge channels
-            var mergedChannels = this.Channels
-                .Select(channel => channel with { })
-                .ToList();
+            var mergedChannels = new List<Channel>();
 
             foreach (var channel in catalog.Channels)
             {
-                var referenceChannel = this.Channels.FirstOrDefault(current => current.Id == channel.Id);
+                var referenceChannel = mergedChannels.FirstOrDefault(current => current.Id == channel.Id);
 
                 if (referenceChannel != null)
                     mergedChannels.Add(referenceChannel.Merge(channel, mergeMode));
 
                 else
-                    mergedChannels.Add(channel);
+                    mergedChannels.Add(channel with { });
             }
 
             // merge properties
@@ -58,40 +56,43 @@ namespace Nexus.DataModel
 
             switch (mergeMode)
             {
-                case ChannelMergeMode.OverwriteMissing:
+                case MergeMode.ExclusiveOr:
 
-                    var mergedMetaData1 = this.Metadata
+                    var mergedMetadata1 = this.Metadata
                         .ToDictionary(entry => entry.Key, entry => entry.Value);
 
                     foreach (var (key, value) in catalog.Metadata)
                     {
-                        if (!mergedMetaData1.ContainsKey(key))
-                            mergedMetaData1[key] = value;
+                        if (mergedMetadata1.ContainsKey(key))
+                            throw new Exception($"The left catalog's metadata already contains the key '{key}'.");
+
+                        else
+                            mergedMetadata1[key] = value;
                     }
 
                     merged = new Catalog()
                     {
                         Id = this.Id,
-                        Metadata = mergedMetaData1,
+                        Metadata = mergedMetadata1,
                         Channels = mergedChannels
                     };
 
                     break;
 
-                case ChannelMergeMode.NewWins:
+                case MergeMode.NewWins:
 
-                    var mergedMetaData2 = this.Metadata
+                    var mergedMetadata2 = this.Metadata
                         .ToDictionary(entry => entry.Key, entry => entry.Value);
 
                     foreach (var (key, value) in catalog.Metadata)
                     {
-                        mergedMetaData2[key] = value;
+                        mergedMetadata2[key] = value;
                     }
 
                     merged = new Catalog()
                     {
                         Id = this.Id,
-                        Metadata = mergedMetaData2,
+                        Metadata = mergedMetadata2,
                         Channels = mergedChannels
                     };
 

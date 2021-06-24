@@ -116,7 +116,7 @@ namespace Nexus.Extensions
                             var currentMonthFolder = Path.Combine(dataFolderPath, WebUtility.UrlEncode(catalogId), currentMonth.ToString("yyyy-MM"));
 
                             // catalog is in cache ...
-                            if (catalog != null)
+                            if (catalog != null && versioning.ScannedUntilMap.ContainsKey(catalogId))
                             {
                                 // ... but cache is outdated
                                 if (this.IsCacheOutdated(catalogId, currentMonthFolder, versioning))
@@ -180,7 +180,7 @@ namespace Nexus.Extensions
                                 var reference = catalogs.FirstOrDefault(current => current.Id == catalog.Id);
 
                                 if (reference != null)
-                                    reference.Merge(catalog, ChannelMergeMode.NewWins);
+                                    reference.Merge(catalog, MergeMode.NewWins);
                                 else
                                     catalogs.Add(catalog);
                             }
@@ -365,7 +365,7 @@ namespace Nexus.Extensions
                     foreach (var dayFolder in dayFolders)
                     {
                         var newCatalog = this.GetCatalog(catalogId, dayFolder);
-                        catalog = catalog.Merge(newCatalog, ChannelMergeMode.NewWins);
+                        catalog = catalog.Merge(newCatalog, MergeMode.NewWins);
                     }
 
                     // update scanned until

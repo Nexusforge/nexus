@@ -23,11 +23,11 @@ namespace Nexus.Extensibility
         long FileTotalLength
     );
 
-    public record DataSourceRegistration
+    public record BackendSource
     {
-        public string DataSourceId { get; init; }
+        public string Type { get; init; }
         public Uri ResourceLocator { get; init; }
-        public Dictionary<string, string>? Parameters { get; init; }
+        public Dictionary<string, string>? Configuration { get; init; }
     }
 
     public record ConfigurationUnit(

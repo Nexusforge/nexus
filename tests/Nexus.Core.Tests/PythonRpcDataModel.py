@@ -39,6 +39,7 @@ class Channel:
     Name: str
     Group: str
     Unit: str
+    Description: str
     Metadata: Dict[str, str]
     Datasets: List[Dataset]
 

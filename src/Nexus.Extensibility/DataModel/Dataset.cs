@@ -1,6 +1,5 @@
 ﻿using Nexus.Extensibility;
 using Nexus.Infrastructure;
-using System;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 
@@ -21,7 +20,7 @@ namespace Nexus.DataModel
         [JsonIgnore]
         public Channel Channel { get; internal set; }
 
-        internal DataSourceRegistration Registration { get; set; }
+        internal BackendSource BackendSource { get; set; }
 
         #endregion
 
@@ -37,19 +36,6 @@ namespace Nexus.DataModel
         public string GetPath()
         {
             return $"{this.Channel.GetPath()}/{this.Id}";
-        }
-
-        internal Dataset Merge(Dataset dataset)
-        {
-            if (this.Channel.Id != dataset.Channel.Id ||
-                this.DataType != dataset.DataType)
-                throw new Exception("The datasets to be merged are not equal.");
-
-            return new Dataset()
-            {
-                Id = this.Id,
-                DataType = this.DataType
-            };
         }
 
         #endregion

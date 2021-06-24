@@ -28,22 +28,20 @@ class PythonDataSource(IDataSource):
 
         # catalog 1
         catalog1_channel1_id = str(uuid3(NULL_NAMESPACE, "catalog1_channel1"))
-        catalog1_channel1_meta = { "Description": "description1" }
         catalog1_channel1_datasets = [Dataset("1 Hz_mean", NexusDataType.FLOAT32)]
+        catalog1_channel1_meta = { "c": "d" }
         catalog1_channel1 = Channel(catalog1_channel1_id, "channel1", "group1", "°C", catalog1_channel1_meta, catalog1_channel1_datasets)
 
         catalog1_channel2_id = str(uuid3(NULL_NAMESPACE, "catalog1_channel2"))
-        catalog1_channel2_meta = { "Description": "description2" }
         catalog1_channel2_datasets = [Dataset("1 Hz_mean", NexusDataType.FLOAT64)]
-        catalog1_channel2 = Channel(catalog1_channel2_id, "channel2", "group2", "bar", catalog1_channel2_meta, catalog1_channel2_datasets)
+        catalog1_channel2 = Channel(catalog1_channel2_id, "channel2", "group2", "bar", { }, catalog1_channel2_datasets)
 
-        catalog1 = Catalog("/A/B/C", metadata = {}, channels = [catalog1_channel1, catalog1_channel2])
+        catalog1 = Catalog("/A/B/C", metadata = { "a": "b" }, channels = [catalog1_channel1, catalog1_channel2])
 
         # catalog 2
         catalog2_channel1_id = str(uuid3(NULL_NAMESPACE, "catalog2_channel1"))
-        catalog2_channel1_meta = { "Description": "description1" }
         catalog2_channel1_datasets = [Dataset("1 Hz_mean", NexusDataType.INT64)]
-        catalog2_channel1 = Channel(catalog2_channel1_id, "channel1", "group1", "m/s", catalog2_channel1_meta, catalog2_channel1_datasets)
+        catalog2_channel1 = Channel(catalog2_channel1_id, "channel1", "group1", "m/s", { }, catalog2_channel1_datasets)
 
         catalog2 = Catalog("/D/E/F", metadata = {}, channels = [catalog2_channel1])
 

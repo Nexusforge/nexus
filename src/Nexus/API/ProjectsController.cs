@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Logging;
 using Nexus.Core;
 using Nexus.DataModel;
+using Nexus.Extensibility;
 using Nexus.Infrastructure;
 using Nexus.Services;
 using NJsonSchema.Annotations;
@@ -415,15 +416,15 @@ namespace Nexus.Controllers
                 using var dataSource = dataSourceForUsing;
                 var timeRange = await dataSource.GetTimeRangeAsync(catalog.Id, cancellationToken);
 
-                var registration = new DataSourceRegistration()
+                var backendSource = new BackendSource()
                 {
-                    ResourceLocator = timeRange.DataSourceRegistration.ResourceLocator,
-                    DataSourceId = timeRange.DataSourceRegistration.DataSourceId,
+                    Type = timeRange.BackendSource.Type,
+                    ResourceLocator = timeRange.BackendSource.ResourceLocator,
                 };
 
                 return new TimeRangeResult()
                 {
-                    DataSourceRegistration = registration,
+                    BackendSource = backendSource,
                     Begin = timeRange.Begin,
                     End = timeRange.End
                 };
@@ -444,15 +445,15 @@ namespace Nexus.Controllers
                 using var dataSource = dataSourceForUsing;
                 var availability = await dataSource.GetAvailabilityAsync(catalog.Id, begin, end, granularity, cancellationToken);
 
-                var registration = new DataSourceRegistration()
+                var backendSource = new BackendSource()
                 {
-                    ResourceLocator = availability.DataSourceRegistration.ResourceLocator,
-                    DataSourceId = availability.DataSourceRegistration.DataSourceId,
+                    ResourceLocator = availability.BackendSource.ResourceLocator,
+                    Type = availability.BackendSource.Type,
                 };
 
                 return new AvailabilityResult()
                 {
-                    DataSourceRegistration = registration,
+                    BackendSource = backendSource,
                     Data = availability.Data
                 };
             }).ToList();
@@ -519,21 +520,21 @@ namespace Nexus.Controllers
 
         #region Types
 
-        public record DataSourceRegistration
+        public record BackendSource
         {
+            public string Type { get; set; }
             public Uri ResourceLocator { get; set; }
-            public string DataSourceId { get; set; }
         }
 
         public record AvailabilityResult
         {
-            public DataSourceRegistration DataSourceRegistration { get; set; }
+            public BackendSource BackendSource { get; set; }
             public Dictionary<DateTime, double> Data { get; set; }
         }
 
         public record TimeRangeResult
         {
-            public DataSourceRegistration DataSourceRegistration { get; set; }
+            public BackendSource BackendSource { get; set; }
             public DateTime Begin { get; set; }
             public DateTime End { get; set; }
         }

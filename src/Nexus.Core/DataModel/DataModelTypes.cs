@@ -7,7 +7,7 @@ namespace Nexus.DataModel
     public record NexusDatabaseConfig()
     {
         public string AggregationDataReaderRootPath { get; set; }
-        public List<DataSourceRegistration> DataSourceRegistrations { get; set; }
+        public List<BackendSource> BackendSources { get; set; }
     }
 
     public enum AvailabilityGranularity
@@ -43,13 +43,13 @@ namespace Nexus.DataModel
 
     public record AvailabilityResult
     {
-        public DataSourceRegistration DataSourceRegistration { get; set; }
+        public BackendSource BackendSource { get; set; }
         public Dictionary<DateTime, double> Data { get; set; }
     }
 
     public record TimeRangeResult
     {
-        public DataSourceRegistration DataSourceRegistration { get; set; }
+        public BackendSource BackendSource { get; set; }
         public DateTime Begin { get; set; }
         public DateTime End { get; set; }
     }

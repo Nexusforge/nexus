@@ -271,7 +271,7 @@ namespace Nexus.Controllers
                                 _aggregationOptions.ChunkSizeMB,
                                 setup,
                                 state,
-                                registration => databaseManager.GetDataSourceControllerAsync(userIdService.User, registration, cts.Token, state),
+                                backendSource => databaseManager.GetDataSourceControllerAsync(userIdService.User, backendSource, cts.Token, state),
                                 cts.Token);
 
                             _logger.LogInformation($"{message} Done.");

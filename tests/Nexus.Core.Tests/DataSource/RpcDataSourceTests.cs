@@ -44,21 +44,31 @@ namespace Nexus.Core.Tests
             var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
 
             // assert
+            var actualMetadata1 = catalogs.First().Metadata;
             var actual = catalogs.First(catalog => catalog.Id == "/A/B/C");
             var actualNames = actual.Channels.Select(channel => channel.Name).ToList();
             var actualGroups = actual.Channels.Select(channel => channel.Group).ToList();
             var actualUnits = actual.Channels.Select(channel => channel.Unit).ToList();
             var actualDataTypes = actual.Channels.SelectMany(channel => channel.Datasets.Select(dataset => dataset.DataType)).ToList();
+            var actualMetadata2 = actual.Channels.Select(channel => channel.Metadata).ToList();
 
+            var expectedMetadata1 = new Dictionary<string, string>() { ["a"] = "b" };
             var expectedNames = new List<string>() { "channel1", "channel2" };
             var expectedGroups = new List<string>() { "group1", "group2" };
             var expectedUnits = new List<string>() { "°C", "bar" };
             var expectedDataTypes = new List<NexusDataType>() { NexusDataType.FLOAT32, NexusDataType.FLOAT64 };
+            var expectedMetadata2 = new List<Dictionary<string, string>>() { new Dictionary<string, string>() { ["c"] = "d" }, new Dictionary<string, string>() };
 
+            Assert.True(actualMetadata1.SequenceEqual(expectedMetadata1));
             Assert.True(expectedNames.SequenceEqual(actualNames));
             Assert.True(expectedGroups.SequenceEqual(actualGroups));
             Assert.True(expectedUnits.SequenceEqual(actualUnits));
             Assert.True(expectedDataTypes.SequenceEqual(actualDataTypes));
+
+            for (int i = 0; i < expectedMetadata2.Count; i++)
+            {
+                Assert.True(expectedMetadata2[i].SequenceEqual(actualMetadata2[i]));
+            }
         }
 
         [Fact]

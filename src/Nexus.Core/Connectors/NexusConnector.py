@@ -32,7 +32,7 @@ class Channel():
         self.unit = dict["unit"]
         self.dataset_name = channelPath.split("/")[-1]
         self.description = dict["description"]
-        self.special_info = dict["specialInfo"]
+        self.metadata = dict["metadata"]
 
 class NexusConnector():
 

@@ -94,5 +94,5 @@ namespace Nexus.Core
         public string TargetFilePath { get; init; }
     }
 
-    public record AggregationInstruction(CatalogContainer Container, Dictionary<DataSourceRegistration, List<AggregationChannel>> DataReaderToAggregationsMap);
+    public record AggregationInstruction(CatalogContainer Container, Dictionary<BackendSource, List<AggregationChannel>> DataReaderToAggregationsMap);
 }

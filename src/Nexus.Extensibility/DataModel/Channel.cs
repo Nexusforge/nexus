@@ -25,22 +25,39 @@ namespace Nexus.DataModel
 
         #region "Methods"
 
-        internal Channel Merge(Channel channel, ChannelMergeMode mergeMode)
+        internal Channel Merge(Channel channel, MergeMode mergeMode)
         {
             // merge datasets
-            var mergedDatasets = this.Datasets
-                .Select(dataset => dataset with { })
-                .ToList();
+            var mergedDatasets = new List<Dataset>();
 
             foreach (var dataset in channel.Datasets)
             {
-                var referenceDataset = this.Datasets.FirstOrDefault(current => current.Id == dataset.Id);
+                var referenceDataset = mergedDatasets.FirstOrDefault(current => current.Id == dataset.Id);
 
-                if (referenceDataset != null)
-                    mergedDatasets.Add(referenceDataset.Merge(dataset));
+                if (referenceDataset is not null)
+                {
+                    switch (mergeMode)
+                    {
+                        case MergeMode.ExclusiveOr:
 
+                            throw new Exception($"There may be only a single dataset with a given identifier.");
+
+                        case MergeMode.NewWins:
+
+                            if (!dataset.Equals(referenceDataset))
+                                throw new Exception($"The datasets to be merged are not equal.");
+
+                            break;
+
+                        default:
+
+                            throw new NotSupportedException($"The merge mode '{mergeMode}' is not supported.");
+                    }
+                }
                 else
-                    mergedDatasets.Add(dataset);
+                {
+                    mergedDatasets.Add(dataset with { });
+                }
             }
 
             // merge properties
@@ -48,15 +65,18 @@ namespace Nexus.DataModel
 
             switch (mergeMode)
             {
-                case ChannelMergeMode.OverwriteMissing:
+                case MergeMode.ExclusiveOr:
 
-                    var mergedMetaData1 = this.Metadata
+                    var mergedMetadata1 = this.Metadata
                         .ToDictionary(entry => entry.Key, entry => entry.Value);
 
                     foreach (var (key, value) in channel.Metadata)
                     {
-                        if (!mergedMetaData1.ContainsKey(key))
-                            mergedMetaData1[key] = value;
+                        if (mergedMetadata1.ContainsKey(key))
+                            throw new Exception($"The left channel's metadata already contains the key '{key}'.");
+
+                        else
+                            mergedMetadata1[key] = value;
                     }
 
                     merged = new Channel()
@@ -65,20 +85,20 @@ namespace Nexus.DataModel
                         Name = string.IsNullOrWhiteSpace(this.Name) ? channel.Name : this.Name,
                         Group = string.IsNullOrWhiteSpace(this.Group) ? channel.Group : this.Group,
                         Unit = string.IsNullOrWhiteSpace(this.Unit) ? channel.Unit : this.Unit,
-                        Metadata = mergedMetaData1,
+                        Metadata = mergedMetadata1,
                         Datasets = mergedDatasets
                     };
 
                     break;
 
-                case ChannelMergeMode.NewWins:
+                case MergeMode.NewWins:
 
-                    var mergedMetaData2 = this.Metadata
+                    var mergedMetadata2 = this.Metadata
                         .ToDictionary(entry => entry.Key, entry => entry.Value);
 
                     foreach (var (key, value) in channel.Metadata)
                     {
-                        mergedMetaData2[key] = value;
+                        mergedMetadata2[key] = value;
                     }
 
                     merged = new Channel()
@@ -87,14 +107,14 @@ namespace Nexus.DataModel
                         Name = channel.Name,
                         Group = channel.Group,
                         Unit = channel.Unit,
-                        Metadata = mergedMetaData2,
+                        Metadata = mergedMetadata2,
                         Datasets = mergedDatasets
                     };
 
                     break;
 
                 default:
-                    throw new NotSupportedException();
+                    throw new NotSupportedException($"The merge mode '{mergeMode}' is not supported.");
             }
 
             return merged;

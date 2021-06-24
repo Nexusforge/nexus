@@ -78,7 +78,7 @@ namespace Nexus.Extensions
 
         public Func<string, bool> IsCatalogAccessible { get; set; }
 
-        public Func<DataSourceRegistration, Task<DataSourceController>> GetDataSourceAsync { get; set; }
+        public Func<BackendSource, Task<DataSourceController>> GetDataSourceAsync { get; set; }
 
         private static ConcurrentDictionary<Uri, FilterSettings> FilterSettingsCache { get; }
 
@@ -98,7 +98,7 @@ namespace Nexus.Extensions
         {
             codeDefinition = default;
 
-            if (FilterDataSource.FilterDataSourceCache.TryGetValue(dataset.Registration.ResourceLocator, out var cacheEntries))
+            if (FilterDataSource.FilterDataSourceCache.TryGetValue(dataset.BackendSource.ResourceLocator, out var cacheEntries))
             {
                 var cacheEntry = cacheEntries
                     .FirstOrDefault(entry => entry.SupportedChanneIds.Contains(dataset.Channel.Id));
@@ -263,7 +263,7 @@ namespace Nexus.Extensions
                         throw new UnauthorizedAccessException("The current user is not allowed to access this filter.");
 
 #warning GetData Should be Async! Deadlock may happen
-                    var dataReader = this.GetDataSourceAsync(dataset.Registration).Result;
+                    var dataReader = this.GetDataSourceAsync(dataset.BackendSource).Result;
 
 #warning GetData Should be Async! Deadlock may happen
                     dataReader.ReadSingleAsync(dataset, result, begin, end, cancellationToken).Wait();

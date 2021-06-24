@@ -94,7 +94,7 @@ namespace Nexus.Controllers
                     return this.Unauthorized($"The current user is not authorized to access the catalog '{catalog.Id}'.");
 
                 // controller
-                using var controller = await _databaseManager.GetDataSourceControllerAsync(_userIdService.User, dataset.Registration, cancellationToken);
+                using var controller = await _databaseManager.GetDataSourceControllerAsync(_userIdService.User, dataset.BackendSource, cancellationToken);
 
                 // read data
                 var stream = controller.ReadAsDoubleStream(dataset, begin, end, 1 * 1000 * 1000UL, cancellationToken);

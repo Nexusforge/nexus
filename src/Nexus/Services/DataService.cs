@@ -279,14 +279,14 @@ namespace Nexus.Services
                                              CancellationToken cancellationToken)
         {
             var datasets = sparseCatalog.Channels.SelectMany(channel => channel.Datasets);
-            var registrationToDatasetsMap = new Dictionary<DataSourceRegistration, List<Dataset>>();
+            var backendSourceToDatasetsMap = new Dictionary<BackendSource, List<Dataset>>();
 
             foreach (var dataset in datasets)
             {
-                if (!registrationToDatasetsMap.ContainsKey(dataset.Registration))
-                    registrationToDatasetsMap[dataset.Registration] = new List<Dataset>();
+                if (!backendSourceToDatasetsMap.ContainsKey(dataset.Registration))
+                    backendSourceToDatasetsMap[dataset.Registration] = new List<Dataset>();
 
-                registrationToDatasetsMap[dataset.Registration].Add(dataset);
+                backendSourceToDatasetsMap[dataset.Registration].Add(dataset);
             }
 
             var progressHandler = (EventHandler<double>)((sender, e) =>
@@ -294,7 +294,7 @@ namespace Nexus.Services
                 this.OnProgress(new ProgressUpdatedEventArgs(e, $"Loading data ..."));
             });
 
-            foreach (var entry in registrationToDatasetsMap)
+            foreach (var entry in backendSourceToDatasetsMap)
             {
                 if (entry.Value.Any())
                 {

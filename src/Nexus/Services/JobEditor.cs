@@ -77,12 +77,12 @@ namespace Nexus.Services
             {
                 sb.AppendLine($"Catalog '{instruction.Container.Id}'");
 
-                foreach (var (registration, aggregationChannels) in instruction.DataReaderToAggregationsMap)
+                foreach (var (backendSource, aggregationChannels) in instruction.DataReaderToAggregationsMap)
                 {
                     if (aggregationChannels.Any())
                     {
                         sb.AppendLine();
-                        sb.AppendLine($"\tData Reader '{registration.DataSourceId}' ({registration.ResourceLocator})");
+                        sb.AppendLine($"\tData Reader '{backendSource.Type}' ({backendSource.ResourceLocator})");
 
                         foreach (var aggregationChannel in aggregationChannels)
                         {

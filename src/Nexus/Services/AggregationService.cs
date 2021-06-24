@@ -68,15 +68,15 @@ namespace Nexus.Services
                 if (container is null)
                     return null;
 
-                var DataSourceRegistrations = container
+                var backendSources = container
                     .Catalog
                     .Channels
-                    .SelectMany(channel => channel.Datasets.Select(dataset => dataset.Registration))
+                    .SelectMany(channel => channel.Datasets.Select(dataset => dataset.BackendSource))
                     .Distinct()
-                    .Where(registration => registration != state.AggregationRegistration)
+                    .Where(backendSource => backendSource != state.AggregationBackendSource)
                     .ToList();
 
-                return new AggregationInstruction(container, DataSourceRegistrations.ToDictionary(registration => registration, registration =>
+                return new AggregationInstruction(container, backendSources.ToDictionary(backendSource => backendSource, backendSource =>
                 {
                     // find aggregations for catalog ID
                     var potentialAggregations = setup.Aggregations
@@ -85,8 +85,8 @@ namespace Nexus.Services
 
                     // create channel to aggregations map
                     var aggregationChannels = container.Catalog.Channels
-                        // find all channels for current reader registration
-                        .Where(channel => channel.Datasets.Any(dataset => dataset.Registration == registration))
+                        // find all channels for current reader backend source
+                        .Where(channel => channel.Datasets.Any(dataset => dataset.BackendSource == backendSource))
                         // find all aggregations for current channel
                         .Select(channel =>
                         {
@@ -111,7 +111,7 @@ namespace Nexus.Services
                                                uint aggregationChunkSizeMB,
                                                AggregationSetup setup,
                                                DatabaseManagerState state,
-                                               Func<DataSourceRegistration, Task<DataSourceController>> getControllerAsync,
+                                               Func<BackendSource, Task<DataSourceController>> getControllerAsync,
                                                CancellationToken cancellationToken)
         {
             if (setup.Begin != setup.Begin.Date)
@@ -168,12 +168,12 @@ namespace Nexus.Services
                                                  DatabaseManagerState state,
                                                  AggregationSetup setup,
                                                  AggregationInstruction instruction,
-                                                 Func<DataSourceRegistration, Task<DataSourceController>> getControllerAsync,
+                                                 Func<BackendSource, Task<DataSourceController>> getControllerAsync,
                                                  CancellationToken cancellationToken)
         {
-            foreach (var (registration, aggregationChannels) in instruction.DataReaderToAggregationsMap)
+            foreach (var (backendSource, aggregationChannels) in instruction.DataReaderToAggregationsMap)
             {
-                using var controller = await getControllerAsync(registration);
+                using var controller = await getControllerAsync(backendSource);
 
                 // get files
                 if (!await controller.IsDataOfDayAvailableAsync(catalogId, date, cancellationToken))

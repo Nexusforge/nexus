@@ -178,12 +178,12 @@ namespace Nexus.Shared
 
                     if (hasCleared)
                     {
-                        var registration = availability[i].DataSourceRegistration;
-                        var isAggregation = registration.Equals(this.DatabaseManager.State.AggregationRegistration);
+                        var backendSource = availability[i].BackendSource;
+                        var isAggregation = backendSource.Equals(this.DatabaseManager.State.AggregationBackendSource);
 
                         dataset = new BarDataset<TimePoint>
                         {
-                            Label = isAggregation ? "Aggregations" : $"Raw ({registration.ResourceLocator} - {registration.DataSourceId})",
+                            Label = isAggregation ? "Aggregations" : $"Raw ({backendSource.ResourceLocator} - {backendSource.Type})",
                             BackgroundColor = _backgroundColors[i % _backgroundColors.Count()],
                             BorderColor = _borderColors[i % _borderColors.Count()],
                             BorderWidth = 2

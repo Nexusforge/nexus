@@ -11,7 +11,7 @@ namespace Nexus.Services
     {
         NexusDatabase Database { get; }
         DatabaseManager.DatabaseManagerState State { get; }
-        Task<DataSourceController> GetDataSourceControllerAsync(ClaimsPrincipal user, DataSourceRegistration registration, CancellationToken cancellationToken, DatabaseManager.DatabaseManagerState state = null);
+        Task<DataSourceController> GetDataSourceControllerAsync(ClaimsPrincipal user, BackendSource backendSource, CancellationToken cancellationToken, DatabaseManager.DatabaseManagerState state = null);
         Task<List<DataSourceController>> GetDataSourcesAsync(ClaimsPrincipal user, string catalogId, CancellationToken cancellationToken);
         void SaveConfig(string folderPath, NexusDatabaseConfig config);
         void SaveCatalogMeta(CatalogMeta catalogMeta);

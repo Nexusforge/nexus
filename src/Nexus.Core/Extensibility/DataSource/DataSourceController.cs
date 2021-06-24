@@ -16,10 +16,10 @@ namespace Nexus.Extensibility
     {
         #region Constructors
 
-        public DataSourceController(IDataSource dataSource, DataSourceRegistration registration)
+        public DataSourceController(IDataSource dataSource, BackendSource backendSource)
         {
             this.DataSource = dataSource;
-            this.Registration = registration;
+            this.BackendSource = backendSource;
             this.Progress = new Progress<double>();
         }
 
@@ -33,7 +33,7 @@ namespace Nexus.Extensibility
 
         public List<Catalog> Catalogs { get; private set; }
 
-        internal DataSourceRegistration Registration { get; }
+        internal BackendSource BackendSource { get; }
 
         #endregion
 
@@ -49,7 +49,7 @@ namespace Nexus.Extensibility
                 {
                     foreach (var dataset in channel.Datasets)
                     {
-                        dataset.Registration = this.Registration;
+                        dataset.BackendSource = this.BackendSource;
                     }
                 }
             }
@@ -297,9 +297,8 @@ namespace Nexus.Extensibility
 
             return new AvailabilityResult()
             {
-                DataSourceRegistration = this.Registration,
-                Data = aggregatedData
-                    .ToDictionary(entry => entry.Key, entry => entry.Value)
+                BackendSource = this.BackendSource,
+                Data = aggregatedData.ToDictionary(entry => entry.Key, entry => entry.Value)
             };
         }
 
@@ -310,7 +309,7 @@ namespace Nexus.Extensibility
 
             return new TimeRangeResult() 
             {
-                DataSourceRegistration = this.Registration,
+                BackendSource = this.BackendSource,
                 Begin = begin, 
                 End = end 
             };
