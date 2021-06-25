@@ -3,7 +3,6 @@ using Nexus.DataModel;
 using Nexus.Services;
 using Nexus.ViewModels;
 using Nexus.Infrastructure;
-using Nexus.Extension.Csv;
 using Prism.Mvvm;
 using System;
 using System.Collections.Generic;

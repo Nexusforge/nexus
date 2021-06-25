@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text.Json.Serialization;
 
 namespace Nexus.DataModel
 {
@@ -17,9 +16,6 @@ namespace Nexus.DataModel
         public string Unit { get; init; }
         public Dictionary<string, string> Metadata { get; set; } = new Dictionary<string, string>();
         public List<Dataset> Datasets { get; init; } = new List<Dataset>();
-
-        [JsonIgnore]
-        public Catalog Catalog { get; internal set; }
 
         #endregion
 
@@ -56,7 +52,7 @@ namespace Nexus.DataModel
                 }
                 else
                 {
-                    mergedDatasets.Add(dataset with { });
+                    mergedDatasets.Add(dataset);
                 }
             }
 
@@ -118,19 +114,6 @@ namespace Nexus.DataModel
             }
 
             return merged;
-        }
-
-        public string GetPath()
-        {
-            return $"{this.Catalog.GetPath()}/{this.Id}";
-        }
-
-        public void Initialize()
-        {
-            foreach (var dataset in this.Datasets)
-            {
-                dataset.Channel = this;
-            }
         }
 
         #endregion

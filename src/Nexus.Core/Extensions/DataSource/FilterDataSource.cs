@@ -45,40 +45,15 @@ namespace Nexus.Extensions
 
         #region Properties
 
-        public Uri ResourceLocator
-        {
-            set
-            {
-                _resourceLocator = value;
-
-                if (!value.IsAbsoluteUri || value.IsFile)
-                {
-                    this.Root = value.IsAbsoluteUri
-                        ? value.AbsolutePath
-                        : value.ToString();
-                }
-                else
-                {
-                    throw new Exception("Only file URIs are supported.");
-                }
-            }
-            get
-            {
-                return _resourceLocator;
-            }
-        }
-
-        public ILogger Logger { get; set; }
-
-        public Dictionary<string, string> Configuration { get; set; }
-
-        private string Root { get; set; }
-
         public INexusDatabase Database { get; set; }
 
         public Func<string, bool> IsCatalogAccessible { get; set; }
 
         public Func<BackendSource, Task<DataSourceController>> GetDataSourceAsync { get; set; }
+
+        private DataSourceContext Context { get; set; }
+
+        private string Root { get; set; }
 
         private static ConcurrentDictionary<Uri, FilterSettings> FilterSettingsCache { get; }
 
@@ -88,20 +63,36 @@ namespace Nexus.Extensions
 
         #region Methods
 
-        public Task OnParametersSetAsync()
+        public Task SetContextAsync(DataSourceContext context, CancellationToken cancellationToken)
         {
-            _cacheEntries = FilterDataSource.FilterDataSourceCache.GetOrAdd(this.ResourceLocator, new List<FilterDataSourceCacheEntry>());
+            this.Context = context;
+
+            var uri = context.ResourceLocator;
+
+            if (!uri.IsAbsoluteUri || uri.IsFile)
+            {
+                this.Root = uri.IsAbsoluteUri
+                    ? uri.AbsolutePath
+                    : uri.ToString();
+            }
+            else
+            {
+                throw new Exception("Only file URIs are supported.");
+            }
+
+            _cacheEntries = FilterDataSource.FilterDataSourceCache.GetOrAdd(context.ResourceLocator, new List<FilterDataSourceCacheEntry>());
+
             return Task.CompletedTask;
         }
 
-        public static bool TryGetFilterCodeDefinition(Dataset dataset, out CodeDefinition codeDefinition)
+        public static bool TryGetFilterCodeDefinition(DatasetRecord datasetRecord, out CodeDefinition codeDefinition)
         {
             codeDefinition = default;
 
-            if (FilterDataSource.FilterDataSourceCache.TryGetValue(dataset.BackendSource.ResourceLocator, out var cacheEntries))
+            if (FilterDataSource.FilterDataSourceCache.TryGetValue(datasetRecord.Dataset.BackendSource.ResourceLocator, out var cacheEntries))
             {
                 var cacheEntry = cacheEntries
-                    .FirstOrDefault(entry => entry.SupportedChanneIds.Contains(dataset.Channel.Id));
+                    .FirstOrDefault(entry => entry.SupportedChanneIds.Contains(datasetRecord.Channel.Id));
 
                 if (cacheEntry is not null)
                 {
@@ -184,7 +175,7 @@ namespace Nexus.Extensions
                             // create channel
                             if (!NexusUtilities.CheckNamingConvention(localFilterChannel.ChannelName, out var message))
                             {
-                                this.Logger.LogWarning($"Skipping channel '{localFilterChannel.ChannelName}' due to the following reason: {message}.");
+                                this.Context.Logger.LogWarning($"Skipping channel '{localFilterChannel.ChannelName}' due to the following reason: {message}.");
                                 continue;
                             }
 
@@ -211,11 +202,6 @@ namespace Nexus.Extensions
                     }
                 }
 
-                foreach (var catalog in catalogs.Values)
-                {
-                    catalog.Initialize();
-                }
-
                 _catalogs = catalogs.Values.ToList();
                 return _catalogs;
             });
@@ -235,10 +221,10 @@ namespace Nexus.Extensions
         {
             return Task.Run(() =>
             {
-                var dataset = Catalog.FindDataset(datasetPath, _catalogs);
+                var (catalog, channel, dataset) = Catalog.Find(datasetPath, _catalogs);
                 var samplesPerDay = new SampleRateContainer(dataset.Id).SamplesPerDay;
                 var length = (long)Math.Round((end - begin).TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
-                var cacheEntry = _cacheEntries.FirstOrDefault(current => current.SupportedChanneIds.Contains(dataset.Channel.Id));
+                var cacheEntry = _cacheEntries.FirstOrDefault(current => current.SupportedChanneIds.Contains(channel.Id));
 
                 if (cacheEntry is null)
                     throw new Exception("The requested filter channel ID could not be found.");
@@ -253,27 +239,23 @@ namespace Nexus.Extensions
                     if (catalog == null)
                         throw new Exception($"Unable to find catalog with id '{catalogId}'.");
 
-                    if (!this.Database.TryFindDatasetById(catalog.Id, channelId, datasetId, out var dataset))
-                    {
-                        var path = $"{catalog.Id}/{channelId}/{datasetId}";
-                        throw new Exception($"Unable to find dataset with path '{path}'.");
-                    }
+                    var datasetRecord = this.Database.Find(catalog.Id, channelId, datasetId);
 
-                    if (!this.IsCatalogAccessible(dataset.Channel.Catalog.Id))
+                    if (!this.IsCatalogAccessible(catalog.Id))
                         throw new UnauthorizedAccessException("The current user is not allowed to access this filter.");
 
 #warning GetData Should be Async! Deadlock may happen
-                    var dataReader = this.GetDataSourceAsync(dataset.BackendSource).Result;
+                    var dataSourceController = this.GetDataSourceAsync(dataset.BackendSource).Result;
 
 #warning GetData Should be Async! Deadlock may happen
-                    dataReader.ReadSingleAsync(dataset, result, begin, end, cancellationToken).Wait();
+                    dataSourceController.ReadSingleAsync(datasetRecord, result, begin, end, cancellationToken).Wait();
                     var data = BufferUtilities.ApplyDatasetStatusByDataType(dataset.DataType, result);
 
                     return data;
                 };
 
                 // execute
-                var filter = cacheEntry.FilterProvider.Filters.First(filter => filter.ToGuid(cacheEntry.FilterCodeDefinition) == dataset.Channel.Id);
+                var filter = cacheEntry.FilterProvider.Filters.First(filter => filter.ToGuid(cacheEntry.FilterCodeDefinition) == channel.Id);
                 var filterResult = MemoryMarshal.Cast<byte, double>(result.Data.Span);
 
                 cacheEntry.FilterProvider.Filter(begin, end, filter, getData, filterResult);
@@ -284,7 +266,7 @@ namespace Nexus.Extensions
         private bool TryGetFilterSettings(out FilterSettings filterSettings)
         {
             // search in cache
-            if (FilterDataSource.FilterSettingsCache.TryGetValue(this.ResourceLocator, out filterSettings))
+            if (FilterDataSource.FilterSettingsCache.TryGetValue(this.Context.ResourceLocator, out filterSettings))
             {
                 return true;   
             }
@@ -300,7 +282,7 @@ namespace Nexus.Extensions
 
                     // add to cache
                     var filterSettings2 = filterSettings; // to make compiler happy
-                    FilterDataSource.FilterSettingsCache.AddOrUpdate(this.ResourceLocator, filterSettings, (key, value) => filterSettings2);
+                    FilterDataSource.FilterSettingsCache.AddOrUpdate(this.Context.ResourceLocator, filterSettings, (key, value) => filterSettings2);
 
                     return true;
                 }
@@ -316,7 +298,7 @@ namespace Nexus.Extensions
                 .ToList();
 
             var message = $"Compiling {filterCodeDefinitions.Count} filter(s) ...";
-            this.Logger.LogInformation(message);
+            this.Context.Logger.LogInformation(message);
 
             var cacheEntries = new FilterDataSourceCacheEntry[filterCodeDefinitions.Count];
 
@@ -362,12 +344,12 @@ namespace Nexus.Extensions
                 }
                 catch (Exception ex)
                 {
-                    this.Logger.LogError($"Failed to instantiate the filter provider '{filterCodeDefinition.Name}' of user {filterCodeDefinition.Owner}. Detailed error: {ex.GetFullMessage()}");
+                    this.Context.Logger.LogError($"Failed to instantiate the filter provider '{filterCodeDefinition.Name}' of user {filterCodeDefinition.Owner}. Detailed error: {ex.GetFullMessage()}");
                 }
             });
 
             _cacheEntries.AddRange(cacheEntries.Where(cacheEntry => cacheEntry is not null));
-            this.Logger.LogInformation($"{message} Done.");
+            this.Context.Logger.LogInformation($"{message} Done.");
         }
 
         private string PrepareCode(string code)

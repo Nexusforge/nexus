@@ -15,46 +15,52 @@ class NULL_NAMESPACE:
 
 class PythonDataSource(IDataSource):
     
-    _catalogs = None
+    _context = None
 
-    async def on_parameters_set_async(self):
+    async def set_context_async(self, context):
         
-        if (self.resource_locator.scheme != "file"):
+        self._context = context
+
+        if (context.resource_locator.scheme != "file"):
             raise Exception(f"Expected 'file' URI scheme, but got '{self.resource_locator.scheme}'.")
 
-        self.logger.Log(LogLevel.Information, "Logging works!")
+        context.logger.Log(LogLevel.Information, "Logging works!")
 
     async def get_catalogs_async(self):
 
-        # catalog 1
-        catalog1_channel1_id = str(uuid3(NULL_NAMESPACE, "catalog1_channel1"))
-        catalog1_channel1_datasets = [Dataset("1 Hz_mean", NexusDataType.FLOAT32)]
-        catalog1_channel1_meta = { "c": "d" }
-        catalog1_channel1 = Channel(catalog1_channel1_id, "channel1", "group1", "°C", catalog1_channel1_meta, catalog1_channel1_datasets)
+        if (self._context.catalogs is None):
 
-        catalog1_channel2_id = str(uuid3(NULL_NAMESPACE, "catalog1_channel2"))
-        catalog1_channel2_datasets = [Dataset("1 Hz_mean", NexusDataType.FLOAT64)]
-        catalog1_channel2 = Channel(catalog1_channel2_id, "channel2", "group2", "bar", { }, catalog1_channel2_datasets)
+            # catalog 1
+            catalog1_channel1_id = str(uuid3(NULL_NAMESPACE, "catalog1_channel1"))
+            catalog1_channel1_datasets = [Dataset("1 Hz_mean", NexusDataType.INT64)]
+            catalog1_channel1_meta = { "c": "d" }
+            catalog1_channel1 = Channel(catalog1_channel1_id, "channel1", "group1", "°C", catalog1_channel1_meta, catalog1_channel1_datasets)
 
-        catalog1 = Catalog("/A/B/C", metadata = { "a": "b" }, channels = [catalog1_channel1, catalog1_channel2])
+            catalog1_channel2_id = str(uuid3(NULL_NAMESPACE, "catalog1_channel2"))
+            catalog1_channel2_datasets = [Dataset("1 Hz_mean", NexusDataType.FLOAT64)]
+            catalog1_channel2 = Channel(catalog1_channel2_id, "channel2", "group2", "bar", { }, catalog1_channel2_datasets)
 
-        # catalog 2
-        catalog2_channel1_id = str(uuid3(NULL_NAMESPACE, "catalog2_channel1"))
-        catalog2_channel1_datasets = [Dataset("1 Hz_mean", NexusDataType.INT64)]
-        catalog2_channel1 = Channel(catalog2_channel1_id, "channel1", "group1", "m/s", { }, catalog2_channel1_datasets)
+            catalog1 = Catalog("/A/B/C", metadata = { "a": "b" }, channels = [catalog1_channel1, catalog1_channel2])
 
-        catalog2 = Catalog("/D/E/F", metadata = {}, channels = [catalog2_channel1])
+            # catalog 2
+            catalog2_channel1_id = str(uuid3(NULL_NAMESPACE, "catalog2_channel1"))
+            catalog2_channel1_datasets = [Dataset("1 Hz_mean", NexusDataType.FLOAT32)]
+            catalog2_channel1 = Channel(catalog2_channel1_id, "channel1", "group1", "m/s", { }, catalog2_channel1_datasets)
+
+            catalog2 = Catalog("/D/E/F", metadata = {}, channels = [catalog2_channel1])
+
+            #
+            self._context.catalogs = [catalog1, catalog2]
 
         # return
-        self._catalogs = [catalog1, catalog2]
-        return self._catalogs
+        return self._context.catalogs
 
     async def get_time_range_async(self, catalogId: str):
 
         if catalogId != "/A/B/C":
             raise Exception("Unknown catalog ID.")
 
-        filePaths = glob.glob(url2pathname(self.resource_locator.path) + "/**/*.dat", recursive=True)
+        filePaths = glob.glob(url2pathname(self._context.resource_locator.path) + "/**/*.dat", recursive=True)
         fileNames = [os.path.basename(filePath) for filePath in filePaths]
         dateTimes = sorted([datetime.strptime(fileName, '%Y-%m-%d_%H-%M-%S.dat') for fileName in fileNames])
         begin = dateTimes[0].replace(tzinfo = timezone.utc)
@@ -69,7 +75,7 @@ class PythonDataSource(IDataSource):
 
         periodPerFile = timedelta(minutes = 10)
         maxFileCount = (end - begin).total_seconds() / periodPerFile.total_seconds()
-        filePaths = glob.glob(url2pathname(self.resource_locator.path) + "/**/*.dat", recursive=True)
+        filePaths = glob.glob(url2pathname(self._context.resource_locator.path) + "/**/*.dat", recursive=True)
         fileNames = [os.path.basename(filePath) for filePath in filePaths]
         dateTimes = [datetime.strptime(fileName, '%Y-%m-%d_%H-%M-%S.dat') for fileName in fileNames]
         filteredDateTimes = [current for current in dateTimes if current >= begin and current < end]
@@ -93,8 +99,6 @@ class PythonDataSource(IDataSource):
         # stored as 8 byte little-endian integers) with a sample rate of 1 Hz.
 
         # ensure the catalogs have already been loaded
-        await self._ensureCatalogsAsync()
-
         (catalog, channel, dataset) = self._find(datasetPath)
 
         # dataset ID = "1 Hz_mean" -> extract "1"
@@ -113,7 +117,7 @@ class PythonDataSource(IDataSource):
         while currentBegin < end:
 
             # find files
-            searchPattern = url2pathname(self.resource_locator.path) + \
+            searchPattern = url2pathname(self._context.resource_locator.path) + \
                 f"/DATA/test/{currentBegin.strftime('%Y-%m')}/{currentBegin.strftime('%Y-%m-%d')}/*.dat"
 
             filePaths = glob.glob(searchPattern, recursive=True)
@@ -146,10 +150,6 @@ class PythonDataSource(IDataSource):
 
         return (data, status)
 
-    async def _ensureCatalogsAsync(self):
-        if (self._catalogs is None):
-            await self.get_catalogs_async()
-
     def _find(self, datasetPath):
 
         pathParts = datasetPath.split("/")
@@ -158,7 +158,7 @@ class PythonDataSource(IDataSource):
         channelId = pathParts[-2]
         catalogId = "/" + "/".join(pathParts[1:-2])
 
-        catalog = next((catalog for catalog in self._catalogs if catalog.Id == catalogId), None)
+        catalog = next((catalog for catalog in self._context.catalogs if catalog.Id == catalogId), None)
 
         if catalog is None:
             raise Exception(f"Catalog '{catalogId}' not found.")

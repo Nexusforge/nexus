@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -53,10 +52,18 @@ namespace Nexus.Extensibility.Tests
 
         #endregion
 
+        #region Properties
+
+        private DataSourceContext Context { get; set; }
+
+        #endregion
+
         #region Methods
 
-        protected override async Task OnParametersSetAsync()
+        protected override async Task SetContextAsync(DataSourceContext context, CancellationToken cancellationToken)
         {
+            this.Context = context;
+
             var configFilePath = Path.Combine(this.Root, "config.json");
 
             if (!File.Exists(configFilePath))
@@ -82,14 +89,22 @@ namespace Nexus.Extensibility.Tests
 
         protected override Task<List<Catalog>> GetCatalogsAsync(CancellationToken cancellationToken)
         {
-            var catalog = new Catalog() { Id = "/A/B/C" };
-            var channel = new Channel() { Id = Guid.NewGuid() };
-            var dataset = new Dataset() { Id = "1 Hz_mean", DataType = NexusDataType.INT64 };
+            if (this.Context.Catalogs is null)
+            {
+                var catalog = new Catalog() { Id = "/A/B/C" };
+                var channel = new Channel() { Id = Guid.NewGuid() };
+                var dataset = new Dataset() { Id = "1 Hz_mean", DataType = NexusDataType.INT64 };
 
-            channel.Datasets.Add(dataset);
-            catalog.Channels.Add(channel);
+                channel.Datasets.Add(dataset);
+                catalog.Channels.Add(channel);
 
-            return Task.FromResult(new List<Catalog>() { catalog });
+                this.Context = this.Context with
+                {
+                    Catalogs = new List<Catalog>() { catalog }
+                };
+            }
+
+            return Task.FromResult(this.Context.Catalogs);
         }
 
         protected override async Task ReadSingleAsync(ReadInfo readInfo, CancellationToken cancellationToken)

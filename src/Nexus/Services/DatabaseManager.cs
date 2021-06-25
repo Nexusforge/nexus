@@ -158,11 +158,11 @@ namespace Nexus.Services
                     if (File.Exists(filePath))
                     {
                         var jsonString = File.ReadAllText(filePath);
-                        return JsonSerializer.Deserialize<CatalogMeta>(jsonString);
+                        return JsonSerializer.Deserialize<Catalog>(jsonString);
                     }
                     else
                     {
-                        return new CatalogMeta(catalogId);
+                        return new Catalog(catalogId);
                     }
                 })
                 .ToList();
@@ -218,9 +218,6 @@ namespace Nexus.Services
                     .Where(channel => string.IsNullOrWhiteSpace(channel.Name))
                     .ToList()
                     .ForEach(channel => channels.Remove(channel));
-
-                // initalize catalog meta
-                catalogContainer.CatalogSettings.Initialize(catalogContainer.Catalog);
 
                 // save catalog meta to disk
                 this.SaveCatalogMeta(catalogContainer.CatalogSettings);
@@ -286,7 +283,7 @@ namespace Nexus.Services
             return controller;
         }
 
-        public void SaveCatalogMeta(CatalogMeta catalogMeta)
+        public void SaveCatalogMeta(Catalog catalogMeta)
         {
             var filePath = this.GetCatalogMetaPath(catalogMeta.Id);
             var jsonString = JsonSerializer.Serialize(catalogMeta, new JsonSerializerOptions() { WriteIndented = true });
@@ -371,13 +368,6 @@ namespace Nexus.Services
             var logger = _loggerFactory.CreateLogger($"{backendSource.Type} - {backendSource.ResourceLocator}");
             var dataSource = (IDataSource)Activator.CreateInstance(type);
 
-            // set parameters
-            dataSource.ResourceLocator = backendSource.ResourceLocator;
-            dataSource.Parameters = backendSource.Configuration;
-            dataSource.Logger = logger;
-
-            await dataSource.OnParametersSetAsync();
-
             // special case checks
             if (type == typeof(AggregationDataSource))
             {
@@ -388,19 +378,19 @@ namespace Nexus.Services
             // create controller 
             var controller = new DataSourceController(dataSource, backendSource);
 
-            if (backendSourceToCatalogsMap.TryGetValue(backendSource, out var value))
-            {
-                controller.InitializeCatalogs(value);
-            }
-            else
-            {
-                await controller.InitializeCatalogsAsync(cancellationToken);
+            // initialize
+            _ = backendSourceToCatalogsMap.TryGetValue(backendSource, out var catalogs);
 
-                backendSourceToCatalogsMap[backendSource] = controller
-                    .Catalogs
-                    .Where(current => NexusUtilities.CheckCatalogNamingConvention(current.Id, out var _))
-                    .ToList();
-            }
+            var context = new DataSourceContext()
+            {
+                ResourceLocator = backendSource.ResourceLocator,
+                Configuration = backendSource.Configuration,
+                Logger = logger,
+                Catalogs = catalogs
+            };
+
+            await controller.InitializeAsync(context, cancellationToken);
+            backendSourceToCatalogsMap[backendSource] = controller.Catalogs;
 
             return controller;
         }
@@ -457,7 +447,7 @@ namespace Nexus.Services
         }
 
         private void CleanUpFilterCatalogs(List<Catalog> filterCatalogs,
-                                           List<CatalogMeta> catalogMetas,
+                                           List<Catalog> catalogMetas,
                                            UserManager<IdentityUser> userManager,
                                            CancellationToken cancellationToken)
         {

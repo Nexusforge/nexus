@@ -1,6 +1,5 @@
 ﻿using GraphQL;
 using GraphQL.Types;
-using Nexus.DataModel;
 using System;
 using System.Collections.Generic;
 using System.Linq;

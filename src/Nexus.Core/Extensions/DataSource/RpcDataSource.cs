@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Nexus.DataModel;
+﻿using Nexus.DataModel;
 using Nexus.Extensibility;
 using System;
 using System.Collections.Generic;
@@ -13,7 +12,6 @@ namespace Nexus.Extensions
     {
         #region Fields
 
-        private List<Catalog> _catalogs;
         private static int API_LEVEL = 1;
         private RpcCommunicator _communicator;
 
@@ -38,28 +36,26 @@ namespace Nexus.Extensions
          *      - ...
          */
 
-        public Uri ResourceLocator { private get; set; }
-
-        public Dictionary<string, string> Configuration { private get; set; }
-
-        public ILogger Logger { private get; set; }
+        private DataSourceContext Context { get; set; }
 
         #endregion
 
         #region Methods
 
-        public async Task OnParametersSetAsync()
+        public async Task SetContextAsync(DataSourceContext context, CancellationToken cancellationToken)
         {
-            if (!this.Configuration.TryGetValue("command", out var command))
+            this.Context = context;
+
+            if (!this.Context.Configuration.TryGetValue("command", out var command))
                 throw new KeyNotFoundException("The command parameter must be provided.");
 
-            var arguments = this.Configuration.ContainsKey("arguments")
-                ? this.Configuration["arguments"]
+            var arguments = this.Context.Configuration.ContainsKey("arguments")
+                ? this.Context.Configuration["arguments"]
                 : string.Empty;
 
             var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromSeconds(10));
 
-            _communicator = new RpcCommunicator(command, arguments, this.Logger);
+            _communicator = new RpcCommunicator(command, arguments, this.Context.Logger);
 
             await _communicator.ConnectAsync(timeoutTokenSource.Token);
 
@@ -72,28 +68,34 @@ namespace Nexus.Extensions
             if (apiLevel < 1 || apiLevel > RpcDataSource.API_LEVEL)
                 throw new Exception($"The API level '{apiLevel}' is not supported.");
 
-            await _communicator.SendAsync("SetParameters", new object[]
+            await _communicator.SendAsync("SetContext", new object[]
             {
-                this.ResourceLocator.ToString(),
-                this.Configuration
+                this.Context.ResourceLocator.ToString(),
+                this.Context.Configuration,
+                this.Context.Catalogs
             }, timeoutTokenSource.Token);
         }
 
         public async Task<List<Catalog>> GetCatalogsAsync(CancellationToken cancellationToken)
         {
-            var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromMinutes(1));
-            cancellationToken.Register(() => timeoutTokenSource.Cancel());
+            if (this.Context.Catalogs is null)
+            {
+                var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromMinutes(1));
+                cancellationToken.Register(() => timeoutTokenSource.Cancel());
 
-            var response = await _communicator.InvokeAsync<CatalogsResponse>(
-                "GetCatalogs",
-                null, 
-                timeoutTokenSource.Token
-            );
+                var response = await _communicator.InvokeAsync<CatalogsResponse>(
+                    "GetCatalogs",
+                    null,
+                    timeoutTokenSource.Token
+                );
 
-            response.Catalogs.ForEach(catalog => catalog.Initialize());
+                this.Context = this.Context with
+                { 
+                    Catalogs = response.Catalogs
+                };
+            }
 
-            _catalogs = response.Catalogs;
-            return response.Catalogs;
+            return this.Context.Catalogs;
         }
 
         public async Task<(DateTime Begin, DateTime End)> GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
@@ -129,16 +131,15 @@ namespace Nexus.Extensions
 
         public async Task ReadSingleAsync(string datasetPath, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
-            var dataset = Catalog.FindDataset(datasetPath, _catalogs);
-
+            var datasetRecord = Catalog.Find(datasetPath, this.Context.Catalogs);
             var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromMinutes(1));
             cancellationToken.Register(() => timeoutTokenSource.Cancel());
 
-            var elementCount = result.Data.Length / dataset.ElementSize;
+            var elementCount = result.Data.Length / datasetRecord.Dataset.ElementSize;
 
             var response = await _communicator.InvokeAsync<ReadSingleResponse>(
                 "ReadSingle", 
-                new object[] { dataset.GetPath(), elementCount, begin, end },
+                new object[] { datasetRecord.GetPath(), elementCount, begin, end },
                 timeoutTokenSource.Token
             );
 

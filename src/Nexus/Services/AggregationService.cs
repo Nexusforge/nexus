@@ -1,8 +1,6 @@
 ﻿using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.Statistics;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
-using Nexus.Buffers;
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
@@ -15,7 +13,6 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Security.Claims;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;

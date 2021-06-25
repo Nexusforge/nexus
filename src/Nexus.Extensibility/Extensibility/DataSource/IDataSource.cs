@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Nexus.DataModel;
+﻿using Nexus.DataModel;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -9,22 +8,9 @@ namespace Nexus.Extensibility
 {
     public interface IDataSource
     {
-        #region Properties
-
-        Uri ResourceLocator { set; }
-
-        ILogger Logger { set; }
-
-        Dictionary<string, string> Configuration { set; }
-
-        #endregion
-
         #region Methods
 
-        Task OnParametersSetAsync()
-        {
-            return Task.CompletedTask;
-        }
+        Task SetContextAsync(DataSourceContext context, CancellationToken cancellationToken);
 
         Task<List<Catalog>> GetCatalogsAsync(CancellationToken cancellationToken);
 

@@ -28,14 +28,16 @@ namespace Nexus.Core.Tests
         public async Task ProvidesCatalog()
         {
             // arrange
-            var dataSource = new FilterDataSource()
+            var dataSource = new FilterDataSource() as IDataSource;
+
+            var context = new DataSourceContext()
             {
                 ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), "FILTERDATA")),
-                Logger = _logger,
-                Configuration = new Dictionary<string, string>()
-            } as IDataSource;
+                Configuration = new Dictionary<string, string>(),
+                Logger = _logger
+            };
 
-            await dataSource.OnParametersSetAsync();
+            await dataSource.SetContextAsync(context, CancellationToken.None);
 
             // act
             var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
@@ -61,14 +63,16 @@ namespace Nexus.Core.Tests
         [Fact]
         public async Task CanProvideTimeRange()
         {
-            var dataSource = new FilterDataSource()
+            var dataSource = new FilterDataSource() as IDataSource;
+
+            var context = new DataSourceContext()
             {
                 ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), "FILTERDATA")),
-                Logger = _logger,
-                Configuration = new Dictionary<string, string>()
-            } as IDataSource;
+                Configuration = new Dictionary<string, string>(),
+                Logger = _logger
+            };
 
-            await dataSource.OnParametersSetAsync();
+            await dataSource.SetContextAsync(context, CancellationToken.None);
 
             var actual = await dataSource.GetTimeRangeAsync("/IN_MEMORY/FILTERS/SHARED", CancellationToken.None);
 
@@ -79,14 +83,16 @@ namespace Nexus.Core.Tests
         [Fact]
         public async Task CanProvideAvailability()
         {
-            var dataSource = new FilterDataSource()
+            var dataSource = new FilterDataSource() as IDataSource;
+
+            var context = new DataSourceContext()
             {
                 ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), "FILTERDATA")),
-                Logger = _logger,
-                Configuration = new Dictionary<string, string>()
-            } as IDataSource;
+                Configuration = new Dictionary<string, string>(),
+                Logger = _logger
+            };
 
-            await dataSource.OnParametersSetAsync();
+            await dataSource.SetContextAsync(context, CancellationToken.None);
 
             var begin = new DateTime(2020, 01, 01, 00, 00, 00, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 02, 00, 00, 00, DateTimeKind.Utc);
@@ -111,11 +117,10 @@ namespace Nexus.Core.Tests
 
             var catalog = new Catalog() { Id = "/IN_MEMORY/TEST/ACCESSIBLE" };
             catalog.Channels.Add(channel);
-            catalog.Initialize();
 
             Mock.Get(database)
-                .Setup(s => s.TryFindDatasetById(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), out dataset))
-                .Returns(true);
+                .Setup(s => s.Find(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()))
+                .Returns(new DatasetRecord(catalog, channel, dataset));
 
             // setup data source
             var subDataSource = Mock.Of<IDataSource>();
@@ -144,24 +149,31 @@ namespace Nexus.Core.Tests
             // go
             var dataSource = new FilterDataSource()
             {
-                ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), "FILTERDATA")),
-                Logger = _logger,
-                Configuration = new Dictionary<string, string>(),
                 IsCatalogAccessible = _ => true,
                 Database = database,
                 GetDataSourceAsync = id => Task.FromResult(new DataSourceController(subDataSource, null))
             } as IDataSource;
 
-            await dataSource.OnParametersSetAsync();
+            var context = new DataSourceContext()
+            {
+                ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), "FILTERDATA")),
+                Configuration = new Dictionary<string, string>(),
+                Logger = _logger
+            };
+
+            await dataSource.SetContextAsync(context, CancellationToken.None);
 
             var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
-            dataset = catalogs.First().Channels.First().Datasets.First();
+            var catalog2 = catalogs.First();
+            var channel2 = catalog2.Channels.First();
+            var dataset2 = channel2.Datasets.First();
+            var datasetPath = new DatasetRecord(catalog2, channel2, dataset2).GetPath();
 
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 02, 0, 0, 0, DateTimeKind.Utc);
             var result = ExtensibilityUtilities.CreateReadResult(dataset, begin, end);
 
-            await dataSource.ReadSingleAsync(dataset.GetPath(), result, begin, end, CancellationToken.None);
+            await dataSource.ReadSingleAsync(datasetPath, result, begin, end, CancellationToken.None);
             var doubleData = result.GetData<double>();
 
             Assert.Equal(Math.Pow(2, 2), doubleData.Span[0]);

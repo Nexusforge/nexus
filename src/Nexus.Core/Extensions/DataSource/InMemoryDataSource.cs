@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Nexus.DataModel;
+﻿using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Infrastructure;
 using System;
@@ -14,41 +13,47 @@ namespace Nexus.Extensions
     [ExtensionIdentification("Nexus.InMemory", "Nexus in-memory", "Provides an in-memory database.")]
     public class InMemoryDataSource : IDataSource
     {
-        #region Fields
-
-        private List<Catalog> _catalogs;
-
-        #endregion
-
         #region Properties
 
-        public Uri ResourceLocator { get; set; }
-
-        public ILogger Logger { get; set; }
-
-        public Dictionary<string, string> Configuration { get; set; }
+        private DataSourceContext Context { get; set; }
 
         #endregion
 
         #region Methods
 
+        public Task SetContextAsync(DataSourceContext context, CancellationToken cancellationToken)
+        {
+            this.Context = context;
+            return Task.CompletedTask;
+        }
+
         public Task<List<Catalog>> GetCatalogsAsync(CancellationToken cancellationToken)
         {
-            var id11 = Guid.Parse("f01b6a96-1de6-4caa-9205-184d8a3eb2f8");
-            var id12 = Guid.Parse("d549a4dd-e003-4d24-98de-4d5bc8c72aca");
-            var id13 = Guid.Parse("7dec6d79-b92e-4af2-9358-21be1f3626c9");
-            var id14 = Guid.Parse("cf50190b-fd2a-477b-9655-48f4f41ba7bf");
-            var catalog_allowed = this.LoadCatalog("/IN_MEMORY/TEST/ACCESSIBLE", id11, id12, id13, id14);
+            if (this.Context.Catalogs is null)
+            {
+                var id11 = Guid.Parse("f01b6a96-1de6-4caa-9205-184d8a3eb2f8");
+                var id12 = Guid.Parse("d549a4dd-e003-4d24-98de-4d5bc8c72aca");
+                var id13 = Guid.Parse("7dec6d79-b92e-4af2-9358-21be1f3626c9");
+                var id14 = Guid.Parse("cf50190b-fd2a-477b-9655-48f4f41ba7bf");
+                var catalog_allowed = this.LoadCatalog("/IN_MEMORY/TEST/ACCESSIBLE", id11, id12, id13, id14);
 
-            var id21 = Guid.Parse("50d38fe5-a7a8-49e8-8bd4-3e98a48a951f");
-            var id22 = Guid.Parse("d47d1dc6-7c38-4b75-9459-742fa570ef9d");
-            var id23 = Guid.Parse("511d6e9c-9075-41ee-bac7-891d359f0dda");
-            var id24 = Guid.Parse("99b85689-5373-4a9a-8fd7-be04a89c9da8");
-            var catalog_restricted = this.LoadCatalog("/IN_MEMORY/TEST/RESTRICTED", id21, id22, id23, id24);
+                var id21 = Guid.Parse("50d38fe5-a7a8-49e8-8bd4-3e98a48a951f");
+                var id22 = Guid.Parse("d47d1dc6-7c38-4b75-9459-742fa570ef9d");
+                var id23 = Guid.Parse("511d6e9c-9075-41ee-bac7-891d359f0dda");
+                var id24 = Guid.Parse("99b85689-5373-4a9a-8fd7-be04a89c9da8");
+                var catalog_restricted = this.LoadCatalog("/IN_MEMORY/TEST/RESTRICTED", id21, id22, id23, id24);
 
-            _catalogs = new List<Catalog>() { catalog_allowed, catalog_restricted };
+                this.Context = this.Context with
+                {
+                    Catalogs = new List<Catalog>()
+                    { 
+                        catalog_allowed,
+                        catalog_restricted 
+                    }
+                };
+            }
 
-            return Task.FromResult(_catalogs);
+            return Task.FromResult(this.Context.Catalogs);
         }
 
         public Task<(DateTime Begin, DateTime End)> GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
@@ -65,7 +70,7 @@ namespace Nexus.Extensions
         {
             return Task.Run(() =>
             {
-                var dataset = Catalog.FindDataset(datasetPath, _catalogs);
+                var (catalog, channel, dataset) = Catalog.Find(datasetPath, this.Context.Catalogs);
 
                 double[] dataDouble;
 
@@ -75,7 +80,7 @@ namespace Nexus.Extensions
                 var elementCount = result.Data.Length / dataset.ElementSize;
                 var dt = (double)(1 / dataset.GetSampleRate().SamplesPerSecond);
 
-                if (dataset.Channel.Name.Contains("unix_time"))
+                if (channel.Name.Contains("unix_time"))
                 {
                     dataDouble = Enumerable.Range(0, elementCount).Select(i => i * dt + beginTime).ToArray();
                 }
@@ -143,8 +148,6 @@ namespace Nexus.Extensions
                 channelC,
                 channelD
             });
-
-            catalog.Initialize();
 
             return catalog;
         }

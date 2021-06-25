@@ -49,8 +49,6 @@ namespace Nexus.Core.Tests
             catalog.Metadata["my-custom-parameter1"] = "my-custom-value1";
             catalog.Metadata["my-custom-parameter2"] = "my-custom-value2";
 
-            catalog.Initialize();
-
             this.Catalog = catalog;
         }
 

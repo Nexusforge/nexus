@@ -49,44 +49,21 @@ namespace Nexus.Extensibility
         #region Fields
 
         private bool _isInitialized;
-        private List<Catalog> _catalogs;
 
         #endregion
 
         #region Properties
 
-        public Uri ResourceLocator
-        {
-            set
-            {
-                if (!value.IsAbsoluteUri || value.IsFile)
-                {
-                    this.Root = value.IsAbsoluteUri
-                        ? value.AbsolutePath
-                        : value.ToString();
-                }
-                else
-                {
-                    throw new Exception("Only file URIs are supported.");
-                }
-            }
-        }
-
-        public ILogger Logger { get; set; }
-
-        public Dictionary<string, string> Configuration { get; set; }
-
         protected string Root { get; private set; }
+
+        private DataSourceContext Context { get; set; }
 
         #endregion
 
         #region Protected API as seen by subclass
 
-        protected virtual Task 
-            OnParametersSetAsync()
-        {
-            return Task.CompletedTask;
-        }
+        protected abstract Task
+            SetContextAsync(DataSourceContext context, CancellationToken cancellationToken);
 
         protected abstract Task<Configuration>
             GetConfigurationAsync(string catalogId, CancellationToken cancellationToken);
@@ -185,7 +162,7 @@ namespace Nexus.Extensibility
                         var task = this.GetFileAvailabilityAsync(file.FilePath, cancellationToken);
 
                         _ = task.ContinueWith(
-                            x => this.Logger.LogWarning($"Could not process file '{file.FilePath}'. Reason: {ExtensibilityUtilities.GetFullMessage(task.Exception)}"),
+                            x => this.Context.Logger.LogWarning($"Could not process file '{file.FilePath}'. Reason: {ExtensibilityUtilities.GetFullMessage(task.Exception)}"),
                             TaskContinuationOptions.OnlyOnFaulted
                         );
 
@@ -211,7 +188,7 @@ namespace Nexus.Extensibility
         }
 
         protected virtual async Task 
-            ReadSingleAsync(Dataset dataset, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
+            ReadSingleAsync(DatasetRecord datasetRecord, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
             if (begin >= end)
                 throw new ArgumentException("The start time must be before the end time.");
@@ -219,8 +196,9 @@ namespace Nexus.Extensibility
             this.EnsureUtc(begin);
             this.EnsureUtc(end);
 
-            var catalog = dataset.Channel.Catalog;
-            var config = (await this.GetConfigurationAsync(catalog.Id, cancellationToken).ConfigureAwait(false)).Single(dataset);
+            var dataset = datasetRecord.Dataset;
+            var catalog = datasetRecord.Catalog;
+            var config = (await this.GetConfigurationAsync(catalog.Id, cancellationToken).ConfigureAwait(false)).Single(datasetRecord);
             var samplesPerDay = dataset.GetSampleRate().SamplesPerDay;
             var fileTotalLength = (long)Math.Round(config.FilePeriod.TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
 
@@ -278,7 +256,7 @@ namespace Nexus.Extensibility
 
                                 var readParameters = new ReadInfo(
                                     filePath,
-                                    dataset,
+                                    datasetRecord,
                                     slicedData,
                                     slicedStatus,
                                     fileBegin,
@@ -293,7 +271,7 @@ namespace Nexus.Extensibility
                             }
                             catch (Exception ex)
                             {
-                                this.Logger.LogWarning($"Could not process file '{filePath}'. Reason: {ExtensibilityUtilities.GetFullMessage(ex)}");
+                                this.Context.Logger.LogWarning($"Could not process file '{filePath}'. Reason: {ExtensibilityUtilities.GetFullMessage(ex)}");
                             }
                         }
                     }
@@ -366,20 +344,39 @@ namespace Nexus.Extensibility
 
         #region Public API as seen by Nexus and unit tests
 
-        Task 
-            IDataSource.OnParametersSetAsync()
+        async Task 
+            IDataSource.SetContextAsync(DataSourceContext context, CancellationToken cancellationToken)
         {
-            return this.OnParametersSetAsync();
+            var url = context.ResourceLocator;
+
+            if (!url.IsAbsoluteUri || url.IsFile)
+            {
+                this.Root = url.IsAbsoluteUri
+                    ? url.AbsolutePath
+                    : url.ToString();
+            }
+            else
+            {
+                throw new Exception("Only file URIs are supported.");
+            }
+
+            this.Context = context;
+
+            await this.SetContextAsync(context, cancellationToken);
         }
 
         async Task<List<Catalog>> 
             IDataSource.GetCatalogsAsync(CancellationToken cancellationToken)
         {
-            await this
-                .EnsureCatalogsAsync(cancellationToken)
-                .ConfigureAwait(false);
+            if (this.Context.Catalogs is null)
+            {
+                this.Context = this.Context with
+                {
+                    Catalogs = await this.GetCatalogsAsync(cancellationToken)
+                };
+            }
 
-            return _catalogs;
+            return this.Context.Catalogs;
         }
 
         Task<(DateTime Begin, DateTime End)> 
@@ -397,35 +394,13 @@ namespace Nexus.Extensibility
         async Task
             IDataSource.ReadSingleAsync(string datasetPath, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
-            await this
-                .EnsureCatalogsAsync(cancellationToken)
-                .ConfigureAwait(false);
-
-            var dataset = Catalog.FindDataset(datasetPath, _catalogs);
-            await this.ReadSingleAsync(dataset, result, begin, end, cancellationToken);
+            var datasetRecord = Catalog.Find(datasetPath, this.Context.Catalogs);
+            await this.ReadSingleAsync(datasetRecord, result, begin, end, cancellationToken);
         }
 
         #endregion
 
         #region Helpers
-
-        private async Task
-            EnsureCatalogsAsync(CancellationToken cancellationToken)
-        {
-            if (!_isInitialized)
-            {
-                _catalogs = await this
-                    .GetCatalogsAsync(cancellationToken)
-                    .ConfigureAwait(false);
-
-                foreach (var catalog in _catalogs)
-                {
-                    catalog.Initialize();
-                }
-
-                _isInitialized = true;
-            }
-        }
 
         private static IEnumerable<(string FilePath, DateTime DateTime)> 
             GetCandidateFiles(string rootPath, DateTime begin, DateTime end, ConfigurationUnit config, CancellationToken cancellationToken)

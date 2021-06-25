@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Extensions;
 using Nexus.Infrastructure;
@@ -25,14 +26,16 @@ namespace Nexus.Core.Tests
         public async Task ProvidesCatalog()
         {
             // arrange
-            var dataSource = new InMemoryDataSource()
+            var dataSource = new InMemoryDataSource() as IDataSource;
+
+            var context = new DataSourceContext()
             {
                 ResourceLocator = new Uri("memory://localhost"),
-                Logger = _logger,
-                Configuration = new Dictionary<string, string>()
-            } as IDataSource;
+                Configuration = new Dictionary<string, string>(),
+                Logger = _logger
+            };
 
-            await dataSource.OnParametersSetAsync();
+            await dataSource.SetContextAsync(context, CancellationToken.None);
 
             // act
             var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
@@ -58,14 +61,16 @@ namespace Nexus.Core.Tests
         [Fact]
         public async Task CanProvideTimeRange()
         {
-            var dataSource = new InMemoryDataSource()
+            var dataSource = new InMemoryDataSource() as IDataSource;
+
+            var context = new DataSourceContext()
             {
                 ResourceLocator = new Uri("memory://localhost"),
-                Logger = _logger,
-                Configuration = new Dictionary<string, string>()
-            } as IDataSource;
+                Configuration = new Dictionary<string, string>(),
+                Logger = _logger
+            };
 
-            await dataSource.OnParametersSetAsync();
+            await dataSource.SetContextAsync(context, CancellationToken.None);
 
             var actual = await dataSource.GetTimeRangeAsync("/IN_MEMORY/TEST/ACCESSIBLE", CancellationToken.None);
 
@@ -76,14 +81,16 @@ namespace Nexus.Core.Tests
         [Fact]
         public async Task CanProvideAvailability()
         {
-            var dataSource = new InMemoryDataSource()
+            var dataSource = new InMemoryDataSource() as IDataSource;
+
+            var context = new DataSourceContext()
             {
                 ResourceLocator = new Uri("memory://localhost"),
-                Logger = _logger,
-                Configuration = new Dictionary<string, string>()
-            } as IDataSource;
+                Configuration = new Dictionary<string, string>(),
+                Logger = _logger
+            };
 
-            await dataSource.OnParametersSetAsync();
+            await dataSource.SetContextAsync(context, CancellationToken.None);
 
             var begin = new DateTime(2020, 01, 02, 00, 00, 00, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 03, 00, 00, 00, DateTimeKind.Utc);
@@ -96,23 +103,28 @@ namespace Nexus.Core.Tests
         [Fact]
         public async Task CanReadFullDay()
         {
-            var dataSource = new InMemoryDataSource()
+            var dataSource = new InMemoryDataSource() as IDataSource;
+
+            var context = new DataSourceContext()
             {
                 ResourceLocator = new Uri("memory://localhost"),
-                Logger = _logger,
-                Configuration = new Dictionary<string, string>()
-            } as IDataSource;
+                Configuration = new Dictionary<string, string>(),
+                Logger = _logger
+            };
 
-            await dataSource.OnParametersSetAsync();
+            await dataSource.SetContextAsync(context, CancellationToken.None);
 
             var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
-            var dataset = catalogs.First().Channels.First().Datasets.First();
+            var catalog = catalogs.First();
+            var channel = catalog.Channels.First();
+            var dataset = channel.Datasets.First();
+            var datasetPath = new DatasetRecord(catalog, channel, dataset).GetPath();
 
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 02, 0, 0, 0, DateTimeKind.Utc);
             var result = ExtensibilityUtilities.CreateReadResult(dataset, begin, end);
 
-            await dataSource.ReadSingleAsync(dataset.GetPath(), result, begin, end, CancellationToken.None);
+            await dataSource.ReadSingleAsync(datasetPath, result, begin, end, CancellationToken.None);
             var doubleData = result.GetData<double>();
 
             Assert.Equal(-0.059998, doubleData.Span[0], precision: 6);

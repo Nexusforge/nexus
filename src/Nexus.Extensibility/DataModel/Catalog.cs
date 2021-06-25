@@ -8,12 +8,6 @@ namespace Nexus.DataModel
     [DebuggerDisplay("{Id,nq}")]
     public record Catalog
     {
-        #region Fields
-
-        private bool _isInitialized;
-
-        #endregion
-
         #region Properties
 
         public string Id { get; init; }
@@ -23,25 +17,6 @@ namespace Nexus.DataModel
         #endregion
 
         #region "Methods"
-
-        public string GetPath()
-        {
-            return this.Id;
-        }
-
-        public void Initialize()
-        {
-            if (!_isInitialized)
-            {
-                foreach (var channel in this.Channels)
-                {
-                    channel.Catalog = this;
-                    channel.Initialize();
-                }
-
-                _isInitialized = true;
-            }
-        }
 
         public Catalog Merge(Catalog catalog, MergeMode mergeMode)
         {
@@ -56,10 +31,17 @@ namespace Nexus.DataModel
                 var referenceChannel = mergedChannels.FirstOrDefault(current => current.Id == channel.Id);
 
                 if (referenceChannel != null)
+                {
                     mergedChannels.Add(referenceChannel.Merge(channel, mergeMode));
-
+                }
                 else
-                    mergedChannels.Add(channel with { });
+                {
+                    mergedChannels.Add(channel with
+                    {
+                        Metadata = channel.Metadata.ToDictionary(entry => entry.Key, entry => entry.Value),
+                        Datasets = channel.Datasets.ToList()
+                    });
+                }
             }
 
             // merge properties
@@ -116,11 +98,11 @@ namespace Nexus.DataModel
             return merged;
         }
 
-        public bool TryFindDataset(string path, out Dataset dataset)
+        public bool TryFind(string datasetPath, out DatasetRecord datasetRecord, bool includeName = false)
         {
-            dataset = null;
+            datasetRecord = null;
 
-            var pathParts = path.Split("/");
+            var pathParts = datasetPath.Split("/");
             var catalogId = string.Join('/', pathParts.Take(pathParts.Length - 2));
             var channelId = Guid.Parse(pathParts[4]);
             var datasetId = pathParts[5];
@@ -131,30 +113,45 @@ namespace Nexus.DataModel
             var channel = this.Channels.FirstOrDefault(channel => channel.Id == channelId);
 
             if (channel is null)
-                return false;
+            {
+                if (includeName)
+                    channel = this.Channels.FirstOrDefault(channel => channel.Name == pathParts[4]);
 
-            dataset = channel.Datasets.FirstOrDefault(dataset => dataset.Id == datasetId);
+                if (channel is null)
+                    return false;
+            }
+
+            var dataset = channel.Datasets.FirstOrDefault(dataset => dataset.Id == datasetId);
 
             if (dataset is null)
                 return false;
 
+            datasetRecord = new DatasetRecord(this, channel, dataset);
             return true;
         }
 
-        public static Dataset FindDataset(string datasetPath, IEnumerable<Catalog> catalogs)
+        public DatasetRecord Find(string datasetPath, bool includeName = false)
         {
-            var dataset = default(Dataset);
+            if (!this.TryFind(datasetPath, out var datasetRecord, includeName))
+                throw new Exception($"The dataset on path '{datasetPath}' could not be found.");
+
+            return datasetRecord;
+        }
+
+        public static DatasetRecord Find(string datasetPath, IEnumerable<Catalog> catalogs, bool includeName = false)
+        {
+            var datasetRecord = default(DatasetRecord);
 
             foreach (var catalog in catalogs)
             {
-                if (catalog.TryFindDataset(datasetPath, out dataset))
+                if (catalog.TryFind(datasetPath, out datasetRecord, includeName))
                     break;
             }
 
-            if (dataset is null)
+            if (datasetRecord is null)
                 throw new Exception($"The dataset on path '{datasetPath}' could not be found.");
 
-            return dataset;
+            return datasetRecord;
         }
 
         #endregion

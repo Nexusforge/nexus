@@ -41,13 +41,22 @@ class Logger():
         self._stream.write("\n")
         self._stream.flush()
 
-class IDataSource(ABC):
+class DataSourceContext:
 
     resource_locator: ParseResult
     configuration: Dict[str, str]
-    logger: Logger
 
-    async def on_parameters_set_async(self):
+    catalogs: List[Catalog]
+
+    def __init__(self, resource_locator: ParseResult, configuration: Dict[str, str], logger: Logger, catalogs: List[Catalog]):
+        self.resource_locator = resource_locator
+        self.configuration = configuration
+        self.logger = logger
+        self.catalogs = catalogs
+
+class IDataSource(ABC):
+
+    async def set_context_async(self):
         pass
 
     @abstractmethod
@@ -161,17 +170,15 @@ class RpcCommunicator:
                 }
             }
 
-        elif request["target"] == "SetParameters":
+        elif request["target"] == "SetContext":
 
-            resourceLocator = urlparse(request["arguments"][0])
+            resource_locator = urlparse(request["arguments"][0])
             configuration = request["arguments"][1]
             logger = Logger(sys.stderr)
+            catalogs = request["arguments"][2]
+            context = DataSourceContext(resource_locator, configuration, logger, catalogs)
 
-            self._dataSource.resource_locator = resourceLocator
-            self._dataSource.configuration = configuration
-            self._dataSource.logger = logger
-
-            await self._dataSource.on_parameters_set_async()
+            await self._dataSource.set_context_async(context)
 
         elif request["target"] == "GetCatalogs":
 

@@ -125,9 +125,9 @@ namespace Nexus.Extensibility
             if (success)
             {
                 var entry = _enumerator.Current.DatasetToResultMap.First();
-                var dataset = entry.Key;
+                var datasetRecord = entry.Key;
                 var result = entry.Value;
-                var doubleData = BufferUtilities.ApplyDatasetStatusByDataType(dataset.DataType, result);
+                var doubleData = BufferUtilities.ApplyDatasetStatusByDataType(datasetRecord.Dataset.DataType, result);
 
                 return doubleData;
             }

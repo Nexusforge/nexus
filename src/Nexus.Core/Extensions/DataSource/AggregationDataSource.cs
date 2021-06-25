@@ -28,32 +28,33 @@ namespace Nexus.Extensions
 
         public IFileAccessManager FileAccessManager { get; set; }
 
-        public Uri ResourceLocator
-        {
-            set
-            {
-                if (!value.IsAbsoluteUri || value.IsFile)
-                {
-                    this.Root = value.IsAbsoluteUri
-                        ? value.AbsolutePath
-                        : value.ToString();
-                }
-                else
-                {
-                    throw new Exception("Only file URIs are supported.");
-                }
-            }
-        }
-
-        public ILogger Logger { get; set; }
-
-        public Dictionary<string, string> Configuration { get; set; }
+        private DataSourceContext Context { get; set; }
 
         private string Root { get; set; }
 
         #endregion
 
         #region Methods
+
+        public Task SetContextAsync(DataSourceContext context, CancellationToken cancellationToken)
+        {
+            this.Context = context;
+
+            var uri = context.ResourceLocator;
+
+            if (!uri.IsAbsoluteUri || uri.IsFile)
+            {
+                this.Root = uri.IsAbsoluteUri
+                    ? uri.AbsolutePath
+                    : uri.ToString();
+            }
+            else
+            {
+                throw new Exception("Only file URIs are supported.");
+            }
+
+            return Task.CompletedTask;
+        }
 
         public Task<List<Catalog>> GetCatalogsAsync(CancellationToken cancellationToken)
         {
@@ -108,7 +109,6 @@ namespace Nexus.Extensions
                     if (File.Exists(cacheFilePath))
                     {
                         cache = JsonSerializerHelper.Deserialize<List<Catalog>>(cacheFilePath);
-                        cache.ForEach(catalog => catalog.Initialize());
 
                         foreach (var catalogId in catalogIds)
                         {
@@ -168,12 +168,11 @@ namespace Nexus.Extensions
 
                     try
                     {
-                        this.Logger.LogInformation(message);
+                        this.Context.Logger.LogInformation(message);
 
                         foreach (var cacheFile in cacheFiles)
                         {
                             var cache = JsonSerializerHelper.Deserialize<List<Catalog>>(cacheFile);
-                            cache.ForEach(catalog => catalog.Initialize());
 
                             foreach (var catalog in cache)
                             {
@@ -186,11 +185,11 @@ namespace Nexus.Extensions
                             }
                         }
 
-                        this.Logger.LogInformation($"{message} Done.");
+                        this.Context.Logger.LogInformation($"{message} Done.");
                     }
                     catch (Exception ex)
                     {
-                        this.Logger.LogError($"{message} Error: {ex.GetFullMessage()}");
+                        this.Context.Logger.LogError($"{message} Error: {ex.GetFullMessage()}");
                         throw;
                     }
 
@@ -199,12 +198,6 @@ namespace Nexus.Extensions
                 else
                 {
                     catalogs = JsonSerializerHelper.Deserialize<List<Catalog>>(mainCacheFilePath);
-                    catalogs.ForEach(catalog => catalog.Initialize());
-                }
-
-                foreach (var catalog in catalogs)
-                {
-                    catalog.Initialize();
                 }
 
                 _catalogs = catalogs;
@@ -264,9 +257,7 @@ namespace Nexus.Extensions
         {
             return Task.Run(() =>
             {
-                var dataset = Catalog.FindDataset(datasetPath, _catalogs);
-                var catalog = dataset.Channel.Catalog;
-                var channel = dataset.Channel;
+                var (catalog, channel, dataset) = Catalog.Find(datasetPath, _catalogs);
                 var catalogFolderPath = Path.Combine(this.Root, "DATA", WebUtility.UrlEncode(catalog.Id));
                 var samplesPerDay = new SampleRateContainer(dataset.Id).SamplesPerDay;
 
@@ -314,7 +305,7 @@ namespace Nexus.Extensions
                         }
                         catch (Exception ex)
                         {
-                            this.Logger.LogWarning($"Could not process file '{filePath}'. Reason: {ex.Message}");
+                            this.Context.Logger.LogWarning($"Could not process file '{filePath}'. Reason: {ex.Message}");
                         }
                         finally
                         {
@@ -356,7 +347,7 @@ namespace Nexus.Extensions
             if (Directory.Exists(currentMonthFolder))
             {
                 var message = $"Scanning files for {Path.GetFileName(currentMonthFolder)} ...";
-                this.Logger.LogInformation(message);
+                this.Context.Logger.LogInformation(message);
 
                 var dayFolders = Directory.EnumerateDirectories(currentMonthFolder);
 
@@ -381,11 +372,11 @@ namespace Nexus.Extensions
                         versioning.ScannedUntilMap[catalogId] = scannedUntil;
                     }
 
-                    this.Logger.LogInformation($"{message} Done.");
+                    this.Context.Logger.LogInformation($"{message} Done.");
                 }
                 catch (Exception ex)
                 {
-                    this.Logger.LogError($"{message} Error: {ex.GetFullMessage()}");
+                    this.Context.Logger.LogError($"{message} Error: {ex.GetFullMessage()}");
                 }
             }
 

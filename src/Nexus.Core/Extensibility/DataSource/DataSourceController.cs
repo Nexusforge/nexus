@@ -5,7 +5,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,38 +38,51 @@ namespace Nexus.Extensibility
 
         #region Methods
 
-        public async Task InitializeCatalogsAsync(CancellationToken cancellationToken)
+        public async Task InitializeAsync(DataSourceContext context, CancellationToken cancellationToken)
         {
-            var catalogs = await this.DataSource.GetCatalogsAsync(cancellationToken);
+            await this.DataSource.SetContextAsync(context, cancellationToken);
 
-            foreach (var catalog in catalogs)
+            if (context.Catalogs is null)
             {
-                foreach (var channel in catalog.Channels)
+                var catalogs = await this.DataSource.GetCatalogsAsync(cancellationToken);
+
+                catalogs = catalogs
+                    .Where(catalog => NexusUtilities.CheckCatalogNamingConvention(catalog.Id, out var _))
+                    .ToList();
+
+                foreach (var catalog in catalogs)
                 {
-                    foreach (var dataset in channel.Datasets)
+                    foreach (var channel in catalog.Channels)
                     {
-                        dataset.BackendSource = this.BackendSource;
+                        foreach (var dataset in channel.Datasets)
+                        {
+                            dataset.BackendSource = this.BackendSource;
+                        }
                     }
                 }
-            }
 
-            this.Catalogs = catalogs;
+                this.Catalogs = catalogs;
+            }
+            else
+            {
+                this.Catalogs = context.Catalogs;
+            }
         }
 
-        public void InitializeCatalogs(List<Catalog> catalogs)
+        public void SetCatalogs(List<Catalog> catalogs)
         {
             this.Catalogs = catalogs;
         }
 
         public DataSourceDoubleStream ReadAsDoubleStream(
-            Dataset dataset,
+            DatasetRecord datasetRecords,
             DateTime begin,
             DateTime end,
             ulong upperBlockSize,
             CancellationToken cancellationToken)
         {
-            var progressRecords = this.ReadAsync(new List<Dataset>() { dataset }, begin, end, upperBlockSize, TimeSpan.FromMinutes(1), cancellationToken);
-            var samplesPerSecond = new SampleRateContainer(dataset.Id).SamplesPerSecond;
+            var progressRecords = this.ReadAsync(new List<DatasetRecord>() { datasetRecords }, begin, end, upperBlockSize, TimeSpan.FromMinutes(1), cancellationToken);
+            var samplesPerSecond = new SampleRateContainer(datasetRecords.Dataset.Id).SamplesPerSecond;
             var length = (long)Math.Round(samplesPerSecond * 
                 (decimal)(end - begin).TotalSeconds, MidpointRounding.AwayFromZero) * 
                 NexusUtilities.SizeOf(NexusDataType.FLOAT64);
@@ -79,22 +91,22 @@ namespace Nexus.Extensibility
         }
 
         public IAsyncEnumerable<DataSourceProgressRecord> ReadAsync(
-            Dataset dataset,
+            DatasetRecord datasetRecord,
             DateTime begin,
             DateTime end,
             ulong upperBlockSize,
             CancellationToken cancellationToken)
         {
 #warning This is only a workaround. Should not be necessary when 1 Minute Base limit has been removed and all code is unit tested and rewritten.
-            var fundamentalPeriod = (dataset.GetSampleRate().SamplesPerDay == 144)
+            var fundamentalPeriod = (datasetRecord.Dataset.GetSampleRate().SamplesPerDay == 144)
                 ? TimeSpan.FromMinutes(10)
                 : TimeSpan.FromMinutes(1);
 
-            return this.ReadAsync(new List<Dataset>() { dataset }, begin, end, upperBlockSize, fundamentalPeriod, cancellationToken);
+            return this.ReadAsync(new List<DatasetRecord>() { datasetRecord }, begin, end, upperBlockSize, fundamentalPeriod, cancellationToken);
         }
 
         public IAsyncEnumerable<DataSourceProgressRecord> ReadAsync(
-            List<Dataset> datasets,
+            List<DatasetRecord> datasetRecords,
             DateTime begin,
             DateTime end,
             ulong upperBlockSize,
@@ -102,101 +114,73 @@ namespace Nexus.Extensibility
         {
 #warning This is only a workaround. Should not be necessary when 1 Minute Base limit has been removed and all code is unit tested and rewritten.
 
-            var fundamentalPeriod = (datasets.First().GetSampleRate().SamplesPerDay == 144) 
+            var fundamentalPeriod = (datasetRecords.First().Dataset.GetSampleRate().SamplesPerDay == 144) 
                 ? TimeSpan.FromMinutes(10) 
                 : TimeSpan.FromMinutes(1);
 
-            return this.ReadAsync(datasets, begin, end, upperBlockSize, fundamentalPeriod, cancellationToken);
+            return this.ReadAsync(datasetRecords, begin, end, upperBlockSize, fundamentalPeriod, cancellationToken);
         }
 
         public IAsyncEnumerable<DataSourceProgressRecord> ReadAsync(
-            Dataset dataset,
+            DatasetRecord datasetRecord,
             DateTime begin,
             DateTime end,
             ulong upperBlockSize,
             TimeSpan fundamentalPeriod,
             CancellationToken cancellationToken)
         {
-            return this.ReadAsync(new List<Dataset>() { dataset }, begin, end, upperBlockSize, fundamentalPeriod, cancellationToken);
+            return this.ReadAsync(new List<DatasetRecord>() { datasetRecord }, begin, end, upperBlockSize, fundamentalPeriod, cancellationToken);
         }
 
         public IAsyncEnumerable<DataSourceProgressRecord> ReadAsync(
-            List<Dataset> datasets,
+            List<DatasetRecord> datasetRecords,
             DateTime begin,
             DateTime end,
             ulong blockSizeLimit,
             TimeSpan fundamentalPeriod,
             CancellationToken cancellationToken)
         {
-            var basePeriod = TimeSpan.FromMinutes(1);
-            var period = end - begin;
+            var samplePeriod = new SampleRateContainer(datasetRecords.First().Dataset.Id).Period;
 
             // sanity checks
             if (begin >= end)
                 throw new ValidationException("The begin datetime must be less than the end datetime.");
 
-            if (begin.Ticks % basePeriod.Ticks != 0)
-                throw new ValidationException("The begin parameter must be a multiple of 1 minute.");
+            if (begin.Ticks % samplePeriod.Ticks != 0)
+                throw new ValidationException("The begin parameter must be a multiple of the sample period.");
 
-            if (end.Ticks % basePeriod.Ticks != 0)
-                throw new ValidationException("The end parameter must be a multiple of 1 minute.");
-
-            if (fundamentalPeriod.Ticks % basePeriod.Ticks != 0)
-                throw new ValidationException("The fundamental period parameter must be a multiple of 1 minute.");
-
-            if (period.Ticks % fundamentalPeriod.Ticks != 0)
-                throw new ValidationException("The request period must be a multiple of the fundamental period.");
+            if (end.Ticks % samplePeriod.Ticks != 0)
+                throw new ValidationException("The end parameter must be a multiple of the sample period.");
 
             if (blockSizeLimit == 0)
                 throw new ValidationException("The upper block size must be > 0 bytes.");
 
-            return this.InternalReadAsync(datasets, begin, end, blockSizeLimit, basePeriod, fundamentalPeriod, cancellationToken);
+            return this.InternalReadAsync(datasetRecords, begin, end, blockSizeLimit, samplePeriod, cancellationToken);
         }
 
         private async IAsyncEnumerable<DataSourceProgressRecord> InternalReadAsync(
-            List<Dataset> datasets,
+            List<DatasetRecord> datasetRecords,
             DateTime begin,
             DateTime end,
             ulong blockSizeLimit,
-            TimeSpan basePeriod,
-            TimeSpan fundamentalPeriod,
+            TimeSpan samplePeriod,
             [EnumeratorCancellation]
             CancellationToken cancellationToken)
         {
-            /* 
-             * |....................|
-             * |
-             * |
-             * |....................
-             * |
-             * |
-             * |....................
-             * |
-             * |====================
-             * |....................
-             * |
-             * |
-             * |....................|
-             * 
-             * |     = base period (1 minute)
-             *  ...  = fundamental period (e.g. 10 minutes)
-             * |...| = begin & end markers
-             *  ===  = block period
-             */
-
             if (cancellationToken.IsCancellationRequested)
                 yield break;
 
-            if (!datasets.Any() || begin == end)
+            if (!datasetRecords.Any() || begin == end)
                 yield break;
 
             // calculation
+#error Continue here
             var minutesPerFP = fundamentalPeriod.Ticks / basePeriod.Ticks;
 
-            var bytesPerFP = datasets.Sum(dataset =>
+            var bytesPerFP = datasetRecords.Sum(datasetRecord =>
             {
-                var bytesPerSample = NexusUtilities.SizeOf(dataset.DataType);
-                var samplesPerMinute = dataset.GetSampleRate().SamplesPerSecond * 60;
+                var bytesPerSample = NexusUtilities.SizeOf(datasetRecord.Dataset.DataType);
+                var samplesPerMinute = datasetRecord.Dataset.GetSampleRate().SamplesPerSecond * 60;
                 var bytesPerFP = bytesPerSample * samplesPerMinute * minutesPerFP;
 
                 return bytesPerFP;
@@ -217,13 +201,13 @@ namespace Nexus.Extensibility
 
             while (remainingPeriod > TimeSpan.Zero)
             {
-                var datasetToResultMap = new Dictionary<Dataset, ReadResult>();
+                var datasetRecordToResultMap = new Dictionary<DatasetRecord, ReadResult>();
                 var currentPeriod = TimeSpan.FromTicks(Math.Min(remainingPeriod.Ticks, maxPeriodPerRequest.Ticks));
                 var currentEnd = currentBegin + currentPeriod;
                 var index = 1;
-                var count = datasets.Count;
+                var count = datasetRecords.Count;
 
-                foreach (var dataset in datasets)
+                foreach (var datasetRecord in datasetRecords)
                 {
                     if (cancellationToken.IsCancellationRequested)
                         yield break;
@@ -233,9 +217,9 @@ namespace Nexus.Extensibility
                     //#error ReadSingle returns ReadResult ... and that read result should be disposable using the IMemoryOwners
                     //#error every consumer that is done with the specific read result must dispose it!
 
-                    var readResult = ExtensibilityUtilities.CreateReadResult(dataset, begin, end);
-                    await this.DataSource.ReadSingleAsync(dataset.GetPath(), readResult, currentBegin, currentEnd, cancellationToken);
-                    datasetToResultMap[dataset] = readResult;
+                    var readResult = ExtensibilityUtilities.CreateReadResult(datasetRecord.Dataset, begin, end);
+                    await this.DataSource.ReadSingleAsync(datasetRecord.GetPath(), readResult, currentBegin, currentEnd, cancellationToken);
+                    datasetRecordToResultMap[datasetRecord] = readResult;
 
                     // update progress
                     var localProgress = TimeSpan.FromTicks(currentPeriod.Ticks * index / count);
@@ -246,7 +230,7 @@ namespace Nexus.Extensibility
                 }
 
                 // notify about new data
-                yield return new DataSourceProgressRecord(datasetToResultMap, currentBegin, currentEnd);
+                yield return new DataSourceProgressRecord(datasetRecordToResultMap, currentBegin, currentEnd);
 
                 // continue in time
                 currentBegin += currentPeriod;
@@ -336,9 +320,9 @@ namespace Nexus.Extensibility
             return (await this.DataSource.GetAvailabilityAsync(catalogId, day, day.AddDays(1), cancellationToken)) > 0;
         }
 
-        public async Task ReadSingleAsync(Dataset dataset, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
+        public async Task ReadSingleAsync(DatasetRecord datasetRecord, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
-            await this.DataSource.ReadSingleAsync(dataset.GetPath(), result, begin, end, cancellationToken);
+            await this.DataSource.ReadSingleAsync(datasetRecord.GetPath(), result, begin, end, cancellationToken);
         }
 
         public virtual void Dispose()

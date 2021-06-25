@@ -17,9 +17,6 @@ namespace Nexus.DataModel
         [JsonIgnore]
         public int ElementSize => ((int)this.DataType & 0xFF) >> 3;
 
-        [JsonIgnore]
-        public Channel Channel { get; internal set; }
-
         internal BackendSource BackendSource { get; set; }
 
         #endregion
@@ -31,11 +28,6 @@ namespace Nexus.DataModel
         internal SampleRateContainer GetSampleRate(bool ensureNonZeroIntegerHz = false)
         {
             return new SampleRateContainer(this.Id, ensureNonZeroIntegerHz);
-        }
-
-        public string GetPath()
-        {
-            return $"{this.Channel.GetPath()}/{this.Id}";
         }
 
         #endregion

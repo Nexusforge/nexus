@@ -7,9 +7,9 @@ public class DataSourceProgressRecord
 {
     #region Constructors
 
-    public DataSourceProgressRecord(Dictionary<Dataset, ReadResult> datasetToResultMap, DateTime begin, DateTime end)
+    public DataSourceProgressRecord(Dictionary<DatasetRecord, ReadResult> datasetRecordToResultMap, DateTime begin, DateTime end)
     {
-        this.DatasetToResultMap = datasetToResultMap;
+        this.DatasetToResultMap = datasetRecordToResultMap;
         this.Begin = begin;
         this.End = end;
     }
@@ -18,7 +18,7 @@ public class DataSourceProgressRecord
 
     #region Properties
 
-    public Dictionary<Dataset, ReadResult> DatasetToResultMap { get; }
+    public Dictionary<DatasetRecord, ReadResult> DatasetToResultMap { get; }
 
     public DateTime Begin { get; }
 

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Nexus.DataModel;
 using System;
 using System.Globalization;
 using System.IO;
@@ -34,14 +35,16 @@ namespace Nexus.Extensibility.Tests
             var expectedBegin = DateTime.ParseExact(expectedBeginString, "yyyy-MM-ddTHH-mm-ssZ", null, DateTimeStyles.AdjustToUniversal);
             var expectedEnd = DateTime.ParseExact(expectedEndString, "yyyy-MM-ddTHH-mm-ssZ", null, DateTimeStyles.AdjustToUniversal);
 
-            var dataSource = new StructuredFileDataSourceTester()
+            var dataSource = new StructuredFileDataSourceTester() as IDataSource;
+
+            var context = new DataSourceContext()
             {
                 ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), root)),
                 Logger = _logger,
                 Configuration = null,
-            } as IDataSource;
+            };
 
-            await dataSource.OnParametersSetAsync();
+            await dataSource.SetContextAsync(context, CancellationToken.None);
 
             var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
             var actual = await dataSource.GetTimeRangeAsync(catalogs.First().Id, CancellationToken.None);
@@ -65,14 +68,16 @@ namespace Nexus.Extensibility.Tests
             var begin = DateTime.ParseExact(beginString, "yyyy-MM-ddTHH-mm-ssZ", default, DateTimeStyles.AdjustToUniversal);
             var end = DateTime.ParseExact(endString, "yyyy-MM-ddTHH-mm-ssZ", default, DateTimeStyles.AdjustToUniversal);
 
-            var dataSource = new StructuredFileDataSourceTester()
+            var dataSource = new StructuredFileDataSourceTester() as IDataSource;
+
+            var context = new DataSourceContext()
             {
                 ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), root)),
                 Logger = _logger,
                 Configuration = null,
-            } as IDataSource;
+            };
 
-            await dataSource.OnParametersSetAsync();
+            await dataSource.SetContextAsync(context, CancellationToken.None);
 
             var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
             var actual = await dataSource.GetAvailabilityAsync(catalogs.First().Id, begin, end, CancellationToken.None);
@@ -88,13 +93,15 @@ namespace Nexus.Extensibility.Tests
             var begin = DateTime.ParseExact(beginString, "yyyy-MM-ddTHH-mm-ssZ", default, DateTimeStyles.AdjustToUniversal);
             var end = DateTime.ParseExact(endString, "yyyy-MM-ddTHH-mm-ssZ", default, DateTimeStyles.AdjustToUniversal);
 
-            var dataSource = new StructuredFileDataSourceTester()
+            var dataSource = new StructuredFileDataSourceTester() as IDataSource;
+
+            var context = new DataSourceContext()
             {
                 ResourceLocator = new Uri(string.Empty, UriKind.Relative),
                 Logger = _logger,
                 Configuration = null,
-            } as IDataSource;
-           
+            };
+
             await Assert.ThrowsAsync<ArgumentException>(() => 
                 dataSource.GetAvailabilityAsync("/A/B/C", begin, end, CancellationToken.None));
         }
@@ -104,15 +111,22 @@ namespace Nexus.Extensibility.Tests
         [InlineData(true)]
         public async Task CanReadSingle(bool overrideFindFilePathsWithNoDateTime)
         {
-            var dataSource = new StructuredFileDataSourceTester(overrideFindFilePathsWithNoDateTime)
+            var dataSource = new StructuredFileDataSourceTester(overrideFindFilePathsWithNoDateTime) as IDataSource;
+
+            var context = new DataSourceContext()
             {
                 ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), "DATABASES/TESTDATA")),
                 Logger = _logger,
                 Configuration = null,
-            } as IDataSource;
+            };
+
+            await dataSource.SetContextAsync(context, CancellationToken.None);
 
             var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
-            var dataset = catalogs.First().Channels.First().Datasets.First();
+            var catalog = catalogs.First();
+            var channel = catalog.Channels.First();
+            var dataset = channel.Datasets.First();
+            var datasetPath = new DatasetRecord(catalog, channel, dataset).GetPath();
 
             var begin = new DateTime(2019, 12, 31, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 03, 0, 0, 0, DateTimeKind.Utc);
@@ -139,8 +153,7 @@ namespace Nexus.Extensibility.Tests
             GenerateData(new DateTimeOffset(2020, 01, 02, 09, 40, 0, 0, TimeSpan.Zero));
             GenerateData(new DateTimeOffset(2020, 01, 02, 09, 50, 0, 0, TimeSpan.Zero));
 
-            await dataSource.OnParametersSetAsync();
-            await dataSource.ReadSingleAsync(dataset.GetPath(), readResult, begin, end, CancellationToken.None);
+            await dataSource.ReadSingleAsync(datasetPath, readResult, begin, end, CancellationToken.None);
 
             Assert.True(expectedData.SequenceEqual(MemoryMarshal.Cast<byte, long>(readResult.Data.Span).ToArray()));
             Assert.True(expectedStatus.SequenceEqual(readResult.Status.ToArray()));
@@ -153,18 +166,25 @@ namespace Nexus.Extensibility.Tests
         {
             var begin = DateTime.ParseExact(beginString, "yyyy-MM-ddTHH-mm-ssZ", default, DateTimeStyles.AdjustToUniversal);
             var end = DateTime.ParseExact(endString, "yyyy-MM-ddTHH-mm-ssZ", default, DateTimeStyles.AdjustToUniversal);
-            var dataSource = new StructuredFileDataSourceTester()
+            var dataSource = new StructuredFileDataSourceTester() as IDataSource;
+
+            var context = new DataSourceContext()
             {
-                ResourceLocator = new Uri(string.Empty, UriKind.Relative),
+                ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), "DATABASES/TESTDATA")),
                 Logger = _logger,
                 Configuration = null,
-            } as IDataSource;
+            };
+
+            await dataSource.SetContextAsync(context, CancellationToken.None);
 
             var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
-            var dataset = catalogs.First().Channels.First().Datasets.First();
+            var catalog = catalogs.First();
+            var channel = catalog.Channels.First();
+            var dataset = channel.Datasets.First();
+            var datasetPath = new DatasetRecord(catalog, channel, dataset).GetPath();
 
             await Assert.ThrowsAsync<ArgumentException>(() =>
-                dataSource.ReadSingleAsync(dataset.GetPath(), default, begin, end, CancellationToken.None));
+                dataSource.ReadSingleAsync(datasetPath, default, begin, end, CancellationToken.None));
         }
     }
 }
