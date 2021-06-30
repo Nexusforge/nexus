@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Nexus.Core;
 using Nexus.DataModel;
 using System;
 using System.Collections.Generic;
@@ -6,9 +7,9 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
-namespace Nexus.Core
+namespace Nexus.Utilities
 {
-    public static class Utilities
+    internal static class NexusUtilities
     {
         public static async Task<ClaimsPrincipal> GetClaimsPrincipalAsync(string username, UserManager<IdentityUser> userManager)
         {
@@ -32,7 +33,7 @@ namespace Nexus.Core
             var catalogContainer = database.CatalogContainers.First(current => current.Id == catalogId);
             var catalogMeta = catalogContainer.CatalogSettings;
 
-            return Utilities.IsCatalogAccessible(principal, catalogMeta);
+            return NexusUtilities.IsCatalogAccessible(principal, catalogMeta);
         }
 
         public static bool IsCatalogAccessible(ClaimsPrincipal principal, CatalogMeta catalogMeta)

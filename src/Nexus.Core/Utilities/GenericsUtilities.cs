@@ -2,7 +2,7 @@
 using System.Linq.Expressions;
 using System.Reflection.Emit;
 
-namespace Nexus
+namespace Nexus.Utilities
 {
     public static class GenericToDouble<T>
     {

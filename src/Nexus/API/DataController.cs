@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Logging;
-using Nexus.Core;
 using Nexus.Services;
+using Nexus.Utilities;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Net;
@@ -84,20 +84,23 @@ namespace Nexus.Controllers
                 // dataset
                 var path = $"{catalogId}/{channelId}/{datasetId}";
 
-                if (!_databaseManager.Database.TryFindDataset(path, out var dataset))
-                    return this.NotFound($"Could not find dataset with name '{path}'.");
+                if (!_databaseManager.Database.TryFind(path, out var datasetRecord))
+                    return this.NotFound($"Could not find dataset on path '{path}'.");
 
-                var catalog = dataset.Channel.Catalog;
+                var catalog = datasetRecord.Catalog;
 
                 // security check
-                if (!Utilities.IsCatalogAccessible(this.User, catalog.Id, _databaseManager.Database))
+                if (!NexusUtilities.IsCatalogAccessible(this.User, catalog.Id, _databaseManager.Database))
                     return this.Unauthorized($"The current user is not authorized to access the catalog '{catalog.Id}'.");
 
                 // controller
-                using var controller = await _databaseManager.GetDataSourceControllerAsync(_userIdService.User, dataset.BackendSource, cancellationToken);
+                using var controller = await _databaseManager.GetDataSourceControllerAsync(
+                    _userIdService.User, 
+                    datasetRecord.Dataset.BackendSource,
+                    cancellationToken);
 
                 // read data
-                var stream = controller.ReadAsDoubleStream(dataset, begin, end, 1 * 1000 * 1000UL, cancellationToken);
+                var stream = controller.ReadAsStream(begin, end, datasetRecord);
 
                 _logger.LogInformation($"{message} Done.");
 

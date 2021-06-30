@@ -249,7 +249,8 @@ namespace Nexus.Extensions
 
 #warning GetData Should be Async! Deadlock may happen
                     dataSourceController.ReadSingleAsync(datasetRecord, result, begin, end, cancellationToken).Wait();
-                    var data = BufferUtilities.ApplyDatasetStatusByDataType(dataset.DataType, result);
+                    var data = new double[result.Status.Length];
+                    BufferUtilities.ApplyDatasetStatusByDataType(dataset.DataType, result, data);
 
                     return data;
                 };

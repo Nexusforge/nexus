@@ -1,5 +1,4 @@
 ﻿using Nexus.Extensibility;
-using Nexus.Extensions;
 using System;
 
 namespace Nexus

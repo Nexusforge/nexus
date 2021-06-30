@@ -16,6 +16,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Threading;
 using Microsoft.Extensions.Options;
+using Nexus.Utilities;
 
 namespace Nexus.Core
 {
@@ -463,7 +464,7 @@ namespace Nexus.Core
 
                 foreach (var catalogId in catalogIds)
                 {
-                    if (!Utilities.IsCatalogAccessible(_userIdService.User, catalogId, _databaseManager.Database))
+                    if (!NexusUtilities.IsCatalogAccessible(_userIdService.User, catalogId, _databaseManager.Database))
                         throw new UnauthorizedAccessException($"The current user is not authorized to access catalog '{catalogId}'.");
                 }
 

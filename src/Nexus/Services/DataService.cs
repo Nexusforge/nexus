@@ -16,6 +16,7 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
+using Nexus.Utilities;
 
 namespace Nexus.Services
 {
@@ -28,7 +29,15 @@ namespace Nexus.Services
         private IDatabaseManager _databaseManager;
         private PathsOptions _pathsOptions;
 
-        private ulong _blockSizeLimit;
+        private ulong _chunkSize;
+
+        #endregion
+
+        #region Types
+
+        private record ExportContext(TimeSpan SamplePeriod,
+                                     List<IGrouping<BackendSource, DatasetRecord>> GroupedDatasetRecords,
+                                     ExportParameters ExportParameters);
 
         #endregion
 
@@ -37,13 +46,14 @@ namespace Nexus.Services
         public DataService(IDatabaseManager databaseManager,
                            UserIdService userIdService,
                            ILoggerFactory loggerFactory,
+                           IOptions<AggregationOptions> aggregationOptions,
                            IOptions<PathsOptions> pathsOptions)
         {
             _databaseManager = databaseManager;
             _userIdService = userIdService;
             _logger = loggerFactory.CreateLogger("Nexus");
             _pathsOptions = pathsOptions.Value;
-            _blockSizeLimit = 5 * 1000 * 1000UL;
+            _chunkSize = aggregationOptions.Value.ChunkSizeMB * 1000 * 1000UL;
 
             this.Progress = new Progress<ProgressUpdatedEventArgs>();
         }
@@ -77,39 +87,30 @@ namespace Nexus.Services
         }
 
         public async Task<string> ExportDataAsync(ExportParameters exportParameters,
-                                                  List<Dataset> datasets,
+                                                  List<DatasetRecord> datasetRecords,
                                                   CancellationToken cancellationToken)
         {
-            if (!datasets.Any() || exportParameters.Begin == exportParameters.End)
+            if (!datasetRecords.Any() || exportParameters.Begin == exportParameters.End)
                 return string.Empty;
 
-            var username = _userIdService.GetUserId();
-
             // find sample rate
-            var sampleRates = datasets.Select(dataset => dataset.GetSampleRate());
+            var sampleRates = datasetRecords
+                .Select(datasetRecord => datasetRecord.Dataset.GetSampleRate())
+                .Distinct()
+                .ToList();
 
-            if (sampleRates.Select(sampleRate => sampleRate.SamplesPerSecond).Distinct().Count() > 1)
-                throw new ValidationException("Channels with different sample rates have been requested.");
+            if (sampleRates.Count != 1)
+                throw new ValidationException("All datasets must be of the same sample period.");
 
             var sampleRate = sampleRates.First();
 
             // log
+            var username = _userIdService.GetUserId();
             var message = $"User '{username}' exports data: {exportParameters.Begin.ToISO8601()} to {exportParameters.End.ToISO8601()} ... ";
             _logger.LogInformation(message);
 
             try
             {
-                // convert datasets into catalogs
-                var catalogIds = datasets.Select(dataset => dataset.Channel.Catalog.Id).Distinct();
-                var catalogContainers = _databaseManager.Database.CatalogContainers
-                    .Where(catalogContainer => catalogIds.Contains(catalogContainer.Id));
-
-                var sparseCatalogs = catalogContainers.Select(catalogContainer =>
-                {
-                    var currentDatasets = datasets.Where(dataset => dataset.Channel.Catalog.Id == catalogContainer.Id).ToList();
-                    return catalogContainer.ToSparseCatalog(currentDatasets);
-                });
-
                 // start
                 var zipFilePath = Path.Combine(_pathsOptions.Export, $"Nexus_{exportParameters.Begin.ToString("yyyy-MM-ddTHH-mm")}_{sampleRate.ToUnitString(underscore: true)}_{Guid.NewGuid().ToString().Substring(0, 8)}.zip");
                 using var zipArchive = ZipFile.Open(zipFilePath, ZipArchiveMode.Create);
@@ -124,9 +125,14 @@ namespace Nexus.Services
 
                 Directory.CreateDirectory(directoryPath);
 
-                foreach (var sparseCatalog in sparseCatalogs)
+                foreach (var catalogGroup in datasetRecords.GroupBy(datasetRecord => datasetRecord.Catalog.Id))
                 {
-                    await this.CreateFilesAsync(_userIdService.User, exportParameters, sparseCatalog, directoryPath, cancellationToken);
+                    var groupedByBackendSource = datasetRecords
+                        .GroupBy(datasetRecord => datasetRecord.Dataset.BackendSource)
+                        .ToList();
+
+                    var exportContext = new ExportContext(sampleRate.Period, groupedByBackendSource, exportParameters);
+                    await this.CreateFilesAsync(_userIdService.User, exportContext, directoryPath, cancellationToken);
                 }
 
                 switch (exportParameters.ExportMode)
@@ -184,10 +190,9 @@ namespace Nexus.Services
         }
 
         private async Task CreateFilesAsync(ClaimsPrincipal user, 
-                                 ExportParameters exportParameters,
-                                 SparseCatalog sparseCatalog,
-                                 string directoryPath,
-                                 CancellationToken cancellationToken)
+                                            ExportContext exportContext,
+                                            string directoryPath,
+                                            CancellationToken cancellationToken)
         {
             var channelDescriptionSet = sparseCatalog.ToChannelDescriptions();
             var singleFile = exportParameters.FileGranularity == FileGranularity.SingleFile;
@@ -246,10 +251,6 @@ namespace Nexus.Services
                     throw new NotImplementedException();
             }
 
-            // create custom meta data
-            var customMetadataEntrySet = new List<CustomMetadataEntry>();
-            //customMetadataEntrySet.Add(new CustomMetadataEntry("system_name", "Nexus", CustomMetadataEntryLevel.File));
-
             if (!string.IsNullOrWhiteSpace(sparseCatalog.License.FileMessage))
                 customMetadataEntrySet.Add(new CustomMetadataEntry("license", sparseCatalog.License.FileMessage, CustomMetadataEntryLevel.Catalog));
 
@@ -261,7 +262,7 @@ namespace Nexus.Services
             try
             {
                 // create temp files
-                await this.CreateFilesAsync(user, dataWriter, exportParameters, sparseCatalog, cancellationToken);
+                await this.CreateFilesAsync(user, exportContext, dataWriter, cancellationToken);
                 dataWriter.Dispose();               
             }
             finally
@@ -270,67 +271,60 @@ namespace Nexus.Services
             }
         }
 
-        private async Task CreateFilesAsync(ClaimsPrincipal user,
-                                             DataWriterController dataWriter,
-                                             ExportParameters exportParameters,
-                                             SparseCatalog sparseCatalog,
-                                             CancellationToken cancellationToken)
+        private async Task CreateFilesAsync(ClaimsPrincipal user, 
+                                            ExportContext exportContext,
+                                            DataWriterController dataWriter,
+                                            CancellationToken cancellationToken)
         {
-            var datasets = sparseCatalog.Channels.SelectMany(channel => channel.Datasets);
-            var backendSourceToDatasetsMap = new Dictionary<BackendSource, List<Dataset>>();
-
-            foreach (var dataset in datasets)
-            {
-                if (!backendSourceToDatasetsMap.ContainsKey(dataset.Registration))
-                    backendSourceToDatasetsMap[dataset.Registration] = new List<Dataset>();
-
-                backendSourceToDatasetsMap[dataset.Registration].Add(dataset);
-            }
-
+            /* progressHandler */
             var progressHandler = (EventHandler<double>)((sender, e) =>
             {
                 this.OnProgress(new ProgressUpdatedEventArgs(e, $"Loading data ..."));
             });
 
-            foreach (var entry in backendSourceToDatasetsMap)
+            /* readingGroups */
+            var readingGroupTasks = exportContext.GroupedDatasetRecords.Select(async group =>
             {
-                if (entry.Value.Any())
-                {
-                    var registration = entry.Key;
-                    var controller = await _databaseManager.GetDataSourceControllerAsync(user, registration, cancellationToken);
-                    controller.Progress.ProgressChanged += progressHandler;
+                var backendSource = group.Key;
+                var controller = await _databaseManager.GetDataSourceControllerAsync(user, backendSource, cancellationToken);
+                controller.Progress.ProgressChanged += progressHandler;
+                var datasetRecordPipes = group.Select(datasetRecord => new DatasetRecordPipe(datasetRecord, x, null));
 
-                    try
-                    {
-                        await foreach (var progressRecord in controller.ReadAsync(entry.Value, exportParameters.Begin, exportParameters.End, _blockSizeLimit, cancellationToken))
-                        {
-                            this.ProcessData(dataWriter, progressRecord);
-                        }
-                    }
-                    finally
-                    {
-                        controller.Progress.ProgressChanged -= progressHandler;
-                    }
+                return new DataSourceReadingGroup(controller, datasetRecordPipes);
+            });
+
+            await Task.WhenAll(readingGroupTasks);
+
+            var readingGroups = readingGroupTasks
+                .Select(readingGroupTask => readingGroupTask.Result)
+                .ToList;
+
+            try
+            {
+                /* read */
+                var exportParameters = exportContext.ExportParameters;
+
+                var reading = await DataSourceController.ReadAsync(
+                    exportParameters.Begin,
+                    exportParameters.End,
+                    exportContext.SamplePeriod,
+                    _chunkSize,
+                    readingGroups,
+                    cancellationToken);
+
+                var writing = dataWriter.WriteAsync(datasetRecordPipes, )
+
+                await Task.WhenAll(reading, writing);
+#error jetzt würden die pipewriter ja immer weiter schreiben, also auch verschieden lang sein .... man müsste also erstmal die min größe finden
+                dataWriter.Write(progressRecord.Begin, period, buffers);              
+            }
+            finally
+            {
+                foreach (var readingGroup in readingGroups)
+                {
+                    readingGroup.Controller.Progress.ProgressChanged -= progressHandler;
                 }
             }
-
-            cancellationToken.ThrowIfCancellationRequested();
-        }
-
-        private void ProcessData(DataWriterController dataWriter, DataSourceProgressRecord progressRecord)
-        {
-            var buffers = progressRecord.DatasetToResultMap.Select(entry =>
-            {
-                var data = BufferUtilities.ApplyDatasetStatusByDataType(entry.Key.DataType, entry.Value);
-                return (IBuffer)BufferUtilities.CreateSimpleBuffer(data);
-            }).ToList();
-
-            var period = progressRecord.End - progressRecord.Begin;
-            dataWriter.Write(progressRecord.Begin, period, buffers);
-
-            // clean up
-            buffers = null;
-            GC.Collect();
         }
 
         private void CleanUp(string directoryPath)

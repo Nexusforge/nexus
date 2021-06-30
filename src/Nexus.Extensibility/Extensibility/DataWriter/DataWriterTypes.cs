@@ -1,10 +1,12 @@
-﻿using Nexus.Infrastructure;
-using System;
+﻿using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
-using System.Data;
 
 namespace Nexus.Extensibility
 {
-    public record DatasetWriteInfo(DataSet Dataset, Memory<byte> Data, Memory<byte> Status);
-    public record CatalogWriteInfo(string CatalogId, SampleRateContainer SampleRate, List<DatasetWriteInfo> DatasetInfos);
+    public record DataWriterContext()
+    {
+        public string TargetFolder { get; init; }
+        public Dictionary<string, string> Configuration { get; init; }
+        public ILogger Logger { get; init; }
+    }
 }

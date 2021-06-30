@@ -5,10 +5,12 @@ using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Infrastructure;
+using Nexus.Utilities;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
+using System.IO.Pipelines;
 using System.Linq;
 using System.Net;
 using System.Reflection;
@@ -87,7 +89,7 @@ namespace Nexus.Services
                         // find all aggregations for current channel
                         .Select(channel =>
                         {
-                            var channelMeta = container.CatalogSettings.Channels
+                            var channelMeta = container.CatalogMeta.Channels
                                 .First(current => current.Id == channel.Id);
 
                             return new AggregationChannel()
@@ -193,20 +195,24 @@ namespace Nexus.Services
                     {
                         var dataset = aggregationChannel.Channel.Datasets.First();
 
-                        await (Task)NexusUtilities.InvokeGenericMethod(this, nameof(this.OrchestrateAggregationAsync),
-                                                            BindingFlags.Instance | BindingFlags.NonPublic,
-                                                            NexusUtilities.GetTypeFromNexusDataType(dataset.DataType),
-                                                            new object[] 
-                                                            {
-                                                                targetDirectoryPath,
-                                                                controller, 
-                                                                dataset, 
-                                                                aggregationChannel.Aggregations, 
-                                                                date,
-                                                                aggregationChunkSizeMB,
-                                                                setup.Force, 
-                                                                cancellationToken
-                                                            });
+                        var parameters = new object[]
+                        {
+                            targetDirectoryPath,
+                            controller,
+                            dataset,
+                            aggregationChannel.Aggregations,
+                            date,
+                            aggregationChunkSizeMB,
+                            setup.Force,
+                            cancellationToken
+                        };
+
+                        await (Task)NexusCoreUtilities.InvokeGenericMethod(
+                            this, 
+                            nameof(this.OrchestrateAggregationAsync),
+                            BindingFlags.Instance | BindingFlags.NonPublic,
+                            NexusCoreUtilities.GetTypeFromNexusDataType(dataset.DataType),
+                            parameters);
                     }
                     catch (TaskCanceledException)
                     {
@@ -221,8 +227,8 @@ namespace Nexus.Services
         }
 
         private async Task OrchestrateAggregationAsync<T>(string targetDirectoryPath,
-                                                           DataSourceController dataReader,
-                                                           Dataset dataset,
+                                                           DataSourceController dataSourceController,
+                                                           DatasetRecord datasetRecord,
                                                            List<Aggregation> aggregations,
                                                            DateTime date,
                                                            uint aggregationChunkSizeMB,
@@ -230,11 +236,11 @@ namespace Nexus.Services
                                                            CancellationToken cancellationToken) where T : unmanaged
         {
             // check source sample rate
-            var _ = new SampleRateContainer(dataset.Id, ensureNonZeroIntegerHz: true);
+            var _ = new SampleRateContainer(datasetRecord.Dataset.Id, ensureNonZeroIntegerHz: true);
 
             // prepare variables
             var units = new List<AggregationUnit>();
-            var channel = dataset.Channel;
+            var channel = datasetRecord.Channel;
 
             // prepare buffers
             foreach (var aggregation in aggregations)
@@ -243,7 +249,7 @@ namespace Nexus.Services
 
                 foreach (var period in aggregation.Periods)
                 {
-#warning Ensure that period is a sensible value
+#warning Ensure that period is a plausible value
 
                     foreach (var entry in aggregation.Methods)
                     {
@@ -297,29 +303,30 @@ namespace Nexus.Services
                 return;
 
             // process data
-            var fundamentalPeriod = TimeSpan.FromMinutes(10); // required to ensure that the aggregation functions get data with a multiple length of 10 minutes
             var endDate = date.AddDays(1);
-            var blockSizeLimit = aggregationChunkSizeMB * 1000 * 1000;
+            var chunkSize = aggregationChunkSizeMB * 1000 * 1000;
 
             // read raw data
-            await foreach (var progressRecord in dataReader.ReadAsync(dataset, date, endDate, blockSizeLimit, fundamentalPeriod, cancellationToken))
-            {
-                var result = progressRecord.DatasetToResultMap.First().Value;
+            var dataPipe = new Pipe();
+            var statusPipe = new Pipe();
 
-                // aggregate data
-                var data = result.GetData<T>();
-                var partialBuffersMap = this.ApplyAggregationFunction(dataset, data, result.Status, units);
+            var reading = dataSourceController.ReadSingleAsync(
+                date,
+                endDate,
+                chunkSize,
+                datasetRecord,
+                dataPipe.Writer,
+                statusPipe.Writer,
+                cancellationToken);
 
-                foreach (var entry in partialBuffersMap)
-                {
-                    // copy aggregated data to target buffer
-                    var partialBuffer = entry.Value;
-                    var unit = entry.Key;
+            var writing = this.AggregateSingleAsync<T>(
+                datasetRecord, 
+                dataPipe.Reader,
+                statusPipe.Reader,
+                units,
+                cancellationToken);
 
-                    Array.Copy(partialBuffer, 0, unit.Buffer, unit.BufferPosition, partialBuffer.Length);
-                    unit.BufferPosition += partialBuffer.Length;
-                }
-            }
+            await Task.WhenAll(reading, writing);
 
             // write data to file
             foreach (var unit in units)
@@ -341,14 +348,54 @@ namespace Nexus.Services
             }
         }
 
-        private Dictionary<AggregationUnit, double[]> ApplyAggregationFunction<T>(Dataset dataset,
-                                                                                  Memory<T> data,
-                                                                                  Memory<byte> status,
-                                                                                  List<AggregationUnit> aggregationUnits) where T : unmanaged
+        private async Task AggregateSingleAsync<T>(
+            DatasetRecord datasetRecord,
+            PipeReader dataReader,
+            PipeReader statusReader, 
+            List<AggregationUnit> units,
+            CancellationToken cancellationToken)
+            where T : unmanaged
+        {
+            while (true)
+            {
+                // read
+                var dataResult = await dataReader.ReadAsync().ConfigureAwait(false);
+                var dataSequence = dataResult.Buffer;
+
+                var statusResult = await statusReader.ReadAsync().ConfigureAwait(false);
+                var statusSequence = statusResult.Buffer;
+
+                // aggregate
+                var position = default(SequencePosition);
+
+                while (dataResult.Buffer.TryGet(ref position, out var dataBuffer, advance: true) &&
+                       statusResult.Buffer.TryGet(ref position, out var statusBuffer, advance: true))
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    var typedDataBuffer = new ReadonlyCastMemoryManager<byte, T>(dataBuffer).Memory;
+                    this.ApplyAggregationFunction<T>(datasetRecord.Dataset, typedDataBuffer, statusBuffer, units);
+                }
+
+                // advance
+                dataReader.AdvanceTo(dataSequence.Start, dataSequence.End);
+                statusReader.AdvanceTo(statusSequence.Start, statusSequence.End);
+
+                if (dataResult.IsCompleted || statusResult.IsCompleted)
+                    break;
+            }
+
+            await dataReader.CompleteAsync();
+            await statusReader.CompleteAsync();
+        }
+
+        private void ApplyAggregationFunction<T>(Dataset dataset,
+                                                 ReadOnlyMemory<T> data,
+                                                 ReadOnlyMemory<byte> status,
+                                                 List<AggregationUnit> aggregationUnits) where T : unmanaged
         {
             var nanLimit = 0.99;
             var dataset_double = default(double[]);
-            var partialBuffersMap = new Dictionary<AggregationUnit, double[]>();
 
             foreach (var unit in aggregationUnits)
             {
@@ -357,6 +404,8 @@ namespace Nexus.Services
                 var method = unit.Method;
                 var argument = unit.Argument;
                 var sampleCount = dataset.GetSampleRate(ensureNonZeroIntegerHz: true).SamplesPerSecondAsUInt64 * (ulong)period;
+
+                double[] partialBuffer;
 
                 switch (unit.Method)
                 {
@@ -370,17 +419,18 @@ namespace Nexus.Services
                     case AggregationMethod.Sum:
 
                         if (dataset_double == null)
-                            dataset_double = BufferUtilities.ApplyDatasetStatus(data, status);
+                        {
+                            dataset_double = new double[data.Length];
+                            BufferUtilities.ApplyDatasetStatus(data, status, dataset_double);
+                        }
 
-                        partialBuffersMap[unit] = this.ApplyAggregationFunction(method, argument, (int)sampleCount, dataset_double, nanLimit, _logger);
-
+                        partialBuffer = this.ApplyAggregationFunction(method, argument, (int)sampleCount, dataset_double, nanLimit, _logger);
                         break;
 
                     case AggregationMethod.MinBitwise:
                     case AggregationMethod.MaxBitwise:
 
-                        partialBuffersMap[unit] = this.ApplyAggregationFunction(method, argument, (int)sampleCount, data, status, nanLimit, _logger);
-
+                        partialBuffer = this.ApplyAggregationFunction(method, argument, (int)sampleCount, data, status, nanLimit, _logger);
                         break;
 
                     default:
@@ -389,15 +439,19 @@ namespace Nexus.Services
 
                         continue;
                 }
-            }
 
-            return partialBuffersMap;
+                if (partialBuffer is not null)
+                {
+                    Array.Copy(partialBuffer, 0, unit.Buffer, unit.BufferPosition, partialBuffer.Length);
+                    unit.BufferPosition += partialBuffer.Length;
+                }
+            }
         }
 
         internal double[] ApplyAggregationFunction(AggregationMethod method,
                                                    string argument,
                                                    int kernelSize,
-                                                   Memory<double> data,
+                                                   ReadOnlyMemory<double> data,
                                                    double nanLimit,
                                                    ILogger logger)
         {
@@ -565,8 +619,8 @@ namespace Nexus.Services
         internal double[] ApplyAggregationFunction<T>(AggregationMethod method,
                                                       string argument,
                                                       int kernelSize,
-                                                      Memory<T> data,
-                                                      Memory<byte> status,
+                                                      ReadOnlyMemory<T> data,
+                                                      ReadOnlyMemory<byte> status,
                                                       double nanLimit,
                                                       ILogger logger) where T : unmanaged
         {
@@ -641,7 +695,7 @@ namespace Nexus.Services
             return result;
         }
 
-        private unsafe T[] GetNaNFreeData<T>(Span<T> data, Span<byte> status, int index, int kernelSize) where T : unmanaged
+        private unsafe T[] GetNaNFreeData<T>(ReadOnlySpan<T> data, ReadOnlySpan<byte> status, int index, int kernelSize) where T : unmanaged
         {
             var sourceIndex = index * kernelSize;
             var length = data.Length;
@@ -656,7 +710,7 @@ namespace Nexus.Services
             return chunkData.ToArray();
         }
 
-        private double[] GetNaNFreeData(Memory<double> data, int index, int kernelSize)
+        private double[] GetNaNFreeData(ReadOnlyMemory<double> data, int index, int kernelSize)
         {
             var sourceIndex = index * kernelSize;
 
@@ -667,7 +721,7 @@ namespace Nexus.Services
                 .ToArray();
         }
 
-        private static bool ApplyAggregationFilter(Channel channel, ChannelMeta channelMeta, Dictionary<AggregationFilter, string> filters, ILogger logger)
+        private static bool ApplyAggregationFilter(Channel channel, Channel channelMeta, Dictionary<AggregationFilter, string> filters, ILogger logger)
         {
             bool result = true;
 
@@ -689,7 +743,7 @@ namespace Nexus.Services
             if (filters.ContainsKey(AggregationFilter.IncludeUnit))
             {
 #warning Remove this special case check.
-                if (channel.Unit == null)
+                if (channel.Unit is null)
                 {
                     logger.LogWarning("Unit 'null' value detected.");
                     result &= false;

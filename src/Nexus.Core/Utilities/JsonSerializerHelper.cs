@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Text.Json;
 
-namespace Nexus
+namespace Nexus.Utilities
 {
     public static class JsonSerializerHelper
     {

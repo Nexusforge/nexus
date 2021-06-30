@@ -376,7 +376,7 @@ namespace Nexus.Services
             }
 
             // create controller 
-            var controller = new DataSourceController(dataSource, backendSource);
+            var controller = new DataSourceController(dataSource, backendSource, logger);
 
             // initialize
             _ = backendSourceToCatalogsMap.TryGetValue(backendSource, out var catalogs);

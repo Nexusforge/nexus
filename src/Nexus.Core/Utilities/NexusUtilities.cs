@@ -5,9 +5,9 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
-namespace Nexus
+namespace Nexus.Utilities
 {
-    public static class NexusUtilities
+    internal static class NexusCoreUtilities
     {
         public static Type GetTypeFromNexusDataType(NexusDataType dataType)
         {
@@ -34,7 +34,7 @@ namespace Nexus
 
         public static int SizeOf(NexusDataType dataType)
         {
-            return NexusUtilities.SizeOf(NexusUtilities.GetTypeFromNexusDataType(dataType));
+            return NexusCoreUtilities.SizeOf(NexusCoreUtilities.GetTypeFromNexusDataType(dataType));
         }
 
         public static int SizeOf(Type type)
@@ -87,7 +87,7 @@ namespace Nexus
 
         public static object InvokeGenericMethod<T>(T instance, string methodName, BindingFlags bindingFlags, Type genericType, object[] parameters)
         {
-            return NexusUtilities.InvokeGenericMethod(typeof(T), instance, methodName, bindingFlags, genericType, parameters);
+            return NexusCoreUtilities.InvokeGenericMethod(typeof(T), instance, methodName, bindingFlags, genericType, parameters);
         }
 
         public static object InvokeGenericMethod(Type methodParent, object instance, string methodName, BindingFlags bindingFlags, Type genericType, object[] parameters)

@@ -1,11 +1,14 @@
-﻿using Nexus.DataModel;
+﻿using Microsoft.Extensions.Logging;
+using Nexus.DataModel;
 using Nexus.Infrastructure;
+using Nexus.Utilities;
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.IO.Pipelines;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,11 +18,12 @@ namespace Nexus.Extensibility
     {
         #region Constructors
 
-        public DataSourceController(IDataSource dataSource, BackendSource backendSource)
+        public DataSourceController(IDataSource dataSource, BackendSource backendSource, ILogger logger)
         {
             this.DataSource = dataSource;
             this.BackendSource = backendSource;
             this.Progress = new Progress<double>();
+            this.Logger = logger;
         }
 
         #endregion
@@ -34,6 +38,8 @@ namespace Nexus.Extensibility
 
         internal BackendSource BackendSource { get; }
 
+        private ILogger Logger { get; }
+
         #endregion
 
         #region Methods
@@ -47,7 +53,7 @@ namespace Nexus.Extensibility
                 var catalogs = await this.DataSource.GetCatalogsAsync(cancellationToken);
 
                 catalogs = catalogs
-                    .Where(catalog => NexusUtilities.CheckCatalogNamingConvention(catalog.Id, out var _))
+                    .Where(catalog => NexusCoreUtilities.CheckCatalogNamingConvention(catalog.Id, out var _))
                     .ToList();
 
                 foreach (var catalog in catalogs)
@@ -69,173 +75,56 @@ namespace Nexus.Extensibility
             }
         }
 
-        public void SetCatalogs(List<Catalog> catalogs)
-        {
-            this.Catalogs = catalogs;
-        }
-
-        public DataSourceDoubleStream ReadAsDoubleStream(
-            DatasetRecord datasetRecords,
+        public DataSourceDoubleStream ReadAsStream(
             DateTime begin,
             DateTime end,
-            ulong upperBlockSize,
-            CancellationToken cancellationToken)
+            DatasetRecord datasetRecord)
         {
-            var progressRecords = this.ReadAsync(new List<DatasetRecord>() { datasetRecords }, begin, end, upperBlockSize, TimeSpan.FromMinutes(1), cancellationToken);
-            var samplesPerSecond = new SampleRateContainer(datasetRecords.Dataset.Id).SamplesPerSecond;
-            var length = (long)Math.Round(samplesPerSecond * 
-                (decimal)(end - begin).TotalSeconds, MidpointRounding.AwayFromZero) * 
-                NexusUtilities.SizeOf(NexusDataType.FLOAT64);
+            var elementCount = ExtensibilityUtilities.CalculateElementCount(datasetRecord.Dataset, begin, end);
+            var totalLength = elementCount * NexusCoreUtilities.SizeOf(NexusDataType.FLOAT64);
+            var pipe = new Pipe();
+            
+            _ = this.ReadSingleAsync(
+                begin,
+                end,
+                chunkSize: 1 * 1000 * 1000,
+                datasetRecord,
+                pipe.Writer,
+                statusWriter: default,
+                CancellationToken.None);
 
-            return new DataSourceDoubleStream(length, progressRecords);
+            return new DataSourceDoubleStream(totalLength, pipe.Reader);
         }
 
-        public IAsyncEnumerable<DataSourceProgressRecord> ReadAsync(
+        public Task ReadSingleAsync(
+            DateTime begin,
+            DateTime end,
+            uint chunkSize,
             DatasetRecord datasetRecord,
-            DateTime begin,
-            DateTime end,
-            ulong upperBlockSize,
+            PipeWriter dataWriter,
+            PipeWriter? statusWriter,
             CancellationToken cancellationToken)
         {
-#warning This is only a workaround. Should not be necessary when 1 Minute Base limit has been removed and all code is unit tested and rewritten.
-            var fundamentalPeriod = (datasetRecord.Dataset.GetSampleRate().SamplesPerDay == 144)
-                ? TimeSpan.FromMinutes(10)
-                : TimeSpan.FromMinutes(1);
+            /* This (instance) method calls into 
+             *  - the general static ReadAsync method which allows reading from more than one data source
+             *    and which then calls back into
+             *  - the instance method InternalReadAsync which contains the logic to write into the pipes. */
 
-            return this.ReadAsync(new List<DatasetRecord>() { datasetRecord }, begin, end, upperBlockSize, fundamentalPeriod, cancellationToken);
-        }
+            var samplePeriod = datasetRecord.Dataset.GetSampleRate().Period;
+            DataSourceController.ValidateParameters(begin, end, samplePeriod);
 
-        public IAsyncEnumerable<DataSourceProgressRecord> ReadAsync(
-            List<DatasetRecord> datasetRecords,
-            DateTime begin,
-            DateTime end,
-            ulong upperBlockSize,
-            CancellationToken cancellationToken)
-        {
-#warning This is only a workaround. Should not be necessary when 1 Minute Base limit has been removed and all code is unit tested and rewritten.
-
-            var fundamentalPeriod = (datasetRecords.First().Dataset.GetSampleRate().SamplesPerDay == 144) 
-                ? TimeSpan.FromMinutes(10) 
-                : TimeSpan.FromMinutes(1);
-
-            return this.ReadAsync(datasetRecords, begin, end, upperBlockSize, fundamentalPeriod, cancellationToken);
-        }
-
-        public IAsyncEnumerable<DataSourceProgressRecord> ReadAsync(
-            DatasetRecord datasetRecord,
-            DateTime begin,
-            DateTime end,
-            ulong upperBlockSize,
-            TimeSpan fundamentalPeriod,
-            CancellationToken cancellationToken)
-        {
-            return this.ReadAsync(new List<DatasetRecord>() { datasetRecord }, begin, end, upperBlockSize, fundamentalPeriod, cancellationToken);
-        }
-
-        public IAsyncEnumerable<DataSourceProgressRecord> ReadAsync(
-            List<DatasetRecord> datasetRecords,
-            DateTime begin,
-            DateTime end,
-            ulong blockSizeLimit,
-            TimeSpan fundamentalPeriod,
-            CancellationToken cancellationToken)
-        {
-            var samplePeriod = new SampleRateContainer(datasetRecords.First().Dataset.Id).Period;
-
-            // sanity checks
-            if (begin >= end)
-                throw new ValidationException("The begin datetime must be less than the end datetime.");
-
-            if (begin.Ticks % samplePeriod.Ticks != 0)
-                throw new ValidationException("The begin parameter must be a multiple of the sample period.");
-
-            if (end.Ticks % samplePeriod.Ticks != 0)
-                throw new ValidationException("The end parameter must be a multiple of the sample period.");
-
-            if (blockSizeLimit == 0)
-                throw new ValidationException("The upper block size must be > 0 bytes.");
-
-            return this.InternalReadAsync(datasetRecords, begin, end, blockSizeLimit, samplePeriod, cancellationToken);
-        }
-
-        private async IAsyncEnumerable<DataSourceProgressRecord> InternalReadAsync(
-            List<DatasetRecord> datasetRecords,
-            DateTime begin,
-            DateTime end,
-            ulong blockSizeLimit,
-            TimeSpan samplePeriod,
-            [EnumeratorCancellation]
-            CancellationToken cancellationToken)
-        {
-            if (cancellationToken.IsCancellationRequested)
-                yield break;
-
-            if (!datasetRecords.Any() || begin == end)
-                yield break;
-
-            // calculation
-#error Continue here
-            var minutesPerFP = fundamentalPeriod.Ticks / basePeriod.Ticks;
-
-            var bytesPerFP = datasetRecords.Sum(datasetRecord =>
-            {
-                var bytesPerSample = NexusUtilities.SizeOf(datasetRecord.Dataset.DataType);
-                var samplesPerMinute = datasetRecord.Dataset.GetSampleRate().SamplesPerSecond * 60;
-                var bytesPerFP = bytesPerSample * samplesPerMinute * minutesPerFP;
-
-                return bytesPerFP;
+            var readingGroup = new DataSourceReadingGroup(this, new List<DatasetRecordPipe>() 
+            { 
+                new DatasetRecordPipe(datasetRecord, dataWriter, statusWriter) 
             });
 
-            var FPCountPerBlock = blockSizeLimit / bytesPerFP;
-            var roundedFPCount = (long)Math.Floor(FPCountPerBlock);
-
-            if (roundedFPCount < 1)
-                throw new Exception("The block size limit is too small.");
-
-            var maxPeriodPerRequest = TimeSpan.FromTicks(fundamentalPeriod.Ticks * roundedFPCount);
-
-            // load data
-            var period = end - begin;
-            var currentBegin = begin;
-            var remainingPeriod = end - currentBegin;
-
-            while (remainingPeriod > TimeSpan.Zero)
-            {
-                var datasetRecordToResultMap = new Dictionary<DatasetRecord, ReadResult>();
-                var currentPeriod = TimeSpan.FromTicks(Math.Min(remainingPeriod.Ticks, maxPeriodPerRequest.Ticks));
-                var currentEnd = currentBegin + currentPeriod;
-                var index = 1;
-                var count = datasetRecords.Count;
-
-                foreach (var datasetRecord in datasetRecords)
-                {
-                    if (cancellationToken.IsCancellationRequested)
-                        yield break;
-
-#warning add Try/Catch + Logging block at this point when implementing new IDataSource. Catching all ReadSingle Errors and return NaN should be easy then
-#warning redesign
-                    //#error ReadSingle returns ReadResult ... and that read result should be disposable using the IMemoryOwners
-                    //#error every consumer that is done with the specific read result must dispose it!
-
-                    var readResult = ExtensibilityUtilities.CreateReadResult(datasetRecord.Dataset, begin, end);
-                    await this.DataSource.ReadSingleAsync(datasetRecord.GetPath(), readResult, currentBegin, currentEnd, cancellationToken);
-                    datasetRecordToResultMap[datasetRecord] = readResult;
-
-                    // update progress
-                    var localProgress = TimeSpan.FromTicks(currentPeriod.Ticks * index / count);
-                    var currentProgress = (currentBegin + localProgress - begin).Ticks / (double)period.Ticks;
-
-                    ((IProgress<double>)this.Progress).Report(currentProgress);
-                    index++;
-                }
-
-                // notify about new data
-                yield return new DataSourceProgressRecord(datasetRecordToResultMap, currentBegin, currentEnd);
-
-                // continue in time
-                currentBegin += currentPeriod;
-                remainingPeriod = end - currentBegin;
-            }
+            return DataSourceController.ReadAsync(
+                begin, 
+                end, 
+                samplePeriod,
+                chunkSize,
+                new List<DataSourceReadingGroup>() { readingGroup },
+                cancellationToken);
         }
 
         public async Task<AvailabilityResult> 
@@ -299,35 +188,227 @@ namespace Nexus.Extensibility
             };
         }
 
-        public List<string> GetCatalogIds()
-        {
-            return this.Catalogs.Select(catalog => catalog.Id).ToList();
-        }
-
-        public bool TryGetCatalog(string catalogId, out Catalog catalogInfo)
-        {
-            catalogInfo = this.Catalogs.FirstOrDefault(catalog => catalog.Id == catalogId);
-            return catalogInfo != null;
-        }
-
-        public Catalog GetCatalog(string catalogId)
-        {
-            return this.Catalogs.First(catalog => catalog.Id == catalogId);
-        }
-
         public async Task<bool> IsDataOfDayAvailableAsync(string catalogId, DateTime day, CancellationToken cancellationToken)
         {
             return (await this.DataSource.GetAvailabilityAsync(catalogId, day, day.AddDays(1), cancellationToken)) > 0;
         }
 
-        public async Task ReadSingleAsync(DatasetRecord datasetRecord, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
-        {
-            await this.DataSource.ReadSingleAsync(datasetRecord.GetPath(), result, begin, end, cancellationToken);
-        }
-
         public virtual void Dispose()
         {
             //
+        }
+
+        private async Task InternalReadAsync(
+            DateTime begin, 
+            DateTime end,
+            List<DatasetRecordPipe> datasetRecordPipes,
+            CancellationToken cancellationToken)
+        {
+            var index = 1;
+            var count = datasetRecordPipes.Count;
+
+            foreach (var (datasetRecord, dataWriter, statusWriter) in datasetRecordPipes)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var elementCount = ExtensibilityUtilities.CalculateElementCount(datasetRecord.Dataset, begin, end);
+
+                if (statusWriter is null)
+                {
+                    /* sizes */
+                    var elementSize = sizeof(double);
+                    var dataLength = elementCount * elementSize;
+
+                    /* data memory */
+                    using var dataOwner = MemoryPool<byte>.Shared.Rent(dataLength);
+                    var dataMemory = dataOwner.Memory.Slice(dataLength);
+                    dataMemory.Span.Clear();
+
+                    /* status memory */
+                    using var statusOwner = MemoryPool<byte>.Shared.Rent(elementCount);
+                    var statusMemory = statusOwner.Memory.Slice(elementCount);
+                    statusMemory.Span.Clear();
+
+                    /* get data */
+                    var readResult = new ReadResult(dataMemory, statusMemory);
+
+                    try
+                    {
+                        await this.DataSource.ReadSingleAsync(
+                            datasetRecord.GetPath(),
+                            readResult,
+                            begin,
+                            end,
+                            cancellationToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        this.Logger.LogWarning(ex.GetFullMessage());
+                    }
+
+                    /* apply status */
+                    var buffer = dataWriter
+                        .GetMemory(dataLength)
+                        .Slice(0, dataLength);
+
+                    BufferUtilities.ApplyDatasetStatusByDataType(
+                        datasetRecord.Dataset.DataType,
+                        readResult,
+                        target: new CastMemoryManager<byte, double>(buffer).Memory);
+
+                    /* update progress */
+                    dataWriter.Advance(dataLength);
+                    await dataWriter.FlushAsync();
+                }
+                else
+                {
+                    /* sizes */
+                    var elementSize = datasetRecord.Dataset.ElementSize;
+                    var dataLength = elementCount * elementSize;
+
+                    /* data memory */
+                    var dataMemory = dataWriter
+                        .GetMemory(dataLength)
+                        .Slice(0, dataLength);
+
+                    dataMemory.Span.Clear(); // I think this is required, but found no clear evidence in the docs.
+
+                    /* status memory */
+                    var statusMemory = statusWriter
+                        .GetMemory(elementCount)
+                        .Slice(0, elementCount);
+
+                    statusMemory.Span.Clear(); // I think this is required, but found no clear evidence in the docs.
+
+                    /* get data */
+                    var readResult = new ReadResult(dataMemory, statusMemory);
+
+                    try
+                    {
+                        await this.DataSource.ReadSingleAsync(
+                            datasetRecord.GetPath(),
+                            readResult,
+                            begin,
+                            end,
+                            cancellationToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        this.Logger.LogWarning(ex.GetFullMessage());
+                    }
+
+                    /* update progress */
+                    dataWriter.Advance(dataLength);
+                    await dataWriter.FlushAsync();
+
+                    statusWriter.Advance(elementCount);
+                    await statusWriter.FlushAsync();
+                }
+
+                var localProgress = TimeSpan.FromTicks((end - begin).Ticks * index / count);
+                var currentProgress = (begin + localProgress - begin).Ticks / (double)period.Ticks;
+
+                ((IProgress<double>)this.Progress).Report(currentProgress);
+                index++;
+            }
+        }
+
+        #endregion
+
+        #region Static Methods
+
+        public static async Task ReadAsync(
+            DateTime begin,
+            DateTime end,
+            TimeSpan samplePeriod,
+            uint chunkSize,
+            List<DataSourceReadingGroup> readingGroups,
+            CancellationToken cancellationToken)
+        {
+            /* validation */
+            foreach (var datasetRecordPipe in readingGroups.SelectMany(readingGroup => readingGroup.DatasetRecordPipes))
+            {
+                if (datasetRecordPipe.DatasetRecord.Dataset.GetSampleRate().Period != samplePeriod)
+                    throw new ValidationException("All datasets must be of the same sample period.");
+            }
+
+            DataSourceController.ValidateParameters(begin, end, samplePeriod);
+
+            /* pre-calculation */
+            var bytesPerRow = readingGroups
+                .SelectMany(readingGroup => readingGroup.DatasetRecordPipes)
+                .Sum(datasetRecordPipe => datasetRecordPipe.DatasetRecord.Dataset.ElementSize);
+
+            TimeSpan maxPeriodPerRequest;
+
+            if (chunkSize > 0)
+            {
+                var rows = chunkSize / bytesPerRow;
+
+                if (rows == 0)
+                    throw new ValidationException("The chunk size size is smaller than the expected row size.");
+
+                maxPeriodPerRequest = TimeSpan.FromTicks(samplePeriod.Ticks * rows);
+            }
+            else
+            {
+                maxPeriodPerRequest = TimeSpan.MaxValue;
+            }
+
+            /* load data */
+            var period = end - begin;
+            var currentBegin = begin;
+            var remainingPeriod = end - currentBegin;
+
+            while (remainingPeriod > TimeSpan.Zero)
+            {
+                var currentPeriod = TimeSpan.FromTicks(Math.Min(remainingPeriod.Ticks, maxPeriodPerRequest.Ticks));
+                var currentEnd = currentBegin + currentPeriod;
+
+                foreach (var readingGroup in readingGroups)
+                {
+                    await readingGroup.Controller.InternalReadAsync(
+                        begin,
+                        end,
+                        readingGroup.DatasetRecordPipes,
+                        cancellationToken).ConfigureAwait(false);
+                }
+
+                /* continue in time */
+                currentBegin += currentPeriod;
+                remainingPeriod = end - currentBegin;
+            }
+
+            /* complete */
+            foreach (var readingGroup in readingGroups)
+            {
+                foreach (var datasetRecordPipe in readingGroup.DatasetRecordPipes)
+                {
+                    await datasetRecordPipe.DataWriter.CompleteAsync();
+
+                    if (datasetRecordPipe.StatusWriter is not null)
+                        await datasetRecordPipe.StatusWriter.CompleteAsync();
+                }
+            }
+        }
+
+        private static void ValidateParameters(DateTime begin, DateTime end, TimeSpan samplePeriod)
+        {
+            /* When the user requests two time series of the same frequency, they will be aligned to the sample
+             * period. With the current implementation, it simply not possible for one data source to provide an 
+             * offset which is smaller than the sample period. In future a solution could be to have time series 
+             * data with associated time stamps, which is not yet implemented.
+             */
+
+            // sanity checks
+            if (begin >= end)
+                throw new ValidationException("The begin datetime must be less than the end datetime.");
+
+            if (begin.Ticks % samplePeriod.Ticks != 0)
+                throw new ValidationException("The begin parameter must be a multiple of the sample period.");
+
+            if (end.Ticks % samplePeriod.Ticks != 0)
+                throw new ValidationException("The end parameter must be a multiple of the sample period.");
         }
 
         #endregion

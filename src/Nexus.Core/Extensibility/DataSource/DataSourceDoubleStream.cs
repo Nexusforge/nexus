@@ -1,8 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
+using System.IO.Pipelines;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Nexus.Extensibility
 {
@@ -10,24 +10,18 @@ namespace Nexus.Extensibility
     {
         #region Fields
 
-        private double[] _buffer;
-        private int _offset;
-        private int _position;
-        private int _remaining;
-
+        private long _position;
         private long _length;
-        private IAsyncEnumerator<DataSourceProgressRecord> _enumerator;
+        private Stream _reader;
 
         #endregion
 
         #region Constructors
 
-        public DataSourceDoubleStream(long length, IAsyncEnumerable<DataSourceProgressRecord> progressRecords)
+        public DataSourceDoubleStream(long length, PipeReader reader)
         {
             _length = length;
-            _enumerator = progressRecords.GetAsyncEnumerator();
-
-            this._buffer = new double[0];
+            _reader = reader.AsStream();
         }
 
         #endregion
@@ -65,41 +59,43 @@ namespace Nexus.Extensibility
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            var remaining = count;
+            throw new NotImplementedException();
+        }
 
-            while (remaining > 0)
-            {
-                var byteBuffer = MemoryMarshal.AsBytes(_buffer.AsSpan());
-                _remaining = byteBuffer.Length - _offset;
+        public override int Read(Span<byte> buffer)
+        {
+            throw new NotImplementedException();
+        }
 
-                // we have some remaining bytes in the buffer
-                if (_remaining > 0)
-                {
-                    var actualCount = Math.Min(_remaining, remaining);
-                    var source = byteBuffer.Slice(_offset, actualCount);
-                    var target = buffer.AsSpan().Slice(offset, actualCount);
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        {
+            return _reader.BeginRead(buffer, offset, count, callback, state);
+        }
 
-                    source.CopyTo(target);
+        public override int EndRead(IAsyncResult asyncResult)
+        {
+            var readCount = _reader.EndRead(asyncResult);
+            _position += readCount;
+            return readCount;
+        }
 
-                    // update counters
-                    remaining -= actualCount;
-                    _offset += actualCount;
-                    _position += actualCount;
-                    _remaining -= actualCount;
-                }
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            var readCount = await _reader.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
+            _position += readCount;
+            return readCount;
+        }
 
-                // load next buffer
-                if (_remaining <= 0)
-                {
-                    _buffer = this.GetNext();
-                    _offset = 0;
-                }
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            var readCount = await _reader.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+            _position += readCount;
+            return readCount;
+        }
 
-                if (_buffer == null)
-                    break;
-            }
-
-            return count - remaining;
+        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        {
+            return _reader.CopyToAsync(destination, bufferSize, cancellationToken);
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -117,24 +113,9 @@ namespace Nexus.Extensibility
             throw new NotImplementedException();
         }
 
-        private double[] GetNext()
+        protected override void Dispose(bool disposing)
         {
-#warning risk of deadlock
-            var success = _enumerator.MoveNextAsync().Result;
-
-            if (success)
-            {
-                var entry = _enumerator.Current.DatasetToResultMap.First();
-                var datasetRecord = entry.Key;
-                var result = entry.Value;
-                var doubleData = BufferUtilities.ApplyDatasetStatusByDataType(datasetRecord.Dataset.DataType, result);
-
-                return doubleData;
-            }
-            else
-            {
-                return null;
-            }
+            _reader.Dispose();
         }
 
         #endregion

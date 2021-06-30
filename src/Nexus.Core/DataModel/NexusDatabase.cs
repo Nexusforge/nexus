@@ -25,6 +25,12 @@ namespace Nexus.DataModel
         public bool TryFind(string catalogId, string channelIdOrName, string datasetId, out DatasetRecord datasetRecord, bool includeName = false)
         {
             var datasetPath = $"{catalogId}/{channelIdOrName}/{datasetId}";
+            return this.TryFind(datasetPath, out datasetRecord, includeName);
+        }
+
+
+        public bool TryFind(string datasetPath, out DatasetRecord datasetRecord, bool includeName = false)
+        {
             datasetRecord = default(DatasetRecord);
 
             foreach (var container in this.CatalogContainers)

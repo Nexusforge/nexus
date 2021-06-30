@@ -1,6 +1,6 @@
 ﻿using Nexus.DataModel;
-using Nexus.Infrastructure;
 using System;
+using System.Buffers;
 using System.Text.RegularExpressions;
 
 namespace Nexus.Extensibility
@@ -9,10 +9,17 @@ namespace Nexus.Extensibility
     {
         public static ReadResult CreateReadResult(Dataset dataset, DateTime begin, DateTime end)
         {
-            var samplesPerDay = new SampleRateContainer(dataset.Id).SamplesPerDay;
-            var length = (int)Math.Round((end - begin).TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
+            var elementCount = ExtensibilityUtilities.CalculateElementCount(dataset, begin, end);
 
-            return new ReadResult(length, dataset.ElementSize);
+            var dataOwner = MemoryPool<byte>.Shared.Rent(elementCount * dataset.ElementSize);
+            var data = dataOwner.Memory.Slice(0, elementCount * dataset.ElementSize);
+            data.Span.Clear();
+
+            var statusOwner = MemoryPool<byte>.Shared.Rent(elementCount);
+            var status = statusOwner.Memory.Slice(0, elementCount);
+            status.Span.Clear();
+
+            return new ReadResult(data, status);
         }
 
         public static string EnforceNamingConvention(string value, string prefix = "X")
@@ -26,6 +33,14 @@ namespace Nexus.Extensibility
                 value = $"{prefix}_" + value;
 
             return value;
+        }
+
+        internal static int CalculateElementCount(Dataset dataset, DateTime begin, DateTime end)
+        {
+            var samplesPerDay = dataset.GetSampleRate().SamplesPerDay;
+            var elementCount = (int)Math.Round((end - begin).TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
+
+            return elementCount;
         }
 
         internal static DateTime RoundDown(DateTime dateTime, TimeSpan timeSpan)

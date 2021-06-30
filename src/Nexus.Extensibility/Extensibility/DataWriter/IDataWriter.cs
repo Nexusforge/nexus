@@ -1,33 +1,19 @@
-﻿using Microsoft.Extensions.Logging;
-using Nexus.DataModel;
-using Nexus.Infrastructure;
+﻿using Nexus.DataModel;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Nexus.Extensibility
 {
     public interface IDataWriter
     {
-        #region Properties
-
-        string TargetFolder { set; }
-
-        ILogger Logger { set; }
-
-        Dictionary<string, string> Configuration { set; }
-
-        #endregion
-
         #region Methods
 
-        void OnParametersSet()
-        {
-            //
-        }
+        Task SetContext(DataWriterContext context);
 
-        void Open(DateTime begin, Dictionary<Catalog, SampleRateContainer> catalogMap);
+        void Open(DateTime begin, Dictionary<Catalog, TimeSpan> catalogMap);
 
-        void Write(ulong fileOffset, ulong bufferOffset, ulong length, CatalogWriteInfo writeInfo);
+        void Write(DatasetRecord dataset, Memory<byte> data, Memory<byte> status, ulong fileOffset);
 
         #endregion
     }

@@ -69,16 +69,16 @@ namespace Nexus.Controllers
             parameters.End = parameters.End.ToUniversalTime();
 
             // translate channel paths to datasets
-            List<Dataset> datasets;
+            List<DatasetRecord> datasetRecords;
 
             try
             {
-                datasets = parameters.ChannelPaths.Select(channelPath =>
+                datasetRecords = parameters.ChannelPaths.Select(datasetPath =>
                 {
-                    if (!_databaseManager.Database.TryFindDataset(channelPath, out var dataset))
-                        throw new ValidationException($"Could not find the channel with path '{channelPath}'.");
+                    if (!_databaseManager.Database.TryFind(datasetPath, out var datasetRecord))
+                        throw new ValidationException($"Could not find the channel with path '{datasetPath}'.");
 
-                    return dataset;
+                    return datasetRecord;
                 }).ToList();
             }
             catch (ValidationException ex)
@@ -87,11 +87,11 @@ namespace Nexus.Controllers
             }
 
             // check that there is anything to export
-            if (!datasets.Any())
+            if (!datasetRecords.Any())
                 return this.BadRequest("The list of channel paths is empty.");
 
             // security check
-            var catalogIds = datasets.Select(dataset => dataset.Channel.Catalog.Id).Distinct();
+            var catalogIds = datasetRecords.Select(datasetRecord => datasetRecord.Catalog.Id).Distinct();
 
             foreach (var catalogId in catalogIds)
             {
@@ -113,7 +113,7 @@ namespace Nexus.Controllers
                 var jobControl = _exportJobService.AddJob(job, dataService.Progress, (jobControl, cts) =>
                 {
                     var userIdService = _serviceProvider.GetRequiredService<UserIdService>();
-                    var task = dataService.ExportDataAsync(parameters, datasets, cts.Token);
+                    var task = dataService.ExportDataAsync(parameters, datasetRecords, cts.Token);
 
                     return task;
                 });
