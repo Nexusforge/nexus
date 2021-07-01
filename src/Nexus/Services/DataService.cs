@@ -16,7 +16,7 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
-using Nexus.Utilities;
+using System.IO.Pipelines;
 
 namespace Nexus.Services
 {
@@ -29,14 +29,15 @@ namespace Nexus.Services
         private IDatabaseManager _databaseManager;
         private PathsOptions _pathsOptions;
 
-        private ulong _chunkSize;
+        private uint _chunkSize;
+        private PipeWriter x;
 
         #endregion
 
         #region Types
 
         private record ExportContext(TimeSpan SamplePeriod,
-                                     List<IGrouping<BackendSource, DatasetRecord>> GroupedDatasetRecords,
+                                     List<DatasetRecord> DatasetRecords,
                                      ExportParameters ExportParameters);
 
         #endregion
@@ -53,7 +54,7 @@ namespace Nexus.Services
             _userIdService = userIdService;
             _logger = loggerFactory.CreateLogger("Nexus");
             _pathsOptions = pathsOptions.Value;
-            _chunkSize = aggregationOptions.Value.ChunkSizeMB * 1000 * 1000UL;
+            _chunkSize = aggregationOptions.Value.ChunkSizeMB * 1000 * 1000;
 
             this.Progress = new Progress<ProgressUpdatedEventArgs>();
         }
@@ -68,7 +69,7 @@ namespace Nexus.Services
 
         #region Methods
 
-        public Task<List<AvailabilityResult>> GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, AvailabilityGranularity granularity, CancellationToken cancellationToken)
+        public Task<AvailabilityResult[]> GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, AvailabilityGranularity granularity, CancellationToken cancellationToken)
         {
             return Task.Run(async () =>
             {
@@ -80,9 +81,9 @@ namespace Nexus.Services
                     return dataSource.GetAvailabilityAsync(catalogId, begin, end, granularity, cancellationToken);
                 }).ToList();
 
-                await Task.WhenAll(tasks);
+                var availabilityResults = await Task.WhenAll(tasks);
 
-                return tasks.Select(task => task.Result).ToList();
+                return availabilityResults;
             });
         }
 
@@ -125,15 +126,8 @@ namespace Nexus.Services
 
                 Directory.CreateDirectory(directoryPath);
 
-                foreach (var catalogGroup in datasetRecords.GroupBy(datasetRecord => datasetRecord.Catalog.Id))
-                {
-                    var groupedByBackendSource = datasetRecords
-                        .GroupBy(datasetRecord => datasetRecord.Dataset.BackendSource)
-                        .ToList();
-
-                    var exportContext = new ExportContext(sampleRate.Period, groupedByBackendSource, exportParameters);
-                    await this.CreateFilesAsync(_userIdService.User, exportContext, directoryPath, cancellationToken);
-                }
+                var exportContext = new ExportContext(sampleRate.Period, datasetRecords, exportParameters);
+                await this.CreateFilesAsync(_userIdService.User, exportContext, directoryPath, cancellationToken);
 
                 switch (exportParameters.ExportMode)
                 {
@@ -276,35 +270,42 @@ namespace Nexus.Services
                                             DataWriterController dataWriter,
                                             CancellationToken cancellationToken)
         {
-            /* progressHandler */
+            /* progress handler */
             var progressHandler = (EventHandler<double>)((sender, e) =>
             {
                 this.OnProgress(new ProgressUpdatedEventArgs(e, $"Loading data ..."));
             });
 
-            /* readingGroups */
-            var readingGroupTasks = exportContext.GroupedDatasetRecords.Select(async group =>
+            /* reading groups */
+            var datasetPipeReaders = new List<DatasetPipeReader>();
+            var groupedDatasetRecords = exportContext.DatasetRecords.GroupBy(datasetRecord => datasetRecord.Dataset.BackendSource);
+            var readingGroups = new List<DataReadingGroup>();
+
+            foreach (var datasetRecordGroup in groupedDatasetRecords)
             {
-                var backendSource = group.Key;
+                var backendSource = datasetRecordGroup.Key;
                 var controller = await _databaseManager.GetDataSourceControllerAsync(user, backendSource, cancellationToken);
                 controller.Progress.ProgressChanged += progressHandler;
-                var datasetRecordPipes = group.Select(datasetRecord => new DatasetRecordPipe(datasetRecord, x, null));
 
-                return new DataSourceReadingGroup(controller, datasetRecordPipes);
-            });
+                var datasetPipeWriters = new List<DatasetPipeWriter>();
 
-            await Task.WhenAll(readingGroupTasks);
+                foreach (var datasetRecord in datasetRecordGroup)
+                {
+                    var pipe = new Pipe();
+                    datasetPipeWriters.Add(new DatasetPipeWriter(datasetRecord, pipe.Writer, null));
+                    datasetPipeReaders.Add(new DatasetPipeReader(datasetRecord, pipe.Reader));
+                }
 
-            var readingGroups = readingGroupTasks
-                .Select(readingGroupTask => readingGroupTask.Result)
-                .ToList;
+                readingGroups.Add(new DataReadingGroup(controller, datasetPipeWriters));
+            }
 
+            /* go! */
             try
             {
                 /* read */
                 var exportParameters = exportContext.ExportParameters;
 
-                var reading = await DataSourceController.ReadAsync(
+                var reading = DataSourceController.ReadAsync(
                     exportParameters.Begin,
                     exportParameters.End,
                     exportContext.SamplePeriod,
@@ -312,11 +313,18 @@ namespace Nexus.Services
                     readingGroups,
                     cancellationToken);
 
-                var writing = dataWriter.WriteAsync(datasetRecordPipes, )
+                /* write */
+                var writing = dataWriter.WriteAsync(
+                    exportParameters.Begin,
+                    exportParameters.End,
+                    exportContext.SamplePeriod,
+                    exportParameters.FileGranularity,
+                    datasetPipeReaders,
+                    cancellationToken
+                );
 
+                /* await */
                 await Task.WhenAll(reading, writing);
-#error jetzt würden die pipewriter ja immer weiter schreiben, also auch verschieden lang sein .... man müsste also erstmal die min größe finden
-                dataWriter.Write(progressRecord.Begin, period, buffers);              
             }
             finally
             {

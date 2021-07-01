@@ -46,12 +46,6 @@ namespace Nexus.Extensibility
         //
         // (6) Only file URLs are supported
 
-        #region Fields
-
-        private bool _isInitialized;
-
-        #endregion
-
         #region Properties
 
         protected string Root { get; private set; }
@@ -155,23 +149,20 @@ namespace Nexus.Extensibility
                         .Where(current => localBegin <= current.DateTime && current.DateTime < localEnd)
                         .ToList();
 
-                    var tasks = new List<Task<double>>();
-
-                    foreach (var file in files)
+                    var availabilityTasks = files.Select(file =>
                     {
-                        var task = this.GetFileAvailabilityAsync(file.FilePath, cancellationToken);
+                        var availabilityTask = this.GetFileAvailabilityAsync(file.FilePath, cancellationToken);
 
-                        _ = task.ContinueWith(
-                            x => this.Context.Logger.LogWarning($"Could not process file '{file.FilePath}'. Reason: {ExtensibilityUtilities.GetFullMessage(task.Exception)}"),
+                        _ = availabilityTask.ContinueWith(
+                            x => this.Context.Logger.LogWarning($"Could not process file '{file.FilePath}'. Reason: {ExtensibilityUtilities.GetFullMessage(availabilityTask.Exception)}"),
                             TaskContinuationOptions.OnlyOnFaulted
                         );
 
-                        tasks.Add(task);
-                    }
+                        return availabilityTask;
+                    });
 
-                    await Task.WhenAll(tasks);
-
-                    var actual = tasks.Sum(task => task.IsCompletedSuccessfully ? task.Result : 0.0);
+                    var availabilities = await Task.WhenAll(availabilityTasks).ConfigureAwait(false);
+                    var actual = availabilities.Sum();
                     var total = (end - begin).Ticks / (double)config.FilePeriod.Ticks;
 
                     summedAvailability += actual / total;
@@ -188,7 +179,7 @@ namespace Nexus.Extensibility
         }
 
         protected virtual async Task 
-            ReadSingleAsync(DatasetRecord datasetRecord, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
+            ReadSingleAsync(DatasetRecord datasetRecord, DateTime begin, DateTime end, Memory<byte> data, Memory<byte> status, CancellationToken cancellationToken)
         {
             if (begin >= end)
                 throw new ArgumentException("The start time must be before the end time.");
@@ -244,17 +235,15 @@ namespace Nexus.Extensibility
                         {
                             try
                             {
-                                var slicedData = result
-                                    .Data
+                                var slicedData = data
                                     .Slice(bufferOffset * dataset.ElementSize, fileBlock * dataset.ElementSize);
 
-                                var slicedStatus = result
-                                    .Status
+                                var slicedStatus = status
                                     .Slice(bufferOffset, fileBlock);
 
                                 var fileLength = slicedData.Length / dataset.ElementSize;
 
-                                var readParameters = new ReadInfo(
+                                var readInfo = new ReadInfo(
                                     filePath,
                                     datasetRecord,
                                     slicedData,
@@ -266,7 +255,7 @@ namespace Nexus.Extensibility
                                 );
 
                                 await this
-                                    .ReadSingleAsync(readParameters, cancellationToken)
+                                    .ReadSingleAsync(readInfo, cancellationToken)
                                     .ConfigureAwait(false);
                             }
                             catch (Exception ex)
@@ -392,10 +381,21 @@ namespace Nexus.Extensibility
         }
 
         async Task
-            IDataSource.ReadSingleAsync(string datasetPath, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
+            IDataSource.ReadAsync(DateTime begin, DateTime end, ReadRequest[] requests, CancellationToken cancellationToken)
         {
-            var datasetRecord = Catalog.Find(datasetPath, this.Context.Catalogs);
-            await this.ReadSingleAsync(datasetRecord, result, begin, end, cancellationToken);
+            foreach (var (datasetPath, dataBuffer, statusBuffer) in requests)
+            {
+                var datasetRecord = Catalog.Find(datasetPath, this.Context.Catalogs);
+
+                try
+                {
+                    await this.ReadSingleAsync(datasetRecord, begin, end, dataBuffer, statusBuffer, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    this.Context.Logger.LogWarning($"Could not read dataset '{datasetPath}'. Reason: {ExtensibilityUtilities.GetFullMessage(ex)}");
+                }
+            }
         }
 
         #endregion

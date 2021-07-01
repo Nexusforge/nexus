@@ -1,6 +1,7 @@
 ﻿using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Infrastructure;
+using Nexus.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -66,49 +67,56 @@ namespace Nexus.Extensions
             return Task.FromResult(new Random((int)begin.Ticks).NextDouble() / 10 + 0.9);
         }
 
-        public Task ReadSingleAsync(string datasetPath, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
+        public Task ReadAsync(DateTime begin, DateTime end, ReadRequest[] requests, CancellationToken cancellationToken)
         {
-            return Task.Run(() =>
+            var tasks = requests.Select(request =>
             {
-                var (catalog, channel, dataset) = Catalog.Find(datasetPath, this.Context.Catalogs);
+                var (datasetPath, data, status) = request;
 
-                double[] dataDouble;
-
-                var beginTime = begin.ToUnixTimeStamp();
-                var endTime = end.ToUnixTimeStamp();
-
-                var elementCount = result.Data.Length / dataset.ElementSize;
-                var dt = (double)(1 / dataset.GetSampleRate().SamplesPerSecond);
-
-                if (channel.Name.Contains("unix_time"))
+                return Task.Run(() =>
                 {
-                    dataDouble = Enumerable.Range(0, elementCount).Select(i => i * dt + beginTime).ToArray();
-                }
-                else // temperature or wind speed
-                {
-                    var kernelSize = 1000;
-                    var movingAverage = new double[kernelSize];
-                    var random = new Random((int)begin.Ticks);
-                    var mean = 15;
+                    cancellationToken.ThrowIfCancellationRequested();
 
-                    dataDouble = new double[elementCount];
+                    var (catalog, channel, dataset) = Catalog.Find(datasetPath, this.Context.Catalogs);
 
-                    for (int i = 0; i < elementCount; i++)
+                    double[] dataDouble;
+
+                    var beginTime = begin.ToUnixTimeStamp();
+                    var endTime = end.ToUnixTimeStamp();
+
+                    var elementCount = data.Length / dataset.ElementSize;
+                    var dt = (double)(1 / dataset.GetSampleRate().SamplesPerSecond);
+
+                    if (channel.Name.Contains("unix_time"))
                     {
-                        movingAverage[i % kernelSize] = (random.NextDouble() - 0.5) * mean * 10 + mean;
-                        dataDouble[i] = movingAverage.Sum() / kernelSize;
+                        dataDouble = Enumerable.Range(0, elementCount).Select(i => i * dt + beginTime).ToArray();
                     }
-                }
+                    else // temperature or wind speed
+                    {
+                        var kernelSize = 1000;
+                        var movingAverage = new double[kernelSize];
+                        var random = new Random((int)begin.Ticks);
+                        var mean = 15;
 
-                var data = dataDouble.Select(value => (double)Convert.ChangeType(value, typeof(double))).ToArray();
+                        dataDouble = new double[elementCount];
 
-                MemoryMarshal
-                    .AsBytes(data.AsSpan())
-                    .CopyTo(result.Data.Span);
+                        for (int i = 0; i < elementCount; i++)
+                        {
+                            movingAverage[i % kernelSize] = (random.NextDouble() - 0.5) * mean * 10 + mean;
+                            dataDouble[i] = movingAverage.Sum() / kernelSize;
+                        }
+                    }
 
-                result.Status.Span
-                    .Fill(1);
+                    MemoryMarshal
+                        .AsBytes(dataDouble.AsSpan())
+                        .CopyTo(data.Span);
+
+                    status.Span
+                        .Fill(1);
+                });
             });
+
+            return Task.WhenAll(tasks);
         }
 
         private Catalog LoadCatalog(string catalogId, Guid id1, Guid id2, Guid id3, Guid id4)

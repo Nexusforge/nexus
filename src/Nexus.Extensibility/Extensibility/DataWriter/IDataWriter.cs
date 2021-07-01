@@ -1,20 +1,29 @@
 ﻿using Nexus.DataModel;
 using System;
-using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nexus.Extensibility
 {
     public interface IDataWriter
     {
-        #region Methods
+        Task SetContextAsync(
+            DataWriterContext context, 
+            CancellationToken cancellationToken);
 
-        Task SetContext(DataWriterContext context);
+        Task OpenAsync(
+            DateTime fileBegin, 
+            TimeSpan samplePeriod,
+            DatasetRecord[] datasetRecords, 
+            CancellationToken cancellationToken);
 
-        void Open(DateTime begin, Dictionary<Catalog, TimeSpan> catalogMap);
+        Task WriteAsync(
+            TimeSpan fileOffset,
+            TimeSpan samplePeriod,
+            WriteRequest[] writeRequests,
+            CancellationToken cancellationToken);
 
-        void Write(DatasetRecord dataset, Memory<byte> data, Memory<byte> status, ulong fileOffset);
-
-        #endregion
+        Task CloseAsync(
+            CancellationToken cancellationToken);
     }
 }

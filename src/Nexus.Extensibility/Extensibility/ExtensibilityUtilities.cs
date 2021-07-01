@@ -7,9 +7,9 @@ namespace Nexus.Extensibility
 {
     public static class ExtensibilityUtilities
     {
-        public static ReadResult CreateReadResult(Dataset dataset, DateTime begin, DateTime end)
+        public static (Memory<byte>, Memory<byte>) CreateBuffers(Dataset dataset, DateTime begin, DateTime end)
         {
-            var elementCount = ExtensibilityUtilities.CalculateElementCount(dataset, begin, end);
+            var elementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, dataset.GetSampleRate().Period);
 
             var dataOwner = MemoryPool<byte>.Shared.Rent(elementCount * dataset.ElementSize);
             var data = dataOwner.Memory.Slice(0, elementCount * dataset.ElementSize);
@@ -19,7 +19,7 @@ namespace Nexus.Extensibility
             var status = statusOwner.Memory.Slice(0, elementCount);
             status.Span.Clear();
 
-            return new ReadResult(data, status);
+            return (data, status);
         }
 
         public static string EnforceNamingConvention(string value, string prefix = "X")
@@ -35,12 +35,9 @@ namespace Nexus.Extensibility
             return value;
         }
 
-        internal static int CalculateElementCount(Dataset dataset, DateTime begin, DateTime end)
+        internal static int CalculateElementCount(DateTime begin, DateTime end, TimeSpan samplePeriod)
         {
-            var samplesPerDay = dataset.GetSampleRate().SamplesPerDay;
-            var elementCount = (int)Math.Round((end - begin).TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
-
-            return elementCount;
+            return (int)((end.Ticks - begin.Ticks) / samplePeriod.Ticks);
         }
 
         internal static DateTime RoundDown(DateTime dateTime, TimeSpan timeSpan)

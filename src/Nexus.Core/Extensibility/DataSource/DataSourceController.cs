@@ -7,6 +7,7 @@ using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.IO;
 using System.IO.Pipelines;
 using System.Linq;
 using System.Threading;
@@ -80,7 +81,8 @@ namespace Nexus.Extensibility
             DateTime end,
             DatasetRecord datasetRecord)
         {
-            var elementCount = ExtensibilityUtilities.CalculateElementCount(datasetRecord.Dataset, begin, end);
+            var samplePeriod = datasetRecord.Dataset.GetSampleRate().Period;
+            var elementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, samplePeriod);
             var totalLength = elementCount * NexusCoreUtilities.SizeOf(NexusDataType.FLOAT64);
             var pipe = new Pipe();
             
@@ -113,9 +115,9 @@ namespace Nexus.Extensibility
             var samplePeriod = datasetRecord.Dataset.GetSampleRate().Period;
             DataSourceController.ValidateParameters(begin, end, samplePeriod);
 
-            var readingGroup = new DataSourceReadingGroup(this, new List<DatasetRecordPipe>() 
+            var readingGroup = new DataReadingGroup(this, new List<DatasetPipeWriter>() 
             { 
-                new DatasetRecordPipe(datasetRecord, dataWriter, statusWriter) 
+                new DatasetPipeWriter(datasetRecord, dataWriter, statusWriter) 
             });
 
             return DataSourceController.ReadAsync(
@@ -123,7 +125,7 @@ namespace Nexus.Extensibility
                 end, 
                 samplePeriod,
                 chunkSize,
-                new List<DataSourceReadingGroup>() { readingGroup },
+                new List<DataReadingGroup>() { readingGroup },
                 cancellationToken);
         }
 
@@ -147,7 +149,7 @@ namespace Nexus.Extensibility
                         aggregatedData.TryAdd(date, availability);
                     });
 
-                    await Task.WhenAll(tasks);
+                    await Task.WhenAll(tasks).ConfigureAwait(false);
 
                     break;
 
@@ -201,17 +203,19 @@ namespace Nexus.Extensibility
         private async Task InternalReadAsync(
             DateTime begin, 
             DateTime end,
-            List<DatasetRecordPipe> datasetRecordPipes,
+            TimeSpan samplePeriod,
+            List<DatasetPipeWriter> datasetPipeWriters,
             CancellationToken cancellationToken)
         {
             var index = 1;
-            var count = datasetRecordPipes.Count;
+            var count = datasetPipeWriters.Count;
+            var elementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, samplePeriod);
 
-            foreach (var (datasetRecord, dataWriter, statusWriter) in datasetRecordPipes)
+            var requests = datasetPipeWriters.Select(datasetPipeWriter =>
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var elementCount = ExtensibilityUtilities.CalculateElementCount(datasetRecord.Dataset, begin, end);
+                var (datasetRecord, dataWriter, statusWriter) = datasetPipeWriter;
+                Memory<byte> data;
+                Memory<byte> status;
 
                 if (statusWriter is null)
                 {
@@ -230,35 +234,8 @@ namespace Nexus.Extensibility
                     statusMemory.Span.Clear();
 
                     /* get data */
-                    var readResult = new ReadResult(dataMemory, statusMemory);
-
-                    try
-                    {
-                        await this.DataSource.ReadSingleAsync(
-                            datasetRecord.GetPath(),
-                            readResult,
-                            begin,
-                            end,
-                            cancellationToken);
-                    }
-                    catch (Exception ex)
-                    {
-                        this.Logger.LogWarning(ex.GetFullMessage());
-                    }
-
-                    /* apply status */
-                    var buffer = dataWriter
-                        .GetMemory(dataLength)
-                        .Slice(0, dataLength);
-
-                    BufferUtilities.ApplyDatasetStatusByDataType(
-                        datasetRecord.Dataset.DataType,
-                        readResult,
-                        target: new CastMemoryManager<byte, double>(buffer).Memory);
-
-                    /* update progress */
-                    dataWriter.Advance(dataLength);
-                    await dataWriter.FlushAsync();
+                    data = dataMemory;
+                    status = statusMemory;
                 }
                 else
                 {
@@ -281,21 +258,58 @@ namespace Nexus.Extensibility
                     statusMemory.Span.Clear(); // I think this is required, but found no clear evidence in the docs.
 
                     /* get data */
-                    var readResult = new ReadResult(dataMemory, statusMemory);
+                    data = dataMemory;
+                    status = statusMemory;
+                }
 
-                    try
-                    {
-                        await this.DataSource.ReadSingleAsync(
-                            datasetRecord.GetPath(),
-                            readResult,
-                            begin,
-                            end,
-                            cancellationToken);
-                    }
-                    catch (Exception ex)
-                    {
-                        this.Logger.LogWarning(ex.GetFullMessage());
-                    }
+                return new ReadRequest(datasetRecord.GetPath(), data, status);
+            }).ToArray();
+
+            try
+            {
+                await this.DataSource.ReadAsync(
+                    begin,
+                    end,
+                    requests,
+                    cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogWarning(ex.GetFullMessage());
+            }
+
+            foreach (var (datasetPipeWriter, readRequest) in datasetPipeWriters.Zip(requests))
+            {
+                var (datasetRecord, dataWriter, statusWriter) = datasetPipeWriter;
+
+                if (statusWriter is null)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    /* sizes */
+                    var elementSize = sizeof(double);
+                    var dataLength = elementCount * elementSize;
+
+                    /* apply status */
+                    var buffer = dataWriter
+                        .GetMemory(dataLength)
+                        .Slice(0, dataLength);
+
+                    BufferUtilities.ApplyDatasetStatusByDataType(
+                        datasetRecord.Dataset.DataType,
+                        readRequest.Data,
+                        readRequest.Status,
+                        target: new CastMemoryManager<byte, double>(buffer).Memory);
+
+                    /* update progress */
+                    dataWriter.Advance(dataLength);
+                    await dataWriter.FlushAsync();
+                }
+                else
+                {
+                    /* sizes */
+                    var elementSize = datasetRecord.Dataset.ElementSize;
+                    var dataLength = elementCount * elementSize;
 
                     /* update progress */
                     dataWriter.Advance(dataLength);
@@ -304,13 +318,13 @@ namespace Nexus.Extensibility
                     statusWriter.Advance(elementCount);
                     await statusWriter.FlushAsync();
                 }
-
-                var localProgress = TimeSpan.FromTicks((end - begin).Ticks * index / count);
-                var currentProgress = (begin + localProgress - begin).Ticks / (double)period.Ticks;
-
-                ((IProgress<double>)this.Progress).Report(currentProgress);
-                index++;
             }
+
+            //var localProgress = TimeSpan.FromTicks((end - begin).Ticks * index / count);
+            //var currentProgress = (begin + localProgress - begin).Ticks / (double)period.Ticks;
+
+            //((IProgress<double>)this.Progress).Report(currentProgress);
+            //index++;
         }
 
         #endregion
@@ -322,13 +336,13 @@ namespace Nexus.Extensibility
             DateTime end,
             TimeSpan samplePeriod,
             uint chunkSize,
-            List<DataSourceReadingGroup> readingGroups,
+            List<DataReadingGroup> readingGroups,
             CancellationToken cancellationToken)
         {
             /* validation */
-            foreach (var datasetRecordPipe in readingGroups.SelectMany(readingGroup => readingGroup.DatasetRecordPipes))
+            foreach (var datasetPipeWriters in readingGroups.SelectMany(readingGroup => readingGroup.DatasetPipeWriters))
             {
-                if (datasetRecordPipe.DatasetRecord.Dataset.GetSampleRate().Period != samplePeriod)
+                if (datasetPipeWriters.DatasetRecord.Dataset.GetSampleRate().Period != samplePeriod)
                     throw new ValidationException("All datasets must be of the same sample period.");
             }
 
@@ -336,8 +350,8 @@ namespace Nexus.Extensibility
 
             /* pre-calculation */
             var bytesPerRow = readingGroups
-                .SelectMany(readingGroup => readingGroup.DatasetRecordPipes)
-                .Sum(datasetRecordPipe => datasetRecordPipe.DatasetRecord.Dataset.ElementSize);
+                .SelectMany(readingGroup => readingGroup.DatasetPipeWriters)
+                .Sum(datasetPipeWriter => datasetPipeWriter.DatasetRecord.Dataset.ElementSize);
 
             TimeSpan maxPeriodPerRequest;
 
@@ -365,14 +379,19 @@ namespace Nexus.Extensibility
                 var currentPeriod = TimeSpan.FromTicks(Math.Min(remainingPeriod.Ticks, maxPeriodPerRequest.Ticks));
                 var currentEnd = currentBegin + currentPeriod;
 
-                foreach (var readingGroup in readingGroups)
+                var readingTasks = readingGroups.Select(readingGroup =>
                 {
-                    await readingGroup.Controller.InternalReadAsync(
-                        begin,
-                        end,
-                        readingGroup.DatasetRecordPipes,
-                        cancellationToken).ConfigureAwait(false);
-                }
+                    var (controller, datasetPipeWriters) = readingGroup;
+                    
+                    return controller.InternalReadAsync(
+                        currentBegin,
+                        currentEnd,
+                        samplePeriod,
+                        datasetPipeWriters,
+                        cancellationToken);
+                });
+
+                await Task.WhenAll(readingTasks).ConfigureAwait(false);
 
                 /* continue in time */
                 currentBegin += currentPeriod;
@@ -382,12 +401,12 @@ namespace Nexus.Extensibility
             /* complete */
             foreach (var readingGroup in readingGroups)
             {
-                foreach (var datasetRecordPipe in readingGroup.DatasetRecordPipes)
+                foreach (var datasetPipeWriter in readingGroup.DatasetPipeWriters)
                 {
-                    await datasetRecordPipe.DataWriter.CompleteAsync();
+                    await datasetPipeWriter.DataWriter.CompleteAsync();
 
-                    if (datasetRecordPipe.StatusWriter is not null)
-                        await datasetRecordPipe.StatusWriter.CompleteAsync();
+                    if (datasetPipeWriter.StatusWriter is not null)
+                        await datasetPipeWriter.StatusWriter.CompleteAsync();
                 }
             }
         }
@@ -400,7 +419,6 @@ namespace Nexus.Extensibility
              * data with associated time stamps, which is not yet implemented.
              */
 
-            // sanity checks
             if (begin >= end)
                 throw new ValidationException("The begin datetime must be less than the end datetime.");
 

@@ -1,10 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Logging;
-using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Infrastructure;
 using Nexus.Services;
+using Nexus.Utilities;
 using NJsonSchema.Annotations;
 using System;
 using System.Collections.Generic;
@@ -56,8 +56,8 @@ namespace Nexus.Controllers
 
             catalogContainers = catalogContainers.Where(catalogContainer =>
             {
-                var isCatalogAccessible = Utilities.IsCatalogAccessible(this.User, catalogContainer.Id, _databaseManager.Database);
-                var isCatalogVisible = Utilities.IsCatalogVisible(this.User, catalogContainer.CatalogSettings, isCatalogAccessible);
+                var isCatalogAccessible = NexusUtilities.IsCatalogAccessible(this.User, catalogContainer.Id, _databaseManager.Database);
+                var isCatalogVisible = NexusUtilities.IsCatalogVisible(this.User, catalogContainer.CatalogSettings, isCatalogAccessible);
 
                 return isCatalogAccessible && isCatalogVisible;
             }).ToList();
@@ -107,7 +107,7 @@ namespace Nexus.Controllers
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpGet("{catalogId}/timerange")]
-        public async Task<ActionResult<List<TimeRangeResult>>> 
+        public async Task<ActionResult<TimeRangeResult[]>> 
             GetTimeRange(
                 string catalogId, 
                 CancellationToken cancellationToken)
@@ -123,7 +123,7 @@ namespace Nexus.Controllers
 
             try
             {
-                return await this.ProcessCatalogIdAsync<List<TimeRangeResult>>(catalogId, message,
+                return await this.ProcessCatalogIdAsync<TimeRangeResult[]>(catalogId, message,
                     async (catalog, catalogMeta) =>
                     {
                         _logger.LogInformation($"{message} Done.");
@@ -165,7 +165,7 @@ namespace Nexus.Controllers
 
             try
             {
-                return await this.ProcessCatalogIdAsync<List<AvailabilityResult>>(catalogId, message,
+                return await this.ProcessCatalogIdAsync<AvailabilityResult[]>(catalogId, message,
                     async (catalog, catalogMeta) =>
                     {
                         _logger.LogInformation($"{message} Done.");
@@ -405,7 +405,7 @@ namespace Nexus.Controllers
             };
         }
 
-        private async Task<List<TimeRangeResult>> 
+        private async Task<TimeRangeResult[]> 
             CreateTimeRangeResponseAsync(DataModel.Catalog catalog, CancellationToken cancellationToken)
         {
             var dataSources = await _databaseManager.GetDataSourcesAsync(_userIdService.User, catalog.Id, cancellationToken);
@@ -429,12 +429,13 @@ namespace Nexus.Controllers
                 };
             }).ToList();
 
-            await Task.WhenAll(tasks);
+            var timeRangeResults = await Task
+                 .WhenAll(tasks);
 
-            return tasks.Select(task => task.Result).ToList();
+            return timeRangeResults;
         }
 
-        private async Task<List<AvailabilityResult>> 
+        private async Task<AvailabilityResult[]> 
             CreateAvailabilityResponseAsync(DataModel.Catalog catalog, DateTime begin, DateTime end, AvailabilityGranularity granularity, CancellationToken cancellationToken)
         {
             var dataSources = await _databaseManager.GetDataSourcesAsync(_userIdService.User, catalog.Id, cancellationToken);
@@ -457,9 +458,9 @@ namespace Nexus.Controllers
                 };
             }).ToList();
 
-            await Task.WhenAll(tasks);
+            var availabilityResults = await Task.WhenAll(tasks);
 
-            return tasks.Select(task => task.Result).ToList();
+            return availabilityResults;
         }
 
         private Channel CreateChannelResponse(DataModel.Channel channel, ChannelMeta channelMeta)
@@ -493,7 +494,7 @@ namespace Nexus.Controllers
             string message,
             Func<DataModel.Catalog, CatalogMeta, Task<ActionResult<T>>> action)
         {
-            if (!Utilities.IsCatalogAccessible(this.User, catalogId, _databaseManager.Database))
+            if (!NexusUtilities.IsCatalogAccessible(this.User, catalogId, _databaseManager.Database))
                 return this.Unauthorized($"The current user is not authorized to access the catalog '{catalogId}'.");
 
             var catalogContainer = _databaseManager

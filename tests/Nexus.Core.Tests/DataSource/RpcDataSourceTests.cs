@@ -205,7 +205,7 @@ namespace Nexus.Core.Tests
 
             var begin = new DateTime(2019, 12, 31, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 03, 0, 0, 0, DateTimeKind.Utc);
-            var result = ExtensibilityUtilities.CreateReadResult(dataset, begin, end);
+            var (data, status) = ExtensibilityUtilities.CreateBuffers(dataset, begin, end);
 
             var length = 3 * 86400;
             var expectedData = new long[length];
@@ -228,11 +228,12 @@ namespace Nexus.Core.Tests
             GenerateData(new DateTimeOffset(2020, 01, 02, 09, 40, 0, 0, TimeSpan.Zero));
             GenerateData(new DateTimeOffset(2020, 01, 02, 09, 50, 0, 0, TimeSpan.Zero));
 
-            await dataSource.ReadSingleAsync(datasetPath, result, begin, end, CancellationToken.None);
-            var longData = result.GetData<long>();
+            var request = new ReadRequest(datasetPath, data, status);
+            await dataSource.ReadAsync(begin, end, new ReadRequest[] { request }, CancellationToken.None);
+            var longData = data.Cast<long>();
 
             Assert.True(expectedData.SequenceEqual(longData.ToArray()));
-            Assert.True(expectedStatus.SequenceEqual(result.Status.ToArray()));
+            Assert.True(expectedStatus.SequenceEqual(status.ToArray()));
         }
 
         [Fact]

@@ -541,10 +541,10 @@ namespace Nexus.Core
             this.VisualizeProgress = progress;
         }
 
-        public async Task<List<AvailabilityResult>> GetAvailabilityAsync(AvailabilityGranularity granularity, CancellationToken cancellationToken)
+        public async Task<AvailabilityResult[]> GetAvailabilityAsync(AvailabilityGranularity granularity, CancellationToken cancellationToken)
         {
             // security check
-            if (!Utilities.IsCatalogAccessible(_userIdService.User, this.CatalogContainer.Id, _databaseManager.Database))
+            if (!NexusUtilities.IsCatalogAccessible(_userIdService.User, this.CatalogContainer.Id, _databaseManager.Database))
                 throw new UnauthorizedAccessException($"The current user is not authorized to access catalog '{this.CatalogContainer.Id}'.");
 
             return await _dataService.GetAvailabilityAsync(this.CatalogContainer.Id, this.DateTimeBegin, this.DateTimeEnd, granularity, cancellationToken);
@@ -618,7 +618,7 @@ namespace Nexus.Core
 
             return (long)this.GetSelectedDatasets().Sum(dataset =>
             {
-                var elementSize = NexusUtilities.SizeOf(dataset.DataType);
+                var elementSize = NexusCoreUtilities.SizeOf(dataset.DataType);
 
                 return frequency * totalDays * elementSize;
             });
@@ -753,16 +753,16 @@ namespace Nexus.Core
 
             var accessible = catalogContainers.Where(catalogContainer =>
             {
-                var isCatalogAccessible = Utilities.IsCatalogAccessible(principal, catalogContainer.Id, database);
-                var isCatalogVisible = Utilities.IsCatalogVisible(principal, catalogContainer.CatalogSettings, isCatalogAccessible);
+                var isCatalogAccessible = NexusUtilities.IsCatalogAccessible(principal, catalogContainer.Id, database);
+                var isCatalogVisible = NexusUtilities.IsCatalogVisible(principal, catalogContainer.CatalogSettings, isCatalogAccessible);
 
                 return isCatalogAccessible && isCatalogVisible;
             }).OrderBy(catalogContainer => catalogContainer.Id).ToList();
 
             var restricted = catalogContainers.Where(catalogContainer =>
             {
-                var isCatalogAccessible = Utilities.IsCatalogAccessible(principal, catalogContainer.Id, database);
-                var isCatalogVisible = Utilities.IsCatalogVisible(principal, catalogContainer.CatalogSettings, isCatalogAccessible);
+                var isCatalogAccessible = NexusUtilities.IsCatalogAccessible(principal, catalogContainer.Id, database);
+                var isCatalogVisible = NexusUtilities.IsCatalogVisible(principal, catalogContainer.CatalogSettings, isCatalogAccessible);
 
                 return !isCatalogAccessible && isCatalogVisible;
             }).OrderBy(catalogContainer => catalogContainer.Id).ToList();

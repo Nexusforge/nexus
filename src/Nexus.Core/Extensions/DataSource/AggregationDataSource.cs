@@ -254,71 +254,74 @@ namespace Nexus.Extensions
             });
         }
 
-        public Task ReadSingleAsync(string datasetPath, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
+        public Task ReadAsync(DateTime begin, DateTime end, ReadRequest[] requests, CancellationToken cancellationToken)
         {
             return Task.Run(() =>
             {
-                var (catalog, channel, dataset) = Catalog.Find(datasetPath, _catalogs);
-                var catalogFolderPath = Path.Combine(this.Root, "DATA", WebUtility.UrlEncode(catalog.Id));
-                var samplesPerDay = new SampleRateContainer(dataset.Id).SamplesPerDay;
-
-                if (!Directory.Exists(catalogFolderPath))
-                    return Task.CompletedTask;
-
-                var periodPerFile = TimeSpan.FromDays(1);
-
-                // read data
-                var currentBegin = begin.RoundDown(periodPerFile);
-                var fileLength = (int)Math.Round(periodPerFile.TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
-                var fileOffset = (int)Math.Round((begin - currentBegin).TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
-                var bufferOffset = 0;
-                var remainingBufferLength = result.Data.Length / dataset.ElementSize;
-
-                while (remainingBufferLength > 0)
+                foreach (var (datasetPath, data, status) in requests)
                 {
-                    var filePath = Path.Combine(
-                        catalogFolderPath,
-                        currentBegin.ToString("yyyy-MM"),
-                        currentBegin.ToString("dd"),
-                        $"{channel.Id}_{dataset.Id.Replace(" ", "_")}.nex");
+                    var (catalog, channel, dataset) = Catalog.Find(datasetPath, _catalogs);
+                    var catalogFolderPath = Path.Combine(this.Root, "DATA", WebUtility.UrlEncode(catalog.Id));
+                    var samplesPerDay = new SampleRateContainer(dataset.Id).SamplesPerDay;
 
-                    var fileBlock = fileLength - fileOffset;
-                    var currentBlock = Math.Min(remainingBufferLength, fileBlock);
+                    if (!Directory.Exists(catalogFolderPath))
+                        continue;
 
-                    if (File.Exists(filePath))
+                    var periodPerFile = TimeSpan.FromDays(1);
+
+                    // read data
+                    var currentBegin = begin.RoundDown(periodPerFile);
+                    var fileLength = (int)Math.Round(periodPerFile.TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
+                    var fileOffset = (int)Math.Round((begin - currentBegin).TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
+                    var bufferOffset = 0;
+                    var remainingBufferLength = data.Length / dataset.ElementSize;
+
+                    while (remainingBufferLength > 0)
                     {
-                        try
+                        var filePath = Path.Combine(
+                            catalogFolderPath,
+                            currentBegin.ToString("yyyy-MM"),
+                            currentBegin.ToString("dd"),
+                            $"{channel.Id}_{dataset.Id.Replace(" ", "_")}.nex");
+
+                        var fileBlock = fileLength - fileOffset;
+                        var currentBlock = Math.Min(remainingBufferLength, fileBlock);
+
+                        if (File.Exists(filePath))
                         {
-                            this.FileAccessManager?.Register(filePath, CancellationToken.None);
-                            var aggregationData = AggregationFile.Read<byte>(filePath);
-
-                            // write data
-                            if (aggregationData.Length == fileLength * dataset.ElementSize)
+                            try
                             {
-                                aggregationData
-                                    .Slice(fileOffset * dataset.ElementSize, currentBlock * dataset.ElementSize)
-                                    .CopyTo(result.Data.Span.Slice(bufferOffset * dataset.ElementSize));
+                                this.FileAccessManager?.Register(filePath, CancellationToken.None);
+                                var aggregationData = AggregationFile.Read<byte>(filePath);
 
-                                result.Status.Span
-                                    .Slice(bufferOffset, currentBlock)
-                                    .Fill(1);
+                                // write data
+                                if (aggregationData.Length == fileLength * dataset.ElementSize)
+                                {
+                                    aggregationData
+                                        .Slice(fileOffset * dataset.ElementSize, currentBlock * dataset.ElementSize)
+                                        .CopyTo(data.Span.Slice(bufferOffset * dataset.ElementSize));
+
+                                    status.Span
+                                        .Slice(bufferOffset, currentBlock)
+                                        .Fill(1);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                this.Context.Logger.LogWarning($"Could not process file '{filePath}'. Reason: {ex.GetFullMessage()}");
+                            }
+                            finally
+                            {
+                                this.FileAccessManager?.Unregister(filePath);
                             }
                         }
-                        catch (Exception ex)
-                        {
-                            this.Context.Logger.LogWarning($"Could not process file '{filePath}'. Reason: {ex.Message}");
-                        }
-                        finally
-                        {
-                            this.FileAccessManager?.Unregister(filePath);
-                        }
-                    }
 
-                    // update loop state
-                    fileOffset = 0; // Only the data in the first file may have an offset.
-                    bufferOffset += currentBlock;
-                    remainingBufferLength -= currentBlock;
-                    currentBegin += periodPerFile;
+                        // update loop state
+                        fileOffset = 0; // Only the data in the first file may have an offset.
+                        bufferOffset += currentBlock;
+                        remainingBufferLength -= currentBlock;
+                        currentBegin += periodPerFile;
+                    }
                 }
 
                 return Task.CompletedTask;

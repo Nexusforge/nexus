@@ -8,7 +8,7 @@ namespace Nexus.Utilities
 {
     public static class BufferUtilities
     {
-        public static void ApplyDatasetStatusByDataType(NexusDataType dataType, ReadResult result, Memory<double> target)
+        public static void ApplyDatasetStatusByDataType(NexusDataType dataType, Memory<byte> data, Memory<byte> status, Memory<double> target)
         {
             var targetType = NexusCoreUtilities.GetTypeFromNexusDataType(dataType);
 
@@ -16,16 +16,16 @@ namespace Nexus.Utilities
                 .GetMethod(nameof(BufferUtilities.InternalApplyDatasetStatusByDataType), BindingFlags.NonPublic | BindingFlags.Static)
                 .MakeGenericMethod(targetType);
 
-            method.Invoke(null, new object[] { result, target });
+            method.Invoke(null, new object[] { data, status, target });
         }
 
-        private static void InternalApplyDatasetStatusByDataType<T>(ReadResult result, Memory<double> target)
+        private static void InternalApplyDatasetStatusByDataType<T>(Memory<byte> data, Memory<byte> status, Memory<double> target)
             where T : unmanaged
         {
-            BufferUtilities.ApplyDatasetStatus<T>(result.GetData<T>(), result.Status, target);
+            BufferUtilities.ApplyDatasetStatus<T>(data.Cast<T>(), status, target);
         }
 
-        public unsafe static void ApplyDatasetStatus<T>(ReadOnlyMemory<T> data, ReadOnlyMemory<byte> status, Memory<double> target) where T : unmanaged
+        public static unsafe void ApplyDatasetStatus<T>(ReadOnlyMemory<T> data, ReadOnlyMemory<byte> status, Memory<double> target) where T : unmanaged
         {
             fixed (T* dataPtr = data.Span)
             {

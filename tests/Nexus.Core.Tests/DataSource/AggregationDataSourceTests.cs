@@ -114,10 +114,11 @@ namespace Nexus.Core.Tests
 
             var begin = new DateTime(2020, 07, 07, 23, 00, 00, DateTimeKind.Utc);
             var end = new DateTime(2020, 07, 10, 00, 00, 00, DateTimeKind.Utc);
-            var result = ExtensibilityUtilities.CreateReadResult(dataset, begin, end);
+            var (data, status) = ExtensibilityUtilities.CreateBuffers(dataset, begin, end);
 
-            await dataSource.ReadSingleAsync(datasetPath, result, begin, end, CancellationToken.None);
-            var doubleData = result.GetData<double>();
+            var result = new ReadRequest(datasetPath, data, status);
+            await dataSource.ReadAsync(begin, end, new ReadRequest[] { result }, CancellationToken.None);
+            var doubleData = data.Cast<double>();
 
             // assert
             var samplesPerDay = 86400 * 100;

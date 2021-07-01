@@ -8,26 +8,27 @@ namespace Nexus.Extensibility
 {
     public interface IDataSource
     {
-        #region Methods
+        Task SetContextAsync(
+            DataSourceContext context, 
+            CancellationToken cancellationToken);
 
-        Task SetContextAsync(DataSourceContext context, CancellationToken cancellationToken);
+        Task<List<Catalog>> GetCatalogsAsync(
+            CancellationToken cancellationToken);
 
-        Task<List<Catalog>> GetCatalogsAsync(CancellationToken cancellationToken);
+        Task<(DateTime Begin, DateTime End)> GetTimeRangeAsync(
+            string catalogId,
+            CancellationToken cancellationToken);
 
-        Task<(DateTime Begin, DateTime End)> GetTimeRangeAsync(string catalogId,
-                                                               CancellationToken cancellationToken);
+        Task<double> GetAvailabilityAsync(
+            string catalogId, 
+            DateTime begin,
+            DateTime end,                             
+            CancellationToken cancellationToken);
 
-        Task<double> GetAvailabilityAsync(string catalogId,
-                                          DateTime begin,
-                                          DateTime end,
-                                          CancellationToken cancellationToken);
-
-        Task ReadSingleAsync(string datasetPath,
-                             ReadResult result,
-                             DateTime begin,
-                             DateTime end,
-                             CancellationToken cancellationToken);
-
-        #endregion
+        Task ReadAsync(
+            DateTime begin,
+            DateTime end,
+            ReadRequest[] requests,
+            CancellationToken cancellationToken);
     }
 }

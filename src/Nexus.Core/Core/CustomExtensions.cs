@@ -1,14 +1,20 @@
-﻿using Nexus.Extensibility;
+﻿using Nexus.Utilities;
 using System;
 
 namespace Nexus
 {
     public static class CustomExtensions
     {
-        public static Memory<T> GetData<T>(this ReadResult result)
+        public static Memory<T> Cast<T>(this Memory<byte> buffer)
             where T : unmanaged
         {
-            return new CastMemoryManager<byte, T>(result.Data).Memory;
+            return new CastMemoryManager<byte, T>(buffer).Memory;
+        }
+
+        public static Memory<T> Cast<T>(this ReadOnlyMemory<byte> buffer)
+            where T : unmanaged
+        {
+            return new ReadonlyCastMemoryManager<byte, T>(buffer).Memory;
         }
 
         public static string ToISO8601(this DateTime dateTime)

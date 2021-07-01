@@ -7,6 +7,7 @@ using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Extensions;
 using Nexus.Filters;
+using Nexus.Utilities;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -134,8 +135,7 @@ namespace Nexus.Services
                                 .Select(entry => this.InstantiateDataSourceAsync(entry.Key, entry.Value, backendSourceToCatalogsMap, cancellationToken))
                                 .ToList();
 
-            await Task.WhenAll(tasks);
-            var dataSources = tasks.Select(task => task.Result);
+            var dataSources = await Task.WhenAll(tasks);
 
             foreach (var dataSource in dataSources)
             {
@@ -235,7 +235,7 @@ namespace Nexus.Services
             _logger.LogInformation("Database loaded.");
         }
 
-        public async Task<List<DataSourceController>> GetDataSourcesAsync(ClaimsPrincipal user, string catalogId, CancellationToken cancellationToken)
+        public async Task<DataSourceController[]> GetDataSourcesAsync(ClaimsPrincipal user, string catalogId, CancellationToken cancellationToken)
         {
             var state = this.State;
 
@@ -245,11 +245,9 @@ namespace Nexus.Services
                 // select the backend source and get a brand new data source from it
                 .Select(entry => this.GetDataSourceControllerAsync(user, entry.Key, cancellationToken, state));
 
-            await Task.WhenAll(tasks);
+            var dataSourceControllers = await Task.WhenAll(tasks);
 
-            return tasks
-                .Select(task => task.Result)
-                .ToList();
+            return dataSourceControllers;
         }
 
         public async Task<DataSourceController> GetDataSourceControllerAsync(
@@ -274,7 +272,7 @@ namespace Nexus.Services
                 filterDataSource.Database = this.Database;
 
                 filterDataSource.IsCatalogAccessible =
-                    catalogId => Utilities.IsCatalogAccessible(user, catalogId, this.Database);
+                    catalogId => NexusUtilities.IsCatalogAccessible(user, catalogId, this.Database);
 
                 filterDataSource.GetDataSourceAsync =
                     backendSource => this.GetDataSourceControllerAsync(user, backendSource, cancellationToken);
@@ -475,14 +473,14 @@ namespace Nexus.Services
                             // get user
                             if (!usersMap.TryGetValue(codeDefinition.Owner, out var user))
                             {
-                                user = Utilities
+                                user = NexusUtilities
                                     .GetClaimsPrincipalAsync(codeDefinition.Owner, userManager)
                                     .Result;
 
                                 usersMap[codeDefinition.Owner] = user;
                             }
 
-                            keep = catalogMeta.Id == FilterConstants.SharedCatalogID || Utilities.IsCatalogEditable(user, catalogMeta);
+                            keep = catalogMeta.Id == FilterConstants.SharedCatalogID || NexusUtilities.IsCatalogEditable(user, catalogMeta);
                         }
 
                         if (!keep)

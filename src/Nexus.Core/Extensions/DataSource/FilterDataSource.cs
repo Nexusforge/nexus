@@ -5,6 +5,7 @@ using Nexus.Extensibility;
 using Nexus.Filters;
 using Nexus.Infrastructure;
 using Nexus.Roslyn;
+using Nexus.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -173,7 +174,7 @@ namespace Nexus.Extensions
                             };
 
                             // create channel
-                            if (!NexusUtilities.CheckNamingConvention(localFilterChannel.ChannelName, out var message))
+                            if (!NexusCoreUtilities.CheckNamingConvention(localFilterChannel.ChannelName, out var message))
                             {
                                 this.Context.Logger.LogWarning($"Skipping channel '{localFilterChannel.ChannelName}' due to the following reason: {message}.");
                                 continue;
@@ -217,50 +218,54 @@ namespace Nexus.Extensions
             return Task.FromResult(1.0);
         }
 
-        public Task ReadSingleAsync(string datasetPath, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
+        public Task ReadAsync(DateTime begin, DateTime end, ReadRequest[] requests, CancellationToken cancellationToken)
         {
             return Task.Run(() =>
             {
-                var (catalog, channel, dataset) = Catalog.Find(datasetPath, _catalogs);
-                var samplesPerDay = new SampleRateContainer(dataset.Id).SamplesPerDay;
-                var length = (long)Math.Round((end - begin).TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
-                var cacheEntry = _cacheEntries.FirstOrDefault(current => current.SupportedChanneIds.Contains(channel.Id));
-
-                if (cacheEntry is null)
-                    throw new Exception("The requested filter channel ID could not be found.");
-
-                // fill database
-                GetFilterData getData = (string catalogId, string channelId, string datasetId, DateTime begin, DateTime end) =>
+                foreach (var (datasetPath, data, status) in requests)
                 {
+                    var (catalog, channel, dataset) = Catalog.Find(datasetPath, _catalogs);
+                    var samplesPerDay = new SampleRateContainer(dataset.Id).SamplesPerDay;
+                    var length = (long)Math.Round((end - begin).TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
+                    var cacheEntry = _cacheEntries.FirstOrDefault(current => current.SupportedChanneIds.Contains(channel.Id));
+
+                    if (cacheEntry is null)
+                        throw new Exception("The requested filter channel ID could not be found.");
+
+                    // fill database
+                    GetFilterData getData = (string catalogId, string channelId, string datasetId, DateTime begin, DateTime end) =>
+                    {
 #warning improve this (PhysicalName)
-                    var catalog = this.Database.CatalogContainers
-                         .FirstOrDefault(container => container.Id == catalogId || container.PhysicalName == catalogId);
+                        var catalog = this.Database.CatalogContainers
+                             .FirstOrDefault(container => container.Id == catalogId || container.PhysicalName == catalogId);
 
-                    if (catalog == null)
-                        throw new Exception($"Unable to find catalog with id '{catalogId}'.");
+                        if (catalog == null)
+                            throw new Exception($"Unable to find catalog with id '{catalogId}'.");
 
-                    var datasetRecord = this.Database.Find(catalog.Id, channelId, datasetId);
+                        var datasetRecord = this.Database.Find(catalog.Id, channelId, datasetId);
 
-                    if (!this.IsCatalogAccessible(catalog.Id))
-                        throw new UnauthorizedAccessException("The current user is not allowed to access this filter.");
-
-#warning GetData Should be Async! Deadlock may happen
-                    var dataSourceController = this.GetDataSourceAsync(dataset.BackendSource).Result;
+                        if (!this.IsCatalogAccessible(catalog.Id))
+                            throw new UnauthorizedAccessException("The current user is not allowed to access this filter.");
 
 #warning GetData Should be Async! Deadlock may happen
-                    dataSourceController.ReadSingleAsync(datasetRecord, result, begin, end, cancellationToken).Wait();
-                    var data = new double[result.Status.Length];
-                    BufferUtilities.ApplyDatasetStatusByDataType(dataset.DataType, result, data);
+                        var dataSourceController = this.GetDataSourceAsync(dataset.BackendSource).Result;
 
-                    return data;
-                };
+#warning GetData Should be Async! Deadlock may happen
+                        var request = new ReadRequest(datasetRecord.GetPath(), data, status);
+                        dataSourceController.ReadAsync(begin, end, new ReadRequest[] { request }, cancellationToken).Wait();
+                        var doubleData = new double[status.Length];
+                        BufferUtilities.ApplyDatasetStatusByDataType(dataset.DataType, data, status, doubleData);
 
-                // execute
-                var filter = cacheEntry.FilterProvider.Filters.First(filter => filter.ToGuid(cacheEntry.FilterCodeDefinition) == channel.Id);
-                var filterResult = MemoryMarshal.Cast<byte, double>(result.Data.Span);
+                        return doubleData;
+                    };
 
-                cacheEntry.FilterProvider.Filter(begin, end, filter, getData, filterResult);
-                result.Status.Span.Fill(1);
+                    // execute
+                    var filter = cacheEntry.FilterProvider.Filters.First(filter => filter.ToGuid(cacheEntry.FilterCodeDefinition) == channel.Id);
+                    var filterResult = MemoryMarshal.Cast<byte, double>(data.Span);
+
+                    cacheEntry.FilterProvider.Filter(begin, end, filter, getData, filterResult);
+                    status.Span.Fill(1);
+                }
             });
         }
 

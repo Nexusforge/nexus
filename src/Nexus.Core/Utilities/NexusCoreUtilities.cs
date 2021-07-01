@@ -1,14 +1,40 @@
 ﻿using Nexus.Infrastructure;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace Nexus.Utilities
 {
     internal static class NexusCoreUtilities
     {
+        public static async ValueTask<T[]> WhenAll<T>(params ValueTask<T>[] tasks)
+        {
+            List<Exception>? exceptions = null;
+
+            var results = new T[tasks.Length];
+
+            for (var i = 0; i < tasks.Length; i++)
+            {
+                try
+                {
+                    results[i] = await tasks[i].ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    exceptions ??= new List<Exception>(tasks.Length);
+                    exceptions.Add(ex);
+                }
+            }
+
+            return exceptions is null
+                ? results
+                : throw new AggregateException(exceptions);
+        }
+
         public static Type GetTypeFromNexusDataType(NexusDataType dataType)
         {
             return dataType switch

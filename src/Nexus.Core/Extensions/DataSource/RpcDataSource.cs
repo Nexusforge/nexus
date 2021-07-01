@@ -129,22 +129,25 @@ namespace Nexus.Extensions
             return response.Availability;
         }
 
-        public async Task ReadSingleAsync(string datasetPath, ReadResult result, DateTime begin, DateTime end, CancellationToken cancellationToken)
+        public async Task ReadAsync(DateTime begin, DateTime end, ReadRequest[] requests, CancellationToken cancellationToken)
         {
-            var datasetRecord = Catalog.Find(datasetPath, this.Context.Catalogs);
-            var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromMinutes(1));
-            cancellationToken.Register(() => timeoutTokenSource.Cancel());
+            foreach (var (datasetPath, data, status) in requests)
+            {
+                var datasetRecord = Catalog.Find(datasetPath, this.Context.Catalogs);
+                var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromMinutes(1));
+                cancellationToken.Register(() => timeoutTokenSource.Cancel());
 
-            var elementCount = result.Data.Length / datasetRecord.Dataset.ElementSize;
+                var elementCount = data.Length / datasetRecord.Dataset.ElementSize;
 
-            var response = await _communicator.InvokeAsync<ReadSingleResponse>(
-                "ReadSingle", 
-                new object[] { datasetRecord.GetPath(), elementCount, begin, end },
-                timeoutTokenSource.Token
-            );
+                var response = await _communicator.InvokeAsync<ReadSingleResponse>(
+                    "ReadSingle",
+                    new object[] { datasetRecord.GetPath(), elementCount, begin, end },
+                    timeoutTokenSource.Token
+                );
 
-            await _communicator.ReadRawAsync(result.Data, timeoutTokenSource.Token);
-            await _communicator.ReadRawAsync(result.Status, timeoutTokenSource.Token);
+                await _communicator.ReadRawAsync(data, timeoutTokenSource.Token);
+                await _communicator.ReadRawAsync(status, timeoutTokenSource.Token);
+            }
         }
 
         private CancellationTokenSource GetTimeoutTokenSource(TimeSpan timeout)

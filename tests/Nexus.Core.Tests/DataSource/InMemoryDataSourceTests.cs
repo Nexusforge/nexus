@@ -122,10 +122,11 @@ namespace Nexus.Core.Tests
 
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 02, 0, 0, 0, DateTimeKind.Utc);
-            var result = ExtensibilityUtilities.CreateReadResult(dataset, begin, end);
+            var (data, status) = ExtensibilityUtilities.CreateBuffers(dataset, begin, end);
 
-            await dataSource.ReadSingleAsync(datasetPath, result, begin, end, CancellationToken.None);
-            var doubleData = result.GetData<double>();
+            var request = new ReadRequest(datasetPath, data, status);
+            await dataSource.ReadAsync(begin, end, new[] { request }, CancellationToken.None);
+            var doubleData = data.Cast<double>();
 
             Assert.Equal(-0.059998, doubleData.Span[0], precision: 6);
             Assert.Equal(0.427089, doubleData.Span[29], precision: 6);

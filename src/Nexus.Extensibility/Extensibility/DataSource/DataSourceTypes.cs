@@ -13,24 +13,10 @@ namespace Nexus.Extensibility
         public List<Catalog>? Catalogs { get; init; }
     }
 
-    public record Configuration()
-    {
-        public GetConfigurationUnitDelegate Single { get; set; }
-        public List<ConfigurationUnit> All { get; set; }
-    }
-
-    public delegate ConfigurationUnit GetConfigurationUnitDelegate(DatasetRecord datasetRecord);
-
-    public record ReadInfo(
-        string FilePath,
-        DatasetRecord DatasetRecord,
+    public record ReadRequest(
+        string DatasetPath,
         Memory<byte> Data,
-        Memory<byte> Status,
-        DateTime FileBegin,
-        long FileOffset,
-        long FileLength,
-        long FileTotalLength
-    );
+        Memory<byte> Status);
 
     public sealed record BackendSource
     {
@@ -50,13 +36,4 @@ namespace Nexus.Extensibility
                 this.ResourceLocator == other.ResourceLocator;
         }
     }
-
-    public record ConfigurationUnit(
-        string[] PathSegments,
-        string FileTemplate,
-        string? FileDateTimePreselector,
-        string? FileDateTimeSelector,
-        TimeSpan FilePeriod,
-        TimeSpan UtcOffset
-    );
 }

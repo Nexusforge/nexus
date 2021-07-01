@@ -130,7 +130,7 @@ namespace Nexus.Extensibility.Tests
 
             var begin = new DateTime(2019, 12, 31, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 03, 0, 0, 0, DateTimeKind.Utc);
-            var readResult = ExtensibilityUtilities.CreateReadResult(dataset, begin, end);
+            var (data, status) = ExtensibilityUtilities.CreateBuffers(dataset, begin, end);
 
             var expectedLength = 3 * 86400;
             var expectedData = new long[expectedLength];
@@ -153,10 +153,11 @@ namespace Nexus.Extensibility.Tests
             GenerateData(new DateTimeOffset(2020, 01, 02, 09, 40, 0, 0, TimeSpan.Zero));
             GenerateData(new DateTimeOffset(2020, 01, 02, 09, 50, 0, 0, TimeSpan.Zero));
 
-            await dataSource.ReadSingleAsync(datasetPath, readResult, begin, end, CancellationToken.None);
+            var request = new ReadRequest(datasetPath, data, status);
+            await dataSource.ReadAsync(begin, end, new ReadRequest[] { request }, CancellationToken.None);
 
-            Assert.True(expectedData.SequenceEqual(MemoryMarshal.Cast<byte, long>(readResult.Data.Span).ToArray()));
-            Assert.True(expectedStatus.SequenceEqual(readResult.Status.ToArray()));
+            Assert.True(expectedData.SequenceEqual(MemoryMarshal.Cast<byte, long>(data.Span).ToArray()));
+            Assert.True(expectedStatus.SequenceEqual(status.ToArray()));
         }
 
         [Theory]
@@ -182,9 +183,10 @@ namespace Nexus.Extensibility.Tests
             var channel = catalog.Channels.First();
             var dataset = channel.Datasets.First();
             var datasetPath = new DatasetRecord(catalog, channel, dataset).GetPath();
+            var request = new ReadRequest(datasetPath, default, default);
 
             await Assert.ThrowsAsync<ArgumentException>(() =>
-                dataSource.ReadSingleAsync(datasetPath, default, begin, end, CancellationToken.None));
+                dataSource.ReadAsync(begin, end, new ReadRequest[] { request }, CancellationToken.None));
         }
     }
 }
