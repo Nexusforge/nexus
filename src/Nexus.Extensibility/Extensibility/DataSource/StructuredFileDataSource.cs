@@ -36,7 +36,7 @@ namespace Nexus.Extensibility
         //
         // (3) Most nested folders are not empty.
         //
-        // (4) Files periods are constant (except for partially written files). The current
+        // (4) File periods are constant (except for partially written files). The current
         // implementation recognizes the first of two or more partially written files within
         // a file period but ignores the rest.
         //
@@ -181,23 +181,19 @@ namespace Nexus.Extensibility
         protected virtual async Task 
             ReadSingleAsync(DatasetRecord datasetRecord, DateTime begin, DateTime end, Memory<byte> data, Memory<byte> status, CancellationToken cancellationToken)
         {
-            if (begin >= end)
-                throw new ArgumentException("The start time must be before the end time.");
-
-            this.EnsureUtc(begin);
-            this.EnsureUtc(end);
-
             var dataset = datasetRecord.Dataset;
             var catalog = datasetRecord.Catalog;
             var config = (await this.GetConfigurationAsync(catalog.Id, cancellationToken).ConfigureAwait(false)).Single(datasetRecord);
-            var samplesPerDay = dataset.GetSampleRate().SamplesPerDay;
-            var fileTotalLength = (long)Math.Round(config.FilePeriod.TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
+            var samplePeriod = dataset.GetSamplePeriod();
+            var fileLength = config.FilePeriod.Ticks / samplePeriod.Ticks;
 
             var bufferOffset = 0;
             var currentBegin = begin;
-            var remainingPeriod = end - begin;
+            var totalPeriod = end - begin;
+            var consumedPeriod = TimeSpan.Zero;
+            var remainingPeriod = totalPeriod;
 
-            while (remainingPeriod.Ticks > 0)
+            while (consumedPeriod < totalPeriod)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
@@ -220,14 +216,21 @@ namespace Nexus.Extensibility
                 var CB_PLUS_FP = currentBegin + config.FilePeriod;
 
                 int fileBlock;
-                TimeSpan consumedPeriod;
+                TimeSpan currentPeriod;
 
+                /* normal case: current begin may be greater than file begin if: 
+                 * - this is the very first iteration
+                 * - the current file begin later than expected (incomplete file)
+                 */
                 if (CB_MINUS_FP < fileBegin && fileBegin <= currentBegin)
                 {
-                    var fileBeginOffset = currentBegin - fileBegin;
-                    var fileOffset = (long)Math.Round(fileBeginOffset.TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
-                    consumedPeriod = TimeSpan.FromTicks(Math.Min(config.FilePeriod.Ticks - fileBeginOffset.Ticks, remainingPeriod.Ticks));
-                    fileBlock = (int)(fileTotalLength - fileOffset);
+                    var consumedFilePeriod = currentBegin - fileBegin;
+                    var remainingFilePeriod = config.FilePeriod - consumedFilePeriod;
+
+                    currentPeriod = TimeSpan.FromTicks(Math.Min(remainingFilePeriod.Ticks, remainingPeriod.Ticks));
+                    fileBlock = (int)(currentPeriod.Ticks / samplePeriod.Ticks);
+
+                    var fileOffset = consumedFilePeriod.Ticks / samplePeriod.Ticks;
 
                     foreach (var filePath in filePaths)
                     {
@@ -241,8 +244,6 @@ namespace Nexus.Extensibility
                                 var slicedStatus = status
                                     .Slice(bufferOffset, fileBlock);
 
-                                var fileLength = slicedData.Length / dataset.ElementSize;
-
                                 var readInfo = new ReadInfo(
                                     filePath,
                                     datasetRecord,
@@ -250,8 +251,8 @@ namespace Nexus.Extensibility
                                     slicedStatus,
                                     fileBegin,
                                     fileOffset,
-                                    fileLength,
-                                    fileTotalLength
+                                    fileBlock,
+                                    fileLength
                                 );
 
                                 await this
@@ -265,10 +266,11 @@ namespace Nexus.Extensibility
                         }
                     }
                 }
+                /* there was an incomplete file, skip the incomplete part */
                 else if (CB_PLUS_FP <= fileBegin && fileBegin < end)
                 {
-                    consumedPeriod = fileBegin - currentBegin;
-                    fileBlock = (int)Math.Round(consumedPeriod.TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
+                    currentPeriod = fileBegin - currentBegin;
+                    fileBlock = (int)(currentPeriod.Ticks / samplePeriod.Ticks);
                 }
                 else
                 {
@@ -277,8 +279,9 @@ namespace Nexus.Extensibility
 
                 // update loop state
                 bufferOffset += fileBlock;
-                remainingPeriod -= consumedPeriod;
-                currentBegin += consumedPeriod;
+                currentBegin += currentPeriod;
+                consumedPeriod += currentPeriod;
+                remainingPeriod -= currentPeriod;
             }
         }
 
@@ -336,19 +339,7 @@ namespace Nexus.Extensibility
         async Task 
             IDataSource.SetContextAsync(DataSourceContext context, CancellationToken cancellationToken)
         {
-            var url = context.ResourceLocator;
-
-            if (!url.IsAbsoluteUri || url.IsFile)
-            {
-                this.Root = url.IsAbsoluteUri
-                    ? url.AbsolutePath
-                    : url.ToString();
-            }
-            else
-            {
-                throw new Exception("Only file URIs are supported.");
-            }
-
+            this.Root = context.ResourceLocator.ToPath();
             this.Context = context;
 
             await this.SetContextAsync(context, cancellationToken);
@@ -381,8 +372,16 @@ namespace Nexus.Extensibility
         }
 
         async Task
-            IDataSource.ReadAsync(DateTime begin, DateTime end, ReadRequest[] requests, CancellationToken cancellationToken)
+            IDataSource.ReadAsync(DateTime begin, DateTime end, ReadRequest[] requests, IProgress<double> progress, CancellationToken cancellationToken)
         {
+            if (begin >= end)
+                throw new ArgumentException("The start time must be before the end time.");
+
+            this.EnsureUtc(begin);
+            this.EnsureUtc(end);
+
+            var counter = 0.0;
+
             foreach (var (datasetPath, dataBuffer, statusBuffer) in requests)
             {
                 var datasetRecord = Catalog.Find(datasetPath, this.Context.Catalogs);
@@ -395,6 +394,8 @@ namespace Nexus.Extensibility
                 {
                     this.Context.Logger.LogWarning($"Could not read dataset '{datasetPath}'. Reason: {ExtensibilityUtilities.GetFullMessage(ex)}");
                 }
+
+                progress.Report(++counter / requests.Length);
             }
         }
 
@@ -599,7 +600,7 @@ namespace Nexus.Extensibility
                             var folderName = pathSegments[i];
                             var folderTemplate = config.PathSegments[i];
 
-                            var success = DateTime.TryParseExact(
+                            var _ = DateTime.TryParseExact(
                                 folderName,
                                 folderTemplate,
                                 default,

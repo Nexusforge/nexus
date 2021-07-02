@@ -455,7 +455,7 @@ namespace Nexus.Core
             try
             {
                 this.ClientState = ClientState.PrepareDownload;
-                _dataService.Progress.ProgressChanged += eventHandler;
+                _dataService.ReadProgress.ProgressChanged += eventHandler;
 
                 var selectedDatasets = this.GetSelectedDatasets().Select(dataset => dataset.Model).ToList();
 
@@ -477,7 +477,7 @@ namespace Nexus.Core
 
                 var exportJobService = _serviceProvider.GetRequiredService<JobService<ExportJob>>();
 
-                _exportJobControl = exportJobService.AddJob(job, _dataService.Progress, (jobControl, cts) =>
+                _exportJobControl = exportJobService.AddJob(job, _dataService.ReadProgress, (jobControl, cts) =>
                 {
                     var task = _dataService.ExportDataAsync(this.ExportParameters,
                                                             selectedDatasets,
@@ -496,7 +496,7 @@ namespace Nexus.Core
             }
             finally
             {
-                _dataService.Progress.ProgressChanged -= eventHandler;
+                _dataService.ReadProgress.ProgressChanged -= eventHandler;
                 this.ClientState = ClientState.Normal;
                 this.DownloadMessage = string.Empty;
                 this.DownloadProgress = 0;

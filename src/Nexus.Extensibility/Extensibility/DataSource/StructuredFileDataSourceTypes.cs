@@ -19,8 +19,8 @@ namespace Nexus.Extensibility
         Memory<byte> Status,
         DateTime FileBegin,
         long FileOffset,
-        long FileLength,
-        long FileTotalLength
+        long FileBlock,
+        long FileLength
     );
 
     public record ConfigurationUnit(

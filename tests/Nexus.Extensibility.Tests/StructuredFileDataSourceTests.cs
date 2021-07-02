@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Moq;
 using Nexus.DataModel;
 using System;
 using System.Globalization;
@@ -154,7 +155,7 @@ namespace Nexus.Extensibility.Tests
             GenerateData(new DateTimeOffset(2020, 01, 02, 09, 50, 0, 0, TimeSpan.Zero));
 
             var request = new ReadRequest(datasetPath, data, status);
-            await dataSource.ReadAsync(begin, end, new ReadRequest[] { request }, CancellationToken.None);
+            await dataSource.ReadAsync(begin, end, new ReadRequest[] { request, request }, new Progress<double>(), CancellationToken.None);
 
             Assert.True(expectedData.SequenceEqual(MemoryMarshal.Cast<byte, long>(data.Span).ToArray()));
             Assert.True(expectedStatus.SequenceEqual(status.ToArray()));
@@ -186,7 +187,7 @@ namespace Nexus.Extensibility.Tests
             var request = new ReadRequest(datasetPath, default, default);
 
             await Assert.ThrowsAsync<ArgumentException>(() =>
-                dataSource.ReadAsync(begin, end, new ReadRequest[] { request }, CancellationToken.None));
+                dataSource.ReadAsync(begin, end, new ReadRequest[] { request }, default, CancellationToken.None));
         }
     }
 }

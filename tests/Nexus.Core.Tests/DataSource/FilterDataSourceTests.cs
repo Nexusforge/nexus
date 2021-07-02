@@ -130,9 +130,10 @@ namespace Nexus.Core.Tests
                     It.IsAny<DateTime>(), 
                     It.IsAny<DateTime>(),
                     It.IsAny<ReadRequest[]>(),
+                    It.IsAny<IProgress<double>>(),
                     It.IsAny<CancellationToken>())
                 )
-                .Callback<DateTime, DateTime, ReadRequest[], CancellationToken>((begin, end, requests, cancellationToken) =>
+                .Callback<DateTime, DateTime, ReadRequest[], IProgress<double>, CancellationToken>((begin, end, requests, progress, cancellationToken) =>
                 {
                     var (datasetPath, data, status) = requests[0];
 
@@ -175,7 +176,7 @@ namespace Nexus.Core.Tests
             var (data, status) = ExtensibilityUtilities.CreateBuffers(dataset, begin, end);
 
             var request = new ReadRequest(datasetPath, data, status);
-            await dataSource.ReadAsync(begin, end, new[] { request }, CancellationToken.None);
+            await dataSource.ReadAsync(begin, end, new[] { request }, new Progress<double>(), CancellationToken.None);
             var doubleData = data.Cast<double>();
 
             Assert.Equal(Math.Pow(2, 2), doubleData.Span[0]);

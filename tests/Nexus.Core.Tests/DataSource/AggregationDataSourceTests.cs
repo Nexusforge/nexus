@@ -117,7 +117,7 @@ namespace Nexus.Core.Tests
             var (data, status) = ExtensibilityUtilities.CreateBuffers(dataset, begin, end);
 
             var result = new ReadRequest(datasetPath, data, status);
-            await dataSource.ReadAsync(begin, end, new ReadRequest[] { result }, CancellationToken.None);
+            await dataSource.ReadAsync(begin, end, new ReadRequest[] { result }, new Progress<double>(), CancellationToken.None);
             var doubleData = data.Cast<double>();
 
             // assert

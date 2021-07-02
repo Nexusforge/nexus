@@ -1,5 +1,4 @@
-﻿using Nexus.DataModel;
-using System;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,13 +13,14 @@ namespace Nexus.Extensibility
         Task OpenAsync(
             DateTime fileBegin, 
             TimeSpan samplePeriod,
-            DatasetRecord[] datasetRecords, 
+            DatasetRecordGroup[] datasetRecordGroups, 
             CancellationToken cancellationToken);
 
         Task WriteAsync(
             TimeSpan fileOffset,
             TimeSpan samplePeriod,
-            WriteRequest[] writeRequests,
+            WriteRequestGroup[] writeRequestGroups,
+            Progress<double> progress,
             CancellationToken cancellationToken);
 
         Task CloseAsync(

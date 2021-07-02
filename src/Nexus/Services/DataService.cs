@@ -25,12 +25,11 @@ namespace Nexus.Services
         #region Fields
 
         private ILogger _logger;
+        private PathsOptions _pathsOptions;
         private UserIdService _userIdService;
         private IDatabaseManager _databaseManager;
-        private PathsOptions _pathsOptions;
 
         private uint _chunkSize;
-        private PipeWriter x;
 
         #endregion
 
@@ -56,14 +55,17 @@ namespace Nexus.Services
             _pathsOptions = pathsOptions.Value;
             _chunkSize = aggregationOptions.Value.ChunkSizeMB * 1000 * 1000;
 
-            this.Progress = new Progress<ProgressUpdatedEventArgs>();
+            this.ReadProgress = new Progress<double>();
+            this.WriteProgress = new Progress<double>();
         }
 
         #endregion
 
         #region Properties
 
-        public Progress<ProgressUpdatedEventArgs> Progress { get; }
+        public Progress<double> ReadProgress { get; }
+
+        public Progress<double> WriteProgress { get; }
 
         #endregion
 
@@ -168,7 +170,7 @@ namespace Nexus.Services
 
                     var zipArchiveEntry = zipArchive.CreateEntry(Path.GetFileName(filePath), CompressionLevel.Optimal);
 
-                    this.OnProgress(new ProgressUpdatedEventArgs(currentFile / (double)fileCount, $"Writing file {currentFile + 1} / {fileCount} to ZIP archive ..."));
+                    this.OnReadProgress(new ProgressUpdatedEventArgs(currentFile / (double)fileCount, $"Writing file {currentFile + 1} / {fileCount} to ZIP archive ..."));
 
                     using var fileStream = File.Open(filePath, FileMode.Open, FileAccess.Read);
                     using var zipArchiveEntryStream = zipArchiveEntry.Open();
@@ -266,16 +268,10 @@ namespace Nexus.Services
         }
 
         private async Task CreateFilesAsync(ClaimsPrincipal user, 
-                                            ExportContext exportContext,
-                                            DataWriterController dataWriter,
-                                            CancellationToken cancellationToken)
+                                      ExportContext exportContext,
+                                      DataWriterController dataWriter,
+                                      CancellationToken cancellationToken)
         {
-            /* progress handler */
-            var progressHandler = (EventHandler<double>)((sender, e) =>
-            {
-                this.OnProgress(new ProgressUpdatedEventArgs(e, $"Loading data ..."));
-            });
-
             /* reading groups */
             var datasetPipeReaders = new List<DatasetPipeReader>();
             var groupedDatasetRecords = exportContext.DatasetRecords.GroupBy(datasetRecord => datasetRecord.Dataset.BackendSource);
@@ -285,8 +281,6 @@ namespace Nexus.Services
             {
                 var backendSource = datasetRecordGroup.Key;
                 var controller = await _databaseManager.GetDataSourceControllerAsync(user, backendSource, cancellationToken);
-                controller.Progress.ProgressChanged += progressHandler;
-
                 var datasetPipeWriters = new List<DatasetPipeWriter>();
 
                 foreach (var datasetRecord in datasetRecordGroup)
@@ -299,40 +293,31 @@ namespace Nexus.Services
                 readingGroups.Add(new DataReadingGroup(controller, datasetPipeWriters));
             }
 
-            /* go! */
-            try
-            {
-                /* read */
-                var exportParameters = exportContext.ExportParameters;
+            /* read */
+            var exportParameters = exportContext.ExportParameters;
 
-                var reading = DataSourceController.ReadAsync(
-                    exportParameters.Begin,
-                    exportParameters.End,
-                    exportContext.SamplePeriod,
-                    _chunkSize,
-                    readingGroups,
-                    cancellationToken);
+            var reading = DataSourceController.ReadAsync(
+                exportParameters.Begin,
+                exportParameters.End,
+                exportContext.SamplePeriod,
+                _chunkSize,
+                readingGroups,
+                this.ReadProgress,
+                cancellationToken);
 
-                /* write */
-                var writing = dataWriter.WriteAsync(
-                    exportParameters.Begin,
-                    exportParameters.End,
-                    exportContext.SamplePeriod,
-                    exportParameters.FileGranularity,
-                    datasetPipeReaders,
-                    cancellationToken
-                );
+            /* write */
+            var writing = dataWriter.WriteAsync(
+                exportParameters.Begin,
+                exportParameters.End,
+                exportContext.SamplePeriod,
+                exportParameters.FileGranularity,
+                datasetPipeReaders,
+                this.WriteProgress,
+                cancellationToken
+            );
 
-                /* await */
-                await Task.WhenAll(reading, writing);
-            }
-            finally
-            {
-                foreach (var readingGroup in readingGroups)
-                {
-                    readingGroup.Controller.Progress.ProgressChanged -= progressHandler;
-                }
-            }
+            /* wait */
+            await Task.WhenAll(reading, writing);
         }
 
         private void CleanUp(string directoryPath)
@@ -347,9 +332,14 @@ namespace Nexus.Services
             }
         }
 
-        private void OnProgress(ProgressUpdatedEventArgs e)
+        private void OnReadProgress(ProgressUpdatedEventArgs e)
         {
-            ((IProgress<ProgressUpdatedEventArgs>)this.Progress).Report(e);
+            ((IProgress<ProgressUpdatedEventArgs>)this.ReadProgress).Report(e);
+        }
+
+        private void OnWriterogress(ProgressUpdatedEventArgs e)
+        {
+            ((IProgress<ProgressUpdatedEventArgs>)this.WriteProgress).Report(e);
         }
 
         #endregion

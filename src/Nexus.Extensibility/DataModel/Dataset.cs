@@ -1,5 +1,5 @@
 ﻿using Nexus.Extensibility;
-using Nexus.Infrastructure;
+using System;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 
@@ -23,11 +23,37 @@ namespace Nexus.DataModel
 
         #region "Methods"
 
-#warning Encode SamplesPerDay in Dataset instead of name?
+#warning Encode sample period in Dataset instead of name?
 
-        internal SampleRateContainer GetSampleRate(bool ensureNonZeroIntegerHz = false)
+        internal TimeSpan GetSamplePeriod()
         {
-            return new SampleRateContainer(this.Id, ensureNonZeroIntegerHz);
+            var parts = this.Id.Split("_");
+            var frequency = parts[0];
+            parts = frequency.Split(" ");
+
+            var number = long.Parse(parts[0]);
+
+            if (number < 1)
+                throw new Exception($"The frequency value '{number}' is invalid.");
+
+            var unit = parts[1];
+
+            if (unit == "Hz")
+            {
+                return TimeSpan.FromTicks(1000 * 1000 * 1000 / 100 / number);
+            }
+            else
+            {
+                return unit switch
+                {
+                    "ns"    => TimeSpan.FromTicks(number / 100),
+                    "us"    => TimeSpan.FromTicks(number * 1000 / 100),
+                    "ms"    => TimeSpan.FromTicks(number * 1000 * 1000 / 100),
+                    "s"     => TimeSpan.FromTicks(number * 1000 * 1000 * 1000 / 100),
+                    _       => throw new Exception($"The unit '{unit}' is not supported.")
+                };
+            }
+
         }
 
         #endregion

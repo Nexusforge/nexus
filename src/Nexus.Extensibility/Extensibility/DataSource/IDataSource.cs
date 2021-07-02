@@ -9,7 +9,7 @@ namespace Nexus.Extensibility
     public interface IDataSource
     {
         Task SetContextAsync(
-            DataSourceContext context, 
+            DataSourceContext context,
             CancellationToken cancellationToken);
 
         Task<List<Catalog>> GetCatalogsAsync(
@@ -29,6 +29,7 @@ namespace Nexus.Extensibility
             DateTime begin,
             DateTime end,
             ReadRequest[] requests,
+            IProgress<double> progress,
             CancellationToken cancellationToken);
     }
 }

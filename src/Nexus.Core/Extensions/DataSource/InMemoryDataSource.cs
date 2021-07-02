@@ -67,7 +67,7 @@ namespace Nexus.Extensions
             return Task.FromResult(new Random((int)begin.Ticks).NextDouble() / 10 + 0.9);
         }
 
-        public Task ReadAsync(DateTime begin, DateTime end, ReadRequest[] requests, CancellationToken cancellationToken)
+        public Task ReadAsync(DateTime begin, DateTime end, ReadRequest[] requests, IProgress<double> progress, CancellationToken cancellationToken)
         {
             var tasks = requests.Select(request =>
             {
@@ -85,7 +85,7 @@ namespace Nexus.Extensions
                     var endTime = end.ToUnixTimeStamp();
 
                     var elementCount = data.Length / dataset.ElementSize;
-                    var dt = (double)(1 / dataset.GetSampleRate().SamplesPerSecond);
+                    var dt = dataset.GetSamplePeriod().TotalSeconds;
 
                     if (channel.Name.Contains("unix_time"))
                     {

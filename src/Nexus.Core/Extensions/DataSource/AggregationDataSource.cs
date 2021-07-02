@@ -254,38 +254,35 @@ namespace Nexus.Extensions
             });
         }
 
-        public Task ReadAsync(DateTime begin, DateTime end, ReadRequest[] requests, CancellationToken cancellationToken)
+        public Task ReadAsync(DateTime begin, DateTime end, ReadRequest[] requests, IProgress<double> progress, CancellationToken cancellationToken)
         {
             return Task.Run(() =>
             {
+                var counter = 0.0;
+
                 foreach (var (datasetPath, data, status) in requests)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     var (catalog, channel, dataset) = Catalog.Find(datasetPath, _catalogs);
                     var catalogFolderPath = Path.Combine(this.Root, "DATA", WebUtility.UrlEncode(catalog.Id));
-                    var samplesPerDay = new SampleRateContainer(dataset.Id).SamplesPerDay;
+                    var samplePeriod = dataset.GetSamplePeriod();
 
                     if (!Directory.Exists(catalogFolderPath))
                         continue;
 
-                    var periodPerFile = TimeSpan.FromDays(1);
-
                     // read data
-                    var currentBegin = begin.RoundDown(periodPerFile);
-                    var fileLength = (int)Math.Round(periodPerFile.TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
-                    var fileOffset = (int)Math.Round((begin - currentBegin).TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
-                    var bufferOffset = 0;
-                    var remainingBufferLength = data.Length / dataset.ElementSize;
+                    var filePeriod = TimeSpan.FromDays(1);
+                    var fileLength = (int)(filePeriod.Ticks / samplePeriod.Ticks);
 
-                    while (remainingBufferLength > 0)
+                    this.Loop(begin, end, filePeriod, samplePeriod,
+                        (fileBegin, fileOffset, fileBlock, bufferOffset) =>
                     {
                         var filePath = Path.Combine(
                             catalogFolderPath,
-                            currentBegin.ToString("yyyy-MM"),
-                            currentBegin.ToString("dd"),
+                            fileBegin.ToString("yyyy-MM"),
+                            fileBegin.ToString("dd"),
                             $"{channel.Id}_{dataset.Id.Replace(" ", "_")}.nex");
-
-                        var fileBlock = fileLength - fileOffset;
-                        var currentBlock = Math.Min(remainingBufferLength, fileBlock);
 
                         if (File.Exists(filePath))
                         {
@@ -298,11 +295,11 @@ namespace Nexus.Extensions
                                 if (aggregationData.Length == fileLength * dataset.ElementSize)
                                 {
                                     aggregationData
-                                        .Slice(fileOffset * dataset.ElementSize, currentBlock * dataset.ElementSize)
+                                        .Slice(fileOffset * dataset.ElementSize, fileBlock * dataset.ElementSize)
                                         .CopyTo(data.Span.Slice(bufferOffset * dataset.ElementSize));
 
                                     status.Span
-                                        .Slice(bufferOffset, currentBlock)
+                                        .Slice(bufferOffset, fileBlock)
                                         .Fill(1);
                                 }
                             }
@@ -315,13 +312,9 @@ namespace Nexus.Extensions
                                 this.FileAccessManager?.Unregister(filePath);
                             }
                         }
+                    });             
 
-                        // update loop state
-                        fileOffset = 0; // Only the data in the first file may have an offset.
-                        bufferOffset += currentBlock;
-                        remainingBufferLength -= currentBlock;
-                        currentBegin += periodPerFile;
-                    }
+                    progress.Report(++counter / requests.Length);
                 }
 
                 return Task.CompletedTask;
@@ -341,6 +334,32 @@ namespace Nexus.Extensions
             else
             {
                 return false;
+            }
+        }
+
+        private void Loop(DateTime begin, DateTime end, TimeSpan filePeriod, TimeSpan samplePeriod, Action<DateTime, int, int, int> action)
+        {
+            /* This could serve as a reference implementation for other (simple) data readers. */
+            var bufferOffset = 0;
+            var currentBegin = begin;
+            var remainingPeriod = end - begin;
+
+            while (remainingPeriod > TimeSpan.Zero)
+            {
+                var fileBegin = currentBegin.RoundDown(filePeriod);
+                var consumedFilePeriod = currentBegin - fileBegin;
+                var remainingFilePeriod = filePeriod - consumedFilePeriod;
+                var fileOffset = (int)(consumedFilePeriod.Ticks / samplePeriod.Ticks);
+
+                var currentPeriod = TimeSpan.FromTicks(Math.Min(remainingFilePeriod.Ticks, remainingPeriod.Ticks));
+                var fileBlock = (int)(currentPeriod.Ticks / samplePeriod.Ticks);
+
+                action.Invoke(fileBegin, fileOffset, fileBlock, bufferOffset);
+
+                // update loop state
+                bufferOffset += fileBlock;
+                currentBegin += currentPeriod;
+                remainingPeriod -= currentPeriod;
             }
         }
 

@@ -129,10 +129,14 @@ namespace Nexus.Extensions
             return response.Availability;
         }
 
-        public async Task ReadAsync(DateTime begin, DateTime end, ReadRequest[] requests, CancellationToken cancellationToken)
+        public async Task ReadAsync(DateTime begin, DateTime end, ReadRequest[] requests, IProgress<double> progress, CancellationToken cancellationToken)
         {
+            var counter = 0.0;
+
             foreach (var (datasetPath, data, status) in requests)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 var datasetRecord = Catalog.Find(datasetPath, this.Context.Catalogs);
                 var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromMinutes(1));
                 cancellationToken.Register(() => timeoutTokenSource.Cancel());
@@ -147,6 +151,8 @@ namespace Nexus.Extensions
 
                 await _communicator.ReadRawAsync(data, timeoutTokenSource.Token);
                 await _communicator.ReadRawAsync(status, timeoutTokenSource.Token);
+
+                progress.Report(++counter / requests.Length);
             }
         }
 

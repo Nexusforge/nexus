@@ -1,4 +1,4 @@
-﻿using Nexus.Infrastructure;
+﻿using Nexus.DataModel;
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -1,4 +1,4 @@
-﻿namespace Nexus.Infrastructure
+﻿namespace Nexus.DataModel
 {
     public enum NexusDataType
     {

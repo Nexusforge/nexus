@@ -12,7 +12,16 @@ namespace Nexus.Extensibility
         public ILogger Logger { get; init; }
     }
 
+    public record DatasetRecordGroup(
+        Catalog Catalog,
+        string License, 
+        DatasetRecord[] DatasetRecords);
+
+    public record WriteRequestGroup(
+        Catalog Catalog,
+        WriteRequest[] WriteRequests);
+
     public record WriteRequest(
         DatasetRecord DatasetRecord,
-        ReadOnlyMemory<double> data);
+        ReadOnlyMemory<double> Data);
 }

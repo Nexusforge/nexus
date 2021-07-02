@@ -32,7 +32,7 @@ namespace Nexus.DataModel
 
         public Catalog CatalogMeta { get; set; }
 
-        public CatalogSettings CatalogSettings { get; set; }
+        public CatalogProperties CatalogProperties { get; set; }
 
         #endregion
 

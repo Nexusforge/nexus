@@ -110,7 +110,7 @@ namespace Nexus.Controllers
 
             try
             {
-                var jobControl = _exportJobService.AddJob(job, dataService.Progress, (jobControl, cts) =>
+                var jobControl = _exportJobService.AddJob(job, dataService.ReadProgress, (jobControl, cts) =>
                 {
                     var userIdService = _serviceProvider.GetRequiredService<UserIdService>();
                     var task = dataService.ExportDataAsync(parameters, datasetRecords, cts.Token);

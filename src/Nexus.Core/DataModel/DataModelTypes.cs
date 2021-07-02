@@ -23,7 +23,7 @@ namespace Nexus.DataModel
         AcceptLicense = 2
     }
 
-    public record CatalogSettings(string Id)
+    public record CatalogProperties(string Id)
     {
         public string Contact { get; set; }
         public bool IsQualityControlled { get; set; }

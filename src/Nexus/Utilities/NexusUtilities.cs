@@ -36,7 +36,7 @@ namespace Nexus.Utilities
             return NexusUtilities.IsCatalogAccessible(principal, catalogMeta);
         }
 
-        public static bool IsCatalogAccessible(ClaimsPrincipal principal, CatalogMeta catalogMeta)
+        public static bool IsCatalogAccessible(ClaimsPrincipal principal, CatalogProperties catalogMeta)
         {
             if (principal == null)
                 return false;
@@ -63,7 +63,7 @@ namespace Nexus.Utilities
             return false;
         }
 
-        public static bool IsCatalogEditable(ClaimsPrincipal principal, CatalogMeta catalogMeta)
+        public static bool IsCatalogEditable(ClaimsPrincipal principal, CatalogProperties catalogMeta)
         {
             if (principal == null)
                 return false;
@@ -83,7 +83,7 @@ namespace Nexus.Utilities
             return false;
         }
 
-        public static bool IsCatalogVisible(ClaimsPrincipal principal, CatalogMeta catalogMeta, bool isCatalogAccessible)
+        public static bool IsCatalogVisible(ClaimsPrincipal principal, CatalogProperties catalogMeta, bool isCatalogAccessible)
         {
             var identity = principal.Identity;
 

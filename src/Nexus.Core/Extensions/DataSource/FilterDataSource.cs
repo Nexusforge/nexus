@@ -218,15 +218,33 @@ namespace Nexus.Extensions
             return Task.FromResult(1.0);
         }
 
-        public Task ReadAsync(DateTime begin, DateTime end, ReadRequest[] requests, CancellationToken cancellationToken)
+        public Task ReadAsync2(DateTime begin, DateTime end, ReadRequest[] requests, IProgress<double> progress, CancellationToken cancellationToken)
         {
             return Task.Run(() =>
             {
+                var counter = 0.0;
+
                 foreach (var (datasetPath, data, status) in requests)
                 {
                     var (catalog, channel, dataset) = Catalog.Find(datasetPath, _catalogs);
-                    var samplesPerDay = new SampleRateContainer(dataset.Id).SamplesPerDay;
-                    var length = (long)Math.Round((end - begin).TotalDays * samplesPerDay, MidpointRounding.AwayFromZero);
+                    var cacheEntry = _cacheEntries.FirstOrDefault(current => current.SupportedChanneIds.Contains(channel.Id));
+
+
+                }
+
+                return Task.CompletedTask;
+            });
+        }
+
+        public Task ReadAsync(DateTime begin, DateTime end, ReadRequest[] requests, IProgress<double> progress, CancellationToken cancellationToken)
+        {
+            return Task.Run(() =>
+            {
+                var counter = 0.0;
+
+                foreach (var (datasetPath, data, status) in requests)
+                {
+                    var (catalog, channel, dataset) = Catalog.Find(datasetPath, _catalogs);
                     var cacheEntry = _cacheEntries.FirstOrDefault(current => current.SupportedChanneIds.Contains(channel.Id));
 
                     if (cacheEntry is null)
@@ -251,8 +269,9 @@ namespace Nexus.Extensions
                         var dataSourceController = this.GetDataSourceAsync(dataset.BackendSource).Result;
 
 #warning GetData Should be Async! Deadlock may happen
+                        var progress = new Progress<double>();
                         var request = new ReadRequest(datasetRecord.GetPath(), data, status);
-                        dataSourceController.ReadAsync(begin, end, new ReadRequest[] { request }, cancellationToken).Wait();
+                        dataSourceController.DataSource.ReadAsync(begin, end, new ReadRequest[] { request }, progress, cancellationToken).Wait();
                         var doubleData = new double[status.Length];
                         BufferUtilities.ApplyDatasetStatusByDataType(dataset.DataType, data, status, doubleData);
 
@@ -265,6 +284,8 @@ namespace Nexus.Extensions
 
                     cacheEntry.FilterProvider.Filter(begin, end, filter, getData, filterResult);
                     status.Span.Fill(1);
+
+                    progress.Report(++counter / requests.Length);
                 }
             });
         }
