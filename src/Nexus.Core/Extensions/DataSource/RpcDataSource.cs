@@ -133,11 +133,11 @@ namespace Nexus.Extensions
         {
             var counter = 0.0;
 
-            foreach (var (representationPath, data, status) in requests)
+            foreach (var (resourcePath, data, status) in requests)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var representationRecord = ResourceCatalog.Find(representationPath, this.Context.Catalogs);
+                var representationRecord = ResourceCatalog.Find(resourcePath, this.Context.Catalogs);
                 var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromMinutes(1));
                 cancellationToken.Register(() => timeoutTokenSource.Cancel());
 

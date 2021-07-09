@@ -224,9 +224,9 @@ namespace Nexus.Extensions
             {
                 var counter = 0.0;
 
-                foreach (var (representationPath, data, status) in requests)
+                foreach (var (resourcePath, data, status) in requests)
                 {
-                    var (catalog, resource, representation) = ResourceCatalog.Find(representationPath, _catalogs);
+                    var (catalog, resource, representation) = ResourceCatalog.Find(resourcePath, _catalogs);
                     var cacheEntry = _cacheEntries.FirstOrDefault(current => current.SupportedChanneIds.Contains(resource.Id));
 
 
@@ -242,9 +242,9 @@ namespace Nexus.Extensions
             {
                 var counter = 0.0;
 
-                foreach (var (representationPath, data, status) in requests)
+                foreach (var (resourcePath, data, status) in requests)
                 {
-                    var (catalog, resource, representation) = ResourceCatalog.Find(representationPath, _catalogs);
+                    var (catalog, resource, representation) = ResourceCatalog.Find(resourcePath, _catalogs);
                     var cacheEntry = _cacheEntries.FirstOrDefault(current => current.SupportedChanneIds.Contains(resource.Id));
 
                     if (cacheEntry is null)

@@ -382,9 +382,9 @@ namespace Nexus.Extensibility
 
             var counter = 0.0;
 
-            foreach (var (representationPath, dataBuffer, statusBuffer) in requests)
+            foreach (var (resourcePath, dataBuffer, statusBuffer) in requests)
             {
-                var representationRecord = ResourceCatalog.Find(representationPath, this.Context.Catalogs);
+                var representationRecord = ResourceCatalog.Find(resourcePath, this.Context.Catalogs);
 
                 try
                 {
@@ -392,7 +392,7 @@ namespace Nexus.Extensibility
                 }
                 catch (Exception ex)
                 {
-                    this.Context.Logger.LogWarning($"Could not read representation '{representationPath}'. Reason: {ExtensibilityUtilities.GetFullMessage(ex)}");
+                    this.Context.Logger.LogWarning($"Could not read representation '{resourcePath}'. Reason: {ExtensibilityUtilities.GetFullMessage(ex)}");
                 }
 
                 progress.Report(++counter / requests.Length);

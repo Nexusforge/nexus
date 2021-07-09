@@ -24,18 +24,18 @@ namespace Nexus.DataModel
 
         public bool TryFind(string catalogId, string resourceIdOrName, string representationId, out RepresentationRecord representationRecord, bool includeName = false)
         {
-            var representationPath = $"{catalogId}/{resourceIdOrName}/{representationId}";
-            return this.TryFind(representationPath, out representationRecord, includeName);
+            var resourcePath = $"{catalogId}/{resourceIdOrName}/{representationId}";
+            return this.TryFind(resourcePath, out representationRecord, includeName);
         }
 
 
-        public bool TryFind(string representationPath, out RepresentationRecord representationRecord, bool includeName = false)
+        public bool TryFind(string resourcePath, out RepresentationRecord representationRecord, bool includeName = false)
         {
             representationRecord = default(RepresentationRecord);
 
             foreach (var container in this.CatalogContainers)
             {
-                if (container.Catalog.TryFind(representationPath, out representationRecord, includeName))
+                if (container.Catalog.TryFind(resourcePath, out representationRecord, includeName))
                     break;
             }
 

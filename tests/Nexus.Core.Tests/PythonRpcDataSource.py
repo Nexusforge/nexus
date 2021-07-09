@@ -83,7 +83,7 @@ class PythonDataSource(IDataSource):
 
         return actualFileCount / maxFileCount
 
-    async def read_single_async(self, representationPath: str, length: int, begin: datetime, end: datetime):
+    async def read_single_async(self, resourcePath: str, length: int, begin: datetime, end: datetime):
 
         # ############################################################################
         # Warning! This is a simplified implementation and not generally applicable! #
@@ -99,7 +99,7 @@ class PythonDataSource(IDataSource):
         # stored as 8 byte little-endian integers) with a sample rate of 1 Hz.
 
         # ensure the catalogs have already been loaded
-        (catalog, resource, representation) = self._find(representationPath)
+        (catalog, resource, representation) = self._find(resourcePath)
 
         # representation ID = "1 Hz_mean" -> extract "1"
         samplesPerSecond = int(representation.Id.split(" ")[0])
@@ -150,9 +150,9 @@ class PythonDataSource(IDataSource):
 
         return (data, status)
 
-    def _find(self, representationPath):
+    def _find(self, resourcePath):
 
-        pathParts = representationPath.split("/")
+        pathParts = resourcePath.split("/")
 
         representationId = pathParts[-1]
         resourceId = pathParts[-2]

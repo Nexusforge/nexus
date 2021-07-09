@@ -260,11 +260,11 @@ namespace Nexus.Extensions
             {
                 var counter = 0.0;
 
-                foreach (var (representationPath, data, status) in requests)
+                foreach (var (resourcePath, data, status) in requests)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    var (catalog, resource, representation) = ResourceCatalog.Find(representationPath, _catalogs);
+                    var (catalog, resource, representation) = ResourceCatalog.Find(resourcePath, _catalogs);
                     var catalogFolderPath = Path.Combine(this.Root, "DATA", WebUtility.UrlEncode(catalog.Id));
                     var samplePeriod = representation.GetSamplePeriod();
 

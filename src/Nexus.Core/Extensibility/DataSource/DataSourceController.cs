@@ -106,7 +106,7 @@ namespace Nexus.Extensibility
             RepresentationRecord representationRecord,
             PipeWriter dataWriter,
             PipeWriter? statusWriter,
-            IProgress<double> progress,
+            IProgress<double>? progress,
             CancellationToken cancellationToken)
         {
             /* This (instance) method calls into 

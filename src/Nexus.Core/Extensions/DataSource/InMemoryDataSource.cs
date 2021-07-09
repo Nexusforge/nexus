@@ -71,13 +71,13 @@ namespace Nexus.Extensions
         {
             var tasks = requests.Select(request =>
             {
-                var (representationPath, data, status) = request;
+                var (resourcePath, data, status) = request;
 
                 return Task.Run(() =>
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    var (catalog, resource, representation) = ResourceCatalog.Find(representationPath, this.Context.Catalogs);
+                    var (catalog, resource, representation) = ResourceCatalog.Find(resourcePath, this.Context.Catalogs);
 
                     double[] dataDouble;
 

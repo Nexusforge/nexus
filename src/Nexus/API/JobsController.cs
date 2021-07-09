@@ -73,10 +73,10 @@ namespace Nexus.Controllers
 
             try
             {
-                representationRecords = parameters.ResourcePaths.Select(representationPath =>
+                representationRecords = parameters.ResourcePaths.Select(resourcePath =>
                 {
-                    if (!_databaseManager.Database.TryFind(representationPath, out var representationRecord))
-                        throw new ValidationException($"Could not find the resource with path '{representationPath}'.");
+                    if (!_databaseManager.Database.TryFind(resourcePath, out var representationRecord))
+                        throw new ValidationException($"Could not find the resource with path '{resourcePath}'.");
 
                     return representationRecord;
                 }).ToList();

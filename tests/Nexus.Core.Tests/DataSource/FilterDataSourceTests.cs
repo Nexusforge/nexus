@@ -135,7 +135,7 @@ namespace Nexus.Core.Tests
                 )
                 .Callback<DateTime, DateTime, ReadRequest[], IProgress<double>, CancellationToken>((begin, end, requests, progress, cancellationToken) =>
                 {
-                    var (representationPath, data, status) = requests[0];
+                    var (resourcePath, data, status) = requests[0];
 
                     var doubleData = data.Cast<double>();
                     doubleData.Span[0] = 2;
@@ -169,13 +169,13 @@ namespace Nexus.Core.Tests
             var catalog2 = catalogs.First();
             var resource2 = catalog2.Resources.First();
             var representation2 = resource2.Representations.First();
-            var representationPath = new RepresentationRecord(catalog2, resource2, representation2).GetPath();
+            var resourcePath = new RepresentationRecord(catalog2, resource2, representation2).GetPath();
 
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 02, 0, 0, 0, DateTimeKind.Utc);
             var (data, status) = ExtensibilityUtilities.CreateBuffers(representation, begin, end);
 
-            var request = new ReadRequest(representationPath, data, status);
+            var request = new ReadRequest(resourcePath, data, status);
             await dataSource.ReadAsync(begin, end, new[] { request }, new Progress<double>(), CancellationToken.None);
             var doubleData = data.Cast<double>();
 
