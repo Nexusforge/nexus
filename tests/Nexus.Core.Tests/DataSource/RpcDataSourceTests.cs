@@ -52,7 +52,7 @@ namespace Nexus.Core.Tests
             var actualNames = actual.Resources.Select(resource => resource.Name).ToList();
             var actualGroups = actual.Resources.Select(resource => resource.Group).ToList();
             var actualUnits = actual.Resources.Select(resource => resource.Unit).ToList();
-            var actualDataTypes = actual.Resources.SelectMany(resource => resource.Datasets.Select(dataset => dataset.DataType)).ToList();
+            var actualDataTypes = actual.Resources.SelectMany(resource => resource.Representations.Select(representation => representation.DataType)).ToList();
             var actualMetadata2 = actual.Resources.Select(resource => resource.Metadata).ToList();
 
             var expectedMetadata1 = new Dictionary<string, string>() { ["a"] = "b" };
@@ -79,11 +79,11 @@ namespace Nexus.Core.Tests
         {
             // arrange
 
-            var dataset = new Dataset() { Id = "1 Hz", DataType = NexusDataType.INT32 };
+            var representation = new Representation() { Id = "1 Hz", DataType = NexusDataType.INT32 };
 
             var resourceGuid = Guid.NewGuid();
             var resource = new Resource() { Id = resourceGuid, Name = "resource 1", Group = "group 1", Unit = "unit 1" };
-            resource.Datasets.Add(dataset);
+            resource.Representations.Add(representation);
 
             var catalog = new Catalog() { Id = "/M/F/G" };
             catalog.Resources.Add(resource);
@@ -113,7 +113,7 @@ namespace Nexus.Core.Tests
             var actualNames = actual.Resources.Select(resource => resource.Name).ToList();
             var actualGroups = actual.Resources.Select(resource => resource.Group).ToList();
             var actualUnits = actual.Resources.Select(resource => resource.Unit).ToList();
-            var actualDataTypes = actual.Resources.SelectMany(resource => resource.Datasets.Select(dataset => dataset.DataType)).ToList();
+            var actualDataTypes = actual.Resources.SelectMany(resource => resource.Representations.Select(representation => representation.DataType)).ToList();
             var actualMetadata2 = actual.Resources.Select(resource => resource.Metadata).ToList();
 
             var expectedNames = new List<string>() { "resource 1" };
@@ -200,12 +200,12 @@ namespace Nexus.Core.Tests
             var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
             var catalog = catalogs.First();
             var resource = catalog.Resources.First();
-            var dataset = resource.Datasets.First();
-            var datasetPath = new DatasetRecord(catalog, resource, dataset).GetPath();
+            var representation = resource.Representations.First();
+            var representationPath = new RepresentationRecord(catalog, resource, representation).GetPath();
 
             var begin = new DateTime(2019, 12, 31, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 03, 0, 0, 0, DateTimeKind.Utc);
-            var (data, status) = ExtensibilityUtilities.CreateBuffers(dataset, begin, end);
+            var (data, status) = ExtensibilityUtilities.CreateBuffers(representation, begin, end);
 
             var length = 3 * 86400;
             var expectedData = new long[length];
@@ -228,7 +228,7 @@ namespace Nexus.Core.Tests
             GenerateData(new DateTimeOffset(2020, 01, 02, 09, 40, 0, 0, TimeSpan.Zero));
             GenerateData(new DateTimeOffset(2020, 01, 02, 09, 50, 0, 0, TimeSpan.Zero));
 
-            var request = new ReadRequest(datasetPath, data, status);
+            var request = new ReadRequest(representationPath, data, status);
             await dataSource.ReadAsync(begin, end, new ReadRequest[] { request }, new Progress<double>(), CancellationToken.None);
             var longData = data.Cast<long>();
 

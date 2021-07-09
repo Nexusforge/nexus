@@ -41,7 +41,7 @@ namespace Nexus.Extensibility
         // a file period but ignores the rest.
         //
         // (5) UTC offset is a correction factor that should be selected so that the parsed
-        // date/time of a file points to the UTC date/time of the very first dataset within
+        // date/time of a file points to the UTC date/time of the very first representation within
         // that file.
         //
         // (6) Only file URLs are supported
@@ -179,12 +179,12 @@ namespace Nexus.Extensibility
         }
 
         protected virtual async Task 
-            ReadSingleAsync(DatasetRecord datasetRecord, DateTime begin, DateTime end, Memory<byte> data, Memory<byte> status, CancellationToken cancellationToken)
+            ReadSingleAsync(RepresentationRecord representationRecord, DateTime begin, DateTime end, Memory<byte> data, Memory<byte> status, CancellationToken cancellationToken)
         {
-            var dataset = datasetRecord.Dataset;
-            var catalog = datasetRecord.Catalog;
-            var config = (await this.GetConfigurationAsync(catalog.Id, cancellationToken).ConfigureAwait(false)).Single(datasetRecord);
-            var samplePeriod = dataset.GetSamplePeriod();
+            var representation = representationRecord.Representation;
+            var catalog = representationRecord.Catalog;
+            var config = (await this.GetConfigurationAsync(catalog.Id, cancellationToken).ConfigureAwait(false)).Single(representationRecord);
+            var samplePeriod = representation.GetSamplePeriod();
             var fileLength = config.FilePeriod.Ticks / samplePeriod.Ticks;
 
             var bufferOffset = 0;
@@ -239,14 +239,14 @@ namespace Nexus.Extensibility
                             try
                             {
                                 var slicedData = data
-                                    .Slice(bufferOffset * dataset.ElementSize, fileBlock * dataset.ElementSize);
+                                    .Slice(bufferOffset * representation.ElementSize, fileBlock * representation.ElementSize);
 
                                 var slicedStatus = status
                                     .Slice(bufferOffset, fileBlock);
 
                                 var readInfo = new ReadInfo(
                                     filePath,
-                                    datasetRecord,
+                                    representationRecord,
                                     slicedData,
                                     slicedStatus,
                                     fileBegin,
@@ -382,17 +382,17 @@ namespace Nexus.Extensibility
 
             var counter = 0.0;
 
-            foreach (var (datasetPath, dataBuffer, statusBuffer) in requests)
+            foreach (var (representationPath, dataBuffer, statusBuffer) in requests)
             {
-                var datasetRecord = Catalog.Find(datasetPath, this.Context.Catalogs);
+                var representationRecord = Catalog.Find(representationPath, this.Context.Catalogs);
 
                 try
                 {
-                    await this.ReadSingleAsync(datasetRecord, begin, end, dataBuffer, statusBuffer, cancellationToken);
+                    await this.ReadSingleAsync(representationRecord, begin, end, dataBuffer, statusBuffer, cancellationToken);
                 }
                 catch (Exception ex)
                 {
-                    this.Context.Logger.LogWarning($"Could not read dataset '{datasetPath}'. Reason: {ExtensibilityUtilities.GetFullMessage(ex)}");
+                    this.Context.Logger.LogWarning($"Could not read representation '{representationPath}'. Reason: {ExtensibilityUtilities.GetFullMessage(ex)}");
                 }
 
                 progress.Report(++counter / requests.Length);

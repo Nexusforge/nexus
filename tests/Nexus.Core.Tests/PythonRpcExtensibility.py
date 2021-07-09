@@ -12,7 +12,7 @@ from typing import Awaitable, Dict, List, Tuple
 from urllib.parse import ParseResult, urlparse
 from uuid import UUID, uuid3
 
-from PythonRpcDataModel import Catalog, Dataset
+from PythonRpcDataModel import Catalog, Representation
 
 
 class LogLevel(enum.Enum):
@@ -72,7 +72,7 @@ class IDataSource(ABC):
         pass
 
     @abstractmethod
-    async def read_single_async(self, datasetPath: str, length: int, begin: datetime, end: datetime) -> Awaitable[Tuple[List[float], bytes]]:
+    async def read_single_async(self, representationPath: str, length: int, begin: datetime, end: datetime) -> Awaitable[Tuple[List[float], bytes]]:
         pass
 
     def dispose(self):
@@ -220,11 +220,11 @@ class RpcCommunicator:
 
         elif request["target"] == "ReadSingle":
 
-            datasetPath = request["arguments"][0]
+            representationPath = request["arguments"][0]
             length = request["arguments"][1]
             begin = datetime.strptime(request["arguments"][2], "%Y-%m-%dT%H:%M:%SZ")
             end = datetime.strptime(request["arguments"][3], "%Y-%m-%dT%H:%M:%SZ")
-            (data, status) = await self._dataSource.read_single_async(datasetPath, length, begin, end)
+            (data, status) = await self._dataSource.read_single_async(representationPath, length, begin, end)
 
             response =  ({
                 "invocationId": request["invocationId"],

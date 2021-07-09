@@ -41,7 +41,7 @@ namespace Nexus.Controllers
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="resourceId">The resource identifier.</param>
-        /// <param name="datasetId">The dataset identifier.</param>
+        /// <param name="representationId">The representation identifier.</param>
         /// <param name="begin">Start date/time.</param>
         /// <param name="end">End date/time.</param>
         /// <param name="cancellationToken">A cancellation token.</param>
@@ -51,7 +51,7 @@ namespace Nexus.Controllers
         public async Task<IActionResult> GetStream(
             [BindRequired] string catalogId,
             [BindRequired] string resourceId,
-            [BindRequired] string datasetId,
+            [BindRequired] string representationId,
             [BindRequired] DateTime begin,
             [BindRequired] DateTime end,
             CancellationToken cancellationToken)
@@ -61,7 +61,7 @@ namespace Nexus.Controllers
 
             catalogId = WebUtility.UrlDecode(catalogId);
             resourceId = WebUtility.UrlDecode(resourceId);
-            datasetId = WebUtility.UrlDecode(datasetId);
+            representationId = WebUtility.UrlDecode(representationId);
 
             var remoteIpAddress = this.HttpContext.Connection.RemoteIpAddress;
 
@@ -81,13 +81,13 @@ namespace Nexus.Controllers
 
             try
             {
-                // dataset
-                var path = $"{catalogId}/{resourceId}/{datasetId}";
+                // representation
+                var path = $"{catalogId}/{resourceId}/{representationId}";
 
-                if (!_databaseManager.Database.TryFind(path, out var datasetRecord))
-                    return this.NotFound($"Could not find dataset on path '{path}'.");
+                if (!_databaseManager.Database.TryFind(path, out var representationRecord))
+                    return this.NotFound($"Could not find representation on path '{path}'.");
 
-                var catalog = datasetRecord.Catalog;
+                var catalog = representationRecord.Catalog;
 
                 // security check
                 if (!NexusUtilities.IsCatalogAccessible(this.User, catalog.Id, _databaseManager.Database))
@@ -96,11 +96,11 @@ namespace Nexus.Controllers
                 // controller
                 using var controller = await _databaseManager.GetDataSourceControllerAsync(
                     _userIdService.User, 
-                    datasetRecord.Dataset.BackendSource,
+                    representationRecord.Representation.BackendSource,
                     cancellationToken);
 
                 // read data
-                var stream = controller.ReadAsStream(begin, end, datasetRecord);
+                var stream = controller.ReadAsStream(begin, end, representationRecord);
 
                 _logger.LogInformation($"{message} Done.");
 

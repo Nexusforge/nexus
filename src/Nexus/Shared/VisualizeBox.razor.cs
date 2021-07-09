@@ -51,7 +51,7 @@ namespace Nexus.Shared
 					{
 						await this.UpdateChartAsync();
 					}
-					else if (e.PropertyName == nameof(UserState.SelectedDatasets))
+					else if (e.PropertyName == nameof(UserState.SelectedRepresentations))
 					{
 						await this.UpdateChartAsync();
 					}
@@ -101,17 +101,17 @@ namespace Nexus.Shared
 		{
 			var chartEntries = new List<ChartEntry>();
 
-			foreach (var dataset in this.UserState.SelectedDatasets.ToList())
+			foreach (var representation in this.UserState.SelectedRepresentations.ToList())
 			{
-				var name = dataset.Parent.Name;
-				var datasetNameParts = dataset.Name.Split('_');
+				var name = representation.Parent.Name;
+				var representationNameParts = representation.Name.Split('_');
 
-				if (datasetNameParts.Count() == 2)
-					name += $" ({datasetNameParts[1]})";
+				if (representationNameParts.Count() == 2)
+					name += $" ({representationNameParts[1]})";
 
-				var path = dataset.Model.GetPath();
+				var path = representation.Model.GetPath();
 
-				chartEntries.Add(new ChartEntry(name, path, dataset.Parent.Unit));
+				chartEntries.Add(new ChartEntry(name, path, representation.Parent.Unit));
 			}
 
 			return chartEntries;

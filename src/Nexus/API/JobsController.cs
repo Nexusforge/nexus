@@ -68,17 +68,17 @@ namespace Nexus.Controllers
             parameters.Begin = parameters.Begin.ToUniversalTime();
             parameters.End = parameters.End.ToUniversalTime();
 
-            // translate resource paths to datasets
-            List<DatasetRecord> datasetRecords;
+            // translate resource paths to representations
+            List<RepresentationRecord> representationRecords;
 
             try
             {
-                datasetRecords = parameters.ResourcePaths.Select(datasetPath =>
+                representationRecords = parameters.ResourcePaths.Select(representationPath =>
                 {
-                    if (!_databaseManager.Database.TryFind(datasetPath, out var datasetRecord))
-                        throw new ValidationException($"Could not find the resource with path '{datasetPath}'.");
+                    if (!_databaseManager.Database.TryFind(representationPath, out var representationRecord))
+                        throw new ValidationException($"Could not find the resource with path '{representationPath}'.");
 
-                    return datasetRecord;
+                    return representationRecord;
                 }).ToList();
             }
             catch (ValidationException ex)
@@ -87,11 +87,11 @@ namespace Nexus.Controllers
             }
 
             // check that there is anything to export
-            if (!datasetRecords.Any())
+            if (!representationRecords.Any())
                 return this.BadRequest("The list of resource paths is empty.");
 
             // security check
-            var catalogIds = datasetRecords.Select(datasetRecord => datasetRecord.Catalog.Id).Distinct();
+            var catalogIds = representationRecords.Select(representationRecord => representationRecord.Catalog.Id).Distinct();
 
             foreach (var catalogId in catalogIds)
             {
@@ -113,7 +113,7 @@ namespace Nexus.Controllers
                 var jobControl = _exportJobService.AddJob(job, dataService.ReadProgress, (jobControl, cts) =>
                 {
                     var userIdService = _serviceProvider.GetRequiredService<UserIdService>();
-                    var task = dataService.ExportDataAsync(parameters, datasetRecords, cts.Token);
+                    var task = dataService.ExportDataAsync(parameters, representationRecords, cts.Token);
 
                     return task;
                 });

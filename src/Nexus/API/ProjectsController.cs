@@ -283,13 +283,13 @@ namespace Nexus.Controllers
         }
 
         /// <summary>
-        /// Gets a list of all datasets in the specified catalog and resource.
+        /// Gets a list of all representations in the specified catalog and resource.
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="resourceId">The resource identifier.</param>
         /// <returns></returns>
-        [HttpGet("{catalogId}/resources/{resourceId}/datasets")]
-        public async Task<ActionResult<List<Dataset>>> GetDatasets(
+        [HttpGet("{catalogId}/resources/{resourceId}/representations")]
+        public async Task<ActionResult<List<Representation>>> GetRepresentations(
             string catalogId,
             string resourceId)
         {
@@ -300,7 +300,7 @@ namespace Nexus.Controllers
             resourceId = WebUtility.UrlDecode(resourceId);
 
             // log
-            var message = $"User '{_userIdService.GetUserId()}' requests datasets for resource '{catalogId}/{resourceId}' ...";
+            var message = $"User '{_userIdService.GetUserId()}' requests representations for resource '{catalogId}/{resourceId}' ...";
             _logger.LogInformation(message);
 
             try
@@ -316,15 +316,15 @@ namespace Nexus.Controllers
                                 current => current.Name == resourceId);
 
                         if (resource == null)
-                            return Task.FromResult((ActionResult<List<Dataset>>)this.NotFound($"{catalogId}/{resourceId}"));
+                            return Task.FromResult((ActionResult<List<Representation>>)this.NotFound($"{catalogId}/{resourceId}"));
 
                         _logger.LogInformation($"{message} Done.");
 
-                        var response = resource.Datasets.Select(dataset 
-                            => this.CreateDatasetResponse(dataset))
+                        var response = resource.Representations.Select(representation 
+                            => this.CreateRepresentationResponse(representation))
                             .ToList();
 
-                        return Task.FromResult((ActionResult<List<Dataset>>)response);
+                        return Task.FromResult((ActionResult<List<Representation>>)response);
                     });
             }
             catch (Exception ex)
@@ -335,32 +335,32 @@ namespace Nexus.Controllers
         }
 
         /// <summary>
-        /// Gets the specified dataset.
+        /// Gets the specified representation.
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="resourceId">The resource identifier.</param>
-        /// <param name="datasetId">The dataset identifier.</param>
+        /// <param name="representationId">The representation identifier.</param>
         /// <returns></returns>
-        [HttpGet("{catalogId}/resources/{resourceId}/datasets/{datasetId}")]
-        public async Task<ActionResult<Dataset>> GetDataset(
+        [HttpGet("{catalogId}/resources/{resourceId}/representations/{representationId}")]
+        public async Task<ActionResult<Representation>> GetRepresentation(
             string catalogId,
             string resourceId,
-            string datasetId)
+            string representationId)
         {
             if (_databaseManager.Database == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
 
             catalogId = WebUtility.UrlDecode(catalogId);
             resourceId = WebUtility.UrlDecode(resourceId);
-            datasetId = WebUtility.UrlDecode(datasetId);
+            representationId = WebUtility.UrlDecode(representationId);
 
             // log
-            var message = $"User '{_userIdService.GetUserId()}' requests dataset '{catalogId}/{resourceId}/{datasetId}' ...";
+            var message = $"User '{_userIdService.GetUserId()}' requests representation '{catalogId}/{resourceId}/{representationId}' ...";
             _logger.LogInformation(message);
 
             try
             {
-                return await this.ProcessCatalogIdAsync<Dataset>(catalogId, message,
+                return await this.ProcessCatalogIdAsync<Representation>(catalogId, message,
                     (catalog, catalogMeta) =>
                     {
                         var resource = catalog.Resources.FirstOrDefault(
@@ -371,17 +371,17 @@ namespace Nexus.Controllers
                                 current => current.Name == resourceId);
 
                         if (resource == null)
-                            return Task.FromResult((ActionResult<Dataset>)this.NotFound($"{catalogId}/{resourceId}"));
+                            return Task.FromResult((ActionResult<Representation>)this.NotFound($"{catalogId}/{resourceId}"));
 
-                        var dataset = resource.Datasets.FirstOrDefault(
-                           current => current.Id == datasetId);
+                        var representation = resource.Representations.FirstOrDefault(
+                           current => current.Id == representationId);
 
-                        if (dataset == null)
-                            return Task.FromResult((ActionResult<Dataset>)this.NotFound($"{catalogId}/{resourceId}/{dataset}"));
+                        if (representation == null)
+                            return Task.FromResult((ActionResult<Representation>)this.NotFound($"{catalogId}/{resourceId}/{representation}"));
 
                         _logger.LogInformation($"{message} Done.");
 
-                        return Task.FromResult((ActionResult<Dataset>)this.CreateDatasetResponse(dataset));
+                        return Task.FromResult((ActionResult<Representation>)this.CreateRepresentationResponse(representation));
                     });
             }
             catch (Exception ex)
@@ -480,12 +480,12 @@ namespace Nexus.Controllers
             };
         }
 
-        private Dataset CreateDatasetResponse(DataModel.Dataset dataset)
+        private Representation CreateRepresentationResponse(DataModel.Representation representation)
         {
-            return new Dataset()
+            return new Representation()
             {
-                Id = dataset.Id,
-                DataType = dataset.DataType
+                Id = representation.Id,
+                DataType = representation.DataType
             };
         }
 
@@ -560,7 +560,7 @@ namespace Nexus.Controllers
             public string SpecialInfo { get; set; }
         }
 
-        public record Dataset()
+        public record Representation()
         {
             public string Id { get; set; }
             public NexusDataType DataType { get; set; }

@@ -70,7 +70,7 @@ namespace Nexus.Services
                 var backendSources = container
                     .Catalog
                     .Resources
-                    .SelectMany(resource => resource.Datasets.Select(dataset => dataset.BackendSource))
+                    .SelectMany(resource => resource.Representations.Select(representation => representation.BackendSource))
                     .Distinct()
                     .Where(backendSource => backendSource != state.AggregationBackendSource)
                     .ToList();
@@ -85,7 +85,7 @@ namespace Nexus.Services
                     // create resource to aggregations map
                     var aggregationResources = container.Catalog.Resources
                         // find all resources for current reader backend source
-                        .Where(resource => resource.Datasets.Any(dataset => dataset.BackendSource == backendSource))
+                        .Where(resource => resource.Representations.Any(representation => representation.BackendSource == backendSource))
                         // find all aggregations for current resource
                         .Select(resource =>
                         {
@@ -193,13 +193,13 @@ namespace Nexus.Services
 
                     try
                     {
-                        var dataset = aggregationResource.Resource.Datasets.First();
+                        var representation = aggregationResource.Resource.Representations.First();
 
                         var parameters = new object[]
                         {
                             targetDirectoryPath,
                             controller,
-                            dataset,
+                            representation,
                             aggregationResource.Aggregations,
                             date,
                             aggregationChunkSizeMB,
@@ -211,7 +211,7 @@ namespace Nexus.Services
                             this, 
                             nameof(this.OrchestrateAggregationAsync),
                             BindingFlags.Instance | BindingFlags.NonPublic,
-                            NexusCoreUtilities.GetTypeFromNexusDataType(dataset.DataType),
+                            NexusCoreUtilities.GetTypeFromNexusDataType(representation.DataType),
                             parameters);
                     }
                     catch (TaskCanceledException)
@@ -228,7 +228,7 @@ namespace Nexus.Services
 
         private async Task OrchestrateAggregationAsync<T>(string targetDirectoryPath,
                                                            DataSourceController dataSourceController,
-                                                           DatasetRecord datasetRecord,
+                                                           RepresentationRecord representationRecord,
                                                            List<Aggregation> aggregations,
                                                            DateTime date,
                                                            uint aggregationChunkSizeMB,
@@ -236,11 +236,11 @@ namespace Nexus.Services
                                                            CancellationToken cancellationToken) where T : unmanaged
         {
             // check source sample rate
-            var _ = new SampleRateContainer(datasetRecord.Dataset.Id, ensureNonZeroIntegerHz: true);
+            var _ = new SampleRateContainer(representationRecord.Representation.Id, ensureNonZeroIntegerHz: true);
 
             // prepare variables
             var units = new List<AggregationUnit>();
-            var resource = datasetRecord.Resource;
+            var resource = representationRecord.Resource;
 
             // prepare buffers
             foreach (var aggregation in aggregations)
@@ -314,13 +314,13 @@ namespace Nexus.Services
                 date,
                 endDate,
                 chunkSize,
-                datasetRecord,
+                representationRecord,
                 dataPipe.Writer,
                 statusPipe.Writer,
                 cancellationToken);
 
             var writing = this.AggregateSingleAsync<T>(
-                datasetRecord, 
+                representationRecord, 
                 dataPipe.Reader,
                 statusPipe.Reader,
                 units,
@@ -349,7 +349,7 @@ namespace Nexus.Services
         }
 
         private async Task AggregateSingleAsync<T>(
-            DatasetRecord datasetRecord,
+            RepresentationRecord representationRecord,
             PipeReader dataReader,
             PipeReader statusReader, 
             List<AggregationUnit> units,
@@ -374,7 +374,7 @@ namespace Nexus.Services
                     cancellationToken.ThrowIfCancellationRequested();
 
                     var typedDataBuffer = new ReadonlyCastMemoryManager<byte, T>(dataBuffer).Memory;
-                    this.ApplyAggregationFunction<T>(datasetRecord.Dataset, typedDataBuffer, statusBuffer, units);
+                    this.ApplyAggregationFunction<T>(representationRecord.Representation, typedDataBuffer, statusBuffer, units);
                 }
 
                 // advance
@@ -389,13 +389,13 @@ namespace Nexus.Services
             await statusReader.CompleteAsync();
         }
 
-        private void ApplyAggregationFunction<T>(Dataset dataset,
+        private void ApplyAggregationFunction<T>(Representation representation,
                                                  ReadOnlyMemory<T> data,
                                                  ReadOnlyMemory<byte> status,
                                                  List<AggregationUnit> aggregationUnits) where T : unmanaged
         {
             var nanLimit = 0.99;
-            var dataset_double = default(double[]);
+            var representation_double = default(double[]);
 
             foreach (var unit in aggregationUnits)
             {
@@ -403,7 +403,7 @@ namespace Nexus.Services
                 var period = unit.Period;
                 var method = unit.Method;
                 var argument = unit.Argument;
-                var sampleCount = dataset.GetSampleRate(ensureNonZeroIntegerHz: true).SamplesPerSecondAsUInt64 * (ulong)period;
+                var sampleCount = representation.GetSampleRate(ensureNonZeroIntegerHz: true).SamplesPerSecondAsUInt64 * (ulong)period;
 
                 double[] partialBuffer;
 
@@ -418,13 +418,13 @@ namespace Nexus.Services
                     case AggregationMethod.SampleAndHold:
                     case AggregationMethod.Sum:
 
-                        if (dataset_double == null)
+                        if (representation_double == null)
                         {
-                            dataset_double = new double[data.Length];
-                            BufferUtilities.ApplyDatasetStatus(data, status, dataset_double);
+                            representation_double = new double[data.Length];
+                            BufferUtilities.ApplyRepresentationStatus(data, status, representation_double);
                         }
 
-                        partialBuffer = this.ApplyAggregationFunction(method, argument, (int)sampleCount, dataset_double, nanLimit, _logger);
+                        partialBuffer = this.ApplyAggregationFunction(method, argument, (int)sampleCount, representation_double, nanLimit, _logger);
                         break;
 
                     case AggregationMethod.MinBitwise:
@@ -455,14 +455,14 @@ namespace Nexus.Services
                                                    double nanLimit,
                                                    ILogger logger)
         {
-            var targetDatasetLength = data.Length / kernelSize;
-            var result = new double[targetDatasetLength];
+            var targetRepresentationLength = data.Length / kernelSize;
+            var result = new double[targetRepresentationLength];
 
             switch (method)
             {
                 case AggregationMethod.Mean:
 
-                    Parallel.For(0, targetDatasetLength, x =>
+                    Parallel.For(0, targetRepresentationLength, x =>
                     {
                         var chunkData = this.GetNaNFreeData(data, x, kernelSize);
                         var isHighQuality = (chunkData.Length / (double)kernelSize) >= nanLimit;
@@ -477,8 +477,8 @@ namespace Nexus.Services
 
                 case AggregationMethod.MeanPolar:
 
-                    double[] sin = new double[targetDatasetLength];
-                    double[] cos = new double[targetDatasetLength];
+                    double[] sin = new double[targetRepresentationLength];
+                    double[] cos = new double[targetRepresentationLength];
                     double limit;
 
                     if (argument.Contains("*PI"))
@@ -488,7 +488,7 @@ namespace Nexus.Services
 
                     var factor = 2 * Math.PI / limit;
 
-                    Parallel.For(0, targetDatasetLength, x =>
+                    Parallel.For(0, targetRepresentationLength, x =>
                     {
                         var chunkData = this.GetNaNFreeData(data, x, kernelSize);
                         var length = chunkData.Length;
@@ -517,7 +517,7 @@ namespace Nexus.Services
 
                 case AggregationMethod.Min:
 
-                    Parallel.For(0, targetDatasetLength, x =>
+                    Parallel.For(0, targetRepresentationLength, x =>
                     {
                         var chunkData = this.GetNaNFreeData(data, x, kernelSize);
                         var isHighQuality = (chunkData.Length / (double)kernelSize) >= nanLimit;
@@ -532,7 +532,7 @@ namespace Nexus.Services
 
                 case AggregationMethod.Max:
 
-                    Parallel.For(0, targetDatasetLength, x =>
+                    Parallel.For(0, targetRepresentationLength, x =>
                     {
                         var chunkData = this.GetNaNFreeData(data, x, kernelSize);
                         var isHighQuality = (chunkData.Length / (double)kernelSize) >= nanLimit;
@@ -547,7 +547,7 @@ namespace Nexus.Services
 
                 case AggregationMethod.Std:
 
-                    Parallel.For(0, targetDatasetLength, x =>
+                    Parallel.For(0, targetRepresentationLength, x =>
                     {
                         var chunkData = this.GetNaNFreeData(data, x, kernelSize);
                         var isHighQuality = (chunkData.Length / (double)kernelSize) >= nanLimit;
@@ -562,7 +562,7 @@ namespace Nexus.Services
 
                 case AggregationMethod.Rms:
 
-                    Parallel.For(0, targetDatasetLength, x =>
+                    Parallel.For(0, targetRepresentationLength, x =>
                     {
                         var chunkData = this.GetNaNFreeData(data, x, kernelSize);
                         var isHighQuality = (chunkData.Length / (double)kernelSize) >= nanLimit;
@@ -577,7 +577,7 @@ namespace Nexus.Services
 
                 case AggregationMethod.SampleAndHold:
 
-                    Parallel.For(0, targetDatasetLength, x =>
+                    Parallel.For(0, targetRepresentationLength, x =>
                     {
                         var chunkData = this.GetNaNFreeData(data, x, kernelSize);
                         var isHighQuality = (chunkData.Length / (double)kernelSize) >= nanLimit;
@@ -592,7 +592,7 @@ namespace Nexus.Services
 
                 case AggregationMethod.Sum:
 
-                    Parallel.For(0, targetDatasetLength, x =>
+                    Parallel.For(0, targetRepresentationLength, x =>
                     {
                         var chunkData = this.GetNaNFreeData(data, x, kernelSize);
                         var isHighQuality = (chunkData.Length / (double)kernelSize) >= nanLimit;
@@ -624,16 +624,16 @@ namespace Nexus.Services
                                                       double nanLimit,
                                                       ILogger logger) where T : unmanaged
         {
-            var targetDatasetLength = data.Length / kernelSize;
-            var result = new double[targetDatasetLength];
+            var targetRepresentationLength = data.Length / kernelSize;
+            var result = new double[targetRepresentationLength];
 
             switch (method)
             {
                 case AggregationMethod.MinBitwise:
 
-                    T[] bitField_and = new T[targetDatasetLength];
+                    T[] bitField_and = new T[targetRepresentationLength];
 
-                    Parallel.For(0, targetDatasetLength, x =>
+                    Parallel.For(0, targetRepresentationLength, x =>
                     {
                         var chunkData = this.GetNaNFreeData(data.Span, status.Span, x, kernelSize);
                         var length = chunkData.Length;
@@ -661,9 +661,9 @@ namespace Nexus.Services
 
                 case AggregationMethod.MaxBitwise:
 
-                    T[] bitField_or = new T[targetDatasetLength];
+                    T[] bitField_or = new T[targetRepresentationLength];
 
-                    Parallel.For(0, targetDatasetLength, x =>
+                    Parallel.For(0, targetRepresentationLength, x =>
                     {
                         var chunkData = this.GetNaNFreeData(data.Span, status.Span, x, kernelSize);
                         var length = chunkData.Length;

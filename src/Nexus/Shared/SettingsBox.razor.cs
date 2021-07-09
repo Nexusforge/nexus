@@ -34,7 +34,7 @@ namespace Nexus.Shared
                 {
                     this.InvokeAsync(this.StateHasChanged);
                 }
-                else if (e.PropertyName == nameof(UserState.SelectedDatasets))
+                else if (e.PropertyName == nameof(UserState.SelectedRepresentations))
                 {
                     this.InvokeAsync(this.StateHasChanged);
                 }

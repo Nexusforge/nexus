@@ -3,7 +3,7 @@ using System.IO.Pipelines;
 
 namespace Nexus.Extensibility
 {
-    public record DatasetPipeReader(
-        DatasetRecord DatasetRecord,
+    public record RepresentationPipeReader(
+        RepresentationRecord RepresentationRecord,
         PipeReader DataReader);
 }

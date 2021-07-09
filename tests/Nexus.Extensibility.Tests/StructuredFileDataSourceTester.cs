@@ -82,7 +82,7 @@ namespace Nexus.Extensibility.Tests
             return Task.FromResult(new Configuration
             {
                 All = all,
-                Single = dataset => all.First(),
+                Single = representation => all.First(),
             });
         }
 
@@ -92,9 +92,9 @@ namespace Nexus.Extensibility.Tests
             {
                 var catalog = new Catalog() { Id = "/A/B/C" };
                 var resource = new Resource() { Id = Guid.NewGuid() };
-                var dataset = new Dataset() { Id = "1 Hz_mean", DataType = NexusDataType.INT64 };
+                var representation = new Representation() { Id = "1 Hz_mean", DataType = NexusDataType.INT64 };
 
-                resource.Datasets.Add(dataset);
+                resource.Representations.Add(representation);
                 catalog.Resources.Add(resource);
 
                 this.Context = this.Context with

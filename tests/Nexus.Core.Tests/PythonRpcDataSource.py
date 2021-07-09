@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 from urllib.request import url2pathname
 from uuid import uuid3
 
-from PythonRpcDataModel import Catalog, Resource, Dataset, NexusDataType
+from PythonRpcDataModel import Catalog, Resource, Representation, NexusDataType
 from PythonRpcExtensibility import IDataSource, LogLevel, RpcCommunicator
 
 class NULL_NAMESPACE:
@@ -32,20 +32,20 @@ class PythonDataSource(IDataSource):
 
             # catalog 1
             catalog1_resource1_id = str(uuid3(NULL_NAMESPACE, "catalog1_resource1"))
-            catalog1_resource1_datasets = [Dataset("1 Hz_mean", NexusDataType.INT64)]
+            catalog1_resource1_representations = [Representation("1 Hz_mean", NexusDataType.INT64)]
             catalog1_resource1_meta = { "c": "d" }
-            catalog1_resource1 = Resource(catalog1_resource1_id, "resource1", "group1", "°C", catalog1_resource1_meta, catalog1_resource1_datasets)
+            catalog1_resource1 = Resource(catalog1_resource1_id, "resource1", "group1", "°C", catalog1_resource1_meta, catalog1_resource1_representations)
 
             catalog1_resource2_id = str(uuid3(NULL_NAMESPACE, "catalog1_resource2"))
-            catalog1_resource2_datasets = [Dataset("1 Hz_mean", NexusDataType.FLOAT64)]
-            catalog1_resource2 = Resource(catalog1_resource2_id, "resource2", "group2", "bar", { }, catalog1_resource2_datasets)
+            catalog1_resource2_representations = [Representation("1 Hz_mean", NexusDataType.FLOAT64)]
+            catalog1_resource2 = Resource(catalog1_resource2_id, "resource2", "group2", "bar", { }, catalog1_resource2_representations)
 
             catalog1 = Catalog("/A/B/C", metadata = { "a": "b" }, resources = [catalog1_resource1, catalog1_resource2])
 
             # catalog 2
             catalog2_resource1_id = str(uuid3(NULL_NAMESPACE, "catalog2_resource1"))
-            catalog2_resource1_datasets = [Dataset("1 Hz_mean", NexusDataType.FLOAT32)]
-            catalog2_resource1 = Resource(catalog2_resource1_id, "resource1", "group1", "m/s", { }, catalog2_resource1_datasets)
+            catalog2_resource1_representations = [Representation("1 Hz_mean", NexusDataType.FLOAT32)]
+            catalog2_resource1 = Resource(catalog2_resource1_id, "resource1", "group1", "m/s", { }, catalog2_resource1_representations)
 
             catalog2 = Catalog("/D/E/F", metadata = {}, resources = [catalog2_resource1])
 
@@ -83,7 +83,7 @@ class PythonDataSource(IDataSource):
 
         return actualFileCount / maxFileCount
 
-    async def read_single_async(self, datasetPath: str, length: int, begin: datetime, end: datetime):
+    async def read_single_async(self, representationPath: str, length: int, begin: datetime, end: datetime):
 
         # ############################################################################
         # Warning! This is a simplified implementation and not generally applicable! #
@@ -99,10 +99,10 @@ class PythonDataSource(IDataSource):
         # stored as 8 byte little-endian integers) with a sample rate of 1 Hz.
 
         # ensure the catalogs have already been loaded
-        (catalog, resource, dataset) = self._find(datasetPath)
+        (catalog, resource, representation) = self._find(representationPath)
 
-        # dataset ID = "1 Hz_mean" -> extract "1"
-        samplesPerSecond = int(dataset.Id.split(" ")[0])
+        # representation ID = "1 Hz_mean" -> extract "1"
+        samplesPerSecond = int(representation.Id.split(" ")[0])
         secondsPerFile = 600
         typeSize = 8
 
@@ -150,11 +150,11 @@ class PythonDataSource(IDataSource):
 
         return (data, status)
 
-    def _find(self, datasetPath):
+    def _find(self, representationPath):
 
-        pathParts = datasetPath.split("/")
+        pathParts = representationPath.split("/")
 
-        datasetId = pathParts[-1]
+        representationId = pathParts[-1]
         resourceId = pathParts[-2]
         catalogId = "/" + "/".join(pathParts[1:-2])
 
@@ -168,11 +168,11 @@ class PythonDataSource(IDataSource):
         if resource is None:
             raise Exception(f"Resource '{resourceId}' not found.")
 
-        dataset = next((dataset for dataset in resource.Datasets if dataset.Id == datasetId), None)
+        representation = next((representation for representation in resource.Representations if representation.Id == representationId), None)
 
-        if dataset is None:
-            raise Exception(f"Dataset '{datasetId}' not found.")
+        if representation is None:
+            raise Exception(f"Representation '{representationId}' not found.")
 
-        return (catalog, resource, dataset)
+        return (catalog, resource, representation)
 
 asyncio.run(RpcCommunicator(PythonDataSource()).run())

@@ -210,7 +210,7 @@ namespace Nexus.Services
                 if (cancellationToken.IsCancellationRequested)
                     return;
 
-                // remove all resources where no native datasets are available
+                // remove all resources where no native representations are available
                 // because only these provide metadata like name and group
                 var resources = catalogContainer.Catalog.Resources;
 
@@ -462,13 +462,13 @@ namespace Nexus.Services
 
                 foreach (var resource in catalog.Resources)
                 {
-                    var datasetsToRemove = new List<Dataset>();
+                    var representationsToRemove = new List<Representation>();
 
-                    foreach (var dataset in resource.Datasets)
+                    foreach (var representation in resource.Representations)
                     {
                         var keep = false;
 
-                        if (FilterDataSource.TryGetFilterCodeDefinition(dataset, out var codeDefinition))
+                        if (FilterDataSource.TryGetFilterCodeDefinition(representation, out var codeDefinition))
                         {
                             // get user
                             if (!usersMap.TryGetValue(codeDefinition.Owner, out var user))
@@ -484,14 +484,14 @@ namespace Nexus.Services
                         }
 
                         if (!keep)
-                            datasetsToRemove.Add(dataset);
+                            representationsToRemove.Add(representation);
                     }
 
-                    foreach (var datasetToRemove in datasetsToRemove)
+                    foreach (var representationToRemove in representationsToRemove)
                     {
-                        resource.Datasets.Remove(datasetToRemove);
+                        resource.Representations.Remove(representationToRemove);
 
-                        if (!resource.Datasets.Any())
+                        if (!resource.Representations.Any())
                             resourcesToRemove.Add(resource);
                     }
                 }

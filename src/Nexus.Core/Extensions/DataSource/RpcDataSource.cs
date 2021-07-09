@@ -133,19 +133,19 @@ namespace Nexus.Extensions
         {
             var counter = 0.0;
 
-            foreach (var (datasetPath, data, status) in requests)
+            foreach (var (representationPath, data, status) in requests)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var datasetRecord = Catalog.Find(datasetPath, this.Context.Catalogs);
+                var representationRecord = Catalog.Find(representationPath, this.Context.Catalogs);
                 var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromMinutes(1));
                 cancellationToken.Register(() => timeoutTokenSource.Cancel());
 
-                var elementCount = data.Length / datasetRecord.Dataset.ElementSize;
+                var elementCount = data.Length / representationRecord.Representation.ElementSize;
 
                 var response = await _communicator.InvokeAsync<ReadSingleResponse>(
                     "ReadSingle",
-                    new object[] { datasetRecord.GetPath(), elementCount, begin, end },
+                    new object[] { representationRecord.GetPath(), elementCount, begin, end },
                     timeoutTokenSource.Token
                 );
 

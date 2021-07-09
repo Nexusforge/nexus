@@ -260,13 +260,13 @@ namespace Nexus.Extensions
             {
                 var counter = 0.0;
 
-                foreach (var (datasetPath, data, status) in requests)
+                foreach (var (representationPath, data, status) in requests)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    var (catalog, resource, dataset) = Catalog.Find(datasetPath, _catalogs);
+                    var (catalog, resource, representation) = Catalog.Find(representationPath, _catalogs);
                     var catalogFolderPath = Path.Combine(this.Root, "DATA", WebUtility.UrlEncode(catalog.Id));
-                    var samplePeriod = dataset.GetSamplePeriod();
+                    var samplePeriod = representation.GetSamplePeriod();
 
                     if (!Directory.Exists(catalogFolderPath))
                         continue;
@@ -282,7 +282,7 @@ namespace Nexus.Extensions
                             catalogFolderPath,
                             fileBegin.ToString("yyyy-MM"),
                             fileBegin.ToString("dd"),
-                            $"{resource.Id}_{dataset.Id.Replace(" ", "_")}.nex");
+                            $"{resource.Id}_{representation.Id.Replace(" ", "_")}.nex");
 
                         if (File.Exists(filePath))
                         {
@@ -292,11 +292,11 @@ namespace Nexus.Extensions
                                 var aggregationData = AggregationFile.Read<byte>(filePath);
 
                                 // write data
-                                if (aggregationData.Length == fileLength * dataset.ElementSize)
+                                if (aggregationData.Length == fileLength * representation.ElementSize)
                                 {
                                     aggregationData
-                                        .Slice(fileOffset * dataset.ElementSize, fileBlock * dataset.ElementSize)
-                                        .CopyTo(data.Span.Slice(bufferOffset * dataset.ElementSize));
+                                        .Slice(fileOffset * representation.ElementSize, fileBlock * representation.ElementSize)
+                                        .CopyTo(data.Span.Slice(bufferOffset * representation.ElementSize));
 
                                     status.Span
                                         .Slice(bufferOffset, fileBlock)
@@ -533,7 +533,7 @@ namespace Nexus.Extensions
                     var fileName = Path.GetFileNameWithoutExtension(filePath);
                     var fileNameParts = fileName.Split('_');
                     var id = Guid.Parse(fileNameParts[0]);
-                    var datasetName = $"{fileNameParts[1]} {fileNameParts[2]}_{fileNameParts[3]}";
+                    var representationName = $"{fileNameParts[1]} {fileNameParts[2]}_{fileNameParts[3]}";
 
                     if (!resourceMap.TryGetValue(id, out var resource))
                     {
@@ -541,13 +541,13 @@ namespace Nexus.Extensions
                         resourceMap[id] = resource;
                     }
 
-                    var dataset = new Dataset()
+                    var representation = new Representation()
                     {
-                        Id = datasetName,
+                        Id = representationName,
                         DataType = NexusDataType.FLOAT64
                     };
 
-                    resource.Datasets.Add(dataset);
+                    resource.Representations.Add(representation);
                 });
 
             catalog.Resources.AddRange(resourceMap.Values.ToList());

@@ -45,7 +45,7 @@ namespace Nexus.Core.Tests
             var actualNames = actual.Resources.Select(resource => resource.Name).ToList();
             var actualGroups = actual.Resources.Select(resource => resource.Group).ToList();
             var actualUnits = actual.Resources.Select(resource => resource.Unit).ToList();
-            var actualDataTypes = actual.Resources.SelectMany(resource => resource.Datasets.Select(dataset => dataset.DataType)).ToList();
+            var actualDataTypes = actual.Resources.SelectMany(resource => resource.Representations.Select(representation => representation.DataType)).ToList();
 
             var expectedNames = new List<string>() { "T1", "V1", "unix_time1", "unix_time2" };
             var expectedGroups = new List<string>() { "Group 1", "Group 1", "Group 2", "Group 2" };
@@ -117,14 +117,14 @@ namespace Nexus.Core.Tests
             var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
             var catalog = catalogs.First();
             var resource = catalog.Resources.First();
-            var dataset = resource.Datasets.First();
-            var datasetPath = new DatasetRecord(catalog, resource, dataset).GetPath();
+            var representation = resource.Representations.First();
+            var representationPath = new RepresentationRecord(catalog, resource, representation).GetPath();
 
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 02, 0, 0, 0, DateTimeKind.Utc);
-            var (data, status) = ExtensibilityUtilities.CreateBuffers(dataset, begin, end);
+            var (data, status) = ExtensibilityUtilities.CreateBuffers(representation, begin, end);
 
-            var request = new ReadRequest(datasetPath, data, status);
+            var request = new ReadRequest(representationPath, data, status);
             await dataSource.ReadAsync(begin, end, new[] { request }, new Progress<double>(), CancellationToken.None);
             var doubleData = data.Cast<double>();
 

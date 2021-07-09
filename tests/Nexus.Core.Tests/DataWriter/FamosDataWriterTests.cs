@@ -70,9 +70,9 @@
 //        private ResourceDescription CreateResourceDescription(string resourceName, string group, NexusDataType dataType, SampleRateContainer sampleRate, string unit)
 //        {
 //            var guid = Guid.NewGuid();
-//            var datasetName = sampleRate.ToUnitString();
+//            var representationName = sampleRate.ToUnitString();
 
-//            return new ResourceDescription(guid, resourceName, datasetName, group, dataType, sampleRate, unit, BufferType.Simple);
+//            return new ResourceDescription(guid, resourceName, representationName, group, dataType, sampleRate, unit, BufferType.Simple);
 //        }
 
 //        private static void ConfigureServices(IServiceCollection services)

@@ -166,22 +166,22 @@ namespace Nexus.Shared
                 var availability = await this.UserState.GetAvailabilityAsync(granularity, CancellationToken.None);
                 var hasCleared = false;
 
-                if (availability.Count != this.Config.Data.Datasets.Count)
+                if (availability.Count != this.Config.Data.Representations.Count)
                 {
-                    this.Config.Data.Datasets.Clear();
+                    this.Config.Data.Representations.Clear();
                     hasCleared = true;
                 }
 
                 for (int i = 0; i < availability.Count; i++)
                 {
-                    BarDataset<TimePoint> dataset;
+                    BarRepresentation<TimePoint> representation;
 
                     if (hasCleared)
                     {
                         var backendSource = availability[i].BackendSource;
                         var isAggregation = backendSource.Equals(this.DatabaseManager.State.AggregationBackendSource);
 
-                        dataset = new BarDataset<TimePoint>
+                        representation = new BarRepresentation<TimePoint>
                         {
                             Label = isAggregation ? "Aggregations" : $"Raw ({backendSource.ResourceLocator} - {backendSource.Type})",
                             BackgroundColor = _backgroundColors[i % _backgroundColors.Count()],
@@ -189,12 +189,12 @@ namespace Nexus.Shared
                             BorderWidth = 2
                         };
 
-                        this.Config.Data.Datasets.Add(dataset);
+                        this.Config.Data.Representations.Add(representation);
                     }
                     else
                     {
-                        dataset = (BarDataset<TimePoint>)this.Config.Data.Datasets[i];
-                        dataset.Clear();
+                        representation = (BarRepresentation<TimePoint>)this.Config.Data.Representations[i];
+                        representation.Clear();
                     }
 
                     switch (granularity)
@@ -203,7 +203,7 @@ namespace Nexus.Shared
 
                             axis.Time.Unit = TimeMeasurement.Day;
 
-                            dataset.AddRange(availability[i].Data
+                            representation.AddRange(availability[i].Data
                                 .Select((entry, i) =>
                                 {
                                     return new TimePoint(entry.Key, entry.Value * 100);
@@ -216,7 +216,7 @@ namespace Nexus.Shared
 
                             axis.Time.Unit = TimeMeasurement.Month;
 
-                            dataset.AddRange(availability[i].Data
+                            representation.AddRange(availability[i].Data
                                 .Select((entry, i) =>
                                 {
                                     return new TimePoint(entry.Key, entry.Value * 100);

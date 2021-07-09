@@ -22,37 +22,37 @@ namespace Nexus.DataModel
 
         #region Methods
 
-        public bool TryFind(string catalogId, string resourceIdOrName, string datasetId, out DatasetRecord datasetRecord, bool includeName = false)
+        public bool TryFind(string catalogId, string resourceIdOrName, string representationId, out RepresentationRecord representationRecord, bool includeName = false)
         {
-            var datasetPath = $"{catalogId}/{resourceIdOrName}/{datasetId}";
-            return this.TryFind(datasetPath, out datasetRecord, includeName);
+            var representationPath = $"{catalogId}/{resourceIdOrName}/{representationId}";
+            return this.TryFind(representationPath, out representationRecord, includeName);
         }
 
 
-        public bool TryFind(string datasetPath, out DatasetRecord datasetRecord, bool includeName = false)
+        public bool TryFind(string representationPath, out RepresentationRecord representationRecord, bool includeName = false)
         {
-            datasetRecord = default(DatasetRecord);
+            representationRecord = default(RepresentationRecord);
 
             foreach (var container in this.CatalogContainers)
             {
-                if (container.Catalog.TryFind(datasetPath, out datasetRecord, includeName))
+                if (container.Catalog.TryFind(representationPath, out representationRecord, includeName))
                     break;
             }
 
-            if (datasetRecord is null)
+            if (representationRecord is null)
                 return false;
 
             return true;
         }
 
-        public DatasetRecord Find(string catalogId, string resourceIdOrName, string datasetId, bool includeName = false)
+        public RepresentationRecord Find(string catalogId, string resourceIdOrName, string representationId, bool includeName = false)
         {
-            this.TryFind(catalogId, resourceIdOrName, datasetId, out var datasetRecord, includeName);
+            this.TryFind(catalogId, resourceIdOrName, representationId, out var representationRecord, includeName);
 
-            if (datasetRecord is null)
-                throw new Exception($"The dataset on path '{catalogId}/{resourceIdOrName}/{datasetId}' could not be found.");
+            if (representationRecord is null)
+                throw new Exception($"The representation on path '{catalogId}/{resourceIdOrName}/{representationId}' could not be found.");
 
-            return datasetRecord;
+            return representationRecord;
         }
 
         #endregion

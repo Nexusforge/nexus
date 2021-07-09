@@ -15,7 +15,7 @@ namespace Nexus.DataModel
         public string Group { get; init; }
         public string Unit { get; init; }
         public Dictionary<string, string> Metadata { get; set; } = new Dictionary<string, string>();
-        public List<Dataset> Datasets { get; init; } = new List<Dataset>();
+        public List<Representation> Representations { get; init; } = new List<Representation>();
 
         #endregion
 
@@ -23,25 +23,25 @@ namespace Nexus.DataModel
 
         internal Resource Merge(Resource resource, MergeMode mergeMode)
         {
-            // merge datasets
-            var mergedDatasets = new List<Dataset>();
+            // merge representations
+            var mergedRepresentations = new List<Representation>();
 
-            foreach (var dataset in resource.Datasets)
+            foreach (var representation in resource.Representations)
             {
-                var referenceDataset = mergedDatasets.FirstOrDefault(current => current.Id == dataset.Id);
+                var referenceRepresentation = mergedRepresentations.FirstOrDefault(current => current.Id == representation.Id);
 
-                if (referenceDataset is not null)
+                if (referenceRepresentation is not null)
                 {
                     switch (mergeMode)
                     {
                         case MergeMode.ExclusiveOr:
 
-                            throw new Exception($"There may be only a single dataset with a given identifier.");
+                            throw new Exception($"There may be only a single representation with a given identifier.");
 
                         case MergeMode.NewWins:
 
-                            if (!dataset.Equals(referenceDataset))
-                                throw new Exception($"The datasets to be merged are not equal.");
+                            if (!representation.Equals(referenceRepresentation))
+                                throw new Exception($"The representations to be merged are not equal.");
 
                             break;
 
@@ -52,7 +52,7 @@ namespace Nexus.DataModel
                 }
                 else
                 {
-                    mergedDatasets.Add(dataset);
+                    mergedRepresentations.Add(representation);
                 }
             }
 
@@ -82,7 +82,7 @@ namespace Nexus.DataModel
                         Group = string.IsNullOrWhiteSpace(this.Group) ? resource.Group : this.Group,
                         Unit = string.IsNullOrWhiteSpace(this.Unit) ? resource.Unit : this.Unit,
                         Metadata = mergedMetadata1,
-                        Datasets = mergedDatasets
+                        Representations = mergedRepresentations
                     };
 
                     break;
@@ -104,7 +104,7 @@ namespace Nexus.DataModel
                         Group = resource.Group,
                         Unit = resource.Unit,
                         Metadata = mergedMetadata2,
-                        Datasets = mergedDatasets
+                        Representations = mergedRepresentations
                     };
 
                     break;

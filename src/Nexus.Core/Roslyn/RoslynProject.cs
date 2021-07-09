@@ -137,12 +137,12 @@ namespace Nexus.Roslyn
             classStringBuilder.AppendLine($"{{");
 
             // add Read() method
-            classStringBuilder.AppendLine($"public Span<double> Read(string catalogId, string resourceName, string datasetId)");
+            classStringBuilder.AppendLine($"public Span<double> Read(string catalogId, string resourceName, string representationId)");
             classStringBuilder.AppendLine($"{{");
             classStringBuilder.AppendLine($"return default;");
             classStringBuilder.AppendLine($"}}");
 
-            classStringBuilder.AppendLine($"public Span<double> Read(string catalogId, string resourceName, string datasetId, DateTime begin, DateTime end)");
+            classStringBuilder.AppendLine($"public Span<double> Read(string catalogId, string resourceName, string representationId, DateTime begin, DateTime end)");
             classStringBuilder.AppendLine($"{{");
             classStringBuilder.AppendLine($"return default;");
             classStringBuilder.AppendLine($"}}");
@@ -170,10 +170,10 @@ namespace Nexus.Roslyn
                         resourceStringBuilder.AppendLine($"public class {resource.Name}_TYPE");
                         resourceStringBuilder.AppendLine($"{{");
 
-                        foreach (var dataset in resource.Datasets.Where(dataset => dataset.Id.Contains(sampleRate)))
+                        foreach (var representation in resource.Representations.Where(representation => representation.Id.Contains(sampleRate)))
                         {
-                            // dataset property
-                            resourceStringBuilder.AppendLine($"public Span<double> {ExtensibilityUtilities.EnforceNamingConvention(dataset.Id, prefix: "DATASET")} {{ get; set; }}");
+                            // representation property
+                            resourceStringBuilder.AppendLine($"public Span<double> {ExtensibilityUtilities.EnforceNamingConvention(representation.Id, prefix: "REPRESENTATION")} {{ get; set; }}");
 
                             addResource = true;
                             addCatalog = true;

@@ -44,12 +44,12 @@
             }
         </div>
 
-        <div class="resource-datasets ml-auto">
-            @foreach (var dataset in _filteredDatasets)
+        <div class="resource-representations ml-auto">
+            @foreach (var representation in _filteredRepresentations)
             {
-                <div class="resource-dataset @(this.UserState.IsDatasetSeleced(dataset) ? "selected" : "")"
-                     @onclick="() => this.UserState.ToggleDatasetSelection(dataset)">
-                    @dataset.Name
+                <div class="resource-representation @(this.UserState.IsRepresentationSeleced(representation) ? "selected" : "")"
+                     @onclick="() => this.UserState.ToggleRepresentationSelection(representation)">
+                    @representation.Name
                 </div>
             }
         </div>

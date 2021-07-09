@@ -45,18 +45,18 @@ namespace Nexus.Extensibility
             DateTime end,
             TimeSpan samplePeriod,
             TimeSpan filePeriod,
-            List<DatasetPipeReader> datasetPipeReaders,
+            List<RepresentationPipeReader> representationPipeReaders,
             IProgress<double> progress,
             CancellationToken cancellationToken)
         {
             /* validation */
-            foreach (var datasetPipeWriters in datasetPipeReaders)
+            foreach (var representationPipeWriters in representationPipeReaders)
             {
-                if (datasetPipeWriters.DatasetRecord.Dataset.GetSamplePeriod() != samplePeriod)
-                    throw new ValidationException("All datasets must be of the same sample period.");
+                if (representationPipeWriters.RepresentationRecord.Representation.GetSamplePeriod() != samplePeriod)
+                    throw new ValidationException("All representations must be of the same sample period.");
             }
 
-            if (!datasetPipeReaders.Any())
+            if (!representationPipeReaders.Any())
                 return;
 
             DataWriterController.ValidateParameters(begin, samplePeriod, filePeriod);
@@ -80,15 +80,15 @@ namespace Nexus.Extensibility
             };
 
             /* misc */
-            var datasetRecords = datasetPipeReaders
-                .Select(datasetPipeReader => datasetPipeReader.DatasetRecord)
+            var representationRecords = representationPipeReaders
+                .Select(representationPipeReader => representationPipeReader.RepresentationRecord)
                 .ToArray();
 
 #warning Pass license also!
 
-            var groupedDatasetRecords = datasetRecords
-                        .GroupBy(datasetRecord => datasetRecord.Catalog)
-                        .Select(group => new DatasetRecordGroup(group.Key, "", group.ToArray()))
+            var groupedRepresentationRecords = representationRecords
+                        .GroupBy(representationRecord => representationRecord.Catalog)
+                        .Select(group => new RepresentationRecordGroup(group.Key, "", group.ToArray()))
                         .ToArray();
 
             /* go */
@@ -117,15 +117,15 @@ namespace Nexus.Extensibility
                     await this.DataWriter.OpenAsync(
                         fileBegin, 
                         samplePeriod,
-                        groupedDatasetRecords,
+                        groupedRepresentationRecords,
                         cancellationToken);
 
                     _lastFileBegin = fileBegin;
                 }
 
                 /* read */
-                var readResultTasks = datasetPipeReaders
-                    .Select(datasetPipeReader => datasetPipeReader.DataReader.ReadAsync(cancellationToken))
+                var readResultTasks = representationPipeReaders
+                    .Select(representationPipeReader => representationPipeReader.DataReader.ReadAsync(cancellationToken))
                     .ToArray();
 
                 var readResults = await NexusCoreUtilities.WhenAll(readResultTasks).ConfigureAwait(false);
@@ -144,17 +144,17 @@ namespace Nexus.Extensibility
                 var bufferPeriod = samplePeriod * elementCount;
                 currentPeriod = new TimeSpan(Math.Min(remainingFilePeriod.Ticks, bufferPeriod.Ticks));
 
-                var requests = datasetPipeReaders.Zip(readResults).Select(zipped =>
+                var requests = representationPipeReaders.Zip(readResults).Select(zipped =>
                 {
-                    var (datasetPipeReader, readResult) = zipped;
+                    var (representationPipeReader, readResult) = zipped;
 
                     return new WriteRequest(
-                        datasetPipeReader.DatasetRecord, 
+                        representationPipeReader.RepresentationRecord, 
                         readResult.Buffer.First.Cast<double>().Slice(elementCount));
                 });
 
                 var groupedRequests = requests
-                    .GroupBy(writeRequest => writeRequest.DatasetRecord.Catalog)
+                    .GroupBy(writeRequest => writeRequest.RepresentationRecord.Catalog)
                     .Select(group => new WriteRequestGroup(group.Key, group.ToArray()))
                     .ToArray();
 
@@ -166,7 +166,7 @@ namespace Nexus.Extensibility
                     cancellationToken);
 
                 /* advance */
-                foreach (var ((_, dataReader), readResult) in datasetPipeReaders.Zip(readResults))
+                foreach (var ((_, dataReader), readResult) in representationPipeReaders.Zip(readResults))
                 {
                     dataReader.AdvanceTo(readResult.Buffer.GetPosition(elementCount * sizeof(double)));
                 }
@@ -178,7 +178,7 @@ namespace Nexus.Extensibility
             /* close */
             await this.DataWriter.CloseAsync(cancellationToken);
 
-            foreach (var (_, dataReader) in datasetPipeReaders)
+            foreach (var (_, dataReader) in representationPipeReaders)
             {
                 await dataReader.CompleteAsync();
             }

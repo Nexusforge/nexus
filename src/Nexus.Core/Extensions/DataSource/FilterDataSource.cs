@@ -86,14 +86,14 @@ namespace Nexus.Extensions
             return Task.CompletedTask;
         }
 
-        public static bool TryGetFilterCodeDefinition(DatasetRecord datasetRecord, out CodeDefinition codeDefinition)
+        public static bool TryGetFilterCodeDefinition(RepresentationRecord representationRecord, out CodeDefinition codeDefinition)
         {
             codeDefinition = default;
 
-            if (FilterDataSource.FilterDataSourceCache.TryGetValue(datasetRecord.Dataset.BackendSource.ResourceLocator, out var cacheEntries))
+            if (FilterDataSource.FilterDataSourceCache.TryGetValue(representationRecord.Representation.BackendSource.ResourceLocator, out var cacheEntries))
             {
                 var cacheEntry = cacheEntries
-                    .FirstOrDefault(entry => entry.SupportedChanneIds.Contains(datasetRecord.Resource.Id));
+                    .FirstOrDefault(entry => entry.SupportedChanneIds.Contains(representationRecord.Resource.Id));
 
                 if (cacheEntry is not null)
                 {
@@ -163,10 +163,10 @@ namespace Nexus.Extensions
                                 };
                             }
 
-                            // create datasets
-                            var datasets = new List<Dataset>()
+                            // create representations
+                            var representations = new List<Representation>()
                             {
-                                new Dataset()
+                                new Representation()
                                 {
                                     Id = filterCodeDefinition.SampleRate,
                                     DataType = NexusDataType.FLOAT64
@@ -186,7 +186,7 @@ namespace Nexus.Extensions
                                 Name = localFilterResource.ResourceName,
                                 Group = localFilterResource.Group,
                                 Unit = localFilterResource.Unit,
-                                Datasets = datasets,
+                                Representations = representations,
                             };
 
                             resource.Metadata["Description"] = localFilterResource.Description;
@@ -224,9 +224,9 @@ namespace Nexus.Extensions
             {
                 var counter = 0.0;
 
-                foreach (var (datasetPath, data, status) in requests)
+                foreach (var (representationPath, data, status) in requests)
                 {
-                    var (catalog, resource, dataset) = Catalog.Find(datasetPath, _catalogs);
+                    var (catalog, resource, representation) = Catalog.Find(representationPath, _catalogs);
                     var cacheEntry = _cacheEntries.FirstOrDefault(current => current.SupportedChanneIds.Contains(resource.Id));
 
 
@@ -242,16 +242,16 @@ namespace Nexus.Extensions
             {
                 var counter = 0.0;
 
-                foreach (var (datasetPath, data, status) in requests)
+                foreach (var (representationPath, data, status) in requests)
                 {
-                    var (catalog, resource, dataset) = Catalog.Find(datasetPath, _catalogs);
+                    var (catalog, resource, representation) = Catalog.Find(representationPath, _catalogs);
                     var cacheEntry = _cacheEntries.FirstOrDefault(current => current.SupportedChanneIds.Contains(resource.Id));
 
                     if (cacheEntry is null)
                         throw new Exception("The requested filter resource ID could not be found.");
 
                     // fill database
-                    GetFilterData getData = (string catalogId, string resourceId, string datasetId, DateTime begin, DateTime end) =>
+                    GetFilterData getData = (string catalogId, string resourceId, string representationId, DateTime begin, DateTime end) =>
                     {
 #warning improve this (PhysicalName)
                         var catalog = this.Database.CatalogContainers
@@ -260,20 +260,20 @@ namespace Nexus.Extensions
                         if (catalog == null)
                             throw new Exception($"Unable to find catalog with id '{catalogId}'.");
 
-                        var datasetRecord = this.Database.Find(catalog.Id, resourceId, datasetId);
+                        var representationRecord = this.Database.Find(catalog.Id, resourceId, representationId);
 
                         if (!this.IsCatalogAccessible(catalog.Id))
                             throw new UnauthorizedAccessException("The current user is not allowed to access this filter.");
 
 #warning GetData Should be Async! Deadlock may happen
-                        var dataSourceController = this.GetDataSourceAsync(dataset.BackendSource).Result;
+                        var dataSourceController = this.GetDataSourceAsync(representation.BackendSource).Result;
 
 #warning GetData Should be Async! Deadlock may happen
                         var progress = new Progress<double>();
-                        var request = new ReadRequest(datasetRecord.GetPath(), data, status);
+                        var request = new ReadRequest(representationRecord.GetPath(), data, status);
                         dataSourceController.DataSource.ReadAsync(begin, end, new ReadRequest[] { request }, progress, cancellationToken).Wait();
                         var doubleData = new double[status.Length];
-                        BufferUtilities.ApplyDatasetStatusByDataType(dataset.DataType, data, status, doubleData);
+                        BufferUtilities.ApplyRepresentationStatusByDataType(representation.DataType, data, status, doubleData);
 
                         return doubleData;
                     };
@@ -386,42 +386,42 @@ namespace Nexus.Extensions
                 "DataProvider dataProvider",
                 "GetFilterData getData");
 
-            // matches strings like "= dataProvider.IN_MEMORY_TEST_ACCESSIBLE.T1.DATASET_1_s_mean;"
-            var pattern1 = @"=\s*dataProvider\.([a-zA-Z_0-9]+)\.([a-zA-Z_0-9]+)\.DATASET_([a-zA-Z_0-9]+);";
+            // matches strings like "= dataProvider.IN_MEMORY_TEST_ACCESSIBLE.T1.REPRESENTATION_1_s_mean;"
+            var pattern1 = @"=\s*dataProvider\.([a-zA-Z_0-9]+)\.([a-zA-Z_0-9]+)\.REPRESENTATION_([a-zA-Z_0-9]+);";
             code = Regex.Replace(code, pattern1, match =>
             {
                 var catalogId = match.Groups[1].Value;
                 var resourceId = match.Groups[2].Value;
 
-#warning: Whenever the space in the dataset name is removed, update this code
+#warning: Whenever the space in the representation name is removed, update this code
                 var regex = new Regex("_");
-                var datasetId = regex.Replace(match.Groups[3].Value, " ", 1);
+                var representationId = regex.Replace(match.Groups[3].Value, " ", 1);
 
-                return $"= getData(\"{catalogId}\", \"{resourceId}\", \"{datasetId}\", begin, end);";
+                return $"= getData(\"{catalogId}\", \"{resourceId}\", \"{representationId}\", begin, end);";
             });
 
-            // matches strings like "= dataProvider.Read(campaignId, resourceId, datasetId, begin, end);"
+            // matches strings like "= dataProvider.Read(campaignId, resourceId, representationId, begin, end);"
             var pattern3 = @"=\s*dataProvider\.Read\((.*?),(.*?),(.*?),(.*?),(.*?)\);";
             code = Regex.Replace(code, pattern3, match =>
             {
                 var catalogId = match.Groups[1].Value;
                 var resourceId = match.Groups[2].Value;
-                var datasetId = match.Groups[3].Value;
+                var representationId = match.Groups[3].Value;
                 var begin = match.Groups[4].Value;
                 var end = match.Groups[5].Value;
 
-                return $"= getData({catalogId}, {resourceId}, {datasetId}, {begin}, {end});";
+                return $"= getData({catalogId}, {resourceId}, {representationId}, {begin}, {end});";
             });
 
-            // matches strings like "= dataProvider.Read(campaignId, resourceId, datasetId);"
+            // matches strings like "= dataProvider.Read(campaignId, resourceId, representationId);"
             var pattern2 = @"=\s*dataProvider\.Read\((.*?),(.*?),(.*?)\);";
             code = Regex.Replace(code, pattern2, match =>
             {
                 var catalogId = match.Groups[1].Value;
                 var resourceId = match.Groups[2].Value;
-                var datasetId = match.Groups[3].Value;
+                var representationId = match.Groups[3].Value;
 
-                return $"= getData({catalogId}, {resourceId}, {datasetId}, begin, end);";
+                return $"= getData({catalogId}, {resourceId}, {representationId}, begin, end);";
             });
 
             return code;

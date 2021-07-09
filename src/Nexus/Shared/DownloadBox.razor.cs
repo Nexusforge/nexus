@@ -40,7 +40,7 @@ namespace Nexus.Shared
 				{
 					this.InvokeAsync(this.StateHasChanged);
 				}
-				else if (e.PropertyName == nameof(UserState.SelectedDatasets))
+				else if (e.PropertyName == nameof(UserState.SelectedRepresentations))
 				{
 					this.InvokeAsync(this.StateHasChanged);
 				}
@@ -61,9 +61,9 @@ namespace Nexus.Shared
 
         #region Commands
 
-		private void CopyPath(DatasetViewModel dataset)
+		private void CopyPath(RepresentationViewModel representation)
         {
-			this.JsRuntime.WriteToClipboard($"{dataset.Parent.Parent.Id}/{dataset.Parent.Name}/{dataset.Model.Id}");
+			this.JsRuntime.WriteToClipboard($"{representation.Parent.Parent.Id}/{representation.Parent.Name}/{representation.Model.Id}");
         }
 
         #endregion

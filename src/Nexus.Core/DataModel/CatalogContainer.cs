@@ -38,18 +38,18 @@ namespace Nexus.DataModel
 
         #region Methods
 
-        public Catalog ToSparseCatalog(List<DatasetRecord> datasetRecords)
+        public Catalog ToSparseCatalog(List<RepresentationRecord> representationRecords)
         {
             var resources = new List<Resource>();
 
-            foreach (var datasetRecord in datasetRecords)
+            foreach (var representationRecord in representationRecords)
             {
-                var resource = resources.FirstOrDefault(resource => resource.Id == datasetRecord.Resource.Id);
+                var resource = resources.FirstOrDefault(resource => resource.Id == representationRecord.Resource.Id);
 
                 if (resource is null)
-                    resources.Add(datasetRecord.Resource with { Datasets = new List<Dataset>() });
+                    resources.Add(representationRecord.Resource with { Representations = new List<Representation>() });
 
-                resource.Datasets.Add(datasetRecord.Dataset with { });
+                resource.Representations.Add(representationRecord.Representation with { });
             }
 
             return this.Catalog with { Resources = resources };

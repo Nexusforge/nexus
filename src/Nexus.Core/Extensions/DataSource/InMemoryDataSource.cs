@@ -71,21 +71,21 @@ namespace Nexus.Extensions
         {
             var tasks = requests.Select(request =>
             {
-                var (datasetPath, data, status) = request;
+                var (representationPath, data, status) = request;
 
                 return Task.Run(() =>
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    var (catalog, resource, dataset) = Catalog.Find(datasetPath, this.Context.Catalogs);
+                    var (catalog, resource, representation) = Catalog.Find(representationPath, this.Context.Catalogs);
 
                     double[] dataDouble;
 
                     var beginTime = begin.ToUnixTimeStamp();
                     var endTime = end.ToUnixTimeStamp();
 
-                    var elementCount = data.Length / dataset.ElementSize;
-                    var dt = dataset.GetSamplePeriod().TotalSeconds;
+                    var elementCount = data.Length / representation.ElementSize;
+                    var dt = representation.GetSamplePeriod().TotalSeconds;
 
                     if (resource.Name.Contains("unix_time"))
                     {
@@ -135,18 +135,18 @@ namespace Nexus.Extensions
             var resourceD = new Resource() { Id = id4, Name = "unix_time2", Group = "Group 2", Unit = "" };
             resourceD.Metadata["Description"] = "Test resource.";
 
-            var dataset1 = new Dataset() { Id = "1 s_mean", DataType = NexusDataType.FLOAT64 };
-            var dataset2 = new Dataset() { Id = "1 s_mean", DataType = NexusDataType.FLOAT64 };
-            var dataset3 = new Dataset() { Id = "25 Hz", DataType = NexusDataType.INT32 };
-            var dataset4 = new Dataset() { Id = "1 s_max", DataType = NexusDataType.FLOAT64 };
-            var dataset5 = new Dataset() { Id = "1 s_mean", DataType = NexusDataType.FLOAT64 };
+            var representation1 = new Representation() { Id = "1 s_mean", DataType = NexusDataType.FLOAT64 };
+            var representation2 = new Representation() { Id = "1 s_mean", DataType = NexusDataType.FLOAT64 };
+            var representation3 = new Representation() { Id = "25 Hz", DataType = NexusDataType.INT32 };
+            var representation4 = new Representation() { Id = "1 s_max", DataType = NexusDataType.FLOAT64 };
+            var representation5 = new Representation() { Id = "1 s_mean", DataType = NexusDataType.FLOAT64 };
 
             // resource A
-            resourceA.Datasets.Add(dataset1);
-            resourceB.Datasets.Add(dataset2);
-            resourceC.Datasets.Add(dataset3);
-            resourceD.Datasets.Add(dataset4);
-            resourceD.Datasets.Add(dataset5);
+            resourceA.Representations.Add(representation1);
+            resourceB.Representations.Add(representation2);
+            resourceC.Representations.Add(representation3);
+            resourceD.Representations.Add(representation4);
+            resourceD.Representations.Add(representation5);
 
             // catalog
             catalog.Resources.AddRange(new List<Resource>()

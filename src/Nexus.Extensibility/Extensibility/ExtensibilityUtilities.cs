@@ -7,12 +7,12 @@ namespace Nexus.Extensibility
 {
     public static class ExtensibilityUtilities
     {
-        public static (Memory<byte>, Memory<byte>) CreateBuffers(Dataset dataset, DateTime begin, DateTime end)
+        public static (Memory<byte>, Memory<byte>) CreateBuffers(Representation representation, DateTime begin, DateTime end)
         {
-            var elementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, dataset.GetSamplePeriod());
+            var elementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, representation.GetSamplePeriod());
 
-            var dataOwner = MemoryPool<byte>.Shared.Rent(elementCount * dataset.ElementSize);
-            var data = dataOwner.Memory.Slice(0, elementCount * dataset.ElementSize);
+            var dataOwner = MemoryPool<byte>.Shared.Rent(elementCount * representation.ElementSize);
+            var data = dataOwner.Memory.Slice(0, elementCount * representation.ElementSize);
             data.Span.Clear();
 
             var statusOwner = MemoryPool<byte>.Shared.Rent(elementCount);

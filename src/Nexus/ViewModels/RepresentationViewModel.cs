@@ -3,13 +3,13 @@ using Nexus.Infrastructure;
 
 namespace Nexus.ViewModels
 {
-    public class DatasetViewModel
+    public class RepresentationViewModel
     {
         #region Constructors
 
-        public DatasetViewModel(Dataset dataset, ResourceViewModel parent)
+        public RepresentationViewModel(Representation representation, ResourceViewModel parent)
         {
-            this.Model = dataset;
+            this.Model = representation;
             this.Parent = parent;
         }
 
@@ -17,7 +17,7 @@ namespace Nexus.ViewModels
 
         #region Properties
 
-        public Dataset Model { get; }
+        public Representation Model { get; }
 
         public string Name => this.Model.Id;
 

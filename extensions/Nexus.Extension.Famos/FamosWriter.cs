@@ -136,10 +136,10 @@ namespace Nexus.Extension.Famos
         private FamosFileResource PrepareResource(FamosFileField field, ResourceDescription resourceDescription, int totalLength, DateTime startDateTme, double dx)
         {
             // component 
-            var datasetName = $"{resourceDescription.ResourceName}_{resourceDescription.DatasetName.Replace(" ", "_")}";
+            var representationName = $"{resourceDescription.ResourceName}_{resourceDescription.RepresentationName.Replace(" ", "_")}";
             var calibration = new FamosFileCalibration(false, 1, 0, false, resourceDescription.Unit);
 
-            var component = new FamosFileAnalogComponent(datasetName, FamosFileDataType.Float64, totalLength, calibration)
+            var component = new FamosFileAnalogComponent(representationName, FamosFileDataType.Float64, totalLength, calibration)
             {
                 XAxisScaling = new FamosFileXAxisScaling((decimal)dx) { Unit = "s" },
                 TriggerTime = new FamosFileTriggerTime(startDateTme, FamosFileTimeMode.Unknown),

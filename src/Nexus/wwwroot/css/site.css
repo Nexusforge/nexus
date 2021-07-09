@@ -535,13 +535,13 @@ app {
     flex-direction: row;
 }
 
-.resource-datasets {
+.resource-representations {
     display: flex;
     flex-direction: row;
     cursor: pointer;
 }
 
-    .resource-datasets div {
+    .resource-representations div {
         font-size: 0.9rem;
         padding: 2px 4px 2px 4px;
         margin: 0px 2px 0px 2px;
@@ -549,12 +549,12 @@ app {
         color: var(--font-color-subtitle);
     }
 
-        .resource-datasets div:hover {
+        .resource-representations div:hover {
             color: var(--hover-color);
             border: 1px solid var(--hover-color);
         }
 
-.resource-dataset.selected {
+.resource-representation.selected {
     color: var(--active-color) !important;
     border: 1px solid var(--active-color) !important;
 }

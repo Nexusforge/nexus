@@ -18,11 +18,11 @@ namespace Nexus.Extensibility.Tests
         [InlineData("1 us", "00:00:00.000001")]
         [InlineData("200 ns", "00:00:00.0000002")]
         [InlineData("15 ns", "00:00:00")]
-        public void CanCreatUnitStrings(string datasetId, string expectedString)
+        public void CanCreatUnitStrings(string representationId, string expectedString)
         {
             var expected = TimeSpan.Parse(expectedString);
-            var dataset = new Dataset() { Id = datasetId };
-            var actual = dataset.GetSamplePeriod();
+            var representation = new Representation() { Id = representationId };
+            var actual = representation.GetSamplePeriod();
 
             Assert.Equal(expected, actual);
         }

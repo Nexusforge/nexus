@@ -39,7 +39,7 @@ namespace Nexus.DataModel
                     mergedResources.Add(resource with
                     {
                         Metadata = resource.Metadata.ToDictionary(entry => entry.Key, entry => entry.Value),
-                        Datasets = resource.Datasets.ToList()
+                        Representations = resource.Representations.ToList()
                     });
                 }
             }
@@ -98,14 +98,14 @@ namespace Nexus.DataModel
             return merged;
         }
 
-        public bool TryFind(string datasetPath, out DatasetRecord datasetRecord, bool includeName = false)
+        public bool TryFind(string representationPath, out RepresentationRecord representationRecord, bool includeName = false)
         {
-            datasetRecord = null;
+            representationRecord = null;
 
-            var pathParts = datasetPath.Split("/");
+            var pathParts = representationPath.Split("/");
             var catalogId = string.Join('/', pathParts.Take(pathParts.Length - 2));
             var resourceId = Guid.Parse(pathParts[4]);
-            var datasetId = pathParts[5];
+            var representationId = pathParts[5];
 
             if (catalogId != this.Id)
                 return false;
@@ -121,37 +121,37 @@ namespace Nexus.DataModel
                     return false;
             }
 
-            var dataset = resource.Datasets.FirstOrDefault(dataset => dataset.Id == datasetId);
+            var representation = resource.Representations.FirstOrDefault(representation => representation.Id == representationId);
 
-            if (dataset is null)
+            if (representation is null)
                 return false;
 
-            datasetRecord = new DatasetRecord(this, resource, dataset);
+            representationRecord = new RepresentationRecord(this, resource, representation);
             return true;
         }
 
-        public DatasetRecord Find(string datasetPath, bool includeName = false)
+        public RepresentationRecord Find(string representationPath, bool includeName = false)
         {
-            if (!this.TryFind(datasetPath, out var datasetRecord, includeName))
-                throw new Exception($"The dataset on path '{datasetPath}' could not be found.");
+            if (!this.TryFind(representationPath, out var representationRecord, includeName))
+                throw new Exception($"The representation on path '{representationPath}' could not be found.");
 
-            return datasetRecord;
+            return representationRecord;
         }
 
-        public static DatasetRecord Find(string datasetPath, IEnumerable<Catalog> catalogs, bool includeName = false)
+        public static RepresentationRecord Find(string representationPath, IEnumerable<Catalog> catalogs, bool includeName = false)
         {
-            var datasetRecord = default(DatasetRecord);
+            var representationRecord = default(RepresentationRecord);
 
             foreach (var catalog in catalogs)
             {
-                if (catalog.TryFind(datasetPath, out datasetRecord, includeName))
+                if (catalog.TryFind(representationPath, out representationRecord, includeName))
                     break;
             }
 
-            if (datasetRecord is null)
-                throw new Exception($"The dataset on path '{datasetPath}' could not be found.");
+            if (representationRecord is null)
+                throw new Exception($"The representation on path '{representationPath}' could not be found.");
 
-            return datasetRecord;
+            return representationRecord;
         }
 
         #endregion

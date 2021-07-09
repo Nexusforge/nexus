@@ -14,7 +14,7 @@ namespace Nexus.Shared
         #region Fields
 
         private bool _showAdditionalInfo;
-        private List<DatasetViewModel> _filteredDatasets;
+        private List<RepresentationViewModel> _filteredRepresentations;
 
         #endregion
 
@@ -40,7 +40,7 @@ namespace Nexus.Shared
 
         protected override Task OnParametersSetAsync()
         {
-            this.UpdateFilteredDatasets();
+            this.UpdateFilteredRepresentations();
             this.UserState.PropertyChanged += this.OnUserStatePropertyChanged;
 
             return base.OnParametersSetAsync();
@@ -51,18 +51,18 @@ namespace Nexus.Shared
             this.IsExpanded = !this.IsExpanded;
         }
 
-        private void UpdateFilteredDatasets()
+        private void UpdateFilteredRepresentations()
         {
             if (string.IsNullOrWhiteSpace(this.UserState.SampleRate))
-                _filteredDatasets = new List<DatasetViewModel>();
+                _filteredRepresentations = new List<RepresentationViewModel>();
             else
-                _filteredDatasets = this.Resource.Datasets.Where(dataset => dataset.Name.Contains(this.UserState.SampleRate)).ToList();
+                _filteredRepresentations = this.Resource.Representations.Where(representation => representation.Name.Contains(this.UserState.SampleRate)).ToList();
         }
 
         private List<string> GetSampleRates()
         {
-            return this.Resource.Datasets
-                .Select(dataset => dataset.Name.Split('_')[0])
+            return this.Resource.Representations
+                .Select(representation => representation.Name.Split('_')[0])
                 .Distinct()
                 .Where(sampleRate => sampleRate != this.UserState.SampleRate)
                 .OrderBy(x => x, new SampleRateStringComparer()).ToList();
@@ -78,7 +78,7 @@ namespace Nexus.Shared
             {
                 this.InvokeAsync(() =>
                 {
-                    this.UpdateFilteredDatasets();
+                    this.UpdateFilteredRepresentations();
                     this.StateHasChanged();
                 });
             }

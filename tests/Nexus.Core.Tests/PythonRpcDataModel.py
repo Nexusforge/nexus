@@ -24,7 +24,7 @@ class NexusDataType(enum.Enum):
     FLOAT32 = 0x320
     FLOAT64 = 0x340
 
-class Dataset:
+class Representation:
 
     Id: str
     DataType: NexusDataType
@@ -41,15 +41,15 @@ class Resource:
     Unit: str
     Description: str
     Metadata: Dict[str, str]
-    Datasets: List[Dataset]
+    Representations: List[Representation]
 
-    def __init__(self, id: UUID, name: str, group: str, unit: str, metadata: Dict[str, str], datasets: List[Dataset]):
+    def __init__(self, id: UUID, name: str, group: str, unit: str, metadata: Dict[str, str], representations: List[Representation]):
         self.Id = id
         self.Name = name
         self.Group = group
         self.Unit = unit
         self.Metadata = metadata
-        self.Datasets = datasets
+        self.Representations = representations
 
 class Catalog:
     

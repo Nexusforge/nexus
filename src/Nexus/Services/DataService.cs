@@ -36,7 +36,7 @@ namespace Nexus.Services
         #region Types
 
         private record ExportContext(TimeSpan SamplePeriod,
-                                     List<DatasetRecord> DatasetRecords,
+                                     List<RepresentationRecord> RepresentationRecords,
                                      ExportParameters ExportParameters);
 
         #endregion
@@ -90,20 +90,20 @@ namespace Nexus.Services
         }
 
         public async Task<string> ExportDataAsync(ExportParameters exportParameters,
-                                                  List<DatasetRecord> datasetRecords,
+                                                  List<RepresentationRecord> representationRecords,
                                                   CancellationToken cancellationToken)
         {
-            if (!datasetRecords.Any() || exportParameters.Begin == exportParameters.End)
+            if (!representationRecords.Any() || exportParameters.Begin == exportParameters.End)
                 return string.Empty;
 
             // find sample rate
-            var sampleRates = datasetRecords
-                .Select(datasetRecord => datasetRecord.Dataset.GetSampleRate())
+            var sampleRates = representationRecords
+                .Select(representationRecord => representationRecord.Representation.GetSampleRate())
                 .Distinct()
                 .ToList();
 
             if (sampleRates.Count != 1)
-                throw new ValidationException("All datasets must be of the same sample period.");
+                throw new ValidationException("All representations must be of the same sample period.");
 
             var sampleRate = sampleRates.First();
 
@@ -128,7 +128,7 @@ namespace Nexus.Services
 
                 Directory.CreateDirectory(directoryPath);
 
-                var exportContext = new ExportContext(sampleRate.Period, datasetRecords, exportParameters);
+                var exportContext = new ExportContext(sampleRate.Period, representationRecords, exportParameters);
                 await this.CreateFilesAsync(_userIdService.User, exportContext, directoryPath, cancellationToken);
 
                 switch (exportParameters.ExportMode)
@@ -273,24 +273,24 @@ namespace Nexus.Services
                                       CancellationToken cancellationToken)
         {
             /* reading groups */
-            var datasetPipeReaders = new List<DatasetPipeReader>();
-            var groupedDatasetRecords = exportContext.DatasetRecords.GroupBy(datasetRecord => datasetRecord.Dataset.BackendSource);
+            var representationPipeReaders = new List<RepresentationPipeReader>();
+            var groupedRepresentationRecords = exportContext.RepresentationRecords.GroupBy(representationRecord => representationRecord.Representation.BackendSource);
             var readingGroups = new List<DataReadingGroup>();
 
-            foreach (var datasetRecordGroup in groupedDatasetRecords)
+            foreach (var representationRecordGroup in groupedRepresentationRecords)
             {
-                var backendSource = datasetRecordGroup.Key;
+                var backendSource = representationRecordGroup.Key;
                 var controller = await _databaseManager.GetDataSourceControllerAsync(user, backendSource, cancellationToken);
-                var datasetPipeWriters = new List<DatasetPipeWriter>();
+                var representationPipeWriters = new List<RepresentationPipeWriter>();
 
-                foreach (var datasetRecord in datasetRecordGroup)
+                foreach (var representationRecord in representationRecordGroup)
                 {
                     var pipe = new Pipe();
-                    datasetPipeWriters.Add(new DatasetPipeWriter(datasetRecord, pipe.Writer, null));
-                    datasetPipeReaders.Add(new DatasetPipeReader(datasetRecord, pipe.Reader));
+                    representationPipeWriters.Add(new RepresentationPipeWriter(representationRecord, pipe.Writer, null));
+                    representationPipeReaders.Add(new RepresentationPipeReader(representationRecord, pipe.Reader));
                 }
 
-                readingGroups.Add(new DataReadingGroup(controller, datasetPipeWriters));
+                readingGroups.Add(new DataReadingGroup(controller, representationPipeWriters));
             }
 
             /* read */
@@ -311,7 +311,7 @@ namespace Nexus.Services
                 exportParameters.End,
                 exportContext.SamplePeriod,
                 exportParameters.FileGranularity,
-                datasetPipeReaders,
+                representationPipeReaders,
                 this.WriteProgress,
                 cancellationToken
             );

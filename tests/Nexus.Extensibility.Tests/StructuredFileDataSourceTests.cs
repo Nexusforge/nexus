@@ -126,12 +126,12 @@ namespace Nexus.Extensibility.Tests
             var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
             var catalog = catalogs.First();
             var resource = catalog.Resources.First();
-            var dataset = resource.Datasets.First();
-            var datasetPath = new DatasetRecord(catalog, resource, dataset).GetPath();
+            var representation = resource.Representations.First();
+            var representationPath = new RepresentationRecord(catalog, resource, representation).GetPath();
 
             var begin = new DateTime(2019, 12, 31, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 03, 0, 0, 0, DateTimeKind.Utc);
-            var (data, status) = ExtensibilityUtilities.CreateBuffers(dataset, begin, end);
+            var (data, status) = ExtensibilityUtilities.CreateBuffers(representation, begin, end);
 
             var expectedLength = 3 * 86400;
             var expectedData = new long[expectedLength];
@@ -154,7 +154,7 @@ namespace Nexus.Extensibility.Tests
             GenerateData(new DateTimeOffset(2020, 01, 02, 09, 40, 0, 0, TimeSpan.Zero));
             GenerateData(new DateTimeOffset(2020, 01, 02, 09, 50, 0, 0, TimeSpan.Zero));
 
-            var request = new ReadRequest(datasetPath, data, status);
+            var request = new ReadRequest(representationPath, data, status);
             await dataSource.ReadAsync(begin, end, new ReadRequest[] { request, request }, new Progress<double>(), CancellationToken.None);
 
             Assert.True(expectedData.SequenceEqual(MemoryMarshal.Cast<byte, long>(data.Span).ToArray()));
@@ -183,9 +183,9 @@ namespace Nexus.Extensibility.Tests
             var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
             var resource = catalogsResource);
             var channel = resource.Channels.First();
-            var dataset = channel.Datasets.First();resource
-            var datasetPath = new DatasetRecord(catalog, channel, dataset).GetPath();
-            var request = new ReadRequest(datasetPath, default, default);
+            var representation = channel.Representations.First();resource
+            var representationPath = new RepresentationRecord(catalog, channel, representation).GetPath();
+            var request = new ReadRequest(representationPath, default, default);
 
             await Assert.ThrowsAsync<ArgumentException>(() =>
                 dataSource.ReadAsync(begin, end, new ReadRequest[] { request }, default, CancellationToken.None));

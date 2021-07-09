@@ -50,12 +50,12 @@ async function UpdateChart(userState, chartEntries, start, end, count, dt, begin
             var resourcePathSegments = chartEntry.path.split("/");
             var catalogId = encodeURIComponent('/' + resourcePathSegments[1] + '/' + resourcePathSegments[2] + '/' + resourcePathSegments[3]);
             var resourceId = encodeURIComponent(resourcePathSegments[4]);
-            var datasetId = encodeURIComponent(resourcePathSegments[5]);
+            var representationId = encodeURIComponent(resourcePathSegments[5]);
 
             url = "/api/v1/data" +
                   "?catalogId=" + catalogId +
                   "&resourceId=" + resourceId +
-                  "&datasetId=" + datasetId +
+                  "&representationId=" + representationId +
                   "&begin=" + start +
                   "&end=" + end;
 

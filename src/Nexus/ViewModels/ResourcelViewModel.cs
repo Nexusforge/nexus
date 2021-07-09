@@ -21,9 +21,9 @@ namespace Nexus.ViewModels
             _resource = resource;
             _resourceMeta = resourceMeta;
 
-            this.Datasets = resource.Datasets
-                .Where(dataset => !dataset.Id.EndsWith("_status"))
-                .Select(dataset => new DatasetViewModel(dataset, this)).ToList();
+            this.Representations = resource.Representations
+                .Where(representation => !representation.Id.EndsWith("_status"))
+                .Select(representation => new RepresentationViewModel(representation, this)).ToList();
         }
 
         #endregion
@@ -72,7 +72,7 @@ namespace Nexus.ViewModels
 
         public Catalog Parent => (Catalog)_resource.Catalog;
 
-        public List<DatasetViewModel> Datasets { get; private set; }
+        public List<RepresentationViewModel> Representations { get; private set; }
 
         #endregion
     }

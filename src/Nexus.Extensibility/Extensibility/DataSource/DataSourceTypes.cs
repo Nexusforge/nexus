@@ -14,7 +14,7 @@ namespace Nexus.Extensibility
     }
 
     public record ReadRequest(
-        string DatasetPath,
+        string RepresentationPath,
         Memory<byte> Data,
         Memory<byte> Status);
 

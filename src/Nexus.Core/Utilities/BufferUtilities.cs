@@ -7,24 +7,24 @@ namespace Nexus.Utilities
 {
     public static class BufferUtilities
     {
-        public static void ApplyDatasetStatusByDataType(NexusDataType dataType, Memory<byte> data, Memory<byte> status, Memory<double> target)
+        public static void ApplyRepresentationStatusByDataType(NexusDataType dataType, Memory<byte> data, Memory<byte> status, Memory<double> target)
         {
             var targetType = NexusCoreUtilities.GetTypeFromNexusDataType(dataType);
 
             var method = typeof(BufferUtilities)
-                .GetMethod(nameof(BufferUtilities.InternalApplyDatasetStatusByDataType), BindingFlags.NonPublic | BindingFlags.Static)
+                .GetMethod(nameof(BufferUtilities.InternalApplyRepresentationStatusByDataType), BindingFlags.NonPublic | BindingFlags.Static)
                 .MakeGenericMethod(targetType);
 
             method.Invoke(null, new object[] { data, status, target });
         }
 
-        private static void InternalApplyDatasetStatusByDataType<T>(Memory<byte> data, Memory<byte> status, Memory<double> target)
+        private static void InternalApplyRepresentationStatusByDataType<T>(Memory<byte> data, Memory<byte> status, Memory<double> target)
             where T : unmanaged
         {
-            BufferUtilities.ApplyDatasetStatus<T>(data.Cast<T>(), status, target);
+            BufferUtilities.ApplyRepresentationStatus<T>(data.Cast<T>(), status, target);
         }
 
-        public static unsafe void ApplyDatasetStatus<T>(ReadOnlyMemory<T> data, ReadOnlyMemory<byte> status, Memory<double> target) where T : unmanaged
+        public static unsafe void ApplyRepresentationStatus<T>(ReadOnlyMemory<T> data, ReadOnlyMemory<byte> status, Memory<double> target) where T : unmanaged
         {
             fixed (T* dataPtr = data.Span)
             {
@@ -32,13 +32,13 @@ namespace Nexus.Utilities
                 {
                     fixed (double* targetPtr = target.Span)
                     {
-                        BufferUtilities.InternalApplyDatasetStatus(data.Length, dataPtr, statusPtr, targetPtr);
+                        BufferUtilities.InternalApplyRepresentationStatus(data.Length, dataPtr, statusPtr, targetPtr);
                     }
                 }
             }
         }
 
-        private unsafe static void InternalApplyDatasetStatus<T>(int length, T* dataPtr, byte* statusPtr, double* targetPtr) where T : unmanaged
+        private unsafe static void InternalApplyRepresentationStatus<T>(int length, T* dataPtr, byte* statusPtr, double* targetPtr) where T : unmanaged
         {
             Parallel.For(0, length, i =>
             {

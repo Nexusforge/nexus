@@ -47,7 +47,7 @@ namespace Nexus.Core.Tests
             var actualNames = actual.Resources.Select(resource => resource.Name).ToList();
             var actualGroups = actual.Resources.Select(resource => resource.Group).ToList();
             var actualUnits = actual.Resources.Select(resource => resource.Unit).ToList();
-            var actualDataTypes = actual.Resources.SelectMany(resource => resource.Datasets.Select(dataset => dataset.DataType)).ToList();
+            var actualDataTypes = actual.Resources.SelectMany(resource => resource.Representations.Select(representation => representation.DataType)).ToList();
 
             var expectedNames = new List<string>() { "T1_squared" };
             var expectedGroups = new List<string>() { "test" };
@@ -110,17 +110,17 @@ namespace Nexus.Core.Tests
                 new CatalogContainer("/IN_MEMORY/TEST/ACCESSIBLE")
             });
 
-            var dataset = new Dataset() { Id = "1 Hz", DataType = NexusDataType.FLOAT64 };
+            var representation = new Representation() { Id = "1 Hz", DataType = NexusDataType.FLOAT64 };
 
             var resource = new Resource() { Id = Guid.NewGuid() };
-            resource.Datasets.Add(dataset);
+            resource.Representations.Add(representation);
 
             var catalog = new Catalog() { Id = "/IN_MEMORY/TEST/ACCESSIBLE" };
             catalog.Resources.Add(resource);
 
             Mock.Get(database)
                 .Setup(s => s.Find(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()))
-                .Returns(new DatasetRecord(catalog, resource, dataset));
+                .Returns(new RepresentationRecord(catalog, resource, representation));
 
             // setup data source
             var subDataSource = Mock.Of<IDataSource>();
@@ -135,7 +135,7 @@ namespace Nexus.Core.Tests
                 )
                 .Callback<DateTime, DateTime, ReadRequest[], IProgress<double>, CancellationToken>((begin, end, requests, progress, cancellationToken) =>
                 {
-                    var (datasetPath, data, status) = requests[0];
+                    var (representationPath, data, status) = requests[0];
 
                     var doubleData = data.Cast<double>();
                     doubleData.Span[0] = 2;
@@ -168,14 +168,14 @@ namespace Nexus.Core.Tests
             var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
             var catalog2 = catalogs.First();
             var resource2 = catalog2.Resources.First();
-            var dataset2 = resource2.Datasets.First();
-            var datasetPath = new DatasetRecord(catalog2, resource2, dataset2).GetPath();
+            var representation2 = resource2.Representations.First();
+            var representationPath = new RepresentationRecord(catalog2, resource2, representation2).GetPath();
 
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 02, 0, 0, 0, DateTimeKind.Utc);
-            var (data, status) = ExtensibilityUtilities.CreateBuffers(dataset, begin, end);
+            var (data, status) = ExtensibilityUtilities.CreateBuffers(representation, begin, end);
 
-            var request = new ReadRequest(datasetPath, data, status);
+            var request = new ReadRequest(representationPath, data, status);
             await dataSource.ReadAsync(begin, end, new[] { request }, new Progress<double>(), CancellationToken.None);
             var doubleData = data.Cast<double>();
 

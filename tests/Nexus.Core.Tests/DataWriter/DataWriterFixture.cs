@@ -13,11 +13,11 @@ namespace Nexus.Core.Tests
             this.TargetFolder = Path.Combine(Path.GetTempPath(), $"Nexus.Tests.{Guid.NewGuid()}");
             Directory.CreateDirectory(this.TargetFolder);
 
-            // datasets
-            var datasets = new List<Dataset>()
+            // representations
+            var representations = new List<Representation>()
             {
-                new Dataset() { Id = "1 Hz_mean", DataType = NexusDataType.FLOAT32 },
-                new Dataset() { Id = "1 Hz_max", DataType = NexusDataType.FLOAT64 },
+                new Representation() { Id = "1 Hz_mean", DataType = NexusDataType.FLOAT32 },
+                new Representation() { Id = "1 Hz_max", DataType = NexusDataType.FLOAT64 },
             };
 
             // resource
@@ -35,7 +35,7 @@ namespace Nexus.Core.Tests
                     Group = "group1",
                     Unit = "°C",
                     Metadata = resourceMetadata,
-                    Datasets = datasets
+                    Representations = representations
                 }
             };
 

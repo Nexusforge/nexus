@@ -52,7 +52,7 @@ namespace Nexus.Core
         private AuthenticationStateProvider _authenticationStateProvider;
 
         private KeyValuePair<string, List<ResourceViewModel>> _groupedResourcesEntry;
-        private Dictionary<string, List<DatasetViewModel>> _sampleRateToSelectedDatasetsMap;
+        private Dictionary<string, List<RepresentationViewModel>> _sampleRateToSelectedRepresentationsMap;
 
         #endregion
 
@@ -313,7 +313,7 @@ namespace Nexus.Core
 
         #region Properties - Download Area
 
-        public IReadOnlyCollection<DatasetViewModel> SelectedDatasets => this.GetSelectedDatasets();
+        public IReadOnlyCollection<RepresentationViewModel> SelectedRepresentations => this.GetSelectedRepresentations();
 
         #endregion
 
@@ -435,7 +435,7 @@ namespace Nexus.Core
 
 
                 return this.DateTimeBegin < this.DateTimeEnd &&
-                       this.SelectedDatasets.Count > 0 &&
+                       this.SelectedRepresentations.Count > 0 &&
                        (ulong)this.FileGranularity >= samplePeriod;
             }
             else
@@ -457,10 +457,10 @@ namespace Nexus.Core
                 this.ClientState = ClientState.PrepareDownload;
                 _dataService.ReadProgress.ProgressChanged += eventHandler;
 
-                var selectedDatasets = this.GetSelectedDatasets().Select(dataset => dataset.Model).ToList();
+                var selectedRepresentations = this.GetSelectedRepresentations().Select(representation => representation.Model).ToList();
 
                 // security check
-                var catalogIds = selectedDatasets.Select(dataset => dataset.Resource.Catalog.Id).Distinct();
+                var catalogIds = selectedRepresentations.Select(representation => representation.Resource.Catalog.Id).Distinct();
 
                 foreach (var catalogId in catalogIds)
                 {
@@ -480,7 +480,7 @@ namespace Nexus.Core
                 _exportJobControl = exportJobService.AddJob(job, _dataService.ReadProgress, (jobControl, cts) =>
                 {
                     var task = _dataService.ExportDataAsync(this.ExportParameters,
-                                                            selectedDatasets,
+                                                            selectedRepresentations,
                                                             cts.Token);
 
                     return task;
@@ -518,7 +518,7 @@ namespace Nexus.Core
 
         public bool CanVisualize()
         {
-            return this.SelectedDatasets.Any()
+            return this.SelectedRepresentations.Any()
                 && this.DateTimeBegin < this.DateTimeEnd;
         }
 
@@ -552,8 +552,8 @@ namespace Nexus.Core
 
         public void SetExportParameters(ExportParameters exportParameters)
         {
-            _sampleRateToSelectedDatasetsMap = this.SampleRateValues
-                .ToDictionary(sampleRate => sampleRate, sampleRate => new List<DatasetViewModel>());
+            _sampleRateToSelectedRepresentationsMap = this.SampleRateValues
+                .ToDictionary(sampleRate => sampleRate, sampleRate => new List<RepresentationViewModel>());
 
             // find sample rate
             var sampleRates = exportParameters.ResourcePaths.Select(resourcePath 
@@ -564,14 +564,14 @@ namespace Nexus.Core
 
             //
             this.ExportParameters = exportParameters;
-            var selectedDatasets = this.GetSelectedDatasets();
+            var selectedRepresentations = this.GetSelectedRepresentations();
 
             exportParameters.ResourcePaths.ForEach(value =>
             {
                 var pathSegments = value.Split('/');
                 var catalogName = $"/{pathSegments[1]}/{pathSegments[2]}/{pathSegments[3]}";
                 var resourceName = pathSegments[4];
-                var datasetName = pathSegments[5];
+                var representationName = pathSegments[5];
 
                 var catalogContainer = this.CatalogContainersInfo.Accessible.FirstOrDefault(current => current.Id == catalogName);
 
@@ -582,10 +582,10 @@ namespace Nexus.Core
 
                     if (resource != null)
                     {
-                        var dataset = resource.Datasets.FirstOrDefault(current => current.Name == datasetName);
+                        var representation = resource.Representations.FirstOrDefault(current => current.Name == representationName);
 
-                        if (dataset != null)
-                            selectedDatasets.Add(dataset);
+                        if (representation != null)
+                            selectedRepresentations.Add(representation);
                     }
                 }
             });
@@ -593,22 +593,22 @@ namespace Nexus.Core
             this.RaisePropertyChanged(nameof(UserState.ExportParameters));
         }
 
-        public bool IsDatasetSeleced(DatasetViewModel dataset)
+        public bool IsRepresentationSeleced(RepresentationViewModel representation)
         {
-            return this.SelectedDatasets.Contains(dataset);
+            return this.SelectedRepresentations.Contains(representation);
         }
 
-        public void ToggleDatasetSelection(DatasetViewModel dataset)
+        public void ToggleRepresentationSelection(RepresentationViewModel representation)
         {
-            var isSelected = this.SelectedDatasets.Contains(dataset);
+            var isSelected = this.SelectedRepresentations.Contains(representation);
 
             if (isSelected)
-                this.GetSelectedDatasets().Remove(dataset);
+                this.GetSelectedRepresentations().Remove(representation);
             else
-                this.GetSelectedDatasets().Add(dataset);
+                this.GetSelectedRepresentations().Add(representation);
 
             this.UpdateExportParameters();
-            this.RaisePropertyChanged(nameof(UserState.SelectedDatasets));
+            this.RaisePropertyChanged(nameof(UserState.SelectedRepresentations));
         }
 
         public long GetByteCount()
@@ -616,9 +616,9 @@ namespace Nexus.Core
             var totalDays = (this.DateTimeEnd - this.DateTimeBegin).TotalDays;
             var frequency = string.IsNullOrWhiteSpace(this.SampleRate) ? 0 : new SampleRateContainer(this.SampleRate).SamplesPerDay;
 
-            return (long)this.GetSelectedDatasets().Sum(dataset =>
+            return (long)this.GetSelectedRepresentations().Sum(representation =>
             {
-                var elementSize = NexusCoreUtilities.SizeOf(dataset.DataType);
+                var elementSize = NexusCoreUtilities.SizeOf(representation.DataType);
 
                 return frequency * totalDays * elementSize;
             });
@@ -637,11 +637,11 @@ namespace Nexus.Core
             {
                 return catalogContainer.Catalog.Resources.SelectMany(resource =>
                 {
-                    return resource.Datasets.Select(dataset => dataset.Id.Split('_')[0]);
+                    return resource.Representations.Select(representation => representation.Id.Split('_')[0]);
                 });
             }).Distinct().OrderBy(x => x, new SampleRateStringComparer()).ToList();
 
-            // to rebuilt list with new dataset instances
+            // to rebuilt list with new representation instances
             this.SetExportParameters(this.ExportParameters);
 
             // maybe there is a new resource available now: display it
@@ -717,9 +717,9 @@ namespace Nexus.Core
 
         private void UpdateExportParameters()
         {
-            this.ExportParameters.ResourcePaths = this.GetSelectedDatasets().Select(dataset =>
+            this.ExportParameters.ResourcePaths = this.GetSelectedRepresentations().Select(representation =>
             {
-                return $"{dataset.Parent.Parent.Id}/{dataset.Parent.Id}/{dataset.Name}";
+                return $"{representation.Parent.Parent.Id}/{representation.Parent.Id}/{representation.Name}";
             }).ToList();
         }
 
@@ -735,14 +735,14 @@ namespace Nexus.Core
             return false;
         }
 
-        private List<DatasetViewModel> GetSelectedDatasets()
+        private List<RepresentationViewModel> GetSelectedRepresentations()
         {
-            var containsKey = !string.IsNullOrWhiteSpace(this.SampleRate) && _sampleRateToSelectedDatasetsMap.ContainsKey(this.SampleRate);
+            var containsKey = !string.IsNullOrWhiteSpace(this.SampleRate) && _sampleRateToSelectedRepresentationsMap.ContainsKey(this.SampleRate);
 
             if (containsKey)
-                return _sampleRateToSelectedDatasetsMap[this.SampleRate];
+                return _sampleRateToSelectedRepresentationsMap[this.SampleRate];
             else
-                return new List<DatasetViewModel>();
+                return new List<RepresentationViewModel>();
         }
 
         private async Task<SplittedCatalogContainers> SplitCampainContainersAsync(List<CatalogContainer> catalogContainers,

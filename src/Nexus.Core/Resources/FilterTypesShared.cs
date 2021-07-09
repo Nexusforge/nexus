@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace Nexus.Filters
 {
-    public delegate Span<double> GetFilterData(string catalogId, string resourceId, string datasetId, DateTime begin, DateTime end);
+    public delegate Span<double> GetFilterData(string catalogId, string resourceId, string representationId, DateTime begin, DateTime end);
 
     public static class FilterConstants
     {

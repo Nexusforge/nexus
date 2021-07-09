@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 namespace Nexus.DataModel
 {
     [DebuggerDisplay("{Id,nq}")]
-    public record Dataset
+    public record Representation
     {
         #region Properties
 
@@ -23,7 +23,7 @@ namespace Nexus.DataModel
 
         #region "Methods"
 
-#warning Encode sample period in Dataset instead of name?
+#warning Encode sample period in Representation instead of name?
 
         internal TimeSpan GetSamplePeriod()
         {

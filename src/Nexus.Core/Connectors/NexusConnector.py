@@ -30,7 +30,7 @@ class Resource():
         self.name = dict["name"]
         self.group = dict["group"]
         self.unit = dict["unit"]
-        self.dataset_name = resourcePath.split("/")[-1]
+        self.representation_name = resourcePath.split("/")[-1]
         self.description = dict["description"]
         self.metadata = dict["metadata"]
 
@@ -119,7 +119,7 @@ class NexusConnector():
 
         catalogId = quote("/" + resourcePathSegments[1] + "/" + resourcePathSegments[2] + "/" + resourcePathSegments[3], safe="")
         resourceId = quote(resourcePathSegments[4], safe="")
-        datasetId = quote(resourcePathSegments[5], safe="")
+        representationId = quote(resourcePathSegments[5], safe="")
         begin = params["Begin"]
         end = params["End"]
 
@@ -129,7 +129,7 @@ class NexusConnector():
             "/api/v1/data" + \
             "?catalogId=" + catalogId +
             "&resourceId=" + resourceId +
-            "&datasetId=" + datasetId +
+            "&representationId=" + representationId +
             "&begin=" + params["Begin"] +
             "&end=" + params["End"],
             None, \
