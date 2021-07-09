@@ -117,9 +117,9 @@ namespace Nexus.Extensibility
             var samplePeriod = catalogItem.Representation.GetSamplePeriod();
             DataSourceController.ValidateParameters(begin, end, samplePeriod);
 
-            var readingGroup = new DataReadingGroup(this, new List<RepresentationPipeWriter>() 
+            var readingGroup = new DataReadingGroup(this, new List<CatalogItemPipeWriter>() 
             { 
-                new RepresentationPipeWriter(catalogItem, dataWriter, statusWriter) 
+                new CatalogItemPipeWriter(catalogItem, dataWriter, statusWriter) 
             });
 
             return DataSourceController.ReadAsync(
@@ -207,16 +207,16 @@ namespace Nexus.Extensibility
             DateTime begin, 
             DateTime end,
             TimeSpan samplePeriod,
-            List<RepresentationPipeWriter> representationPipeWriters,
+            List<CatalogItemPipeWriter> catalogItemPipeWriters,
             CancellationToken cancellationToken)
         {
             var index = 1;
-            var count = representationPipeWriters.Count;
+            var count = catalogItemPipeWriters.Count;
             var elementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, samplePeriod);
 
-            var requests = representationPipeWriters.Select(representationPipeWriter =>
+            var requests = catalogItemPipeWriters.Select(catalogItemPipeWriter =>
             {
-                var (catalogItem, dataWriter, statusWriter) = representationPipeWriter;
+                var (catalogItem, dataWriter, statusWriter) = catalogItemPipeWriter;
                 Memory<byte> data;
                 Memory<byte> status;
 
@@ -275,9 +275,9 @@ namespace Nexus.Extensibility
                     this.Progress,
                     cancellationToken);
 
-            foreach (var (representationPipeWriter, readRequest) in representationPipeWriters.Zip(requests))
+            foreach (var (catalogItemPipeWriter, readRequest) in catalogItemPipeWriters.Zip(requests))
             {
-                var (catalogItem, dataWriter, statusWriter) = representationPipeWriter;
+                var (catalogItem, dataWriter, statusWriter) = catalogItemPipeWriter;
 
                 if (statusWriter is null)
                 {
@@ -332,9 +332,9 @@ namespace Nexus.Extensibility
             CancellationToken cancellationToken)
         {
             /* validation */
-            foreach (var representationPipeWriters in readingGroups.SelectMany(readingGroup => readingGroup.RepresentationPipeWriters))
+            foreach (var catalogItemPipeWriters in readingGroups.SelectMany(readingGroup => readingGroup.CatalogItemPipeWriters))
             {
-                if (representationPipeWriters.CatalogItem.Representation.GetSamplePeriod() != samplePeriod)
+                if (catalogItemPipeWriters.CatalogItem.Representation.GetSamplePeriod() != samplePeriod)
                     throw new ValidationException("All representations must be of the same sample period.");
             }
 
@@ -342,8 +342,8 @@ namespace Nexus.Extensibility
 
             /* pre-calculation */
             var bytesPerRow = readingGroups
-                .SelectMany(readingGroup => readingGroup.RepresentationPipeWriters)
-                .Sum(representationPipeWriter => representationPipeWriter.CatalogItem.Representation.ElementSize);
+                .SelectMany(readingGroup => readingGroup.CatalogItemPipeWriters)
+                .Sum(catalogItemPipeWriter => catalogItemPipeWriter.CatalogItem.Representation.ElementSize);
 
             TimeSpan maxPeriodPerRequest;
 
@@ -370,7 +370,7 @@ namespace Nexus.Extensibility
             /* progress */
             var currentDataSourceProgress = new ConcurrentDictionary<DataSourceController, double>();
 
-            foreach (var (controller, representationPipeWriters) in readingGroups)
+            foreach (var (controller, catalogItemPipeWriters) in readingGroups)
             {
                 /* no need to remove handler because of short lifetime of IDataSource */
                 controller.Progress.ProgressChanged += (sender, progressValue) =>
@@ -397,7 +397,7 @@ namespace Nexus.Extensibility
 
                 var readingTasks = readingGroups.Select(async readingGroup =>
                 {
-                    var (controller, representationPipeWriters) = readingGroup;
+                    var (controller, catalogItemPipeWriters) = readingGroup;
                     var currentBegin = begin + consumedPeriod;
                     var currentEnd = begin + currentPeriod;
 
@@ -407,7 +407,7 @@ namespace Nexus.Extensibility
                             currentBegin,
                             currentEnd,
                             samplePeriod,
-                            representationPipeWriters,
+                            catalogItemPipeWriters,
                             cancellationToken);
                     }
                     catch (Exception ex)
@@ -428,12 +428,12 @@ namespace Nexus.Extensibility
             /* complete */
             foreach (var readingGroup in readingGroups)
             {
-                foreach (var representationPipeWriter in readingGroup.RepresentationPipeWriters)
+                foreach (var catalogItemPipeWriter in readingGroup.CatalogItemPipeWriters)
                 {
-                    await representationPipeWriter.DataWriter.CompleteAsync().ConfigureAwait(false);
+                    await catalogItemPipeWriter.DataWriter.CompleteAsync().ConfigureAwait(false);
 
-                    if (representationPipeWriter.StatusWriter is not null)
-                        await representationPipeWriter.StatusWriter.CompleteAsync().ConfigureAwait(false);
+                    if (catalogItemPipeWriter.StatusWriter is not null)
+                        await catalogItemPipeWriter.StatusWriter.CompleteAsync().ConfigureAwait(false);
                 }
             }
         }

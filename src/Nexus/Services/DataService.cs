@@ -273,7 +273,7 @@ namespace Nexus.Services
                                       CancellationToken cancellationToken)
         {
             /* reading groups */
-            var representationPipeReaders = new List<RepresentationPipeReader>();
+            var catalogItemPipeReaders = new List<CatalogItemPipeReader>();
             var groupedCatalogItems = exportContext.CatalogItems.GroupBy(catalogItem => catalogItem.Representation.BackendSource);
             var readingGroups = new List<DataReadingGroup>();
 
@@ -281,16 +281,16 @@ namespace Nexus.Services
             {
                 var backendSource = catalogItemGroup.Key;
                 var controller = await _databaseManager.GetDataSourceControllerAsync(user, backendSource, cancellationToken);
-                var representationPipeWriters = new List<RepresentationPipeWriter>();
+                var catalogItemPipeWriters = new List<CatalogItemPipeWriter>();
 
                 foreach (var catalogItem in catalogItemGroup)
                 {
                     var pipe = new Pipe();
-                    representationPipeWriters.Add(new RepresentationPipeWriter(catalogItem, pipe.Writer, null));
-                    representationPipeReaders.Add(new RepresentationPipeReader(catalogItem, pipe.Reader));
+                    catalogItemPipeWriters.Add(new CatalogItemPipeWriter(catalogItem, pipe.Writer, null));
+                    catalogItemPipeReaders.Add(new CatalogItemPipeReader(catalogItem, pipe.Reader));
                 }
 
-                readingGroups.Add(new DataReadingGroup(controller, representationPipeWriters));
+                readingGroups.Add(new DataReadingGroup(controller, catalogItemPipeWriters));
             }
 
             /* read */
@@ -311,7 +311,7 @@ namespace Nexus.Services
                 exportParameters.End,
                 exportContext.SamplePeriod,
                 exportParameters.FileGranularity,
-                representationPipeReaders,
+                catalogItemPipeReaders,
                 this.WriteProgress,
                 cancellationToken
             );
