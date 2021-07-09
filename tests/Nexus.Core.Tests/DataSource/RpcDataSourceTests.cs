@@ -85,7 +85,7 @@ namespace Nexus.Core.Tests
             var resource = new Resource() { Id = resourceGuid, Name = "resource 1", Group = "group 1", Unit = "unit 1" };
             resource.Representations.Add(representation);
 
-            var catalog = new Catalog() { Id = "/M/F/G" };
+            var catalog = new ResourceCatalog() { Id = "/M/F/G" };
             catalog.Resources.Add(resource);
 
             var dataSource = new RpcDataSource() as IDataSource;
@@ -99,7 +99,7 @@ namespace Nexus.Core.Tests
                     ["arguments"] = "PythonRpcDataSource.py"
                 },
                 Logger = _logger,
-                Catalogs = new List<Catalog>() { catalog }
+                Catalogs = new List<ResourceCatalog>() { catalog }
             };
 
             await dataSource.SetContextAsync(context, CancellationToken.None);

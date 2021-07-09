@@ -62,7 +62,7 @@ namespace Nexus.Extensibility
         protected abstract Task<Configuration>
             GetConfigurationAsync(string catalogId, CancellationToken cancellationToken);
 
-        protected abstract Task<List<Catalog>>
+        protected abstract Task<List<ResourceCatalog>>
             GetCatalogsAsync(CancellationToken cancellationToken);
 
         protected virtual Task<(DateTime Begin, DateTime End)> 
@@ -345,7 +345,7 @@ namespace Nexus.Extensibility
             await this.SetContextAsync(context, cancellationToken);
         }
 
-        async Task<List<Catalog>> 
+        async Task<List<ResourceCatalog>> 
             IDataSource.GetCatalogsAsync(CancellationToken cancellationToken)
         {
             if (this.Context.Catalogs is null)
@@ -384,7 +384,7 @@ namespace Nexus.Extensibility
 
             foreach (var (representationPath, dataBuffer, statusBuffer) in requests)
             {
-                var representationRecord = Catalog.Find(representationPath, this.Context.Catalogs);
+                var representationRecord = ResourceCatalog.Find(representationPath, this.Context.Catalogs);
 
                 try
                 {

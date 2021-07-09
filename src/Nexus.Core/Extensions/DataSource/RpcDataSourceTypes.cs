@@ -8,7 +8,7 @@ using System.Text.Json.Serialization;
 namespace Nexus.Extensions
 {
     public record ApiLevelResponse(int ApiLevel);
-    public record CatalogsResponse(List<Catalog> Catalogs);
+    public record CatalogsResponse(List<ResourceCatalog> Catalogs);
     public record TimeRangeResponse(DateTime Begin, DateTime End);
     public record AvailabilityResponse(double Availability);
     public record ReadSingleResponse();

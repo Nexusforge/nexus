@@ -76,7 +76,7 @@ namespace Nexus.Extensions
             }, timeoutTokenSource.Token);
         }
 
-        public async Task<List<Catalog>> GetCatalogsAsync(CancellationToken cancellationToken)
+        public async Task<List<ResourceCatalog>> GetCatalogsAsync(CancellationToken cancellationToken)
         {
             if (this.Context.Catalogs is null)
             {
@@ -137,7 +137,7 @@ namespace Nexus.Extensions
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var representationRecord = Catalog.Find(representationPath, this.Context.Catalogs);
+                var representationRecord = ResourceCatalog.Find(representationPath, this.Context.Catalogs);
                 var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromMinutes(1));
                 cancellationToken.Register(() => timeoutTokenSource.Cancel());
 

@@ -33,7 +33,7 @@ namespace Nexus.Extensibility
 
         public IDataSource DataSource { get; }
 
-        public List<Catalog> Catalogs { get; private set; }
+        public List<ResourceCatalog> Catalogs { get; private set; }
 
         internal BackendSource BackendSource { get; }
 

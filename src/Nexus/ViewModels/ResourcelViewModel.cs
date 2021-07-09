@@ -70,7 +70,7 @@ namespace Nexus.ViewModels
             set { _resourceMeta.SpecialInfo = value; }
         }
 
-        public Catalog Parent => (Catalog)_resource.Catalog;
+        public ResourceCatalog Parent => (ResourceCatalog)_resource.Catalog;
 
         public List<RepresentationViewModel> Representations { get; private set; }
 

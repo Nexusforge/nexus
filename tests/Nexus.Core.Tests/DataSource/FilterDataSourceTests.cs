@@ -115,7 +115,7 @@ namespace Nexus.Core.Tests
             var resource = new Resource() { Id = Guid.NewGuid() };
             resource.Representations.Add(representation);
 
-            var catalog = new Catalog() { Id = "/IN_MEMORY/TEST/ACCESSIBLE" };
+            var catalog = new ResourceCatalog() { Id = "/IN_MEMORY/TEST/ACCESSIBLE" };
             catalog.Resources.Add(resource);
 
             Mock.Get(database)

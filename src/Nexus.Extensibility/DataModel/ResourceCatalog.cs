@@ -6,7 +6,7 @@ using System.Linq;
 namespace Nexus.DataModel
 {
     [DebuggerDisplay("{Id,nq}")]
-    public record Catalog
+    public record ResourceCatalog
     {
         #region Properties
 
@@ -18,7 +18,7 @@ namespace Nexus.DataModel
 
         #region "Methods"
 
-        public Catalog Merge(Catalog catalog, MergeMode mergeMode)
+        public ResourceCatalog Merge(ResourceCatalog catalog, MergeMode mergeMode)
         {
             if (this.Id != catalog.Id)
                 throw new Exception("The catalog to be merged has a different ID.");
@@ -45,7 +45,7 @@ namespace Nexus.DataModel
             }
 
             // merge properties
-            Catalog merged;
+            ResourceCatalog merged;
 
             switch (mergeMode)
             {
@@ -63,7 +63,7 @@ namespace Nexus.DataModel
                             mergedMetadata1[key] = value;
                     }
 
-                    merged = new Catalog()
+                    merged = new ResourceCatalog()
                     {
                         Id = this.Id,
                         Metadata = mergedMetadata1,
@@ -82,7 +82,7 @@ namespace Nexus.DataModel
                         mergedMetadata2[key] = value;
                     }
 
-                    merged = new Catalog()
+                    merged = new ResourceCatalog()
                     {
                         Id = this.Id,
                         Metadata = mergedMetadata2,
@@ -138,7 +138,7 @@ namespace Nexus.DataModel
             return representationRecord;
         }
 
-        public static RepresentationRecord Find(string representationPath, IEnumerable<Catalog> catalogs, bool includeName = false)
+        public static RepresentationRecord Find(string representationPath, IEnumerable<ResourceCatalog> catalogs, bool includeName = false)
         {
             var representationRecord = default(RepresentationRecord);
 

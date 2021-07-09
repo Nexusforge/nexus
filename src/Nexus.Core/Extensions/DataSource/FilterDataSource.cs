@@ -26,7 +26,7 @@ namespace Nexus.Extensions
 
         public const string Id = "Nexus.Filters";
 
-        private List<Catalog> _catalogs;
+        private List<ResourceCatalog> _catalogs;
 
         private Uri _resourceLocator { get; set; }
 
@@ -122,11 +122,11 @@ namespace Nexus.Extensions
             }
         }
 
-        public Task<List<Catalog>> GetCatalogsAsync(CancellationToken cancellationToken)
+        public Task<List<ResourceCatalog>> GetCatalogsAsync(CancellationToken cancellationToken)
         {
             return Task.Run(() =>
             {
-                var catalogs = new Dictionary<string, Catalog>();
+                var catalogs = new Dictionary<string, ResourceCatalog>();
 
                 if (this.TryGetFilterSettings(out var filterSettings))
                 {
@@ -194,7 +194,7 @@ namespace Nexus.Extensions
                             // get or create catalog
                             if (!catalogs.TryGetValue(localFilterResource.CatalogId, out var catalog))
                             {
-                                catalog = new Catalog() { Id = localFilterResource.CatalogId };
+                                catalog = new ResourceCatalog() { Id = localFilterResource.CatalogId };
                                 catalogs[localFilterResource.CatalogId] = catalog;
                             }
 
@@ -226,7 +226,7 @@ namespace Nexus.Extensions
 
                 foreach (var (representationPath, data, status) in requests)
                 {
-                    var (catalog, resource, representation) = Catalog.Find(representationPath, _catalogs);
+                    var (catalog, resource, representation) = ResourceCatalog.Find(representationPath, _catalogs);
                     var cacheEntry = _cacheEntries.FirstOrDefault(current => current.SupportedChanneIds.Contains(resource.Id));
 
 
@@ -244,7 +244,7 @@ namespace Nexus.Extensions
 
                 foreach (var (representationPath, data, status) in requests)
                 {
-                    var (catalog, resource, representation) = Catalog.Find(representationPath, _catalogs);
+                    var (catalog, resource, representation) = ResourceCatalog.Find(representationPath, _catalogs);
                     var cacheEntry = _cacheEntries.FirstOrDefault(current => current.SupportedChanneIds.Contains(resource.Id));
 
                     if (cacheEntry is null)

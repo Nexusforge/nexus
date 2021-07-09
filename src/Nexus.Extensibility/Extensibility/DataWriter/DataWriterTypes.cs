@@ -13,12 +13,12 @@ namespace Nexus.Extensibility
     }
 
     public record RepresentationRecordGroup(
-        Catalog Catalog,
+        ResourceCatalog Catalog,
         string License, 
         RepresentationRecord[] RepresentationRecords);
 
     public record WriteRequestGroup(
-        Catalog Catalog,
+        ResourceCatalog Catalog,
         WriteRequest[] Requests);
 
     public record WriteRequest(

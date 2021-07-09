@@ -45,7 +45,7 @@ namespace Nexus.Services
             public BackendSource AggregationBackendSource { get; init; }
             public NexusDatabase Database { get; init; }
             public Dictionary<BackendSource, Type> BackendSourceToDataReaderTypeMap { get; init; }
-            public Dictionary<BackendSource, List<Catalog>> BackendSourceToCatalogsMap { get; init; }
+            public Dictionary<BackendSource, List<ResourceCatalog>> BackendSourceToCatalogsMap { get; init; }
         }
 
         #endregion
@@ -111,7 +111,7 @@ namespace Nexus.Services
             var database = new NexusDatabase();
 
             // create new empty catalogs map
-            var backendSourceToCatalogsMap = new Dictionary<BackendSource, List<Catalog>>();
+            var backendSourceToCatalogsMap = new Dictionary<BackendSource, List<ResourceCatalog>>();
 
             // load data readers
             var backendSourceToDataReaderTypeMap = this.LoadDataReaders(this.Config.BackendSources);
@@ -158,7 +158,7 @@ namespace Nexus.Services
                     if (File.Exists(filePath))
                     {
                         var jsonString = File.ReadAllText(filePath);
-                        return JsonSerializer.Deserialize<Catalog>(jsonString);
+                        return JsonSerializer.Deserialize<ResourceCatalog>(jsonString);
                     }
                     else
                     {
@@ -281,7 +281,7 @@ namespace Nexus.Services
             return controller;
         }
 
-        public void SaveCatalogMeta(Catalog catalogMeta)
+        public void SaveCatalogMeta(ResourceCatalog catalogMeta)
         {
             var filePath = this.GetCatalogMetaPath(catalogMeta.Id);
             var jsonString = JsonSerializer.Serialize(catalogMeta, new JsonSerializerOptions() { WriteIndented = true });
@@ -359,7 +359,7 @@ namespace Nexus.Services
         }
 
         private async Task<DataSourceController>
-            InstantiateDataSourceAsync(BackendSource backendSource, Type type, Dictionary<BackendSource, List<Catalog>> backendSourceToCatalogsMap, CancellationToken cancellationToken)
+            InstantiateDataSourceAsync(BackendSource backendSource, Type type, Dictionary<BackendSource, List<ResourceCatalog>> backendSourceToCatalogsMap, CancellationToken cancellationToken)
         {
             _logger.LogInformation($"Instantiating {backendSource.Type} for URI {backendSource.ResourceLocator} ...");
 
@@ -444,13 +444,13 @@ namespace Nexus.Services
             return assembly.ExportedTypes.Where(type => type.IsClass && !type.IsAbstract && type.IsSubclassOf(typeof(DataSourceController))).ToList();
         }
 
-        private void CleanUpFilterCatalogs(List<Catalog> filterCatalogs,
-                                           List<Catalog> catalogMetas,
+        private void CleanUpFilterCatalogs(List<ResourceCatalog> filterCatalogs,
+                                           List<ResourceCatalog> catalogMetas,
                                            UserManager<IdentityUser> userManager,
                                            CancellationToken cancellationToken)
         {
             var usersMap = new Dictionary<string, ClaimsPrincipal>();
-            var catalogsToRemove = new List<Catalog>();
+            var catalogsToRemove = new List<ResourceCatalog>();
 
             foreach (var catalog in filterCatalogs)
             {

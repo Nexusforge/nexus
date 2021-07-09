@@ -10,7 +10,7 @@ namespace Nexus.Extensibility
         public Uri ResourceLocator { get; init; }
         public Dictionary<string, string> Configuration { get; init; }
         public ILogger Logger { get; init; }
-        public List<Catalog>? Catalogs { get; init; }
+        public List<ResourceCatalog>? Catalogs { get; init; }
     }
 
     public record ReadRequest(

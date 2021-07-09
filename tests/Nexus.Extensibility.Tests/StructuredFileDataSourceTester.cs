@@ -86,11 +86,11 @@ namespace Nexus.Extensibility.Tests
             });
         }
 
-        protected override Task<List<Catalog>> GetCatalogsAsync(CancellationToken cancellationToken)
+        protected override Task<List<ResourceCatalog>> GetCatalogsAsync(CancellationToken cancellationToken)
         {
             if (this.Context.Catalogs is null)
             {
-                var catalog = new Catalog() { Id = "/A/B/C" };
+                var catalog = new ResourceCatalog() { Id = "/A/B/C" };
                 var resource = new Resource() { Id = Guid.NewGuid() };
                 var representation = new Representation() { Id = "1 Hz_mean", DataType = NexusDataType.INT64 };
 
@@ -99,7 +99,7 @@ namespace Nexus.Extensibility.Tests
 
                 this.Context = this.Context with
                 {
-                    Catalogs = new List<Catalog>() { catalog }
+                    Catalogs = new List<ResourceCatalog>() { catalog }
                 };
             }
 

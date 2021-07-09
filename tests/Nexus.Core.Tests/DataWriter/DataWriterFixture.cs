@@ -40,7 +40,7 @@ namespace Nexus.Core.Tests
             };
 
             // catalog
-            var catalog = new Catalog()
+            var catalog = new ResourceCatalog()
             {
                 Id = "/A/B/C",
                 Resources = resources
@@ -54,7 +54,7 @@ namespace Nexus.Core.Tests
 
         public string TargetFolder { get; }
 
-        public Catalog Catalog { get; }
+        public ResourceCatalog Catalog { get; }
 
         public void Dispose()
         {

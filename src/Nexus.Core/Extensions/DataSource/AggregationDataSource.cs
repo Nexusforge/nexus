@@ -21,7 +21,7 @@ namespace Nexus.Extensions
     {
         #region Fields
 
-        private List<Catalog> _catalogs;
+        private List<ResourceCatalog> _catalogs;
 
         #endregion
 
@@ -57,7 +57,7 @@ namespace Nexus.Extensions
             return Task.CompletedTask;
         }
 
-        public Task<List<Catalog>> GetCatalogsAsync(CancellationToken cancellationToken)
+        public Task<List<ResourceCatalog>> GetCatalogsAsync(CancellationToken cancellationToken)
         {
             return Task.Run(() =>
             {
@@ -104,12 +104,12 @@ namespace Nexus.Extensions
                     // (4) find corresponding cache file
                     var cacheFilePath = Path.Combine(cacheFolderPath, $"{currentMonth.ToString("yyyy-MM")}.json");
 
-                    List<Catalog> cache;
+                    List<ResourceCatalog> cache;
 
                     // (5.a) cache file exists
                     if (File.Exists(cacheFilePath))
                     {
-                        cache = JsonSerializerHelper.Deserialize<List<Catalog>>(cacheFilePath);
+                        cache = JsonSerializerHelper.Deserialize<List<ResourceCatalog>>(cacheFilePath);
 
                         foreach (var catalogId in catalogIds)
                         {
@@ -158,12 +158,12 @@ namespace Nexus.Extensions
                 }
 
                 // (7) update main cache
-                List<Catalog> catalogs;
+                List<ResourceCatalog> catalogs;
 
                 if (cacheChanged || !File.Exists(mainCacheFilePath))
                 {
                     var cacheFiles = Directory.EnumerateFiles(cacheFolderPath, "*-*.json");
-                    catalogs = new List<Catalog>();
+                    catalogs = new List<ResourceCatalog>();
 
                     var message = "Merging cache files into main cache ...";
 
@@ -173,7 +173,7 @@ namespace Nexus.Extensions
 
                         foreach (var cacheFile in cacheFiles)
                         {
-                            var cache = JsonSerializerHelper.Deserialize<List<Catalog>>(cacheFile);
+                            var cache = JsonSerializerHelper.Deserialize<List<ResourceCatalog>>(cacheFile);
 
                             foreach (var catalog in cache)
                             {
@@ -198,7 +198,7 @@ namespace Nexus.Extensions
                 }
                 else
                 {
-                    catalogs = JsonSerializerHelper.Deserialize<List<Catalog>>(mainCacheFilePath);
+                    catalogs = JsonSerializerHelper.Deserialize<List<ResourceCatalog>>(mainCacheFilePath);
                 }
 
                 _catalogs = catalogs;
@@ -264,7 +264,7 @@ namespace Nexus.Extensions
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    var (catalog, resource, representation) = Catalog.Find(representationPath, _catalogs);
+                    var (catalog, resource, representation) = ResourceCatalog.Find(representationPath, _catalogs);
                     var catalogFolderPath = Path.Combine(this.Root, "DATA", WebUtility.UrlEncode(catalog.Id));
                     var samplePeriod = representation.GetSamplePeriod();
 
@@ -363,9 +363,9 @@ namespace Nexus.Extensions
             }
         }
 
-        private Catalog ScanFiles(string catalogId, string currentMonthFolder, AggregationVersioning versioning)
+        private ResourceCatalog ScanFiles(string catalogId, string currentMonthFolder, AggregationVersioning versioning)
         {
-            var catalog = new Catalog() { Id = catalogId };
+            var catalog = new ResourceCatalog() { Id = catalogId };
 
             if (Directory.Exists(currentMonthFolder))
             {
@@ -520,9 +520,9 @@ namespace Nexus.Extensions
             }
         }
 
-        private Catalog GetCatalog(string catalogId, string dayFolder)
+        private ResourceCatalog GetCatalog(string catalogId, string dayFolder)
         {
-            var catalog = new Catalog() { Id = catalogId };
+            var catalog = new ResourceCatalog() { Id = catalogId };
             var resourceMap = new Dictionary<Guid, Resource>();
 
             Directory

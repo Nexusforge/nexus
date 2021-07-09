@@ -4,11 +4,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Resource = Nexus.Controllers.CatalogsController.Resource;
-using Catalog = Nexus.DataModel.Catalog;
+using ResourceCatalog = Nexus.DataModel.ResourceCatalog;
 
 namespace Nexus.API
 {
-    public class CatalogType : ObjectGraphType<(Catalog Catalog, CatalogMeta Meta)>
+    public class CatalogType : ObjectGraphType<(ResourceCatalog Catalog, CatalogMeta Meta)>
     {
         public CatalogType()
         {

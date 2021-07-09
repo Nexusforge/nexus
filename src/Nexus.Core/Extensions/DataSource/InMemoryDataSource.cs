@@ -28,7 +28,7 @@ namespace Nexus.Extensions
             return Task.CompletedTask;
         }
 
-        public Task<List<Catalog>> GetCatalogsAsync(CancellationToken cancellationToken)
+        public Task<List<ResourceCatalog>> GetCatalogsAsync(CancellationToken cancellationToken)
         {
             if (this.Context.Catalogs is null)
             {
@@ -46,7 +46,7 @@ namespace Nexus.Extensions
 
                 this.Context = this.Context with
                 {
-                    Catalogs = new List<Catalog>()
+                    Catalogs = new List<ResourceCatalog>()
                     { 
                         catalog_allowed,
                         catalog_restricted 
@@ -77,7 +77,7 @@ namespace Nexus.Extensions
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    var (catalog, resource, representation) = Catalog.Find(representationPath, this.Context.Catalogs);
+                    var (catalog, resource, representation) = ResourceCatalog.Find(representationPath, this.Context.Catalogs);
 
                     double[] dataDouble;
 
@@ -119,9 +119,9 @@ namespace Nexus.Extensions
             return Task.WhenAll(tasks);
         }
 
-        private Catalog LoadCatalog(string catalogId, Guid id1, Guid id2, Guid id3, Guid id4)
+        private ResourceCatalog LoadCatalog(string catalogId, Guid id1, Guid id2, Guid id3, Guid id4)
         {
-            var catalog = new Catalog() { Id = catalogId };
+            var catalog = new ResourceCatalog() { Id = catalogId };
 
             var resourceA = new Resource() { Id = id1, Name = "T1", Group = "Group 1", Unit = "°C" };
             resourceA.Metadata["Description"] = "Test resource.";
