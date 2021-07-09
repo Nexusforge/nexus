@@ -3,7 +3,6 @@ using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Filters;
-using Nexus.Infrastructure;
 using Nexus.Roslyn;
 using Nexus.Utilities;
 using System;
@@ -218,33 +217,15 @@ namespace Nexus.Extensions
             return Task.FromResult(1.0);
         }
 
-        public Task ReadAsync2(DateTime begin, DateTime end, ReadRequest[] requests, IProgress<double> progress, CancellationToken cancellationToken)
-        {
-            return Task.Run(() =>
-            {
-                var counter = 0.0;
-
-                foreach (var (resourcePath, data, status) in requests)
-                {
-                    var (catalog, resource, representation) = ResourceCatalog.Find(resourcePath, _catalogs);
-                    var cacheEntry = _cacheEntries.FirstOrDefault(current => current.SupportedChanneIds.Contains(resource.Id));
-
-
-                }
-
-                return Task.CompletedTask;
-            });
-        }
-
         public Task ReadAsync(DateTime begin, DateTime end, ReadRequest[] requests, IProgress<double> progress, CancellationToken cancellationToken)
         {
             return Task.Run(() =>
             {
                 var counter = 0.0;
 
-                foreach (var (resourcePath, data, status) in requests)
+                foreach (var (catalogItem, data, status) in requests)
                 {
-                    var (catalog, resource, representation) = ResourceCatalog.Find(resourcePath, _catalogs);
+                    var (catalog, resource, representation) = catalogItem;
                     var cacheEntry = _cacheEntries.FirstOrDefault(current => current.SupportedChanneIds.Contains(resource.Id));
 
                     if (cacheEntry is null)
@@ -270,7 +251,7 @@ namespace Nexus.Extensions
 
 #warning GetData Should be Async! Deadlock may happen
                         var progress = new Progress<double>();
-                        var request = new ReadRequest(catalogItem.GetPath(), data, status);
+                        var request = new ReadRequest(catalogItem, data, status);
                         dataSourceController.DataSource.ReadAsync(begin, end, new ReadRequest[] { request }, progress, cancellationToken).Wait();
                         var doubleData = new double[status.Length];
                         BufferUtilities.ApplyRepresentationStatusByDataType(representation.DataType, data, status, doubleData);

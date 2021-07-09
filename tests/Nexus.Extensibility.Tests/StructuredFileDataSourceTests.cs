@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using Moq;
 using Nexus.DataModel;
 using System;
 using System.Globalization;
@@ -127,7 +126,7 @@ namespace Nexus.Extensibility.Tests
             var catalog = catalogs.First();
             var resource = catalog.Resources.First();
             var representation = resource.Representations.First();
-            var resourcePath = new CatalogItem(catalog, resource, representation).GetPath();
+            var catalogItem = new CatalogItem(catalog, resource, representation);
 
             var begin = new DateTime(2019, 12, 31, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 03, 0, 0, 0, DateTimeKind.Utc);
@@ -154,7 +153,7 @@ namespace Nexus.Extensibility.Tests
             GenerateData(new DateTimeOffset(2020, 01, 02, 09, 40, 0, 0, TimeSpan.Zero));
             GenerateData(new DateTimeOffset(2020, 01, 02, 09, 50, 0, 0, TimeSpan.Zero));
 
-            var request = new ReadRequest(resourcePath, data, status);
+            var request = new ReadRequest(catalogItem, data, status);
             await dataSource.ReadAsync(begin, end, new ReadRequest[] { request, request }, new Progress<double>(), CancellationToken.None);
 
             Assert.True(expectedData.SequenceEqual(MemoryMarshal.Cast<byte, long>(data.Span).ToArray()));
@@ -181,11 +180,11 @@ namespace Nexus.Extensibility.Tests
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
             var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
-            var resource = catalogsResource);
-            var channel = resource.Channels.First();
-            var representation = channel.Representations.First();resource
-            var resourcePath = new CatalogItem(catalog, channel, representation).GetPath();
-            var request = new ReadRequest(resourcePath, default, default);
+            var catalog = catalogs.First();
+            var resource = catalog.Resources.First();
+            var representation = resource.Representations.First();
+            var catalogItem = new CatalogItem(catalog, resource, representation);
+            var request = new ReadRequest(catalogItem, default, default);
 
             await Assert.ThrowsAsync<ArgumentException>(() =>
                 dataSource.ReadAsync(begin, end, new ReadRequest[] { request }, default, CancellationToken.None));

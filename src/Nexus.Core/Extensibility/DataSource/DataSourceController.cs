@@ -1,13 +1,11 @@
 ﻿using Microsoft.Extensions.Logging;
 using Nexus.DataModel;
-using Nexus.Infrastructure;
 using Nexus.Utilities;
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.IO;
 using System.IO.Pipelines;
 using System.Linq;
 using System.Threading;
@@ -210,7 +208,6 @@ namespace Nexus.Extensibility
             List<CatalogItemPipeWriter> catalogItemPipeWriters,
             CancellationToken cancellationToken)
         {
-            var index = 1;
             var count = catalogItemPipeWriters.Count;
             var elementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, samplePeriod);
 
@@ -265,7 +262,8 @@ namespace Nexus.Extensibility
                     status = statusMemory;
                 }
 
-                return new ReadRequest(catalogItem.GetPath(), data, status);
+                var originalCatalogItem = this.Catalogs.Find(catalogItem.GetPath());
+                return new ReadRequest(originalCatalogItem, data, status);
             }).ToArray();
 
             await this.DataSource.ReadAsync(

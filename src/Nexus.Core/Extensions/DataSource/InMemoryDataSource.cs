@@ -1,6 +1,5 @@
 ﻿using Nexus.DataModel;
 using Nexus.Extensibility;
-using Nexus.Infrastructure;
 using Nexus.Utilities;
 using System;
 using System.Collections.Generic;
@@ -71,13 +70,13 @@ namespace Nexus.Extensions
         {
             var tasks = requests.Select(request =>
             {
-                var (resourcePath, data, status) = request;
+                var (catalogItem, data, status) = request;
 
                 return Task.Run(() =>
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    var (catalog, resource, representation) = ResourceCatalog.Find(resourcePath, this.Context.Catalogs);
+                    var (catalog, resource, representation) = catalogItem;
 
                     double[] dataDouble;
 

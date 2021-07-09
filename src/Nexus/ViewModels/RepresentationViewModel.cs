@@ -1,5 +1,4 @@
 ﻿using Nexus.DataModel;
-using Nexus.Infrastructure;
 
 namespace Nexus.ViewModels
 {

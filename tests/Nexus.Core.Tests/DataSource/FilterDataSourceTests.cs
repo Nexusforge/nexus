@@ -3,7 +3,6 @@ using Moq;
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Extensions;
-using Nexus.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -169,13 +168,13 @@ namespace Nexus.Core.Tests
             var catalog2 = catalogs.First();
             var resource2 = catalog2.Resources.First();
             var representation2 = resource2.Representations.First();
-            var resourcePath = new CatalogItem(catalog2, resource2, representation2).GetPath();
+            var catalogItem = new CatalogItem(catalog2, resource2, representation2);
 
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 02, 0, 0, 0, DateTimeKind.Utc);
             var (data, status) = ExtensibilityUtilities.CreateBuffers(representation, begin, end);
 
-            var request = new ReadRequest(resourcePath, data, status);
+            var request = new ReadRequest(catalogItem, data, status);
             await dataSource.ReadAsync(begin, end, new[] { request }, new Progress<double>(), CancellationToken.None);
             var doubleData = data.Cast<double>();
 

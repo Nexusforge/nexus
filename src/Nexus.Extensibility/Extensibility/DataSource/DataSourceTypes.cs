@@ -14,7 +14,7 @@ namespace Nexus.Extensibility
     }
 
     public record ReadRequest(
-        string ResourcePath,
+        CatalogItem CatalogItem,
         Memory<byte> Data,
         Memory<byte> Status);
 

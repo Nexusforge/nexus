@@ -382,17 +382,15 @@ namespace Nexus.Extensibility
 
             var counter = 0.0;
 
-            foreach (var (resourcePath, dataBuffer, statusBuffer) in requests)
+            foreach (var (catalogItem, dataBuffer, statusBuffer) in requests)
             {
-                var catalogItem = ResourceCatalog.Find(resourcePath, this.Context.Catalogs);
-
                 try
                 {
                     await this.ReadSingleAsync(catalogItem, begin, end, dataBuffer, statusBuffer, cancellationToken);
                 }
                 catch (Exception ex)
                 {
-                    this.Context.Logger.LogWarning($"Could not read representation '{resourcePath}'. Reason: {ExtensibilityUtilities.GetFullMessage(ex)}");
+                    this.Context.Logger.LogWarning($"Could not read catalog item '{catalogItem.GetPath()}'. Reason: {ExtensibilityUtilities.GetFullMessage(ex)}");
                 }
 
                 progress.Report(++counter / requests.Length);

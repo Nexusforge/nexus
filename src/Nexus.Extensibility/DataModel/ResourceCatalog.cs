@@ -133,23 +133,7 @@ namespace Nexus.DataModel
         public CatalogItem Find(string resourcePath, bool includeName = false)
         {
             if (!this.TryFind(resourcePath, out var catalogItem, includeName))
-                throw new Exception($"The representation on path '{resourcePath}' could not be found.");
-
-            return catalogItem;
-        }
-
-        public static CatalogItem Find(string resourcePath, IEnumerable<ResourceCatalog> catalogs, bool includeName = false)
-        {
-            var catalogItem = default(CatalogItem);
-
-            foreach (var catalog in catalogs)
-            {
-                if (catalog.TryFind(resourcePath, out catalogItem, includeName))
-                    break;
-            }
-
-            if (catalogItem is null)
-                throw new Exception($"The representation on path '{resourcePath}' could not be found.");
+                throw new Exception($"The resource path '{resourcePath}' could not be found.");
 
             return catalogItem;
         }

@@ -110,13 +110,13 @@ namespace Nexus.Core.Tests
             var catalog = catalogs.First();
             var resource = catalog.Resources.First();
             var representation = resource.Representations.First();
-            var resourcePath = new CatalogItem(catalog, resource, representation).GetPath();
+            var catalogItem = new CatalogItem(catalog, resource, representation);
 
             var begin = new DateTime(2020, 07, 07, 23, 00, 00, DateTimeKind.Utc);
             var end = new DateTime(2020, 07, 10, 00, 00, 00, DateTimeKind.Utc);
             var (data, status) = ExtensibilityUtilities.CreateBuffers(representation, begin, end);
 
-            var result = new ReadRequest(resourcePath, data, status);
+            var result = new ReadRequest(catalogItem, data, status);
             await dataSource.ReadAsync(begin, end, new ReadRequest[] { result }, new Progress<double>(), CancellationToken.None);
             var doubleData = data.Cast<double>();
 

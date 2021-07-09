@@ -2,7 +2,6 @@
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
-using Nexus.Infrastructure;
 using Nexus.Services;
 using Nexus.Utilities;
 using System;
@@ -260,11 +259,11 @@ namespace Nexus.Extensions
             {
                 var counter = 0.0;
 
-                foreach (var (resourcePath, data, status) in requests)
+                foreach (var (catalogItem, data, status) in requests)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    var (catalog, resource, representation) = ResourceCatalog.Find(resourcePath, _catalogs);
+                    var (catalog, resource, representation) = catalogItem;
                     var catalogFolderPath = Path.Combine(this.Root, "DATA", WebUtility.UrlEncode(catalog.Id));
                     var samplePeriod = representation.GetSamplePeriod();
 
