@@ -137,15 +137,15 @@ namespace Nexus.Extensions
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var representationRecord = ResourceCatalog.Find(resourcePath, this.Context.Catalogs);
+                var catalogItem = ResourceCatalog.Find(resourcePath, this.Context.Catalogs);
                 var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromMinutes(1));
                 cancellationToken.Register(() => timeoutTokenSource.Cancel());
 
-                var elementCount = data.Length / representationRecord.Representation.ElementSize;
+                var elementCount = data.Length / catalogItem.Representation.ElementSize;
 
                 var response = await _communicator.InvokeAsync<ReadSingleResponse>(
                     "ReadSingle",
-                    new object[] { representationRecord.GetPath(), elementCount, begin, end },
+                    new object[] { catalogItem.GetPath(), elementCount, begin, end },
                     timeoutTokenSource.Token
                 );
 

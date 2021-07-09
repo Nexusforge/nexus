@@ -86,14 +86,14 @@ namespace Nexus.Extensions
             return Task.CompletedTask;
         }
 
-        public static bool TryGetFilterCodeDefinition(RepresentationRecord representationRecord, out CodeDefinition codeDefinition)
+        public static bool TryGetFilterCodeDefinition(CatalogItem catalogItem, out CodeDefinition codeDefinition)
         {
             codeDefinition = default;
 
-            if (FilterDataSource.FilterDataSourceCache.TryGetValue(representationRecord.Representation.BackendSource.ResourceLocator, out var cacheEntries))
+            if (FilterDataSource.FilterDataSourceCache.TryGetValue(catalogItem.Representation.BackendSource.ResourceLocator, out var cacheEntries))
             {
                 var cacheEntry = cacheEntries
-                    .FirstOrDefault(entry => entry.SupportedChanneIds.Contains(representationRecord.Resource.Id));
+                    .FirstOrDefault(entry => entry.SupportedChanneIds.Contains(catalogItem.Resource.Id));
 
                 if (cacheEntry is not null)
                 {
@@ -260,7 +260,7 @@ namespace Nexus.Extensions
                         if (catalog == null)
                             throw new Exception($"Unable to find catalog with id '{catalogId}'.");
 
-                        var representationRecord = this.Database.Find(catalog.Id, resourceId, representationId);
+                        var catalogItem = this.Database.Find(catalog.Id, resourceId, representationId);
 
                         if (!this.IsCatalogAccessible(catalog.Id))
                             throw new UnauthorizedAccessException("The current user is not allowed to access this filter.");
@@ -270,7 +270,7 @@ namespace Nexus.Extensions
 
 #warning GetData Should be Async! Deadlock may happen
                         var progress = new Progress<double>();
-                        var request = new ReadRequest(representationRecord.GetPath(), data, status);
+                        var request = new ReadRequest(catalogItem.GetPath(), data, status);
                         dataSourceController.DataSource.ReadAsync(begin, end, new ReadRequest[] { request }, progress, cancellationToken).Wait();
                         var doubleData = new double[status.Length];
                         BufferUtilities.ApplyRepresentationStatusByDataType(representation.DataType, data, status, doubleData);

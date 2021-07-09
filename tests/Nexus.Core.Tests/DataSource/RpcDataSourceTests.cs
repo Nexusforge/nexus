@@ -201,7 +201,7 @@ namespace Nexus.Core.Tests
             var catalog = catalogs.First();
             var resource = catalog.Resources.First();
             var representation = resource.Representations.First();
-            var resourcePath = new RepresentationRecord(catalog, resource, representation).GetPath();
+            var resourcePath = new CatalogItem(catalog, resource, representation).GetPath();
 
             var begin = new DateTime(2019, 12, 31, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 03, 0, 0, 0, DateTimeKind.Utc);

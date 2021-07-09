@@ -120,7 +120,7 @@ namespace Nexus.Core.Tests
 
             Mock.Get(database)
                 .Setup(s => s.Find(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()))
-                .Returns(new RepresentationRecord(catalog, resource, representation));
+                .Returns(new CatalogItem(catalog, resource, representation));
 
             // setup data source
             var subDataSource = Mock.Of<IDataSource>();
@@ -169,7 +169,7 @@ namespace Nexus.Core.Tests
             var catalog2 = catalogs.First();
             var resource2 = catalog2.Resources.First();
             var representation2 = resource2.Representations.First();
-            var resourcePath = new RepresentationRecord(catalog2, resource2, representation2).GetPath();
+            var resourcePath = new CatalogItem(catalog2, resource2, representation2).GetPath();
 
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 02, 0, 0, 0, DateTimeKind.Utc);

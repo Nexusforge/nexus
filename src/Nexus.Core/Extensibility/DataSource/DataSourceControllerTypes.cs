@@ -5,7 +5,7 @@ using System.IO.Pipelines;
 namespace Nexus.Extensibility
 {
     public record RepresentationPipeWriter(
-        RepresentationRecord RepresentationRecord, 
+        CatalogItem CatalogItem, 
         PipeWriter DataWriter, 
         PipeWriter? StatusWriter);
 

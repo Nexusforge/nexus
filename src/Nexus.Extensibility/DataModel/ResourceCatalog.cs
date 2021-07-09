@@ -98,9 +98,9 @@ namespace Nexus.DataModel
             return merged;
         }
 
-        public bool TryFind(string resourcePath, out RepresentationRecord representationRecord, bool includeName = false)
+        public bool TryFind(string resourcePath, out CatalogItem catalogItem, bool includeName = false)
         {
-            representationRecord = null;
+            catalogItem = null;
 
             var pathParts = resourcePath.Split("/");
             var catalogId = string.Join('/', pathParts.Take(pathParts.Length - 2));
@@ -126,32 +126,32 @@ namespace Nexus.DataModel
             if (representation is null)
                 return false;
 
-            representationRecord = new RepresentationRecord(this, resource, representation);
+            catalogItem = new CatalogItem(this, resource, representation);
             return true;
         }
 
-        public RepresentationRecord Find(string resourcePath, bool includeName = false)
+        public CatalogItem Find(string resourcePath, bool includeName = false)
         {
-            if (!this.TryFind(resourcePath, out var representationRecord, includeName))
+            if (!this.TryFind(resourcePath, out var catalogItem, includeName))
                 throw new Exception($"The representation on path '{resourcePath}' could not be found.");
 
-            return representationRecord;
+            return catalogItem;
         }
 
-        public static RepresentationRecord Find(string resourcePath, IEnumerable<ResourceCatalog> catalogs, bool includeName = false)
+        public static CatalogItem Find(string resourcePath, IEnumerable<ResourceCatalog> catalogs, bool includeName = false)
         {
-            var representationRecord = default(RepresentationRecord);
+            var catalogItem = default(CatalogItem);
 
             foreach (var catalog in catalogs)
             {
-                if (catalog.TryFind(resourcePath, out representationRecord, includeName))
+                if (catalog.TryFind(resourcePath, out catalogItem, includeName))
                     break;
             }
 
-            if (representationRecord is null)
+            if (catalogItem is null)
                 throw new Exception($"The representation on path '{resourcePath}' could not be found.");
 
-            return representationRecord;
+            return catalogItem;
         }
 
         #endregion

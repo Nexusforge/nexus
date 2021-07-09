@@ -69,16 +69,16 @@ namespace Nexus.Controllers
             parameters.End = parameters.End.ToUniversalTime();
 
             // translate resource paths to representations
-            List<RepresentationRecord> representationRecords;
+            List<CatalogItem> catalogItems;
 
             try
             {
-                representationRecords = parameters.ResourcePaths.Select(resourcePath =>
+                catalogItems = parameters.ResourcePaths.Select(resourcePath =>
                 {
-                    if (!_databaseManager.Database.TryFind(resourcePath, out var representationRecord))
+                    if (!_databaseManager.Database.TryFind(resourcePath, out var catalogItem))
                         throw new ValidationException($"Could not find the resource with path '{resourcePath}'.");
 
-                    return representationRecord;
+                    return catalogItem;
                 }).ToList();
             }
             catch (ValidationException ex)
@@ -87,11 +87,11 @@ namespace Nexus.Controllers
             }
 
             // check that there is anything to export
-            if (!representationRecords.Any())
+            if (!catalogItems.Any())
                 return this.BadRequest("The list of resource paths is empty.");
 
             // security check
-            var catalogIds = representationRecords.Select(representationRecord => representationRecord.Catalog.Id).Distinct();
+            var catalogIds = catalogItems.Select(catalogItem => catalogItem.Catalog.Id).Distinct();
 
             foreach (var catalogId in catalogIds)
             {
@@ -113,7 +113,7 @@ namespace Nexus.Controllers
                 var jobControl = _exportJobService.AddJob(job, dataService.ReadProgress, (jobControl, cts) =>
                 {
                     var userIdService = _serviceProvider.GetRequiredService<UserIdService>();
-                    var task = dataService.ExportDataAsync(parameters, representationRecords, cts.Token);
+                    var task = dataService.ExportDataAsync(parameters, catalogItems, cts.Token);
 
                     return task;
                 });

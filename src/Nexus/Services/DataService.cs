@@ -36,7 +36,7 @@ namespace Nexus.Services
         #region Types
 
         private record ExportContext(TimeSpan SamplePeriod,
-                                     List<RepresentationRecord> RepresentationRecords,
+                                     List<CatalogItem> CatalogItems,
                                      ExportParameters ExportParameters);
 
         #endregion
@@ -90,15 +90,15 @@ namespace Nexus.Services
         }
 
         public async Task<string> ExportDataAsync(ExportParameters exportParameters,
-                                                  List<RepresentationRecord> representationRecords,
+                                                  List<CatalogItem> catalogItems,
                                                   CancellationToken cancellationToken)
         {
-            if (!representationRecords.Any() || exportParameters.Begin == exportParameters.End)
+            if (!catalogItems.Any() || exportParameters.Begin == exportParameters.End)
                 return string.Empty;
 
             // find sample rate
-            var sampleRates = representationRecords
-                .Select(representationRecord => representationRecord.Representation.GetSampleRate())
+            var sampleRates = catalogItems
+                .Select(catalogItem => catalogItem.Representation.GetSampleRate())
                 .Distinct()
                 .ToList();
 
@@ -128,7 +128,7 @@ namespace Nexus.Services
 
                 Directory.CreateDirectory(directoryPath);
 
-                var exportContext = new ExportContext(sampleRate.Period, representationRecords, exportParameters);
+                var exportContext = new ExportContext(sampleRate.Period, catalogItems, exportParameters);
                 await this.CreateFilesAsync(_userIdService.User, exportContext, directoryPath, cancellationToken);
 
                 switch (exportParameters.ExportMode)
@@ -274,20 +274,20 @@ namespace Nexus.Services
         {
             /* reading groups */
             var representationPipeReaders = new List<RepresentationPipeReader>();
-            var groupedRepresentationRecords = exportContext.RepresentationRecords.GroupBy(representationRecord => representationRecord.Representation.BackendSource);
+            var groupedCatalogItems = exportContext.CatalogItems.GroupBy(catalogItem => catalogItem.Representation.BackendSource);
             var readingGroups = new List<DataReadingGroup>();
 
-            foreach (var representationRecordGroup in groupedRepresentationRecords)
+            foreach (var catalogItemGroup in groupedCatalogItems)
             {
-                var backendSource = representationRecordGroup.Key;
+                var backendSource = catalogItemGroup.Key;
                 var controller = await _databaseManager.GetDataSourceControllerAsync(user, backendSource, cancellationToken);
                 var representationPipeWriters = new List<RepresentationPipeWriter>();
 
-                foreach (var representationRecord in representationRecordGroup)
+                foreach (var catalogItem in catalogItemGroup)
                 {
                     var pipe = new Pipe();
-                    representationPipeWriters.Add(new RepresentationPipeWriter(representationRecord, pipe.Writer, null));
-                    representationPipeReaders.Add(new RepresentationPipeReader(representationRecord, pipe.Reader));
+                    representationPipeWriters.Add(new RepresentationPipeWriter(catalogItem, pipe.Writer, null));
+                    representationPipeReaders.Add(new RepresentationPipeReader(catalogItem, pipe.Reader));
                 }
 
                 readingGroups.Add(new DataReadingGroup(controller, representationPipeWriters));

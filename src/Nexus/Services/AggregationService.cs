@@ -228,7 +228,7 @@ namespace Nexus.Services
 
         private async Task OrchestrateAggregationAsync<T>(string targetDirectoryPath,
                                                            DataSourceController dataSourceController,
-                                                           RepresentationRecord representationRecord,
+                                                           CatalogItem catalogItem,
                                                            List<Aggregation> aggregations,
                                                            DateTime date,
                                                            uint aggregationChunkSizeMB,
@@ -236,11 +236,11 @@ namespace Nexus.Services
                                                            CancellationToken cancellationToken) where T : unmanaged
         {
             // check source sample rate
-            var _ = new SampleRateContainer(representationRecord.Representation.Id, ensureNonZeroIntegerHz: true);
+            var _ = new SampleRateContainer(catalogItem.Representation.Id, ensureNonZeroIntegerHz: true);
 
             // prepare variables
             var units = new List<AggregationUnit>();
-            var resource = representationRecord.Resource;
+            var resource = catalogItem.Resource;
 
             // prepare buffers
             foreach (var aggregation in aggregations)
@@ -314,13 +314,13 @@ namespace Nexus.Services
                 date,
                 endDate,
                 chunkSize,
-                representationRecord,
+                catalogItem,
                 dataPipe.Writer,
                 statusPipe.Writer,
                 cancellationToken);
 
             var writing = this.AggregateSingleAsync<T>(
-                representationRecord, 
+                catalogItem, 
                 dataPipe.Reader,
                 statusPipe.Reader,
                 units,
@@ -349,7 +349,7 @@ namespace Nexus.Services
         }
 
         private async Task AggregateSingleAsync<T>(
-            RepresentationRecord representationRecord,
+            CatalogItem catalogItem,
             PipeReader dataReader,
             PipeReader statusReader, 
             List<AggregationUnit> units,
@@ -374,7 +374,7 @@ namespace Nexus.Services
                     cancellationToken.ThrowIfCancellationRequested();
 
                     var typedDataBuffer = new ReadonlyCastMemoryManager<byte, T>(dataBuffer).Memory;
-                    this.ApplyAggregationFunction<T>(representationRecord.Representation, typedDataBuffer, statusBuffer, units);
+                    this.ApplyAggregationFunction<T>(catalogItem.Representation, typedDataBuffer, statusBuffer, units);
                 }
 
                 // advance

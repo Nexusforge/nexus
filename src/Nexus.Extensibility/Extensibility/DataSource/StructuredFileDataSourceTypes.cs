@@ -10,11 +10,11 @@ namespace Nexus.Extensibility
         public List<ConfigurationUnit> All { get; set; }
     }
 
-    public delegate ConfigurationUnit GetConfigurationUnitDelegate(RepresentationRecord representationRecord);
+    public delegate ConfigurationUnit GetConfigurationUnitDelegate(CatalogItem catalogItem);
 
     public record ReadInfo(
         string FilePath,
-        RepresentationRecord RepresentationRecord,
+        CatalogItem CatalogItem,
         Memory<byte> Data,
         Memory<byte> Status,
         DateTime FileBegin,

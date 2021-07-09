@@ -45,17 +45,17 @@ namespace Nexus.Core.Tests
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
             var samplePeriod = TimeSpan.FromSeconds(1);
 
-            var representationRecords = _fixture.Catalog.Resources
-                .SelectMany(resource => resource.Representations.Select(representation => new RepresentationRecord(_fixture.Catalog, resource, representation)))
+            var catalogItems = _fixture.Catalog.Resources
+                .SelectMany(resource => resource.Representations.Select(representation => new CatalogItem(_fixture.Catalog, resource, representation)))
                 .ToArray();
 
-            var representationRecordGroups = new[]
+            var catalogItemGroups = new[]
             {
-                new RepresentationRecordGroup(_fixture.Catalog, "My License", representationRecords)
+                new CatalogItemGroup(_fixture.Catalog, "My License", catalogItems)
             };
 
-            var requests = representationRecords
-                .Select(representationRecord => new WriteRequest(representationRecord, new double[1000]))
+            var requests = catalogItems
+                .Select(catalogItem => new WriteRequest(catalogItem, new double[1000]))
                 .ToArray();
 
             var requestGroups = new[]
@@ -63,7 +63,7 @@ namespace Nexus.Core.Tests
                 new WriteRequestGroup(_fixture.Catalog, requests)
             };
 
-            await dataWriter.OpenAsync(begin, TimeSpan.FromSeconds(1), representationRecordGroups, CancellationToken.None);
+            await dataWriter.OpenAsync(begin, TimeSpan.FromSeconds(1), catalogItemGroups, CancellationToken.None);
             await dataWriter.WriteAsync(TimeSpan.Zero, TimeSpan.FromSeconds(1), requestGroups, new Progress<double>(), CancellationToken.None);
             await dataWriter.CloseAsync(CancellationToken.None);
 

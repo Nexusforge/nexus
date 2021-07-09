@@ -110,7 +110,7 @@ namespace Nexus.Core.Tests
             var catalog = catalogs.First();
             var resource = catalog.Resources.First();
             var representation = resource.Representations.First();
-            var resourcePath = new RepresentationRecord(catalog, resource, representation).GetPath();
+            var resourcePath = new CatalogItem(catalog, resource, representation).GetPath();
 
             var begin = new DateTime(2020, 07, 07, 23, 00, 00, DateTimeKind.Utc);
             var end = new DateTime(2020, 07, 10, 00, 00, 00, DateTimeKind.Utc);

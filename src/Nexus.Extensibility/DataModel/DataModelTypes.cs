@@ -1,6 +1,6 @@
 ﻿namespace Nexus.DataModel
 {
-    public record RepresentationRecord(ResourceCatalog Catalog, Resource Resource, Representation Representation)
+    public record CatalogItem(ResourceCatalog Catalog, Resource Resource, Representation Representation)
     {
         public string GetPath()
         {

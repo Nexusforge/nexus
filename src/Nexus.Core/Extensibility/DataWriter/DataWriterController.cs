@@ -52,7 +52,7 @@ namespace Nexus.Extensibility
             /* validation */
             foreach (var representationPipeWriters in representationPipeReaders)
             {
-                if (representationPipeWriters.RepresentationRecord.Representation.GetSamplePeriod() != samplePeriod)
+                if (representationPipeWriters.CatalogItem.Representation.GetSamplePeriod() != samplePeriod)
                     throw new ValidationException("All representations must be of the same sample period.");
             }
 
@@ -80,15 +80,15 @@ namespace Nexus.Extensibility
             };
 
             /* misc */
-            var representationRecords = representationPipeReaders
-                .Select(representationPipeReader => representationPipeReader.RepresentationRecord)
+            var catalogItems = representationPipeReaders
+                .Select(representationPipeReader => representationPipeReader.CatalogItem)
                 .ToArray();
 
 #warning Pass license also!
 
-            var groupedRepresentationRecords = representationRecords
-                        .GroupBy(representationRecord => representationRecord.Catalog)
-                        .Select(group => new RepresentationRecordGroup(group.Key, "", group.ToArray()))
+            var groupedCatalogItems = catalogItems
+                        .GroupBy(catalogItem => catalogItem.Catalog)
+                        .Select(group => new CatalogItemGroup(group.Key, "", group.ToArray()))
                         .ToArray();
 
             /* go */
@@ -117,7 +117,7 @@ namespace Nexus.Extensibility
                     await this.DataWriter.OpenAsync(
                         fileBegin, 
                         samplePeriod,
-                        groupedRepresentationRecords,
+                        groupedCatalogItems,
                         cancellationToken);
 
                     _lastFileBegin = fileBegin;
@@ -149,12 +149,12 @@ namespace Nexus.Extensibility
                     var (representationPipeReader, readResult) = zipped;
 
                     return new WriteRequest(
-                        representationPipeReader.RepresentationRecord, 
+                        representationPipeReader.CatalogItem, 
                         readResult.Buffer.First.Cast<double>().Slice(elementCount));
                 });
 
                 var groupedRequests = requests
-                    .GroupBy(writeRequest => writeRequest.RepresentationRecord.Catalog)
+                    .GroupBy(writeRequest => writeRequest.CatalogItem.Catalog)
                     .Select(group => new WriteRequestGroup(group.Key, group.ToArray()))
                     .ToArray();
 

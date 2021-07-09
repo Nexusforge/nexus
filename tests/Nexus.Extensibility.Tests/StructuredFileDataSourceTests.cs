@@ -127,7 +127,7 @@ namespace Nexus.Extensibility.Tests
             var catalog = catalogs.First();
             var resource = catalog.Resources.First();
             var representation = resource.Representations.First();
-            var resourcePath = new RepresentationRecord(catalog, resource, representation).GetPath();
+            var resourcePath = new CatalogItem(catalog, resource, representation).GetPath();
 
             var begin = new DateTime(2019, 12, 31, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 03, 0, 0, 0, DateTimeKind.Utc);
@@ -184,7 +184,7 @@ namespace Nexus.Extensibility.Tests
             var resource = catalogsResource);
             var channel = resource.Channels.First();
             var representation = channel.Representations.First();resource
-            var resourcePath = new RepresentationRecord(catalog, channel, representation).GetPath();
+            var resourcePath = new CatalogItem(catalog, channel, representation).GetPath();
             var request = new ReadRequest(resourcePath, default, default);
 
             await Assert.ThrowsAsync<ArgumentException>(() =>

@@ -84,10 +84,10 @@ namespace Nexus.Controllers
                 // representation
                 var path = $"{catalogId}/{resourceId}/{representationId}";
 
-                if (!_databaseManager.Database.TryFind(path, out var representationRecord))
+                if (!_databaseManager.Database.TryFind(path, out var catalogItem))
                     return this.NotFound($"Could not find representation on path '{path}'.");
 
-                var catalog = representationRecord.Catalog;
+                var catalog = catalogItem.Catalog;
 
                 // security check
                 if (!NexusUtilities.IsCatalogAccessible(this.User, catalog.Id, _databaseManager.Database))
@@ -96,11 +96,11 @@ namespace Nexus.Controllers
                 // controller
                 using var controller = await _databaseManager.GetDataSourceControllerAsync(
                     _userIdService.User, 
-                    representationRecord.Representation.BackendSource,
+                    catalogItem.Representation.BackendSource,
                     cancellationToken);
 
                 // read data
-                var stream = controller.ReadAsStream(begin, end, representationRecord);
+                var stream = controller.ReadAsStream(begin, end, catalogItem);
 
                 _logger.LogInformation($"{message} Done.");
 

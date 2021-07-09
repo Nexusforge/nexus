@@ -79,9 +79,9 @@ namespace Nexus.Extensibility
         public DataSourceDoubleStream ReadAsStream(
             DateTime begin,
             DateTime end,
-            RepresentationRecord representationRecord)
+            CatalogItem catalogItem)
         {
-            var samplePeriod = representationRecord.Representation.GetSamplePeriod();
+            var samplePeriod = catalogItem.Representation.GetSamplePeriod();
             var elementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, samplePeriod);
             var totalLength = elementCount * NexusCoreUtilities.SizeOf(NexusDataType.FLOAT64);
             var pipe = new Pipe();
@@ -90,7 +90,7 @@ namespace Nexus.Extensibility
                 begin,
                 end,
                 chunkSize: 1 * 1000 * 1000,
-                representationRecord,
+                catalogItem,
                 pipe.Writer,
                 statusWriter: default,
                 progress: default,
@@ -103,7 +103,7 @@ namespace Nexus.Extensibility
             DateTime begin,
             DateTime end,
             uint chunkSize,
-            RepresentationRecord representationRecord,
+            CatalogItem catalogItem,
             PipeWriter dataWriter,
             PipeWriter? statusWriter,
             IProgress<double>? progress,
@@ -114,12 +114,12 @@ namespace Nexus.Extensibility
              *    and which then calls back into
              *  - the instance method InternalReadAsync which contains the logic to write into the pipes. */
 
-            var samplePeriod = representationRecord.Representation.GetSamplePeriod();
+            var samplePeriod = catalogItem.Representation.GetSamplePeriod();
             DataSourceController.ValidateParameters(begin, end, samplePeriod);
 
             var readingGroup = new DataReadingGroup(this, new List<RepresentationPipeWriter>() 
             { 
-                new RepresentationPipeWriter(representationRecord, dataWriter, statusWriter) 
+                new RepresentationPipeWriter(catalogItem, dataWriter, statusWriter) 
             });
 
             return DataSourceController.ReadAsync(
@@ -216,7 +216,7 @@ namespace Nexus.Extensibility
 
             var requests = representationPipeWriters.Select(representationPipeWriter =>
             {
-                var (representationRecord, dataWriter, statusWriter) = representationPipeWriter;
+                var (catalogItem, dataWriter, statusWriter) = representationPipeWriter;
                 Memory<byte> data;
                 Memory<byte> status;
 
@@ -243,7 +243,7 @@ namespace Nexus.Extensibility
                 else
                 {
                     /* sizes */
-                    var elementSize = representationRecord.Representation.ElementSize;
+                    var elementSize = catalogItem.Representation.ElementSize;
                     var dataLength = elementCount * elementSize;
 
                     /* data memory */
@@ -265,7 +265,7 @@ namespace Nexus.Extensibility
                     status = statusMemory;
                 }
 
-                return new ReadRequest(representationRecord.GetPath(), data, status);
+                return new ReadRequest(catalogItem.GetPath(), data, status);
             }).ToArray();
 
             await this.DataSource.ReadAsync(
@@ -277,7 +277,7 @@ namespace Nexus.Extensibility
 
             foreach (var (representationPipeWriter, readRequest) in representationPipeWriters.Zip(requests))
             {
-                var (representationRecord, dataWriter, statusWriter) = representationPipeWriter;
+                var (catalogItem, dataWriter, statusWriter) = representationPipeWriter;
 
                 if (statusWriter is null)
                 {
@@ -293,7 +293,7 @@ namespace Nexus.Extensibility
                         .Slice(0, dataLength);
 
                     BufferUtilities.ApplyRepresentationStatusByDataType(
-                        representationRecord.Representation.DataType,
+                        catalogItem.Representation.DataType,
                         readRequest.Data,
                         readRequest.Status,
                         target: new CastMemoryManager<byte, double>(buffer).Memory);
@@ -305,7 +305,7 @@ namespace Nexus.Extensibility
                 else
                 {
                     /* sizes */
-                    var elementSize = representationRecord.Representation.ElementSize;
+                    var elementSize = catalogItem.Representation.ElementSize;
                     var dataLength = elementCount * elementSize;
 
                     /* update progress */
@@ -334,7 +334,7 @@ namespace Nexus.Extensibility
             /* validation */
             foreach (var representationPipeWriters in readingGroups.SelectMany(readingGroup => readingGroup.RepresentationPipeWriters))
             {
-                if (representationPipeWriters.RepresentationRecord.Representation.GetSamplePeriod() != samplePeriod)
+                if (representationPipeWriters.CatalogItem.Representation.GetSamplePeriod() != samplePeriod)
                     throw new ValidationException("All representations must be of the same sample period.");
             }
 
@@ -343,7 +343,7 @@ namespace Nexus.Extensibility
             /* pre-calculation */
             var bytesPerRow = readingGroups
                 .SelectMany(readingGroup => readingGroup.RepresentationPipeWriters)
-                .Sum(representationPipeWriter => representationPipeWriter.RepresentationRecord.Representation.ElementSize);
+                .Sum(representationPipeWriter => representationPipeWriter.CatalogItem.Representation.ElementSize);
 
             TimeSpan maxPeriodPerRequest;
 

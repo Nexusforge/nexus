@@ -13,7 +13,7 @@ namespace Nexus.Extensibility
         Task OpenAsync(
             DateTime fileBegin, 
             TimeSpan samplePeriod,
-            RepresentationRecordGroup[] representationRecordGroups, 
+            CatalogItemGroup[] catalogItemGroups, 
             CancellationToken cancellationToken);
 
         Task WriteAsync(

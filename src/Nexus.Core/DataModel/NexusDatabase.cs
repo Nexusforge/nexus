@@ -22,37 +22,37 @@ namespace Nexus.DataModel
 
         #region Methods
 
-        public bool TryFind(string catalogId, string resourceIdOrName, string representationId, out RepresentationRecord representationRecord, bool includeName = false)
+        public bool TryFind(string catalogId, string resourceIdOrName, string representationId, out CatalogItem catalogItem, bool includeName = false)
         {
             var resourcePath = $"{catalogId}/{resourceIdOrName}/{representationId}";
-            return this.TryFind(resourcePath, out representationRecord, includeName);
+            return this.TryFind(resourcePath, out catalogItem, includeName);
         }
 
 
-        public bool TryFind(string resourcePath, out RepresentationRecord representationRecord, bool includeName = false)
+        public bool TryFind(string resourcePath, out CatalogItem catalogItem, bool includeName = false)
         {
-            representationRecord = default(RepresentationRecord);
+            catalogItem = default(CatalogItem);
 
             foreach (var container in this.CatalogContainers)
             {
-                if (container.Catalog.TryFind(resourcePath, out representationRecord, includeName))
+                if (container.Catalog.TryFind(resourcePath, out catalogItem, includeName))
                     break;
             }
 
-            if (representationRecord is null)
+            if (catalogItem is null)
                 return false;
 
             return true;
         }
 
-        public RepresentationRecord Find(string catalogId, string resourceIdOrName, string representationId, bool includeName = false)
+        public CatalogItem Find(string catalogId, string resourceIdOrName, string representationId, bool includeName = false)
         {
-            this.TryFind(catalogId, resourceIdOrName, representationId, out var representationRecord, includeName);
+            this.TryFind(catalogId, resourceIdOrName, representationId, out var catalogItem, includeName);
 
-            if (representationRecord is null)
+            if (catalogItem is null)
                 throw new Exception($"The representation on path '{catalogId}/{resourceIdOrName}/{representationId}' could not be found.");
 
-            return representationRecord;
+            return catalogItem;
         }
 
         #endregion

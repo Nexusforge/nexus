@@ -49,13 +49,13 @@ namespace Nexus.Extensions
             return Task.CompletedTask;
         }
 
-        public Task OpenAsync(DateTime fileBegin, TimeSpan samplePeriod, RepresentationRecordGroup[] representationRecordGroups, CancellationToken cancellationToken)
+        public Task OpenAsync(DateTime fileBegin, TimeSpan samplePeriod, CatalogItemGroup[] catalogItemGroups, CancellationToken cancellationToken)
         {
             _lastFileBegin = fileBegin;
             _unixStart = (fileBegin - _unixEpoch).TotalSeconds;
             _excelStart = fileBegin.ToOADate();
 
-            foreach (var (catalog, license, representationRecords) in representationRecordGroups)
+            foreach (var (catalog, license, catalogItems) in catalogItemGroups)
             {
                 var physicalId = catalog.Id.TrimStart('/').Replace('/', '_');
                 var root = this.Context.ResourceLocator.ToPath();
@@ -101,9 +101,9 @@ namespace Nexus.Extensions
                                 throw new NotSupportedException($"The row index format '{rowIndexFormat}' is not supported.");
                         }
 
-                        foreach (var representationRecord in representationRecords)
+                        foreach (var catalogItem in catalogItems)
                         {
-                            streamWriter.Write($"{representationRecord.Resource.Name};");
+                            streamWriter.Write($"{catalogItem.Resource.Name};");
                         }
 
                         streamWriter.WriteLine();
@@ -111,9 +111,9 @@ namespace Nexus.Extensions
                         /* representation name */
                         streamWriter.Write("-;");
 
-                        foreach (var representationRecord in representationRecords)
+                        foreach (var catalogItem in catalogItems)
                         {
-                            streamWriter.Write($"{representationRecord.Representation.Id};");
+                            streamWriter.Write($"{catalogItem.Representation.Id};");
                         }
 
                         streamWriter.WriteLine();
@@ -121,9 +121,9 @@ namespace Nexus.Extensions
                         /* unit */
                         streamWriter.Write("-;");
 
-                        foreach (var representationRecord in representationRecords)
+                        foreach (var catalogItem in catalogItems)
                         {
-                            streamWriter.Write($"{representationRecord.Resource.Unit};");
+                            streamWriter.Write($"{catalogItem.Resource.Unit};");
                         }
 
                         streamWriter.WriteLine();

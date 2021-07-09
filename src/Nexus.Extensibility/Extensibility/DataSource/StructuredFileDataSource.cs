@@ -179,11 +179,11 @@ namespace Nexus.Extensibility
         }
 
         protected virtual async Task 
-            ReadSingleAsync(RepresentationRecord representationRecord, DateTime begin, DateTime end, Memory<byte> data, Memory<byte> status, CancellationToken cancellationToken)
+            ReadSingleAsync(CatalogItem catalogItem, DateTime begin, DateTime end, Memory<byte> data, Memory<byte> status, CancellationToken cancellationToken)
         {
-            var representation = representationRecord.Representation;
-            var catalog = representationRecord.Catalog;
-            var config = (await this.GetConfigurationAsync(catalog.Id, cancellationToken).ConfigureAwait(false)).Single(representationRecord);
+            var representation = catalogItem.Representation;
+            var catalog = catalogItem.Catalog;
+            var config = (await this.GetConfigurationAsync(catalog.Id, cancellationToken).ConfigureAwait(false)).Single(catalogItem);
             var samplePeriod = representation.GetSamplePeriod();
             var fileLength = config.FilePeriod.Ticks / samplePeriod.Ticks;
 
@@ -246,7 +246,7 @@ namespace Nexus.Extensibility
 
                                 var readInfo = new ReadInfo(
                                     filePath,
-                                    representationRecord,
+                                    catalogItem,
                                     slicedData,
                                     slicedStatus,
                                     fileBegin,
@@ -384,11 +384,11 @@ namespace Nexus.Extensibility
 
             foreach (var (resourcePath, dataBuffer, statusBuffer) in requests)
             {
-                var representationRecord = ResourceCatalog.Find(resourcePath, this.Context.Catalogs);
+                var catalogItem = ResourceCatalog.Find(resourcePath, this.Context.Catalogs);
 
                 try
                 {
-                    await this.ReadSingleAsync(representationRecord, begin, end, dataBuffer, statusBuffer, cancellationToken);
+                    await this.ReadSingleAsync(catalogItem, begin, end, dataBuffer, statusBuffer, cancellationToken);
                 }
                 catch (Exception ex)
                 {

@@ -4,6 +4,6 @@ using System.IO.Pipelines;
 namespace Nexus.Extensibility
 {
     public record RepresentationPipeReader(
-        RepresentationRecord RepresentationRecord,
+        CatalogItem CatalogItem,
         PipeReader DataReader);
 }
