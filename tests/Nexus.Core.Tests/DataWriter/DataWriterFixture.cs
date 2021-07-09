@@ -20,21 +20,21 @@ namespace Nexus.Core.Tests
                 new Dataset() { Id = "1 Hz_max", DataType = NexusDataType.FLOAT64 },
             };
 
-            // channel
-            var channelMetadata = new Dictionary<string, string>()
+            // resource
+            var resourceMetadata = new Dictionary<string, string>()
             {
                 ["my-custom-parameter3"] = "my-custom-value3"
             };
 
-            var channels = new List<Channel>()
+            var resources = new List<Resource>()
             {
-                new Channel()
+                new Resource()
                 {
                     Id = Guid.NewGuid(),
-                    Name = "channel1",
+                    Name = "resource1",
                     Group = "group1",
                     Unit = "°C",
-                    Metadata = channelMetadata,
+                    Metadata = resourceMetadata,
                     Datasets = datasets
                 }
             };
@@ -43,7 +43,7 @@ namespace Nexus.Core.Tests
             var catalog = new Catalog()
             {
                 Id = "/A/B/C",
-                Channels = channels
+                Resources = resources
             };
 
             catalog.Metadata["my-custom-parameter1"] = "my-custom-value1";

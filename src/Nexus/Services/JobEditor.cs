@@ -77,19 +77,19 @@ namespace Nexus.Services
             {
                 sb.AppendLine($"Catalog '{instruction.Container.Id}'");
 
-                foreach (var (backendSource, aggregationChannels) in instruction.DataReaderToAggregationsMap)
+                foreach (var (backendSource, aggregationResources) in instruction.DataReaderToAggregationsMap)
                 {
-                    if (aggregationChannels.Any())
+                    if (aggregationResources.Any())
                     {
                         sb.AppendLine();
                         sb.AppendLine($"\tData Reader '{backendSource.Type}' ({backendSource.ResourceLocator})");
 
-                        foreach (var aggregationChannel in aggregationChannels)
+                        foreach (var aggregationResource in aggregationResources)
                         {
                             sb.AppendLine();
-                            sb.AppendLine($"\t\t{aggregationChannel.Channel.Name} / {aggregationChannel.Channel.Group} / {aggregationChannel.Channel.Unit}");
+                            sb.AppendLine($"\t\t{aggregationResource.Resource.Name} / {aggregationResource.Resource.Group} / {aggregationResource.Resource.Unit}");
 
-                            foreach (var aggregation in aggregationChannel.Aggregations)
+                            foreach (var aggregation in aggregationResource.Aggregations)
                             {
                                 foreach (var period in aggregation.Periods)
                                 {

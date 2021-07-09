@@ -2,7 +2,7 @@
 
 namespace Nexus.Shared
 {
-    public partial class ChannelBox
+    public partial class ResourceBox
     {
 		#region Fields
 
@@ -12,7 +12,7 @@ namespace Nexus.Shared
 
 		#region Constructors
 
-		public ChannelBox()
+		public ResourceBox()
 		{
 			this.PropertyChanged = (sender, e) =>
 			{
@@ -32,9 +32,9 @@ namespace Nexus.Shared
 						this.StateHasChanged();
 					});
 				}
-				else if (e.PropertyName == nameof(UserState.GroupedChannelsEntry))
+				else if (e.PropertyName == nameof(UserState.GroupedResourcesEntry))
 				{
-					this.ChannelPage = 0;
+					this.ResourcePage = 0;
 				}
 				else if (e.PropertyName == nameof(AppState.IsDatabaseInitialized) ||
 						(e.PropertyName == nameof(AppState.IsDatabaseUpdating) && !this.AppState.IsDatabaseUpdating))
@@ -54,9 +54,9 @@ namespace Nexus.Shared
 
 		public int GroupPage { get; set; } = 0;
 
-		public int ChannelPageSize { get; set; } = 9;
+		public int ResourcePageSize { get; set; } = 9;
 
-		public int ChannelPage { get; set; } = 0;
+		public int ResourcePage { get; set; } = 0;
 
 		#endregion
 

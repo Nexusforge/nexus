@@ -49,14 +49,14 @@ namespace Nexus.Core.Tests
             // assert
             var actualMetadata1 = catalogs.First().Metadata;
             var actual = catalogs.First(catalog => catalog.Id == "/A/B/C");
-            var actualNames = actual.Channels.Select(channel => channel.Name).ToList();
-            var actualGroups = actual.Channels.Select(channel => channel.Group).ToList();
-            var actualUnits = actual.Channels.Select(channel => channel.Unit).ToList();
-            var actualDataTypes = actual.Channels.SelectMany(channel => channel.Datasets.Select(dataset => dataset.DataType)).ToList();
-            var actualMetadata2 = actual.Channels.Select(channel => channel.Metadata).ToList();
+            var actualNames = actual.Resources.Select(resource => resource.Name).ToList();
+            var actualGroups = actual.Resources.Select(resource => resource.Group).ToList();
+            var actualUnits = actual.Resources.Select(resource => resource.Unit).ToList();
+            var actualDataTypes = actual.Resources.SelectMany(resource => resource.Datasets.Select(dataset => dataset.DataType)).ToList();
+            var actualMetadata2 = actual.Resources.Select(resource => resource.Metadata).ToList();
 
             var expectedMetadata1 = new Dictionary<string, string>() { ["a"] = "b" };
-            var expectedNames = new List<string>() { "channel1", "channel2" };
+            var expectedNames = new List<string>() { "resource1", "resource2" };
             var expectedGroups = new List<string>() { "group1", "group2" };
             var expectedUnits = new List<string>() { "°C", "bar" };
             var expectedDataTypes = new List<NexusDataType>() { NexusDataType.INT64, NexusDataType.FLOAT64 };
@@ -81,12 +81,12 @@ namespace Nexus.Core.Tests
 
             var dataset = new Dataset() { Id = "1 Hz", DataType = NexusDataType.INT32 };
 
-            var channelGuid = Guid.NewGuid();
-            var channel = new Channel() { Id = channelGuid, Name = "channel 1", Group = "group 1", Unit = "unit 1" };
-            channel.Datasets.Add(dataset);
+            var resourceGuid = Guid.NewGuid();
+            var resource = new Resource() { Id = resourceGuid, Name = "resource 1", Group = "group 1", Unit = "unit 1" };
+            resource.Datasets.Add(dataset);
 
             var catalog = new Catalog() { Id = "/M/F/G" };
-            catalog.Channels.Add(channel);
+            catalog.Resources.Add(resource);
 
             var dataSource = new RpcDataSource() as IDataSource;
 
@@ -110,13 +110,13 @@ namespace Nexus.Core.Tests
             // assert
             var actualMetadata1 = catalogs.First().Metadata;
             var actual = catalogs.First(catalog => catalog.Id == "/M/F/G");
-            var actualNames = actual.Channels.Select(channel => channel.Name).ToList();
-            var actualGroups = actual.Channels.Select(channel => channel.Group).ToList();
-            var actualUnits = actual.Channels.Select(channel => channel.Unit).ToList();
-            var actualDataTypes = actual.Channels.SelectMany(channel => channel.Datasets.Select(dataset => dataset.DataType)).ToList();
-            var actualMetadata2 = actual.Channels.Select(channel => channel.Metadata).ToList();
+            var actualNames = actual.Resources.Select(resource => resource.Name).ToList();
+            var actualGroups = actual.Resources.Select(resource => resource.Group).ToList();
+            var actualUnits = actual.Resources.Select(resource => resource.Unit).ToList();
+            var actualDataTypes = actual.Resources.SelectMany(resource => resource.Datasets.Select(dataset => dataset.DataType)).ToList();
+            var actualMetadata2 = actual.Resources.Select(resource => resource.Metadata).ToList();
 
-            var expectedNames = new List<string>() { "channel 1" };
+            var expectedNames = new List<string>() { "resource 1" };
             var expectedGroups = new List<string>() { "group 1" };
             var expectedUnits = new List<string>() { "unit 1" };
             var expectedDataTypes = new List<NexusDataType>() { NexusDataType.INT32 };
@@ -199,9 +199,9 @@ namespace Nexus.Core.Tests
 
             var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
             var catalog = catalogs.First();
-            var channel = catalog.Channels.First();
-            var dataset = channel.Datasets.First();
-            var datasetPath = new DatasetRecord(catalog, channel, dataset).GetPath();
+            var resource = catalog.Resources.First();
+            var dataset = resource.Datasets.First();
+            var datasetPath = new DatasetRecord(catalog, resource, dataset).GetPath();
 
             var begin = new DateTime(2019, 12, 31, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 03, 0, 0, 0, DateTimeKind.Utc);

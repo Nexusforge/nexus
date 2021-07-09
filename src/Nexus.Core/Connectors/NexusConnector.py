@@ -21,16 +21,16 @@ class ClientResponseMessage:
     reason: str
     body: str
 
-class Channel():
+class Resource():
 
     values = None
 
-    def __init__(self, dict, channelPath):      
+    def __init__(self, dict, resourcePath):      
         self.id = dict["id"]
         self.name = dict["name"]
         self.group = dict["group"]
         self.unit = dict["unit"]
-        self.dataset_name = channelPath.split("/")[-1]
+        self.dataset_name = resourcePath.split("/")[-1]
         self.description = dict["description"]
         self.metadata = dict["metadata"]
 
@@ -50,7 +50,7 @@ class NexusConnector():
         self.logger = logging.getLogger("NexusConnector")
         logging.basicConfig(level=logging.INFO)
    
-    async def load(self, begin, end, params) -> List[Channel]:
+    async def load(self, begin, end, params) -> List[Resource]:
 
         begin = begin.replace(tzinfo=timezone.utc)
         end = end.replace(tzinfo=timezone.utc)
@@ -64,11 +64,11 @@ class NexusConnector():
             self.logger.info("Streaming ... ")
             index = 0
 
-            for i, channelPath in enumerate(params["ChannelPaths"]):
-                channel = await self._getChannel(channelPath)
-                channel.values = await self._getDataStream( \
-                    params, channelPath, index, len(params["ChannelPaths"]))
-                result[channelPath] = channel
+            for i, resourcePath in enumerate(params["ResourcePaths"]):
+                resource = await self._getResource(resourcePath)
+                resource.values = await self._getDataStream( \
+                    params, resourcePath, index, len(params["ResourcePaths"]))
+                result[resourcePath] = resource
                 index += 1
 
             self.logger.info("Streaming ... Done.")
@@ -89,16 +89,16 @@ class NexusConnector():
 
         await self._getDataFiles(params, target_folder)
 
-    async def _getChannel(self, channelPath) -> Channel :
+    async def _getResource(self, resourcePath) -> Resource :
 
-        channelPathSegments = channelPath.split("/")
-        catalogId = quote("/" + channelPathSegments[1] + "/" + channelPathSegments[2] + "/" + channelPathSegments[3], safe="")
-        channelId = quote(channelPathSegments[4], safe="")
+        resourcePathSegments = resourcePath.split("/")
+        catalogId = quote("/" + resourcePathSegments[1] + "/" + resourcePathSegments[2] + "/" + resourcePathSegments[3], safe="")
+        resourceId = quote(resourcePathSegments[4], safe="")
 
         url = urlunsplit(( \
             self.scheme, \
             f"{self.host}:{str(self.port)}", \
-            "/api/v1" + "/catalogs/" + catalogId + "/channels/" + channelId, \
+            "/api/v1" + "/catalogs/" + catalogId + "/resources/" + resourceId, \
             None, \
             None))
 
@@ -106,20 +106,20 @@ class NexusConnector():
             response = await self._send(session, lambda session: session.get(url))
             jsonString = await response.text()
             response.close()
-            return Channel(json.loads(jsonString), channelPath)
+            return Resource(json.loads(jsonString), resourcePath)
 
-    async def _getDataStream(self, params, channelPath, current, total):
+    async def _getDataStream(self, params, resourcePath, current, total):
 
-        channelPathSegments = channelPath.split("/")
+        resourcePathSegments = resourcePath.split("/")
 
         catalogId = quote(\
-            "/" + channelPathSegments[2] + \
-            "/" + channelPathSegments[3] + \
-            "/" + channelPathSegments[4], safe="")
+            "/" + resourcePathSegments[2] + \
+            "/" + resourcePathSegments[3] + \
+            "/" + resourcePathSegments[4], safe="")
 
-        catalogId = quote("/" + channelPathSegments[1] + "/" + channelPathSegments[2] + "/" + channelPathSegments[3], safe="")
-        channelId = quote(channelPathSegments[4], safe="")
-        datasetId = quote(channelPathSegments[5], safe="")
+        catalogId = quote("/" + resourcePathSegments[1] + "/" + resourcePathSegments[2] + "/" + resourcePathSegments[3], safe="")
+        resourceId = quote(resourcePathSegments[4], safe="")
+        datasetId = quote(resourcePathSegments[5], safe="")
         begin = params["Begin"]
         end = params["End"]
 
@@ -128,7 +128,7 @@ class NexusConnector():
             f"{self.host}:{str(self.port)}", \
             "/api/v1/data" + \
             "?catalogId=" + catalogId +
-            "&channelId=" + channelId +
+            "&resourceId=" + resourceId +
             "&datasetId=" + datasetId +
             "&begin=" + params["Begin"] +
             "&end=" + params["End"],

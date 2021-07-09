@@ -39,7 +39,7 @@ namespace Nexus.Core
         /// <example>{ Mean: null, MeanPolar: "360" }</example>
         public Dictionary<AggregationMethod, string> Methods { get; set; } = new Dictionary<AggregationMethod, string>();
 
-        /// <example>{ "IncludeGroup": "GroupA|GroupB", "ExcludeUnit": "deg", "IncludeChannels": "T1" }</example>
+        /// <example>{ "IncludeGroup": "GroupA|GroupB", "ExcludeUnit": "deg", "IncludeResources": "T1" }</example>
         public Dictionary<AggregationFilter, string> Filters { get; set; } = new Dictionary<AggregationFilter, string>();
 
         /// <example>[ 1, 60, 600 ]</example>
@@ -62,17 +62,17 @@ namespace Nexus.Core
 
     public enum AggregationFilter
     {
-        IncludeChannel = 0,
-        ExcludeChannel = 1,
+        IncludeResource = 0,
+        ExcludeResource = 1,
         IncludeGroup = 2,
         ExcludeGroup = 3,
         IncludeUnit = 4,
         ExcludeUnit = 5
     }
 
-    public record AggregationChannel
+    public record AggregationResource
     {
-        public Channel Channel { get; init; }
+        public Resource Resource { get; init; }
 
         public List<Aggregation> Aggregations { get; init; }
     }
@@ -94,5 +94,5 @@ namespace Nexus.Core
         public string TargetFilePath { get; init; }
     }
 
-    public record AggregationInstruction(CatalogContainer Container, Dictionary<BackendSource, List<AggregationChannel>> DataReaderToAggregationsMap);
+    public record AggregationInstruction(CatalogContainer Container, Dictionary<BackendSource, List<AggregationResource>> DataReaderToAggregationsMap);
 }

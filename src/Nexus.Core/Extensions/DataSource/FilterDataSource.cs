@@ -93,7 +93,7 @@ namespace Nexus.Extensions
             if (FilterDataSource.FilterDataSourceCache.TryGetValue(datasetRecord.Dataset.BackendSource.ResourceLocator, out var cacheEntries))
             {
                 var cacheEntry = cacheEntries
-                    .FirstOrDefault(entry => entry.SupportedChanneIds.Contains(datasetRecord.Channel.Id));
+                    .FirstOrDefault(entry => entry.SupportedChanneIds.Contains(datasetRecord.Resource.Id));
 
                 if (cacheEntry is not null)
                 {
@@ -141,23 +141,23 @@ namespace Nexus.Extensions
                             continue;
 
                         var filterProvider = cacheEntry.FilterProvider;
-                        var filterChannels = filterProvider.Filters;
+                        var filterResources = filterProvider.Filters;
 
-                        foreach (var filterChannel in filterChannels)
+                        foreach (var filterResource in filterResources)
                         {
-                            var localFilterChannel = filterChannel;
+                            var localFilterResource = filterResource;
 
                             // enforce group
-                            if (localFilterChannel.CatalogId == FilterConstants.SharedCatalogID)
+                            if (localFilterResource.CatalogId == FilterConstants.SharedCatalogID)
                             {
-                                localFilterChannel = localFilterChannel with
+                                localFilterResource = localFilterResource with
                                 {
                                     Group = filterCodeDefinition.Owner.Split('@')[0]
                                 };
                             }
-                            else if (string.IsNullOrWhiteSpace(localFilterChannel.Group))
+                            else if (string.IsNullOrWhiteSpace(localFilterResource.Group))
                             {
-                                localFilterChannel = localFilterChannel with
+                                localFilterResource = localFilterResource with
                                 {
                                     Group = "General"
                                 };
@@ -173,32 +173,32 @@ namespace Nexus.Extensions
                                 }
                             };
 
-                            // create channel
-                            if (!NexusCoreUtilities.CheckNamingConvention(localFilterChannel.ChannelName, out var message))
+                            // create resource
+                            if (!NexusCoreUtilities.CheckNamingConvention(localFilterResource.ResourceName, out var message))
                             {
-                                this.Context.Logger.LogWarning($"Skipping channel '{localFilterChannel.ChannelName}' due to the following reason: {message}.");
+                                this.Context.Logger.LogWarning($"Skipping resource '{localFilterResource.ResourceName}' due to the following reason: {message}.");
                                 continue;
                             }
 
-                            var channel = new Channel()
+                            var resource = new Resource()
                             {
-                                Id = localFilterChannel.ToGuid(cacheEntry.FilterCodeDefinition),
-                                Name = localFilterChannel.ChannelName,
-                                Group = localFilterChannel.Group,
-                                Unit = localFilterChannel.Unit,
+                                Id = localFilterResource.ToGuid(cacheEntry.FilterCodeDefinition),
+                                Name = localFilterResource.ResourceName,
+                                Group = localFilterResource.Group,
+                                Unit = localFilterResource.Unit,
                                 Datasets = datasets,
                             };
 
-                            channel.Metadata["Description"] = localFilterChannel.Description;
+                            resource.Metadata["Description"] = localFilterResource.Description;
 
                             // get or create catalog
-                            if (!catalogs.TryGetValue(localFilterChannel.CatalogId, out var catalog))
+                            if (!catalogs.TryGetValue(localFilterResource.CatalogId, out var catalog))
                             {
-                                catalog = new Catalog() { Id = localFilterChannel.CatalogId };
-                                catalogs[localFilterChannel.CatalogId] = catalog;
+                                catalog = new Catalog() { Id = localFilterResource.CatalogId };
+                                catalogs[localFilterResource.CatalogId] = catalog;
                             }
 
-                            catalog.Channels.Add(channel);
+                            catalog.Resources.Add(resource);
                         }
                     }
                 }
@@ -226,8 +226,8 @@ namespace Nexus.Extensions
 
                 foreach (var (datasetPath, data, status) in requests)
                 {
-                    var (catalog, channel, dataset) = Catalog.Find(datasetPath, _catalogs);
-                    var cacheEntry = _cacheEntries.FirstOrDefault(current => current.SupportedChanneIds.Contains(channel.Id));
+                    var (catalog, resource, dataset) = Catalog.Find(datasetPath, _catalogs);
+                    var cacheEntry = _cacheEntries.FirstOrDefault(current => current.SupportedChanneIds.Contains(resource.Id));
 
 
                 }
@@ -244,14 +244,14 @@ namespace Nexus.Extensions
 
                 foreach (var (datasetPath, data, status) in requests)
                 {
-                    var (catalog, channel, dataset) = Catalog.Find(datasetPath, _catalogs);
-                    var cacheEntry = _cacheEntries.FirstOrDefault(current => current.SupportedChanneIds.Contains(channel.Id));
+                    var (catalog, resource, dataset) = Catalog.Find(datasetPath, _catalogs);
+                    var cacheEntry = _cacheEntries.FirstOrDefault(current => current.SupportedChanneIds.Contains(resource.Id));
 
                     if (cacheEntry is null)
-                        throw new Exception("The requested filter channel ID could not be found.");
+                        throw new Exception("The requested filter resource ID could not be found.");
 
                     // fill database
-                    GetFilterData getData = (string catalogId, string channelId, string datasetId, DateTime begin, DateTime end) =>
+                    GetFilterData getData = (string catalogId, string resourceId, string datasetId, DateTime begin, DateTime end) =>
                     {
 #warning improve this (PhysicalName)
                         var catalog = this.Database.CatalogContainers
@@ -260,7 +260,7 @@ namespace Nexus.Extensions
                         if (catalog == null)
                             throw new Exception($"Unable to find catalog with id '{catalogId}'.");
 
-                        var datasetRecord = this.Database.Find(catalog.Id, channelId, datasetId);
+                        var datasetRecord = this.Database.Find(catalog.Id, resourceId, datasetId);
 
                         if (!this.IsCatalogAccessible(catalog.Id))
                             throw new UnauthorizedAccessException("The current user is not allowed to access this filter.");
@@ -279,7 +279,7 @@ namespace Nexus.Extensions
                     };
 
                     // execute
-                    var filter = cacheEntry.FilterProvider.Filters.First(filter => filter.ToGuid(cacheEntry.FilterCodeDefinition) == channel.Id);
+                    var filter = cacheEntry.FilterProvider.Filters.First(filter => filter.ToGuid(cacheEntry.FilterCodeDefinition) == resource.Id);
                     var filterResult = MemoryMarshal.Cast<byte, double>(data.Span);
 
                     cacheEntry.FilterProvider.Filter(begin, end, filter, getData, filterResult);
@@ -391,37 +391,37 @@ namespace Nexus.Extensions
             code = Regex.Replace(code, pattern1, match =>
             {
                 var catalogId = match.Groups[1].Value;
-                var channelId = match.Groups[2].Value;
+                var resourceId = match.Groups[2].Value;
 
 #warning: Whenever the space in the dataset name is removed, update this code
                 var regex = new Regex("_");
                 var datasetId = regex.Replace(match.Groups[3].Value, " ", 1);
 
-                return $"= getData(\"{catalogId}\", \"{channelId}\", \"{datasetId}\", begin, end);";
+                return $"= getData(\"{catalogId}\", \"{resourceId}\", \"{datasetId}\", begin, end);";
             });
 
-            // matches strings like "= dataProvider.Read(campaignId, channelId, datasetId, begin, end);"
+            // matches strings like "= dataProvider.Read(campaignId, resourceId, datasetId, begin, end);"
             var pattern3 = @"=\s*dataProvider\.Read\((.*?),(.*?),(.*?),(.*?),(.*?)\);";
             code = Regex.Replace(code, pattern3, match =>
             {
                 var catalogId = match.Groups[1].Value;
-                var channelId = match.Groups[2].Value;
+                var resourceId = match.Groups[2].Value;
                 var datasetId = match.Groups[3].Value;
                 var begin = match.Groups[4].Value;
                 var end = match.Groups[5].Value;
 
-                return $"= getData({catalogId}, {channelId}, {datasetId}, {begin}, {end});";
+                return $"= getData({catalogId}, {resourceId}, {datasetId}, {begin}, {end});";
             });
 
-            // matches strings like "= dataProvider.Read(campaignId, channelId, datasetId);"
+            // matches strings like "= dataProvider.Read(campaignId, resourceId, datasetId);"
             var pattern2 = @"=\s*dataProvider\.Read\((.*?),(.*?),(.*?)\);";
             code = Regex.Replace(code, pattern2, match =>
             {
                 var catalogId = match.Groups[1].Value;
-                var channelId = match.Groups[2].Value;
+                var resourceId = match.Groups[2].Value;
                 var datasetId = match.Groups[3].Value;
 
-                return $"= getData({catalogId}, {channelId}, {datasetId}, begin, end);";
+                return $"= getData({catalogId}, {resourceId}, {datasetId}, begin, end);";
             });
 
             return code;

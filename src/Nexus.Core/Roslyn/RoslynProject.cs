@@ -137,12 +137,12 @@ namespace Nexus.Roslyn
             classStringBuilder.AppendLine($"{{");
 
             // add Read() method
-            classStringBuilder.AppendLine($"public Span<double> Read(string catalogId, string channelName, string datasetId)");
+            classStringBuilder.AppendLine($"public Span<double> Read(string catalogId, string resourceName, string datasetId)");
             classStringBuilder.AppendLine($"{{");
             classStringBuilder.AppendLine($"return default;");
             classStringBuilder.AppendLine($"}}");
 
-            classStringBuilder.AppendLine($"public Span<double> Read(string catalogId, string channelName, string datasetId, DateTime begin, DateTime end)");
+            classStringBuilder.AppendLine($"public Span<double> Read(string catalogId, string resourceName, string datasetId, DateTime begin, DateTime end)");
             classStringBuilder.AppendLine($"{{");
             classStringBuilder.AppendLine($"return default;");
             classStringBuilder.AppendLine($"}}");
@@ -161,31 +161,31 @@ namespace Nexus.Roslyn
                     catalogStringBuilder.AppendLine($"public class {catalogContainer.PhysicalName}_TYPE");
                     catalogStringBuilder.AppendLine($"{{");
 
-                    foreach (var channel in catalogContainer.Catalog.Channels)
+                    foreach (var resource in catalogContainer.Catalog.Resources)
                     {
-                        var addChannel = false;
-                        var channelStringBuilder = new StringBuilder();
+                        var addResource = false;
+                        var resourceStringBuilder = new StringBuilder();
 
-                        // channel class definition
-                        channelStringBuilder.AppendLine($"public class {channel.Name}_TYPE");
-                        channelStringBuilder.AppendLine($"{{");
+                        // resource class definition
+                        resourceStringBuilder.AppendLine($"public class {resource.Name}_TYPE");
+                        resourceStringBuilder.AppendLine($"{{");
 
-                        foreach (var dataset in channel.Datasets.Where(dataset => dataset.Id.Contains(sampleRate)))
+                        foreach (var dataset in resource.Datasets.Where(dataset => dataset.Id.Contains(sampleRate)))
                         {
                             // dataset property
-                            channelStringBuilder.AppendLine($"public Span<double> {ExtensibilityUtilities.EnforceNamingConvention(dataset.Id, prefix: "DATASET")} {{ get; set; }}");
+                            resourceStringBuilder.AppendLine($"public Span<double> {ExtensibilityUtilities.EnforceNamingConvention(dataset.Id, prefix: "DATASET")} {{ get; set; }}");
 
-                            addChannel = true;
+                            addResource = true;
                             addCatalog = true;
                         }
 
-                        channelStringBuilder.AppendLine($"}}");
+                        resourceStringBuilder.AppendLine($"}}");
 
-                        // channel property
-                        channelStringBuilder.AppendLine($"public {channel.Name}_TYPE {channel.Name} {{ get; }}");
+                        // resource property
+                        resourceStringBuilder.AppendLine($"public {resource.Name}_TYPE {resource.Name} {{ get; }}");
 
-                        if (addChannel)
-                            catalogStringBuilder.AppendLine(channelStringBuilder.ToString());
+                        if (addResource)
+                            catalogStringBuilder.AppendLine(resourceStringBuilder.ToString());
                     }
 
                     catalogStringBuilder.AppendLine($"}}");

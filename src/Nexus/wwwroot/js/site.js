@@ -45,16 +45,16 @@ async function UpdateChart(userState, chartEntries, start, end, count, dt, begin
         for (var i = 0; i < chartEntries.length; i++) {
 
             var chartEntry = chartEntries[i];
-            var channelData = Array(count);
+            var resourceData = Array(count);
 
-            var channelPathSegments = chartEntry.path.split("/");
-            var catalogId = encodeURIComponent('/' + channelPathSegments[1] + '/' + channelPathSegments[2] + '/' + channelPathSegments[3]);
-            var channelId = encodeURIComponent(channelPathSegments[4]);
-            var datasetId = encodeURIComponent(channelPathSegments[5]);
+            var resourcePathSegments = chartEntry.path.split("/");
+            var catalogId = encodeURIComponent('/' + resourcePathSegments[1] + '/' + resourcePathSegments[2] + '/' + resourcePathSegments[3]);
+            var resourceId = encodeURIComponent(resourcePathSegments[4]);
+            var datasetId = encodeURIComponent(resourcePathSegments[5]);
 
             url = "/api/v1/data" +
                   "?catalogId=" + catalogId +
-                  "&channelId=" + channelId +
+                  "&resourceId=" + resourceId +
                   "&datasetId=" + datasetId +
                   "&begin=" + start +
                   "&end=" + end;
@@ -89,15 +89,15 @@ async function UpdateChart(userState, chartEntries, start, end, count, dt, begin
                 await userState.invokeMethodAsync('SetVisualizeProgress', progress);
             }
 
-            var channelData = new Float64Array(buffer);
+            var resourceData = new Float64Array(buffer);
 
             // replace NaN by null
-            for (var j = 0; j < channelData.length; j++) {
-                if (isNaN(channelData[j]))
-                    channelData[j] = null;
+            for (var j = 0; j < resourceData.length; j++) {
+                if (isNaN(resourceData[j]))
+                    resourceData[j] = null;
             }
 
-            chartEntry.data = channelData;
+            chartEntry.data = resourceData;
         }        
     }
     finally {

@@ -22,7 +22,7 @@ namespace Nexus.Core
         public ExportMode ExportMode { get; set; } = ExportMode.Web;
 
         /// <example>["/IN_MEMORY/TEST/ACCESSIBLE/T1/1 s_mean", "/IN_MEMORY/TEST/ACCESSIBLE/V1/1 s_mean"]</example>
-        public List<string> ChannelPaths { get; set; } = new List<string>();
+        public List<string> ResourcePaths { get; set; } = new List<string>();
 
         /// <example>{ "RowIndexFormat": "Index", "SignificantFigures": "4" }</example>
         public Dictionary<string, string> Configuration { get; set; } = new Dictionary<string, string>();

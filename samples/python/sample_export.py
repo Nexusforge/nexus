@@ -17,7 +17,7 @@ begin = datetime(2020, 2, 1, 0, 0, tzinfo=timezone.utc)
 end   = datetime(2020, 2, 2, 0, 0, tzinfo=timezone.utc)
 
 # must all be of the same sample rate
-channel_paths = [
+resource_paths = [
     "/IN_MEMORY/TEST/ACCESSIBLE/T1/1 s_mean",
     "/IN_MEMORY/TEST/ACCESSIBLE/V1/1 s_mean"
 ]
@@ -39,7 +39,7 @@ connector = NexusConnector(scheme, host, port, username, password)
 params = {
     "FileGranularity": "Day",       # Minute_1, Minute_10, Hour, Day, SingleFile
     "FileFormat": "MAT73",          # CSV, FAMOS, MAT73
-    "ChannelPaths": channel_paths,
+    "ResourcePaths": resource_paths,
 
     # CSV-only:
     "Configuration": {

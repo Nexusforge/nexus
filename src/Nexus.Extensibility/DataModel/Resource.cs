@@ -6,7 +6,7 @@ using System.Linq;
 namespace Nexus.DataModel
 {
     [DebuggerDisplay("{Name,nq}")]
-    public record Channel
+    public record Resource
     {
         #region Properties
 
@@ -21,12 +21,12 @@ namespace Nexus.DataModel
 
         #region "Methods"
 
-        internal Channel Merge(Channel channel, MergeMode mergeMode)
+        internal Resource Merge(Resource resource, MergeMode mergeMode)
         {
             // merge datasets
             var mergedDatasets = new List<Dataset>();
 
-            foreach (var dataset in channel.Datasets)
+            foreach (var dataset in resource.Datasets)
             {
                 var referenceDataset = mergedDatasets.FirstOrDefault(current => current.Id == dataset.Id);
 
@@ -57,7 +57,7 @@ namespace Nexus.DataModel
             }
 
             // merge properties
-            Channel merged;
+            Resource merged;
 
             switch (mergeMode)
             {
@@ -66,21 +66,21 @@ namespace Nexus.DataModel
                     var mergedMetadata1 = this.Metadata
                         .ToDictionary(entry => entry.Key, entry => entry.Value);
 
-                    foreach (var (key, value) in channel.Metadata)
+                    foreach (var (key, value) in resource.Metadata)
                     {
                         if (mergedMetadata1.ContainsKey(key))
-                            throw new Exception($"The left channel's metadata already contains the key '{key}'.");
+                            throw new Exception($"The left resource's metadata already contains the key '{key}'.");
 
                         else
                             mergedMetadata1[key] = value;
                     }
 
-                    merged = new Channel()
+                    merged = new Resource()
                     {
                         Id = this.Id,
-                        Name = string.IsNullOrWhiteSpace(this.Name) ? channel.Name : this.Name,
-                        Group = string.IsNullOrWhiteSpace(this.Group) ? channel.Group : this.Group,
-                        Unit = string.IsNullOrWhiteSpace(this.Unit) ? channel.Unit : this.Unit,
+                        Name = string.IsNullOrWhiteSpace(this.Name) ? resource.Name : this.Name,
+                        Group = string.IsNullOrWhiteSpace(this.Group) ? resource.Group : this.Group,
+                        Unit = string.IsNullOrWhiteSpace(this.Unit) ? resource.Unit : this.Unit,
                         Metadata = mergedMetadata1,
                         Datasets = mergedDatasets
                     };
@@ -92,17 +92,17 @@ namespace Nexus.DataModel
                     var mergedMetadata2 = this.Metadata
                         .ToDictionary(entry => entry.Key, entry => entry.Value);
 
-                    foreach (var (key, value) in channel.Metadata)
+                    foreach (var (key, value) in resource.Metadata)
                     {
                         mergedMetadata2[key] = value;
                     }
 
-                    merged = new Channel()
+                    merged = new Resource()
                     {
                         Id = this.Id,
-                        Name = channel.Name,
-                        Group = channel.Group,
-                        Unit = channel.Unit,
+                        Name = resource.Name,
+                        Group = resource.Group,
+                        Unit = resource.Unit,
                         Metadata = mergedMetadata2,
                         Datasets = mergedDatasets
                     };

@@ -44,11 +44,11 @@ classdef NexusConnector < matlab.net.http.ProgressMonitor
                 fprintf('Streaming ... \n');
                 index = 0;
                 
-                for channelPath = params.ChannelPaths.'
-                    channel                     = self.GetChannel(channelPath);
-                    channel.Values              = self.GetDataStream(...
-                        params, channelPath, index, length(params.ChannelPaths));
-                    result(char(channelPath))   = channel;
+                for resourcePath = params.ResourcePaths.'
+                    resource                     = self.GetResource(resourcePath);
+                    resource.Values              = self.GetDataStream(...
+                        params, resourcePath, index, length(params.ResourcePaths));
+                    result(char(resourcePath))   = resource;
                     index                       = index + 1;
                 end 
 
@@ -94,38 +94,38 @@ classdef NexusConnector < matlab.net.http.ProgressMonitor
     
     methods (Access = private)
         
-        function channel = GetChannel(self, channelPath)
+        function resource = GetResource(self, resourcePath)
             import matlab.net.*
             import matlab.net.http.*
             
             requestMessage          = RequestMessage;
             requestMessage.Method   = 'get';
-            channelPathSegments        = split(channelPath, '/');
-            catalogId               = urlencode(['/' char(channelPathSegments(2)) '/' char(channelPathSegments(3)) '/' char(channelPathSegments(4))]);
-            channelId               = urlencode(char(channelPathSegments(5)));
+            resourcePathSegments        = split(resourcePath, '/');
+            catalogId               = urlencode(['/' char(resourcePathSegments(2)) '/' char(resourcePathSegments(3)) '/' char(resourcePathSegments(4))]);
+            resourceId               = urlencode(char(resourcePathSegments(5)));
             
             uri = URI([self.Scheme '://' self.Host ':' num2str(self.Port) '/api/v1' ...
                 '/catalogs/' catalogId ...
-                '/channels/' channelId]);
+                '/resources/' resourceId]);
             
             response                = self.Send(requestMessage, uri);          
-            channel                 = self.ToPascalCase(response.Body.Data);
+            resource                 = self.ToPascalCase(response.Body.Data);
         end
                      
-        function data = GetDataStream(self, params, channelPath, current, total)
+        function data = GetDataStream(self, params, resourcePath, current, total)
             import matlab.net.*
             import matlab.net.http.*
             
             requestMessage          = RequestMessage;
             requestMessage.Method   = 'get';
-            channelPathSegments        = split(channelPath, '/');
-            catalogId               = urlencode(['/' char(channelPathSegments(2)) '/' char(channelPathSegments(3)) '/' char(channelPathSegments(4))]);
-            channelId               = urlencode(char(channelPathSegments(5)));
-            datasetId               = urlencode(char(channelPathSegments(6)));
+            resourcePathSegments        = split(resourcePath, '/');
+            catalogId               = urlencode(['/' char(resourcePathSegments(2)) '/' char(resourcePathSegments(3)) '/' char(resourcePathSegments(4))]);
+            resourceId               = urlencode(char(resourcePathSegments(5)));
+            datasetId               = urlencode(char(resourcePathSegments(6)));
             
             uri = URI([self.Scheme '://' self.Host ':' num2str(self.Port) '/api/v1/data' ...
                 '?catalogId=' catalogId ...
-                '&channelId=' channelId ...
+                '&resourceId=' resourceId ...
                 '&datasetId=' datasetId ...
                 '&begin=' params.Begin ...
                 '&end=' params.End]);

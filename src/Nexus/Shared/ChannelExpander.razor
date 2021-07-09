@@ -1,67 +1,67 @@
-﻿<div class="channel-expander" @onclick="this.OnClick" @onmouseover="() => _showAdditionalInfo = true" @onmouseout="() => _showAdditionalInfo = false">
-    <div class="channel-name">
+﻿<div class="resource-expander" @onclick="this.OnClick" @onmouseover="() => _showAdditionalInfo = true" @onmouseout="() => _showAdditionalInfo = false">
+    <div class="resource-name">
 
         @if (this.UserState.IsEditEnabled)
         {
-            <span>@this.Channel.Name&nbsp;</span><input type="text" @bind-value="this.Channel.Unit" />
+            <span>@this.Resource.Name&nbsp;</span><input type="text" @bind-value="this.Resource.Unit" />
         }
         else
         {
-            @if (string.IsNullOrWhiteSpace(this.Channel.Unit))
+            @if (string.IsNullOrWhiteSpace(this.Resource.Unit))
             {
-                @this.Channel.Name
+                @this.Resource.Name
             }
             else
             {
-                <span>@this.Channel.Name&nbsp;</span><span class="small-text">@this.Channel.Unit</span>
+                <span>@this.Resource.Name&nbsp;</span><span class="small-text">@this.Resource.Unit</span>
             }
         }
 
-        <div class="channel-special-info">
+        <div class="resource-special-info">
             @if (this.UserState.IsEditEnabled)
             {
-                <input type="text" @bind-value="this.Channel.SpecialInfo" />
+                <input type="text" @bind-value="this.Resource.SpecialInfo" />
             }
             else
             {
-                @if (!string.IsNullOrWhiteSpace(this.Channel.SpecialInfo))
+                @if (!string.IsNullOrWhiteSpace(this.Resource.SpecialInfo))
                 {
                     <span><i class="fas fa-exclamation-triangle"></i></span>
-                    @this.Channel.SpecialInfo
+                    @this.Resource.SpecialInfo
                 }
             }
         </div>
 
-        <div class="channel-sample-rates">
+        <div class="resource-sample-rates">
             @if (_showAdditionalInfo)
             {
                 @foreach (var sampleRate in this.GetSampleRates())
                 {
-                    <div class="channel-sample-rate" @onclick="() => this.UserState.SampleRate = sampleRate">
+                    <div class="resource-sample-rate" @onclick="() => this.UserState.SampleRate = sampleRate">
                         @sampleRate
                     </div>
                 }
             }
         </div>
 
-        <div class="channel-datasets ml-auto">
+        <div class="resource-datasets ml-auto">
             @foreach (var dataset in _filteredDatasets)
             {
-                <div class="channel-dataset @(this.UserState.IsDatasetSeleced(dataset) ? "selected" : "")"
+                <div class="resource-dataset @(this.UserState.IsDatasetSeleced(dataset) ? "selected" : "")"
                      @onclick="() => this.UserState.ToggleDatasetSelection(dataset)">
                     @dataset.Name
                 </div>
             }
         </div>
     </div>
-    <span class="channel-description">
+    <span class="resource-description">
         @if (this.UserState.IsEditEnabled)
         {
-            <input type="text" @bind-value="this.Channel.Description" />
+            <input type="text" @bind-value="this.Resource.Description" />
         }
         else
         {
-            @this.Channel.Description
+            @this.Resource.Description
         }
     </span>
 </div>

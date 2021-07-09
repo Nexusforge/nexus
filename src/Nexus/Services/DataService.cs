@@ -190,7 +190,7 @@ namespace Nexus.Services
                                             string directoryPath,
                                             CancellationToken cancellationToken)
         {
-            var channelDescriptionSet = sparseCatalog.ToChannelDescriptions();
+            var resourceDescriptionSet = sparseCatalog.ToResourceDescriptions();
             var singleFile = exportParameters.FileGranularity == FileGranularity.SingleFile;
 
             TimeSpan filePeriod;
@@ -253,7 +253,7 @@ namespace Nexus.Services
             // initialize data writer
             var catalogName_splitted = sparseCatalog.Id.Split('/');
             var dataWriterContext = new DataWriterContext("Nexus", directoryPath, new NexusCatalogDescription(Guid.Empty, 0, catalogName_splitted[1], catalogName_splitted[2], catalogName_splitted[3]), customMetadataEntrySet);
-            dataWriter.Configure(dataWriterContext, channelDescriptionSet);
+            dataWriter.Configure(dataWriterContext, resourceDescriptionSet);
 
             try
             {

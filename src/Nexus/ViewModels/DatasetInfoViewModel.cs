@@ -7,7 +7,7 @@ namespace Nexus.ViewModels
     {
         #region Constructors
 
-        public DatasetViewModel(Dataset dataset, ChannelViewModel parent)
+        public DatasetViewModel(Dataset dataset, ResourceViewModel parent)
         {
             this.Model = dataset;
             this.Parent = parent;
@@ -23,7 +23,7 @@ namespace Nexus.ViewModels
 
         public NexusDataType DataType => this.Model.DataType;
 
-        public ChannelViewModel Parent { get; }
+        public ResourceViewModel Parent { get; }
 
         #endregion
     }

@@ -45,8 +45,8 @@ namespace Nexus.Core.Tests
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
             var samplePeriod = TimeSpan.FromSeconds(1);
 
-            var datasetRecords = _fixture.Catalog.Channels
-                .SelectMany(channel => channel.Datasets.Select(dataset => new DatasetRecord(_fixture.Catalog, channel, dataset)))
+            var datasetRecords = _fixture.Catalog.Resources
+                .SelectMany(resource => resource.Datasets.Select(dataset => new DatasetRecord(_fixture.Catalog, resource, dataset)))
                 .ToArray();
 
             var datasetRecordGroups = new[]
@@ -54,17 +54,17 @@ namespace Nexus.Core.Tests
                 new DatasetRecordGroup(_fixture.Catalog, "My License", datasetRecords)
             };
 
-            var writeRequests = datasetRecords
+            var requests = datasetRecords
                 .Select(datasetRecord => new WriteRequest(datasetRecord, new double[1000]))
                 .ToArray();
 
-            var writeRequestGroups = new[]
+            var requestGroups = new[]
             {
-                new WriteRequestGroup(_fixture.Catalog, writeRequests)
+                new WriteRequestGroup(_fixture.Catalog, requests)
             };
 
             await dataWriter.OpenAsync(begin, TimeSpan.FromSeconds(1), datasetRecordGroups, CancellationToken.None);
-            await dataWriter.WriteAsync(TimeSpan.Zero, TimeSpan.FromSeconds(1), writeRequestGroups, new Progress<double>(), CancellationToken.None);
+            await dataWriter.WriteAsync(TimeSpan.Zero, TimeSpan.FromSeconds(1), requestGroups, new Progress<double>(), CancellationToken.None);
             await dataWriter.CloseAsync(CancellationToken.None);
 
             var actualFilePath = Directory.GetFiles(_fixture.TargetFolder).SingleOrDefault();

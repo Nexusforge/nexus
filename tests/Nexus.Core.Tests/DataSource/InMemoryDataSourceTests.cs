@@ -42,10 +42,10 @@ namespace Nexus.Core.Tests
 
             // assert
             var actual = catalogs.First(catalog => catalog.Id == "/IN_MEMORY/TEST/ACCESSIBLE");
-            var actualNames = actual.Channels.Select(channel => channel.Name).ToList();
-            var actualGroups = actual.Channels.Select(channel => channel.Group).ToList();
-            var actualUnits = actual.Channels.Select(channel => channel.Unit).ToList();
-            var actualDataTypes = actual.Channels.SelectMany(channel => channel.Datasets.Select(dataset => dataset.DataType)).ToList();
+            var actualNames = actual.Resources.Select(resource => resource.Name).ToList();
+            var actualGroups = actual.Resources.Select(resource => resource.Group).ToList();
+            var actualUnits = actual.Resources.Select(resource => resource.Unit).ToList();
+            var actualDataTypes = actual.Resources.SelectMany(resource => resource.Datasets.Select(dataset => dataset.DataType)).ToList();
 
             var expectedNames = new List<string>() { "T1", "V1", "unix_time1", "unix_time2" };
             var expectedGroups = new List<string>() { "Group 1", "Group 1", "Group 2", "Group 2" };
@@ -116,9 +116,9 @@ namespace Nexus.Core.Tests
 
             var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
             var catalog = catalogs.First();
-            var channel = catalog.Channels.First();
-            var dataset = channel.Datasets.First();
-            var datasetPath = new DatasetRecord(catalog, channel, dataset).GetPath();
+            var resource = catalog.Resources.First();
+            var dataset = resource.Datasets.First();
+            var datasetPath = new DatasetRecord(catalog, resource, dataset).GetPath();
 
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 02, 0, 0, 0, DateTimeKind.Utc);

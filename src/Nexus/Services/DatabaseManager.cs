@@ -167,7 +167,7 @@ namespace Nexus.Services
                 })
                 .ToList();
 
-            // ensure that the filter data reader plugin does not create catalogs and channels without permission
+            // ensure that the filter data reader plugin does not create catalogs and resources without permission
             var filterCatalogs = backendSourceToCatalogsMap
                 .Where(entry => entry.Key.Type == FilterDataSource.Id)
                 .SelectMany(entry => entry.Value)
@@ -204,20 +204,20 @@ namespace Nexus.Services
             }
 
             // the purpose of this block is to initalize empty properties,
-            // add missing channels and clean up empty channels
+            // add missing resources and clean up empty resources
             foreach (var catalogContainer in database.CatalogContainers)
             {
                 if (cancellationToken.IsCancellationRequested)
                     return;
 
-                // remove all channels where no native datasets are available
+                // remove all resources where no native datasets are available
                 // because only these provide metadata like name and group
-                var channels = catalogContainer.Catalog.Channels;
+                var resources = catalogContainer.Catalog.Resources;
 
-                channels
-                    .Where(channel => string.IsNullOrWhiteSpace(channel.Name))
+                resources
+                    .Where(resource => string.IsNullOrWhiteSpace(resource.Name))
                     .ToList()
-                    .ForEach(channel => channels.Remove(channel));
+                    .ForEach(resource => resources.Remove(resource));
 
                 // save catalog meta to disk
                 this.SaveCatalogMeta(catalogContainer.CatalogSettings);
@@ -458,13 +458,13 @@ namespace Nexus.Services
                     return;
 
                 var catalogMeta = catalogMetas.First(catalogMeta => catalogMeta.Id == catalog.Id);
-                var channelsToRemove = new List<Channel>();
+                var resourcesToRemove = new List<Resource>();
 
-                foreach (var channel in catalog.Channels)
+                foreach (var resource in catalog.Resources)
                 {
                     var datasetsToRemove = new List<Dataset>();
 
-                    foreach (var dataset in channel.Datasets)
+                    foreach (var dataset in resource.Datasets)
                     {
                         var keep = false;
 
@@ -489,18 +489,18 @@ namespace Nexus.Services
 
                     foreach (var datasetToRemove in datasetsToRemove)
                     {
-                        channel.Datasets.Remove(datasetToRemove);
+                        resource.Datasets.Remove(datasetToRemove);
 
-                        if (!channel.Datasets.Any())
-                            channelsToRemove.Add(channel);
+                        if (!resource.Datasets.Any())
+                            resourcesToRemove.Add(resource);
                     }
                 }
 
-                foreach (var channelToRemove in channelsToRemove)
+                foreach (var resourceToRemove in resourcesToRemove)
                 {
-                    catalog.Channels.Remove(channelToRemove);
+                    catalog.Resources.Remove(resourceToRemove);
 
-                    if (!catalog.Channels.Any())
+                    if (!catalog.Resources.Any())
                         catalogsToRemove.Add(catalog);
                 }
             }

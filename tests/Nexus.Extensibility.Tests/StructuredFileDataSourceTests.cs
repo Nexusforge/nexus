@@ -125,9 +125,9 @@ namespace Nexus.Extensibility.Tests
 
             var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
             var catalog = catalogs.First();
-            var channel = catalog.Channels.First();
-            var dataset = channel.Datasets.First();
-            var datasetPath = new DatasetRecord(catalog, channel, dataset).GetPath();
+            var resource = catalog.Resources.First();
+            var dataset = resource.Datasets.First();
+            var datasetPath = new DatasetRecord(catalog, resource, dataset).GetPath();
 
             var begin = new DateTime(2019, 12, 31, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 03, 0, 0, 0, DateTimeKind.Utc);
@@ -168,7 +168,8 @@ namespace Nexus.Extensibility.Tests
         {
             var begin = DateTime.ParseExact(beginString, "yyyy-MM-ddTHH-mm-ssZ", default, DateTimeStyles.AdjustToUniversal);
             var end = DateTime.ParseExact(endString, "yyyy-MM-ddTHH-mm-ssZ", default, DateTimeStyles.AdjustToUniversal);
-            var dataSource = new StructuredFileDataSourceTester() as IDataSource;
+
+            var dataSource = new StructuredFileDataSourceTester() as IDataSource;
 
             var context = new DataSourceContext()
             {
@@ -180,9 +181,9 @@ namespace Nexus.Extensibility.Tests
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
             var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
-            var catalog = catalogs.First();
-            var channel = catalog.Channels.First();
-            var dataset = channel.Datasets.First();
+            var resource = catalogsResource);
+            var channel = resource.Channels.First();
+            var dataset = channel.Datasets.First();resource
             var datasetPath = new DatasetRecord(catalog, channel, dataset).GetPath();
             var request = new ReadRequest(datasetPath, default, default);
 

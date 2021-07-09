@@ -33,22 +33,22 @@ namespace Nexus.Extension.Famos
 
         #region "Methods"
 
-        protected override void OnPrepareFile(DateTime startDateTime, List<ChannelContextGroup> channelContextGroupSet)
+        protected override void OnPrepareFile(DateTime startDateTime, List<ResourceContextGroup> resourceContextGroupSet)
         {
             _dataFilePath = Path.Combine(this.DataWriterContext.DataDirectoryPath, $"{this.DataWriterContext.CatalogDescription.PrimaryGroupName}_{this.DataWriterContext.CatalogDescription.SecondaryGroupName}_{this.DataWriterContext.CatalogDescription.CatalogName}_V{ this.DataWriterContext.CatalogDescription.Version}_{startDateTime.ToString("yyyy-MM-ddTHH-mm-ss")}Z.dat");
 
             if (_famosFile != null)
                 _famosFile.Dispose();
 
-            this.OpenFile(_dataFilePath, startDateTime, channelContextGroupSet);
+            this.OpenFile(_dataFilePath, startDateTime, resourceContextGroupSet);
         }
 
-        protected override void OnWrite(ChannelContextGroup contextGroup, ulong fileOffset, ulong bufferOffset, ulong length)
+        protected override void OnWrite(ResourceContextGroup contextGroup, ulong fileOffset, ulong bufferOffset, ulong length)
         {
             if (length <= 0)
                 throw new Exception(ErrorMessage.FamosWriter_SampleRateTooLow);
 
-            var simpleBuffers = contextGroup.ChannelContextSet.Select(channelContext => channelContext.Buffer.ToSimpleBuffer()).ToList();
+            var simpleBuffers = contextGroup.ResourceContextSet.Select(resourceContext => resourceContext.Buffer.ToSimpleBuffer()).ToList();
 
             var fieldIndex = _spdToFieldIndexMap[contextGroup.SampleRate.SamplesPerDay];
             var field = _famosFile.Fields[fieldIndex];
@@ -65,10 +65,10 @@ namespace Nexus.Extension.Famos
             });
         }
 
-        private void OpenFile(string dataFilePath, DateTime startDateTime, List<ChannelContextGroup> channelContextGroupSet)
+        private void OpenFile(string dataFilePath, DateTime startDateTime, List<ResourceContextGroup> resourceContextGroupSet)
         {
             if (File.Exists(dataFilePath))
-                throw new Exception($"The file {dataFilePath} already exists. Extending an already existing file with additional channels is not supported.");
+                throw new Exception($"The file {dataFilePath} already exists. Extending an already existing file with additional resources is not supported.");
 
             var famosFile = new FamosFileHeader();
 
@@ -105,7 +105,7 @@ namespace Nexus.Extension.Famos
             famosFile.Groups.Add(catalogGroup);
 
             // for each context group
-            foreach (var contextGroup in channelContextGroupSet)
+            foreach (var contextGroup in resourceContextGroupSet)
             {
                 var totalSeconds = (int)Math.Round(_settings.FilePeriod.TotalSeconds, MidpointRounding.AwayFromZero);
                 var totalLength = (int)(totalSeconds * contextGroup.SampleRate.SamplesPerSecond);
@@ -113,15 +113,15 @@ namespace Nexus.Extension.Famos
                 if (totalLength * (double)NexusUtilities.SizeOf(NexusDataType.FLOAT64) > 2 * Math.Pow(10, 9))
                     throw new Exception(ErrorMessage.FamosWriter_DataSizeExceedsLimit);
 
-                // file -> catalog -> channels
+                // file -> catalog -> resources
                 var field = new FamosFileField(FamosFileFieldType.MultipleYToSingleEquidistantTime);
 
-                foreach (ChannelContext channelContext in contextGroup.ChannelContextSet)
+                foreach (ResourceContext resourceContext in contextGroup.ResourceContextSet)
                 {
                     var dx = contextGroup.SampleRate.Period.TotalSeconds;
-                    var channel = this.PrepareChannel(field, channelContext.ChannelDescription, (int)totalLength, startDateTime, dx);
+                    var resource = this.PrepareResource(field, resourceContext.ResourceDescription, (int)totalLength, startDateTime, dx);
 
-                    catalogGroup.Channels.Add(channel);
+                    catalogGroup.Resources.Add(resource);
                 }
 
                 famosFile.Fields.Add(field);
@@ -133,11 +133,11 @@ namespace Nexus.Extension.Famos
             _famosFile = FamosFile.OpenEditable(dataFilePath);
         }
 
-        private FamosFileChannel PrepareChannel(FamosFileField field, ChannelDescription channelDescription, int totalLength, DateTime startDateTme, double dx)
+        private FamosFileResource PrepareResource(FamosFileField field, ResourceDescription resourceDescription, int totalLength, DateTime startDateTme, double dx)
         {
             // component 
-            var datasetName = $"{channelDescription.ChannelName}_{channelDescription.DatasetName.Replace(" ", "_")}";
-            var calibration = new FamosFileCalibration(false, 1, 0, false, channelDescription.Unit);
+            var datasetName = $"{resourceDescription.ResourceName}_{resourceDescription.DatasetName.Replace(" ", "_")}";
+            var calibration = new FamosFileCalibration(false, 1, 0, false, resourceDescription.Unit);
 
             var component = new FamosFileAnalogComponent(datasetName, FamosFileDataType.Float64, totalLength, calibration)
             {
@@ -146,18 +146,18 @@ namespace Nexus.Extension.Famos
             };
 
             // attributes
-            var channel = component.Channels.First();
+            var resource = component.Resources.First();
 
-            channel.PropertyInfo = new FamosFilePropertyInfo(new List<FamosFileProperty>()
+            resource.PropertyInfo = new FamosFilePropertyInfo(new List<FamosFileProperty>()
             {
-                new FamosFileProperty("name", channelDescription.ChannelName),
-                new FamosFileProperty("group", channelDescription.Group),
+                new FamosFileProperty("name", resourceDescription.ResourceName),
+                new FamosFileProperty("group", resourceDescription.Group),
                 new FamosFileProperty("comment", "yyyy-MM-ddTHH-mm-ssZ: Comment1"),
             });
 
             field.Components.Add(component);
 
-            return channel;
+            return resource;
         }
 
         protected override void FreeManagedResources()

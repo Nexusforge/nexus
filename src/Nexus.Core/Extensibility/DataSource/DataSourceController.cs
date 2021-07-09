@@ -59,9 +59,9 @@ namespace Nexus.Extensibility
 
                 foreach (var catalog in catalogs)
                 {
-                    foreach (var channel in catalog.Channels)
+                    foreach (var resource in catalog.Resources)
                     {
-                        foreach (var dataset in channel.Datasets)
+                        foreach (var dataset in resource.Datasets)
                         {
                             dataset.BackendSource = this.BackendSource;
                         }

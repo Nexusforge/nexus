@@ -91,11 +91,11 @@ namespace Nexus.Extensibility.Tests
             if (this.Context.Catalogs is null)
             {
                 var catalog = new Catalog() { Id = "/A/B/C" };
-                var channel = new Channel() { Id = Guid.NewGuid() };
+                var resource = new Resource() { Id = Guid.NewGuid() };
                 var dataset = new Dataset() { Id = "1 Hz_mean", DataType = NexusDataType.INT64 };
 
-                channel.Datasets.Add(dataset);
-                catalog.Channels.Add(channel);
+                resource.Datasets.Add(dataset);
+                catalog.Resources.Add(resource);
 
                 this.Context = this.Context with
                 {

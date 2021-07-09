@@ -69,8 +69,8 @@ namespace Nexus.Services
 
                 var backendSources = container
                     .Catalog
-                    .Channels
-                    .SelectMany(channel => channel.Datasets.Select(dataset => dataset.BackendSource))
+                    .Resources
+                    .SelectMany(resource => resource.Datasets.Select(dataset => dataset.BackendSource))
                     .Distinct()
                     .Where(backendSource => backendSource != state.AggregationBackendSource)
                     .ToList();
@@ -82,26 +82,26 @@ namespace Nexus.Services
                         .Where(parameters => parameters.CatalogId == container.Catalog.Id)
                         .ToList();
 
-                    // create channel to aggregations map
-                    var aggregationChannels = container.Catalog.Channels
-                        // find all channels for current reader backend source
-                        .Where(channel => channel.Datasets.Any(dataset => dataset.BackendSource == backendSource))
-                        // find all aggregations for current channel
-                        .Select(channel =>
+                    // create resource to aggregations map
+                    var aggregationResources = container.Catalog.Resources
+                        // find all resources for current reader backend source
+                        .Where(resource => resource.Datasets.Any(dataset => dataset.BackendSource == backendSource))
+                        // find all aggregations for current resource
+                        .Select(resource =>
                         {
-                            var channelMeta = container.CatalogMeta.Channels
-                                .First(current => current.Id == channel.Id);
+                            var resourceMeta = container.CatalogMeta.Resources
+                                .First(current => current.Id == resource.Id);
 
-                            return new AggregationChannel()
+                            return new AggregationResource()
                             {
-                                Channel = channel,
-                                Aggregations = potentialAggregations.Where(current => AggregationService.ApplyAggregationFilter(channel, channelMeta, current.Filters, logger)).ToList()
+                                Resource = resource,
+                                Aggregations = potentialAggregations.Where(current => AggregationService.ApplyAggregationFilter(resource, resourceMeta, current.Filters, logger)).ToList()
                             };
                         })
-                        // take all channels with aggregations
-                        .Where(aggregationChannel => aggregationChannel.Aggregations.Any());
+                        // take all resources with aggregations
+                        .Where(aggregationResource => aggregationResource.Aggregations.Any());
 
-                    return aggregationChannels.ToList();
+                    return aggregationResources.ToList();
                 }));
             }).Where(instruction => instruction != null).ToList();
         }
@@ -170,7 +170,7 @@ namespace Nexus.Services
                                                  Func<BackendSource, Task<DataSourceController>> getControllerAsync,
                                                  CancellationToken cancellationToken)
         {
-            foreach (var (backendSource, aggregationChannels) in instruction.DataReaderToAggregationsMap)
+            foreach (var (backendSource, aggregationResources) in instruction.DataReaderToAggregationsMap)
             {
                 using var controller = await getControllerAsync(backendSource);
 
@@ -186,21 +186,21 @@ namespace Nexus.Services
 
                 var targetDirectoryPath = Path.Combine(databaseFolderPath, "DATA", WebUtility.UrlEncode(container.Id), date.ToString("yyyy-MM"), date.ToString("dd"));
 
-                // for each channel
-                foreach (var aggregationChannel in aggregationChannels)
+                // for each resource
+                foreach (var aggregationResource in aggregationResources)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
                     try
                     {
-                        var dataset = aggregationChannel.Channel.Datasets.First();
+                        var dataset = aggregationResource.Resource.Datasets.First();
 
                         var parameters = new object[]
                         {
                             targetDirectoryPath,
                             controller,
                             dataset,
-                            aggregationChannel.Aggregations,
+                            aggregationResource.Aggregations,
                             date,
                             aggregationChunkSizeMB,
                             setup.Force,
@@ -240,7 +240,7 @@ namespace Nexus.Services
 
             // prepare variables
             var units = new List<AggregationUnit>();
-            var channel = datasetRecord.Channel;
+            var resource = datasetRecord.Resource;
 
             // prepare buffers
             foreach (var aggregation in aggregations)
@@ -272,7 +272,7 @@ namespace Nexus.Services
                             _ => throw new Exception($"The aggregation method '{method}' is unknown.")
                         };
 
-                        var targetFileName = $"{channel.Id}_{period}_s_{methodIdentifier}.nex";
+                        var targetFileName = $"{resource.Id}_{period}_s_{methodIdentifier}.nex";
                         var targetFilePath = Path.Combine(targetDirectoryPath, targetFileName);
 
                         if (force || !File.Exists(targetFilePath))
@@ -721,38 +721,38 @@ namespace Nexus.Services
                 .ToArray();
         }
 
-        private static bool ApplyAggregationFilter(Channel channel, Channel channelMeta, Dictionary<AggregationFilter, string> filters, ILogger logger)
+        private static bool ApplyAggregationFilter(Resource resource, Resource resourceMeta, Dictionary<AggregationFilter, string> filters, ILogger logger)
         {
             bool result = true;
 
-            // channel
-            if (filters.ContainsKey(AggregationFilter.IncludeChannel))
-                result &= Regex.IsMatch(channel.Name, filters[AggregationFilter.IncludeChannel]);
+            // resource
+            if (filters.ContainsKey(AggregationFilter.IncludeResource))
+                result &= Regex.IsMatch(resource.Name, filters[AggregationFilter.IncludeResource]);
 
-            if (filters.ContainsKey(AggregationFilter.ExcludeChannel))
-                result &= !Regex.IsMatch(channel.Name, filters[AggregationFilter.ExcludeChannel]);
+            if (filters.ContainsKey(AggregationFilter.ExcludeResource))
+                result &= !Regex.IsMatch(resource.Name, filters[AggregationFilter.ExcludeResource]);
 
             // group
             if (filters.ContainsKey(AggregationFilter.IncludeGroup))
-                result &= channel.Group.Split('\n').Any(groupName => Regex.IsMatch(groupName, filters[AggregationFilter.IncludeGroup]));
+                result &= resource.Group.Split('\n').Any(groupName => Regex.IsMatch(groupName, filters[AggregationFilter.IncludeGroup]));
 
             if (filters.ContainsKey(AggregationFilter.ExcludeGroup))
-                result &= !channel.Group.Split('\n').Any(groupName => Regex.IsMatch(groupName, filters[AggregationFilter.ExcludeGroup]));
+                result &= !resource.Group.Split('\n').Any(groupName => Regex.IsMatch(groupName, filters[AggregationFilter.ExcludeGroup]));
 
             // unit
             if (filters.ContainsKey(AggregationFilter.IncludeUnit))
             {
 #warning Remove this special case check.
-                if (channel.Unit is null)
+                if (resource.Unit is null)
                 {
                     logger.LogWarning("Unit 'null' value detected.");
                     result &= false;
                 }
                 else
                 {
-                    var unit = !string.IsNullOrWhiteSpace(channelMeta.Unit)
-                        ? channelMeta.Unit
-                        : channel.Unit;
+                    var unit = !string.IsNullOrWhiteSpace(resourceMeta.Unit)
+                        ? resourceMeta.Unit
+                        : resource.Unit;
 
                     result &= Regex.IsMatch(unit, filters[AggregationFilter.IncludeUnit]);
                 }
@@ -761,7 +761,7 @@ namespace Nexus.Services
             if (filters.ContainsKey(AggregationFilter.ExcludeUnit))
             {
 #warning Remove this special case check.
-                if (channel.Unit == null)
+                if (resource.Unit == null)
                 {
                     logger.LogWarning("Unit 'null' value detected.");
                     result &= true;
@@ -769,9 +769,9 @@ namespace Nexus.Services
                 }
                 else
                 {
-                    var unit = !string.IsNullOrWhiteSpace(channelMeta.Unit)
-                        ? channelMeta.Unit
-                        : channel.Unit;
+                    var unit = !string.IsNullOrWhiteSpace(resourceMeta.Unit)
+                        ? resourceMeta.Unit
+                        : resource.Unit;
 
                     result &= !Regex.IsMatch(unit, filters[AggregationFilter.ExcludeUnit]);
                 }

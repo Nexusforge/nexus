@@ -19,7 +19,7 @@ namespace Nexus.Extensibility
         Task WriteAsync(
             TimeSpan fileOffset,
             TimeSpan samplePeriod,
-            WriteRequestGroup[] writeRequestGroups,
+            WriteRequestGroup[] requestGroups,
             Progress<double> progress,
             CancellationToken cancellationToken);
 

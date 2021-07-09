@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 from urllib.request import url2pathname
 from uuid import uuid3
 
-from PythonRpcDataModel import Catalog, Channel, Dataset, NexusDataType
+from PythonRpcDataModel import Catalog, Resource, Dataset, NexusDataType
 from PythonRpcExtensibility import IDataSource, LogLevel, RpcCommunicator
 
 class NULL_NAMESPACE:
@@ -31,23 +31,23 @@ class PythonDataSource(IDataSource):
         if (self._context.catalogs is None):
 
             # catalog 1
-            catalog1_channel1_id = str(uuid3(NULL_NAMESPACE, "catalog1_channel1"))
-            catalog1_channel1_datasets = [Dataset("1 Hz_mean", NexusDataType.INT64)]
-            catalog1_channel1_meta = { "c": "d" }
-            catalog1_channel1 = Channel(catalog1_channel1_id, "channel1", "group1", "°C", catalog1_channel1_meta, catalog1_channel1_datasets)
+            catalog1_resource1_id = str(uuid3(NULL_NAMESPACE, "catalog1_resource1"))
+            catalog1_resource1_datasets = [Dataset("1 Hz_mean", NexusDataType.INT64)]
+            catalog1_resource1_meta = { "c": "d" }
+            catalog1_resource1 = Resource(catalog1_resource1_id, "resource1", "group1", "°C", catalog1_resource1_meta, catalog1_resource1_datasets)
 
-            catalog1_channel2_id = str(uuid3(NULL_NAMESPACE, "catalog1_channel2"))
-            catalog1_channel2_datasets = [Dataset("1 Hz_mean", NexusDataType.FLOAT64)]
-            catalog1_channel2 = Channel(catalog1_channel2_id, "channel2", "group2", "bar", { }, catalog1_channel2_datasets)
+            catalog1_resource2_id = str(uuid3(NULL_NAMESPACE, "catalog1_resource2"))
+            catalog1_resource2_datasets = [Dataset("1 Hz_mean", NexusDataType.FLOAT64)]
+            catalog1_resource2 = Resource(catalog1_resource2_id, "resource2", "group2", "bar", { }, catalog1_resource2_datasets)
 
-            catalog1 = Catalog("/A/B/C", metadata = { "a": "b" }, channels = [catalog1_channel1, catalog1_channel2])
+            catalog1 = Catalog("/A/B/C", metadata = { "a": "b" }, resources = [catalog1_resource1, catalog1_resource2])
 
             # catalog 2
-            catalog2_channel1_id = str(uuid3(NULL_NAMESPACE, "catalog2_channel1"))
-            catalog2_channel1_datasets = [Dataset("1 Hz_mean", NexusDataType.FLOAT32)]
-            catalog2_channel1 = Channel(catalog2_channel1_id, "channel1", "group1", "m/s", { }, catalog2_channel1_datasets)
+            catalog2_resource1_id = str(uuid3(NULL_NAMESPACE, "catalog2_resource1"))
+            catalog2_resource1_datasets = [Dataset("1 Hz_mean", NexusDataType.FLOAT32)]
+            catalog2_resource1 = Resource(catalog2_resource1_id, "resource1", "group1", "m/s", { }, catalog2_resource1_datasets)
 
-            catalog2 = Catalog("/D/E/F", metadata = {}, channels = [catalog2_channel1])
+            catalog2 = Catalog("/D/E/F", metadata = {}, resources = [catalog2_resource1])
 
             #
             self._context.catalogs = [catalog1, catalog2]
@@ -99,7 +99,7 @@ class PythonDataSource(IDataSource):
         # stored as 8 byte little-endian integers) with a sample rate of 1 Hz.
 
         # ensure the catalogs have already been loaded
-        (catalog, channel, dataset) = self._find(datasetPath)
+        (catalog, resource, dataset) = self._find(datasetPath)
 
         # dataset ID = "1 Hz_mean" -> extract "1"
         samplesPerSecond = int(dataset.Id.split(" ")[0])
@@ -155,7 +155,7 @@ class PythonDataSource(IDataSource):
         pathParts = datasetPath.split("/")
 
         datasetId = pathParts[-1]
-        channelId = pathParts[-2]
+        resourceId = pathParts[-2]
         catalogId = "/" + "/".join(pathParts[1:-2])
 
         catalog = next((catalog for catalog in self._context.catalogs if catalog.Id == catalogId), None)
@@ -163,16 +163,16 @@ class PythonDataSource(IDataSource):
         if catalog is None:
             raise Exception(f"Catalog '{catalogId}' not found.")
         
-        channel = next((channel for channel in catalog.Channels if channel.Id == channelId), None)
+        resource = next((resource for resource in catalog.Resources if resource.Id == resourceId), None)
 
-        if channel is None:
-            raise Exception(f"Channel '{channelId}' not found.")
+        if resource is None:
+            raise Exception(f"Resource '{resourceId}' not found.")
 
-        dataset = next((dataset for dataset in channel.Datasets if dataset.Id == datasetId), None)
+        dataset = next((dataset for dataset in resource.Datasets if dataset.Id == datasetId), None)
 
         if dataset is None:
             raise Exception(f"Dataset '{datasetId}' not found.")
 
-        return (catalog, channel, dataset)
+        return (catalog, resource, dataset)
 
 asyncio.run(RpcCommunicator(PythonDataSource()).run())

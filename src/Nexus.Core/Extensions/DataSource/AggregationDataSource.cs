@@ -264,7 +264,7 @@ namespace Nexus.Extensions
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    var (catalog, channel, dataset) = Catalog.Find(datasetPath, _catalogs);
+                    var (catalog, resource, dataset) = Catalog.Find(datasetPath, _catalogs);
                     var catalogFolderPath = Path.Combine(this.Root, "DATA", WebUtility.UrlEncode(catalog.Id));
                     var samplePeriod = dataset.GetSamplePeriod();
 
@@ -282,7 +282,7 @@ namespace Nexus.Extensions
                             catalogFolderPath,
                             fileBegin.ToString("yyyy-MM"),
                             fileBegin.ToString("dd"),
-                            $"{channel.Id}_{dataset.Id.Replace(" ", "_")}.nex");
+                            $"{resource.Id}_{dataset.Id.Replace(" ", "_")}.nex");
 
                         if (File.Exists(filePath))
                         {
@@ -523,7 +523,7 @@ namespace Nexus.Extensions
         private Catalog GetCatalog(string catalogId, string dayFolder)
         {
             var catalog = new Catalog() { Id = catalogId };
-            var channelMap = new Dictionary<Guid, Channel>();
+            var resourceMap = new Dictionary<Guid, Resource>();
 
             Directory
                 .EnumerateFiles(dayFolder, "*.nex", SearchOption.TopDirectoryOnly)
@@ -535,10 +535,10 @@ namespace Nexus.Extensions
                     var id = Guid.Parse(fileNameParts[0]);
                     var datasetName = $"{fileNameParts[1]} {fileNameParts[2]}_{fileNameParts[3]}";
 
-                    if (!channelMap.TryGetValue(id, out var channel))
+                    if (!resourceMap.TryGetValue(id, out var resource))
                     {
-                        channel = new Channel() { Id = id };
-                        channelMap[id] = channel;
+                        resource = new Resource() { Id = id };
+                        resourceMap[id] = resource;
                     }
 
                     var dataset = new Dataset()
@@ -547,10 +547,10 @@ namespace Nexus.Extensions
                         DataType = NexusDataType.FLOAT64
                     };
 
-                    channel.Datasets.Add(dataset);
+                    resource.Datasets.Add(dataset);
                 });
 
-            catalog.Channels.AddRange(channelMap.Values.ToList());
+            catalog.Resources.AddRange(resourceMap.Values.ToList());
 
             return catalog;
         }

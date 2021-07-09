@@ -40,7 +40,7 @@ namespace Nexus.Controllers
         /// Gets the requested data.
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="channelId">The channel identifier.</param>
+        /// <param name="resourceId">The resource identifier.</param>
         /// <param name="datasetId">The dataset identifier.</param>
         /// <param name="begin">Start date/time.</param>
         /// <param name="end">End date/time.</param>
@@ -50,7 +50,7 @@ namespace Nexus.Controllers
         [HttpGet]
         public async Task<IActionResult> GetStream(
             [BindRequired] string catalogId,
-            [BindRequired] string channelId,
+            [BindRequired] string resourceId,
             [BindRequired] string datasetId,
             [BindRequired] DateTime begin,
             [BindRequired] DateTime end,
@@ -60,7 +60,7 @@ namespace Nexus.Controllers
                 return this.StatusCode(503, "The database has not been loaded yet.");
 
             catalogId = WebUtility.UrlDecode(catalogId);
-            channelId = WebUtility.UrlDecode(channelId);
+            resourceId = WebUtility.UrlDecode(resourceId);
             datasetId = WebUtility.UrlDecode(datasetId);
 
             var remoteIpAddress = this.HttpContext.Connection.RemoteIpAddress;
@@ -82,7 +82,7 @@ namespace Nexus.Controllers
             try
             {
                 // dataset
-                var path = $"{catalogId}/{channelId}/{datasetId}";
+                var path = $"{catalogId}/{resourceId}/{datasetId}";
 
                 if (!_databaseManager.Database.TryFind(path, out var datasetRecord))
                     return this.NotFound($"Could not find dataset on path '{path}'.");

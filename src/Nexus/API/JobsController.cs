@@ -68,15 +68,15 @@ namespace Nexus.Controllers
             parameters.Begin = parameters.Begin.ToUniversalTime();
             parameters.End = parameters.End.ToUniversalTime();
 
-            // translate channel paths to datasets
+            // translate resource paths to datasets
             List<DatasetRecord> datasetRecords;
 
             try
             {
-                datasetRecords = parameters.ChannelPaths.Select(datasetPath =>
+                datasetRecords = parameters.ResourcePaths.Select(datasetPath =>
                 {
                     if (!_databaseManager.Database.TryFind(datasetPath, out var datasetRecord))
-                        throw new ValidationException($"Could not find the channel with path '{datasetPath}'.");
+                        throw new ValidationException($"Could not find the resource with path '{datasetPath}'.");
 
                     return datasetRecord;
                 }).ToList();
@@ -88,7 +88,7 @@ namespace Nexus.Controllers
 
             // check that there is anything to export
             if (!datasetRecords.Any())
-                return this.BadRequest("The list of channel paths is empty.");
+                return this.BadRequest("The list of resource paths is empty.");
 
             // security check
             var catalogIds = datasetRecords.Select(datasetRecord => datasetRecord.Catalog.Id).Distinct();

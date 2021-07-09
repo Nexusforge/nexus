@@ -34,22 +34,22 @@
 //            var customMetadataEntrySet = new List<CustomMetadataEntry>();
 //            var dataWriterContext = new DataWriterContext("Nexus", dataDirectoryPath, catalogDescription, customMetadataEntrySet);
 
-//            var channelDescriptionSet = new List<ChannelDescription>()
+//            var resourceDescriptionSet = new List<ResourceDescription>()
 //            {
-//                this.CreateChannelDescription("Var1", "Group1", NexusDataType.FLOAT64, new SampleRateContainer(8640000), "Unit1"),
-//                this.CreateChannelDescription("Var2", "Group2", NexusDataType.FLOAT64, new SampleRateContainer(8640000), "Unit2"),
-//                this.CreateChannelDescription("Var3", "Group1", NexusDataType.FLOAT64, new SampleRateContainer(86400), "Unit2"),
+//                this.CreateResourceDescription("Var1", "Group1", NexusDataType.FLOAT64, new SampleRateContainer(8640000), "Unit1"),
+//                this.CreateResourceDescription("Var2", "Group2", NexusDataType.FLOAT64, new SampleRateContainer(8640000), "Unit2"),
+//                this.CreateResourceDescription("Var3", "Group1", NexusDataType.FLOAT64, new SampleRateContainer(86400), "Unit2"),
 //            };
 
 //            var currentDate = new DateTime(2019, 1, 1, 15, 0, 0);
 //            var period = TimeSpan.FromMinutes(1);
 
 //            // Act
-//            dataWriter.Configure(dataWriterContext, channelDescriptionSet);
+//            dataWriter.Configure(dataWriterContext, resourceDescriptionSet);
 
 //            for (int i = 0; i < 9; i++)
 //            {
-//                var buffers = channelDescriptionSet.Select(current =>
+//                var buffers = resourceDescriptionSet.Select(current =>
 //                {
 //                    var length = (int)current.SampleRate.SamplesPerDay / 1440;
 //                    var offset = length * i;
@@ -67,12 +67,12 @@
 //            // Assert
 //        }
 
-//        private ChannelDescription CreateChannelDescription(string channelName, string group, NexusDataType dataType, SampleRateContainer sampleRate, string unit)
+//        private ResourceDescription CreateResourceDescription(string resourceName, string group, NexusDataType dataType, SampleRateContainer sampleRate, string unit)
 //        {
 //            var guid = Guid.NewGuid();
 //            var datasetName = sampleRate.ToUnitString();
 
-//            return new ChannelDescription(guid, channelName, datasetName, group, dataType, sampleRate, unit, BufferType.Simple);
+//            return new ResourceDescription(guid, resourceName, datasetName, group, dataType, sampleRate, unit, BufferType.Simple);
 //        }
 
 //        private static void ConfigureServices(IServiceCollection services)

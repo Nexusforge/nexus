@@ -33,7 +33,7 @@ class Dataset:
         self.Id = id
         self.DataType = dataType
 
-class Channel:
+class Resource:
 
     Id: UUID
     Name: str
@@ -55,9 +55,9 @@ class Catalog:
     
     Id: str
     Metadata: Dict[str, str]
-    Channels: List[Channel]
+    Resources: List[Resource]
 
-    def __init__(self, id: str, metadata: Dict[str, str], channels: List[Channel]):
+    def __init__(self, id: str, metadata: Dict[str, str], resources: List[Resource]):
         self.Id = id
         self.Metadata = metadata
-        self.Channels = channels
+        self.Resources = resources

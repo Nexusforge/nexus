@@ -14,10 +14,10 @@
             <div class="project-box mat-elevation-z11">
                 <ProjectBox />
             </div>
-            <div class="channel-box mat-elevation-z11">
+            <div class="resource-box mat-elevation-z11">
                 @if (this.UserState.ClientState != ClientState.Availability)
                 {
-                    <ChannelBox />
+                    <ResourceBox />
                 }
                 else
                 {
@@ -36,7 +36,7 @@
         <div class="news-box mat-elevation-z11">
             <NewsTicker />
         </div>
-        <div class="selected-channel-box mat-elevation-z11">
+        <div class="selected-resource-box mat-elevation-z11">
             <DownloadBox />
         </div>
     </div>

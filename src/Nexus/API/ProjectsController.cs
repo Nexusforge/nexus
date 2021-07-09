@@ -180,12 +180,12 @@ namespace Nexus.Controllers
         }
 
         /// <summary>
-        /// Gets a list of all channels in the specified catalog.
+        /// Gets a list of all resources in the specified catalog.
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <returns></returns>
-        [HttpGet("{catalogId}/channels")]
-        public async Task<ActionResult<List<Channel>>> GetChannels(
+        [HttpGet("{catalogId}/resources")]
+        public async Task<ActionResult<List<Resource>>> GetResources(
             [BindRequired] string catalogId)
         {
             if (_databaseManager.Database == null)
@@ -203,7 +203,7 @@ namespace Nexus.Controllers
             else
                 userName = "anonymous";
 
-            var message = $"User '{userName}' ({remoteIpAddress}) requests channels for catalog '{catalogId}' ...";
+            var message = $"User '{userName}' ({remoteIpAddress}) requests resources for catalog '{catalogId}' ...";
             _logger.LogInformation(message);
 
             try
@@ -211,17 +211,17 @@ namespace Nexus.Controllers
                 return await this.ProcessCatalogIdAsync(catalogId, message,
                     (catalog, catalogMeta) =>
                     {
-                        var channels = catalog.Channels.Select(channel =>
+                        var resources = catalog.Resources.Select(resource =>
                         {
-                            var channelMeta = catalogMeta.Channels.First(
-                                current => current.Id == channel.Id);
+                            var resourceMeta = catalogMeta.Resources.First(
+                                current => current.Id == resource.Id);
 
-                            return this.CreateChannelResponse(channel, channelMeta);
+                            return this.CreateResourceResponse(resource, resourceMeta);
                         }).ToList();
 
                         _logger.LogInformation($"{message} Done.");
 
-                        return Task.FromResult((ActionResult<List<Channel>>)channels);
+                        return Task.FromResult((ActionResult<List<Resource>>)resources);
                     });
             }
             catch (Exception ex)
@@ -232,24 +232,24 @@ namespace Nexus.Controllers
         }
 
         /// <summary>
-        /// Gets the specified channel.
+        /// Gets the specified resource.
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="channelId">The channel identifier.</param>
+        /// <param name="resourceId">The resource identifier.</param>
         /// <returns></returns>
-        [HttpGet("{catalogId}/channels/{channelId}")]
-        public async Task<ActionResult<Channel>> GetChannel(
+        [HttpGet("{catalogId}/resources/{resourceId}")]
+        public async Task<ActionResult<Resource>> GetResource(
             string catalogId,
-            string channelId)
+            string resourceId)
         {
             if (_databaseManager.Database == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
 
             catalogId = WebUtility.UrlDecode(catalogId);
-            channelId = WebUtility.UrlDecode(channelId);
+            resourceId = WebUtility.UrlDecode(resourceId);
 
             // log
-            var message = $"User '{_userIdService.GetUserId()}' requests channel '{catalogId}/{channelId}' ...";
+            var message = $"User '{_userIdService.GetUserId()}' requests resource '{catalogId}/{resourceId}' ...";
             _logger.LogInformation(message);
 
             try
@@ -257,22 +257,22 @@ namespace Nexus.Controllers
                 return await this.ProcessCatalogIdAsync(catalogId, message,
                     (catalog, catalogMeta) =>
                     {
-                        var channel = catalog.Channels.FirstOrDefault(
-                            current => current.Id.ToString() == channelId);
+                        var resource = catalog.Resources.FirstOrDefault(
+                            current => current.Id.ToString() == resourceId);
 
-                        if (channel == null)
-                            channel = catalog.Channels.FirstOrDefault(
-                                current => current.Name == channelId);
+                        if (resource == null)
+                            resource = catalog.Resources.FirstOrDefault(
+                                current => current.Name == resourceId);
 
-                        if (channel == null)
-                            return Task.FromResult((ActionResult<Channel>)this.NotFound($"{catalogId}/{channelId}"));
+                        if (resource == null)
+                            return Task.FromResult((ActionResult<Resource>)this.NotFound($"{catalogId}/{resourceId}"));
 
-                        var channelMeta = catalogMeta.Channels.First(
-                            current => current.Id == channel.Id);
+                        var resourceMeta = catalogMeta.Resources.First(
+                            current => current.Id == resource.Id);
 
                         _logger.LogInformation($"{message} Done.");
 
-                        return Task.FromResult((ActionResult<Channel>)this.CreateChannelResponse(channel, channelMeta));
+                        return Task.FromResult((ActionResult<Resource>)this.CreateResourceResponse(resource, resourceMeta));
                     });
             }
             catch (Exception ex)
@@ -283,24 +283,24 @@ namespace Nexus.Controllers
         }
 
         /// <summary>
-        /// Gets a list of all datasets in the specified catalog and channel.
+        /// Gets a list of all datasets in the specified catalog and resource.
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="channelId">The channel identifier.</param>
+        /// <param name="resourceId">The resource identifier.</param>
         /// <returns></returns>
-        [HttpGet("{catalogId}/channels/{channelId}/datasets")]
+        [HttpGet("{catalogId}/resources/{resourceId}/datasets")]
         public async Task<ActionResult<List<Dataset>>> GetDatasets(
             string catalogId,
-            string channelId)
+            string resourceId)
         {
             if (_databaseManager.Database == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
 
             catalogId = WebUtility.UrlDecode(catalogId);
-            channelId = WebUtility.UrlDecode(channelId);
+            resourceId = WebUtility.UrlDecode(resourceId);
 
             // log
-            var message = $"User '{_userIdService.GetUserId()}' requests datasets for channel '{catalogId}/{channelId}' ...";
+            var message = $"User '{_userIdService.GetUserId()}' requests datasets for resource '{catalogId}/{resourceId}' ...";
             _logger.LogInformation(message);
 
             try
@@ -308,19 +308,19 @@ namespace Nexus.Controllers
                 return await this.ProcessCatalogIdAsync(catalogId, message,
                     (catalog, catalogMeta) =>
                     {
-                        var channel = catalog.Channels.FirstOrDefault(
-                            current => current.Id.ToString() == channelId);
+                        var resource = catalog.Resources.FirstOrDefault(
+                            current => current.Id.ToString() == resourceId);
 
-                        if (channel == null)
-                            channel = catalog.Channels.FirstOrDefault(
-                                current => current.Name == channelId);
+                        if (resource == null)
+                            resource = catalog.Resources.FirstOrDefault(
+                                current => current.Name == resourceId);
 
-                        if (channel == null)
-                            return Task.FromResult((ActionResult<List<Dataset>>)this.NotFound($"{catalogId}/{channelId}"));
+                        if (resource == null)
+                            return Task.FromResult((ActionResult<List<Dataset>>)this.NotFound($"{catalogId}/{resourceId}"));
 
                         _logger.LogInformation($"{message} Done.");
 
-                        var response = channel.Datasets.Select(dataset 
+                        var response = resource.Datasets.Select(dataset 
                             => this.CreateDatasetResponse(dataset))
                             .ToList();
 
@@ -338,24 +338,24 @@ namespace Nexus.Controllers
         /// Gets the specified dataset.
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="channelId">The channel identifier.</param>
+        /// <param name="resourceId">The resource identifier.</param>
         /// <param name="datasetId">The dataset identifier.</param>
         /// <returns></returns>
-        [HttpGet("{catalogId}/channels/{channelId}/datasets/{datasetId}")]
+        [HttpGet("{catalogId}/resources/{resourceId}/datasets/{datasetId}")]
         public async Task<ActionResult<Dataset>> GetDataset(
             string catalogId,
-            string channelId,
+            string resourceId,
             string datasetId)
         {
             if (_databaseManager.Database == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
 
             catalogId = WebUtility.UrlDecode(catalogId);
-            channelId = WebUtility.UrlDecode(channelId);
+            resourceId = WebUtility.UrlDecode(resourceId);
             datasetId = WebUtility.UrlDecode(datasetId);
 
             // log
-            var message = $"User '{_userIdService.GetUserId()}' requests dataset '{catalogId}/{channelId}/{datasetId}' ...";
+            var message = $"User '{_userIdService.GetUserId()}' requests dataset '{catalogId}/{resourceId}/{datasetId}' ...";
             _logger.LogInformation(message);
 
             try
@@ -363,21 +363,21 @@ namespace Nexus.Controllers
                 return await this.ProcessCatalogIdAsync<Dataset>(catalogId, message,
                     (catalog, catalogMeta) =>
                     {
-                        var channel = catalog.Channels.FirstOrDefault(
-                            current => current.Id.ToString() == channelId);
+                        var resource = catalog.Resources.FirstOrDefault(
+                            current => current.Id.ToString() == resourceId);
 
-                        if (channel == null)
-                            channel = catalog.Channels.FirstOrDefault(
-                                current => current.Name == channelId);
+                        if (resource == null)
+                            resource = catalog.Resources.FirstOrDefault(
+                                current => current.Name == resourceId);
 
-                        if (channel == null)
-                            return Task.FromResult((ActionResult<Dataset>)this.NotFound($"{catalogId}/{channelId}"));
+                        if (resource == null)
+                            return Task.FromResult((ActionResult<Dataset>)this.NotFound($"{catalogId}/{resourceId}"));
 
-                        var dataset = channel.Datasets.FirstOrDefault(
+                        var dataset = resource.Datasets.FirstOrDefault(
                            current => current.Id == datasetId);
 
                         if (dataset == null)
-                            return Task.FromResult((ActionResult<Dataset>)this.NotFound($"{catalogId}/{channelId}/{dataset}"));
+                            return Task.FromResult((ActionResult<Dataset>)this.NotFound($"{catalogId}/{resourceId}/{dataset}"));
 
                         _logger.LogInformation($"{message} Done.");
 
@@ -463,20 +463,20 @@ namespace Nexus.Controllers
             return availabilityResults;
         }
 
-        private Channel CreateChannelResponse(DataModel.Channel channel, ChannelMeta channelMeta)
+        private Resource CreateResourceResponse(DataModel.Resource resource, ResourceMeta resourceMeta)
         {
-            return new Channel()
+            return new Resource()
             {
-                Id = channel.Id,
-                Name = channel.Name,
-                Group = channel.Group,
-                Unit = !string.IsNullOrWhiteSpace(channelMeta.Unit)
-                        ? channelMeta.Unit
-                        : channel.Unit,
-                Description = !string.IsNullOrWhiteSpace(channelMeta.Description)
-                        ? channelMeta.Description
-                        : channel.Description,
-                SpecialInfo = channelMeta.SpecialInfo
+                Id = resource.Id,
+                Name = resource.Name,
+                Group = resource.Group,
+                Unit = !string.IsNullOrWhiteSpace(resourceMeta.Unit)
+                        ? resourceMeta.Unit
+                        : resource.Unit,
+                Description = !string.IsNullOrWhiteSpace(resourceMeta.Description)
+                        ? resourceMeta.Description
+                        : resource.Description,
+                SpecialInfo = resourceMeta.SpecialInfo
             };
         }
 
@@ -550,7 +550,7 @@ namespace Nexus.Controllers
             public List<string> LogBook { get; set; }
         }
 
-        public record Channel()
+        public record Resource()
         {
             public Guid Id { get; set; }
             public string Name { get; set; }

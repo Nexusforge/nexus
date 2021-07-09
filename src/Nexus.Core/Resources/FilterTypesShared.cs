@@ -5,26 +5,26 @@ using System.Collections.Generic;
 
 namespace Nexus.Filters
 {
-    public delegate Span<double> GetFilterData(string catalogId, string channelId, string datasetId, DateTime begin, DateTime end);
+    public delegate Span<double> GetFilterData(string catalogId, string resourceId, string datasetId, DateTime begin, DateTime end);
 
     public static class FilterConstants
     {
         public static string SharedCatalogID { get; } = "/IN_MEMORY/FILTERS/SHARED";
     }
 
-    public record FilterChannel
+    public record FilterResource
     {
         #region Constructors
 
-        public FilterChannel()
+        public FilterResource()
         {
             //
         }
 
-        public FilterChannel(string catalogId, string channelName, string group, string unit, string description)
+        public FilterResource(string catalogId, string resourceName, string group, string unit, string description)
         {
             this.CatalogId = catalogId;
-            this.ChannelName = channelName;
+            this.ResourceName = resourceName;
             this.Group = group;
             this.Unit = unit;
             this.Description = description;
@@ -35,7 +35,7 @@ namespace Nexus.Filters
         #region Properties
 
         public string CatalogId { get; init; } = FilterConstants.SharedCatalogID;
-        public string ChannelName { get; init; } = string.Empty;
+        public string ResourceName { get; init; } = string.Empty;
         public string Group { get; init; } = string.Empty;
         public string Unit { get; init; } = string.Empty;
         public string Description { get; init; } = string.Empty;
@@ -47,7 +47,7 @@ namespace Nexus.Filters
     {
         #region Fields
 
-        private List<FilterChannel> _filters;
+        private List<FilterResource> _filters;
 
         #endregion
 
@@ -62,7 +62,7 @@ namespace Nexus.Filters
 
         #region Properties
 
-        public IReadOnlyList<FilterChannel> Filters => _filters;
+        public IReadOnlyList<FilterResource> Filters => _filters;
 
         #endregion
 
@@ -71,11 +71,11 @@ namespace Nexus.Filters
         public abstract void Filter(
             DateTime begin,
             DateTime end, 
-            FilterChannel filterChannel, 
+            FilterResource filterResource, 
             GetFilterData getData,
             Span<double> result);
 
-        protected abstract List<FilterChannel> GetFilters();
+        protected abstract List<FilterResource> GetFilters();
 
         #endregion
     }

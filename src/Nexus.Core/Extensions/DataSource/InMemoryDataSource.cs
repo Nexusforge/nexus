@@ -77,7 +77,7 @@ namespace Nexus.Extensions
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    var (catalog, channel, dataset) = Catalog.Find(datasetPath, this.Context.Catalogs);
+                    var (catalog, resource, dataset) = Catalog.Find(datasetPath, this.Context.Catalogs);
 
                     double[] dataDouble;
 
@@ -87,7 +87,7 @@ namespace Nexus.Extensions
                     var elementCount = data.Length / dataset.ElementSize;
                     var dt = dataset.GetSamplePeriod().TotalSeconds;
 
-                    if (channel.Name.Contains("unix_time"))
+                    if (resource.Name.Contains("unix_time"))
                     {
                         dataDouble = Enumerable.Range(0, elementCount).Select(i => i * dt + beginTime).ToArray();
                     }
@@ -123,17 +123,17 @@ namespace Nexus.Extensions
         {
             var catalog = new Catalog() { Id = catalogId };
 
-            var channelA = new Channel() { Id = id1, Name = "T1", Group = "Group 1", Unit = "°C" };
-            channelA.Metadata["Description"] = "Test channel.";
+            var resourceA = new Resource() { Id = id1, Name = "T1", Group = "Group 1", Unit = "°C" };
+            resourceA.Metadata["Description"] = "Test resource.";
 
-            var channelB = new Channel() { Id = id2, Name = "V1", Group = "Group 1", Unit = "m/s" };
-            channelB.Metadata["Description"] = "Test channel.";
+            var resourceB = new Resource() { Id = id2, Name = "V1", Group = "Group 1", Unit = "m/s" };
+            resourceB.Metadata["Description"] = "Test resource.";
 
-            var channelC = new Channel() { Id = id3, Name = "unix_time1", Group = "Group 2", Unit = "" };
-            channelC.Metadata["Description"] = "Test channel.";
+            var resourceC = new Resource() { Id = id3, Name = "unix_time1", Group = "Group 2", Unit = "" };
+            resourceC.Metadata["Description"] = "Test resource.";
 
-            var channelD = new Channel() { Id = id4, Name = "unix_time2", Group = "Group 2", Unit = "" };
-            channelD.Metadata["Description"] = "Test channel.";
+            var resourceD = new Resource() { Id = id4, Name = "unix_time2", Group = "Group 2", Unit = "" };
+            resourceD.Metadata["Description"] = "Test resource.";
 
             var dataset1 = new Dataset() { Id = "1 s_mean", DataType = NexusDataType.FLOAT64 };
             var dataset2 = new Dataset() { Id = "1 s_mean", DataType = NexusDataType.FLOAT64 };
@@ -141,20 +141,20 @@ namespace Nexus.Extensions
             var dataset4 = new Dataset() { Id = "1 s_max", DataType = NexusDataType.FLOAT64 };
             var dataset5 = new Dataset() { Id = "1 s_mean", DataType = NexusDataType.FLOAT64 };
 
-            // channel A
-            channelA.Datasets.Add(dataset1);
-            channelB.Datasets.Add(dataset2);
-            channelC.Datasets.Add(dataset3);
-            channelD.Datasets.Add(dataset4);
-            channelD.Datasets.Add(dataset5);
+            // resource A
+            resourceA.Datasets.Add(dataset1);
+            resourceB.Datasets.Add(dataset2);
+            resourceC.Datasets.Add(dataset3);
+            resourceD.Datasets.Add(dataset4);
+            resourceD.Datasets.Add(dataset5);
 
             // catalog
-            catalog.Channels.AddRange(new List<Channel>()
+            catalog.Resources.AddRange(new List<Resource>()
             {
-                channelA,
-                channelB,
-                channelC,
-                channelD
+                resourceA,
+                resourceB,
+                resourceC,
+                resourceD
             });
 
             return catalog;

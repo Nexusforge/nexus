@@ -12,7 +12,7 @@ namespace Nexus.DataModel
 
         public string Id { get; init; }
         public Dictionary<string, string> Metadata { get; set; } = new Dictionary<string, string>();
-        public List<Channel> Channels { get; init; } = new List<Channel>();
+        public List<Resource> Resources { get; init; } = new List<Resource>();
 
         #endregion
 
@@ -23,23 +23,23 @@ namespace Nexus.DataModel
             if (this.Id != catalog.Id)
                 throw new Exception("The catalog to be merged has a different ID.");
 
-            // merge channels
-            var mergedChannels = new List<Channel>();
+            // merge resources
+            var mergedResources = new List<Resource>();
 
-            foreach (var channel in catalog.Channels)
+            foreach (var resource in catalog.Resources)
             {
-                var referenceChannel = mergedChannels.FirstOrDefault(current => current.Id == channel.Id);
+                var referenceResource = mergedResources.FirstOrDefault(current => current.Id == resource.Id);
 
-                if (referenceChannel != null)
+                if (referenceResource != null)
                 {
-                    mergedChannels.Add(referenceChannel.Merge(channel, mergeMode));
+                    mergedResources.Add(referenceResource.Merge(resource, mergeMode));
                 }
                 else
                 {
-                    mergedChannels.Add(channel with
+                    mergedResources.Add(resource with
                     {
-                        Metadata = channel.Metadata.ToDictionary(entry => entry.Key, entry => entry.Value),
-                        Datasets = channel.Datasets.ToList()
+                        Metadata = resource.Metadata.ToDictionary(entry => entry.Key, entry => entry.Value),
+                        Datasets = resource.Datasets.ToList()
                     });
                 }
             }
@@ -67,7 +67,7 @@ namespace Nexus.DataModel
                     {
                         Id = this.Id,
                         Metadata = mergedMetadata1,
-                        Channels = mergedChannels
+                        Resources = mergedResources
                     };
 
                     break;
@@ -86,7 +86,7 @@ namespace Nexus.DataModel
                     {
                         Id = this.Id,
                         Metadata = mergedMetadata2,
-                        Channels = mergedChannels
+                        Resources = mergedResources
                     };
 
                     break;
@@ -104,29 +104,29 @@ namespace Nexus.DataModel
 
             var pathParts = datasetPath.Split("/");
             var catalogId = string.Join('/', pathParts.Take(pathParts.Length - 2));
-            var channelId = Guid.Parse(pathParts[4]);
+            var resourceId = Guid.Parse(pathParts[4]);
             var datasetId = pathParts[5];
 
             if (catalogId != this.Id)
                 return false;
 
-            var channel = this.Channels.FirstOrDefault(channel => channel.Id == channelId);
+            var resource = this.Resources.FirstOrDefault(resource => resource.Id == resourceId);
 
-            if (channel is null)
+            if (resource is null)
             {
                 if (includeName)
-                    channel = this.Channels.FirstOrDefault(channel => channel.Name == pathParts[4]);
+                    resource = this.Resources.FirstOrDefault(resource => resource.Name == pathParts[4]);
 
-                if (channel is null)
+                if (resource is null)
                     return false;
             }
 
-            var dataset = channel.Datasets.FirstOrDefault(dataset => dataset.Id == datasetId);
+            var dataset = resource.Datasets.FirstOrDefault(dataset => dataset.Id == datasetId);
 
             if (dataset is null)
                 return false;
 
-            datasetRecord = new DatasetRecord(this, channel, dataset);
+            datasetRecord = new DatasetRecord(this, resource, dataset);
             return true;
         }
 

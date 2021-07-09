@@ -44,10 +44,10 @@ namespace Nexus.Core.Tests
 
             // assert
             var actual = catalogs.First(catalog => catalog.Id == "/IN_MEMORY/FILTERS/SHARED");
-            var actualNames = actual.Channels.Select(channel => channel.Name).ToList();
-            var actualGroups = actual.Channels.Select(channel => channel.Group).ToList();
-            var actualUnits = actual.Channels.Select(channel => channel.Unit).ToList();
-            var actualDataTypes = actual.Channels.SelectMany(channel => channel.Datasets.Select(dataset => dataset.DataType)).ToList();
+            var actualNames = actual.Resources.Select(resource => resource.Name).ToList();
+            var actualGroups = actual.Resources.Select(resource => resource.Group).ToList();
+            var actualUnits = actual.Resources.Select(resource => resource.Unit).ToList();
+            var actualDataTypes = actual.Resources.SelectMany(resource => resource.Datasets.Select(dataset => dataset.DataType)).ToList();
 
             var expectedNames = new List<string>() { "T1_squared" };
             var expectedGroups = new List<string>() { "test" };
@@ -112,15 +112,15 @@ namespace Nexus.Core.Tests
 
             var dataset = new Dataset() { Id = "1 Hz", DataType = NexusDataType.FLOAT64 };
 
-            var channel = new Channel() { Id = Guid.NewGuid() };
-            channel.Datasets.Add(dataset);
+            var resource = new Resource() { Id = Guid.NewGuid() };
+            resource.Datasets.Add(dataset);
 
             var catalog = new Catalog() { Id = "/IN_MEMORY/TEST/ACCESSIBLE" };
-            catalog.Channels.Add(channel);
+            catalog.Resources.Add(resource);
 
             Mock.Get(database)
                 .Setup(s => s.Find(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()))
-                .Returns(new DatasetRecord(catalog, channel, dataset));
+                .Returns(new DatasetRecord(catalog, resource, dataset));
 
             // setup data source
             var subDataSource = Mock.Of<IDataSource>();
@@ -167,9 +167,9 @@ namespace Nexus.Core.Tests
 
             var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
             var catalog2 = catalogs.First();
-            var channel2 = catalog2.Channels.First();
-            var dataset2 = channel2.Datasets.First();
-            var datasetPath = new DatasetRecord(catalog2, channel2, dataset2).GetPath();
+            var resource2 = catalog2.Resources.First();
+            var dataset2 = resource2.Datasets.First();
+            var datasetPath = new DatasetRecord(catalog2, resource2, dataset2).GetPath();
 
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 02, 0, 0, 0, DateTimeKind.Utc);

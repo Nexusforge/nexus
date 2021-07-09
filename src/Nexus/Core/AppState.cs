@@ -25,7 +25,7 @@ namespace Nexus.Core
         private SemaphoreSlim _updateDatabaseSemaphore;
         private CancellationTokenSource _updateDatabaseCancellationTokenSource;
         private IDatabaseManager _databaseManager;
-        private Dictionary<CatalogContainer, List<ChannelViewModel>> _channelCache;
+        private Dictionary<CatalogContainer, List<ResourceViewModel>> _resourceCache;
 
         #endregion
 
@@ -112,7 +112,7 @@ namespace Nexus.Core
                 this.FilterSettings = new FilterSettingsViewModel(filterSettingsFilePath);
                 this.InitializeFilterSettings(this.FilterSettings.Model, filterSettingsFilePath);
 
-                _channelCache = new Dictionary<CatalogContainer, List<ChannelViewModel>>();
+                _resourceCache = new Dictionary<CatalogContainer, List<ResourceViewModel>>();
                 _updateDatabaseSemaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
                 _userManager.Initialize();
 
@@ -136,7 +136,7 @@ namespace Nexus.Core
             { 
                 this.IsDatabaseUpdating = true;
                 await _databaseManager.UpdateAsync(_updateDatabaseCancellationTokenSource.Token);
-                _channelCache.Clear();
+                _resourceCache.Clear();
                 this.IsDatabaseInitialized = true;
             }
             catch (Exception ex)
@@ -151,20 +151,20 @@ namespace Nexus.Core
             }
         }
 
-        public List<ChannelViewModel> GetChannels(CatalogContainer catalogContainer)
+        public List<ResourceViewModel> GetResources(CatalogContainer catalogContainer)
         {
-            if (!_channelCache.TryGetValue(catalogContainer, out var channels))
+            if (!_resourceCache.TryGetValue(catalogContainer, out var resources))
             {
-                channels = catalogContainer.Catalog.Channels.Select(channel =>
+                resources = catalogContainer.Catalog.Resources.Select(resource =>
                 {
-                    var channelMeta = catalogContainer.CatalogSettings.Channels.First(channelMeta => channelMeta.Id == channel.Id);
-                    return new ChannelViewModel(channel, channelMeta);
+                    var resourceMeta = catalogContainer.CatalogSettings.Resources.First(resourceMeta => resourceMeta.Id == resource.Id);
+                    return new ResourceViewModel(resource, resourceMeta);
                 }).ToList();
 
-                _channelCache[catalogContainer] = channels;
+                _resourceCache[catalogContainer] = resources;
             }
 
-            return channels;
+            return resources;
         }
 
         private void InitializeFilterSettings(FilterSettings filterSettings, string filePath)

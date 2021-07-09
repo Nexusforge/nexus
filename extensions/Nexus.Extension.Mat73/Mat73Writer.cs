@@ -77,7 +77,7 @@ namespace Nexus.Extension.Mat73
                 throw new Exception("The number of custom metadata entries must not exceed 58.");
         }
 
-        protected override void OnPrepareFile(DateTime startDateTime, List<ChannelContextGroup> channelContextGroupSet)
+        protected override void OnPrepareFile(DateTime startDateTime, List<ResourceContextGroup> resourceContextGroupSet)
         {
             var catalogDescription = this.DataWriterContext.CatalogDescription;
             _dataFilePath = Path.Combine(this.DataWriterContext.DataDirectoryPath, $"{catalogDescription.PrimaryGroupName}_{catalogDescription.SecondaryGroupName}_{catalogDescription.CatalogName}_V{catalogDescription.Version}_{startDateTime.ToString("yyyy-MM-ddTHH-mm-ss")}Z.mat");
@@ -85,10 +85,10 @@ namespace Nexus.Extension.Mat73
             if (_fileId > -1)
                 this.CloseHdfFile(_fileId);
 
-            this.OpenFile(_dataFilePath, startDateTime, channelContextGroupSet.SelectMany(contextGroup => contextGroup.ChannelContextSet).ToList());
+            this.OpenFile(_dataFilePath, startDateTime, resourceContextGroupSet.SelectMany(contextGroup => contextGroup.ResourceContextSet).ToList());
         }
 
-        protected override void OnWrite(ChannelContextGroup contextGroup, ulong fileOffset, ulong bufferOffset, ulong length)
+        protected override void OnWrite(ResourceContextGroup contextGroup, ulong fileOffset, ulong bufferOffset, ulong length)
         {
             long groupId = -1;
 
@@ -108,9 +108,9 @@ namespace Nexus.Extension.Mat73
                 }
 
                 // write data
-                for (int i = 0; i < contextGroup.ChannelContextSet.Count(); i++)
+                for (int i = 0; i < contextGroup.ResourceContextSet.Count(); i++)
                 {
-                    this.WriteData(fileOffset, bufferOffset, length, contextGroup.ChannelContextSet[i]);
+                    this.WriteData(fileOffset, bufferOffset, length, contextGroup.ResourceContextSet[i]);
                 }
 
                 // write last_completed_chunk
@@ -131,7 +131,7 @@ namespace Nexus.Extension.Mat73
             if (H5I.is_valid(_fileId) > 0) { this.CloseHdfFile(_fileId); }
         }
 
-        private void OpenFile(string filePath, DateTime startDateTime, IList<ChannelContext> channelContextSet)
+        private void OpenFile(string filePath, DateTime startDateTime, IList<ResourceContext> resourceContextSet)
         {
             long propertyId = -1;
             long datasetId = -1;
@@ -172,20 +172,20 @@ namespace Nexus.Extension.Mat73
                 if (_fileId < 0)
                     throw new Exception($"{ ErrorMessage.Mat73Writer_CouldNotOpenOrCreateFile } File: { filePath }.");
 
-                // prepare channels
-                foreach (ChannelContext channelContext in channelContextSet)
+                // prepare resources
+                foreach (ResourceContext resourceContext in resourceContextSet)
                 {
                     var periodInSeconds = (ulong)Math.Round(_settings.FilePeriod.TotalSeconds, MidpointRounding.AwayFromZero);
-                    var samplesPerSecond = channelContext.ChannelDescription.SampleRate.SamplesPerSecond;
+                    var samplesPerSecond = resourceContext.ResourceDescription.SampleRate.SamplesPerSecond;
                     (var chunkLength, var chunkCount) = GeneralHelper.CalculateChunkParameters(periodInSeconds, samplesPerSecond);
 
-                    this.PrepareChannel(_fileId, channelContext.ChannelDescription, chunkLength, chunkCount);
+                    this.PrepareResource(_fileId, resourceContext.ResourceDescription, chunkLength, chunkCount);
                 }
 
                 // info
                 groupId = this.OpenOrCreateStruct(_fileId, "/info").GroupId;
 
-                (datasetId, isNew) = this.OpenOrCreateChannel(groupId, "last_completed_chunk", 1, 1);
+                (datasetId, isNew) = this.OpenOrCreateResource(groupId, "last_completed_chunk", 1, 1);
 
                 if (isNew)
                     IOHelper.Write(datasetId, new double[] { -1 }, DataContainerType.Dataset);
@@ -215,9 +215,9 @@ namespace Nexus.Extension.Mat73
             _fileId = H5F.open(filePath, H5F.ACC_RDWR);
         }
 
-        private unsafe void WriteData(ulong fileOffset, ulong bufferOffset, ulong length, ChannelContext channelContext)
+        private unsafe void WriteData(ulong fileOffset, ulong bufferOffset, ulong length, ResourceContext resourceContext)
         {
-            Contract.Requires(channelContext != null, nameof(channelContext));
+            Contract.Requires(resourceContext != null, nameof(resourceContext));
 
             long groupId = -1;
             long datasetId = -1;
@@ -226,14 +226,14 @@ namespace Nexus.Extension.Mat73
 
             try
             {
-                groupId = H5G.open(_fileId, $"/{ channelContext.ChannelDescription.ChannelName }");
+                groupId = H5G.open(_fileId, $"/{ resourceContext.ResourceDescription.ResourceName }");
 
-                var datasetName = $"dataset_{ channelContext.ChannelDescription.DatasetName.Replace(" ", "_") }";
+                var datasetName = $"dataset_{ resourceContext.ResourceDescription.DatasetName.Replace(" ", "_") }";
                 datasetId = H5D.open(groupId, datasetName);
                 dataspaceId = H5D.get_space(datasetId);
                 dataspaceId_Buffer = H5S.create_simple(1, new ulong[] { length }, null);
 
-                var simpleBuffers = channelContext.Buffer.ToSimpleBuffer();
+                var simpleBuffers = resourceContext.Buffer.ToSimpleBuffer();
 
                 // dataset
                 H5S.select_hyperslab(dataspaceId,
@@ -261,7 +261,7 @@ namespace Nexus.Extension.Mat73
             }
         }
 
-        private void PrepareChannel(long locationId, ChannelDescription channelDescription, ulong chunkLength, ulong chunkCount)
+        private void PrepareResource(long locationId, ResourceDescription resourceDescription, ulong chunkLength, ulong chunkCount)
         {
             long groupId = -1;
             long datasetId = -1;
@@ -272,9 +272,9 @@ namespace Nexus.Extension.Mat73
                     throw new Exception(ErrorMessage.Mat73Writer_SampleRateTooLow);
 
                 // struct
-                groupId = this.OpenOrCreateStruct(locationId, channelDescription.ChannelName).GroupId;
+                groupId = this.OpenOrCreateStruct(locationId, resourceDescription.ResourceName).GroupId;
 
-                datasetId = this.OpenOrCreateChannel(groupId, $"dataset_{ channelDescription.DatasetName.Replace(" ", "_") }", chunkLength, chunkCount).DatasetId;
+                datasetId = this.OpenOrCreateResource(groupId, $"dataset_{ resourceDescription.DatasetName.Replace(" ", "_") }", chunkLength, chunkCount).DatasetId;
             }
             finally
             {
@@ -295,7 +295,7 @@ namespace Nexus.Extension.Mat73
         }
 
         // low level
-        private (long DatasetId, bool IsNew) OpenOrCreateChannel(long locationId, string name, ulong chunkLength, ulong chunkCount)
+        private (long DatasetId, bool IsNew) OpenOrCreateResource(long locationId, string name, ulong chunkLength, ulong chunkCount)
         {
             long datasetId = -1;
             GCHandle gcHandle_fillValue = default;

@@ -5,23 +5,23 @@ using System.Linq;
 
 namespace Nexus.ViewModels
 {
-    public class ChannelViewModel
+    public class ResourceViewModel
     {
         #region Fields
 
-        private Channel _channel;
-        private ChannelMeta _channelMeta;
+        private Resource _resource;
+        private ResourceMeta _resourceMeta;
 
         #endregion
 
         #region Constructors
 
-        public ChannelViewModel(Channel channel, ChannelMeta channelMeta)
+        public ResourceViewModel(Resource resource, ResourceMeta resourceMeta)
         {
-            _channel = channel;
-            _channelMeta = channelMeta;
+            _resource = resource;
+            _resourceMeta = resourceMeta;
 
-            this.Datasets = channel.Datasets
+            this.Datasets = resource.Datasets
                 .Where(dataset => !dataset.Id.EndsWith("_status"))
                 .Select(dataset => new DatasetViewModel(dataset, this)).ToList();
         }
@@ -30,23 +30,23 @@ namespace Nexus.ViewModels
 
         #region Properties
 
-        public Guid Id => _channel.Id;
+        public Guid Id => _resource.Id;
 
-        public string Name => _channel.Name;
+        public string Name => _resource.Name;
 
-        public string Group => _channel.Group;
+        public string Group => _resource.Group;
 
         public string Unit
         {
             get
             { 
-                return !string.IsNullOrWhiteSpace(_channelMeta.Unit)
-                    ? _channelMeta.Unit
-                    : _channel.Unit;
+                return !string.IsNullOrWhiteSpace(_resourceMeta.Unit)
+                    ? _resourceMeta.Unit
+                    : _resource.Unit;
             }
             set 
             {
-                _channelMeta.Unit = value; 
+                _resourceMeta.Unit = value; 
             }
         }
 
@@ -54,23 +54,23 @@ namespace Nexus.ViewModels
         {
             get
             {
-                return !string.IsNullOrWhiteSpace(_channelMeta.Description)
-                    ? _channelMeta.Description
-                    : _channel.Description;
+                return !string.IsNullOrWhiteSpace(_resourceMeta.Description)
+                    ? _resourceMeta.Description
+                    : _resource.Description;
             }
             set
             {
-                _channelMeta.Description = value;
+                _resourceMeta.Description = value;
             }
         }
 
         public string SpecialInfo
         {
-            get { return _channelMeta.SpecialInfo; }
-            set { _channelMeta.SpecialInfo = value; }
+            get { return _resourceMeta.SpecialInfo; }
+            set { _resourceMeta.SpecialInfo = value; }
         }
 
-        public Catalog Parent => (Catalog)_channel.Catalog;
+        public Catalog Parent => (Catalog)_resource.Catalog;
 
         public List<DatasetViewModel> Datasets { get; private set; }
 

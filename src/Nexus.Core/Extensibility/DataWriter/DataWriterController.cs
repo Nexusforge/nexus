@@ -144,7 +144,7 @@ namespace Nexus.Extensibility
                 var bufferPeriod = samplePeriod * elementCount;
                 currentPeriod = new TimeSpan(Math.Min(remainingFilePeriod.Ticks, bufferPeriod.Ticks));
 
-                var writeRequests = datasetPipeReaders.Zip(readResults).Select(zipped =>
+                var requests = datasetPipeReaders.Zip(readResults).Select(zipped =>
                 {
                     var (datasetPipeReader, readResult) = zipped;
 
@@ -153,7 +153,7 @@ namespace Nexus.Extensibility
                         readResult.Buffer.First.Cast<double>().Slice(elementCount));
                 });
 
-                var groupedWriteRequests = writeRequests
+                var groupedRequests = requests
                     .GroupBy(writeRequest => writeRequest.DatasetRecord.Catalog)
                     .Select(group => new WriteRequestGroup(group.Key, group.ToArray()))
                     .ToArray();
@@ -161,7 +161,7 @@ namespace Nexus.Extensibility
                 await this.DataWriter.WriteAsync(
                     fileOffset, 
                     samplePeriod,
-                    groupedWriteRequests, 
+                    groupedRequests, 
                     dataWriterProgress,
                     cancellationToken);
 

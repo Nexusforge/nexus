@@ -78,7 +78,7 @@ namespace Nexus.Extensions
                             streamWriter.WriteLine($"# {entry.Key}={entry.Value};");
                         }
 
-                        /* channel name */
+                        /* resource name */
                         var rowIndexFormat = this.Context.Configuration.TryGetValue("RowIndexFormat", out var value)
                             ? value
                             : "Index";
@@ -103,7 +103,7 @@ namespace Nexus.Extensions
 
                         foreach (var datasetRecord in datasetRecords)
                         {
-                            streamWriter.Write($"{datasetRecord.Channel.Name};");
+                            streamWriter.Write($"{datasetRecord.Resource.Name};");
                         }
 
                         streamWriter.WriteLine();
@@ -123,7 +123,7 @@ namespace Nexus.Extensions
 
                         foreach (var datasetRecord in datasetRecords)
                         {
-                            streamWriter.Write($"{datasetRecord.Channel.Unit};");
+                            streamWriter.Write($"{datasetRecord.Resource.Unit};");
                         }
 
                         streamWriter.WriteLine();
@@ -134,13 +134,13 @@ namespace Nexus.Extensions
             return Task.CompletedTask;
         }
 
-        public Task WriteAsync(TimeSpan fileOffset, TimeSpan samplePeriod, WriteRequestGroup[] writeRequestGroups, Progress<double> progress, CancellationToken cancellationToken)
+        public Task WriteAsync(TimeSpan fileOffset, TimeSpan samplePeriod, WriteRequestGroup[] requestGroups, Progress<double> progress, CancellationToken cancellationToken)
         {
             return Task.Run(() =>
             {
                 var offset = fileOffset.Ticks / samplePeriod.Ticks;
 
-                foreach (var (catalog, writeRequests) in writeRequestGroups)
+                foreach (var (catalog, requests) in requestGroups)
                 {
                     var physicalId = catalog.Id.TrimStart('/').Replace('/', '_');
                     var root = this.Context.ResourceLocator.ToPath();
@@ -162,7 +162,7 @@ namespace Nexus.Extensions
                         var excelStart = _excelStart + fileOffset.TotalDays;
                         var excelScalingFactor = (double)samplePeriod.Ticks / TimeSpan.FromDays(1).Ticks;
 
-                        var length = writeRequests.First().Data.Length;
+                        var length = requests.First().Data.Length;
 
                         for (int rowIndex = 0; rowIndex < length; rowIndex++)
                         {
@@ -181,9 +181,9 @@ namespace Nexus.Extensions
                                     throw new NotSupportedException($"The row index format '{rowIndexFormat}' is not supported.");
                             }
 
-                            for (int i = 0; i < writeRequests.Length; i++)
+                            for (int i = 0; i < requests.Length; i++)
                             {
-                                var value = writeRequests[i].Data.Span[rowIndex];
+                                var value = requests[i].Data.Span[rowIndex];
                                 streamWriter.Write($"{string.Format(_nfi, $"{{0:G{significantFigures}}}", value)};");
                             }
 

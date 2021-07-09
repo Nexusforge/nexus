@@ -40,19 +40,19 @@ namespace Nexus.DataModel
 
         public Catalog ToSparseCatalog(List<DatasetRecord> datasetRecords)
         {
-            var channels = new List<Channel>();
+            var resources = new List<Resource>();
 
             foreach (var datasetRecord in datasetRecords)
             {
-                var channel = channels.FirstOrDefault(channel => channel.Id == datasetRecord.Channel.Id);
+                var resource = resources.FirstOrDefault(resource => resource.Id == datasetRecord.Resource.Id);
 
-                if (channel is null)
-                    channels.Add(datasetRecord.Channel with { Datasets = new List<Dataset>() });
+                if (resource is null)
+                    resources.Add(datasetRecord.Resource with { Datasets = new List<Dataset>() });
 
-                channel.Datasets.Add(datasetRecord.Dataset with { });
+                resource.Datasets.Add(datasetRecord.Dataset with { });
             }
 
-            return this.Catalog with { Channels = channels };
+            return this.Catalog with { Resources = resources };
         }
 
         #endregion

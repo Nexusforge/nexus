@@ -6,8 +6,8 @@ namespace Nexus.DataModel
     {
         List<CatalogContainer> CatalogContainers { get; }
 
-        bool TryFind(string catalogId, string channelIdOrName, string datasetId, out DatasetRecord datasetRecord, bool includeName = false);
+        bool TryFind(string catalogId, string resourceIdOrName, string datasetId, out DatasetRecord datasetRecord, bool includeName = false);
 
-        DatasetRecord Find(string catalogId, string channelIdOrName, string datasetId, bool includeName = false);
+        DatasetRecord Find(string catalogId, string resourceIdOrName, string datasetId, bool includeName = false);
     }
 }

@@ -42,8 +42,8 @@ namespace Nexus.Core.Tests
             var actual = catalogs.First(catalog => catalog.Id == "/A/B/C");
 
             // assert
-            Assert.Single(actual.Channels);
-            Assert.Equal("100 Hz_mean", actual.Channels.First().Datasets.First().Id);
+            Assert.Single(actual.Resources);
+            Assert.Equal("100 Hz_mean", actual.Resources.First().Datasets.First().Id);
         }
 
         [Fact]
@@ -108,9 +108,9 @@ namespace Nexus.Core.Tests
             // act
             var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
             var catalog = catalogs.First();
-            var channel = catalog.Channels.First();
-            var dataset = channel.Datasets.First();
-            var datasetPath = new DatasetRecord(catalog, channel, dataset).GetPath();
+            var resource = catalog.Resources.First();
+            var dataset = resource.Datasets.First();
+            var datasetPath = new DatasetRecord(catalog, resource, dataset).GetPath();
 
             var begin = new DateTime(2020, 07, 07, 23, 00, 00, DateTimeKind.Utc);
             var end = new DateTime(2020, 07, 10, 00, 00, 00, DateTimeKind.Utc);

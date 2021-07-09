@@ -51,7 +51,7 @@ namespace Nexus.Core
         private JobControl<ExportJob> _exportJobControl;
         private AuthenticationStateProvider _authenticationStateProvider;
 
-        private KeyValuePair<string, List<ChannelViewModel>> _groupedChannelsEntry;
+        private KeyValuePair<string, List<ResourceViewModel>> _groupedResourcesEntry;
         private Dictionary<string, List<DatasetViewModel>> _sampleRateToSelectedDatasetsMap;
 
         #endregion
@@ -254,7 +254,7 @@ namespace Nexus.Core
 
         #endregion
 
-        #region Properties - Channel Selection
+        #region Properties - Resource Selection
 
         public CatalogContainer CatalogContainer
         {
@@ -276,12 +276,12 @@ namespace Nexus.Core
 
                 if (this.CatalogContainersInfo.Accessible.Contains(value))
                 {
-                    this.UpdateGroupedChannels();
+                    this.UpdateGroupedResources();
                     this.UpdateAttachments();
                 }
                 else
                 {
-                    this.GroupedChannels = null;
+                    this.GroupedResources = null;
                     this.Attachments = null;
                 }
             }
@@ -291,12 +291,12 @@ namespace Nexus.Core
 
         public SplittedCatalogContainers CatalogContainersInfo { get; private set; }
 
-        public Dictionary<string, List<ChannelViewModel>> GroupedChannels { get; private set; }
+        public Dictionary<string, List<ResourceViewModel>> GroupedResources { get; private set; }
 
-        public KeyValuePair<string, List<ChannelViewModel>> GroupedChannelsEntry
+        public KeyValuePair<string, List<ResourceViewModel>> GroupedResourcesEntry
         {
-            get { return _groupedChannelsEntry; }
-            set { base.SetProperty(ref _groupedChannelsEntry, value); }
+            get { return _groupedResourcesEntry; }
+            set { base.SetProperty(ref _groupedResourcesEntry, value); }
         }
 
         public string SearchString
@@ -305,7 +305,7 @@ namespace Nexus.Core
             set
             {
                 base.SetProperty(ref _searchString, value);
-                this.UpdateGroupedChannels();
+                this.UpdateGroupedResources();
             }
         }
 
@@ -460,7 +460,7 @@ namespace Nexus.Core
                 var selectedDatasets = this.GetSelectedDatasets().Select(dataset => dataset.Model).ToList();
 
                 // security check
-                var catalogIds = selectedDatasets.Select(dataset => dataset.Channel.Catalog.Id).Distinct();
+                var catalogIds = selectedDatasets.Select(dataset => dataset.Resource.Catalog.Id).Distinct();
 
                 foreach (var catalogId in catalogIds)
                 {
@@ -556,8 +556,8 @@ namespace Nexus.Core
                 .ToDictionary(sampleRate => sampleRate, sampleRate => new List<DatasetViewModel>());
 
             // find sample rate
-            var sampleRates = exportParameters.ChannelPaths.Select(channelPath 
-                => new SampleRateContainer(channelPath.Split("/").Last()).ToUnitString());
+            var sampleRates = exportParameters.ResourcePaths.Select(resourcePath 
+                => new SampleRateContainer(resourcePath.Split("/").Last()).ToUnitString());
 
             if (sampleRates.Any())
                 this.SampleRate = sampleRates.First();
@@ -566,23 +566,23 @@ namespace Nexus.Core
             this.ExportParameters = exportParameters;
             var selectedDatasets = this.GetSelectedDatasets();
 
-            exportParameters.ChannelPaths.ForEach(value =>
+            exportParameters.ResourcePaths.ForEach(value =>
             {
                 var pathSegments = value.Split('/');
                 var catalogName = $"/{pathSegments[1]}/{pathSegments[2]}/{pathSegments[3]}";
-                var channelName = pathSegments[4];
+                var resourceName = pathSegments[4];
                 var datasetName = pathSegments[5];
 
                 var catalogContainer = this.CatalogContainersInfo.Accessible.FirstOrDefault(current => current.Id == catalogName);
 
                 if (catalogContainer != null)
                 {
-                    var channels = _appState.GetChannels(catalogContainer);
-                    var channel = channels.FirstOrDefault(current => current.Id.ToString() == channelName);
+                    var resources = _appState.GetResources(catalogContainer);
+                    var resource = resources.FirstOrDefault(current => current.Id.ToString() == resourceName);
 
-                    if (channel != null)
+                    if (resource != null)
                     {
-                        var dataset = channel.Datasets.FirstOrDefault(current => current.Name == datasetName);
+                        var dataset = resource.Datasets.FirstOrDefault(current => current.Name == datasetName);
 
                         if (dataset != null)
                             selectedDatasets.Add(dataset);
@@ -635,17 +635,17 @@ namespace Nexus.Core
 
             this.SampleRateValues = this.CatalogContainersInfo.Accessible.SelectMany(catalogContainer =>
             {
-                return catalogContainer.Catalog.Channels.SelectMany(channel =>
+                return catalogContainer.Catalog.Resources.SelectMany(resource =>
                 {
-                    return channel.Datasets.Select(dataset => dataset.Id.Split('_')[0]);
+                    return resource.Datasets.Select(dataset => dataset.Id.Split('_')[0]);
                 });
             }).Distinct().OrderBy(x => x, new SampleRateStringComparer()).ToList();
 
             // to rebuilt list with new dataset instances
             this.SetExportParameters(this.ExportParameters);
 
-            // maybe there is a new channel available now: display it
-            this.UpdateGroupedChannels();
+            // maybe there is a new resource available now: display it
+            this.UpdateGroupedResources();
         }
 
         private void UpdateAttachments()
@@ -661,75 +661,75 @@ namespace Nexus.Core
             }
         }
 
-        private void UpdateGroupedChannels()
+        private void UpdateGroupedResources()
         {
             if (this.CatalogContainer is not null)
             {
-                this.GroupedChannels = new Dictionary<string, List<ChannelViewModel>>();
+                this.GroupedResources = new Dictionary<string, List<ResourceViewModel>>();
 
-                foreach (var channel in _appState.GetChannels(this.CatalogContainer))
+                foreach (var resource in _appState.GetResources(this.CatalogContainer))
                 {
-                    if (this.ChannelMatchesFilter(channel))
+                    if (this.ResourceMatchesFilter(resource))
                     {
-                        var groupNames = channel.Group.Split('\n');
+                        var groupNames = resource.Group.Split('\n');
 
                         foreach (string groupName in groupNames)
                         {
-                            var success = this.GroupedChannels.TryGetValue(groupName, out var group);
+                            var success = this.GroupedResources.TryGetValue(groupName, out var group);
 
                             if (!success)
                             {
-                                group = new List<ChannelViewModel>();
-                                this.GroupedChannels[groupName] = group;
+                                group = new List<ResourceViewModel>();
+                                this.GroupedResources[groupName] = group;
                             }
 
-                            group.Add(channel);
+                            group.Add(resource);
                         }
                     }
                 }
 
-                foreach (var entry in this.GroupedChannels)
+                foreach (var entry in this.GroupedResources)
                 {
                     entry.Value.Sort((x, y) => x.Name.CompareTo(y.Name));
                 }
 
-                if (this.GroupedChannels.Any())
+                if (this.GroupedResources.Any())
                 {
                     // try find previously selected group
-                    if (this.GroupedChannelsEntry.Value is not null)
-                        this.GroupedChannelsEntry = this.GroupedChannels
-                            .FirstOrDefault(entry => entry.Key == this.GroupedChannelsEntry.Key);
+                    if (this.GroupedResourcesEntry.Value is not null)
+                        this.GroupedResourcesEntry = this.GroupedResources
+                            .FirstOrDefault(entry => entry.Key == this.GroupedResourcesEntry.Key);
 
                     // otherwise select first group
-                    if (this.GroupedChannelsEntry.Value is null)
-                        this.GroupedChannelsEntry = this.GroupedChannels
+                    if (this.GroupedResourcesEntry.Value is null)
+                        this.GroupedResourcesEntry = this.GroupedResources
                             .OrderBy(entry => entry.Key)
                             .First();
                 }
                 else
-                    this.GroupedChannelsEntry = default;
+                    this.GroupedResourcesEntry = default;
             }
             else
             {
-                this.GroupedChannelsEntry = default;
+                this.GroupedResourcesEntry = default;
             }
         }
 
         private void UpdateExportParameters()
         {
-            this.ExportParameters.ChannelPaths = this.GetSelectedDatasets().Select(dataset =>
+            this.ExportParameters.ResourcePaths = this.GetSelectedDatasets().Select(dataset =>
             {
                 return $"{dataset.Parent.Parent.Id}/{dataset.Parent.Id}/{dataset.Name}";
             }).ToList();
         }
 
-        private bool ChannelMatchesFilter(ChannelViewModel channel)
+        private bool ResourceMatchesFilter(ResourceViewModel resource)
         {
             if (string.IsNullOrWhiteSpace(this.SearchString))
                 return true;
 
-            if (channel.Name.Contains(this.SearchString, StringComparison.OrdinalIgnoreCase) 
-             || channel.Description.Contains(this.SearchString, StringComparison.OrdinalIgnoreCase))
+            if (resource.Name.Contains(this.SearchString, StringComparison.OrdinalIgnoreCase) 
+             || resource.Description.Contains(this.SearchString, StringComparison.OrdinalIgnoreCase))
                 return true;
 
             return false;

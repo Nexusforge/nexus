@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Shared
 {
-    public partial class ChannelExpander : IDisposable
+    public partial class ResourceExpander : IDisposable
     {
         #region Fields
 
@@ -27,7 +27,7 @@ namespace Nexus.Shared
         public bool IsExpanded { get; set; }
 
         [Parameter]
-        public ChannelViewModel Channel { get; set; }
+        public ResourceViewModel Resource { get; set; }
 
         #endregion
 
@@ -56,12 +56,12 @@ namespace Nexus.Shared
             if (string.IsNullOrWhiteSpace(this.UserState.SampleRate))
                 _filteredDatasets = new List<DatasetViewModel>();
             else
-                _filteredDatasets = this.Channel.Datasets.Where(dataset => dataset.Name.Contains(this.UserState.SampleRate)).ToList();
+                _filteredDatasets = this.Resource.Datasets.Where(dataset => dataset.Name.Contains(this.UserState.SampleRate)).ToList();
         }
 
         private List<string> GetSampleRates()
         {
-            return this.Channel.Datasets
+            return this.Resource.Datasets
                 .Select(dataset => dataset.Name.Split('_')[0])
                 .Distinct()
                 .Where(sampleRate => sampleRate != this.UserState.SampleRate)

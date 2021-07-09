@@ -3,29 +3,29 @@ using static Nexus.Controllers.CatalogsController;
 
 namespace Nexus.API
 {
-    public class ChannelType : ObjectGraphType<Channel>
+    public class ResourceType : ObjectGraphType<Resource>
     {
-        public ChannelType()
+        public ResourceType()
         {
-            this.Name = "Channel";
+            this.Name = "Resource";
 
             this.Field(x => x.Id, type: typeof(IdGraphType))
-                .Description("The channel ID.");
+                .Description("The resource ID.");
 
             this.Field(x => x.Name, type: typeof(IdGraphType))
-                .Description("The channel name.");
+                .Description("The resource name.");
 
             this.Field(x => x.Group)
-                .Description("The channel group.");
+                .Description("The resource group.");
 
             this.Field(x => x.Unit)
-                .Description("The channel unit.");
+                .Description("The resource unit.");
 
             this.Field(x => x.Description)
-                .Description("The channel description.");
+                .Description("The resource description.");
 
             this.Field(x => x.SpecialInfo)
-                .Description("Special info of the channel.");
+                .Description("Special info of the resource.");
         }
     }
 }

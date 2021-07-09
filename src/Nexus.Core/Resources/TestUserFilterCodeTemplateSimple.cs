@@ -6,13 +6,13 @@ namespace Nexus.Filters
     class FilterProvider : FilterProviderBase
     {
         /* Use this method to do the calculations for a filter that can be based on one or more
-         * channels of available and accessible catalogs.
+         * resources of available and accessible catalogs.
          *   begin:  Start of the current time period.
          *   end:    End of the current time period.
          *   data:   Contains data of the preselected catalogs.
          *   result: The resulting double array with length matching the time period and sample rate.
          */
-        public override void Filter(DateTime begin, DateTime end, FilterChannel filter, DataProvider dataProvider, double[] result)
+        public override void Filter(DateTime begin, DateTime end, FilterResource filter, DataProvider dataProvider, double[] result)
         {
             /* This dataset has the same length as the result array. */
             var t1 = dataProvider.IN_MEMORY_TEST_ACCESSIBLE.T1.DATASET_1_s_mean;
@@ -28,13 +28,13 @@ namespace Nexus.Filters
         }
 
         /* Use this method to provide one or more filter definitions. */
-        protected override List<FilterChannel> GetFilters()
+        protected override List<FilterResource> GetFilters()
         {
-            return new List<FilterChannel>()
+            return new List<FilterResource>()
             {
-                new FilterChannel()
+                new FilterResource()
                 {
-                    ChannelName = "T1_squared",
+                    ResourceName = "T1_squared",
                     Unit = "°C²"
                 }
             };

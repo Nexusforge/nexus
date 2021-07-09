@@ -1,22 +1,22 @@
 ﻿@inherits StateComponentBase
 
-<div class="selected-channel-box-sub">
-    <div class="selected-channels">
+<div class="selected-resource-box-sub">
+    <div class="selected-resources">
         @if (!this.UserState.SelectedDatasets.Any())
         {
-            <span class="small-text">no channels selected</span>
+            <span class="small-text">no items selected</span>
         }
         else
         {
             @foreach (var dataset in this.UserState.SelectedDatasets)
             {
-                <div class="selected-channel" 
+                <div class="selected-resource" 
                      @ondblclick="() => this.UserState.ToggleDatasetSelection(dataset)"
                      @onmouseover="() => _showCopyButton = true" 
                      @onmouseout="() => _showCopyButton = false">
 
                     <div class="flex-row flex-space-between">
-                        <span class="selected-channel-name">@dataset.Parent.Name (@dataset.Name)</span>
+                        <span class="selected-resource-name">@dataset.Parent.Name (@dataset.Name)</span>
 
                         @if (_showCopyButton)
                         {
@@ -27,7 +27,7 @@
                         }
                     </div>
 
-                    <span class="selected-channel-catalog">@dataset.Parent.Parent.Id.TrimStart('/').Replace("/", " / ")</span>
+                    <span class="selected-resource-catalog">@dataset.Parent.Parent.Id.TrimStart('/').Replace("/", " / ")</span>
                 </div>
             }
         }

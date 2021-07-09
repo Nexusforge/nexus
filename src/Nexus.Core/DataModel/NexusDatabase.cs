@@ -22,9 +22,9 @@ namespace Nexus.DataModel
 
         #region Methods
 
-        public bool TryFind(string catalogId, string channelIdOrName, string datasetId, out DatasetRecord datasetRecord, bool includeName = false)
+        public bool TryFind(string catalogId, string resourceIdOrName, string datasetId, out DatasetRecord datasetRecord, bool includeName = false)
         {
-            var datasetPath = $"{catalogId}/{channelIdOrName}/{datasetId}";
+            var datasetPath = $"{catalogId}/{resourceIdOrName}/{datasetId}";
             return this.TryFind(datasetPath, out datasetRecord, includeName);
         }
 
@@ -45,12 +45,12 @@ namespace Nexus.DataModel
             return true;
         }
 
-        public DatasetRecord Find(string catalogId, string channelIdOrName, string datasetId, bool includeName = false)
+        public DatasetRecord Find(string catalogId, string resourceIdOrName, string datasetId, bool includeName = false)
         {
-            this.TryFind(catalogId, channelIdOrName, datasetId, out var datasetRecord, includeName);
+            this.TryFind(catalogId, resourceIdOrName, datasetId, out var datasetRecord, includeName);
 
             if (datasetRecord is null)
-                throw new Exception($"The dataset on path '{catalogId}/{channelIdOrName}/{datasetId}' could not be found.");
+                throw new Exception($"The dataset on path '{catalogId}/{resourceIdOrName}/{datasetId}' could not be found.");
 
             return datasetRecord;
         }

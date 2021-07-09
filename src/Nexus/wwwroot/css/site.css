@@ -443,7 +443,7 @@ app {
     align-self: end;
 }
 
-.channel-box {
+.resource-box {
     display: flex;
     flex-direction: row;
     flex: 2;
@@ -508,7 +508,7 @@ app {
     cursor: pointer;
 }
 
-.available-channels {
+.available-resources {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -518,30 +518,30 @@ app {
     margin-top: 15px;
 }
 
-.channel-expander {
+.resource-expander {
     display: flex;
     flex-direction: column;
     height: 2.8rem;
     padding: 2px 2px 2px 2px;
 }
 
-    .channel-expander:hover {
+    .resource-expander:hover {
         color: var(--hover-color) !important;
         background-color: var(--hover-bg-color);
     }
 
-.channel-name {
+.resource-name {
     display: flex;
     flex-direction: row;
 }
 
-.channel-datasets {
+.resource-datasets {
     display: flex;
     flex-direction: row;
     cursor: pointer;
 }
 
-    .channel-datasets div {
+    .resource-datasets div {
         font-size: 0.9rem;
         padding: 2px 4px 2px 4px;
         margin: 0px 2px 0px 2px;
@@ -549,38 +549,38 @@ app {
         color: var(--font-color-subtitle);
     }
 
-        .channel-datasets div:hover {
+        .resource-datasets div:hover {
             color: var(--hover-color);
             border: 1px solid var(--hover-color);
         }
 
-.channel-dataset.selected {
+.resource-dataset.selected {
     color: var(--active-color) !important;
     border: 1px solid var(--active-color) !important;
 }
 
-.channel-sample-rates {
+.resource-sample-rates {
     display: flex;
     flex-direction: row;
     cursor: pointer;
 }
 
-.channel-sample-rate {
+.resource-sample-rate {
     font-size: 0.9rem;
     padding: 0 0.5rem 0 0.5rem;
     color: var(--font-color-subtitle);
 }
 
-    .channel-sample-rate:hover {
+    .resource-sample-rate:hover {
         color: var(--hover-color);
     }
 
-    .channel-sample-rate svg {
+    .resource-sample-rate svg {
         margin-left: 5px;
         margin-right: 2px;
     }
 
-.channel-description {
+.resource-description {
     font-size: 0.9rem;
     color: var(--font-color-subtitle);
     white-space: nowrap;
@@ -588,11 +588,11 @@ app {
     text-overflow: ellipsis;
 }
 
-    .channel-description > input {
+    .resource-description > input {
         width: 98%;
     }
 
-.channel-special-info {
+.resource-special-info {
     font-size: 0.9rem;
     color: var(--font-color-highlight);
     white-space: nowrap;
@@ -600,11 +600,11 @@ app {
     text-overflow: ellipsis;
 }
 
-    .channel-special-info svg {
+    .resource-special-info svg {
         margin-left: 0.5rem;
     }
 
-    .channel-special-info input {
+    .resource-special-info input {
         margin-left: 0.5rem;
     }
 
@@ -653,7 +653,7 @@ app {
         padding-bottom: 5px;
     }
 
-.selected-channel-box {
+.selected-resource-box {
     flex: 2;
     margin: 15px;
     background-color: var(--box-color);
@@ -661,18 +661,18 @@ app {
     min-height: 0;
 }
 
-.selected-channel-box-sub {
+.selected-resource-box-sub {
     display: flex;
     flex-direction: column;
     height: 100%;
 }
 
-    .selected-channel-box-sub button {
+    .selected-resource-box-sub button {
         margin-top: auto;
         margin-right: 15px;
     }
 
-.selected-channels {
+.selected-resources {
     display: flex;
     flex-direction: column;
     cursor: pointer;
@@ -683,14 +683,14 @@ app {
     scrollbar-width: thin;
 }
 
-    .selected-channels > span {
+    .selected-resources > span {
         margin-top: auto;
         margin-bottom: auto;
         margin-right: 10px;
         align-self: center;
     }
 
-.selected-channel {
+.selected-resource {
     display: flex;
     flex-direction: column;
     padding: 10px;
@@ -698,18 +698,18 @@ app {
     white-space: nowrap;
 }
 
-    .selected-channel:hover {
+    .selected-resource:hover {
         background-color: rgba(0, 0, 0, 0.05);
     }
 
-.selected-channel-name {
+.selected-resource-name {
     text-overflow: ellipsis;
     overflow: hidden;
     font-weight: 500;
     margin-bottom: 3px;
 }
 
-.selected-channel-catalog {
+.selected-resource-catalog {
     font-size: 0.8rem;
     color: var(--font-color-subtitle);
     text-overflow: ellipsis;

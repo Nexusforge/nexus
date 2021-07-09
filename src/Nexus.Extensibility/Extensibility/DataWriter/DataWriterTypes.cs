@@ -19,7 +19,7 @@ namespace Nexus.Extensibility
 
     public record WriteRequestGroup(
         Catalog Catalog,
-        WriteRequest[] WriteRequests);
+        WriteRequest[] Requests);
 
     public record WriteRequest(
         DatasetRecord DatasetRecord,
