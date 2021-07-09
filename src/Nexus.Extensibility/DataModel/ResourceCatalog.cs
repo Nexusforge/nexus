@@ -98,28 +98,24 @@ namespace Nexus.DataModel
             return merged;
         }
 
-        public bool TryFind(string resourcePath, out CatalogItem catalogItem, bool includeName = false)
+        public bool TryFind(string resourcePath, out CatalogItem catalogItem)
         {
             catalogItem = null;
 
             var pathParts = resourcePath.Split("/");
             var catalogId = string.Join('/', pathParts.Take(pathParts.Length - 2));
-            var resourceId = Guid.Parse(pathParts[4]);
+            var isGuid = Guid.TryParse(pathParts[4], out var resourceId);
             var representationId = pathParts[5];
 
             if (catalogId != this.Id)
                 return false;
 
-            var resource = this.Resources.FirstOrDefault(resource => resource.Id == resourceId);
+            var resource = isGuid
+                ? this.Resources.FirstOrDefault(resource => resource.Id == resourceId)
+                : this.Resources.FirstOrDefault(resource => resource.Name == pathParts[4]);
 
             if (resource is null)
-            {
-                if (includeName)
-                    resource = this.Resources.FirstOrDefault(resource => resource.Name == pathParts[4]);
-
-                if (resource is null)
-                    return false;
-            }
+                return false;
 
             var representation = resource.Representations.FirstOrDefault(representation => representation.Id == representationId);
 
@@ -130,9 +126,9 @@ namespace Nexus.DataModel
             return true;
         }
 
-        public CatalogItem Find(string resourcePath, bool includeName = false)
+        public CatalogItem Find(string resourcePath)
         {
-            if (!this.TryFind(resourcePath, out var catalogItem, includeName))
+            if (!this.TryFind(resourcePath, out var catalogItem))
                 throw new Exception($"The resource path '{resourcePath}' could not be found.");
 
             return catalogItem;

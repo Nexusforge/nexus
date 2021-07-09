@@ -43,21 +43,21 @@ namespace Nexus
                 throw new Exception("Only a file URI can be converted to a path.");
         }
 
-        public static CatalogItem Find(this IEnumerable<ResourceCatalog> catalogs, string resourcePath, bool includeName = false)
+        public static CatalogItem Find(this IEnumerable<ResourceCatalog> catalogs, string resourcePath)
         {
-            if (!catalogs.TryFind(resourcePath, out var catalogItem, includeName))
+            if (!catalogs.TryFind(resourcePath, out var catalogItem))
                 throw new Exception($"The resource path '{resourcePath}' could not be found.");
 
             return catalogItem;
         }
 
-        public static bool TryFind(this IEnumerable<ResourceCatalog> catalogs, string resourcePath, out CatalogItem catalogItem, bool includeName = false)
+        public static bool TryFind(this IEnumerable<ResourceCatalog> catalogs, string resourcePath, out CatalogItem catalogItem)
         {
             catalogItem = default(CatalogItem);
 
             foreach (var catalog in catalogs)
             {
-                if (catalog.TryFind(resourcePath, out catalogItem, includeName))
+                if (catalog.TryFind(resourcePath, out catalogItem))
                     break;
             }
 

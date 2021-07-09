@@ -23,23 +23,22 @@ namespace Nexus.DataModel
 
         #region Methods
 
-        public bool TryFind(string catalogId, string resourceIdOrName, string representationId, out CatalogItem catalogItem, bool includeName = false)
+        public bool TryFind(string catalogId, string resourceIdOrName, string representationId, out CatalogItem catalogItem)
         {
             var resourcePath = $"{catalogId}/{resourceIdOrName}/{representationId}";
-            return this.TryFind(resourcePath, out catalogItem, includeName);
+            return this.TryFind(resourcePath, out catalogItem);
         }
 
-
-        public bool TryFind(string resourcePath, out CatalogItem catalogItem, bool includeName = false)
+        public bool TryFind(string resourcePath, out CatalogItem catalogItem)
         {
             return this.CatalogContainers
                 .Select(container => container.Catalog)
-                .TryFind(resourcePath, out catalogItem, includeName);
+                .TryFind(resourcePath, out catalogItem);
         }
 
-        public CatalogItem Find(string catalogId, string resourceIdOrName, string representationId, bool includeName = false)
+        public CatalogItem Find(string catalogId, string resourceIdOrName, string representationId)
         {
-            if (!this.TryFind(catalogId, resourceIdOrName, representationId, out var catalogItem, includeName))
+            if (!this.TryFind(catalogId, resourceIdOrName, representationId, out var catalogItem))
                 throw new Exception($"The resource path '{catalogId}/{resourceIdOrName}/{representationId}' could not be found.");
 
             return catalogItem;
