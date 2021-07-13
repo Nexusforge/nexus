@@ -25,7 +25,7 @@ namespace Nexus.Extensions
 
         public const string Id = "Nexus.Filters";
 
-        private List<ResourceCatalog> _catalogs;
+        private ResourceCatalog[] _catalogs;
 
         private Uri _resourceLocator { get; set; }
 
@@ -121,7 +121,7 @@ namespace Nexus.Extensions
             }
         }
 
-        public Task<List<ResourceCatalog>> GetCatalogsAsync(CancellationToken cancellationToken)
+        public Task<ResourceCatalog[]> GetCatalogsAsync(CancellationToken cancellationToken)
         {
             return Task.Run(() =>
             {
@@ -202,7 +202,7 @@ namespace Nexus.Extensions
                     }
                 }
 
-                _catalogs = catalogs.Values.ToList();
+                _catalogs = catalogs.Values.ToArray();
                 return _catalogs;
             });
         }

@@ -62,7 +62,7 @@ namespace Nexus.Extensibility
         protected abstract Task<Configuration>
             GetConfigurationAsync(string catalogId, CancellationToken cancellationToken);
 
-        protected abstract Task<List<ResourceCatalog>>
+        protected abstract Task<ResourceCatalog[]>
             GetCatalogsAsync(CancellationToken cancellationToken);
 
         protected virtual Task<(DateTime Begin, DateTime End)> 
@@ -345,7 +345,7 @@ namespace Nexus.Extensibility
             await this.SetContextAsync(context, cancellationToken);
         }
 
-        async Task<List<ResourceCatalog>> 
+        async Task<ResourceCatalog[]> 
             IDataSource.GetCatalogsAsync(CancellationToken cancellationToken)
         {
             if (this.Context.Catalogs is null)

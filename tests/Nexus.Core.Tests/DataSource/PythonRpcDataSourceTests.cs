@@ -14,13 +14,13 @@ using Xunit.Abstractions;
 
 namespace Nexus.Core.Tests
 {
-    public class RpcDataSourceTests
+    public class PythonRpcDataSourceTests
     {
         private ILogger _logger;
 
-        public RpcDataSourceTests(ITestOutputHelper xunitLogger)
+        public PythonRpcDataSourceTests(ITestOutputHelper xunitLogger)
         {
-            _logger = new XunitLoggerProvider(xunitLogger).CreateLogger(nameof(RpcDataSourceTests));
+            _logger = new XunitLoggerProvider(xunitLogger).CreateLogger(nameof(PythonRpcDataSourceTests));
         }
 
         [Fact]
@@ -35,7 +35,9 @@ namespace Nexus.Core.Tests
                 Configuration = new Dictionary<string, string>() 
                 { 
                     ["command"] = "python.exe",
-                    ["arguments"] =  "PythonRpcDataSource.py"
+                    ["arguments"] = "PythonRpcDataSource.py 55555",
+                    ["listen-address"] = "127.0.0.1",
+                    ["listen-port"] = "55555",
                 },
                 Logger = _logger,
             };
@@ -95,10 +97,12 @@ namespace Nexus.Core.Tests
                 Configuration = new Dictionary<string, string>()
                 {
                     ["command"] = "python.exe",
-                    ["arguments"] = "PythonRpcDataSource.py"
+                    ["arguments"] = "PythonRpcDataSource.py 55555",
+                    ["listen-address"] = "127.0.0.1",
+                    ["listen-port"] = "55555",
                 },
                 Logger = _logger,
-                Catalogs = new List<ResourceCatalog>() { catalog }
+                Catalogs = new [] { catalog }
             };
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
@@ -140,7 +144,9 @@ namespace Nexus.Core.Tests
                 Configuration = new Dictionary<string, string>()
                 {
                     ["command"] = "python.exe",
-                    ["arguments"] = "PythonRpcDataSource.py"
+                    ["arguments"] = "PythonRpcDataSource.py 55555",
+                    ["listen-address"] = "127.0.0.1",
+                    ["listen-port"] = "55555",
                 },
                 Logger = _logger,
             };
@@ -164,7 +170,9 @@ namespace Nexus.Core.Tests
                 Configuration = new Dictionary<string, string>()
                 {
                     ["command"] = "python.exe",
-                    ["arguments"] = "PythonRpcDataSource.py"
+                    ["arguments"] = "PythonRpcDataSource.py 55555",
+                    ["listen-address"] = "127.0.0.1",
+                    ["listen-port"] = "55555",
                 },
                 Logger = _logger,
             };
@@ -189,7 +197,9 @@ namespace Nexus.Core.Tests
                 Configuration = new Dictionary<string, string>()
                 {
                     ["command"] = "python.exe",
-                    ["arguments"] = "PythonRpcDataSource.py"
+                    ["arguments"] = "PythonRpcDataSource.py 55555",
+                    ["listen-address"] = "127.0.0.1",
+                    ["listen-port"] = "55555",
                 },
                 Logger = _logger,
             };
@@ -247,7 +257,9 @@ namespace Nexus.Core.Tests
                 Configuration = new Dictionary<string, string>()
                 {
                     ["command"] = "python.exe",
-                    ["arguments"] = "PythonRpcDataSource.py"
+                    ["arguments"] = "PythonRpcDataSource.py 55555",
+                    ["listen-address"] = "127.0.0.1",
+                    ["listen-port"] = "55555",
                 },
                 Logger = loggerMock.Object,
             };

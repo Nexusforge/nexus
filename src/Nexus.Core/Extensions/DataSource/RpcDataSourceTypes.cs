@@ -1,56 +1,45 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft;
+using Microsoft.Extensions.Logging;
 using Nexus.DataModel;
+using StreamJsonRpc;
+using StreamJsonRpc.Protocol;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
+using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Nexus.Extensions
 {
+    public interface IJsonRpcServer
+    {
+        public Task<ApiLevelResponse> 
+            GetApiLevelAsync(CancellationToken cancellationToken);
+
+        public Task 
+            SetContextAsync(string resourceLocator, Dictionary<string, string> configuration, ResourceCatalog[] catalogs, CancellationToken cancellationToken);
+
+        public Task<CatalogsResponse>
+            GetCatalogsAsync(CancellationToken cancellationToken);
+
+        public Task<TimeRangeResponse>
+            GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken);
+
+        public Task<AvailabilityResponse>
+            GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken);
+
+        public Task
+            ReadSingleAsync(string resourcePath, int elementCount, DateTime begin, DateTime end, CancellationToken cancellationToken);
+    }
+
     public record ApiLevelResponse(int ApiLevel);
-    public record CatalogsResponse(List<ResourceCatalog> Catalogs);
+    public record CatalogsResponse(ResourceCatalog[] Catalogs);
     public record TimeRangeResponse(DateTime Begin, DateTime End);
     public record AvailabilityResponse(double Availability);
-    public record ReadSingleResponse();
     public record LogMessage(LogLevel LogLevel, string Message);
-
-    // Based on the SignalR protocol: https://github.com/aspnet/SignalR/blob/master/specs/HubProtocol.md
-    public record HandshakeRequest(
-        [property: JsonPropertyName("protocol")] string Protocol = "json",
-        [property: JsonPropertyName("version")] int Version = 1
-    );
-
-    public record HandshakeResponse(
-        [property: JsonPropertyName("error")] string? Error
-    );
-
-    public record Invocation(
-        [property: JsonPropertyName("invocationId")] string? InvocationId,
-        [property: JsonPropertyName("target")] string Target,
-        [property: JsonPropertyName("arguments")] object[] Arguments
-    )
-    {
-        [JsonPropertyName("type")]
-        public int Type { get; } = 1;
-    };
-
-    public record Completion<T>(
-       [property: JsonPropertyName("invocationId")] string? InvocationId,
-       [property: JsonPropertyName("result")] T? Result,
-       [property: JsonPropertyName("error")] string? Error
-    )
-    {
-        [JsonPropertyName("type")]
-        public int Type { get; } = 3;
-    };
-
-    public record Close(
-        [property: JsonPropertyName("error")] string? Error
-    )
-    {
-        [JsonPropertyName("type")]
-        public int Type { get; } = 7;
-    };
 
     public class RpcException : Exception
     {

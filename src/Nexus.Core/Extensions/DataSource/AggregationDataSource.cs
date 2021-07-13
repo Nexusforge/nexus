@@ -20,7 +20,7 @@ namespace Nexus.Extensions
     {
         #region Fields
 
-        private List<ResourceCatalog> _catalogs;
+        private ResourceCatalog[] _catalogs;
 
         #endregion
 
@@ -56,7 +56,7 @@ namespace Nexus.Extensions
             return Task.CompletedTask;
         }
 
-        public Task<List<ResourceCatalog>> GetCatalogsAsync(CancellationToken cancellationToken)
+        public Task<ResourceCatalog[]> GetCatalogsAsync(CancellationToken cancellationToken)
         {
             return Task.Run(() =>
             {
@@ -200,8 +200,8 @@ namespace Nexus.Extensions
                     catalogs = JsonSerializerHelper.Deserialize<List<ResourceCatalog>>(mainCacheFilePath);
                 }
 
-                _catalogs = catalogs;
-                return catalogs;
+                _catalogs = catalogs.ToArray();
+                return _catalogs;
             });
         }
 

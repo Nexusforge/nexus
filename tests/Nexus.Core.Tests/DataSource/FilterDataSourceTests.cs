@@ -118,7 +118,7 @@ namespace Nexus.Core.Tests
             catalog.Resources.Add(resource);
 
             Mock.Get(database)
-                .Setup(s => s.Find(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()))
+                .Setup(s => s.Find(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
                 .Returns(new CatalogItem(catalog, resource, representation));
 
             // setup data source

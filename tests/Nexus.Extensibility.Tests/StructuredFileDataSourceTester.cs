@@ -86,7 +86,7 @@ namespace Nexus.Extensibility.Tests
             });
         }
 
-        protected override Task<List<ResourceCatalog>> GetCatalogsAsync(CancellationToken cancellationToken)
+        protected override Task<ResourceCatalog[]> GetCatalogsAsync(CancellationToken cancellationToken)
         {
             if (this.Context.Catalogs is null)
             {
@@ -99,7 +99,7 @@ namespace Nexus.Extensibility.Tests
 
                 this.Context = this.Context with
                 {
-                    Catalogs = new List<ResourceCatalog>() { catalog }
+                    Catalogs = new[] { catalog }
                 };
             }
 

@@ -26,6 +26,7 @@
     <PackageReference Include="Microsoft.NETCore.App.Ref" Version="5.0.0" IncludeAssets="none" PrivateAssets="all" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="5.0.2" />
     <PackageReference Include="OmniSharp.Roslyn.CSharp" Version="1.37.4" />
+    <PackageReference Include="StreamJsonRpc" Version="2.8.21" />
     <PackageReference Include="System.IO.Pipelines" Version="5.0.1" />
   </ItemGroup>
 

@@ -2,13 +2,15 @@ import asyncio
 import datetime
 import glob
 import os
+import sys
 from array import array
 from datetime import datetime, timedelta, timezone
 from urllib.request import url2pathname
 from uuid import uuid3
 
-from PythonRpcDataModel import Catalog, Resource, Representation, NexusDataType
+from PythonRpcDataModel import Catalog, NexusDataType, Representation, Resource
 from PythonRpcExtensibility import IDataSource, LogLevel, RpcCommunicator
+
 
 class NULL_NAMESPACE:
     bytes = b''
@@ -175,4 +177,14 @@ class PythonDataSource(IDataSource):
 
         return (catalog, resource, representation)
 
-asyncio.run(RpcCommunicator(PythonDataSource()).run())
+# get address
+address = "localhost"
+
+# get port
+try:
+    port = int(sys.argv[1])
+except Exception as ex:
+    raise Exception(f"The second command line argument must be a valid port number. Inner error: {str(ex)}")
+
+# run
+asyncio.run(RpcCommunicator(PythonDataSource(), address, port).run())

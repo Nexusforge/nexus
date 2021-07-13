@@ -2,12 +2,14 @@ import array
 import base64
 import enum
 import json
+import socket
 import struct
 import sys
 import time
 from abc import ABC, abstractmethod
 from datetime import datetime
 from io import TextIOWrapper
+from threading import Lock
 from typing import Awaitable, Dict, List, Tuple
 from urllib.parse import ParseResult, urlparse
 from uuid import UUID, uuid3
@@ -25,21 +27,27 @@ class LogLevel(enum.Enum):
 
 class Logger():
 
-    _stream: TextIOWrapper
+    _tcpCommSocket: socket
+    _lock: Lock
 
-    def __init__(self, stream: TextIOWrapper):
-        self._stream = stream
+    def __init__(self, tcpSocket: socket, lock: Lock):
+        self._tcpCommSocket = tcpSocket
+        self._lock = lock
 
     def Log(self, log_level: LogLevel, message: str):
 
-        message = {
-            "LogLevel": log_level.name,
-            "Message": message
+        notification = {
+            "jsonrpc": "2.0",
+            "method": "log",
+            "params": [log_level.name, message]
         }
 
-        self._stream.write(json.dumps(message))
-        self._stream.write("\n")
-        self._stream.flush()
+        jsonResponse = json.dumps(notification, default=lambda x: self._serializeJson(x), ensure_ascii = False)
+        encodedResponse = jsonResponse.encode()
+
+        with self._lock:
+            self._tcpCommSocket.sendall(struct.pack(">I", len(encodedResponse)))
+            self._tcpCommSocket.sendall(encodedResponse)
 
 class DataSourceContext:
 
@@ -80,162 +88,179 @@ class IDataSource(ABC):
 
 class RpcCommunicator:
 
+    _address: str
+    _port: int
     _dataSource: IDataSource
-    _isConnected: bool
+    _lock: Lock
+    _tcpCommSocket: socket
+    _tcpDataSocket: socket
 
-    def __init__(self, dataSource: IDataSource):
+    def __init__(self, dataSource: IDataSource, address: str, port: int):
+
+        self._address = address
+        self._port = port
+        self._lock = Lock()
+        self._tcpCommSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._tcpDataSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        if (not (0 < port and port < 65536)):
+            raise Exception(f"The port {port} is not a valid port number.")
+
         self._dataSource = dataSource
-        self._isConnected = False
 
     async def run(self):
 
+        # comm connection
+        self._tcpCommSocket.connect((self._address, self._port))
+        self._tcpCommSocket.sendall("comm".encode())
+
+        # data connection
+        self._tcpDataSocket.connect((self._address, self._port))
+        self._tcpDataSocket.sendall("data".encode())
+
+        # loop
         while (True):
 
-            # sys.stdin.buffer.read returns requested bytes or zero bytes when reaching EOF:
-            # (https://docs.python.org/3/library/io.html#io.BufferedIOBase.read)
+            # https://www.jsonrpc.org/specification
 
             # get request message
-            jsonRequest = sys.stdin.readline()
-            self._validateRequest(len(jsonRequest))
+            sizeBuffer = self._tcpCommSocket.recv(4, socket.MSG_WAITALL)
+
+            if len(sizeBuffer) == 0:
+                self._shutdown()
+
+            size = struct.unpack(">I", sizeBuffer)[0]
+
+            jsonRequest = self._tcpCommSocket.recv(size, socket.MSG_WAITALL)
+
+            if len(sizeBuffer) == 0:
+                self._shutdown()
+
             request = json.loads(jsonRequest)
-            
+
             # process message
             data = None
             status = None
 
-            if not self._isConnected:
+            if "jsonrpc" in request and request["jsonrpc"] == "2.0":
 
-                if ("protocol" in request and "version" in request):
+                if "id" in request:
 
-                    if (request["protocol"] == "json" and \
-                        request["version"] == 1):
+                    try:
+                        (result, data, status) = await self._processInvocationAsync(request)
 
-                        response = {}
-                        self._isConnected = True
-
-                    else:
                         response = {
-                            "error": "Only protocol 'json' of version 1 is supported.",
+                            "result": result
                         }
-                    
-                else:
-                    raise Exception(f"Handshake message expected, but got something else.")
 
-            elif "type" in request:
-
-                if request["type"] == 1:
-
-                    if "target" in request and \
-                       "arguments" in request:
-
-                        (response, data, status) = await self._processInvocationAsync(request)
-
-                    else:
-                        raise Exception(f"Invalid invocation message received.")
-
-                elif request["type"] == 7:
-                    self._dataSource.dispose()
-                    exit()
+                    except Exception as ex:
+                        
+                        response = {
+                            "error": {
+                                "code": -1,
+                                "message": str(ex)
+                            }
+                        }
 
                 else:
-                    raise Exception(f"Protocol message type '{request['type']}' is not supported.")
+                    raise Exception(f"JSON-RPC 2.0 notifications are not supported.") 
 
-            else:
-                raise Exception(f"Protocol message expected, but something else.") 
+            else:              
+                raise Exception(f"JSON-RPC 2.0 message expected, but got something else.") 
             
-            # send response
-            if response is not None:
-                jsonResponse = json.dumps(response, default=lambda x: self._serializeJson(x))
-                sys.stdout.write(jsonResponse)
-                sys.stdout.write("\n")
-                sys.stdout.flush()
+            response["jsonrpc"] = "2.0"
+            response["id"] = request["id"]
 
+            # send response
+            jsonResponse = json.dumps(response, default=lambda x: self._serializeJson(x), ensure_ascii = False)
+            encodedResponse = jsonResponse.encode()
+
+            with self._lock:
+                self._tcpCommSocket.sendall(struct.pack(">I", len(encodedResponse)))
+                self._tcpCommSocket.sendall(encodedResponse)
+
+            # send data
             if data is not None and status is not None:
-                sys.stdout.buffer.write(data)
-                sys.stdout.buffer.write(status)
-                sys.stdout.flush()
+                self._tcpDataSocket.sendall(data)
+                self._tcpDataSocket.sendall(status)
 
     async def _processInvocationAsync(self, request: any):
         
-        response = None
+        result = None
         data = None
         status = None
 
-        if request["target"] == "GetApiLevel":
+        methodName = request["method"]
+        params = request["params"]
 
-            response = {
-                "invocationId": request["invocationId"],
-                "result": {
-                    "ApiLevel": 1
-                }
+        if methodName == "getApiLevelAsync":
+
+            result = {
+                "ApiLevel": 1
             }
 
-        elif request["target"] == "SetContext":
+        elif methodName == "setContextAsync":
 
-            resource_locator = urlparse(request["arguments"][0])
-            configuration = request["arguments"][1]
-            logger = Logger(sys.stderr)
-            catalogs = request["arguments"][2]
+            resource_locator = urlparse(params[0])
+            configuration = params[1]
+            logger = Logger(self._tcpCommSocket, self._lock)
+            catalogs = params[2]
             context = DataSourceContext(resource_locator, configuration, logger, catalogs)
 
             await self._dataSource.set_context_async(context)
 
-        elif request["target"] == "GetCatalogs":
+        elif methodName== "getCatalogsAsync":
 
             catalogs = await self._dataSource.get_catalogs_async()
 
-            response = {
-                "invocationId": request["invocationId"],
-                "result": {
-                    "Catalogs": catalogs
-                }
+            result = {
+                "Catalogs": catalogs
             }
 
-        elif request["target"] == "GetTimeRange":
+        elif methodName == "getTimeRangeAsync":
 
-            catalogId = request["arguments"][0]
+            catalogId = params[0]
             (begin, end) = await self._dataSource.get_time_range_async(catalogId)
 
-            response = {
-                "invocationId": request["invocationId"],
-                "result": {
-                    "Begin": begin,
-                    "End": end,
-                }
+            result = {
+                "Begin": begin,
+                "End": end,
             }
 
-        elif request["target"] == "GetAvailability":
+        elif methodName == "getAvailabilityAsync":
 
-            catalogId = request["arguments"][0]
-            begin = datetime.strptime(request["arguments"][1], "%Y-%m-%dT%H:%M:%SZ")
-            end = datetime.strptime(request["arguments"][2], "%Y-%m-%dT%H:%M:%SZ")
+            catalogId = params[0]
+            begin = datetime.strptime(params[1], "%Y-%m-%dT%H:%M:%SZ")
+            end = datetime.strptime(params[2], "%Y-%m-%dT%H:%M:%SZ")
             availability = await self._dataSource.get_availability_async(catalogId, begin, end)
 
-            response = {
-                "invocationId": request["invocationId"],
-                "result": {
-                    "Availability": availability
-                }
+            result = {
+                "Availability": availability
             }
 
-        elif request["target"] == "ReadSingle":
+        elif methodName == "readSingleAsync":
 
-            resourcePath = request["arguments"][0]
-            length = request["arguments"][1]
-            begin = datetime.strptime(request["arguments"][2], "%Y-%m-%dT%H:%M:%SZ")
-            end = datetime.strptime(request["arguments"][3], "%Y-%m-%dT%H:%M:%SZ")
+            resourcePath = params[0]
+            length = params[1]
+            begin = datetime.strptime(params[2], "%Y-%m-%dT%H:%M:%SZ")
+            end = datetime.strptime(params[3], "%Y-%m-%dT%H:%M:%SZ")
             (data, status) = await self._dataSource.read_single_async(resourcePath, length, begin, end)
 
-            response =  ({
-                "invocationId": request["invocationId"],
-                "result": {}
-            })
+        # Add cancellation support?
+        # https://github.com/microsoft/vs-streamjsonrpc/blob/main/doc/sendrequest.md#cancellation
+        # https://github.com/Microsoft/language-server-protocol/blob/main/versions/protocol-2-x.md#cancelRequest
+        elif methodName == "$/cancelRequest":
+            pass
 
-        return (response, data, status)
+        else:
+            raise Exception(f"Unknown method '{methodName}'.")
 
-    def _validateRequest(self, readCount: int):
+        return (result, data, status)
+
+    def _shutdown(self, readCount: int):
         if readCount == 0:
-            raise Exception("The connection aborted unexpectedly.")
+            self._dataSource.dispose()
+            exit()
 
     def _serializeJson(self, x):
 

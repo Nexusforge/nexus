@@ -2,6 +2,7 @@
 using Nexus.Extensibility;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,6 +15,7 @@ namespace Nexus.Extensions
 
         private static int API_LEVEL = 1;
         private RpcCommunicator _communicator;
+        private IJsonRpcServer _rpcServer;
 
         #endregion
 
@@ -46,48 +48,52 @@ namespace Nexus.Extensions
         {
             this.Context = context;
 
+            // command
             if (!this.Context.Configuration.TryGetValue("command", out var command))
                 throw new KeyNotFoundException("The command parameter must be provided.");
 
+            // listen-address
+            if (!this.Context.Configuration.TryGetValue("listen-address", out var listenAddressString))
+                throw new KeyNotFoundException("The listen-address parameter must be provided.");
+
+            if (!IPAddress.TryParse(listenAddressString, out var listenAddress))
+                throw new KeyNotFoundException("The listen-address parameter is not a valid IP-Address.");
+
+            // listen-port
+            if (!this.Context.Configuration.TryGetValue("listen-port", out var listenPortString))
+                throw new KeyNotFoundException("The listen-port parameter must be provided.");
+
+            if (!ushort.TryParse(listenPortString, out var listenPort))
+                throw new KeyNotFoundException("The listen-port parameter is not a valid port.");
+
+            // arguments
             var arguments = this.Context.Configuration.ContainsKey("arguments")
                 ? this.Context.Configuration["arguments"]
                 : string.Empty;
 
             var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromSeconds(10));
 
-            _communicator = new RpcCommunicator(command, arguments, this.Context.Logger);
+            _communicator = new RpcCommunicator(context.ResourceLocator, command, arguments, listenAddress, listenPort, this.Context.Logger);
+            _rpcServer = await _communicator.ConnectAsync(timeoutTokenSource.Token);
 
-            await _communicator.ConnectAsync(timeoutTokenSource.Token);
-
-            var apiLevel = (await _communicator.InvokeAsync<ApiLevelResponse>(
-                "GetApiLevel",
-                new object[0], 
-                timeoutTokenSource.Token
-            )).ApiLevel;
+            var apiLevel = (await _rpcServer.GetApiLevelAsync(timeoutTokenSource.Token)).ApiLevel;
 
             if (apiLevel < 1 || apiLevel > RpcDataSource.API_LEVEL)
                 throw new Exception($"The API level '{apiLevel}' is not supported.");
 
-            await _communicator.SendAsync("SetContext", new object[]
-            {
-                this.Context.ResourceLocator.ToString(),
-                this.Context.Configuration,
-                this.Context.Catalogs
-            }, timeoutTokenSource.Token);
+            await _rpcServer
+                .SetContextAsync(context.ResourceLocator.ToString(), context.Configuration, context.Catalogs, timeoutTokenSource.Token);
         }
 
-        public async Task<List<ResourceCatalog>> GetCatalogsAsync(CancellationToken cancellationToken)
+        public async Task<ResourceCatalog[]> GetCatalogsAsync(CancellationToken cancellationToken)
         {
             if (this.Context.Catalogs is null)
             {
                 var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromMinutes(1));
                 cancellationToken.Register(() => timeoutTokenSource.Cancel());
 
-                var response = await _communicator.InvokeAsync<CatalogsResponse>(
-                    "GetCatalogs",
-                    null,
-                    timeoutTokenSource.Token
-                );
+                var response = await _rpcServer
+                    .GetCatalogsAsync(timeoutTokenSource.Token);
 
                 this.Context = this.Context with
                 { 
@@ -103,11 +109,8 @@ namespace Nexus.Extensions
             var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromMinutes(1));
             cancellationToken.Register(() => timeoutTokenSource.Cancel());
 
-            var response = await _communicator.InvokeAsync<TimeRangeResponse>(
-                "GetTimeRange",
-                new object[] { catalogId },
-                timeoutTokenSource.Token
-            );
+            var response = await _rpcServer
+                .GetTimeRangeAsync(catalogId, timeoutTokenSource.Token);
 
             var begin = response.Begin.ToUniversalTime();
             var end = response.End.ToUniversalTime();
@@ -120,11 +123,8 @@ namespace Nexus.Extensions
             var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromMinutes(1));
             cancellationToken.Register(() => timeoutTokenSource.Cancel());
 
-            var response = await _communicator.InvokeAsync<AvailabilityResponse>(
-                "GetAvailability", 
-                new object[] { catalogId, begin, end },
-                timeoutTokenSource.Token
-            );
+            var response = await _rpcServer
+                .GetAvailabilityAsync(catalogId, begin, end, timeoutTokenSource.Token);
 
             return response.Availability;
         }
@@ -142,11 +142,8 @@ namespace Nexus.Extensions
 
                 var elementCount = data.Length / catalogItem.Representation.ElementSize;
 
-                var response = await _communicator.InvokeAsync<ReadSingleResponse>(
-                    "ReadSingle",
-                    new object[] { catalogItem.GetPath(), elementCount, begin, end },
-                    timeoutTokenSource.Token
-                );
+                await _rpcServer
+                    .ReadSingleAsync(catalogItem.GetPath(), elementCount, begin, end, timeoutTokenSource.Token);
 
                 await _communicator.ReadRawAsync(data, timeoutTokenSource.Token);
                 await _communicator.ReadRawAsync(status, timeoutTokenSource.Token);

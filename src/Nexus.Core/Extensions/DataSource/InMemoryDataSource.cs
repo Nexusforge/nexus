@@ -27,7 +27,7 @@ namespace Nexus.Extensions
             return Task.CompletedTask;
         }
 
-        public Task<List<ResourceCatalog>> GetCatalogsAsync(CancellationToken cancellationToken)
+        public Task<ResourceCatalog[]> GetCatalogsAsync(CancellationToken cancellationToken)
         {
             if (this.Context.Catalogs is null)
             {
@@ -45,7 +45,7 @@ namespace Nexus.Extensions
 
                 this.Context = this.Context with
                 {
-                    Catalogs = new List<ResourceCatalog>()
+                    Catalogs = new[]
                     { 
                         catalog_allowed,
                         catalog_restricted 

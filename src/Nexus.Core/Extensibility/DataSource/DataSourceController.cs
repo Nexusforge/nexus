@@ -31,7 +31,7 @@ namespace Nexus.Extensibility
 
         public IDataSource DataSource { get; }
 
-        public List<ResourceCatalog> Catalogs { get; private set; }
+        public ResourceCatalog[] Catalogs { get; private set; }
 
         internal BackendSource BackendSource { get; }
 
@@ -53,7 +53,7 @@ namespace Nexus.Extensibility
 
                 catalogs = catalogs
                     .Where(catalog => NexusCoreUtilities.CheckCatalogNamingConvention(catalog.Id, out var _))
-                    .ToList();
+                    .ToArray();
 
                 foreach (var catalog in catalogs)
                 {

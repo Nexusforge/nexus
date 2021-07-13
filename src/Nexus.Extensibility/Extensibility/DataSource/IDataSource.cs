@@ -12,7 +12,7 @@ namespace Nexus.Extensibility
             DataSourceContext context,
             CancellationToken cancellationToken);
 
-        Task<List<ResourceCatalog>> GetCatalogsAsync(
+        Task<ResourceCatalog[]> GetCatalogsAsync(
             CancellationToken cancellationToken);
 
         Task<(DateTime Begin, DateTime End)> GetTimeRangeAsync(
