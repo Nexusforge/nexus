@@ -140,23 +140,23 @@ namespace Nexus.Extensions
                             continue;
 
                         var filterProvider = cacheEntry.FilterProvider;
-                        var filterResources = filterProvider.Filters;
+                        var filterChannels = filterProvider.Filters;
 
-                        foreach (var filterResource in filterResources)
+                        foreach (var filterChannel in filterChannels)
                         {
-                            var localFilterResource = filterResource;
+                            var localFilterChannel = filterChannel;
 
                             // enforce group
-                            if (localFilterResource.CatalogId == FilterConstants.SharedCatalogID)
+                            if (localFilterChannel.CatalogId == FilterConstants.SharedCatalogID)
                             {
-                                localFilterResource = localFilterResource with
+                                localFilterChannel = localFilterChannel with
                                 {
                                     Group = filterCodeDefinition.Owner.Split('@')[0]
                                 };
                             }
-                            else if (string.IsNullOrWhiteSpace(localFilterResource.Group))
+                            else if (string.IsNullOrWhiteSpace(localFilterChannel.Group))
                             {
-                                localFilterResource = localFilterResource with
+                                localFilterChannel = localFilterChannel with
                                 {
                                     Group = "General"
                                 };
@@ -173,28 +173,28 @@ namespace Nexus.Extensions
                             };
 
                             // create resource
-                            if (!NexusCoreUtilities.CheckNamingConvention(localFilterResource.ResourceName, out var message))
+                            if (!NexusCoreUtilities.CheckNamingConvention(localFilterChannel.ResourceName, out var message))
                             {
-                                this.Context.Logger.LogWarning($"Skipping resource '{localFilterResource.ResourceName}' due to the following reason: {message}.");
+                                this.Context.Logger.LogWarning($"Skipping resource '{localFilterChannel.ResourceName}' due to the following reason: {message}.");
                                 continue;
                             }
 
                             var resource = new Resource()
                             {
-                                Id = localFilterResource.ToGuid(cacheEntry.FilterCodeDefinition),
-                                Name = localFilterResource.ResourceName,
-                                Group = localFilterResource.Group,
-                                Unit = localFilterResource.Unit,
+                                Id = localFilterChannel.ToGuid(cacheEntry.FilterCodeDefinition),
+                                Name = localFilterChannel.ResourceName,
+                                Group = localFilterChannel.Group,
+                                Unit = localFilterChannel.Unit,
                                 Representations = representations,
                             };
 
-                            resource.Metadata["Description"] = localFilterResource.Description;
+                            resource.Metadata["Description"] = localFilterChannel.Description;
 
                             // get or create catalog
-                            if (!catalogs.TryGetValue(localFilterResource.CatalogId, out var catalog))
+                            if (!catalogs.TryGetValue(localFilterChannel.CatalogId, out var catalog))
                             {
-                                catalog = new ResourceCatalog() { Id = localFilterResource.CatalogId };
-                                catalogs[localFilterResource.CatalogId] = catalog;
+                                catalog = new ResourceCatalog() { Id = localFilterChannel.CatalogId };
+                                catalogs[localFilterChannel.CatalogId] = catalog;
                             }
 
                             catalog.Resources.Add(resource);

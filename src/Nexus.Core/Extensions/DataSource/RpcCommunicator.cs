@@ -152,7 +152,7 @@ namespace Nexus.Extensions
                 var readCount = await source.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
 
                 if (readCount == 0)
-                    throw new Exception("The TCP connection ended early.");
+                    throw new Exception("The TCP connection closed early.");
 
                 buffer = buffer.Slice(readCount);
             }

@@ -34,7 +34,7 @@ class Logger():
         self._tcpCommSocket = tcpSocket
         self._lock = lock
 
-    def Log(self, log_level: LogLevel, message: str):
+    def log(self, log_level: LogLevel, message: str):
 
         notification = {
             "jsonrpc": "2.0",
@@ -172,7 +172,7 @@ class RpcCommunicator:
             response["id"] = request["id"]
 
             # send response
-            jsonResponse = json.dumps(response, default=lambda x: self._serializeJson(x), ensure_ascii = False)
+            jsonResponse = json.dumps(response, default=lambda x: self._serializeJson(x), ensure_ascii = False)          
             encodedResponse = jsonResponse.encode()
 
             with self._lock:

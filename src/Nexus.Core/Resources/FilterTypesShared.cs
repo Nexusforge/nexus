@@ -12,16 +12,16 @@ namespace Nexus.Filters
         public static string SharedCatalogID { get; } = "/IN_MEMORY/FILTERS/SHARED";
     }
 
-    public record FilterResource
+    public record FilterChannel
     {
         #region Constructors
 
-        public FilterResource()
+        public FilterChannel()
         {
             //
         }
 
-        public FilterResource(string catalogId, string resourceName, string group, string unit, string description)
+        public FilterChannel(string catalogId, string resourceName, string group, string unit, string description)
         {
             this.CatalogId = catalogId;
             this.ResourceName = resourceName;
@@ -47,7 +47,7 @@ namespace Nexus.Filters
     {
         #region Fields
 
-        private List<FilterResource> _filters;
+        private List<FilterChannel> _filters;
 
         #endregion
 
@@ -62,7 +62,7 @@ namespace Nexus.Filters
 
         #region Properties
 
-        public IReadOnlyList<FilterResource> Filters => _filters;
+        public IReadOnlyList<FilterChannel> Filters => _filters;
 
         #endregion
 
@@ -71,11 +71,11 @@ namespace Nexus.Filters
         public abstract void Filter(
             DateTime begin,
             DateTime end, 
-            FilterResource filterResource, 
+            FilterChannel filterChannel, 
             GetFilterData getData,
             Span<double> result);
 
-        protected abstract List<FilterResource> GetFilters();
+        protected abstract List<FilterChannel> GetFilters();
 
         #endregion
     }

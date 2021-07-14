@@ -26,7 +26,7 @@ class PythonDataSource(IDataSource):
         if (context.resource_locator.scheme != "file"):
             raise Exception(f"Expected 'file' URI scheme, but got '{self.resource_locator.scheme}'.")
 
-        context.logger.Log(LogLevel.Information, "Logging works!")
+        context.logger.log(LogLevel.Information, "Logging works!")
 
     async def get_catalogs_async(self):
 
