@@ -8,7 +8,7 @@
 
   <PropertyGroup Condition="'$(IsLinux)'=='true'">
     <DefineConstants>LINUX</DefineConstants>
-  </PropertyGroup>
+  </PropertyGroup> 
 
   <ItemGroup>
     <PackageReference Include="Appveyor.TestLogger" Version="2.0.0" />
@@ -28,6 +28,9 @@
 
   <ItemGroup>
     <None Update="BashRpcDataSource.sh">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="catalogs.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="FILTERDATA\filters.json">

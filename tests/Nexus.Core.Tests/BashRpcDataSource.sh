@@ -67,78 +67,8 @@ listen() {
             response='{ "jsonrpc": "2.0", "id": '$id', "result": null }'
 
         elif [ "$method" = "getCatalogsAsync" ]; then
-
-            IFS='' read -r -d '' response <<EOF || true
-{
-   "jsonrpc":"2.0",
-   "id":$id,
-   "result":{
-      "Catalogs":[
-         {
-            "Id":"/A/B/C",
-            "Metadata":{
-               "a":"b"
-            },
-            "Resources":[
-               {
-                  "Id":"f77d8b65-2241-30eb-af6e-e7c050dcdabd",
-                  "Name":"resource1",
-                  "Group":"group1",
-                  "Unit":"°C",
-                  "Metadata":{
-                     "c":"d"
-                  },
-                  "Representations":[
-                     {
-                        "Id":"1 Hz_mean",
-                        "DataType":"INT64"
-                     }
-                  ]
-               },
-               {
-                  "Id":"0e1d5180-4a99-3b82-8a79-28c91eea4bc6",
-                  "Name":"resource2",
-                  "Group":"group2",
-                  "Unit":"bar",
-                  "Metadata":{
-                     
-                  },
-                  "Representations":[
-                     {
-                        "Id":"1 Hz_mean",
-                        "DataType":"FLOAT64"
-                     }
-                  ]
-               }
-            ]
-         },
-         {
-            "Id":"/D/E/F",
-            "Metadata":{
-               
-            },
-            "Resources":[
-               {
-                  "Id":"3f06badd-00db-378a-9cc4-323d8d5565fc",
-                  "Name":"resource1",
-                  "Group":"group1",
-                  "Unit":"m/s",
-                  "Metadata":{
-                     
-                  },
-                  "Representations":[
-                     {
-                        "Id":"1 Hz_mean",
-                        "DataType":"FLOAT32"
-                     }
-                  ]
-               }
-            ]
-         }
-      ]
-   }
-}
-EOF
+            catalogs=$(<catalogs.json)
+            response='{ "jsonrpc": "2.0", "id": '$id', "result": '"$catalogs"' }'
 
         elif [ "$method" = "getTimeRangeAsync" ]; then
             response='{ "jsonrpc": "2.0", "id": '$id', "result": { "Begin": "2019-12-31T12:00:00Z", "End": "2020-01-02T09:50:00Z" } }'
