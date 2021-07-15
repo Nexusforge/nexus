@@ -4,7 +4,6 @@ using Nexus.Utilities;
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.IO.Pipelines;
 using System.Linq;
@@ -43,13 +42,21 @@ namespace Nexus.Extensibility
 
         #region Methods
 
-        public async Task InitializeAsync(DataSourceContext context, CancellationToken cancellationToken)
+        public async Task InitializeAsync(ResourceCatalog[]? catalogs, CancellationToken cancellationToken)
         {
+            var context = new DataSourceContext()
+            {
+                ResourceLocator = this.BackendSource.ResourceLocator,
+                Configuration = this.BackendSource.Configuration,
+                Logger = this.Logger,
+                Catalogs = catalogs
+            };
+
             await this.DataSource.SetContextAsync(context, cancellationToken);
 
-            if (context.Catalogs is null)
+            if (catalogs is null)
             {
-                var catalogs = await this.DataSource.GetCatalogsAsync(cancellationToken);
+                catalogs = await this.DataSource.GetCatalogsAsync(cancellationToken);
 
                 catalogs = catalogs
                     .Where(catalog => NexusCoreUtilities.CheckCatalogNamingConvention(catalog.Id, out var _))
@@ -77,8 +84,12 @@ namespace Nexus.Extensibility
         public DataSourceDoubleStream ReadAsStream(
             DateTime begin,
             DateTime end,
+            uint chunkSize,
             CatalogItem catalogItem)
         {
+            // DataSourceDoubleStream is only required to enable the browser to determine the download progress.
+            // Otherwise the PipeReader.AsStream() would be sufficient.
+
             var samplePeriod = catalogItem.Representation.GetSamplePeriod();
             var elementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, samplePeriod);
             var totalLength = elementCount * NexusCoreUtilities.SizeOf(NexusDataType.FLOAT64);
@@ -87,7 +98,7 @@ namespace Nexus.Extensibility
             _ = this.ReadSingleAsync(
                 begin,
                 end,
-                chunkSize: 1 * 1000 * 1000,
+                chunkSize: chunkSize,
                 catalogItem,
                 pipe.Writer,
                 statusWriter: default,
@@ -115,7 +126,7 @@ namespace Nexus.Extensibility
             var samplePeriod = catalogItem.Representation.GetSamplePeriod();
             DataSourceController.ValidateParameters(begin, end, samplePeriod);
 
-            var readingGroup = new DataReadingGroup(this, new List<CatalogItemPipeWriter>() 
+            var readingGroup = new DataReadingGroup(this, new CatalogItemPipeWriter[] 
             { 
                 new CatalogItemPipeWriter(catalogItem, dataWriter, statusWriter) 
             });
@@ -125,7 +136,7 @@ namespace Nexus.Extensibility
                 end, 
                 samplePeriod,
                 chunkSize,
-                new List<DataReadingGroup>() { readingGroup },
+                new DataReadingGroup[] { readingGroup },
                 progress,
                 cancellationToken);
         }
@@ -205,10 +216,10 @@ namespace Nexus.Extensibility
             DateTime begin, 
             DateTime end,
             TimeSpan samplePeriod,
-            List<CatalogItemPipeWriter> catalogItemPipeWriters,
+            CatalogItemPipeWriter[] catalogItemPipeWriters,
             CancellationToken cancellationToken)
         {
-            var count = catalogItemPipeWriters.Count;
+            var count = catalogItemPipeWriters.Length;
             var elementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, samplePeriod);
 
             var requests = catalogItemPipeWriters.Select(catalogItemPipeWriter =>
@@ -225,12 +236,12 @@ namespace Nexus.Extensibility
 
                     /* data memory */
                     using var dataOwner = MemoryPool<byte>.Shared.Rent(dataLength);
-                    var dataMemory = dataOwner.Memory.Slice(dataLength);
+                    var dataMemory = dataOwner.Memory.Slice(0, dataLength);
                     dataMemory.Span.Clear();
 
                     /* status memory */
                     using var statusOwner = MemoryPool<byte>.Shared.Rent(elementCount);
-                    var statusMemory = statusOwner.Memory.Slice(elementCount);
+                    var statusMemory = statusOwner.Memory.Slice(0, elementCount);
                     statusMemory.Span.Clear();
 
                     /* get data */
@@ -325,7 +336,7 @@ namespace Nexus.Extensibility
             DateTime end,
             TimeSpan samplePeriod,
             uint chunkSize,
-            List<DataReadingGroup> readingGroups,
+            DataReadingGroup[] readingGroups,
             IProgress<double>? progress,
             CancellationToken cancellationToken)
         {
@@ -397,7 +408,7 @@ namespace Nexus.Extensibility
                 {
                     var (controller, catalogItemPipeWriters) = readingGroup;
                     var currentBegin = begin + consumedPeriod;
-                    var currentEnd = begin + currentPeriod;
+                    var currentEnd = currentBegin + currentPeriod;
 
                     try
                     {

@@ -1,5 +1,4 @@
 ﻿using Nexus.DataModel;
-using System.Collections.Generic;
 using System.IO.Pipelines;
 
 namespace Nexus.Extensibility
@@ -11,5 +10,5 @@ namespace Nexus.Extensibility
 
     public record DataReadingGroup(
         DataSourceController Controller,
-        List<CatalogItemPipeWriter> CatalogItemPipeWriters);
+        CatalogItemPipeWriter[] CatalogItemPipeWriters);
 }

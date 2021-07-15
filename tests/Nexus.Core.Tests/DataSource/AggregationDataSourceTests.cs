@@ -118,7 +118,7 @@ namespace Nexus.Core.Tests
 
             var result = new ReadRequest(catalogItem, data, status);
             await dataSource.ReadAsync(begin, end, new ReadRequest[] { result }, new Progress<double>(), CancellationToken.None);
-            var doubleData = data.Cast<double>();
+            var doubleData = data.Cast<byte, double>();
 
             // assert
             var samplesPerDay = 86400 * 100;

@@ -5,16 +5,18 @@ namespace Nexus
 {
     public static class CustomExtensions
     {
-        public static Memory<T> Cast<T>(this Memory<byte> buffer)
-            where T : unmanaged
+        public static Memory<To> Cast<TFrom, To>(this Memory<TFrom> buffer)
+            where TFrom : unmanaged
+            where To : unmanaged
         {
-            return new CastMemoryManager<byte, T>(buffer).Memory;
+            return new CastMemoryManager<TFrom, To>(buffer).Memory;
         }
 
-        public static Memory<T> Cast<T>(this ReadOnlyMemory<byte> buffer)
-            where T : unmanaged
+        public static Memory<To> Cast<TFrom, To>(this ReadOnlyMemory<TFrom> buffer)
+            where TFrom : unmanaged
+            where To : unmanaged
         {
-            return new ReadonlyCastMemoryManager<byte, T>(buffer).Memory;
+            return new ReadonlyCastMemoryManager<TFrom, To>(buffer).Memory;
         }
 
         public static string ToISO8601(this DateTime dateTime)

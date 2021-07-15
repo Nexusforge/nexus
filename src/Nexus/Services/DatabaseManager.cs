@@ -379,15 +379,7 @@ namespace Nexus.Services
             // initialize
             _ = backendSourceToCatalogsMap.TryGetValue(backendSource, out var catalogs);
 
-            var context = new DataSourceContext()
-            {
-                ResourceLocator = backendSource.ResourceLocator,
-                Configuration = backendSource.Configuration,
-                Logger = logger,
-                Catalogs = catalogs
-            };
-
-            await controller.InitializeAsync(context, cancellationToken);
+            await controller.InitializeAsync(catalogs, cancellationToken);
             backendSourceToCatalogsMap[backendSource] = controller.Catalogs;
 
             return controller;

@@ -21,7 +21,7 @@ namespace Nexus.Utilities
         private static void InternalApplyRepresentationStatusByDataType<T>(Memory<byte> data, Memory<byte> status, Memory<double> target)
             where T : unmanaged
         {
-            BufferUtilities.ApplyRepresentationStatus<T>(data.Cast<T>(), status, target);
+            BufferUtilities.ApplyRepresentationStatus<T>(data.Cast<byte, T>(), status, target);
         }
 
         public static unsafe void ApplyRepresentationStatus<T>(ReadOnlyMemory<T> data, ReadOnlyMemory<byte> status, Memory<double> target) where T : unmanaged

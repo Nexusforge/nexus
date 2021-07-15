@@ -133,7 +133,7 @@ namespace Nexus.Extensibility
                     break;
 
                 /* write */
-                var elementCount = readResults.Min(readResult => readResult.Buffer.First.Cast<double>().Length);
+                var elementCount = readResults.Min(readResult => readResult.Buffer.First.Cast<byte, double>().Length);
 
                 if (elementCount == 0)
                     throw new ValidationException("The pipe is empty.");
@@ -149,7 +149,7 @@ namespace Nexus.Extensibility
 
                     return new WriteRequest(
                         catalogItemPipeReader.CatalogItem, 
-                        readResult.Buffer.First.Cast<double>().Slice(elementCount));
+                        readResult.Buffer.First.Cast<byte, double>().Slice(elementCount));
                 });
 
                 var groupedRequests = requests

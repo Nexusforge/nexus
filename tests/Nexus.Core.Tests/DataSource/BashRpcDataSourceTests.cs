@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using Moq;
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Extensions;
@@ -187,7 +186,7 @@ namespace Nexus.Core.Tests
 
             var request = new ReadRequest(catalogItem, data, status);
             await dataSource.ReadAsync(begin, end, new ReadRequest[] { request }, new Progress<double>(), CancellationToken.None);
-            var longData = data.Cast<long>();
+            var longData = data.Cast<byte, long>();
 
             Assert.True(expectedData.SequenceEqual(longData.ToArray()));
             Assert.True(expectedStatus.SequenceEqual(status.ToArray()));

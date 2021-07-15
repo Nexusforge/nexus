@@ -125,7 +125,7 @@ namespace Nexus.Core.Tests
 
             var request = new ReadRequest(catalogItem, data, status);
             await dataSource.ReadAsync(begin, end, new[] { request }, new Progress<double>(), CancellationToken.None);
-            var doubleData = data.Cast<double>();
+            var doubleData = data.Cast<byte, double>();
 
             Assert.Equal(-0.059998, doubleData.Span[0], precision: 6);
             Assert.Equal(0.427089, doubleData.Span[29], precision: 6);

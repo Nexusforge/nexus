@@ -136,7 +136,7 @@ namespace Nexus.Core.Tests
                 {
                     var (resourcePath, data, status) = requests[0];
 
-                    var doubleData = data.Cast<double>();
+                    var doubleData = data.Cast<byte, double>();
                     doubleData.Span[0] = 2;
                     doubleData.Span[1] = 1;
                     doubleData.Span[2] = 99.99;
@@ -176,7 +176,7 @@ namespace Nexus.Core.Tests
 
             var request = new ReadRequest(catalogItem, data, status);
             await dataSource.ReadAsync(begin, end, new[] { request }, new Progress<double>(), CancellationToken.None);
-            var doubleData = data.Cast<double>();
+            var doubleData = data.Cast<byte, double>();
 
             Assert.Equal(Math.Pow(2, 2), doubleData.Span[0]);
             Assert.Equal(double.NaN, doubleData.Span[1]);
