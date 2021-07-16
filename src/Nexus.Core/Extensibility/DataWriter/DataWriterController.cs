@@ -78,17 +78,10 @@ namespace Nexus.Extensibility
                 progress.Report(baseProgress + relativeProgress);
             };
 
-            /* misc */
+            /* catalog items */
             var catalogItems = catalogItemPipeReaders
                 .Select(catalogItemPipeReader => catalogItemPipeReader.CatalogItem)
                 .ToArray();
-
-#warning Pass license also!
-
-            var groupedCatalogItems = catalogItems
-                        .GroupBy(catalogItem => catalogItem.Catalog)
-                        .Select(group => new CatalogItemGroup(group.Key, "", group.ToArray()))
-                        .ToArray();
 
             /* go */
             while (true)
@@ -116,7 +109,7 @@ namespace Nexus.Extensibility
                     await this.DataWriter.OpenAsync(
                         fileBegin, 
                         samplePeriod,
-                        groupedCatalogItems,
+                        catalogItems,
                         cancellationToken);
 
                     _lastFileBegin = fileBegin;
@@ -150,17 +143,11 @@ namespace Nexus.Extensibility
                     return new WriteRequest(
                         catalogItemPipeReader.CatalogItem, 
                         readResult.Buffer.First.Cast<byte, double>().Slice(elementCount));
-                });
-
-                var groupedRequests = requests
-                    .GroupBy(writeRequest => writeRequest.CatalogItem.Catalog)
-                    .Select(group => new WriteRequestGroup(group.Key, group.ToArray()))
-                    .ToArray();
+                }).ToArray();
 
                 await this.DataWriter.WriteAsync(
                     fileOffset, 
-                    samplePeriod,
-                    groupedRequests, 
+                    requests, 
                     dataWriterProgress,
                     cancellationToken);
 

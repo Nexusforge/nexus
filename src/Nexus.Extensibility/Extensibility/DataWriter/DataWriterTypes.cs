@@ -12,15 +12,6 @@ namespace Nexus.Extensibility
         public ILogger Logger { get; init; }
     }
 
-    public record CatalogItemGroup(
-        ResourceCatalog Catalog,
-        string License, 
-        CatalogItem[] CatalogItems);
-
-    public record WriteRequestGroup(
-        ResourceCatalog Catalog,
-        WriteRequest[] Requests);
-
     public record WriteRequest(
         CatalogItem CatalogItem,
         ReadOnlyMemory<double> Data);

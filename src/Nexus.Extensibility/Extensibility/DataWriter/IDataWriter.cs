@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Nexus.DataModel;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,13 +14,12 @@ namespace Nexus.Extensibility
         Task OpenAsync(
             DateTime fileBegin, 
             TimeSpan samplePeriod,
-            CatalogItemGroup[] catalogItemGroups, 
+            CatalogItem[] catalogItems, 
             CancellationToken cancellationToken);
 
         Task WriteAsync(
             TimeSpan fileOffset,
-            TimeSpan samplePeriod,
-            WriteRequestGroup[] requestGroups,
+            WriteRequest[] requests,
             Progress<double> progress,
             CancellationToken cancellationToken);
 

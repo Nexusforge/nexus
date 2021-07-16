@@ -7,25 +7,23 @@ namespace Nexus.Core.Tests
 {
     public class DataWriterFixture : IDisposable
     {
+        List<string> _targetFolders = new List<string>();
+
         public DataWriterFixture()
         {
-            this.TargetFolder = Path.Combine(Path.GetTempPath(), $"Nexus.Tests.{Guid.NewGuid()}");
-            Directory.CreateDirectory(this.TargetFolder);
-
-            // representations
-            var representations = new List<Representation>()
+            // catalog 1
+            var representations1 = new List<Representation>()
             {
                 new Representation() { Id = "1 Hz_mean", DataType = NexusDataType.FLOAT32 },
                 new Representation() { Id = "1 Hz_max", DataType = NexusDataType.FLOAT64 },
             };
 
-            // resource
-            var resourceMetadata = new Dictionary<string, string>()
+            var resourceMetadata1 = new Dictionary<string, string>()
             {
                 ["my-custom-parameter3"] = "my-custom-value3"
             };
 
-            var resources = new List<Resource>()
+            var resources1 = new List<Resource>()
             {
                 new Resource()
                 {
@@ -33,37 +31,76 @@ namespace Nexus.Core.Tests
                     Name = "resource1",
                     Group = "group1",
                     Unit = "°C",
-                    Metadata = resourceMetadata,
-                    Representations = representations
+                    Metadata = resourceMetadata1,
+                    Representations = representations1
                 }
             };
 
-            // catalog
-            var catalog = new ResourceCatalog()
+            var catalog1 = new ResourceCatalog()
             {
                 Id = "/A/B/C",
-                Resources = resources
+                Resources = resources1
             };
 
-            catalog.Metadata["my-custom-parameter1"] = "my-custom-value1";
-            catalog.Metadata["my-custom-parameter2"] = "my-custom-value2";
+            catalog1.Metadata["my-custom-parameter1"] = "my-custom-value1";
+            catalog1.Metadata["my-custom-parameter2"] = "my-custom-value2";
 
-            this.Catalog = catalog;
+            // catalog 2
+
+
+            // catalog 2
+            var representations2 = new List<Representation>()
+            {
+                new Representation() { Id = "1 Hz_std", DataType = NexusDataType.INT64 },
+            };
+
+            var resources2 = new List<Resource>()
+            {
+                new Resource()
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "resource3",
+                    Group = "group2",
+                    Unit = "m/s",
+                    Representations = representations2
+                }
+            };
+
+            var catalog2 = new ResourceCatalog()
+            {
+                Id = "/D/E/F",
+                Resources = resources2
+            };
+
+            catalog2.Metadata["my-custom-parameter3"] = "my-custom-value3";
+
+            this.Catalogs = new[] { catalog1, catalog2 };
         }
 
-        public string TargetFolder { get; }
 
-        public ResourceCatalog Catalog { get; }
+        public ResourceCatalog[] Catalogs { get; }
+
+        public string GetTargetFolder()
+        {
+            var targetFolder = Path.Combine(Path.GetTempPath(), $"Nexus.Tests.{Guid.NewGuid()}");
+            Directory.CreateDirectory(targetFolder);
+
+            _targetFolders.Add(targetFolder);
+            return targetFolder;
+        }
 
         public void Dispose()
         {
-            try
+            foreach (var targetFolder in _targetFolders)
             {
-                Directory.Delete(this.TargetFolder, true);
-            }
-            catch
-            {
-                //
+                try
+                {
+                    Directory.Delete(targetFolder, true);
+                }
+                catch
+                {
+                    //
+                }
             }
         }       
     }

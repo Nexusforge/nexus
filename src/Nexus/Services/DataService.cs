@@ -247,6 +247,8 @@ namespace Nexus.Services
                     throw new NotImplementedException();
             }
 
+#error Provide licenses as extra markdown file placed in ZIP!
+
             if (!string.IsNullOrWhiteSpace(sparseCatalog.License.FileMessage))
                 customMetadataEntrySet.Add(new CustomMetadataEntry("license", sparseCatalog.License.FileMessage, CustomMetadataEntryLevel.Catalog));
 
