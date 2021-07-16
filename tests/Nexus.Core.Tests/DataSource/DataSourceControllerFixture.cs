@@ -11,16 +11,18 @@ namespace Nexus.Core.Tests
         {
             var dataSource = new InMemoryDataSource();
 
-            var backendSource = new BackendSource()
+            this.BackendSource = new BackendSource()
             {
                 Type = "Nexus.InMemory",
                 ResourceLocator = new Uri("memory://localhost")
             };
 
-            this.Controller = new DataSourceController(dataSource, backendSource, NullLogger.Instance);
+            this.Controller = new DataSourceController(dataSource, this.BackendSource, NullLogger.Instance);
         }
 
         public DataSourceController Controller { get; }
+
+        public BackendSource BackendSource { get; }
 
         public void Dispose()
         {

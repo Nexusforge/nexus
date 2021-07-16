@@ -71,7 +71,7 @@ namespace Nexus.Core.Tests
             _ => throw new Exception("Unsupported granularity value."),
             };
 
-            Assert.Equal(controller.BackendSource, actual.BackendSource);
+            Assert.Equal(_fixture.BackendSource, actual.BackendSource);
             Assert.True(expectedData.SequenceEqual(new SortedDictionary<DateTime, double>(actual.Data)));
         }
 
@@ -84,7 +84,7 @@ namespace Nexus.Core.Tests
             var catalogId = controller.Catalogs.First().Id;
             var actual = await controller.GetTimeRangeAsync(catalogId, CancellationToken.None);
 
-            Assert.Equal(controller.BackendSource, actual.BackendSource);
+            Assert.Equal(_fixture.BackendSource, actual.BackendSource);
             Assert.Equal(DateTime.MinValue, actual.Begin);
             Assert.Equal(DateTime.MaxValue, actual.End);
         }

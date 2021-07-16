@@ -21,9 +21,10 @@ namespace Nexus.Extensibility
 
         #region Constructors
 
-        public DataWriterController(IDataWriter dataWriter, ILogger logger)
+        public DataWriterController(IDataWriter dataWriter, BackendSource backendSource, ILogger logger)
         {
             this.DataWriter = dataWriter;
+            this.BackendSource = backendSource;
             this.Logger = logger;
         }
 
@@ -33,19 +34,33 @@ namespace Nexus.Extensibility
 
         private IDataWriter DataWriter { get; }
 
+        private BackendSource BackendSource { get; }
+
         private ILogger Logger { get; }
 
         #endregion
 
         #region Methods
 
+        public async Task InitializeAsync(CancellationToken cancellationToken)
+        {
+            var context = new DataWriterContext()
+            {
+                ResourceLocator = this.BackendSource.ResourceLocator,
+                Configuration = this.BackendSource.Configuration,
+                Logger = this.Logger
+            };
+
+            await this.DataWriter.SetContextAsync(context, cancellationToken);
+        }
+
         public async Task WriteAsync(
             DateTime begin,
             DateTime end,
             TimeSpan samplePeriod,
             TimeSpan filePeriod,
-            List<CatalogItemPipeReader> catalogItemPipeReaders,
-            IProgress<double> progress,
+            CatalogItemPipeReader[] catalogItemPipeReaders,
+            IProgress<double>? progress,
             CancellationToken cancellationToken)
         {
             /* validation */
@@ -75,7 +90,7 @@ namespace Nexus.Extensibility
                 var relativeProgressFactor = currentPeriod.Ticks / (double)totalPeriod.Ticks;
                 var relativeProgress = progressValue * relativeProgressFactor;
 
-                progress.Report(baseProgress + relativeProgress);
+                progress?.Report(baseProgress + relativeProgress);
             };
 
             /* catalog items */
@@ -158,7 +173,7 @@ namespace Nexus.Extensibility
                 }
 
                 consumedPeriod += currentPeriod;
-                progress.Report(consumedPeriod.Ticks / (double)totalPeriod.Ticks);
+                progress?.Report(consumedPeriod.Ticks / (double)totalPeriod.Ticks);
             }
 
             /* close */

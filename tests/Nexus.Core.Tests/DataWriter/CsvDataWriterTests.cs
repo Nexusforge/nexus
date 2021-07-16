@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Extensions;
@@ -11,26 +11,23 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Nexus.Core.Tests
 {
     public class CsvDataWriterTests : IClassFixture<DataWriterFixture>
     {
         private DataWriterFixture _fixture;
-        private ILogger _logger;
 
-        public CsvDataWriterTests(DataWriterFixture fixture, ITestOutputHelper xunitLogger)
+        public CsvDataWriterTests(DataWriterFixture fixture)
         {
             _fixture = fixture;
-            _logger = new XunitLoggerProvider(xunitLogger).CreateLogger(nameof(InMemoryDataSourceTests));
         }
 
         [Theory]
         [InlineData("Index")]
         [InlineData("Unix")]
         [InlineData("Excel")]
-        public async Task CanWrite(string rowIndexFormat)
+        public async Task CanWriteFiles(string rowIndexFormat)
         {
             var targetFolder = _fixture.GetTargetFolder();
             var dataWriter = new CsvDataWriter() as IDataWriter;
@@ -38,7 +35,7 @@ namespace Nexus.Core.Tests
             var context = new DataWriterContext()
             {
                 ResourceLocator = new Uri(targetFolder),
-                Logger = _logger,
+                Logger = NullLogger.Instance,
                 Configuration = new Dictionary<string, string>()
                 {
                     ["RowIndexFormat"] = rowIndexFormat,

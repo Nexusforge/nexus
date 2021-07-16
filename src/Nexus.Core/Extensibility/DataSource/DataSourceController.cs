@@ -28,11 +28,11 @@ namespace Nexus.Extensibility
 
         #region Properties
 
-        public IDataSource DataSource { get; }
-
         public ResourceCatalog[] Catalogs { get; private set; }
 
-        internal BackendSource BackendSource { get; }
+        internal IDataSource DataSource { get; }
+
+        private BackendSource BackendSource { get; }
 
         private Progress<double> Progress { get; }
 
