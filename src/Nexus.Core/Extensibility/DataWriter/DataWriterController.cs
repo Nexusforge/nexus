@@ -3,6 +3,7 @@ using Nexus.Utilities;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,12 +14,6 @@ namespace Nexus.Extensibility
 
     public class DataWriterController
     {
-        #region Fields
-
-        private DateTime _lastFileBegin;
-
-        #endregion
-
         #region Constructors
 
         public DataWriterController(IDataWriter dataWriter, BackendSource backendSource, ILogger logger)
@@ -64,9 +59,9 @@ namespace Nexus.Extensibility
             CancellationToken cancellationToken)
         {
             /* validation */
-            foreach (var catalogItemPipeWriters in catalogItemPipeReaders)
+            foreach (var catalogItemPipeReader in catalogItemPipeReaders)
             {
-                if (catalogItemPipeWriters.CatalogItem.Representation.GetSamplePeriod() != samplePeriod)
+                if (catalogItemPipeReader.CatalogItem.Representation.GetSamplePeriod() != samplePeriod)
                     throw new ValidationException("All representations must be of the same sample period.");
             }
 
@@ -99,82 +94,101 @@ namespace Nexus.Extensibility
                 .ToArray();
 
             /* go */
-            while (true)
+            var lastFileBegin = default(DateTime);
+
+            await NexusCoreUtilities.FileLoopAsync(begin, end, filePeriod,
+                async (fileBegin, fileOffset, duration) =>
             {
+                /* Concept: It never happens that the data of a read operation is spreaded over 
+                 * multiple buffers. However, it may happen that the data of multiple read 
+                 * operations are copied into a single buffer (important to ensure that multiple 
+                 * bytes of a single value are always copied together). When the first buffer
+                 * is (partially) read, call the "PipeReader.Advance" function to tell the pipe
+                 * the number of bytes we have consumed. This way we slice our way through 
+                 * the buffers so it is OK to only ever read the first buffer of a read result.
+                 */
+
                 cancellationToken.ThrowIfCancellationRequested();
 
-                /* pre-calculations */
-                var currentBegin = begin + consumedPeriod;
-
-                DateTime fileBegin;
-
-                if (filePeriod == TimeSpan.Zero)
-                    fileBegin = _lastFileBegin != DateTime.MinValue ? _lastFileBegin : begin;
-
-                else
-                    fileBegin = currentBegin.RoundDown(filePeriod);
-
-                if (fileBegin != _lastFileBegin)
+                /* close / open */
+                if (fileBegin != lastFileBegin)
                 {
                     /* close */
-                    if (_lastFileBegin != DateTime.MinValue)
+                    if (lastFileBegin != default)
                         await this.DataWriter.CloseAsync(cancellationToken);
 
                     /* open */
                     await this.DataWriter.OpenAsync(
-                        fileBegin, 
+                        fileBegin,
                         samplePeriod,
                         catalogItems,
                         cancellationToken);
-
-                    _lastFileBegin = fileBegin;
                 }
 
-                /* read */
-                var readResultTasks = catalogItemPipeReaders
-                    .Select(catalogItemPipeReader => catalogItemPipeReader.DataReader.ReadAsync(cancellationToken))
-                    .ToArray();
+                /* loop */
+                var consumedPeriod = TimeSpan.Zero;
+                var remainingPeriod = duration;
 
-                var readResults = await NexusCoreUtilities.WhenAll(readResultTasks).ConfigureAwait(false);
-
-                if (readResults.Any(readResult => readResult.IsCompleted))
-                    break;
-
-                /* write */
-                var elementCount = readResults.Min(readResult => readResult.Buffer.First.Cast<byte, double>().Length);
-
-                if (elementCount == 0)
-                    throw new ValidationException("The pipe is empty.");
-
-                var fileOffset = currentBegin - fileBegin;
-                var remainingFilePeriod = filePeriod - fileOffset;
-                var bufferPeriod = samplePeriod * elementCount;
-                currentPeriod = new TimeSpan(Math.Min(remainingFilePeriod.Ticks, bufferPeriod.Ticks));
-
-                var requests = catalogItemPipeReaders.Zip(readResults).Select(zipped =>
+                while (remainingPeriod > TimeSpan.Zero)
                 {
-                    var (catalogItemPipeReader, readResult) = zipped;
+                    /* read */
+                    var readResultTasks = catalogItemPipeReaders
+                        .Select(catalogItemPipeReader => catalogItemPipeReader.DataReader.ReadAsync(cancellationToken))
+                        .ToArray();
 
-                    return new WriteRequest(
-                        catalogItemPipeReader.CatalogItem, 
-                        readResult.Buffer.First.Cast<byte, double>().Slice(elementCount));
-                }).ToArray();
+                    var readResults = await NexusCoreUtilities.WhenAll(readResultTasks).ConfigureAwait(false);
+                    var bufferPeriod = readResults.Min(readResult => readResult.Buffer.First.Cast<byte, double>().Length) * samplePeriod;
 
-                await this.DataWriter.WriteAsync(
-                    fileOffset, 
-                    requests, 
-                    dataWriterProgress,
-                    cancellationToken);
+                    if (bufferPeriod == default)
+                        throw new ValidationException("The pipe is empty.");
 
-                /* advance */
-                foreach (var ((_, dataReader), readResult) in catalogItemPipeReaders.Zip(readResults))
-                {
-                    dataReader.AdvanceTo(readResult.Buffer.GetPosition(elementCount * sizeof(double)));
+                    /* write */
+                    var currentPeriod = new TimeSpan(Math.Min(remainingPeriod.Ticks, bufferPeriod.Ticks));
+                    var currentLength = (int)(currentPeriod.Ticks / samplePeriod.Ticks);
+
+
+#error Fix test.
+                    Debug.WriteLine($"First Buffer size is {readResults[0].Buffer.First.Length}");
+                    Debug.WriteLine($"Buffer size is {readResults[0].Buffer.Length}");
+
+                    var doublebla = readResults[0].Buffer.First.Cast<byte, double>();
+                    for (int i = 0; i < doublebla.Length; i++)
+                    {
+                        Debug.WriteLine($"Content is {doublebla.Span[i]}");
+                    }
+
+                    Debug.WriteLine($"Taking {currentLength} values");
+
+                    var requests = catalogItemPipeReaders.Zip(readResults).Select(zipped =>
+                    {
+                        var (catalogItemPipeReader, readResult) = zipped;
+
+                        var writeRequest = new WriteRequest(
+                            catalogItemPipeReader.CatalogItem,
+                            readResult.Buffer.First.Cast<byte, double>().Slice(0, currentLength));
+
+                        return writeRequest;
+                    }).ToArray();
+
+                    await this.DataWriter.WriteAsync(
+                        fileOffset + consumedPeriod,
+                        requests,
+                        dataWriterProgress,
+                        cancellationToken);
+
+                    /* advance */
+                    foreach (var ((_, dataReader), readResult) in catalogItemPipeReaders.Zip(readResults))
+                    {
+                        dataReader.AdvanceTo(readResult.Buffer.GetPosition(currentLength * sizeof(double)));
+                    }
+
+                    progress?.Report(consumedPeriod.Ticks / (double)totalPeriod.Ticks);
+
+                    /* update loop state */
+                    consumedPeriod += currentPeriod;
+                    remainingPeriod -= currentPeriod;
                 }
-
-                consumedPeriod += currentPeriod;
-                progress?.Report(consumedPeriod.Ticks / (double)totalPeriod.Ticks);
-            }
+            });
 
             /* close */
             await this.DataWriter.CloseAsync(cancellationToken);

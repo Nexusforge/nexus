@@ -255,7 +255,7 @@ namespace Nexus.Extensions
 
         public Task ReadAsync(DateTime begin, DateTime end, ReadRequest[] requests, IProgress<double> progress, CancellationToken cancellationToken)
         {
-            return Task.Run(() =>
+            return Task.Run(async () =>
             {
                 var counter = 0.0;
 
@@ -273,15 +273,19 @@ namespace Nexus.Extensions
                     // read data
                     var filePeriod = TimeSpan.FromDays(1);
                     var fileLength = (int)(filePeriod.Ticks / samplePeriod.Ticks);
+                    var bufferOffset = 0;
 
-                    this.Loop(begin, end, filePeriod, samplePeriod,
-                        (fileBegin, fileOffset, fileBlock, bufferOffset) =>
+                    await NexusCoreUtilities.FileLoopAsync(begin, end, filePeriod,
+                        (fileBegin, fileOffset, duration) =>
                     {
                         var filePath = Path.Combine(
                             catalogFolderPath,
                             fileBegin.ToString("yyyy-MM"),
                             fileBegin.ToString("dd"),
                             $"{resource.Id}_{representation.Id.Replace(" ", "_")}.nex");
+
+                        var fileElementOffset = (int)(fileOffset.Ticks / samplePeriod.Ticks);
+                        var elementCount = (int)(duration.Ticks / samplePeriod.Ticks);
 
                         if (File.Exists(filePath))
                         {
@@ -294,11 +298,11 @@ namespace Nexus.Extensions
                                 if (aggregationData.Length == fileLength * representation.ElementSize)
                                 {
                                     aggregationData
-                                        .Slice(fileOffset * representation.ElementSize, fileBlock * representation.ElementSize)
+                                        .Slice(fileElementOffset * representation.ElementSize, elementCount * representation.ElementSize)
                                         .CopyTo(data.Span.Slice(bufferOffset * representation.ElementSize));
 
                                     status.Span
-                                        .Slice(bufferOffset, fileBlock)
+                                        .Slice(bufferOffset, elementCount)
                                         .Fill(1);
                                 }
                             }
@@ -311,6 +315,10 @@ namespace Nexus.Extensions
                                 this.FileAccessManager?.Unregister(filePath);
                             }
                         }
+
+                        bufferOffset += elementCount;
+
+                        return Task.CompletedTask;
                     });             
 
                     progress.Report(++counter / requests.Length);
@@ -333,32 +341,6 @@ namespace Nexus.Extensions
             else
             {
                 return false;
-            }
-        }
-
-        private void Loop(DateTime begin, DateTime end, TimeSpan filePeriod, TimeSpan samplePeriod, Action<DateTime, int, int, int> action)
-        {
-            /* This could serve as a reference implementation for other (simple) data readers. */
-            var bufferOffset = 0;
-            var currentBegin = begin;
-            var remainingPeriod = end - begin;
-
-            while (remainingPeriod > TimeSpan.Zero)
-            {
-                var fileBegin = currentBegin.RoundDown(filePeriod);
-                var consumedFilePeriod = currentBegin - fileBegin;
-                var remainingFilePeriod = filePeriod - consumedFilePeriod;
-                var fileOffset = (int)(consumedFilePeriod.Ticks / samplePeriod.Ticks);
-
-                var currentPeriod = TimeSpan.FromTicks(Math.Min(remainingFilePeriod.Ticks, remainingPeriod.Ticks));
-                var fileBlock = (int)(currentPeriod.Ticks / samplePeriod.Ticks);
-
-                action.Invoke(fileBegin, fileOffset, fileBlock, bufferOffset);
-
-                // update loop state
-                bufferOffset += fileBlock;
-                currentBegin += currentPeriod;
-                remainingPeriod -= currentPeriod;
             }
         }
 

@@ -11,6 +11,39 @@ namespace Nexus.Utilities
 {
     internal static class NexusCoreUtilities
     {
+        public static async Task FileLoopAsync(
+            DateTime begin,
+            DateTime end,
+            TimeSpan filePeriod, Func<DateTime, TimeSpan, TimeSpan, Task> func)
+        {
+            var lastFileBegin = default(DateTime);
+            var currentBegin = begin;
+            var remainingPeriod = end - begin;
+
+            while (remainingPeriod > TimeSpan.Zero)
+            {
+                DateTime fileBegin;
+
+                if (filePeriod == TimeSpan.Zero)
+                    fileBegin = lastFileBegin != DateTime.MinValue ? lastFileBegin : begin;
+
+                else
+                    fileBegin = currentBegin.RoundDown(filePeriod);
+
+                lastFileBegin = fileBegin;
+
+                var fileOffset = currentBegin - fileBegin;
+                var remainingFilePeriod = filePeriod - fileOffset;
+                var duration = TimeSpan.FromTicks(Math.Min(remainingFilePeriod.Ticks, remainingPeriod.Ticks));
+
+                await func.Invoke(fileBegin, fileOffset, duration);
+
+                // update loop state
+                currentBegin += duration;
+                remainingPeriod -= duration;
+            }
+        }
+
         public static async ValueTask<T[]> WhenAll<T>(params ValueTask<T>[] tasks)
         {
             List<Exception>? exceptions = null;

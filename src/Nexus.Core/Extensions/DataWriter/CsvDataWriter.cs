@@ -138,7 +138,7 @@ namespace Nexus.Extensions
             });
         }
 
-        public Task WriteAsync(TimeSpan fileOffset, WriteRequest[] requests, Progress<double> progress, CancellationToken cancellationToken)
+        public Task WriteAsync(TimeSpan fileOffset, WriteRequest[] requests, IProgress<double> progress, CancellationToken cancellationToken)
         {
             return Task.Run(() =>
             {

@@ -50,6 +50,7 @@ namespace Nexus.DataModel
                     "us"    => TimeSpan.FromTicks(number * 1000 / 100),
                     "ms"    => TimeSpan.FromTicks(number * 1000 * 1000 / 100),
                     "s"     => TimeSpan.FromTicks(number * 1000 * 1000 * 1000 / 100),
+                    "min"   => TimeSpan.FromTicks(number *   60 * 1000 * 1000 * 1000 / 100),
                     _       => throw new Exception($"The unit '{unit}' is not supported.")
                 };
             }
