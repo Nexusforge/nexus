@@ -125,6 +125,8 @@ namespace Nexus.Extensibility
                         cancellationToken);
                 }
 
+                lastFileBegin = fileBegin;
+
                 /* loop */
                 var consumedPeriod = TimeSpan.Zero;
                 var remainingPeriod = duration;
@@ -145,19 +147,6 @@ namespace Nexus.Extensibility
                     /* write */
                     var currentPeriod = new TimeSpan(Math.Min(remainingPeriod.Ticks, bufferPeriod.Ticks));
                     var currentLength = (int)(currentPeriod.Ticks / samplePeriod.Ticks);
-
-
-#error Fix test.
-                    Debug.WriteLine($"First Buffer size is {readResults[0].Buffer.First.Length}");
-                    Debug.WriteLine($"Buffer size is {readResults[0].Buffer.Length}");
-
-                    var doublebla = readResults[0].Buffer.First.Cast<byte, double>();
-                    for (int i = 0; i < doublebla.Length; i++)
-                    {
-                        Debug.WriteLine($"Content is {doublebla.Span[i]}");
-                    }
-
-                    Debug.WriteLine($"Taking {currentLength} values");
 
                     var requests = catalogItemPipeReaders.Zip(readResults).Select(zipped =>
                     {

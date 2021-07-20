@@ -46,9 +46,6 @@ namespace Nexus.Core.Tests
             catalog1.Metadata["my-custom-parameter2"] = "my-custom-value2";
 
             // catalog 2
-
-
-            // catalog 2
             var representations2 = new List<Representation>()
             {
                 new Representation() { Id = "1 Hz_std", DataType = NexusDataType.INT64 },

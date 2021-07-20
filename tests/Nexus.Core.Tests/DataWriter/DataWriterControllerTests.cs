@@ -25,17 +25,7 @@ namespace Nexus.Core.Tests
         [Fact]
         public async Task CanWrite()
         {
-            var dataWriter = Mock.Of<IDataWriter>();
-
-            var backendSource = new BackendSource()
-            {
-                ResourceLocator = new Uri("file:///empty"),
-                Configuration = new Dictionary<string, string>()
-            };
-
-            var controller = new DataWriterController(dataWriter, backendSource, NullLogger.Instance);
-            await controller.InitializeAsync(CancellationToken.None);
-
+            // prepare write
             var begin = new DateTime(2020, 01, 01, 1, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 01, 3, 0, 0, DateTimeKind.Utc);
             var samplePeriod = TimeSpan.FromMinutes(10);
@@ -67,7 +57,22 @@ namespace Nexus.Core.Tests
                .Select(pipe => Enumerable.Range(0, (int)totalLength).Select(value => 0.0).ToArray())
                .ToArray();
 
-            // prepare mock
+            // mock IDataWriter
+            var dataWriter = Mock.Of<IDataWriter>();
+
+            var fileNo = -1;
+
+            Mock.Get(dataWriter)
+                .Setup(s => s.OpenAsync(
+                    It.IsAny<DateTime>(),
+                    It.IsAny<TimeSpan>(),
+                    It.IsAny<CatalogItem[]>(),
+                    It.IsAny<CancellationToken>()))
+                .Callback<DateTime, TimeSpan, CatalogItem[], CancellationToken>((_, _, _, _) =>
+                {
+                    fileNo++;
+                });
+
             Mock.Get(dataWriter)
                 .Setup(s => s.WriteAsync(
                     It.IsAny<TimeSpan>(),
@@ -77,17 +82,28 @@ namespace Nexus.Core.Tests
                 )
                 .Callback<TimeSpan, WriteRequest[], IProgress<double>, CancellationToken>((fileOffset, requests, progress, cancellationToken) =>
                 {
+                    var fileLength = (int)(filePeriod.Ticks / samplePeriod.Ticks);
                     var fileElementOffset = (int)(fileOffset.Ticks / samplePeriod.Ticks);
 
                     foreach (var ((catalogItem, source), target) in requests.Zip(actualDatasets))
                     {
-                        source.Span.CopyTo(target.AsSpan(fileElementOffset));
+                        source.Span.CopyTo(target.AsSpan(fileElementOffset + fileNo * fileLength));
                     }
                 })
                 .Returns(Task.CompletedTask);
 
-            // go
-            var chunk = 2;
+            // instantiate controller
+            var backendSource = new BackendSource()
+            {
+                ResourceLocator = new Uri("file:///empty"),
+                Configuration = new Dictionary<string, string>()
+            };
+
+            var controller = new DataWriterController(dataWriter, backendSource, NullLogger.Instance);
+            await controller.InitializeAsync(CancellationToken.None);
+
+            // read data
+            var chunkSize = 2;
 
             var reading = Task.Run(async () =>
             {
@@ -96,15 +112,16 @@ namespace Nexus.Core.Tests
 
                 while (remaining > 0)
                 {
-                    var currentChunk = (int)Math.Min(remaining, chunk);
+                    var currentChunk = (int)Math.Min(remaining, chunkSize);
 
                     foreach (var (pipe, dataset) in pipes.Zip(expectedDatasets))
                     {
-                        var buffer = dataset.AsMemory().Slice(offset, currentChunk).Cast<double, byte>();
-                        await pipe.Writer.WriteAsync(buffer);
-                        await pipe.Writer.FlushAsync();
+                        var buffer = dataset
+                            .AsMemory()
+                            .Slice(offset, currentChunk)
+                            .Cast<double, byte>();
 
-                        //pipe.Writer.Advance(buffer.Length); // only if using writer.GetMemory!!
+                        await pipe.Writer.WriteAsync(buffer);
                     }
 
                     remaining -= currentChunk;
@@ -117,8 +134,10 @@ namespace Nexus.Core.Tests
                 }
             });
 
+            // write data
             var writing = controller.WriteAsync(begin, end, samplePeriod, filePeriod, catalogItemPipeReaders, default, CancellationToken.None);
 
+            // wait for completion
             await Task.WhenAll(writing, reading);
 
             // assert
@@ -133,6 +152,11 @@ namespace Nexus.Core.Tests
             
             var begin4 = new DateTime(2020, 01, 01, 2, 30, 0, DateTimeKind.Utc);
             Mock.Get(dataWriter).Verify(dataWriter => dataWriter.OpenAsync(begin4, samplePeriod, catalogItems, default), Times.Once);
+
+            var begin5 = new DateTime(2020, 01, 01, 3, 00, 0, DateTimeKind.Utc);
+            Mock.Get(dataWriter).Verify(dataWriter => dataWriter.OpenAsync(begin5, samplePeriod, catalogItems, default), Times.Never);
+
+            Mock.Get(dataWriter).Verify(dataWriter => dataWriter.CloseAsync(default), Times.Exactly(4));
 
             foreach (var (expected, actual) in expectedDatasets.Zip(actualDatasets))
             {

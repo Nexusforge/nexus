@@ -64,8 +64,20 @@ namespace Nexus.Extensions
                     Arguments = _arguments,
                 };
 
+                psi.RedirectStandardError = true;
+
                 _process = new Process() { StartInfo = psi };
                 _process.Start();
+
+                _process.ErrorDataReceived += (sender, e) => 
+                {
+                    if (!string.IsNullOrWhiteSpace(e.Data))
+                    {
+                        _logger.LogWarning(e.Data);
+                    }
+                };
+
+                _process.BeginErrorReadLine();
 
                 // wait for clients to connect
                 await _connectSemaphore.WaitAsync(cancellationToken);
