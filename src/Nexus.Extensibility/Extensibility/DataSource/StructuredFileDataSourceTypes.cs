@@ -10,12 +10,6 @@ namespace Nexus.Extensibility
         public Dictionary<string, ConfigurationUnit[]> All { get; set; }
     }
 
-    public record SourceFileSuggestions()
-    {
-        public string CatalogId { get; init; }
-        public string[] SourceFiles { get; init; }
-    }
-
     public record ReadInfo(
         string FilePath,
         CatalogItem CatalogItem,

@@ -45,6 +45,15 @@ namespace Nexus.Extensibility
         // that file.
         //
         // (6) Only file URLs are supported
+        //
+        // ================================
+        // It is not uncommon to have measurement data files with varying channel list over
+        // time. This may be caused by updated logger configurations, etc. To support these
+        // scenarios, it is easy to ignore the "SourceFileSuggestions[]" that is passed to
+        // the GetConfigurationAsync() and use an own mechanism instead. The simplest solution
+        // for a data source implementation would be to maintain a list of files that contains
+        // one entry per file version, e.g. [".../fileV1.dat", ".../fileV2.dat" ] or
+        // [".../2020-01-01.dat", ".../2020-06-01.dat" ].
 
         #region Properties
 
@@ -65,7 +74,7 @@ namespace Nexus.Extensibility
             GetConfigurationAsync(CancellationToken cancellationToken);
 
         protected abstract Task<ResourceCatalog[]>
-            GetCatalogsAsync(SourceFileSuggestions[] suggestions, CancellationToken cancellationToken);
+            GetCatalogsAsync(CancellationToken cancellationToken);
 
         protected virtual Task<(DateTime Begin, DateTime End)> 
             GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
@@ -332,6 +341,21 @@ namespace Nexus.Extensibility
             return Task.FromResult((filePaths, fileBegin));
         }
 
+        protected bool TryGetFirstFile(ConfigurationUnit config, out string filePath)
+        {
+            filePath = StructuredFileDataSource
+                .GetCandidateFiles(
+                    this.Root,
+                    DateTime.MinValue,
+                    DateTime.MinValue,
+                    config,
+                    CancellationToken.None)
+                .Select(file => file.FilePath)
+                .FirstOrDefault();
+
+            return filePath is not null;
+        }
+
         #endregion
 
         #region Public API as seen by Nexus and unit tests
@@ -351,35 +375,7 @@ namespace Nexus.Extensibility
         {
             if (this.Context.Catalogs is null)
             {
-                var suggestions = this.Configuration.All
-                    .Select(entry =>
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-
-                        (var catalogId, var configurationUnits) = entry;
-
-                        var sourceFiles = configurationUnits
-                            .SelectMany(configurationUnit =>
-                            {
-                                return StructuredFileDataSource
-                                    .GetCandidateFiles(
-                                        this.Root,
-                                        DateTime.MinValue,
-                                        DateTime.MinValue,
-                                        configurationUnit,
-                                        cancellationToken)
-                                    .Select(file => file.FilePath);
-                            })
-                            .ToArray();
-
-                        return new SourceFileSuggestions()
-                        {
-                            CatalogId = catalogId,
-                            SourceFiles = sourceFiles
-                        };
-                    }).ToArray();
-
-                var catalogs = await this.GetCatalogsAsync(suggestions, cancellationToken);
+                var catalogs = await this.GetCatalogsAsync(cancellationToken);
 
                 this.Context = this.Context with
                 {

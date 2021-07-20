@@ -37,16 +37,10 @@ namespace Nexus.Extensibility.Tests
         #region Fields
 
         private bool _overrideFindFilePathsWithNoDateTime;
-        private Dictionary<string, CatalogDescription> _config;
 
         #endregion
 
         #region Constructors
-
-        public StructuredFileDataSourceTester()
-        {
-            //
-        }
 
         public StructuredFileDataSourceTester(
             bool overrideFindFilePathsWithNoDateTime = false)
@@ -57,6 +51,8 @@ namespace Nexus.Extensibility.Tests
         #endregion
 
         #region Properties
+
+        public Dictionary<string, CatalogDescription> Config { get; private set; }
 
         private DataSourceContext Context { get; set; }
 
@@ -73,12 +69,12 @@ namespace Nexus.Extensibility.Tests
             if (!File.Exists(configFilePath))
                 throw new Exception($"The configuration file does not exist on path '{configFilePath}'.");
 
-            _config = await DeserializeAsync<Dictionary<string, CatalogDescription>>(configFilePath);
+            this.Config = await DeserializeAsync<Dictionary<string, CatalogDescription>>(configFilePath);
         }
 
         protected override Task<Configuration> GetConfigurationAsync(CancellationToken cancellationToken)
         {
-            var all = _config.ToDictionary(
+            var all = this.Config.ToDictionary(
                 config => config.Key,
                 config => config.Value.Config.Values.Cast<ConfigurationUnit>().ToArray());
 
@@ -89,11 +85,11 @@ namespace Nexus.Extensibility.Tests
             });
         }
 
-        protected override Task<ResourceCatalog[]> GetCatalogsAsync(SourceFileSuggestions[] suggestions, CancellationToken cancellationToken)
+        protected override Task<ResourceCatalog[]> GetCatalogsAsync(CancellationToken cancellationToken)
         {
             if (this.Context.Catalogs is null)
             {
-                var catalog = new ResourceCatalog() { Id = suggestions.First().CatalogId };
+                var catalog = new ResourceCatalog() { Id = "/A/B/C" };
                 var resource = new Resource() { Id = Guid.NewGuid() };
                 var representation = new Representation() { Id = "1 Hz_mean", DataType = NexusDataType.INT64 };
 
