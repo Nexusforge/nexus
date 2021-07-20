@@ -52,6 +52,8 @@ namespace Nexus.Extensibility
 
         private DataSourceContext Context { get; set; }
 
+        private Configuration Configuration { get; set; }
+
         #endregion
 
         #region Protected API as seen by subclass
@@ -60,24 +62,22 @@ namespace Nexus.Extensibility
             SetContextAsync(DataSourceContext context, CancellationToken cancellationToken);
 
         protected abstract Task<Configuration>
-            GetConfigurationAsync(string catalogId, CancellationToken cancellationToken);
+            GetConfigurationAsync(CancellationToken cancellationToken);
 
         protected abstract Task<ResourceCatalog[]>
-            GetCatalogsAsync(CancellationToken cancellationToken);
+            GetCatalogsAsync(SourceFileSuggestions[] suggestions, CancellationToken cancellationToken);
 
         protected virtual Task<(DateTime Begin, DateTime End)> 
             GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
         {
-            return Task.Run(async () =>
+            return Task.Run(() =>
             {
                 var minDateTime = DateTime.MaxValue;
                 var maxDateTime = DateTime.MinValue;
 
                 if (Directory.Exists(this.Root))
                 {
-                    var configs = (await this.GetConfigurationAsync(catalogId, cancellationToken).ConfigureAwait(false)).All;
-
-                    foreach (var config in configs)
+                    foreach (var config in this.Configuration.All[catalogId])
                     {
                         cancellationToken.ThrowIfCancellationRequested();
 
@@ -133,8 +133,8 @@ namespace Nexus.Extensibility
                 if (!Directory.Exists(this.Root))
                     return 0;
 
-                var configurations = (await this.GetConfigurationAsync(catalogId, cancellationToken).ConfigureAwait(false)).All;
                 var summedAvailability = 0.0;
+                var configurations = this.Configuration.All[catalogId];
 
                 foreach (var config in configurations)
                 {
@@ -168,7 +168,7 @@ namespace Nexus.Extensibility
                     summedAvailability += actual / total;
                 }
 
-                return summedAvailability / configurations.Count;
+                return summedAvailability / configurations.Length;
             });
         }
 
@@ -183,8 +183,8 @@ namespace Nexus.Extensibility
         {
             var representation = catalogItem.Representation;
             var catalog = catalogItem.Catalog;
-            var config = (await this.GetConfigurationAsync(catalog.Id, cancellationToken).ConfigureAwait(false)).Single(catalogItem);
             var samplePeriod = representation.GetSamplePeriod();
+            var config = this.Configuration.Single(catalogItem);
             var fileLength = config.FilePeriod.Ticks / samplePeriod.Ticks;
 
             var bufferOffset = 0;
@@ -342,7 +342,8 @@ namespace Nexus.Extensibility
             this.Root = context.ResourceLocator.ToPath();
             this.Context = context;
 
-            await this.SetContextAsync(context, cancellationToken);
+            await this.SetContextAsync(context, cancellationToken).ConfigureAwait(false);
+            this.Configuration = await this.GetConfigurationAsync(cancellationToken).ConfigureAwait(false);
         }
 
         async Task<ResourceCatalog[]> 
@@ -350,9 +351,39 @@ namespace Nexus.Extensibility
         {
             if (this.Context.Catalogs is null)
             {
+                var suggestions = this.Configuration.All
+                    .Select(entry =>
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        (var catalogId, var configurationUnits) = entry;
+
+                        var sourceFiles = configurationUnits
+                            .SelectMany(configurationUnit =>
+                            {
+                                return StructuredFileDataSource
+                                    .GetCandidateFiles(
+                                        this.Root,
+                                        DateTime.MinValue,
+                                        DateTime.MinValue,
+                                        configurationUnit,
+                                        cancellationToken)
+                                    .Select(file => file.FilePath);
+                            })
+                            .ToArray();
+
+                        return new SourceFileSuggestions()
+                        {
+                            CatalogId = catalogId,
+                            SourceFiles = sourceFiles
+                        };
+                    }).ToArray();
+
+                var catalogs = await this.GetCatalogsAsync(suggestions, cancellationToken);
+
                 this.Context = this.Context with
                 {
-                    Catalogs = await this.GetCatalogsAsync(cancellationToken)
+                    Catalogs = catalogs
                 };
             }
 

@@ -6,11 +6,15 @@ namespace Nexus.Extensibility
 {
     public record Configuration()
     {
-        public GetConfigurationUnitDelegate Single { get; set; }
-        public List<ConfigurationUnit> All { get; set; }
+        public Func<CatalogItem, ConfigurationUnit> Single { get; set; }
+        public Dictionary<string, ConfigurationUnit[]> All { get; set; }
     }
 
-    public delegate ConfigurationUnit GetConfigurationUnitDelegate(CatalogItem catalogItem);
+    public record SourceFileSuggestions()
+    {
+        public string CatalogId { get; init; }
+        public string[] SourceFiles { get; init; }
+    }
 
     public record ReadInfo(
         string FilePath,

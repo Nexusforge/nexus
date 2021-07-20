@@ -43,6 +43,11 @@ namespace Nexus.Extensibility.Tests
 
         #region Constructors
 
+        public StructuredFileDataSourceTester()
+        {
+            //
+        }
+
         public StructuredFileDataSourceTester(
             bool overrideFindFilePathsWithNoDateTime = false)
         {
@@ -71,26 +76,24 @@ namespace Nexus.Extensibility.Tests
             _config = await DeserializeAsync<Dictionary<string, CatalogDescription>>(configFilePath);
         }
 
-        protected override Task<Configuration> GetConfigurationAsync(string catalogId, CancellationToken cancellationToken)
+        protected override Task<Configuration> GetConfigurationAsync(CancellationToken cancellationToken)
         {
-            var all = _config[catalogId]
-                .Config
-                .Values
-                .Cast<ConfigurationUnit>()
-                .ToList();
+            var all = _config.ToDictionary(
+                config => config.Key,
+                config => config.Value.Config.Values.Cast<ConfigurationUnit>().ToArray());
 
             return Task.FromResult(new Configuration
             {
                 All = all,
-                Single = representation => all.First(),
+                Single = catalogItem => all[catalogItem.Catalog.Id].First(),
             });
         }
 
-        protected override Task<ResourceCatalog[]> GetCatalogsAsync(CancellationToken cancellationToken)
+        protected override Task<ResourceCatalog[]> GetCatalogsAsync(SourceFileSuggestions[] suggestions, CancellationToken cancellationToken)
         {
             if (this.Context.Catalogs is null)
             {
-                var catalog = new ResourceCatalog() { Id = "/A/B/C" };
+                var catalog = new ResourceCatalog() { Id = suggestions.First().CatalogId };
                 var resource = new Resource() { Id = Guid.NewGuid() };
                 var representation = new Representation() { Id = "1 Hz_mean", DataType = NexusDataType.INT64 };
 

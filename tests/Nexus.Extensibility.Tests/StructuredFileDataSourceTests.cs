@@ -1,9 +1,12 @@
 using Microsoft.Extensions.Logging;
+using Moq;
+using Moq.Protected;
 using Nexus.DataModel;
 using System;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,6 +22,57 @@ namespace Nexus.Extensibility.Tests
         public StructuredFileDataSourceTests(ITestOutputHelper xunitLogger)
         {
             _logger = new XunitLoggerProvider(xunitLogger).CreateLogger(nameof(StructuredFileDataSourceTests));
+        }
+
+        [Fact]
+        public async Task CanProvideSuggestions()
+        {
+            var dataSourceMock = Mock.Of<StructuredFileDataSourceTester>();
+
+            Mock.Get(dataSourceMock)
+                .CallBase = true;
+
+            Func<SourceFileSuggestions[], bool> verifier = suggestions =>
+            {
+                var isValid = true;
+
+                isValid &= suggestions.Length == 1;
+
+                isValid &= suggestions
+                    .First()
+                    .CatalogId == "/A/B/C";
+
+                isValid &= suggestions
+                    .First()
+                    .SourceFiles
+                    .First()
+                    .Replace('\\', '/')
+                    .EndsWith("DATA/2019-12/prefix_real_time_data_2019-12-31_12-00-00.dat");
+
+                return isValid;
+            };
+
+            Mock.Get(dataSourceMock)
+                .Protected()
+                .Setup<Task<ResourceCatalog[]>>(
+                    "GetCatalogsAsync", 
+                    ItExpr.Is<SourceFileSuggestions[]>(suggestions => verifier(suggestions)), 
+                    ItExpr.IsAny<CancellationToken>())
+                .Verifiable();
+
+            var dataSource = dataSourceMock as IDataSource;
+
+            var context = new DataSourceContext()
+            {
+                ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), "DATABASES/E")),
+                Logger = _logger,
+                Configuration = null,
+            };
+
+            await dataSource.SetContextAsync(context, CancellationToken.None);
+            var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
+
+            Mock.Get(dataSourceMock).Verify();
         }
 
         [Theory]
