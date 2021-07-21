@@ -4,10 +4,10 @@ using System.Collections.Generic;
 
 namespace Nexus.Extensibility
 {
-    public record Configuration()
+    public record FileSourceProvider()
     {
-        public Func<CatalogItem, ConfigurationUnit> Single { get; set; }
-        public Dictionary<string, ConfigurationUnit[]> All { get; set; }
+        public Func<CatalogItem, FileSource> Single { get; set; }
+        public Dictionary<string, FileSource[]> All { get; set; }
     }
 
     public record ReadInfo(
@@ -21,7 +21,7 @@ namespace Nexus.Extensibility
         long FileLength
     );
 
-    public record ConfigurationUnit(
+    public record FileSource(
         string[] PathSegments,
         string FileTemplate,
         string? FileDateTimePreselector,

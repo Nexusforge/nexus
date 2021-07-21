@@ -16,7 +16,7 @@ namespace Nexus.Extensibility.Tests
 
         public record CatalogDescription()
         {
-            public Dictionary<string, ConfigurationUnit> Config { get; init; }
+            public Dictionary<string, FileSource> Config { get; init; }
         }
 
         class TimeSpanConverter : JsonConverter<TimeSpan>
@@ -76,7 +76,7 @@ namespace Nexus.Extensibility.Tests
         {
             var all = this.Config.ToDictionary(
                 config => config.Key,
-                config => config.Value.Config.Values.Cast<ConfigurationUnit>().ToArray());
+                config => config.Value.Config.Values.Cast<FileSource>().ToArray());
 
             return Task.FromResult(new Configuration
             {
@@ -119,7 +119,7 @@ namespace Nexus.Extensibility.Tests
                 .Fill(1);
         }
 
-        protected override async Task<(string[], DateTime)> FindFilePathsAsync(DateTime begin, ConfigurationUnit config)
+        protected override async Task<(string[], DateTime)> FindFilePathsAsync(DateTime begin, FileSource config)
         {
             if (_overrideFindFilePathsWithNoDateTime)
             {
