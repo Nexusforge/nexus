@@ -28,9 +28,9 @@ namespace Nexus.DataModel
 
             foreach (var representation in resource.Representations)
             {
-                var referenceRepresentation = mergedRepresentations.FirstOrDefault(current => current.Id == representation.Id);
+                var index = mergedRepresentations.FindIndex(current => current.Id == representation.Id);
 
-                if (referenceRepresentation is not null)
+                if (index >= 0)
                 {
                     switch (mergeMode)
                     {
@@ -40,7 +40,7 @@ namespace Nexus.DataModel
 
                         case MergeMode.NewWins:
 
-                            if (!representation.Equals(referenceRepresentation))
+                            if (!representation.Equals(mergedRepresentations[0]))
                                 throw new Exception($"The representations to be merged are not equal.");
 
                             break;
@@ -114,6 +114,15 @@ namespace Nexus.DataModel
             }
 
             return merged;
+        }
+
+        internal Resource DeepCopy()
+        {
+            return this with
+            {
+                Metadata = this.Metadata.ToDictionary(entry => entry.Key, entry => entry.Value),
+                Representations = this.Representations.Select(representation => representation.DeepCopy()).ToList()
+            };
         }
 
         #endregion

@@ -24,22 +24,24 @@ namespace Nexus.DataModel
                 throw new Exception("The catalog to be merged has a different ID.");
 
             // merge resources
-            var mergedResources = new List<Resource>();
+            var mergedResources = this.Resources
+                .Select(resource => resource.DeepCopy())
+                .ToList();
 
-            foreach (var resource in catalog.Resources)
+            foreach (var newResource in catalog.Resources)
             {
-                var referenceResource = mergedResources.FirstOrDefault(current => current.Id == resource.Id);
+                var index = mergedResources.FindIndex(current => current.Id == newResource.Id);
 
-                if (referenceResource != null)
+                if (index >= 0)
                 {
-                    mergedResources.Add(referenceResource.Merge(resource, mergeMode));
+                    mergedResources[index] = mergedResources[index].Merge(newResource, mergeMode);
                 }
                 else
                 {
-                    mergedResources.Add(resource with
+                    mergedResources.Add(newResource with
                     {
-                        Metadata = resource.Metadata.ToDictionary(entry => entry.Key, entry => entry.Value),
-                        Representations = resource.Representations.ToList()
+                        Metadata = newResource.Metadata.ToDictionary(entry => entry.Key, entry => entry.Value),
+                        Representations = newResource.Representations.ToList()
                     });
                 }
             }

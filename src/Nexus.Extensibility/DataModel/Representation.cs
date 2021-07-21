@@ -57,6 +57,11 @@ namespace Nexus.DataModel
 
         }
 
+        internal Representation DeepCopy()
+        {
+            return this;
+        }
+
         #endregion
     }
 }
