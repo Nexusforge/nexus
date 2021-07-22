@@ -24,7 +24,9 @@ namespace Nexus.DataModel
         internal Resource Merge(Resource resource, MergeMode mergeMode)
         {
             // merge representations
-            var mergedRepresentations = new List<Representation>();
+            var mergedRepresentations = this.Representations
+               .Select(representation => representation.DeepCopy())
+               .ToList();
 
             foreach (var representation in resource.Representations)
             {
@@ -40,7 +42,7 @@ namespace Nexus.DataModel
 
                         case MergeMode.NewWins:
 
-                            if (!representation.Equals(mergedRepresentations[0]))
+                            if (!representation.Equals(mergedRepresentations[index]))
                                 throw new Exception($"The representations to be merged are not equal.");
 
                             break;
@@ -74,6 +76,21 @@ namespace Nexus.DataModel
                         else
                             mergedMetadata1[key] = value;
                     }
+
+                    if (!string.IsNullOrWhiteSpace(this.Name) &&
+                        !string.IsNullOrWhiteSpace(resource.Name) &&
+                        this.Name != resource.Name)
+                        throw new Exception($"The resources cannot be merged because their names differ.");
+
+                    if (!string.IsNullOrWhiteSpace(this.Group) &&
+                        !string.IsNullOrWhiteSpace(resource.Group) &&
+                        this.Group != resource.Group)
+                        throw new Exception($"The resources cannot be merged because their groups differ.");
+
+                    if (!string.IsNullOrWhiteSpace(this.Unit) &&
+                        !string.IsNullOrWhiteSpace(resource.Unit) &&
+                        this.Unit != resource.Unit)
+                        throw new Exception($"The resources cannot be merged because their units differ.");
 
                     merged = new Resource()
                     {

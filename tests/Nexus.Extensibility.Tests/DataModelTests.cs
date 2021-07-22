@@ -1,15 +1,25 @@
 using Nexus.DataModel;
 using System;
+using System.Collections.Generic;
+using System.Text.Json;
 using Xunit;
 
 namespace Nexus.Extensibility.Tests
 {
-    public class DataModelTests
+    public class DataModelTests : IClassFixture<DataModelFixture>
     {
+        private DataModelFixture _fixture;
+
+        public DataModelTests(DataModelFixture fixture)
+        {
+            _fixture = fixture;
+        }
+
         [Theory]
         [InlineData("1 Hz_mean_polar", "00:00:01")]
         [InlineData("10 Hz", "00:00:00.1")]
         [InlineData("4000 Hz", "00:00:00.00025")]
+        [InlineData("15 min", "00:15:00")]
         [InlineData("15 s", "00:00:15")]
         [InlineData("1 s", "00:00:01")]
         [InlineData("15 ms", "00:00:00.015")]
@@ -23,6 +33,112 @@ namespace Nexus.Extensibility.Tests
             var expected = TimeSpan.Parse(expectedString);
             var representation = new Representation() { Id = representationId };
             var actual = representation.GetSamplePeriod();
+
+            Assert.Equal(expected, actual);
+        }
+
+        [Fact]
+        public void CanMergeCatalogs_NewWins()
+        {
+            // arrange
+
+            // prepare catalog 0
+            var catalog0_V0 = _fixture.Catalog0_V0 with { Resources = new List<Resource>() };
+            var resource0_V0 = _fixture.Resource0_V0 with { Representations = new List<Representation>() };
+            var resource1_V0 = _fixture.Resource1_V0 with { Representations = new List<Representation>() };
+            var representation0_V0 = _fixture.Representation0_V0;
+            var representation1_V0 = _fixture.Representation1_V0;
+
+            resource0_V0.Representations.Add(representation0_V0);
+            resource0_V0.Representations.Add(representation1_V0);
+
+            catalog0_V0.Resources.Add(resource0_V0);
+            catalog0_V0.Resources.Add(resource1_V0);
+
+            // prepare catalog 1
+            var catalog0_V1 = _fixture.Catalog0_V1 with { Resources = new List<Resource>() };
+            var resource0_V1 = _fixture.Resource0_V1 with { Representations = new List<Representation>() };
+            var resource2_V0 = _fixture.Resource2_V0 with { Representations = new List<Representation>() };
+            var representation0_V1 = _fixture.Representation0_V1;
+            var representation2_V0 = _fixture.Representation2_V0;
+
+            resource0_V1.Representations.Add(representation0_V1);
+            resource0_V1.Representations.Add(representation2_V0);
+
+            catalog0_V1.Resources.Add(resource0_V1);
+            catalog0_V1.Resources.Add(resource2_V0);
+
+            // prepare merged
+            var catalog0_Vnew = _fixture.Catalog0_Vmerged with { Resources = new List<Resource>() };
+            var resource0_Vnew = _fixture.Resource0_Vmerged with { Representations = new List<Representation>() };
+            var representation0_Vnew = _fixture.Representation0_Vmerged;
+
+            resource0_Vnew.Representations.Add(representation0_Vnew);
+            resource0_Vnew.Representations.Add(representation1_V0);
+            resource0_Vnew.Representations.Add(representation2_V0);
+
+            catalog0_Vnew.Resources.Add(resource0_Vnew);
+            catalog0_Vnew.Resources.Add(resource1_V0);
+            catalog0_Vnew.Resources.Add(resource2_V0);
+
+            // act
+            var catalog0_actual = catalog0_V0.Merge(catalog0_V1, MergeMode.NewWins);
+
+            // assert
+            var expected = JsonSerializer.Serialize(catalog0_Vnew);
+            var actual = JsonSerializer.Serialize(catalog0_actual);
+
+            Assert.Equal(expected, actual);
+        }
+
+        [Fact]
+        public void CanMergeCatalogs_ExclusiveOr()
+        {
+            // arrange
+
+            // prepare catalog 0
+            var catalog0_V0 = _fixture.Catalog0_V0 with { Resources = new List<Resource>() };
+            var resource0_V0 = _fixture.Resource0_V0 with { Representations = new List<Representation>() };
+            var resource1_V0 = _fixture.Resource1_V0 with { Representations = new List<Representation>() };
+            var representation0_V0 = _fixture.Representation0_V0;
+            var representation1_V0 = _fixture.Representation1_V0;
+
+            resource0_V0.Representations.Add(representation0_V0);
+            resource0_V0.Representations.Add(representation1_V0);
+
+            catalog0_V0.Resources.Add(resource0_V0);
+            catalog0_V0.Resources.Add(resource1_V0);
+
+            // prepare catalog 1
+            var catalog0_V2 = _fixture.Catalog0_V2 with { Resources = new List<Resource>() };
+            var resource0_V2 = _fixture.Resource0_V2 with { Representations = new List<Representation>() };
+            var resource2_V0 = _fixture.Resource2_V0 with { Representations = new List<Representation>() };
+            var representation2_V0 = _fixture.Representation2_V0;
+
+            resource0_V2.Representations.Add(representation2_V0);
+
+            catalog0_V2.Resources.Add(resource0_V2);
+            catalog0_V2.Resources.Add(resource2_V0);
+
+            // prepare merged
+            var catalog0_Vxor = _fixture.Catalog0_Vxor with { Resources = new List<Resource>() };
+            var resource0_Vxor = _fixture.Resource0_Vxor with { Representations = new List<Representation>() };
+            var representation0_Vxor = _fixture.Representation0_Vxor;
+
+            resource0_Vxor.Representations.Add(representation0_Vxor);
+            resource0_Vxor.Representations.Add(representation1_V0);
+            resource0_Vxor.Representations.Add(representation2_V0);
+
+            catalog0_Vxor.Resources.Add(resource0_Vxor);
+            catalog0_Vxor.Resources.Add(resource1_V0);
+            catalog0_Vxor.Resources.Add(resource2_V0);
+
+            // act
+            var catalog0_actual = catalog0_V0.Merge(catalog0_V2, MergeMode.ExclusiveOr);
+
+            // assert
+            var expected = JsonSerializer.Serialize(catalog0_Vxor);
+            var actual = JsonSerializer.Serialize(catalog0_actual);
 
             Assert.Equal(expected, actual);
         }
