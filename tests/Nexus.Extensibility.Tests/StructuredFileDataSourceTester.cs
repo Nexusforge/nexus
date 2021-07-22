@@ -72,13 +72,13 @@ namespace Nexus.Extensibility.Tests
             this.Config = await DeserializeAsync<Dictionary<string, CatalogDescription>>(configFilePath);
         }
 
-        protected override Task<Configuration> GetConfigurationAsync(CancellationToken cancellationToken)
+        protected override Task<FileSourceProvider> GetFileSourceProviderAsync(CancellationToken cancellationToken)
         {
             var all = this.Config.ToDictionary(
                 config => config.Key,
                 config => config.Value.Config.Values.Cast<FileSource>().ToArray());
 
-            return Task.FromResult(new Configuration
+            return Task.FromResult(new FileSourceProvider
             {
                 All = all,
                 Single = catalogItem => all[catalogItem.Catalog.Id].First(),
