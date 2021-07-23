@@ -65,7 +65,7 @@ namespace Nexus.Extensions
                     var catalog = catalogItemGroup.Key;
                     var physicalId = catalog.Id.TrimStart('/').Replace('/', '_');
                     var root = this.Context.ResourceLocator.ToPath();
-                    var filePath = Path.Combine(root, $"{physicalId}_{fileBegin.ToISO8601()}_{samplePeriod.ToUnitString(underscore: true)}.csv");
+                    var filePath = Path.Combine(root, $"{physicalId}_{fileBegin.ToISO8601()}_{samplePeriod.ToUnitString()}.csv");
 
                     if (!File.Exists(filePath))
                     {
@@ -150,7 +150,7 @@ namespace Nexus.Extensions
                     var requestGroupArray = requestGroup.ToArray();
                     var physicalId = catalog.Id.TrimStart('/').Replace('/', '_');
                     var root = this.Context.ResourceLocator.ToPath();
-                    var filePath = Path.Combine(root, $"{physicalId}_{_lastFileBegin.ToISO8601()}_{_lastSamplePeriod.ToUnitString(underscore: true)}.csv");
+                    var filePath = Path.Combine(root, $"{physicalId}_{_lastFileBegin.ToISO8601()}_{_lastSamplePeriod.ToUnitString()}.csv");
 
                     var rowIndexFormat = this.Context.Configuration.TryGetValue("RowIndexFormat", out var value1)
                         ? value1
