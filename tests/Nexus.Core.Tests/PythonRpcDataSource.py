@@ -34,19 +34,19 @@ class PythonDataSource(IDataSource):
 
             # catalog 1
             catalog1_resource1_id = str(uuid3(NULL_NAMESPACE, "catalog1_resource1"))
-            catalog1_resource1_representations = [Representation("1 Hz_mean", NexusDataType.INT64)]
+            catalog1_resource1_representations = [Representation("1_Hz_mean", NexusDataType.INT64)]
             catalog1_resource1_meta = { "c": "d" }
             catalog1_resource1 = Resource(catalog1_resource1_id, "resource1", "group1", "°C", catalog1_resource1_meta, catalog1_resource1_representations)
 
             catalog1_resource2_id = str(uuid3(NULL_NAMESPACE, "catalog1_resource2"))
-            catalog1_resource2_representations = [Representation("1 Hz_mean", NexusDataType.FLOAT64)]
+            catalog1_resource2_representations = [Representation("1_Hz_mean", NexusDataType.FLOAT64)]
             catalog1_resource2 = Resource(catalog1_resource2_id, "resource2", "group2", "bar", { }, catalog1_resource2_representations)
 
             catalog1 = Catalog("/A/B/C", metadata = { "a": "b" }, resources = [catalog1_resource1, catalog1_resource2])
 
             # catalog 2
             catalog2_resource1_id = str(uuid3(NULL_NAMESPACE, "catalog2_resource1"))
-            catalog2_resource1_representations = [Representation("1 Hz_mean", NexusDataType.FLOAT32)]
+            catalog2_resource1_representations = [Representation("1_Hz_mean", NexusDataType.FLOAT32)]
             catalog2_resource1 = Resource(catalog2_resource1_id, "resource1", "group1", "m/s", { }, catalog2_resource1_representations)
 
             catalog2 = Catalog("/D/E/F", metadata = {}, resources = [catalog2_resource1])
@@ -103,8 +103,8 @@ class PythonDataSource(IDataSource):
         # ensure the catalogs have already been loaded
         (catalog, resource, representation) = self._find(resourcePath)
 
-        # representation ID = "1 Hz_mean" -> extract "1"
-        samplesPerSecond = int(representation.Id.split(" ")[0])
+        # representation ID = "1_Hz_mean" -> extract "1"
+        samplesPerSecond = int(representation.Id.split("_")[0])
         secondsPerFile = 600
         typeSize = 8
 

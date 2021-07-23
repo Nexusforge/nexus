@@ -33,7 +33,7 @@ namespace Nexus.Core.Tests
             var catalogItems = _fixture.Catalogs
                 .SelectMany(catalog => catalog.Resources
                 .SelectMany(resource => resource.Representations
-                .Select(representation => new CatalogItem(catalog, resource, representation with { Id = "10 min_mean" }))))
+                .Select(representation => new CatalogItem(catalog, resource, representation with { Id = "10_min_mean" }))))
                 .ToArray();
 
             var pipes = catalogItems

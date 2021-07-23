@@ -53,14 +53,14 @@ namespace Nexus.Extensibility.Tests
             var catalog1 = new ResourceCatalog() { Id = "/A/B/C" };
             var resource1 = new Resource() { Id = Guid.NewGuid(), Name = "Resource1" };
 
-            var representation1 = new Representation() { Id = "1 s_mean" };
+            var representation1 = new Representation() { Id = "1_s_mean" };
 
             resource1.Representations.Add(representation1);
             catalog1.Resources.Add(resource1);
 
             var catalog2 = new ResourceCatalog() { Id = "/D/E/F" };
             var resource2 = new Resource() { Id = Guid.NewGuid(), Name = "Resource2" };
-            var representation2 = new Representation() { Id = "1 s_mean" };
+            var representation2 = new Representation() { Id = "1_s_mean" };
 
             resource2.Representations.Add(representation2);
             catalog2.Resources.Add(resource2);
@@ -87,14 +87,14 @@ namespace Nexus.Extensibility.Tests
             var catalog1 = new ResourceCatalog() { Id = "/A/B/C" };
             var resource1 = new Resource() { Id = Guid.NewGuid(), Name = "Resource1" };
 
-            var representation1 = new Representation() { Id = "1 s_mean" };
+            var representation1 = new Representation() { Id = "1_s_mean" };
 
             resource1.Representations.Add(representation1);
             catalog1.Resources.Add(resource1);
 
             var catalog2 = new ResourceCatalog() { Id = "/D/E/F" };
             var resource2 = new Resource() { Id = Guid.NewGuid(), Name = "Resource2" };
-            var representation2 = new Representation() { Id = "1 s_mean" };
+            var representation2 = new Representation() { Id = "1_s_mean" };
 
             resource2.Representations.Add(representation2);
             catalog2.Resources.Add(resource2);
@@ -115,15 +115,15 @@ namespace Nexus.Extensibility.Tests
         }
 
         [Theory]
-        [InlineData("/A/B/C", "2fbcfc9b-cb02-45c8-9d35-f8bb0d5ac51c", "1 s_max")]
-        [InlineData("/A/B/C", "2fbcfc9b-cb02-45c8-9d35-f8bb0d5ac51d", "1 s_mean")]
-        [InlineData("/A/B/D", "2fbcfc9b-cb02-45c8-9d35-f8bb0d5ac51c", "1 s_max")]
+        [InlineData("/A/B/C", "2fbcfc9b-cb02-45c8-9d35-f8bb0d5ac51c", "1_s_max")]
+        [InlineData("/A/B/C", "2fbcfc9b-cb02-45c8-9d35-f8bb0d5ac51d", "1_s_mean")]
+        [InlineData("/A/B/D", "2fbcfc9b-cb02-45c8-9d35-f8bb0d5ac51c", "1_s_max")]
         public void ThrowsForInvalidResourcePath(string catalogId, string resourceId, string datasetId)
         {
             var catalog = new ResourceCatalog() { Id = "/A/B/C" };
             var resource = new Resource() { Id = Guid.Parse("2fbcfc9b-cb02-45c8-9d35-f8bb0d5ac51c"), Name = "Resource1" };
 
-            var representation = new Representation() { Id = "1 s_mean" };
+            var representation = new Representation() { Id = "1_s_mean" };
 
             resource.Representations.Add(representation);
             catalog.Resources.Add(resource);

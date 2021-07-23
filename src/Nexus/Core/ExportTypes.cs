@@ -21,7 +21,7 @@ namespace Nexus.Core
         /// <example>Web</example>
         public ExportMode ExportMode { get; set; } = ExportMode.Web;
 
-        /// <example>["/IN_MEMORY/TEST/ACCESSIBLE/T1/1 s_mean", "/IN_MEMORY/TEST/ACCESSIBLE/V1/1 s_mean"]</example>
+        /// <example>["/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean", "/IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean"]</example>
         public List<string> ResourcePaths { get; set; } = new List<string>();
 
         /// <example>{ "RowIndexFormat": "Index", "SignificantFigures": "4" }</example>

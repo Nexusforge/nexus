@@ -156,7 +156,7 @@ namespace Nexus.Extensibility.Tests
             // representations
             this.Representation0_V0 = new Representation()
             {
-                Id = "600 s",
+                Id = "600_s",
                 DataType = NexusDataType.FLOAT32,
             };
 
@@ -168,13 +168,13 @@ namespace Nexus.Extensibility.Tests
 
             this.Representation1_V0 = new Representation()
             {
-                Id = "600 s",
+                Id = "600_s",
                 DataType = NexusDataType.FLOAT64,
             };
 
             this.Representation2_V0 = new Representation()
             {
-                Id = "100 s",
+                Id = "100_s",
                 DataType = NexusDataType.UINT16,
             };
         }

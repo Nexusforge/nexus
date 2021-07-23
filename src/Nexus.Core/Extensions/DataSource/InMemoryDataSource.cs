@@ -134,11 +134,11 @@ namespace Nexus.Extensions
             var resourceD = new Resource() { Id = id4, Name = "unix_time2", Group = "Group 2", Unit = "" };
             resourceD.Metadata["Description"] = "Test resource.";
 
-            var representation1 = new Representation() { Id = "1 s_mean", DataType = NexusDataType.FLOAT64 };
-            var representation2 = new Representation() { Id = "1 s_mean", DataType = NexusDataType.FLOAT64 };
-            var representation3 = new Representation() { Id = "25 Hz", DataType = NexusDataType.INT32 };
-            var representation4 = new Representation() { Id = "1 s_max", DataType = NexusDataType.FLOAT64 };
-            var representation5 = new Representation() { Id = "1 s_mean", DataType = NexusDataType.FLOAT64 };
+            var representation1 = new Representation() { Id = "1_s_mean", DataType = NexusDataType.FLOAT64 };
+            var representation2 = new Representation() { Id = "1_s_mean", DataType = NexusDataType.FLOAT64 };
+            var representation3 = new Representation() { Id = "25_Hz", DataType = NexusDataType.INT32 };
+            var representation4 = new Representation() { Id = "1_s_max", DataType = NexusDataType.FLOAT64 };
+            var representation5 = new Representation() { Id = "1_s_mean", DataType = NexusDataType.FLOAT64 };
 
             // resource A
             resourceA.Representations.Add(representation1);

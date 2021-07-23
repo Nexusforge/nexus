@@ -80,7 +80,7 @@ namespace Nexus.Core.Tests
         {
             // arrange
 
-            var representation = new Representation() { Id = "1 Hz", DataType = NexusDataType.INT32 };
+            var representation = new Representation() { Id = "1_Hz", DataType = NexusDataType.INT32 };
 
             var resourceGuid = Guid.NewGuid();
             var resource = new Resource() { Id = resourceGuid, Name = "resource 1", Group = "group 1", Unit = "unit 1" };

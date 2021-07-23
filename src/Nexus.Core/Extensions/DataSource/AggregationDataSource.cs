@@ -282,7 +282,7 @@ namespace Nexus.Extensions
                             catalogFolderPath,
                             fileBegin.ToString("yyyy-MM"),
                             fileBegin.ToString("dd"),
-                            $"{resource.Id}_{representation.Id.Replace(" ", "_")}.nex");
+                            $"{resource.Id}_{representation.Id}.nex");
 
                         var fileElementOffset = (int)(fileOffset.Ticks / samplePeriod.Ticks);
                         var elementCount = (int)(duration.Ticks / samplePeriod.Ticks);
@@ -512,9 +512,9 @@ namespace Nexus.Extensions
                 .ForEach(filePath =>
                 {
                     var fileName = Path.GetFileNameWithoutExtension(filePath);
-                    var fileNameParts = fileName.Split('_');
+                    var fileNameParts = fileName.Split('_', count: 2);
                     var id = Guid.Parse(fileNameParts[0]);
-                    var representationName = $"{fileNameParts[1]} {fileNameParts[2]}_{fileNameParts[3]}";
+                    var representationId = fileNameParts[1];
 
                     if (!resourceMap.TryGetValue(id, out var resource))
                     {
@@ -524,7 +524,7 @@ namespace Nexus.Extensions
 
                     var representation = new Representation()
                     {
-                        Id = representationName,
+                        Id = representationId,
                         DataType = NexusDataType.FLOAT64
                     };
 

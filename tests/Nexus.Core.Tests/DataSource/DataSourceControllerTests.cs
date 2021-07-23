@@ -113,14 +113,14 @@ namespace Nexus.Core.Tests
             var samplePeriod = TimeSpan.FromSeconds(1);
 
             // resource 1
-            var resourcePath1 = "/IN_MEMORY/TEST/ACCESSIBLE/V1/1 s_mean";
+            var resourcePath1 = "/IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean";
             var catalogItem1 = controller.Catalogs.Find(resourcePath1);
 
             var pipe1 = new Pipe();
             var dataWriter1 = pipe1.Writer;
 
             // resource 2
-            var resourcePath2 = "/IN_MEMORY/TEST/ACCESSIBLE/T1/1 s_mean";
+            var resourcePath2 = "/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean";
             var catalogItem2 = controller.Catalogs.Find(resourcePath2);
 
             var pipe2 = new Pipe();
@@ -173,14 +173,14 @@ namespace Nexus.Core.Tests
 
             await Task.WhenAll(writing, reading);
 
-            // /IN_MEMORY/TEST/ACCESSIBLE/V1/1 s_mean
+            // /IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean
             Assert.Equal(-0.059998, result1[0], precision: 6);
             Assert.Equal(8.191772, result1[10 * 60], precision: 6);
             Assert.Equal(16.290592, result1[01 * 60 * 60], precision: 6);
             Assert.Equal(15.046221, result1[02 * 60 * 60], precision: 6);
             Assert.Equal(15.274073, result1[10 * 60 * 60], precision: 6);
 
-            // /IN_MEMORY/TEST/ACCESSIBLE/T1/1 s_mean
+            // /IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean
             Assert.Equal(-0.059998, result2[0], precision: 6);
             Assert.Equal( 8.191772, result2[10 * 60], precision: 6);
             Assert.Equal(16.290592, result2[01 * 60 * 60], precision: 6);
@@ -196,7 +196,7 @@ namespace Nexus.Core.Tests
 
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 02, 0, 0, 1, DateTimeKind.Utc);
-            var resourcePath = "/IN_MEMORY/TEST/ACCESSIBLE/T1/1 s_mean";
+            var resourcePath = "/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean";
             var catalogItem = controller.Catalogs.Find(resourcePath);
 
             var stream = controller.ReadAsStream(begin, end, 10000, catalogItem);

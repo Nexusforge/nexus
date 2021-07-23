@@ -16,7 +16,7 @@
                 },
                 "Representations":[
                    {
-                      "Id":"1 Hz_mean",
+                      "Id":"1_Hz_mean",
                       "DataType":"INT64"
                    }
                 ]
@@ -31,7 +31,7 @@
                 },
                 "Representations":[
                    {
-                      "Id":"1 Hz_mean",
+                      "Id":"1_Hz_mean",
                       "DataType":"FLOAT64"
                    }
                 ]
@@ -54,7 +54,7 @@
                 },
                 "Representations":[
                    {
-                      "Id":"1 Hz_mean",
+                      "Id":"1_Hz_mean",
                       "DataType":"FLOAT32"
                    }
                 ]

@@ -109,7 +109,7 @@ namespace Nexus.Core.Tests
                 new CatalogContainer("/IN_MEMORY/TEST/ACCESSIBLE")
             });
 
-            var representation = new Representation() { Id = "1 Hz", DataType = NexusDataType.FLOAT64 };
+            var representation = new Representation() { Id = "1_Hz", DataType = NexusDataType.FLOAT64 };
 
             var resource = new Resource() { Id = Guid.NewGuid() };
             resource.Representations.Add(representation);

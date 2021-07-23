@@ -27,8 +27,6 @@ namespace Nexus.Extensions
 
         private ResourceCatalog[] _catalogs;
 
-        private Uri _resourceLocator { get; set; }
-
         private List<FilterDataSourceCacheEntry> _cacheEntries;
 
         #endregion
@@ -167,7 +165,7 @@ namespace Nexus.Extensions
                             {
                                 new Representation()
                                 {
-                                    Id = filterCodeDefinition.SampleRate,
+                                    Id = filterCodeDefinition.SampleRate.Replace(' ', '_'),
                                     DataType = NexusDataType.FLOAT64
                                 }
                             };

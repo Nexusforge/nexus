@@ -1,6 +1,7 @@
 using Nexus.DataModel;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using Xunit;
 
@@ -16,19 +17,77 @@ namespace Nexus.Extensibility.Tests
         }
 
         [Theory]
-        [InlineData("1 Hz_mean_polar", "00:00:01")]
-        [InlineData("10 Hz", "00:00:00.1")]
-        [InlineData("4000 Hz", "00:00:00.00025")]
-        [InlineData("15 min", "00:15:00")]
-        [InlineData("15 s", "00:00:15")]
-        [InlineData("1 s", "00:00:01")]
-        [InlineData("15 ms", "00:00:00.015")]
-        [InlineData("1 ms", "00:00:00.001")]
-        [InlineData("15 us", "00:00:00.000015")]
-        [InlineData("1 us", "00:00:00.000001")]
-        [InlineData("200 ns", "00:00:00.0000002")]
-        [InlineData("15 ns", "00:00:00")]
-        public void CanCreatUnitStrings(string representationId, string expectedString)
+
+        // valid
+        [InlineData("1_Hz", true)]
+        [InlineData("12_Hz", true)]
+        [InlineData("1_min", true)]
+        [InlineData("1_s", true)]
+        [InlineData("1_ms", true)]
+        [InlineData("1_us", true)]
+        [InlineData("1_ns", true)]
+
+        [InlineData("1_Hz_mean", true)]
+        [InlineData("1_Hz_Mean", true)]
+        [InlineData("1_Hz_mean_polar", true)]
+        [InlineData("12_Hz_mean", true)]
+        [InlineData("1_min_mean", true)]
+        [InlineData("1_s_mean", true)]
+        [InlineData("1_ms_mean", true)]
+        [InlineData("1_us_mean", true)]
+        [InlineData("1_ns_mean", true)]
+
+        // invalid
+        [InlineData("1 Hz", false)]
+        [InlineData("1_h", false)]
+        [InlineData("a_Hz", false)]
+        [InlineData("a1_Hz", false)]
+        [InlineData("1a_Hz", false)]
+
+        [InlineData("1_h_mean", false)]
+        [InlineData("1 Hz_mean", false)]
+        [InlineData("1_Hz mean", false)]
+        [InlineData("1_Hz_meaﬂn", false)]
+        [InlineData("1_Hz_mea?n", false)]
+        [InlineData("a_Hz_mean", false)]
+        [InlineData("1a_Hz_mean", false)]
+        [InlineData("a1_Hz_mean", false)]
+        public void CanValidateId(string id, bool isValid)
+        {
+            if (isValid)
+                new Representation() { Id = id, DataType = NexusDataType.FLOAT64 };
+
+            else
+                Assert.Throws<ArgumentException>(() => new Representation() { Id = id, DataType = NexusDataType.FLOAT64 });
+        }
+
+        [Theory]
+        [InlineData(NexusDataType.FLOAT32, true)]
+        [InlineData((NexusDataType)0, false)]
+        [InlineData((NexusDataType)9999, false)]
+        public void CanValidateDataType(NexusDataType dataType, bool isValid)
+        {
+            if (isValid)
+                new Representation() { Id = "1_Hz_mean", DataType = dataType };
+
+            else
+                Assert.Throws<ArgumentException>(() => new Representation() { Id = "1_Hz_mean", DataType = dataType });
+        }
+
+        [Theory]
+        [InlineData("1_Hz_mean_polar", "00:00:01")]
+        [InlineData("10_Hz", "00:00:00.1")]
+        [InlineData("4000_Hz", "00:00:00.00025")]
+        [InlineData("1_min", "00:01:00")]
+        [InlineData("15_s", "00:00:15")]
+        [InlineData("1_s", "00:00:01")]
+        [InlineData("15_ms", "00:00:00.015")]
+        [InlineData("1_ms", "00:00:00.001")]
+        [InlineData("15_us", "00:00:00.000015")]
+        [InlineData("1_us", "00:00:00.000001")]
+        [InlineData("200_ns", "00:00:00.0000002")]
+        [InlineData("15_ns", "00:00:00")]
+        public void CanGetSamplePeriodFromId(string representationId, string expectedString)
         {
             var expected = TimeSpan.Parse(expectedString);
             var representation = new Representation() { Id = representationId };
