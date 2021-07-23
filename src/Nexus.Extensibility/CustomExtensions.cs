@@ -8,25 +8,25 @@ namespace Nexus
     public static class CustomExtensions
     {
         private const int NS_PER_TICK = 100;
-        private static string[] _postFixes = new[] {"ns", "us", "ms", "s" };
+        private static int[] _quotients = new[] { 1000, 1000, 1000, 60, 1 };
+        private static string[] _postFixes = new[] {"ns", "us", "ms", "s", "min" };
 
-        public static string ToUnitString(this TimeSpan samplePeriod, bool underscore = false)
+        public static string ToUnitString(this TimeSpan samplePeriod)
         {
-            var fillChar = underscore ? '_' : ' ';
             var currentValue = samplePeriod.Ticks * NS_PER_TICK;
 
             for (int i = 0; i < _postFixes.Length; i++)
             {
-                var quotient = Math.DivRem(currentValue, 1000, out var remainder);
+                var quotient = Math.DivRem(currentValue, _quotients[i], out var remainder);
 
                 if (remainder != 0)
-                    return $"{currentValue}{fillChar}{_postFixes[i]}";
+                    return $"{currentValue}_{_postFixes[i]}";
 
                 else
                     currentValue = quotient;
             }
 
-            return $"{(int)currentValue}{fillChar}{_postFixes.Last()}";
+            return $"{(int)currentValue}_{_postFixes.Last()}";
         }
 
         public static string ToPath(this Uri url)

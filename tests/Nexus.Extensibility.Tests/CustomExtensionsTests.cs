@@ -7,27 +7,30 @@ namespace Nexus.Extensibility.Tests
     public class CustomExtensionsTests
     {
         [Theory]
-        [InlineData("00:00:00.0000001", true, "100_ns")]
-        [InlineData("00:00:00.0000002", true, "200_ns")]
-        [InlineData("00:00:00.0000015", true, "1500_ns")]
+        [InlineData("00:00:00.0000001", "100_ns")]
+        [InlineData("00:00:00.0000002", "200_ns")]
+        [InlineData("00:00:00.0000015", "1500_ns")]
 
-        [InlineData("00:00:00.0000010", false, "1 us")]
-        [InlineData("00:00:00.0000100", false, "10 us")]
-        [InlineData("00:00:00.0001000", false, "100 us")]
-        [InlineData("00:00:00.0015000", false, "1500 us")]
+        [InlineData("00:00:00.0000010", "1_us")]
+        [InlineData("00:00:00.0000100", "10_us")]
+        [InlineData("00:00:00.0001000", "100_us")]
+        [InlineData("00:00:00.0015000", "1500_us")]
 
-        [InlineData("00:00:00.0010000", false, "1 ms")]
-        [InlineData("00:00:00.0100000", false, "10 ms")]
-        [InlineData("00:00:00.1000000", false, "100 ms")]
-        [InlineData("00:00:01.5000000", false, "1500 ms")]
+        [InlineData("00:00:00.0010000", "1_ms")]
+        [InlineData("00:00:00.0100000", "10_ms")]
+        [InlineData("00:00:00.1000000", "100_ms")]
+        [InlineData("00:00:01.5000000", "1500_ms")]
 
-        [InlineData("00:00:01.0000000", false, "1 s")]
-        [InlineData("00:00:15.0000000", false, "15 s")]
-        public void CanCreatUnitStrings(string period, bool underscore, string expected)
+        [InlineData("00:00:01.0000000", "1_s")]
+        [InlineData("00:00:15.0000000", "15_s")]
+
+        [InlineData("00:01:00.0000000", "1_min")]
+        [InlineData("00:15:00.0000000", "15_min")]
+        public void CanCreateUnitStrings(string period, string expected)
         {
             var actual = TimeSpan
                 .Parse(period)
-                .ToUnitString(underscore);
+                .ToUnitString();
 
             Assert.Equal(expected, actual);
         }
