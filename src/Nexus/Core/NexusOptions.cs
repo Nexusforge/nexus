@@ -41,10 +41,6 @@ namespace Nexus.Core
             ? Path.Combine(Environment.GetFolderPath(SpecialFolder.ApplicationData), "Nexus", "data")
             : "/var/lib/nexus/data";
 
-        public string Extensions { get; set; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-            ? Path.Combine(Environment.GetFolderPath(SpecialFolder.ApplicationData), "Nexus", "extensions")
-            : "/var/lib/nexus/extensions";
-
         public string Export => Path.Combine(this.Data, "EXPORT");
     }
 

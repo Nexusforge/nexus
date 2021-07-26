@@ -516,7 +516,7 @@ namespace Nexus.Extensions
                     var id = Guid.Parse(fileNameParts[0]);
                     var value = fileNameParts[1];
                     var unit = fileNameParts[2];
-                    var samplePeriod = NexusCoreUtilities.ValueAndUnitToSamplePeriod(value, unit);
+                    var samplePeriod = NexusCoreUtilities.ValueAndUnitToSamplePeriod(long.Parse(value), unit);
 
                     var detail = fileNameParts.Length >= 4
                         ? fileNameParts[3]

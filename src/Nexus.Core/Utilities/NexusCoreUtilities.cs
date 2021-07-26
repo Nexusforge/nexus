@@ -11,10 +11,8 @@ namespace Nexus.Utilities
 {
     internal static class NexusCoreUtilities
     {
-        public static TimeSpan ValueAndUnitToSamplePeriod(string value, string unit)
+        public static TimeSpan ValueAndUnitToSamplePeriod(long value, string unit)
         {
-            var parsedValue = long.Parse(value);
-
             var ticksPerUnit = unit switch
             {
                  "ns"   => 0.01,
@@ -27,10 +25,10 @@ namespace Nexus.Utilities
             };
 
             if (unit == "Hz")
-                return TimeSpan.FromTicks((long)(ticksPerUnit / parsedValue));
+                return TimeSpan.FromTicks((long)(ticksPerUnit / value));
 
             else
-                return TimeSpan.FromTicks((long)(parsedValue * ticksPerUnit));
+                return TimeSpan.FromTicks((long)(value * ticksPerUnit));
         }
 
         public static async Task FileLoopAsync(

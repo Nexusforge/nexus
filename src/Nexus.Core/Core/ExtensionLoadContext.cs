@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Runtime.Loader;
@@ -16,20 +15,22 @@ namespace Nexus
     {
         #region Fields
 
+        private const int MAX_PAGES = 20;
+
         private static HttpClient _httpClient = new HttpClient();
-        private static Regex _regex = new Regex(@"^\/(.*)\/(.*)\/releases\/download\/(.*)\/(.*\.(zip|tar\.gz))$");
 
         private bool _isInitialized;
-        private Uri _resourceLocator;
         private AssemblyDependencyResolver _resolver;
+
+        private Dictionary<string, string> _extensionReference;
 
         #endregion
 
         #region Constructors
 
-        public ExtensionLoadContext(Uri resourceLocator)
+        public ExtensionLoadContext(Dictionary<string, string> extensionReference)
         {
-            _resourceLocator = resourceLocator;
+            _extensionReference = extensionReference;
         }
 
         #endregion
@@ -73,22 +74,25 @@ namespace Nexus
         public async Task<DiscoveredExtensionVersion[]> DiscoverVersionsAsync()
         {
             var result = new Dictionary<SemanticVersion, Uri>();
-            var ignoreCase = StringComparison.OrdinalIgnoreCase;
 
-            if (_resourceLocator.Scheme.Equals("http", ignoreCase) ||
-                _resourceLocator.Scheme.Equals("https", ignoreCase))
+            if (!_extensionReference.TryGetValue("Provider", out var provider))
+                throw new ArgumentException("The 'Provider' parameter is missing in the extension reference.");
+
+            switch (provider)
             {
-                if (_resourceLocator.Host.Equals("github.com", ignoreCase))
-                {
-                    try
-                    {
-                        await ExtensionLoadContext.DiscoverGithubVersionsAsync(_resourceLocator, result);
-                    }
-                    catch
-                    {
-                        //
-                    }
-                }
+                case "GitHub":
+                    result = await this.DiscoverGithubVersionsAsync();
+                    break;
+
+                case "GitLab":
+                    result = await this.DiscoverGitLabVersionsAsync();
+                    break;
+
+                case "Local":
+                    break;
+
+                default:
+                    throw new ArgumentException($"The provider '{provider}' is not supported.");
             }
 
             var comparer = new VersionComparer();
@@ -97,6 +101,175 @@ namespace Nexus
                 .OrderBy(entry => entry.Key, comparer)
                 .Select(entry => new DiscoveredExtensionVersion(entry.Key.ToNormalizedString(), entry.Value.ToString()))
                 .ToArray();
+        }
+
+        private async Task<Dictionary<SemanticVersion, Uri>> DiscoverGithubVersionsAsync()
+        {
+            var result = new Dictionary<SemanticVersion, Uri>();
+            var ignoreCase = StringComparison.OrdinalIgnoreCase;
+
+            if (!_extensionReference.TryGetValue("User", out var user))
+                throw new ArgumentException("The 'User' parameter is missing in the extension reference.");
+
+            if (!_extensionReference.TryGetValue("Project", out var project))
+                throw new ArgumentException("The 'Project' parameter is missing in the extension reference.");
+
+            if (!_extensionReference.TryGetValue("Release", out var release))
+                throw new ArgumentException("The 'Release' parameter is missing in the extension reference.");
+
+            if (!_extensionReference.TryGetValue("AssetSelector", out var assetSelector))
+                throw new ArgumentException("The 'AssetSelector' parameter is missing in the extension reference.");
+
+            var host = $"https://api.github.com";
+            var requestUrl = $"{host}/repos/{user}/{project}/releases?per_page={100}&page={1}";
+
+            for (int i = 0; i < MAX_PAGES; i++)
+            {
+                using (var request = new HttpRequestMessage(HttpMethod.Get, requestUrl))
+                {
+                    request.Headers.Add("User-Agent", "Nexus");
+                    request.Headers.Add("Accept", "application/vnd.github.v3+json");
+
+                    using (var response = await _httpClient.SendAsync(request).ConfigureAwait(false))
+                    {
+                        response.EnsureSuccessStatusCode();
+
+                        var contentStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+                        var jsonDocument = await JsonDocument.ParseAsync(contentStream).ConfigureAwait(false);
+
+                        jsonDocument.RootElement
+                            .EnumerateArray()
+                            .ToList()
+                            .ForEach(release =>
+                            {
+                                var isSemanticVersion = ExtensionLoadContext
+                                    .TryParseWithPrefix(release.GetProperty("name").GetString(), out var version);
+
+                                var asset = release
+                                    .GetProperty("assets")
+                                    .EnumerateArray()
+                                    .FirstOrDefault(current => Regex.IsMatch(current.GetProperty("name").GetString(), assetSelector));
+
+                                if (isSemanticVersion && asset.ValueKind != JsonValueKind.Undefined)
+                                {
+                                    var assetUri = new Uri(asset.GetProperty("browser_download_url").GetString());
+
+                                    var isValidAssetType =
+                                        assetUri.ToString().EndsWith("zip", ignoreCase) ||
+                                        assetUri.ToString().EndsWith("tar.gz", ignoreCase);
+
+                                    result[version] = assetUri;
+                                }
+                            });
+
+                        // look for more pages
+                        response.Headers.TryGetValues("Link", out var links);
+
+                        if (!links.Any())
+                            break;
+
+                        requestUrl = links
+                            .First()
+                            .Split(",")
+                            .Where(current => current.Contains("rel=\"next\""))
+                            .Select(current => Regex.Match(current, @"\<(https:.*)\>; rel=""next""").Groups[1].Value)
+                            .FirstOrDefault();
+
+                        if (requestUrl == default)
+                            break;
+
+                        continue;
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        private async Task<Dictionary<SemanticVersion, Uri>> DiscoverGitLabVersionsAsync()
+        {
+            var result = new Dictionary<SemanticVersion, Uri>();
+            var ignoreCase = StringComparison.OrdinalIgnoreCase;
+
+            if (!_extensionReference.TryGetValue("Server", out var server))
+                throw new ArgumentException("The 'Server' parameter is missing in the extension reference.");
+
+            if (!_extensionReference.TryGetValue("User", out var user))
+                throw new ArgumentException("The 'User' parameter is missing in the extension reference.");
+
+            if (!_extensionReference.TryGetValue("Project", out var project))
+                throw new ArgumentException("The 'Project' parameter is missing in the extension reference.");
+
+            if (!_extensionReference.TryGetValue("Release", out var release))
+                throw new ArgumentException("The 'Release' parameter is missing in the extension reference.");
+
+            if (!_extensionReference.TryGetValue("AssetSelector", out var assetSelector))
+                throw new ArgumentException("The 'AssetSelector' parameter is missing in the extension reference.");
+
+            var host = $"https://api.github.com";
+            var requestUrl = $"{host}/repos/{user}/{project}/releases?per_page={100}&page={1}";
+
+            for (int i = 0; i < MAX_PAGES; i++)
+            {
+                using (var request = new HttpRequestMessage(HttpMethod.Get, requestUrl))
+                {
+                    request.Headers.Add("User-Agent", "Nexus");
+                    request.Headers.Add("Accept", "application/vnd.github.v3+json");
+
+                    using (var response = await _httpClient.SendAsync(request).ConfigureAwait(false))
+                    {
+                        response.EnsureSuccessStatusCode();
+
+                        var contentStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+                        var jsonDocument = await JsonDocument.ParseAsync(contentStream).ConfigureAwait(false);
+
+                        jsonDocument.RootElement
+                            .EnumerateArray()
+                            .ToList()
+                            .ForEach(release =>
+                            {
+                                var isSemanticVersion = ExtensionLoadContext
+                                    .TryParseWithPrefix(release.GetProperty("name").GetString(), out var version);
+
+                                var asset = release
+                                    .GetProperty("assets")
+                                    .EnumerateArray()
+                                    .FirstOrDefault(current => Regex.IsMatch(current.GetProperty("name").GetString(), assetSelector));
+
+                                if (isSemanticVersion && asset.ValueKind != JsonValueKind.Undefined)
+                                {
+                                    var assetUri = new Uri(asset.GetProperty("browser_download_url").GetString());
+
+                                    var isValidAssetType =
+                                        assetUri.ToString().EndsWith("zip", ignoreCase) ||
+                                        assetUri.ToString().EndsWith("tar.gz", ignoreCase);
+
+                                    result[version] = assetUri;
+                                }
+                            });
+
+                        // look for more pages
+                        response.Headers.TryGetValues("Link", out var links);
+
+                        if (!links.Any())
+                            break;
+
+                        requestUrl = links
+                            .First()
+                            .Split(",")
+                            .Where(current => current.Contains("rel=\"next\""))
+                            .Select(current => Regex.Match(current, @"\<(https:.*)\>; rel=""next""").Groups[1].Value)
+                            .FirstOrDefault();
+
+                        if (requestUrl == default)
+                            break;
+
+                        continue;
+                    }
+                }
+            }
+
+            return result;
         }
 
         private static bool TryParseWithPrefix(string value, out SemanticVersion version)
@@ -112,76 +285,6 @@ namespace Nexus
             }
 
             return false;
-        }
-
-        private static async Task DiscoverGithubVersionsAsync(Uri resourceLocator, Dictionary<SemanticVersion, Uri> result)
-        {
-            var ignoreCase = StringComparison.OrdinalIgnoreCase;
-            var match = _regex.Match(resourceLocator.PathAndQuery);
-
-            if (match.Success)
-            {
-                var user = match.Groups[1].Value;
-                var project = match.Groups[2].Value;
-                var versionString = match.Groups[3].Value;
-                var assetName = match.Groups[4].Value;
-                var assetType = match.Groups[5].Value;
-
-                var isValidAssetType =
-                    assetType.Equals("zip", ignoreCase) ||
-                    assetType.Equals("tar.gz", ignoreCase);
-
-                if (isValidAssetType && ExtensionLoadContext.TryParseWithPrefix(versionString, out var version))
-                {
-                    var host = $"{resourceLocator.Scheme}://api.github.com";
-                    var requestUrl = $"{host}/repos/{user}/{project}/releases";
-
-                    using (var request = new HttpRequestMessage(HttpMethod.Get, requestUrl))
-                    {
-                        request.Headers.Add("User-Agent", "Nexus");
-                        request.Headers.Add("Accept", "application/vnd.github.v3+json");
-
-                        using (var response = await _httpClient.SendAsync(request).ConfigureAwait(false))
-                        {
-                            response.EnsureSuccessStatusCode();
-
-                            var contentStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-
-                            try
-                            {
-                                var jsonDocument = await JsonDocument.ParseAsync(contentStream);
-
-                                jsonDocument.RootElement
-                                    .EnumerateArray()
-                                    .ToList()
-                                    .ForEach(release =>
-                                    {
-                                        var isSemanticVersion = ExtensionLoadContext
-                                            .TryParseWithPrefix(release.GetProperty("name").GetString(), out var version);
-
-                                        var asset = release
-                                            .GetProperty("assets")
-                                            .EnumerateArray()
-                                            .FirstOrDefault(current => current
-                                                .GetProperty("name")
-                                                .GetString()
-                                                .EndsWith($".{assetType}"));
-
-                                        if (isSemanticVersion && asset.ValueKind != JsonValueKind.Undefined)
-                                        {
-                                            var assetUri = new Uri(asset.GetProperty("browser_download_url").GetString());
-                                            result[version] = assetUri;
-                                        }
-                                    });
-                            }
-                            catch (JsonException)
-                            {
-                                Console.WriteLine("Invalid JSON response.");
-                            }
-                        }
-                    }
-                }
-            }
         }
 
         #endregion

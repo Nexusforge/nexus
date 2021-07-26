@@ -11,7 +11,7 @@ namespace Nexus
         private static int[] _quotients = new[] { 1000, 1000, 1000, 60, 1 };
         private static string[] _postFixes = new[] {"ns", "us", "ms", "s", "min" };
 
-        public static string ToUnitString(this TimeSpan samplePeriod)
+        internal static string ToUnitString(this TimeSpan samplePeriod)
         {
             var currentValue = samplePeriod.Ticks * NS_PER_TICK;
 

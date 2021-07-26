@@ -7,6 +7,7 @@ namespace Nexus.DataModel
     public record NexusDatabaseConfig()
     {
         public string AggregationDataReaderRootPath { get; set; }
+        public List<Dictionary<string, string>> ExtensionReferences { get; set; }
         public List<BackendSource> BackendSources { get; set; }
     }
 
@@ -23,8 +24,9 @@ namespace Nexus.DataModel
         AcceptLicense = 2
     }
 
-    public record CatalogProperties(string Id)
+    public record CatalogProperties
     {
+        public string Id { get; set; }
         public string Contact { get; set; }
         public bool IsQualityControlled { get; set; }
         public bool IsHidden { get; set; }
