@@ -60,8 +60,8 @@ listen() {
         # prepare response
         echo "Received invocation for method '$method'. Preparing response ..."
 
-        if [ "$method" = "getApiLevelAsync" ]; then
-            response='{ "jsonrpc": "2.0", "id": '$id', "result": { "ApiLevel": 1 } }'
+        if [ "$method" = "getApiVersionAsync" ]; then
+            response='{ "jsonrpc": "2.0", "id": '$id', "result": { "ApiVersion": 1 } }'
 
         elif [ "$method" = "setContextAsync" ]; then
             response='{ "jsonrpc": "2.0", "id": '$id', "result": null }'

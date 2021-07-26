@@ -4,6 +4,7 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -69,7 +70,7 @@ namespace Nexus.Extensions
 
                     if (!File.Exists(filePath))
                     {
-                        using (var streamWriter = new StreamWriter(File.Open(filePath, FileMode.Append, FileAccess.Write)))
+                        using (var streamWriter = new StreamWriter(File.Open(filePath, FileMode.Append, FileAccess.Write), Encoding.UTF8))
                         {
                             // comment
                             streamWriter.WriteLine($"# format_version=1;");
@@ -160,7 +161,7 @@ namespace Nexus.Extensions
                         ? value2
                         : "4");
 
-                    using (StreamWriter streamWriter = new StreamWriter(File.Open(filePath, FileMode.Append, FileAccess.Write)))
+                    using (StreamWriter streamWriter = new StreamWriter(File.Open(filePath, FileMode.Append, FileAccess.Write), Encoding.UTF8))
                     {
                         var unixStart = _unixStart + fileOffset.TotalSeconds;
                         var unixScalingFactor = (double)_lastSamplePeriod.Ticks / TimeSpan.FromSeconds(1).Ticks;

@@ -76,10 +76,10 @@ namespace Nexus.Extensions
             _communicator = new RpcCommunicator(context.ResourceLocator, command, arguments, listenAddress, listenPort, this.Context.Logger);
             _rpcServer = await _communicator.ConnectAsync(timeoutTokenSource.Token);
 
-            var apiLevel = (await _rpcServer.GetApiLevelAsync(timeoutTokenSource.Token)).ApiLevel;
+            var apiVersion = (await _rpcServer.GetApiVersionAsync(timeoutTokenSource.Token)).ApiVersion;
 
-            if (apiLevel < 1 || apiLevel > RpcDataSource.API_LEVEL)
-                throw new Exception($"The API level '{apiLevel}' is not supported.");
+            if (apiVersion < 1 || apiVersion > RpcDataSource.API_LEVEL)
+                throw new Exception($"The API level '{apiVersion}' is not supported.");
 
             await _rpcServer
                 .SetContextAsync(context.ResourceLocator.ToString(), context.Configuration, context.Catalogs, timeoutTokenSource.Token);

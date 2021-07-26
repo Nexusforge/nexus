@@ -11,8 +11,8 @@ namespace Nexus.Extensions
 {
     public interface IJsonRpcServer
     {
-        public Task<ApiLevelResponse> 
-            GetApiLevelAsync(CancellationToken cancellationToken);
+        public Task<ApiVersionResponse> 
+            GetApiVersionAsync(CancellationToken cancellationToken);
 
         public Task 
             SetContextAsync(string resourceLocator, Dictionary<string, string> configuration, ResourceCatalog[] catalogs, CancellationToken cancellationToken);
@@ -30,7 +30,7 @@ namespace Nexus.Extensions
             ReadSingleAsync(string resourcePath, int elementCount, DateTime begin, DateTime end, CancellationToken cancellationToken);
     }
 
-    public record ApiLevelResponse(int ApiLevel);
+    public record ApiVersionResponse(int ApiVersion);
     public record CatalogsResponse(ResourceCatalog[] Catalogs);
     public record TimeRangeResponse(DateTime Begin, DateTime End);
     public record AvailabilityResponse(double Availability);

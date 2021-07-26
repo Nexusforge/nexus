@@ -1,4 +1,3 @@
-using GraphQL.Server;
 using MatBlazor;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -12,10 +11,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using Nexus.API;
 using Nexus.Core;
 using Nexus.Services;
 using Nexus.ViewModels;
@@ -135,6 +132,7 @@ namespace Nexus
                 config.Title = "Nexus REST API";
                 config.Version = "v1";
                 config.Description = "Explore resources and get their data.";
+                config.DocumentName = "v1";
                 //config.OperationProcessors.Add(new OperationSecurityScopeProcessor("JWT Token"));
                 //config.AddSecurity("JWT Token", Enumerable.Empty<string>(),
                 //    new OpenApiSecurityScheme()
@@ -146,21 +144,6 @@ namespace Nexus
                 //    }
                 //);
             });
-
-            // graphql
-            services
-                .AddSingleton<CatalogSchema>()
-                .AddGraphQL((options, provider) =>
-                {
-                    options.EnableMetrics = false;
-
-                    var logger = provider.GetRequiredService<ILogger<Startup>>();
-                    options.UnhandledExceptionDelegate = ctx
-                        => logger.LogError($"{ctx.OriginalException.Message} occured");
-                })
-                .AddErrorInfoProvider(opt => opt.ExposeExceptionStackTrace = true)
-                .AddSystemTextJson(deserializerSettings => { }, serializerSettings => { })
-                .AddGraphTypes(typeof(CatalogSchema));
 
             // custom
 #warning replace httpcontextaccessor by async authenticationStateProvider (https://github.com/dotnet/aspnetcore/issues/17585)
@@ -242,11 +225,7 @@ namespace Nexus
 
             // swagger
             app.UseOpenApi();
-            app.UseSwaggerUi3();
-
-            // graphql
-            app.UseGraphQL<CatalogSchema>("/graphql");
-            app.UseGraphQLPlayground();
+            app.UseSwaggerUi3(configure => configure.SwaggerRoutes);
 
             // routing (for REST API)
             app.UseRouting();

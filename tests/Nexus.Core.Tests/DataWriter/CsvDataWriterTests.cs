@@ -111,7 +111,7 @@ namespace Nexus.Core.Tests
                 "# format_version=1;",
                 "# system_name=Nexus;",
                 "# date_time=2020-01-01T00-00-00Z;",
-                "# sample_period=1 s;",
+                "# sample_period=1_s;",
                 "# catalog_id=/A/B/C;",
                 "# my-custom-parameter1=my-custom-value1;",
                 "# my-custom-parameter2=my-custom-value2;",
@@ -129,7 +129,11 @@ namespace Nexus.Core.Tests
             Assert.Equal("A_B_C_2020-01-01T00-00-00Z_1_s.csv", Path.GetFileName(actualFilePaths[0]));
             Assert.Equal($"{expected[0].Item2};412.6589;-0.7542502;", actualLines1.Last());
             Assert.Equal(2010, actualLines1.Count);
-            Assert.True(expectedLines1.SequenceEqual(actualLines1.Take(14)));
+
+            foreach (var (expectedLine, actualLine) in expectedLines1.Zip(actualLines1.Take(14)))
+            {
+                Assert.Equal(expectedLine, actualLine);
+            }
 
             // assert /D/E/F
             var expectedLines2 = new[]
@@ -137,7 +141,7 @@ namespace Nexus.Core.Tests
                 "# format_version=1;",
                 "# system_name=Nexus;",
                 "# date_time=2020-01-01T00-00-00Z;",
-                "# sample_period=1 s;",
+                "# sample_period=1_s;",
                 "# catalog_id=/D/E/F;",
                 "# my-custom-parameter3=my-custom-value3;",
                 $"{expected[0].Item1};resource3;",
@@ -154,7 +158,11 @@ namespace Nexus.Core.Tests
             Assert.Equal("D_E_F_2020-01-01T00-00-00Z_1_s.csv", Path.GetFileName(actualFilePaths[1]));
             Assert.Equal($"{expected[0].Item2};2.336974;", actualLines2.Last());
             Assert.Equal(2009, actualLines2.Count);
-            Assert.True(expectedLines2.SequenceEqual(actualLines2.Take(13)));
+
+            foreach (var (expectedLine, actualLine) in expectedLines2.Zip(actualLines2.Take(13)))
+            {
+                Assert.Equal(expectedLine, actualLine);
+            }
         }
     }
 }

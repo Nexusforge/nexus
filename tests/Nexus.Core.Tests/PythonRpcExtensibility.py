@@ -193,10 +193,10 @@ class RpcCommunicator:
         methodName = request["method"]
         params = request["params"]
 
-        if methodName == "getApiLevelAsync":
+        if methodName == "getApiVersionAsync":
 
             result = {
-                "ApiLevel": 1
+                "ApiVersion": 1
             }
 
         elif methodName == "setContextAsync":
