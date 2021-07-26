@@ -61,7 +61,7 @@ namespace Nexus.Extensibility
             /* validation */
             foreach (var catalogItemPipeReader in catalogItemPipeReaders)
             {
-                if (catalogItemPipeReader.CatalogItem.Representation.GetSamplePeriod() != samplePeriod)
+                if (catalogItemPipeReader.CatalogItem.Representation.SamplePeriod != samplePeriod)
                     throw new ValidationException("All representations must be of the same sample period.");
             }
 

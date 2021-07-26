@@ -43,7 +43,7 @@ namespace Nexus.Core.Tests
 
             // assert
             Assert.Single(actual.Resources);
-            Assert.Equal("100_Hz_mean", actual.Resources.First().Representations.First().Id);
+            Assert.Equal("10_ms_mean", actual.Resources.First().Representations.First().Id);
         }
 
         [Fact]

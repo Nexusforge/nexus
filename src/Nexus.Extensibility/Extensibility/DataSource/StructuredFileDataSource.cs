@@ -192,7 +192,7 @@ namespace Nexus.Extensibility
         {
             var representation = catalogItem.Representation;
             var catalog = catalogItem.Catalog;
-            var samplePeriod = representation.GetSamplePeriod();
+            var samplePeriod = representation.SamplePeriod;
             var fileSource = this.FileSourceProvider.Single(catalogItem);
             var fileLength = fileSource.FilePeriod.Ticks / samplePeriod.Ticks;
 

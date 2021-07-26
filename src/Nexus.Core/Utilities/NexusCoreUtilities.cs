@@ -11,6 +11,28 @@ namespace Nexus.Utilities
 {
     internal static class NexusCoreUtilities
     {
+        public static TimeSpan ValueAndUnitToSamplePeriod(string value, string unit)
+        {
+            var parsedValue = long.Parse(value);
+
+            var ticksPerUnit = unit switch
+            {
+                 "ns"   => 0.01,
+                 "us"   => 10,
+                 "ms"   => 10_000,
+                  "s"   => 10_000_000,
+                 "Hz"   => 10_000_000,
+                "min"   => 600_000_000,
+                _       => throw new Exception($"The unit {unit} is not supported.")
+            };
+
+            if (unit == "Hz")
+                return TimeSpan.FromTicks((long)(ticksPerUnit / parsedValue));
+
+            else
+                return TimeSpan.FromTicks((long)(parsedValue * ticksPerUnit));
+        }
+
         public static async Task FileLoopAsync(
             DateTime begin,
             DateTime end,

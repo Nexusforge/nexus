@@ -91,7 +91,7 @@ namespace Nexus.Extensibility.Tests
             {
                 var catalog = new ResourceCatalog() { Id = "/A/B/C" };
                 var resource = new Resource() { Id = Guid.NewGuid() };
-                var representation = new Representation() { Id = "1_Hz_mean", DataType = NexusDataType.INT64 };
+                var representation = new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "mean", DataType = NexusDataType.INT64 };
 
                 resource.Representations.Add(representation);
                 catalog.Resources.Add(resource);

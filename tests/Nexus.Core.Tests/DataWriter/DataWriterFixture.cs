@@ -14,8 +14,8 @@ namespace Nexus.Core.Tests
             // catalog 1
             var representations1 = new List<Representation>()
             {
-                new Representation() { Id = "1_Hz_mean", DataType = NexusDataType.FLOAT32 },
-                new Representation() { Id = "1_Hz_max", DataType = NexusDataType.FLOAT64 },
+                new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "mean", DataType = NexusDataType.FLOAT32 },
+                new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "max", DataType = NexusDataType.FLOAT64 },
             };
 
             var resourceMetadata1 = new Dictionary<string, string>()
@@ -48,7 +48,7 @@ namespace Nexus.Core.Tests
             // catalog 2
             var representations2 = new List<Representation>()
             {
-                new Representation() { Id = "1_Hz_std", DataType = NexusDataType.INT64 },
+                new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "std", DataType = NexusDataType.INT64 },
             };
 
             var resources2 = new List<Resource>()

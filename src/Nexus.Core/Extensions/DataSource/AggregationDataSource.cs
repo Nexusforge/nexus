@@ -265,7 +265,7 @@ namespace Nexus.Extensions
 
                     var (catalog, resource, representation) = catalogItem;
                     var catalogFolderPath = Path.Combine(this.Root, "DATA", WebUtility.UrlEncode(catalog.Id));
-                    var samplePeriod = representation.GetSamplePeriod();
+                    var samplePeriod = representation.SamplePeriod;
 
                     if (!Directory.Exists(catalogFolderPath))
                         continue;
@@ -512,9 +512,15 @@ namespace Nexus.Extensions
                 .ForEach(filePath =>
                 {
                     var fileName = Path.GetFileNameWithoutExtension(filePath);
-                    var fileNameParts = fileName.Split('_', count: 2);
+                    var fileNameParts = fileName.Split('_', count: 4);
                     var id = Guid.Parse(fileNameParts[0]);
-                    var representationId = fileNameParts[1];
+                    var value = fileNameParts[1];
+                    var unit = fileNameParts[2];
+                    var samplePeriod = NexusCoreUtilities.ValueAndUnitToSamplePeriod(value, unit);
+
+                    var detail = fileNameParts.Length >= 4
+                        ? fileNameParts[3]
+                        : "";
 
                     if (!resourceMap.TryGetValue(id, out var resource))
                     {
@@ -524,7 +530,8 @@ namespace Nexus.Extensions
 
                     var representation = new Representation()
                     {
-                        Id = representationId,
+                        SamplePeriod = samplePeriod,
+                        Detail = detail,
                         DataType = NexusDataType.FLOAT64
                     };
 

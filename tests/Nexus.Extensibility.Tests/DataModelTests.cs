@@ -1,4 +1,4 @@
-using Nexus.DataModel;
+﻿using Nexus.DataModel;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -17,48 +17,62 @@ namespace Nexus.Extensibility.Tests
         }
 
         [Theory]
-
-        // valid
-        [InlineData("1_Hz", true)]
-        [InlineData("12_Hz", true)]
-        [InlineData("1_min", true)]
-        [InlineData("1_s", true)]
-        [InlineData("1_ms", true)]
-        [InlineData("1_us", true)]
-        [InlineData("1_ns", true)]
-
-        [InlineData("1_Hz_mean", true)]
-        [InlineData("1_Hz_Mean", true)]
-        [InlineData("1_Hz_mean_polar", true)]
-        [InlineData("12_Hz_mean", true)]
-        [InlineData("1_min_mean", true)]
-        [InlineData("1_s_mean", true)]
-        [InlineData("1_ms_mean", true)]
-        [InlineData("1_us_mean", true)]
-        [InlineData("1_ns_mean", true)]
-
-        // invalid
-        [InlineData("1 Hz", false)]
-        [InlineData("1_h", false)]
-        [InlineData("a_Hz", false)]
-        [InlineData("a1_Hz", false)]
-        [InlineData("1a_Hz", false)]
-
-        [InlineData("1_h_mean", false)]
-        [InlineData("1 Hz_mean", false)]
-        [InlineData("1_Hz mean", false)]
-        [InlineData("1_Hz_mea�n", false)]
-        [InlineData("1_Hz_mea?n", false)]
-        [InlineData("a_Hz_mean", false)]
-        [InlineData("1a_Hz_mean", false)]
-        [InlineData("a1_Hz_mean", false)]
-        public void CanValidateId(string id, bool isValid)
+        [InlineData("00:01:00", true)]
+        [InlineData("00:00:00", false)]
+        public void CanValidateSamplePeriod(string samplePeriodString, bool isValid)
         {
+            var samplePeriod = TimeSpan.Parse(samplePeriodString);
+
             if (isValid)
-                new Representation() { Id = id, DataType = NexusDataType.FLOAT64 };
+                new Representation()
+                {
+                    SamplePeriod = samplePeriod,
+                    Detail = "mean",
+                    DataType = NexusDataType.FLOAT64
+                };
 
             else
-                Assert.Throws<ArgumentException>(() => new Representation() { Id = id, DataType = NexusDataType.FLOAT64 });
+                Assert.Throws<ArgumentException>(() => new Representation()
+                {
+                    SamplePeriod = samplePeriod,
+                    Detail = "mean",
+                    DataType = NexusDataType.FLOAT64
+                });
+        }
+
+        [Theory]
+
+        // valid
+        [InlineData("", true)]
+        [InlineData("mean", true)]
+        [InlineData("Mean", true)]
+        [InlineData("mean_polar", true)]
+
+        // invalid
+        [InlineData("_mean", false)]
+        [InlineData("1mean", false)]
+        [InlineData("meaßn", false)]
+        [InlineData("ª♫", false)]
+        [InlineData("mea n", false)]
+        [InlineData("mea-n", false)]
+        [InlineData("mea*n", false)]
+        public void CanValidateName(string name, bool isValid)
+        {
+            if (isValid)
+                new Representation() 
+                {
+                    SamplePeriod = TimeSpan.FromSeconds(1),
+                    Detail = name, 
+                    DataType = NexusDataType.FLOAT64 
+                };
+
+            else
+                Assert.Throws<ArgumentException>(() => new Representation()
+                {
+                    SamplePeriod = TimeSpan.FromSeconds(1),
+                    Detail = name,
+                    DataType = NexusDataType.FLOAT64
+                });
         }
 
         [Theory]
@@ -68,30 +82,30 @@ namespace Nexus.Extensibility.Tests
         public void CanValidateDataType(NexusDataType dataType, bool isValid)
         {
             if (isValid)
-                new Representation() { Id = "1_Hz_mean", DataType = dataType };
+                new Representation() 
+                { 
+                    SamplePeriod = TimeSpan.FromSeconds(1),
+                    Detail = "mean", 
+                    DataType = dataType
+                };
 
             else
-                Assert.Throws<ArgumentException>(() => new Representation() { Id = "1_Hz_mean", DataType = dataType });
+                Assert.Throws<ArgumentException>(() => new Representation() 
+                { 
+                    SamplePeriod = TimeSpan.FromSeconds(1),
+                    Detail = "mean",
+                    DataType = dataType 
+                });
         }
 
         [Theory]
-        [InlineData("1_Hz_mean_polar", "00:00:01")]
-        [InlineData("10_Hz", "00:00:00.1")]
-        [InlineData("4000_Hz", "00:00:00.00025")]
-        [InlineData("1_min", "00:01:00")]
-        [InlineData("15_s", "00:00:15")]
-        [InlineData("1_s", "00:00:01")]
-        [InlineData("15_ms", "00:00:00.015")]
-        [InlineData("1_ms", "00:00:00.001")]
-        [InlineData("15_us", "00:00:00.000015")]
-        [InlineData("1_us", "00:00:00.000001")]
-        [InlineData("200_ns", "00:00:00.0000002")]
-        [InlineData("15_ns", "00:00:00")]
-        public void CanGetSamplePeriodFromId(string representationId, string expectedString)
+        [InlineData("00:00:01", "mean", "1_s_mean")]
+        [InlineData("00:00:01", "", "1_s")]
+        public void CanInferId(string smaplePeriodString, string name, string expected)
         {
-            var expected = TimeSpan.Parse(expectedString);
-            var representation = new Representation() { Id = representationId };
-            var actual = representation.GetSamplePeriod();
+            var samplePeriod = TimeSpan.Parse(smaplePeriodString);
+            var representation = new Representation() { SamplePeriod = samplePeriod, Detail = name, DataType = NexusDataType.FLOAT32 };
+            var actual = representation.Id;
 
             Assert.Equal(expected, actual);
         }

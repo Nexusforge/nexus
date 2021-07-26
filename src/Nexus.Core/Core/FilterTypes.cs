@@ -41,7 +41,7 @@ namespace Nexus.Core
 
         public string Name { get; set; } = string.Empty;
 
-        public string SampleRate { get; set; }
+        public TimeSpan SamplePeriod { get; set; }
 
         public List<string> RequestedCatalogIds { get; set; } = new List<string>();
 

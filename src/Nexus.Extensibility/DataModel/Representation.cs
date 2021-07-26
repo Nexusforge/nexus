@@ -12,28 +12,55 @@ namespace Nexus.DataModel
     {
         #region Fields
 
-        private static Regex _idValidator = new Regex(@"^[0-9]+_(?:Hz|min|s|ms|us|ns)(?:_[a-zA-Z][a-zA-Z0-9_]*)?$");
+        private static Regex _detailValidator = new Regex(@"^(?:[a-zA-Z][a-zA-Z0-9_]*)?$");
         private static HashSet<NexusDataType> _nexusDataTypeValues = new HashSet<NexusDataType>(Enum.GetValues<NexusDataType>());
 
-        private string _id;
+        private TimeSpan _samplePeriod;
+        private string _detail;
         private NexusDataType _dataType;
 
         #endregion
 
         #region Properties
 
+        [JsonIgnore]
         public string Id
         {
             get
             {
-                return _id;
+                return string.IsNullOrWhiteSpace(this.Detail)
+                    ? $"{this.SamplePeriod.ToUnitString()}"
+                    : $"{this.SamplePeriod.ToUnitString()}_{this.Detail}";
+            }
+        }
+
+        public TimeSpan SamplePeriod
+        {
+            get
+            {
+                return _samplePeriod;
             }
             init
             {
-                if (!_idValidator.IsMatch(value))
-                    throw new ArgumentException($"The identifier '{value}' is not valid.");
+                if (value.Equals(default))
+                    throw new ArgumentException($"The sample period '{value}' is not valid.");
 
-                _id = value;
+                _samplePeriod = value;
+            }
+        }
+
+        public string Detail
+        {
+            get
+            {
+                return _detail;
+            }
+            init
+            {
+                if (!_detailValidator.IsMatch(value))
+                    throw new ArgumentException($"The representation detail '{value}' is not valid.");
+
+                _detail = value;
             }
         }
 
@@ -60,35 +87,6 @@ namespace Nexus.DataModel
         #endregion
 
         #region "Methods"
-
-        internal TimeSpan GetSamplePeriod()
-        {
-            var parts = this.Id.Split("_");
-            var number = long.Parse(parts[0]);
-
-            if (number < 1)
-                throw new Exception($"The frequency value '{number}' is invalid.");
-
-            var unit = parts[1];
-
-            if (unit == "Hz")
-            {
-                return TimeSpan.FromTicks(1000 * 1000 * 1000 / 100 / number);
-            }
-            else
-            {
-                return unit switch
-                {
-                    "ns"    => TimeSpan.FromTicks(number / 100),
-                    "us"    => TimeSpan.FromTicks(number * 1000 / 100),
-                    "ms"    => TimeSpan.FromTicks(number * 1000 * 1000 / 100),
-                    "s"     => TimeSpan.FromTicks(number * 1000 * 1000 * 1000 / 100),
-                    "min"   => TimeSpan.FromTicks(number *   60 * 1000 * 1000 * 1000 / 100),
-                    _       => throw new Exception($"The unit '{unit}' is not supported.")
-                };
-            }
-
-        }
 
         internal Representation DeepCopy()
         {

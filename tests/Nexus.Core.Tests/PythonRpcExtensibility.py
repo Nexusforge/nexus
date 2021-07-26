@@ -7,7 +7,7 @@ import struct
 import sys
 import time
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import TextIOWrapper
 from threading import Lock
 from typing import Awaitable, Dict, List, Tuple
@@ -266,6 +266,9 @@ class RpcCommunicator:
 
         if isinstance(x, enum.Enum):
             return x._name_
+
+        if isinstance(x, timedelta):
+            return str(x)
 
         if isinstance(x, datetime):
             return x.isoformat()

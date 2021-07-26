@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using Nexus.Core;
+using System.IO;
 using System.Text.Json;
 
 namespace Nexus.Utilities
@@ -8,6 +9,8 @@ namespace Nexus.Utilities
         public static void Serialize<T>(T value, string filePath)
         {
             var options = new JsonSerializerOptions() { WriteIndented = true };
+            options.Converters.Add(new TimeSpanConverter());
+
             var jsonString = JsonSerializer.Serialize(value, options);
 
             File.WriteAllText(filePath, jsonString);
@@ -16,7 +19,11 @@ namespace Nexus.Utilities
         public static T Deserialize<T>(string filePath)
         {
             var jsonString = File.ReadAllText(filePath);
-            return JsonSerializer.Deserialize<T>(jsonString);
+
+            var options = new JsonSerializerOptions();
+            options.Converters.Add(new TimeSpanConverter());
+
+            return JsonSerializer.Deserialize<T>(jsonString, options);
         }
     }
 }

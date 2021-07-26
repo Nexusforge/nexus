@@ -84,7 +84,7 @@ namespace Nexus.Extensions
                     var endTime = end.ToUnixTimeStamp();
 
                     var elementCount = data.Length / representation.ElementSize;
-                    var dt = representation.GetSamplePeriod().TotalSeconds;
+                    var dt = representation.SamplePeriod.TotalSeconds;
 
                     if (resource.Name.Contains("unix_time"))
                     {
@@ -134,11 +134,11 @@ namespace Nexus.Extensions
             var resourceD = new Resource() { Id = id4, Name = "unix_time2", Group = "Group 2", Unit = "" };
             resourceD.Metadata["Description"] = "Test resource.";
 
-            var representation1 = new Representation() { Id = "1_s_mean", DataType = NexusDataType.FLOAT64 };
-            var representation2 = new Representation() { Id = "1_s_mean", DataType = NexusDataType.FLOAT64 };
-            var representation3 = new Representation() { Id = "25_Hz", DataType = NexusDataType.INT32 };
-            var representation4 = new Representation() { Id = "1_s_max", DataType = NexusDataType.FLOAT64 };
-            var representation5 = new Representation() { Id = "1_s_mean", DataType = NexusDataType.FLOAT64 };
+            var representation1 = new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "mean", DataType = NexusDataType.FLOAT64 };
+            var representation2 = new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "mean", DataType = NexusDataType.FLOAT64 };
+            var representation3 = new Representation() { SamplePeriod = TimeSpan.FromMilliseconds(40), Detail = "", DataType = NexusDataType.INT32 };
+            var representation4 = new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "max", DataType = NexusDataType.FLOAT64 };
+            var representation5 = new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "mean", DataType = NexusDataType.FLOAT64 };
 
             // resource A
             resourceA.Representations.Add(representation1);

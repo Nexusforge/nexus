@@ -9,7 +9,7 @@ namespace Nexus.Extensibility
     {
         public static (Memory<byte>, Memory<byte>) CreateBuffers(Representation representation, DateTime begin, DateTime end)
         {
-            var elementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, representation.GetSamplePeriod());
+            var elementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, representation.SamplePeriod);
 
             var dataOwner = MemoryPool<byte>.Shared.Rent(elementCount * representation.ElementSize);
             var data = dataOwner.Memory.Slice(0, elementCount * representation.ElementSize);

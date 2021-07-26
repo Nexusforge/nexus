@@ -90,7 +90,7 @@ namespace Nexus.Roslyn
                 this.Workspace.AddDocument(project.Id, "FilterTypesShared.cs", SourceText.From(sharedCode));
 
                 // database code
-                var databaseCode = this.GenerateDatabaseCode(database, filter.SampleRate, filter.RequestedCatalogIds);
+                var databaseCode = this.GenerateDatabaseCode(database, filter.SamplePeriod, filter.RequestedCatalogIds);
                 this.Workspace.AddDocument(project.Id, "DatabaseCode.cs", SourceText.From(databaseCode));
             }
         }
@@ -124,7 +124,7 @@ namespace Nexus.Roslyn
             } while (!this.Workspace.TryApplyChanges(updatedSolution));
         }
 
-        private string GenerateDatabaseCode(NexusDatabase database, string sampleRate, List<string> requestedCatalogIds)
+        private string GenerateDatabaseCode(NexusDatabase database, TimeSpan samplePeriod, List<string> requestedCatalogIds)
         {
             // generate code
             var classStringBuilder = new StringBuilder();
@@ -147,55 +147,52 @@ namespace Nexus.Roslyn
             classStringBuilder.AppendLine($"return default;");
             classStringBuilder.AppendLine($"}}");
 
-            if (sampleRate is not null)
-            {
-                var filteredCatalogContainer = database.CatalogContainers
+            var filteredCatalogContainer = database.CatalogContainers
                     .Where(catalogContainer => requestedCatalogIds.Contains(catalogContainer.Id));
 
-                foreach (var catalogContainer in filteredCatalogContainer)
+            foreach (var catalogContainer in filteredCatalogContainer)
+            {
+                var addCatalog = false;
+                var catalogStringBuilder = new StringBuilder();
+
+                // catalog class definition
+                catalogStringBuilder.AppendLine($"public class {catalogContainer.PhysicalName}_TYPE");
+                catalogStringBuilder.AppendLine($"{{");
+
+                foreach (var resource in catalogContainer.Catalog.Resources)
                 {
-                    var addCatalog = false;
-                    var catalogStringBuilder = new StringBuilder();
+                    var addResource = false;
+                    var resourceStringBuilder = new StringBuilder();
 
-                    // catalog class definition
-                    catalogStringBuilder.AppendLine($"public class {catalogContainer.PhysicalName}_TYPE");
-                    catalogStringBuilder.AppendLine($"{{");
+                    // resource class definition
+                    resourceStringBuilder.AppendLine($"public class {resource.Name}_TYPE");
+                    resourceStringBuilder.AppendLine($"{{");
 
-                    foreach (var resource in catalogContainer.Catalog.Resources)
+                    foreach (var representation in resource.Representations.Where(representation => representation.SamplePeriod == samplePeriod))
                     {
-                        var addResource = false;
-                        var resourceStringBuilder = new StringBuilder();
+                        // representation property
+                        resourceStringBuilder.AppendLine($"public Span<double> {ExtensibilityUtilities.EnforceNamingConvention(representation.Id, prefix: "REPRESENTATION")} {{ get; set; }}");
 
-                        // resource class definition
-                        resourceStringBuilder.AppendLine($"public class {resource.Name}_TYPE");
-                        resourceStringBuilder.AppendLine($"{{");
-
-                        foreach (var representation in resource.Representations.Where(representation => representation.Id.Contains(sampleRate)))
-                        {
-                            // representation property
-                            resourceStringBuilder.AppendLine($"public Span<double> {ExtensibilityUtilities.EnforceNamingConvention(representation.Id, prefix: "REPRESENTATION")} {{ get; set; }}");
-
-                            addResource = true;
-                            addCatalog = true;
-                        }
-
-                        resourceStringBuilder.AppendLine($"}}");
-
-                        // resource property
-                        resourceStringBuilder.AppendLine($"public {resource.Name}_TYPE {resource.Name} {{ get; }}");
-
-                        if (addResource)
-                            catalogStringBuilder.AppendLine(resourceStringBuilder.ToString());
+                        addResource = true;
+                        addCatalog = true;
                     }
 
-                    catalogStringBuilder.AppendLine($"}}");
+                    resourceStringBuilder.AppendLine($"}}");
 
-                    // catalog property
-                    catalogStringBuilder.AppendLine($"public {catalogContainer.PhysicalName}_TYPE {catalogContainer.PhysicalName} {{ get; }}");
+                    // resource property
+                    resourceStringBuilder.AppendLine($"public {resource.Name}_TYPE {resource.Name} {{ get; }}");
 
-                    if (addCatalog)
-                        classStringBuilder.AppendLine(catalogStringBuilder.ToString());
+                    if (addResource)
+                        catalogStringBuilder.AppendLine(resourceStringBuilder.ToString());
                 }
+
+                catalogStringBuilder.AppendLine($"}}");
+
+                // catalog property
+                catalogStringBuilder.AppendLine($"public {catalogContainer.PhysicalName}_TYPE {catalogContainer.PhysicalName} {{ get; }}");
+
+                if (addCatalog)
+                    classStringBuilder.AppendLine(catalogStringBuilder.ToString());
             }
 
             classStringBuilder.AppendLine($"}}");

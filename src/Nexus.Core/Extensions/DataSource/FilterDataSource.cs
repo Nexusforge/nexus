@@ -165,7 +165,8 @@ namespace Nexus.Extensions
                             {
                                 new Representation()
                                 {
-                                    Id = filterCodeDefinition.SampleRate.Replace(' ', '_'),
+                                    SamplePeriod = filterCodeDefinition.SamplePeriod,
+                                    Detail = "",
                                     DataType = NexusDataType.FLOAT64
                                 }
                             };
@@ -283,8 +284,7 @@ namespace Nexus.Extensions
                 // read from disk
                 if (File.Exists(filePath))
                 {
-                    var jsonString = File.ReadAllText(filePath);
-                    filterSettings = JsonSerializer.Deserialize<FilterSettings>(jsonString);
+                    filterSettings = JsonSerializerHelper.Deserialize<FilterSettings>(filePath);
 
                     // add to cache
                     var filterSettings2 = filterSettings; // to make compiler happy

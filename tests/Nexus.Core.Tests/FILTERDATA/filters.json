@@ -8,7 +8,7 @@
       "Code": "using System;\r\nusing System.Collections.Generic;\r\n\r\nnamespace Nexus.Filters\r\n{\r\n    class FilterProvider : FilterProviderBase\r\n    {\r\n        /* Use this method to do the calculations for a filter that can be based on one or more\r\n         * resources of available and accessible projects.\r\n         *   begin:  Start of the current time period.\r\n         *   end:    End of the current time period.\r\n         *   data:   Contains data of the preselected projects.\r\n         *   result: The resulting double array with length matching the time period and sample rate.\r\n         */\r\n        public override void Filter(DateTime begin, DateTime end, FilterChannel filter, DataProvider dataProvider, Span<double> result)\r\n        {\r\n            /* This representation has the same length as the result array. */\r\n            var t1 = dataProvider.IN_MEMORY_TEST_ACCESSIBLE.T1.REPRESENTATION_1_s_mean;\r\n\r\n            for (int i = 0; i \u003C result.Length; i\u002B\u002B)\r\n            {\r\n                /* Example: Square each value. */\r\n                result[i] = Math.Pow(t1[i], 2);\r\n\r\n                /* Example: Add \u002B1 to each value (to demonstrate how to use shared code). */\r\n                // result[i] = Shared.AddOne(result[i]);\r\n            }\r\n        }\r\n\r\n        /* Use this method to provide one or more filter definitions. */\r\n        protected override List\u003CFilterChannel\u003E GetFilters()\r\n        {\r\n            return new List\u003CFilterChannel\u003E()\r\n            {\r\n                new FilterChannel()\r\n                {\r\n                    ResourceName = \u0022T1_squared\u0022,\r\n                    Unit = \u0022\u00B0C\u00B2\u0022\r\n                }\r\n            };\r\n        }\r\n    }\r\n}",
       "IsEnabled": true,
       "Name": "Simple filter (C#)",
-      "SampleRate": "1 s",
+      "SamplePeriod": "00:00:01",
       "RequestedProjectIds": [
         "/IN_MEMORY/TEST/ACCESSIBLE"
       ],
@@ -22,7 +22,7 @@
       "Code": "using System;\r\n\r\nnamespace Nexus.Filters\r\n{\r\n    /// \u003Csummary\u003E\r\n    /// The purpose of this class is to provide shared code, i.e. predefined and \r\n    /// resuable functions. By default this class is static but you may change it\r\n    /// to be instantiatable. Also, you may rename or create another class within\r\n    /// this code file. All files of kind \u0027shared\u0027 get linked to other \u0027normal\u0027\r\n    /// code files to make their content available there.\r\n    /// \u003C/summary\u003E\r\n    static class Shared\r\n    {\r\n        public static double AddOne(double value)\r\n        {\r\n            return value \u002B 1;\r\n        }\r\n    }\r\n};",
       "IsEnabled": true,
       "Name": "Simple shared (C#)",
-      "SampleRate": "",
+      "SamplePeriod": "00:00:00",
       "RequestedProjectIds": [],
       "CreationDate": "2021-05-11T15:58:34.6322191Z"
     }

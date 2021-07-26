@@ -90,7 +90,7 @@ namespace Nexus.Extensibility
             // DataSourceDoubleStream is only required to enable the browser to determine the download progress.
             // Otherwise the PipeReader.AsStream() would be sufficient.
 
-            var samplePeriod = catalogItem.Representation.GetSamplePeriod();
+            var samplePeriod = catalogItem.Representation.SamplePeriod;
             var elementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, samplePeriod);
             var totalLength = elementCount * NexusCoreUtilities.SizeOf(NexusDataType.FLOAT64);
             var pipe = new Pipe();
@@ -123,7 +123,7 @@ namespace Nexus.Extensibility
              *    and which then calls back into
              *  - the instance method InternalReadAsync which contains the logic to write into the pipes. */
 
-            var samplePeriod = catalogItem.Representation.GetSamplePeriod();
+            var samplePeriod = catalogItem.Representation.SamplePeriod;
             DataSourceController.ValidateParameters(begin, end, samplePeriod);
 
             var readingGroup = new DataReadingGroup(this, new CatalogItemPipeWriter[] 
@@ -343,7 +343,7 @@ namespace Nexus.Extensibility
             /* validation */
             foreach (var catalogItemPipeWriters in readingGroups.SelectMany(readingGroup => readingGroup.CatalogItemPipeWriters))
             {
-                if (catalogItemPipeWriters.CatalogItem.Representation.GetSamplePeriod() != samplePeriod)
+                if (catalogItemPipeWriters.CatalogItem.Representation.SamplePeriod != samplePeriod)
                     throw new ValidationException("All representations must be of the same sample period.");
             }
 
