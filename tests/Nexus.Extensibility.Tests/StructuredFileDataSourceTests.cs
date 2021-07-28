@@ -1,6 +1,4 @@
 using Microsoft.Extensions.Logging;
-using Moq;
-using Moq.Protected;
 using Nexus.DataModel;
 using System;
 using System.Globalization;

@@ -3,8 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 
 namespace Nexus.Core
@@ -106,9 +104,7 @@ namespace Nexus.Core
             // resource name determines the ID. And so renaming a resource means changing 
             // the ID.
             var value = $"({codeDefinition.Id}) {filterChannel.CatalogId}/{filterChannel.ResourceName}";
-            var md5 = MD5.Create(); // compute hash is not thread safe!
-            var hash = md5.ComputeHash(Encoding.UTF8.GetBytes(value)); // 
-            return new Guid(hash);
+            return new Guid(value.Hash());
         }
 
         #endregion

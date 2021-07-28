@@ -1,10 +1,19 @@
 ﻿using Nexus.Utilities;
 using System;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Nexus
 {
     public static class CustomExtensions
     {
+        public static byte[] Hash(this string value)
+        {
+            var md5 = MD5.Create(); // compute hash is not thread safe!
+            var hash = md5.ComputeHash(Encoding.UTF8.GetBytes(value)); // 
+            return hash;
+        }
+
         public static Memory<To> Cast<TFrom, To>(this Memory<TFrom> buffer)
             where TFrom : unmanaged
             where To : unmanaged

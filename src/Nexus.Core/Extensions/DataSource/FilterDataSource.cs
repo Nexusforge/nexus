@@ -11,7 +11,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -119,49 +118,47 @@ namespace Nexus.Extensions
             }
         }
 
-        public Task<ResourceCatalog[]> GetCatalogsAsync(CancellationToken cancellationToken)
+        public async Task<ResourceCatalog[]> GetCatalogsAsync(CancellationToken cancellationToken)
         {
-            return Task.Run(() =>
+            var catalogs = new Dictionary<string, ResourceCatalog>();
+
+            if (this.TryGetFilterSettings(out var filterSettings))
             {
-                var catalogs = new Dictionary<string, ResourceCatalog>();
+                await this.PopulateCacheAsync(filterSettings, cancellationToken);
+                var filterCodeDefinitions = filterSettings.CodeDefinitions.Where(filter => filter.CodeType == CodeType.Filter);
 
-                if (this.TryGetFilterSettings(out var filterSettings))
+                foreach (var filterCodeDefinition in filterCodeDefinitions)
                 {
-                    this.PopulateCache(filterSettings);
-                    var filterCodeDefinitions = filterSettings.CodeDefinitions.Where(filter => filter.CodeType == CodeType.Filter);
+                    var cacheEntry = _cacheEntries.FirstOrDefault(current => current.FilterCodeDefinition == filterCodeDefinition);
 
-                    foreach (var filterCodeDefinition in filterCodeDefinitions)
+                    if (cacheEntry is null)
+                        continue;
+
+                    var filterProvider = cacheEntry.FilterProvider;
+                    var filterChannels = filterProvider.Filters;
+
+                    foreach (var filterChannel in filterChannels)
                     {
-                        var cacheEntry = _cacheEntries.FirstOrDefault(current => current.FilterCodeDefinition == filterCodeDefinition);
+                        var localFilterChannel = filterChannel;
 
-                        if (cacheEntry is null)
-                            continue;
-
-                        var filterProvider = cacheEntry.FilterProvider;
-                        var filterChannels = filterProvider.Filters;
-
-                        foreach (var filterChannel in filterChannels)
+                        // enforce group
+                        if (localFilterChannel.CatalogId == FilterConstants.SharedCatalogID)
                         {
-                            var localFilterChannel = filterChannel;
-
-                            // enforce group
-                            if (localFilterChannel.CatalogId == FilterConstants.SharedCatalogID)
+                            localFilterChannel = localFilterChannel with
                             {
-                                localFilterChannel = localFilterChannel with
-                                {
-                                    Group = filterCodeDefinition.Owner.Split('@')[0]
-                                };
-                            }
-                            else if (string.IsNullOrWhiteSpace(localFilterChannel.Group))
+                                Group = filterCodeDefinition.Owner.Split('@')[0]
+                            };
+                        }
+                        else if (string.IsNullOrWhiteSpace(localFilterChannel.Group))
+                        {
+                            localFilterChannel = localFilterChannel with
                             {
-                                localFilterChannel = localFilterChannel with
-                                {
-                                    Group = "General"
-                                };
-                            }
+                                Group = "General"
+                            };
+                        }
 
-                            // create representations
-                            var representations = new List<Representation>()
+                        // create representations
+                        var representations = new List<Representation>()
                             {
                                 new Representation()
                                 {
@@ -171,39 +168,38 @@ namespace Nexus.Extensions
                                 }
                             };
 
-                            // create resource
-                            if (!NexusCoreUtilities.CheckNamingConvention(localFilterChannel.ResourceName, out var message))
-                            {
-                                this.Context.Logger.LogWarning($"Skipping resource '{localFilterChannel.ResourceName}' due to the following reason: {message}.");
-                                continue;
-                            }
-
-                            var resource = new Resource()
-                            {
-                                Id = localFilterChannel.ToGuid(cacheEntry.FilterCodeDefinition),
-                                Name = localFilterChannel.ResourceName,
-                                Group = localFilterChannel.Group,
-                                Unit = localFilterChannel.Unit,
-                                Representations = representations,
-                            };
-
-                            resource.Metadata["Description"] = localFilterChannel.Description;
-
-                            // get or create catalog
-                            if (!catalogs.TryGetValue(localFilterChannel.CatalogId, out var catalog))
-                            {
-                                catalog = new ResourceCatalog() { Id = localFilterChannel.CatalogId };
-                                catalogs[localFilterChannel.CatalogId] = catalog;
-                            }
-
-                            catalog.Resources.Add(resource);
+                        // create resource
+                        if (!NexusCoreUtilities.CheckNamingConvention(localFilterChannel.ResourceName, out var message))
+                        {
+                            this.Context.Logger.LogWarning($"Skipping resource '{localFilterChannel.ResourceName}' due to the following reason: {message}.");
+                            continue;
                         }
+
+                        var resource = new Resource()
+                        {
+                            Id = localFilterChannel.ToGuid(cacheEntry.FilterCodeDefinition),
+                            Name = localFilterChannel.ResourceName,
+                            Group = localFilterChannel.Group,
+                            Unit = localFilterChannel.Unit,
+                            Representations = representations,
+                        };
+
+                        resource.Metadata["Description"] = localFilterChannel.Description;
+
+                        // get or create catalog
+                        if (!catalogs.TryGetValue(localFilterChannel.CatalogId, out var catalog))
+                        {
+                            catalog = new ResourceCatalog() { Id = localFilterChannel.CatalogId };
+                            catalogs[localFilterChannel.CatalogId] = catalog;
+                        }
+
+                        catalog.Resources.Add(resource);
                     }
                 }
+            }
 
-                _catalogs = catalogs.Values.ToArray();
-                return _catalogs;
-            });
+            _catalogs = catalogs.Values.ToArray();
+            return _catalogs;
         }
 
         public Task<(DateTime Begin, DateTime End)> GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
@@ -297,7 +293,7 @@ namespace Nexus.Extensions
             return false;
         }
 
-        private void PopulateCache(FilterSettings filterSettings)
+        private async Task PopulateCacheAsync(FilterSettings filterSettings, CancellationToken cancellationToken)
         {
             var filterCodeDefinitions = filterSettings.CodeDefinitions
                 .Where(filterSetting => filterSetting.CodeType == CodeType.Filter && filterSetting.IsEnabled)
@@ -308,51 +304,55 @@ namespace Nexus.Extensions
 
             var cacheEntries = new FilterDataSourceCacheEntry[filterCodeDefinitions.Count];
 
-            Parallel.For(0, filterCodeDefinitions.Count, i =>
-            {
-                var filterCodeDefinition = filterCodeDefinitions[i];
-                filterCodeDefinition.Code = this.PrepareCode(filterCodeDefinition.Code);
-
-                var additionalCodeFiles = filterSettings.GetSharedFiles(filterCodeDefinition.Owner)
-                    .Select(codeDefinition => codeDefinition.Code)
-                    .ToList();
-
-                var roslynCatalog = new RoslynProject(filterCodeDefinition, additionalCodeFiles);
-                using var peStream = new MemoryStream();
-
-                var emitResult = roslynCatalog.Workspace.CurrentSolution.Projects.First()
-                    .GetCompilationAsync().Result
-                    .Emit(peStream);
-
-                if (!emitResult.Success)
-                    return;
-
-                peStream.Seek(0, SeekOrigin.Begin);
-
-                var loadContext = new FilterDataSourceLoadContext();
-                var assembly = loadContext.LoadFromStream(peStream);
-                var assemblyType = assembly.GetType();
-
-                // filter method info
-                var interfaceType = typeof(FilterProviderBase);
-                var filterType = assembly
-                    .GetTypes()
-                    .FirstOrDefault(type => interfaceType.IsAssignableFrom(type));
-
-                if (filterType is null)
-                    return;
-
-                try
+            var compileTasks = Enumerable
+                .Range(0, filterCodeDefinitions.Count)
+                .Select(async i =>
                 {
-                    var filterProvider = (FilterProviderBase)Activator.CreateInstance(filterType);
-                    var supportedChanneIds = filterProvider.Filters.Select(filter => filter.ToGuid(filterCodeDefinition)).ToList();
-                    cacheEntries[i] = new FilterDataSourceCacheEntry(filterCodeDefinition, loadContext, filterProvider, supportedChanneIds);
-                }
-                catch (Exception ex)
-                {
-                    this.Context.Logger.LogError($"Failed to instantiate the filter provider '{filterCodeDefinition.Name}' of user {filterCodeDefinition.Owner}. Detailed error: {ex.GetFullMessage()}");
-                }
-            });
+                    var filterCodeDefinition = filterCodeDefinitions[i];
+                    filterCodeDefinition.Code = this.PrepareCode(filterCodeDefinition.Code);
+
+                    var additionalCodeFiles = filterSettings.GetSharedFiles(filterCodeDefinition.Owner)
+                        .Select(codeDefinition => codeDefinition.Code)
+                        .ToList();
+
+                    var roslynCatalog = new RoslynProject(filterCodeDefinition, additionalCodeFiles);
+                    using var peStream = new MemoryStream();
+
+                    var emitResult = (await roslynCatalog.Workspace.CurrentSolution.Projects.First()
+                        .GetCompilationAsync(cancellationToken))
+                        .Emit(peStream);
+
+                    if (!emitResult.Success)
+                        return;
+
+                    peStream.Seek(0, SeekOrigin.Begin);
+
+                    var loadContext = new FilterDataSourceLoadContext();
+                    var assembly = loadContext.LoadFromStream(peStream);
+
+                    // filter method info
+                    var interfaceType = typeof(FilterProviderBase);
+                    var filterType = assembly
+                        .GetTypes()
+                        .FirstOrDefault(type => interfaceType.IsAssignableFrom(type));
+
+                    if (filterType is null)
+                        return;
+
+                    try
+                    {
+                        var filterProvider = (FilterProviderBase)Activator.CreateInstance(filterType);
+                        var supportedChanneIds = filterProvider.Filters.Select(filter => filter.ToGuid(filterCodeDefinition)).ToList();
+                        cacheEntries[i] = new FilterDataSourceCacheEntry(filterCodeDefinition, loadContext, filterProvider, supportedChanneIds);
+                    }
+                    catch (Exception ex)
+                    {
+                        this.Context.Logger.LogError($"Failed to instantiate the filter provider '{filterCodeDefinition.Name}' of user {filterCodeDefinition.Owner}. Detailed error: {ex.GetFullMessage()}");
+                    }
+                })
+                .ToArray();
+
+            await Task.WhenAll(compileTasks);
 
             _cacheEntries.AddRange(cacheEntries.Where(cacheEntry => cacheEntry is not null));
             this.Context.Logger.LogInformation($"{message} Done.");
