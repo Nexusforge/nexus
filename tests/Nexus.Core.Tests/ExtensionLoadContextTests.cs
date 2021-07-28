@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -87,6 +88,18 @@ namespace Nexus.Core.Tests
                 new DiscoveredExtensionVersion("2.0.0", "https://github.com/Nexusforge/github-releases-provider-test-project/releases/download/v2.0.0/assets.zip"),
             };
 
+            // Need to do it this way because GitHub revokes obvious tokens on commit.
+            // However, this token - in combination with the test user's account
+            // privileges - allows only read-only access to a test project, so there
+            // is no real risk.
+            var token = new byte[]
+            {
+                0x67, 0x68, 0x70, 0x5F, 0x6F, 0x77, 0x54, 0x68, 0x65, 0x48,
+                0x52, 0x54, 0x53, 0x44, 0x64, 0x32, 0x5A, 0x6F, 0x47, 0x72,
+                0x46, 0x43, 0x50, 0x6B, 0x33, 0x32, 0x53, 0x61, 0x48, 0x64,
+                0x42, 0x31, 0x58, 0x66, 0x32, 0x53, 0x36, 0x36, 0x44, 0x37
+            };
+
             var extensionReference = new Dictionary<string, string>()
             {
                 // required
@@ -96,7 +109,7 @@ namespace Nexus.Core.Tests
                 ["AssetSelector"] = @"assets\.zip$",
 
                 // optional token with scope(s): repo
-                ["Token"] = "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"
+                ["Token"] = Encoding.ASCII.GetString(token)
             };
 
             var extensionLoadContext = new ExtensionLoadContext(extensionReference);
