@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Configuration;
+using System;
 using System.IO;
 using System.Net;
 using System.Runtime.InteropServices;
@@ -12,6 +13,21 @@ namespace Nexus.Core
     {
         // for testing only
         public string BlindSample { get; set; }
+
+        public static IConfiguration BuildConfiguration(string[] args)
+        {
+            var settingsPath = Environment.GetEnvironmentVariable("NEXUS_PATHS_SETTINGS");
+
+            if (string.IsNullOrWhiteSpace(settingsPath))
+                settingsPath = PathsOptions.DefaultSettingsPath;
+
+            return new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .AddIniFile(settingsPath, optional: true)
+                .AddImprovedEnvironmentVariables(prefix: "NEXUS_")
+                .AddCommandLine(args)
+                .Build();
+        }
     }
 
     public record GeneralOptions() : NexusOptionsBase

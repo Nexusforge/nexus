@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,10 +19,11 @@ namespace Nexus.Core.Tests
         #region Load
 
         [Fact]
-        public async Task CanLoadAsync()
+        public async Task CanLoadAndUnloadAsync()
         {
             // prepare extension
             var extensionFolderPath = Path.Combine(Path.GetTempPath(), $"Nexus.Tests.{Guid.NewGuid()}");
+            var pathHash = new Guid(extensionFolderPath.Hash()).ToString();
             var configuration = "Debug";
             var csprojPath = "./../../../../../tests/TestExtensionProject/TestExtensionProject.csproj";
 
@@ -43,25 +46,27 @@ namespace Nexus.Core.Tests
 
             try
             {
+                var version = "v1.0.0-unit.test";
+
                 var extensionReference = new Dictionary<string, string>()
                 {
                     // required
                     ["Provider"] = "local",
                     ["Path"] = extensionFolderPath,
-                    ["Version"] = "v1.0.0-unit.test"
+                    ["Version"] = version
                 };
 
-                var extensionController = new ExtensionController(extensionReference, NullLogger.Instance);
-                var assembly = await extensionController.LoadAsync(restoreRoot, CancellationToken.None);
+                var fileToDelete = Path.Combine(restoreRoot, "local", pathHash, version, "TestExtensionProject.dll");
+                var weakReference = await this.Load_Run_and_Unload_Async(restoreRoot, fileToDelete, extensionReference);
 
-                var dataSourceType = assembly
-                    .ExportedTypes
-                    .First(type => typeof(IDataSource).IsAssignableFrom(type));
+                for (int i = 0; weakReference.IsAlive && i < 10; i++)
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                }
 
-                var dataSource = (IDataSource)Activator.CreateInstance(dataSourceType);
-                var exception = await Assert.ThrowsAsync<NotImplementedException>(() => dataSource.GetCatalogsAsync(CancellationToken.None));
-
-                Assert.Equal(nameof(IDataSource.GetCatalogsAsync), exception.Message);
+                // try to delete file
+                File.Delete(fileToDelete);
             }
             finally
             {
@@ -69,20 +74,43 @@ namespace Nexus.Core.Tests
                 {
                     Directory.Delete(restoreRoot, recursive: true);
                 }
-                catch
-                {
-                    //
-                }
+                catch { }
 
                 try
                 {
                     Directory.Delete(extensionFolderPath, recursive: true);
                 }
-                catch
-                {
-                    //
-                }
+                catch { }
             }
+        }
+
+        // https://docs.microsoft.com/en-us/dotnet/standard/assembly/unloadability
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private async Task<WeakReference> Load_Run_and_Unload_Async(
+            string restoreRoot, string fileToDelete, Dictionary<string, string> extensionReference)
+        {
+            // load
+            var extensionController = new ExtensionController(extensionReference, NullLogger.Instance);
+            var assembly = await extensionController.LoadAsync(restoreRoot, CancellationToken.None);
+
+            var dataSourceType = assembly
+                .ExportedTypes
+                .First(type => typeof(IDataSource).IsAssignableFrom(type));
+
+            // run
+            var dataSource = (IDataSource)Activator.CreateInstance(dataSourceType);
+            var exception = await Assert.ThrowsAsync<NotImplementedException>(() => dataSource.GetCatalogsAsync(CancellationToken.None));
+
+            Assert.Equal(nameof(IDataSource.GetCatalogsAsync), exception.Message);
+
+            // delete should fail
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                Assert.Throws<UnauthorizedAccessException>(() => File.Delete(fileToDelete));
+
+            // unload
+            var weakReference = extensionController.Unload();
+
+            return weakReference;
         }
 
         #endregion

@@ -108,13 +108,16 @@ namespace Nexus
             return assembly;
         }
 
-        public void Unload()
+        public WeakReference Unload()
         {
             if (_loadContext is null)
                 throw new Exception("The extension is not yet loaded.");
 
             _loadContext.Unload();
+            var weakReference = new WeakReference(_loadContext, trackResurrection: true);
             _loadContext = null;
+
+            return weakReference;
         }
 
         internal async Task<string> RestoreAsync(string restoreRoot, CancellationToken cancellationToken)

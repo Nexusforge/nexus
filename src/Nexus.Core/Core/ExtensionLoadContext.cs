@@ -14,7 +14,7 @@ namespace Nexus
 
         #region Constructors
 
-        public ExtensionLoadContext(string entryDllPath)
+        public ExtensionLoadContext(string entryDllPath) : base(isCollectible: true)
         {
             _resolver = new AssemblyDependencyResolver(entryDllPath);
         }

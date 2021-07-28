@@ -1,6 +1,6 @@
 ﻿namespace Nexus.Core.Services
 {
-    internal class ExtensionLoader
+    internal class ExtensionService
     {
 
     }

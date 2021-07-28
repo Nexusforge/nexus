@@ -1,9 +1,8 @@
 using Microsoft.Extensions.Configuration;
-using Nexus.Core;
 using System;
 using Xunit;
 
-namespace Nexus.Tests
+namespace Nexus.Core.Tests
 {
     public class OptionsTests
     {
@@ -19,7 +18,7 @@ namespace Nexus.Tests
         [Theory]
         public void CanBindOptions<T>(string section, Type optionsType)
         {
-            var configuration = Program
+            var configuration = NexusOptionsBase
                 .BuildConfiguration(new string[0]);
 
             var options = (NexusOptionsBase)configuration
@@ -32,7 +31,7 @@ namespace Nexus.Tests
         [Fact]
         public void CanReadAppsettingsJson()
         {
-            var configuration = Program
+            var configuration = NexusOptionsBase
                 .BuildConfiguration(new string[0]);
 
             var options = configuration
@@ -49,7 +48,7 @@ namespace Nexus.Tests
             {
                 Environment.SetEnvironmentVariable("NEXUS_PATHS_SETTINGS", "appsettings.ini");
 
-                var configuration = Program
+                var configuration = NexusOptionsBase
                     .BuildConfiguration(new string[0]);
 
                 var options = configuration
@@ -70,7 +69,7 @@ namespace Nexus.Tests
                 Environment.SetEnvironmentVariable("NEXUS_PATHS_SETTINGS", "appsettings.ini");
                 Environment.SetEnvironmentVariable("NEXUS_SMTP_PORT", "27");
 
-                var configuration = Program
+                var configuration = NexusOptionsBase
                    .BuildConfiguration(new string[0]);
 
                 var options = configuration
@@ -99,7 +98,7 @@ namespace Nexus.Tests
             {
                 Environment.SetEnvironmentVariable("NEXUS_SMTP_PORT", "27");
 
-                var configuration = Program
+                var configuration = NexusOptionsBase
                     .BuildConfiguration(new string[] { arg });
 
                 var options = configuration

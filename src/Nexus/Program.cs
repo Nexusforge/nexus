@@ -27,7 +27,7 @@ namespace Nexus
             var isWindowsService = args.Contains("--non-interactive");
 
             // configuration
-            var configuration = Program.BuildConfiguration(args);
+            var configuration = NexusOptionsBase.BuildConfiguration(args);
 
             // service vs. interactive
             var hostBuilder = Program.CreateHostBuilder(Environment.CurrentDirectory, configuration);
@@ -43,21 +43,6 @@ namespace Nexus
                     .RunAsync();
 
             return 0;
-        }
-
-        internal static IConfiguration BuildConfiguration(string[] args)
-        {
-            var settingsPath = Environment.GetEnvironmentVariable("NEXUS_PATHS_SETTINGS");
-
-            if (string.IsNullOrWhiteSpace(settingsPath))
-                settingsPath = PathsOptions.DefaultSettingsPath;
-
-            return new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json")
-                .AddIniFile(settingsPath, optional: true)
-                .AddImprovedEnvironmentVariables(prefix: "NEXUS_")
-                .AddCommandLine(args)
-                .Build();
         }
 
         private static IHostBuilder CreateHostBuilder(string currentDirectory, IConfiguration configuration) => 
