@@ -52,6 +52,8 @@ namespace Nexus.PackageManagement
             if (!_packageReference.TryGetValue("Provider", out var provider))
                 throw new ArgumentException("The 'Provider' parameter is missing in the extension reference.");
 
+            _logger.LogDebug("Discover package versions using provider {Provider}.", provider);
+
             switch (provider)
             {
                 case "local":
@@ -73,7 +75,7 @@ namespace Nexus.PackageManagement
                 //    break;
 
                 default:
-                    throw new ArgumentException($"The provider '{provider}' is not supported.");
+                    throw new ArgumentException($"The provider {provider} is not supported.");
             }
 
             return result;
@@ -127,6 +129,8 @@ namespace Nexus.PackageManagement
 
             string restoreFolderPath;
             var actualRestoreRoot = Path.Combine(restoreRoot, provider);
+
+            _logger.LogDebug("Restore package using provider {Provider}.", provider);
 
             switch (provider)
             {
@@ -245,6 +249,7 @@ namespace Nexus.PackageManagement
 
                 var folderName = Path.GetFileName(folderPath);
                 result.Add(folderName);
+                _logger.LogDebug("Discovered package version {PackageVersion}.", folderName);
             }
 
             result.Reverse();
@@ -271,7 +276,14 @@ namespace Nexus.PackageManagement
                 var targetPath = Path.Combine(restoreRoot, pathHash, version);
 
                 if (!Directory.Exists(targetPath) || !Directory.EnumerateFileSystemEntries(targetPath).Any())
+                {
+                    _logger.LogDebug("Restore package from source {Source}.", sourcePath);
                     PackageController.CloneFolder(sourcePath, targetPath);
+                }
+                else
+                {
+                    _logger.LogDebug("Package is already restored.");
+                }
 
                 return targetPath;
             }, cancellationToken);
@@ -311,6 +323,7 @@ namespace Nexus.PackageManagement
                 {
                     var releaseTagName = githubRelease.GetProperty("tag_name").GetString();
                     result.Add(releaseTagName);
+                    _logger.LogDebug("Discovered package version {PackageVersion}.", releaseTagName);
                 }
 
                 // look for more pages
@@ -391,12 +404,17 @@ namespace Nexus.PackageManagement
                     headers["User-Agent"] = "Nexus";
                     headers["Accept"] = "application/octet-stream";
 
+                    _logger.LogDebug("Restore package from source {Source}.", assetBrowserUrl);
                     await PackageController.DownloadAndExtractAsync(assetBrowserUrl, assetUrl, targetPath, headers, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
                     throw new Exception("No matching assets found.");
                 }
+            }
+            else
+            {
+                _logger.LogDebug("Package is already restored.");
             }
 
             return targetPath;
@@ -430,6 +448,7 @@ namespace Nexus.PackageManagement
             {
                 var packageVersion = gitlabPackage.GetProperty("version").GetString();
                 result.Add(packageVersion);
+                _logger.LogDebug("Discovered package version {PackageVersion}.", packageVersion);
             }
 
             result.Reverse();
@@ -510,12 +529,17 @@ namespace Nexus.PackageManagement
                 {
                     // download package file (https://docs.gitlab.com/ee/user/packages/generic_packages/index.html#download-package-file)
                     var assetUrl = $"{server}/api/v4/projects/{encodedProjectPath}/packages/generic/{package}/{version}/{fileName}";
+                    _logger.LogDebug("Restore package from source {Source}.", assetUrl);
                     await PackageController.DownloadAndExtractAsync(fileName, assetUrl, targetPath, headers, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
                     throw new Exception("No matching assets found.");
                 }
+            }
+            else
+            {
+                _logger.LogDebug("Package is already restored.");
             }
 
             return targetPath;
@@ -614,6 +638,8 @@ namespace Nexus.PackageManagement
 
         //            if (isSemanticVersion)
         //                result[semanticVersion] = releaseTagName;
+
+        //            _logger.LogDebug("Discovered package version {PackageVersion}.", releaseTagName);
         //        }
 
         //        // look for more pages
@@ -685,48 +711,18 @@ namespace Nexus.PackageManagement
 
         //        if (asset.ValueKind != JsonValueKind.Undefined)
         //        {
-        //            // get asset download URL
         //            var assetUrl = new Uri(asset.GetProperty("direct_asset_url").GetString());
-
-        //            // get download stream
-        //            async Task<HttpResponseMessage> GetAssetResponseAsync()
-        //            {
-        //                using var assetRequest = new HttpRequestMessage(HttpMethod.Get, assetUrl);
-
-        //                var assetResponse = await _httpClient
-        //                    .SendAsync(assetRequest, HttpCompletionOption.ResponseHeadersRead)
-        //                    .ConfigureAwait(false);
-
-        //                assetResponse.EnsureSuccessStatusCode();
-
-        //                return assetResponse;
-        //            }
-
-        //            // download and extract
-        //            if (assetUrl.ToString().EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
-        //            {
-        //                using var assetResponse = await GetAssetResponseAsync().ConfigureAwait(false);
-        //                using var stream = await assetResponse.Content.ReadAsStreamAsync().ConfigureAwait(false);
-        //                using var zipArchive = new ZipArchive(stream, ZipArchiveMode.Read);
-        //                zipArchive.ExtractToDirectory(targetPath);
-        //            }
-        //            else if (assetUrl.ToString().EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase))
-        //            {
-        //                using var assetResponse = await GetAssetResponseAsync().ConfigureAwait(false);
-        //                using var stream = await assetResponse.Content.ReadAsStreamAsync().ConfigureAwait(false);
-        //                using var gzipStream = new GZipInputStream(stream);
-        //                using var tarArchive = TarArchive.CreateInputTarArchive(gzipStream, Encoding.UTF8);
-        //                tarArchive.ExtractContents(targetPath);
-        //            }
-        //            else
-        //            {
-        //                throw new Exception("Only assets of type .zip or .tar.gz are supported.");
-        //            }
+        //            _logger.LogDebug("Restore package from source {Source}.", assetUrl);
+        //            await PackageController.DownloadAndExtractAsync(fileName, assetUrl, targetPath, headers, cancellationToken).ConfigureAwait(false);
         //        }
         //        else
         //        {
         //            throw new Exception("No matching assets found.");
         //        }
+        //    }
+        //    else
+        //    {
+        //        _logger.LogDebug("Package is already restored.");
         //    }
         //
         //    return targetPath;

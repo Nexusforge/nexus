@@ -60,10 +60,11 @@ namespace Nexus.Services
             foreach (var packageReference in filteredPackageReferences)
             {
                 var controller = new PackageController(packageReference, _logger);
+                using var scope = _logger.BeginScope(packageReference);
 
                 try
                 {
-                    _logger.LogDebug("Package controller loads package reference {PackageReference}.", packageReference);
+                    _logger.LogDebug("Load package.");
                     var assembly = await controller.LoadAsync(_pathsOptions.Packages, cancellationToken);
 
                     var attributesAndTypes = assembly.ExportedTypes
@@ -103,7 +104,7 @@ namespace Nexus.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Package controller loads package reference {PackageReference}.", packageReference);
+                    _logger.LogError(ex, "Load package failed.");
                 }
             }
 
@@ -117,6 +118,8 @@ namespace Nexus.Services
             if (_packageControllerMap is null)
                 return false;
 
+            _logger.LogDebug("Instantiate extension {ExtensionIdentifier} of type {Type}.", identifier, typeof(T).FullName);
+
             var type = _packageControllerMap
                 .SelectMany(entry => entry.Value)
                 .Where(extensionTuple => typeof(T).IsAssignableFrom(extensionTuple.Type) && extensionTuple.Identification.Id == identifier)
@@ -125,7 +128,7 @@ namespace Nexus.Services
 
             if (type is null)
             {
-                _logger.LogWarning("Could not find extension for identifier {Identifier}.", identifier);
+                _logger.LogWarning("Could not find extension {ExtensionIdentifier} of type {Type}.", identifier, typeof(T).FullName);
                 return false;
             }
             else
