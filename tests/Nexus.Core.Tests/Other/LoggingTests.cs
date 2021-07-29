@@ -33,13 +33,14 @@ namespace Other
         [Fact]
         public void CanLogToSeq()
         {
-            // 1. Prepare filters
+            // 1. Prepare environment variables (server url and filters)
+
+            /* Seq server URL */
+            Environment.SetEnvironmentVariable("NEXUS_LOGGING_SEQ_SERVERURL", "http://localhost:5341");
 
             /* How filtering rules are applied:
              * https://docs.microsoft.com/en-us/aspnet/core/fundamentals/logging/?tabs=aspnetcore2x&view=aspnetcore-5.0#how-filtering-rules-are-applied
              */
-
-            Environment.SetEnvironmentVariable("NEXUS_LOGGING_SEQ_SERVERURL", "http://localhost:5341");
 
             /* Seq Minimum Level (cannot override):
              * if not defined: LevelAlias.Minimum = "Trace" (https://github.com/datalust/seq-extensions-logging/blob/90a7471e0c48d1065e60338a1c8f646a85e845c8/src/Seq.Extensions.Logging/Microsoft/Extensions/Logging/SeqLoggerExtensions.cs#L101)
@@ -69,9 +70,11 @@ namespace Other
                 /* It is very important to provide the correct section! */
                 logging.AddConfiguration(configuration.GetSection("Logging"));
 
+                /* Add seq sink */
                 if (configuration.GetSection("Logging:Seq").Exists())
                     logging.AddSeq(configuration.GetSection("Logging:Seq"));
 
+                /* Get SerilogLoggerProvider provider to be able to dispose it later. */
                 loggerProviders = logging.Services
                    .Where(descriptor => descriptor.ImplementationFactory is not null)
                    .Select(descriptor => (ILoggerProvider)descriptor.ImplementationFactory(null))
@@ -100,10 +103,64 @@ namespace Other
             }
 
             // 3.3 Log with template
-            var context = new { Amount = 108, Message = "Hello" };
-            logger.LogWarning("My templated message with parameters {Text}, {Number} and {AnonymousType}.", "A", 2.59, context);
+            var context1 = new { Amount = 108, Message = "Hello" };
+            var context2 = new { Amount2 = 108, Message2 = "Hello" };
 
-            // 4. Clean-up
+            logger.LogInformation("Log with template with parameters {Text}, {Number} and {AnonymousType}.", "A", 2.59, context1);
+
+            // 3.4 Log with scope with template
+            using (var scopeWithTemplate = logger.BeginScope("My templated scope message with parameters {ScopeText}, {ScopeNumber} and {ScopeAnonymousType}.", "A", 2.59, context1))
+            {
+                logger.LogInformation("Log with scope with template with parameters {Text}, {Number} and {AnonymousType}.", "A", 2.59, context1);
+            }
+
+            // 3.5 Log with double scope with template
+            using (var scopeWithTemplate1 = logger.BeginScope("My templated scope message 1 with parameters {ScopeText1}, {ScopeNumber} and {ScopeAnonymousType}.", "A", 2.59, context1))
+            {
+                using (var scopeWithTemplate2 = logger.BeginScope("My templated scope message 2 with parameters {ScopeText2}, {ScopeNumber} and {ScopeAnonymousType}.", "A", 3.59, context2))
+                {
+                    logger.LogInformation("Log with double scope with template with parameters {Text}, {Number} and {AnonymousType}.", "A", 2.59, context1);
+                }
+            }
+
+            // 3.6 Log with scope with state
+            using (var scopeWithState = logger.BeginScope(context1))
+            {
+                logger.LogInformation("Log with scope with state with parameters {Text}, {Number} and {AnonymousType}.", "A", 2.59, context1);
+            }
+
+            // 3.7 Log with double scope with state
+            using (var scopeWithState1 = logger.BeginScope(context1))
+            {
+                using (var scopeWithState2 = logger.BeginScope(context2))
+                {
+                    logger.LogInformation("Log with double scope with state with parameters {Text}, {Number} and {AnonymousType}.", "A", 2.59, context1);
+                }
+            }
+
+            // 3.8 Log with increased log level
+
+            logger.LogTrace("I am increasing the log level to critical only!");
+
+            logLevelUpdater.SetLevel(LogLevel.Critical, category: "Other.LoggingTests");
+
+            logger.LogTrace("Trace: This should not be logged!");
+            logger.LogDebug("Debug: This should not be logged!");
+            logger.LogInformation("Information: This should not be logged!");
+            logger.LogWarning("Warning: This should not be logged!");
+            logger.LogError("Error: This should not be logged!");
+            logger.LogCritical("Critical: It worked! Now change back to previous value!");
+
+            logLevelUpdater.ResetLevel(category: "Other.LoggingTests");
+
+            logger.LogTrace("Trace: It worked!");
+            logger.LogDebug("Debug: It worked!");
+            logger.LogInformation("Information: It worked!");
+            logger.LogWarning("Warning: It worked!");
+            logger.LogError("Error: It worked!");
+            logger.LogCritical("Critical: It worked!");
+
+            // 4. Flush log messages
             loggerProviders.ForEach(loggerProvider => loggerProvider.Dispose());
         }
     }
