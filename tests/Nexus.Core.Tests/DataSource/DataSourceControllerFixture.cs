@@ -3,7 +3,7 @@ using Nexus.Extensibility;
 using Nexus.Extensions;
 using System;
 
-namespace Nexus.Core.Tests
+namespace DataSource
 {
     public class DataSourceControllerFixture : IDisposable
     {

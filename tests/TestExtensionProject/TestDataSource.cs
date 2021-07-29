@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace TestExtensionProject
 {
+    [ExtensionIdentification("my-unique-data-source", "My unique data source", "A data source for unit tests.")]
     public class TestDataSource : IDataSource
     {
         public Task SetContextAsync(DataSourceContext context, CancellationToken cancellationToken)

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
+using Nexus;
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using System;
@@ -10,7 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Nexus.Core.Tests
+namespace DataWriter
 {
     public class DataWriterControllerTests : IClassFixture<DataWriterFixture>
     {

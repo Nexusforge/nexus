@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Nexus.Services;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Runtime.InteropServices;
@@ -14,19 +16,23 @@ namespace Nexus.Core
         // for testing only
         public string BlindSample { get; set; }
 
-        public static IConfiguration BuildConfiguration(string[] args)
+        public static IConfiguration BuildConfiguration(string[] args, LogLevelUpdater logLevelUpdater = default)
         {
             var settingsPath = Environment.GetEnvironmentVariable("NEXUS_PATHS_SETTINGS");
 
             if (string.IsNullOrWhiteSpace(settingsPath))
                 settingsPath = PathsOptions.DefaultSettingsPath;
 
-            return new ConfigurationBuilder()
+            var builder = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.json")
                 .AddIniFile(settingsPath, optional: true)
                 .AddImprovedEnvironmentVariables(prefix: "NEXUS_")
-                .AddCommandLine(args)
-                .Build();
+                .AddCommandLine(args);
+
+            if (logLevelUpdater != default)
+                builder.AddLoggingConfiguration(logLevelUpdater, "Logging");
+
+            return builder.Build();
         }
     }
 
@@ -56,6 +62,10 @@ namespace Nexus.Core
         public string Data { get; set; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
             ? Path.Combine(Environment.GetFolderPath(SpecialFolder.ApplicationData), "Nexus", "data")
             : "/var/lib/nexus/data";
+
+        // GetGlobalPackagesFolder: https://github.com/NuGet/NuGet.Client/blob/0fc58e13683565e7bdf30e706d49e58fc497bbed/src/NuGet.Core/NuGet.Configuration/Utility/SettingsUtility.cs#L225-L254
+        // GetFolderPath: https://github.com/NuGet/NuGet.Client/blob/1d75910076b2ecfbe5f142227cfb4fb45c093a1e/src/NuGet.Core/NuGet.Common/PathUtil/NuGetEnvironment.cs#L54-L57
+        public string Packages { get; set; } = Path.Combine(Environment.GetFolderPath(SpecialFolder.UserProfile), ".nexus", "packages");
 
         public string Export => Path.Combine(this.Data, "EXPORT");
     }

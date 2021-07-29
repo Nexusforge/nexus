@@ -9,16 +9,16 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
-using System.Runtime.Loader;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Nexus
+namespace Nexus.PackageManagement
 {
-    public class ExtensionController
+    public class PackageController
     {
         #region Fields
 
@@ -28,16 +28,16 @@ namespace Nexus
         private static HttpClient _httpClient = new HttpClient();
 
         private ILogger _logger;
-        private ExtensionLoadContext _loadContext;
-        private Dictionary<string, string> _extensionReference;
+        private PackageLoadContext _loadContext;
+        private PackageReference _packageReference;
 
         #endregion
 
         #region Constructors
 
-        public ExtensionController(Dictionary<string, string> extensionReference, ILogger logger)
+        public PackageController(PackageReference packageReference, ILogger logger)
         {
-            _extensionReference = extensionReference;
+            _packageReference = packageReference;
             _logger = logger;
         }
 
@@ -49,7 +49,7 @@ namespace Nexus
         {
             IEnumerable<string> result;
 
-            if (!_extensionReference.TryGetValue("Provider", out var provider))
+            if (!_packageReference.TryGetValue("Provider", out var provider))
                 throw new ArgumentException("The 'Provider' parameter is missing in the extension reference.");
 
             switch (provider)
@@ -100,7 +100,7 @@ namespace Nexus
             if (entryDllPath is null)
                 throw new Exception($"Could not determine the location of the entry DLL file in folder {restoreFolderPath}.");
 
-            _loadContext = new ExtensionLoadContext(entryDllPath);
+            _loadContext = new PackageLoadContext(entryDllPath);
 
             var assemblyName = new AssemblyName(Path.GetFileNameWithoutExtension(entryDllPath));
             var assembly = _loadContext.LoadFromAssemblyName(assemblyName);
@@ -122,7 +122,7 @@ namespace Nexus
 
         internal async Task<string> RestoreAsync(string restoreRoot, CancellationToken cancellationToken)
         {
-            if (!_extensionReference.TryGetValue("Provider", out var provider))
+            if (!_packageReference.TryGetValue("Provider", out var provider))
                 throw new ArgumentException("The 'Provider' parameter is missing in the extension reference.");
 
             string restoreFolderPath;
@@ -173,7 +173,7 @@ namespace Nexus
                 var folderName = Path.GetFileName(folderPath);
 
                 Directory.CreateDirectory(Path.Combine(target, folderName));
-                ExtensionController.CloneFolder(folderPath, Path.Combine(target, folderName));
+                PackageController.CloneFolder(folderPath, Path.Combine(target, folderName));
             }
 
             foreach (var file in Directory.GetFiles(source))
@@ -182,7 +182,7 @@ namespace Nexus
             }
         }
 
-        public static async Task DownloadAndExtractAsync(string assetName, string assetUrl, string targetPath, Dictionary<string, string> headers, CancellationToken cancellationToken)
+        public static async Task DownloadAndExtractAsync(string assetName, string assetUrl, string targetPath, PackageReference headers, CancellationToken cancellationToken)
         {
             // get download stream
             async Task<HttpResponseMessage> GetAssetResponseAsync()
@@ -233,7 +233,7 @@ namespace Nexus
         {
             var result = new List<string>();
 
-            if (!_extensionReference.TryGetValue("Path", out var path))
+            if (!_packageReference.TryGetValue("Path", out var path))
                 throw new ArgumentException("The 'Path' parameter is missing in the extension reference.");
 
             if (!Directory.Exists(path))
@@ -256,10 +256,10 @@ namespace Nexus
         {
             return Task.Run(() =>
             {
-                if (!_extensionReference.TryGetValue("Path", out var path))
+                if (!_packageReference.TryGetValue("Path", out var path))
                     throw new ArgumentException("The 'Path' parameter is missing in the extension reference.");
 
-                if (!_extensionReference.TryGetValue("Version", out var version))
+                if (!_packageReference.TryGetValue("Version", out var version))
                     throw new ArgumentException("The 'Version' parameter is missing in the extension reference.");
 
                 var sourcePath = Path.Combine(path, version);
@@ -271,7 +271,7 @@ namespace Nexus
                 var targetPath = Path.Combine(restoreRoot, pathHash, version);
 
                 if (!Directory.Exists(targetPath) || !Directory.EnumerateFileSystemEntries(targetPath).Any())
-                    ExtensionController.CloneFolder(sourcePath, targetPath);
+                    PackageController.CloneFolder(sourcePath, targetPath);
 
                 return targetPath;
             }, cancellationToken);
@@ -285,7 +285,7 @@ namespace Nexus
         {
             var result = new List<string>();
 
-            if (!_extensionReference.TryGetValue("ProjectPath", out var projectPath))
+            if (!_packageReference.TryGetValue("ProjectPath", out var projectPath))
                 throw new ArgumentException("The 'ProjectPath' parameter is missing in the extension reference.");
 
             var server = $"https://api.github.com";
@@ -295,7 +295,7 @@ namespace Nexus
             {
                 using var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
 
-                if (_extensionReference.TryGetValue("Token", out var token))
+                if (_packageReference.TryGetValue("Token", out var token))
                     request.Headers.Add("Authorization", $"token {token}");
 
                 request.Headers.Add("User-Agent", "Nexus");
@@ -337,13 +337,13 @@ namespace Nexus
 
         private async Task<string> RestoreGitHubReleasesAsync(string restoreRoot, CancellationToken cancellationToken)
         {
-            if (!_extensionReference.TryGetValue("ProjectPath", out var projectPath))
+            if (!_packageReference.TryGetValue("ProjectPath", out var projectPath))
                 throw new ArgumentException("The 'ProjectPath' parameter is missing in the extension reference.");
 
-            if (!_extensionReference.TryGetValue("Tag", out var tag))
+            if (!_packageReference.TryGetValue("Tag", out var tag))
                 throw new ArgumentException("The 'Tag' parameter is missing in the extension reference.");
 
-            if (!_extensionReference.TryGetValue("AssetSelector", out var assetSelector))
+            if (!_packageReference.TryGetValue("AssetSelector", out var assetSelector))
                 throw new ArgumentException("The 'AssetSelector' parameter is missing in the extension reference.");
 
             var targetPath = Path.Combine(restoreRoot, projectPath.Replace('/', '_').ToLower(), tag);
@@ -355,7 +355,7 @@ namespace Nexus
 
                 using var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
 
-                if (_extensionReference.TryGetValue("Token", out var token))
+                if (_packageReference.TryGetValue("Token", out var token))
                     request.Headers.Add("Authorization", $"token {token}");
 
                 request.Headers.Add("User-Agent", "Nexus");
@@ -383,15 +383,15 @@ namespace Nexus
                     var assetBrowserUrl = asset.GetProperty("browser_download_url").GetString();
 
                     // get download stream
-                    var headers = new Dictionary<string, string>();
+                    var headers = new PackageReference();
 
-                    if (_extensionReference.TryGetValue("Token", out var assetToken))
+                    if (_packageReference.TryGetValue("Token", out var assetToken))
                         headers["Authorization"] = $"token {assetToken}";
 
                     headers["User-Agent"] = "Nexus";
                     headers["Accept"] = "application/octet-stream";
 
-                    await ExtensionController.DownloadAndExtractAsync(assetBrowserUrl, assetUrl, targetPath, headers, cancellationToken).ConfigureAwait(false);
+                    await PackageController.DownloadAndExtractAsync(assetBrowserUrl, assetUrl, targetPath, headers, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
@@ -410,23 +410,23 @@ namespace Nexus
         {
             var result = new List<string>();
 
-            if (!_extensionReference.TryGetValue("Server", out var server))
+            if (!_packageReference.TryGetValue("Server", out var server))
                 throw new ArgumentException("The 'Server' parameter is missing in the extension reference.");
 
-            if (!_extensionReference.TryGetValue("ProjectPath", out var projectPath))
+            if (!_packageReference.TryGetValue("ProjectPath", out var projectPath))
                 throw new ArgumentException("The 'ProjectPath' parameter is missing in the extension reference.");
 
-            if (!_extensionReference.TryGetValue("Package", out var package))
+            if (!_packageReference.TryGetValue("Package", out var package))
                 throw new ArgumentException("The 'Package' parameter is missing in the extension reference.");
 
-            _extensionReference.TryGetValue("Token", out var token);
+            _packageReference.TryGetValue("Token", out var token);
 
-            var headers = new Dictionary<string, string>();
+            var headers = new PackageReference();
 
             if (!string.IsNullOrWhiteSpace(token))
                 headers["PRIVATE-TOKEN"] = token;
 
-            await foreach (var gitlabPackage in ExtensionController.GetGitLabPackagesGenericAsync(server, projectPath, package, headers, cancellationToken))
+            await foreach (var gitlabPackage in PackageController.GetGitLabPackagesGenericAsync(server, projectPath, package, headers, cancellationToken))
             {
                 var packageVersion = gitlabPackage.GetProperty("version").GetString();
                 result.Add(packageVersion);
@@ -439,28 +439,28 @@ namespace Nexus
 
         private async Task<string> RestoreGitLabPackagesGenericAsync(string restoreRoot, CancellationToken cancellationToken)
         {
-            if (!_extensionReference.TryGetValue("Server", out var server))
+            if (!_packageReference.TryGetValue("Server", out var server))
                 throw new ArgumentException("The 'Server' parameter is missing in the extension reference.");
 
-            if (!_extensionReference.TryGetValue("ProjectPath", out var projectPath))
+            if (!_packageReference.TryGetValue("ProjectPath", out var projectPath))
                 throw new ArgumentException("The 'ProjectPath' parameter is missing in the extension reference.");
 
-            if (!_extensionReference.TryGetValue("Package", out var package))
+            if (!_packageReference.TryGetValue("Package", out var package))
                 throw new ArgumentException("The 'Package' parameter is missing in the extension reference.");
 
-            if (!_extensionReference.TryGetValue("Version", out var version))
+            if (!_packageReference.TryGetValue("Version", out var version))
                 throw new ArgumentException("The 'Version' parameter is missing in the extension reference.");
 
-            if (!_extensionReference.TryGetValue("AssetSelector", out var assetSelector))
+            if (!_packageReference.TryGetValue("AssetSelector", out var assetSelector))
                 throw new ArgumentException("The 'AssetSelector' parameter is missing in the extension reference.");
 
-            _extensionReference.TryGetValue("Token", out var token);
+            _packageReference.TryGetValue("Token", out var token);
 
             var targetPath = Path.Combine(restoreRoot, projectPath.Replace('/', '_').ToLower(), version);
 
             if (!Directory.Exists(targetPath) || Directory.EnumerateFileSystemEntries(targetPath).Any())
             {
-                var headers = new Dictionary<string, string>();
+                var headers = new PackageReference();
 
                 if (!string.IsNullOrWhiteSpace(token))
                     headers["PRIVATE-TOKEN"] = token;
@@ -468,7 +468,7 @@ namespace Nexus
                 // get package id
                 var gitlabPackage = default(JsonElement);
 
-                await foreach (var currentPackage in ExtensionController
+                await foreach (var currentPackage in PackageController
                     .GetGitLabPackagesGenericAsync(server, projectPath, package, headers, cancellationToken))
                 {
                     var packageVersion = currentPackage.GetProperty("version").GetString();
@@ -510,7 +510,7 @@ namespace Nexus
                 {
                     // download package file (https://docs.gitlab.com/ee/user/packages/generic_packages/index.html#download-package-file)
                     var assetUrl = $"{server}/api/v4/projects/{encodedProjectPath}/packages/generic/{package}/{version}/{fileName}";
-                    await ExtensionController.DownloadAndExtractAsync(fileName, assetUrl, targetPath, headers, cancellationToken).ConfigureAwait(false);
+                    await PackageController.DownloadAndExtractAsync(fileName, assetUrl, targetPath, headers, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
@@ -522,7 +522,7 @@ namespace Nexus
         }
 
         private static async IAsyncEnumerable<JsonElement> GetGitLabPackagesGenericAsync(
-            string server, string projectPath, string package, Dictionary<string, string> headers, CancellationToken cancellationToken)
+            string server, string projectPath, string package, PackageReference headers, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             // list packages (https://docs.gitlab.com/ee/api/packages.html#within-a-project)
             var encodedProjectPath = WebUtility.UrlEncode(projectPath);
@@ -582,10 +582,10 @@ namespace Nexus
         //{
         //    var result = new Dictionary<SemanticVersion, string>();
 
-        //    if (!_extensionReference.TryGetValue("Server", out var server))
+        //    if (!_packageReference.TryGetValue("Server", out var server))
         //        throw new ArgumentException("The 'Server' parameter is missing in the extension reference.");
 
-        //    if (!_extensionReference.TryGetValue("ProjectPath", out var projectPath))
+        //    if (!_packageReference.TryGetValue("ProjectPath", out var projectPath))
         //        throw new ArgumentException("The 'ProjectPath' parameter is missing in the extension reference.");
 
         //    var encodedProjectPath = WebUtility.UrlEncode(projectPath);
@@ -595,7 +595,7 @@ namespace Nexus
         //    {
         //        using var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
 
-        //        if (_extensionReference.TryGetValue("Token", out var token))
+        //        if (_packageReference.TryGetValue("Token", out var token))
         //            request.Headers.Add("PRIVATE-TOKEN", token);
 
         //        using var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
@@ -609,7 +609,7 @@ namespace Nexus
         //        {
         //            var releaseTagName = gitlabRelease.GetProperty("tag_name").GetString();
 
-        //            var isSemanticVersion = ExtensionLoadContext
+        //            var isSemanticVersion = PackageLoadContext
         //                .TryParseWithPrefix(releaseTagName, out var semanticVersion);
 
         //            if (isSemanticVersion)
@@ -640,16 +640,16 @@ namespace Nexus
 
         //private async Task<string> RestoreGitLabReleasesAsync(string restoreRoot, CancellationToken cancellationToken)
         //{
-        //    if (!_extensionReference.TryGetValue("Server", out var server))
+        //    if (!_packageReference.TryGetValue("Server", out var server))
         //        throw new ArgumentException("The 'Server' parameter is missing in the extension reference.");
 
-        //    if (!_extensionReference.TryGetValue("ProjectPath", out var projectPath))
+        //    if (!_packageReference.TryGetValue("ProjectPath", out var projectPath))
         //        throw new ArgumentException("The 'ProjectPath' parameter is missing in the extension reference.");
 
-        //    if (!_extensionReference.TryGetValue("Tag", out var tag))
+        //    if (!_packageReference.TryGetValue("Tag", out var tag))
         //        throw new ArgumentException("The 'Tag' parameter is missing in the extension reference.");
 
-        //    if (!_extensionReference.TryGetValue("AssetSelector", out var assetSelector))
+        //    if (!_packageReference.TryGetValue("AssetSelector", out var assetSelector))
         //        throw new ArgumentException("The 'AssetSelector' parameter is missing in the extension reference.");
 
         //    var targetPath = Path.Combine(restoreRoot, projectPath.Replace('/', '_').ToLower(), tag);
@@ -661,7 +661,7 @@ namespace Nexus
 
         //        using var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
 
-        //        if (_extensionReference.TryGetValue("Token", out var token))
+        //        if (_packageReference.TryGetValue("Token", out var token))
         //            request.Headers.Add("PRIVATE-TOKEN", token);
 
         //        using var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
@@ -675,7 +675,7 @@ namespace Nexus
         //        var gitHubRelease = jsonDocument.RootElement;
         //        var releaseTagName = gitHubRelease.GetProperty("tag_name").GetString();
 
-        //        var isSemanticVersion = ExtensionLoadContext
+        //        var isSemanticVersion = PackageLoadContext
         //            .TryParseWithPrefix(releaseTagName, out var semanticVersion);
 
         //        var asset = gitHubRelease

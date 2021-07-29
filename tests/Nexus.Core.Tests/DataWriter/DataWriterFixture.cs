@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace Nexus.Core.Tests
+namespace DataWriter
 {
     public class DataWriterFixture : IDisposable
     {

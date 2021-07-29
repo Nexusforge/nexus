@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Nexus.Core;
+using Nexus.Services;
 using System;
 using System.Globalization;
 using System.Linq;
@@ -27,10 +29,11 @@ namespace Nexus
             var isWindowsService = args.Contains("--non-interactive");
 
             // configuration
-            var configuration = NexusOptionsBase.BuildConfiguration(args);
+            var logLeveLUpdater = new LogLevelUpdater();
+            var configuration = NexusOptionsBase.BuildConfiguration(args, new LogLevelUpdater());
 
             // service vs. interactive
-            var hostBuilder = Program.CreateHostBuilder(Environment.CurrentDirectory, configuration);
+            var hostBuilder = Program.CreateHostBuilder(Environment.CurrentDirectory, configuration, logLeveLUpdater);
 
             if (isWindowsService)
                 await hostBuilder
@@ -45,7 +48,7 @@ namespace Nexus
             return 0;
         }
 
-        private static IHostBuilder CreateHostBuilder(string currentDirectory, IConfiguration configuration) => 
+        private static IHostBuilder CreateHostBuilder(string currentDirectory, IConfiguration configuration, LogLevelUpdater logLeveLUpdater) => 
             Host.CreateDefaultBuilder()
                 .ConfigureAppConfiguration(builder =>
                 {
@@ -54,9 +57,21 @@ namespace Nexus
                 })
                 .ConfigureLogging(logging =>
                 {
+                    // This is a global (!) prefilter, so set it to the lowest value.
+                    // Messages with lower prio will not even reach the actual loggers.
+                    logging.SetMinimumLevel(LogLevel.Trace);
+
+                    logging.AddConfiguration(configuration.GetSection("Logging"));
+
                     logging.ClearProviders();
                     logging.AddConsole();
-                    logging.AddFilter<ConsoleLoggerProvider>("Microsoft", LogLevel.None);
+
+                    if (configuration.GetSection("Serilog").Exists())
+                        logging.AddSeq(configuration.GetSection("Serilog"));
+                })
+                .ConfigureServices(services =>
+                {
+                    services.AddSingleton(logLeveLUpdater);
                 })
                 .ConfigureWebHostDefaults(webBuilder =>
                 {

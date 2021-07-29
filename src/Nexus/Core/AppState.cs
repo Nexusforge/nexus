@@ -1,8 +1,10 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nexus.DataModel;
-using Nexus.Services;
-using Nexus.ViewModels;
 using Nexus.Infrastructure;
+using Nexus.Services;
+using Nexus.Utilities;
+using Nexus.ViewModels;
 using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
@@ -11,7 +13,6 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Options;
 
 namespace Nexus.Core
 {
@@ -34,17 +35,20 @@ namespace Nexus.Core
         public AppState(ILogger<AppState> logger,
                         IDatabaseManager databaseManager,
                         UserManager userManager,
+                        ExtensionHive extensionHive,
                         IOptions<PathsOptions> pathsOptions)
         {
             this.Logger = logger;
             _databaseManager = databaseManager;
             _userManager = userManager;
 
-            this.CsvRowIndexFormatValues = Utilities.GetEnumValues<CsvRowIndexFormat>();
-            this.CodeLanguageValues = Utilities.GetEnumValues<CodeLanguage>();
-            this.CodeTypeValues = Utilities.GetEnumValues<CodeType>();
-            this.FileFormatValues = Utilities.GetEnumValues<FileFormat>();
-            this.FileGranularityValues = Utilities.GetEnumValues<FileGranularity>();
+            await extensionHive.LoadPackagesAsync(packageReferences, cancellationToken);
+
+            this.CsvRowIndexFormatValues = NexusUtilities.GetEnumValues<CsvRowIndexFormat>();
+            this.CodeLanguageValues = NexusUtilities.GetEnumValues<CodeLanguage>();
+            this.CodeTypeValues = NexusUtilities.GetEnumValues<CodeType>();
+            this.FileFormatValues = NexusUtilities.GetEnumValues<FileFormat>();
+            this.FileGranularityValues = NexusUtilities.GetEnumValues<FileGranularity>();
             this.Version = Assembly.GetEntryAssembly().GetName().Version.ToString();
 
             this.InitializeApp(pathsOptions.Value);

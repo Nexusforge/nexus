@@ -12,7 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Nexus.Core.Tests
+namespace DataWriter
 {
     public class CsvDataWriterTests : IClassFixture<DataWriterFixture>
     {

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Extensibility
 {
-    public interface IDataSource
+    public interface IDataSource : IExtension
     {
         Task SetContextAsync(
             DataSourceContext context,

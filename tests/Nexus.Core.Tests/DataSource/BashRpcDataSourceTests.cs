@@ -1,4 +1,6 @@
 using Microsoft.Extensions.Logging;
+using Nexus;
+using Nexus.Core.Tests;
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Extensions;
@@ -12,7 +14,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Nexus.Core.Tests
+namespace DataSource
 {
     public class BashRpcDataSourceTests
     {

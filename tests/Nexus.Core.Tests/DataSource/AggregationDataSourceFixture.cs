@@ -1,8 +1,9 @@
-﻿using System;
+﻿using Nexus.Core;
+using System;
 using System.IO;
 using System.Net;
 
-namespace Nexus.Core.Tests
+namespace DataSource
 {
     public class AggregationDataSourceFixture : IDisposable
     {

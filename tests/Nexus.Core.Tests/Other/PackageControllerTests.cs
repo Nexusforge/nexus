@@ -1,7 +1,8 @@
 ﻿using Microsoft.Extensions.Logging.Abstractions;
+using Nexus;
 using Nexus.Extensibility;
+using Nexus.PackageManagement;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -12,9 +13,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Nexus.Core.Tests
+namespace Other
 {
-    public class ExtensionControllerTests
+    public class PackageControllerTests
     {
         #region Load
 
@@ -48,7 +49,7 @@ namespace Nexus.Core.Tests
             {
                 var version = "v1.0.0-unit.test";
 
-                var extensionReference = new Dictionary<string, string>()
+                var packageReference = new PackageReference()
                 {
                     // required
                     ["Provider"] = "local",
@@ -57,7 +58,7 @@ namespace Nexus.Core.Tests
                 };
 
                 var fileToDelete = Path.Combine(restoreRoot, "local", pathHash, version, "TestExtensionProject.dll");
-                var weakReference = await this.Load_Run_and_Unload_Async(restoreRoot, fileToDelete, extensionReference);
+                var weakReference = await this.Load_Run_and_Unload_Async(restoreRoot, fileToDelete, packageReference);
 
                 for (int i = 0; weakReference.IsAlive && i < 10; i++)
                 {
@@ -87,11 +88,11 @@ namespace Nexus.Core.Tests
         // https://docs.microsoft.com/en-us/dotnet/standard/assembly/unloadability
         [MethodImpl(MethodImplOptions.NoInlining)]
         private async Task<WeakReference> Load_Run_and_Unload_Async(
-            string restoreRoot, string fileToDelete, Dictionary<string, string> extensionReference)
+            string restoreRoot, string fileToDelete, PackageReference packageReference)
         {
             // load
-            var extensionController = new ExtensionController(extensionReference, NullLogger.Instance);
-            var assembly = await extensionController.LoadAsync(restoreRoot, CancellationToken.None);
+            var packageController = new PackageController(packageReference, NullLogger.Instance);
+            var assembly = await packageController.LoadAsync(restoreRoot, CancellationToken.None);
 
             var dataSourceType = assembly
                 .ExportedTypes
@@ -108,7 +109,7 @@ namespace Nexus.Core.Tests
                 Assert.Throws<UnauthorizedAccessException>(() => File.Delete(fileToDelete));
 
             // unload
-            var weakReference = extensionController.Unload();
+            var weakReference = packageController.Unload();
 
             return weakReference;
         }
@@ -145,16 +146,16 @@ namespace Nexus.Core.Tests
 
             try
             {
-                var extensionReference = new Dictionary<string, string>()
+                var packageReference = new PackageReference()
                 {
                     // required
                     ["Provider"] = "local",
                     ["Path"] = root,
                 };
 
-                var extensionController = new ExtensionController(extensionReference, NullLogger.Instance);
+                var packageController = new PackageController(packageReference, NullLogger.Instance);
 
-                var actual = (await extensionController
+                var actual = (await packageController
                     .DiscoverAsync(CancellationToken.None))
                     .ToArray();
 
@@ -193,7 +194,7 @@ namespace Nexus.Core.Tests
 
             try
             {
-                var extensionReference = new Dictionary<string, string>()
+                var packageReference = new PackageReference()
                 {
                     // required
                     ["Provider"] = "local",
@@ -201,8 +202,8 @@ namespace Nexus.Core.Tests
                     ["Version"] = version
                 };
 
-                var extensionController = new ExtensionController(extensionReference, NullLogger.Instance);
-                await extensionController.RestoreAsync(restoreRoot, CancellationToken.None);
+                var packageController = new PackageController(packageReference, NullLogger.Instance);
+                await packageController.RestoreAsync(restoreRoot, CancellationToken.None);
 
                 Assert.True(File.Exists(Path.Combine(restoreFolderPath, "sub", "a.deps.json")));
                 Assert.True(File.Exists(Path.Combine(restoreFolderPath, "sub", "a.dll")));
@@ -246,7 +247,7 @@ namespace Nexus.Core.Tests
                 0x42, 0x31, 0x58, 0x66, 0x32, 0x53, 0x36, 0x36, 0x44, 0x37
             };
 
-            var extensionReference = new Dictionary<string, string>()
+            var packageReference = new PackageReference()
             {
                 // required
                 ["Provider"] = "github-releases",
@@ -256,9 +257,9 @@ namespace Nexus.Core.Tests
                 ["Token"] = Encoding.ASCII.GetString(token)
             };
 
-            var extensionController = new ExtensionController(extensionReference, NullLogger.Instance);
+            var packageController = new PackageController(packageReference, NullLogger.Instance);
 
-            var actual = (await extensionController
+            var actual = (await packageController
                 .DiscoverAsync(CancellationToken.None))
                 .ToArray();
 
@@ -296,7 +297,7 @@ namespace Nexus.Core.Tests
                     0x42, 0x31, 0x58, 0x66, 0x32, 0x53, 0x36, 0x36, 0x44, 0x37
                 };
 
-                var extensionReference = new Dictionary<string, string>()
+                var packageReference = new PackageReference()
                 {
                     // required
                     ["Provider"] = "github-releases",
@@ -308,8 +309,8 @@ namespace Nexus.Core.Tests
                     ["Token"] = Encoding.ASCII.GetString(token)
                 };
 
-                var extensionController = new ExtensionController(extensionReference, NullLogger.Instance);
-                await extensionController.RestoreAsync(restoreRoot, CancellationToken.None);
+                var packageController = new PackageController(packageReference, NullLogger.Instance);
+                await packageController.RestoreAsync(restoreRoot, CancellationToken.None);
 
                 Assert.True(File.Exists(Path.Combine(restoreFolderPath, "sub", "a.deps.json")));
                 Assert.True(File.Exists(Path.Combine(restoreFolderPath, "sub", "a.dll")));
@@ -340,7 +341,7 @@ namespace Nexus.Core.Tests
                 "v0.1.0"
             };
 
-            var extensionReference = new Dictionary<string, string>()
+            var packageReference = new PackageReference()
             {
                 // required
                 ["Provider"] = "gitlab-releases-v4",
@@ -351,9 +352,9 @@ namespace Nexus.Core.Tests
                 ["Token"] = "doQyXYqgmFxS1LUsupue"
             };
 
-            var extensionController = new ExtensionController(extensionReference, NullLogger.Instance);
+            var packageController = new PackageController(packageReference, NullLogger.Instance);
 
-            var actual = (await extensionController
+            var actual = (await packageController
                 .DiscoverAsync(CancellationToken.None))
                 .ToArray();
 
@@ -379,7 +380,7 @@ namespace Nexus.Core.Tests
 
             try
             {
-                var extensionReference = new Dictionary<string, string>()
+                var packageReference = new PackageReference()
                 {
                     // required
                     ["Provider"] = "gitlab-releases-v4",
@@ -392,8 +393,8 @@ namespace Nexus.Core.Tests
                     ["Token"] = "doQyXYqgmFxS1LUsupue"
                 };
 
-                var extensionController = new ExtensionController(extensionReference, NullLogger.Instance);
-                await extensionController.RestoreAsync(restoreRoot, CancellationToken.None);
+                var packageController = new PackageController(packageReference, NullLogger.Instance);
+                await packageController.RestoreAsync(restoreRoot, CancellationToken.None);
 
                 Assert.True(File.Exists(Path.Combine(restoreFolderPath, "sub", "a.deps.json")));
                 Assert.True(File.Exists(Path.Combine(restoreFolderPath, "sub", "a.dll")));
@@ -424,7 +425,7 @@ namespace Nexus.Core.Tests
                 "v0.1.0"
             };
 
-            var extensionReference = new Dictionary<string, string>()
+            var packageReference = new PackageReference()
             {
                 // required
                 ["Provider"] = "gitlab-packages-generic-v4",
@@ -436,9 +437,9 @@ namespace Nexus.Core.Tests
                 ["Token"] = "zNSQJjP6eWpQ8k-zpvDs",
             };
 
-            var extensionController = new ExtensionController(extensionReference, NullLogger.Instance);
+            var packageController = new PackageController(packageReference, NullLogger.Instance);
 
-            var actual = (await extensionController
+            var actual = (await packageController
                 .DiscoverAsync(CancellationToken.None))
                 .ToArray();
 
@@ -464,7 +465,7 @@ namespace Nexus.Core.Tests
 
             try
             {
-                var extensionReference = new Dictionary<string, string>()
+                var packageReference = new PackageReference()
                 {
                     // required
                     ["Provider"] = "gitlab-packages-generic-v4",
@@ -478,8 +479,8 @@ namespace Nexus.Core.Tests
                     ["Token"] = "zNSQJjP6eWpQ8k-zpvDs",
                 };
 
-                var extensionController = new ExtensionController(extensionReference, NullLogger.Instance);
-                await extensionController.RestoreAsync(restoreRoot, CancellationToken.None);
+                var packageController = new PackageController(packageReference, NullLogger.Instance);
+                await packageController.RestoreAsync(restoreRoot, CancellationToken.None);
 
                 Assert.True(File.Exists(Path.Combine(restoreFolderPath, "sub", "a.deps.json")));
                 Assert.True(File.Exists(Path.Combine(restoreFolderPath, "sub", "a.dll")));

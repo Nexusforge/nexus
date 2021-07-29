@@ -2,9 +2,9 @@
 using System.Reflection;
 using System.Runtime.Loader;
 
-namespace Nexus
+namespace Nexus.PackageManagement
 {
-    public class ExtensionLoadContext : AssemblyLoadContext
+    public class PackageLoadContext : AssemblyLoadContext
     {
         #region Fields
 
@@ -14,7 +14,7 @@ namespace Nexus
 
         #region Constructors
 
-        public ExtensionLoadContext(string entryDllPath) : base(isCollectible: true)
+        public PackageLoadContext(string entryDllPath) : base(isCollectible: true)
         {
             _resolver = new AssemblyDependencyResolver(entryDllPath);
         }

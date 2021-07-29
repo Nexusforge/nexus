@@ -1,8 +1,9 @@
 using Microsoft.Extensions.Configuration;
+using Nexus.Core;
 using System;
 using Xunit;
 
-namespace Nexus.Core.Tests
+namespace Other
 {
     public class OptionsTests
     {

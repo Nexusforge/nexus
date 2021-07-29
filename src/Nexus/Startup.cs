@@ -160,6 +160,7 @@ namespace Nexus
             services.AddTransient<DataService>();
             services.AddTransient<AggregationService>();
 
+            services.AddSingleton<ExtensionHive>();
             services.AddSingleton<AppState>();
             services.AddSingleton<IFileAccessManager, FileAccessManager>();
             services.AddSingleton<JobService<ExportJob>>();
@@ -167,6 +168,7 @@ namespace Nexus
             services.AddSingleton<IDatabaseManager, DatabaseManager>();
             services.AddSingleton<UserManager>();
 
+            services.Configure<LoggingOptions>(Configuration.GetSection(LoggingOptions.Section));
             services.Configure<GeneralOptions>(Configuration.GetSection(GeneralOptions.Section));
             services.Configure<ServerOptions>(Configuration.GetSection(ServerOptions.Section));
             services.Configure<PathsOptions>(Configuration.GetSection(PathsOptions.Section));

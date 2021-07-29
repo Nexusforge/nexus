@@ -7,6 +7,7 @@ using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Extensions;
 using Nexus.Filters;
+using Nexus.PackageManagement;
 using Nexus.Utilities;
 using System;
 using System.Collections.Generic;
@@ -392,7 +393,7 @@ namespace Nexus.Services
 
         private Dictionary<BackendSource, Type> LoadDataReaders(List<BackendSource> backendSources)
         {
-            var extensionFilePaths = Directory.EnumerateFiles(_pathsOptions.Extensions, "*.deps.json", SearchOption.AllDirectories)
+            var extensionFilePaths = Directory.EnumerateFiles(_pathsOptions.Packages, "*.deps.json", SearchOption.AllDirectories)
                                               .Select(filePath => filePath.Replace(".deps.json", ".dll")).ToList();
 
             var idToDataReaderTypeMap = new Dictionary<string, Type>();
@@ -401,7 +402,7 @@ namespace Nexus.Services
             // load assemblies
             foreach (var filePath in extensionFilePaths)
             {
-                var loadContext = new ExtensionLoadContext(filePath);
+                var loadContext = new PackageLoadContext(filePath);
                 var assemblyName = new AssemblyName(Path.GetFileNameWithoutExtension(filePath));
                 var assembly = loadContext.LoadFromAssemblyName(assemblyName);
 
