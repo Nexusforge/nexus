@@ -138,9 +138,8 @@ namespace Other
                 }
             }
 
-            // 3.8 Log with increased log level
-
-            logger.LogTrace("I am increasing the log level to critical only!");
+            // 3.8 Log with increased log level (general)
+            logger.LogTrace("I am increasing the log level to critical-only!");
 
             logLevelUpdater.SetLevel(LogLevel.Critical, category: "Other.LoggingTests");
 
@@ -158,6 +157,18 @@ namespace Other
             logger.LogInformation("Information: It worked!");
             logger.LogWarning("Warning: It worked!");
             logger.LogError("Error: It worked!");
+            logger.LogCritical("Critical: It worked!");
+
+            // 3.8 Log with increased log level (provider-specific)
+            logger.LogTrace("I am increasing the log level for Seq logs to critical-only!");
+
+            logLevelUpdater.SetLevel(LogLevel.Critical, category: "Other.LoggingTests", provider: "Seq");
+
+            logger.LogTrace("Trace: This should not be logged!");
+            logger.LogDebug("Debug: This should not be logged!");
+            logger.LogInformation("Information: This should not be logged!");
+            logger.LogWarning("Warning: This should not be logged!");
+            logger.LogError("Error: This should not be logged!");
             logger.LogCritical("Critical: It worked!");
 
             // 4. Flush log messages
