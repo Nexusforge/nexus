@@ -60,7 +60,7 @@ namespace Nexus.Services
             foreach (var packageReference in filteredPackageReferences)
             {
                 var controller = new PackageController(packageReference, _logger);
-                using var scope = _logger.BeginScope(packageReference);
+                using var scope = _logger.BeginScope(packageReference.ToDictionary(entry => entry.Key, entry => (object)entry.Value));
 
                 try
                 {

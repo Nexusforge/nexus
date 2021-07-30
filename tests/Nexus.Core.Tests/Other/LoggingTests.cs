@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Nexus.Core;
+using Nexus.Logging;
 using Nexus.Services;
-using Seq.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +10,16 @@ using Xunit;
 
 namespace Other
 {
+    // Information from Microsoft:
+    // https://docs.microsoft.com/en-us/aspnet/core/fundamentals/logging/?view=aspnetcore-2.2#log-level
+
+    // Best practices:
+    // https://blog.rsuter.com/logging-with-ilogger-recommendations-and-best-practices/
+
+    // Attaching a large state might lead to very large logs. Nicholas Blumhardt recommends to 
+    // simply send a single verbose message with identifier and all other messages should contain
+    // that identifier, too, so they can be correlated later ("log once, correlate later").
+
     public class LoggingTests
     {
         [Fact]
@@ -138,7 +148,27 @@ namespace Other
                 }
             }
 
-            // 3.8 Log with increased log level (general)
+            // 3.8 Log with scope with Dictionary<string, object> state
+            using (var scopeWithState1 = logger.BeginScope(new Dictionary<string, object>()
+            {
+                ["Amount"] = context1.Amount,
+                ["Message"] = context1.Message
+            }))
+            {
+                logger.LogInformation("Log with scope with Dictionary<string, object> state");
+            }
+
+            // 3.9 Log with named scope
+            using (var namedScope = logger.BeginNamedScope("MyScopeName", new Dictionary<string, object>()
+            {
+                ["Amount"] = context1.Amount,
+                ["Message"] = context1.Message
+            }))
+            {
+                logger.LogInformation("Log with named scope");
+            }
+
+            // 3.10 Log with increased log level (general)
             logger.LogTrace("I am increasing the log level to critical-only!");
 
             logLevelUpdater.SetLevel(LogLevel.Critical, category: "Other.LoggingTests");
@@ -159,7 +189,7 @@ namespace Other
             logger.LogError("Error: It worked!");
             logger.LogCritical("Critical: It worked!");
 
-            // 3.8 Log with increased log level (provider-specific)
+            // 3.11 Log with increased log level (provider-specific)
             logger.LogTrace("I am increasing the log level for Seq logs to critical-only!");
 
             logLevelUpdater.SetLevel(LogLevel.Critical, category: "Other.LoggingTests", provider: "Seq");
