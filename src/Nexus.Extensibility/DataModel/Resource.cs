@@ -12,10 +12,10 @@ namespace Nexus.DataModel
 
         public Guid Id { get; init; }
         public string Name { get; init; }
-        public string Group { get; init; }
         public string Unit { get; init; }
-        public Dictionary<string, string> Metadata { get; set; } = new Dictionary<string, string>();
+        public string[] Groups { get; init; }
         public List<Representation> Representations { get; init; } = new List<Representation>();
+        public Dictionary<string, string> Metadata { get; set; } = new Dictionary<string, string>();
 
         #endregion
 
@@ -82,22 +82,21 @@ namespace Nexus.DataModel
                         this.Name != resource.Name)
                         throw new Exception($"The resources cannot be merged because their names differ.");
 
-                    if (!string.IsNullOrWhiteSpace(this.Group) &&
-                        !string.IsNullOrWhiteSpace(resource.Group) &&
-                        this.Group != resource.Group)
-                        throw new Exception($"The resources cannot be merged because their groups differ.");
-
                     if (!string.IsNullOrWhiteSpace(this.Unit) &&
                         !string.IsNullOrWhiteSpace(resource.Unit) &&
                         this.Unit != resource.Unit)
                         throw new Exception($"The resources cannot be merged because their units differ.");
 
+                    if (this.Groups is not null && resource.Groups is not null &&
+                        this.Groups.SequenceEqual(resource.Groups))
+                        throw new Exception($"The resources cannot be merged because their groups differ.");
+
                     merged = new Resource()
                     {
                         Id = this.Id,
                         Name = string.IsNullOrWhiteSpace(this.Name) ? resource.Name : this.Name,
-                        Group = string.IsNullOrWhiteSpace(this.Group) ? resource.Group : this.Group,
                         Unit = string.IsNullOrWhiteSpace(this.Unit) ? resource.Unit : this.Unit,
+                        Groups = this.Groups is null ? resource.Groups : this.Groups,
                         Metadata = mergedMetadata1,
                         Representations = mergedRepresentations
                     };
@@ -118,8 +117,8 @@ namespace Nexus.DataModel
                     {
                         Id = this.Id,
                         Name = resource.Name,
-                        Group = resource.Group,
                         Unit = resource.Unit,
+                        Groups = resource.Groups,
                         Metadata = mergedMetadata2,
                         Representations = mergedRepresentations
                     };

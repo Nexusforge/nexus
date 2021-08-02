@@ -71,16 +71,15 @@ class Resource:
 
     Id: UUID
     Name: str
-    Group: str
     Unit: str
-    Description: str
+    Groups: List[str]
     Metadata: Dict[str, str]
     Representations: List[Representation]
 
-    def __init__(self, id: UUID, name: str, group: str, unit: str, metadata: Dict[str, str], representations: List[Representation]):
+    def __init__(self, id: UUID, name: str, unit: str, groups: List[str], metadata: Dict[str, str], representations: List[Representation]):
         self.Id = id
         self.Name = name
-        self.Group = group
+        self.Groups = groups
         self.Unit = unit
         self.Metadata = metadata
         self.Representations = representations

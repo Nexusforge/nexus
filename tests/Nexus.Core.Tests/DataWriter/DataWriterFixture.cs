@@ -29,8 +29,8 @@ namespace DataWriter
                 {
                     Id = Guid.NewGuid(),
                     Name = "resource1",
-                    Group = "group1",
                     Unit = "°C",
+                    Groups = new[] { "group1" },
                     Metadata = resourceMetadata1,
                     Representations = representations1
                 }
@@ -57,8 +57,8 @@ namespace DataWriter
                 {
                     Id = Guid.NewGuid(),
                     Name = "resource3",
-                    Group = "group2",
                     Unit = "m/s",
+                    Groups = new[] { "group2" },
                     Representations = representations2
                 }
             };

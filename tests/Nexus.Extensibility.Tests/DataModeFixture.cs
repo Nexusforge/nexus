@@ -65,8 +65,8 @@ namespace Nexus.Extensibility.Tests
             {
                 Id = Guid.NewGuid(),
                 Name = "N_0",
-                Group = null,
                 Unit = "U_0",
+                Groups = null,
                 Metadata = new Dictionary<string, string>()
                 {
                     ["R_0_A"] = "A_0",
@@ -78,8 +78,8 @@ namespace Nexus.Extensibility.Tests
             {
                 Id = this.Resource0_V0.Id,
                 Name = "N_1",
-                Group = "G_1",
                 Unit = "U_1",
+                Groups = new[] { "G_1" },
                 Metadata = new Dictionary<string, string>()
                 {
                     ["R_0_A"] = "A_1",
@@ -91,8 +91,8 @@ namespace Nexus.Extensibility.Tests
             {
                 Id = this.Resource0_V0.Id,
                 Name = null,
-                Group = "G_1",
                 Unit = null,
+                Groups = new[] { "G_1" },
                 Metadata = new Dictionary<string, string>()
                 {
                     ["R_0_C"] = "C_0",
@@ -103,8 +103,8 @@ namespace Nexus.Extensibility.Tests
             {
                 Id = this.Resource0_V0.Id,
                 Name = "N_1",
-                Group = "G_1",
                 Unit = "U_1",
+                Groups = new[] { "G_1" },
                 Metadata = new Dictionary<string, string>()
                 {
                     ["R_0_A"] = "A_1",
@@ -117,8 +117,8 @@ namespace Nexus.Extensibility.Tests
             {
                 Id = this.Resource0_V0.Id,
                 Name = "N_0",
-                Group = "G_1",
                 Unit = "U_0",
+                Groups = new[] { "G_1" },
                 Metadata = new Dictionary<string, string>()
                 {
                     ["R_0_A"] = "A_0",
@@ -131,8 +131,8 @@ namespace Nexus.Extensibility.Tests
             {
                 Id = Guid.NewGuid(),
                 Name = "N_0",
-                Group = "G_0",
                 Unit = "U_0",
+                Groups = new[] { "G_0" },
                 Metadata = new Dictionary<string, string>()
                 {
                     ["R_1_A"] = "A_0",
@@ -144,8 +144,8 @@ namespace Nexus.Extensibility.Tests
             {
                 Id = Guid.NewGuid(),
                 Name = "N_0",
-                Group = "G_0",
                 Unit = "U_0",
+                Groups = new[] { "G_0" },
                 Metadata = new Dictionary<string, string>()
                 {
                     ["R_2_A"] = "A_0",

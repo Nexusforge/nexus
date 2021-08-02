@@ -122,16 +122,16 @@ namespace Nexus.Extensions
         {
             var catalog = new ResourceCatalog() { Id = catalogId };
 
-            var resourceA = new Resource() { Id = id1, Name = "T1", Group = "Group 1", Unit = "°C" };
+            var resourceA = new Resource() { Id = id1, Name = "T1", Unit = "°C", Groups = new[] { "Group 1" } };
             resourceA.Metadata["Description"] = "Test resource.";
 
-            var resourceB = new Resource() { Id = id2, Name = "V1", Group = "Group 1", Unit = "m/s" };
+            var resourceB = new Resource() { Id = id2, Name = "V1", Unit = "m/s", Groups = new[] { "Group 1" } };
             resourceB.Metadata["Description"] = "Test resource.";
 
-            var resourceC = new Resource() { Id = id3, Name = "unix_time1", Group = "Group 2", Unit = "" };
+            var resourceC = new Resource() { Id = id3, Name = "unix_time1", Unit = "", Groups = new[] { "Group 2" } };
             resourceC.Metadata["Description"] = "Test resource.";
 
-            var resourceD = new Resource() { Id = id4, Name = "unix_time2", Group = "Group 2", Unit = "" };
+            var resourceD = new Resource() { Id = id4, Name = "unix_time2", Unit = "", Groups = new[] { "Group 2" } };
             resourceD.Metadata["Description"] = "Test resource.";
 
             var representation1 = new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "mean", DataType = NexusDataType.FLOAT64 };

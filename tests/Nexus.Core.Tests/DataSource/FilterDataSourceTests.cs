@@ -46,13 +46,13 @@ namespace DataSource
             // assert
             var actual = catalogs.First(catalog => catalog.Id == "/IN_MEMORY/FILTERS/SHARED");
             var actualNames = actual.Resources.Select(resource => resource.Name).ToList();
-            var actualGroups = actual.Resources.Select(resource => resource.Group).ToList();
             var actualUnits = actual.Resources.Select(resource => resource.Unit).ToList();
+            var actualGroups = actual.Resources.SelectMany(resource => resource.Groups).ToList();
             var actualDataTypes = actual.Resources.SelectMany(resource => resource.Representations.Select(representation => representation.DataType)).ToList();
 
             var expectedNames = new List<string>() { "T1_squared" };
-            var expectedGroups = new List<string>() { "test" };
             var expectedUnits = new List<string>() { "°C²" };
+            var expectedGroups = new List<string>() { "test" };
             var expectedDataTypes = new List<NexusDataType>() { NexusDataType.FLOAT64 };
 
             Assert.True(expectedNames.SequenceEqual(actualNames));

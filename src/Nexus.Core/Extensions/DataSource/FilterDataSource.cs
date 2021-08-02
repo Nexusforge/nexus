@@ -179,7 +179,7 @@ namespace Nexus.Extensions
                         {
                             Id = localFilterChannel.ToGuid(cacheEntry.FilterCodeDefinition),
                             Name = localFilterChannel.ResourceName,
-                            Group = localFilterChannel.Group,
+                            Groups = new [] { localFilterChannel.Group },
                             Unit = localFilterChannel.Unit,
                             Representations = representations,
                         };
