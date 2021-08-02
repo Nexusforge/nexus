@@ -71,8 +71,8 @@ namespace DataSource
 
             Assert.True(actualMetadata1.SequenceEqual(expectedMetadata1));
             Assert.True(expectedNames.SequenceEqual(actualNames));
-            Assert.True(expectedGroups.SequenceEqual(actualGroups));
             Assert.True(expectedUnits.SequenceEqual(actualUnits));
+            Assert.True(expectedGroups.SequenceEqual(actualGroups));
             Assert.True(expectedDataTypes.SequenceEqual(actualDataTypes));
 
             for (int i = 0; i < expectedMetadata2.Count; i++)

@@ -56,8 +56,8 @@ namespace DataSource
             var expectedDataTypes = new List<NexusDataType>() { NexusDataType.FLOAT64 };
 
             Assert.True(expectedNames.SequenceEqual(actualNames));
-            Assert.True(expectedGroups.SequenceEqual(actualGroups));
             Assert.True(expectedUnits.SequenceEqual(actualUnits));
+            Assert.True(expectedGroups.SequenceEqual(actualGroups));
             Assert.True(expectedDataTypes.SequenceEqual(actualDataTypes));
         }
 
