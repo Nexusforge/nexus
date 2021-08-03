@@ -236,52 +236,6 @@ namespace Nexus.Services
             _logger.LogInformation("Database loaded.");
         }
 
-        public async Task<DataSourceController[]> GetDataSourcesAsync(ClaimsPrincipal user, string catalogId, CancellationToken cancellationToken)
-        {
-            var state = this.State;
-
-            var tasks = state.BackendSourceToCatalogsMap
-                // where the catalog list contains the catalog ID
-                .Where(entry => entry.Value.Any(catalog => catalog.Id == catalogId))
-                // select the backend source and get a brand new data source from it
-                .Select(entry => this.GetDataSourceControllerAsync(user, entry.Key, cancellationToken, state));
-
-            var dataSourceControllers = await Task.WhenAll(tasks);
-
-            return dataSourceControllers;
-        }
-
-        public async Task<DataSourceController> GetDataSourceControllerAsync(
-                ClaimsPrincipal user,
-                BackendSource backendSource,
-                CancellationToken cancellationToken,
-                DatabaseManagerState state = null)
-        {
-            if (state == null)
-                state = this.State;
-
-            if (!state.BackendSourceToDataReaderTypeMap.TryGetValue(backendSource, out var dataSourceType))
-                throw new KeyNotFoundException("The requested data source could not be found.");
-
-            var controller = await this.InstantiateDataSourceAsync(backendSource, dataSourceType, state.BackendSourceToCatalogsMap, cancellationToken);
-
-            // special case checks
-            if (dataSourceType == typeof(FilterDataSource))
-            {
-                var filterDataSource = (FilterDataSource)controller.DataSource;
-
-                filterDataSource.Database = this.Database;
-
-                filterDataSource.IsCatalogAccessible =
-                    catalogId => NexusUtilities.IsCatalogAccessible(user, catalogId, this.Database);
-
-                filterDataSource.GetDataSourceAsync =
-                    backendSource => this.GetDataSourceControllerAsync(user, backendSource, cancellationToken);
-            }
-
-            return controller;
-        }
-
         public void SaveCatalogMeta(ResourceCatalog catalogMeta)
         {
             var filePath = this.GetCatalogMetaPath(catalogMeta.Id);
@@ -362,79 +316,18 @@ namespace Nexus.Services
         private async Task<DataSourceController>
             InstantiateDataSourceAsync(BackendSource backendSource, Type type, Dictionary<BackendSource, List<ResourceCatalog>> backendSourceToCatalogsMap, CancellationToken cancellationToken)
         {
-            _logger.LogInformation($"Instantiating {backendSource.Type} for URI {backendSource.ResourceLocator} ...");
-
-            var logger = _loggerFactory.CreateLogger($"{backendSource.Type} - {backendSource.ResourceLocator}");
-            var dataSource = (IDataSource)Activator.CreateInstance(type);
-
-            // special case checks
-            if (type == typeof(AggregationDataSource))
-            {
-                var fileAccessManger = _serviceProvider.GetRequiredService<IFileAccessManager>();
-                ((AggregationDataSource)dataSource).FileAccessManager = fileAccessManger;
-            }
-
-            // create controller 
-            var controller = new DataSourceController(dataSource, backendSource, logger);
+           // move this:
 
             // initialize
             _ = backendSourceToCatalogsMap.TryGetValue(backendSource, out var catalogs);
 
-            await controller.InitializeAsync(catalogs, cancellationToken);
+            //await controller.InitializeAsync(catalogs, cancellationToken);
             backendSourceToCatalogsMap[backendSource] = controller.Catalogs;
-
-            return controller;
         }
 
         private string GetCatalogMetaPath(string catalogName)
         {
             return Path.Combine(_pathsOptions.Data, "META", $"{catalogName.TrimStart('/').Replace('/', '_')}.json");
-        }
-
-        private Dictionary<BackendSource, Type> LoadDataReaders(List<BackendSource> backendSources)
-        {
-            var extensionFilePaths = Directory.EnumerateFiles(_pathsOptions.Packages, "*.deps.json", SearchOption.AllDirectories)
-                                              .Select(filePath => filePath.Replace(".deps.json", ".dll")).ToList();
-
-            var idToDataReaderTypeMap = new Dictionary<string, Type>();
-            var types = new List<Type>();
-
-            // load assemblies
-            foreach (var filePath in extensionFilePaths)
-            {
-                var loadContext = new PackageLoadContext(filePath);
-                var assemblyName = new AssemblyName(Path.GetFileNameWithoutExtension(filePath));
-                var assembly = loadContext.LoadFromAssemblyName(assemblyName);
-
-                types.AddRange(this.ScanAssembly(assembly));
-            }
-
-#warning Improve this.
-            // add additional data readers
-            types.Add(typeof(AggregationDataSource));
-            types.Add(typeof(InMemoryDataSource));
-            types.Add(typeof(FilterDataSource));
-
-            // get ID for each extension
-            foreach (var type in types)
-            {
-                var attribute = type.GetFirstAttribute<ExtensionIdentificationAttribute>();
-                idToDataReaderTypeMap[attribute.Id] = type;
-            }
-
-            // return root path to type map
-            return backendSources.ToDictionary(backendSource => backendSource, backendSource =>
-            {
-                if (!idToDataReaderTypeMap.TryGetValue(backendSource.Type, out var type))
-                    throw new Exception($"No data reader extension with ID '{backendSource.Type}' could be found.");
-
-                return type;
-            });
-        }
-
-        private List<Type> ScanAssembly(Assembly assembly)
-        {
-            return assembly.ExportedTypes.Where(type => type.IsClass && !type.IsAbstract && type.IsSubclassOf(typeof(DataSourceController))).ToList();
         }
 
         private void CleanUpFilterCatalogs(List<ResourceCatalog> filterCatalogs,

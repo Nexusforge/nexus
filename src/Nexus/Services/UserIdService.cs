@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Services
 {
-    public class UserIdService
+    public class UserIdService : IUserIdService
     {
         #region Fields
 

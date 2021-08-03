@@ -1,12 +1,36 @@
 ﻿using Nexus.Utilities;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Nexus
 {
     public static class CustomExtensions
     {
+        public static async Task<(T[] Results, AggregateException Exception)> WhenAllEx<T>(this IEnumerable<Task<T>> tasks)
+        {
+            tasks = tasks.ToArray();
+
+            await Task.WhenAll(tasks);
+
+            var results = tasks
+                .Where(task => task.Status == TaskStatus.RanToCompletion)
+                .Select(task => task.Result)
+                .ToArray();
+
+            var aggregateExceptions = tasks
+                .Where(task => task.IsFaulted)
+                .Select(task => task.Exception)
+                .ToArray();
+
+            var flattenedAggregateException = new AggregateException(aggregateExceptions).Flatten();
+
+            return (results, flattenedAggregateException);
+        }
+
         public static byte[] Hash(this string value)
         {
             var md5 = MD5.Create(); // compute hash is not thread safe!

@@ -1,22 +1,20 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Nexus.DataModel;
+using Microsoft.Extensions.Options;
 using Nexus.Core;
-using Nexus.Infrastructure;
+using Nexus.DataModel;
 using Nexus.Extensibility;
-using Nexus.Extension.Famos;
-using Nexus.Extension.Mat73;
+using Nexus.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.IO.Compression;
+using System.IO.Pipelines;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Options;
-using System.IO.Pipelines;
 
 namespace Nexus.Services
 {
@@ -26,8 +24,9 @@ namespace Nexus.Services
 
         private ILogger _logger;
         private PathsOptions _pathsOptions;
-        private UserIdService _userIdService;
+        private IUserIdService _userIdService;
         private IDatabaseManager _databaseManager;
+        private IDataSourceControllerService _dataSourceControllerService;
 
         private uint _chunkSize;
 
@@ -43,15 +42,18 @@ namespace Nexus.Services
 
         #region Constructors
 
-        public DataService(IDatabaseManager databaseManager,
-                           UserIdService userIdService,
+        public DataService(IDataSourceControllerService dataSourceControllerService,
+                           IDatabaseManager databaseManager,
+                           IUserIdService userIdService,
+                           ILogger<DataService> logger,
                            ILoggerFactory loggerFactory,
                            IOptions<AggregationOptions> aggregationOptions,
                            IOptions<PathsOptions> pathsOptions)
         {
+            _dataSourceControllerService = dataSourceControllerService;
             _databaseManager = databaseManager;
             _userIdService = userIdService;
-            _logger = loggerFactory.CreateLogger("Nexus");
+            _logger = logger;
             _pathsOptions = pathsOptions.Value;
             _chunkSize = aggregationOptions.Value.ChunkSizeMB * 1000 * 1000;
 
@@ -73,19 +75,43 @@ namespace Nexus.Services
 
         public Task<AvailabilityResult[]> GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, AvailabilityGranularity granularity, CancellationToken cancellationToken)
         {
+#warning this is OK! continue with more methods
+
             return Task.Run(async () =>
             {
-                var dataSources = await _databaseManager.GetDataSourcesAsync(_userIdService.User, catalogId, cancellationToken);
+                var backendSources = _databaseManager.State.BackendSourceToCatalogsMap
+                    // where the catalog list contains the catalog ID
+                    .Where(entry => entry.Value.Any(catalog => catalog.Id == catalogId))
+                    // select the backend source
+                    .Select(entry => entry.Key);
 
-                var tasks = dataSources.Select(dataSourceForUsing =>
+                var dataSourceControllerTasks = backendSources
+                    .Select(backendSource => _dataSourceControllerService.GetControllerAsync(_userIdService.User, backendSource, cancellationToken));
+
+                var (controllers, exception) = await dataSourceControllerTasks.WhenAllEx();
+
+                try
                 {
-                    using var dataSource = dataSourceForUsing;
-                    return dataSource.GetAvailabilityAsync(catalogId, begin, end, granularity, cancellationToken);
-                }).ToList();
+                    if (!exception.InnerExceptions.Any())
+                    {
+                        var availabilityTasks = controllers.Select(controller => controller.GetAvailabilityAsync(catalogId, begin, end, granularity, cancellationToken));
+                        var availabilityResults = await Task.WhenAll(availabilityTasks);
 
-                var availabilityResults = await Task.WhenAll(tasks);
-
-                return availabilityResults;
+                        return availabilityResults;
+                    }
+                    else
+                    {
+                        throw exception;
+                    }
+                }
+                finally
+                {
+                    foreach (var controller in controllers)
+                    {
+                        var disposable = controller as IDisposable;
+                        disposable?.Dispose();
+                    }
+                }
             });
         }
 
@@ -292,7 +318,7 @@ namespace Nexus.Services
                     catalogItemPipeReaders.Add(new CatalogItemPipeReader(catalogItem, pipe.Reader));
                 }
 
-                readingGroups.Add(new DataReadingGroup(controller, catalogItemPipeWriters));
+                readingGroups.Add(new DataReadingGroup(controller, catalogItemPipeWriters.ToArray()));
             }
 
             /* read */
@@ -332,16 +358,6 @@ namespace Nexus.Services
             {
                 //
             }
-        }
-
-        private void OnReadProgress(ProgressUpdatedEventArgs e)
-        {
-            ((IProgress<ProgressUpdatedEventArgs>)this.ReadProgress).Report(e);
-        }
-
-        private void OnWriterogress(ProgressUpdatedEventArgs e)
-        {
-            ((IProgress<ProgressUpdatedEventArgs>)this.WriteProgress).Report(e);
         }
 
         #endregion

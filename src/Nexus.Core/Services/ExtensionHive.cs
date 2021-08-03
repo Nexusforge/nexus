@@ -24,6 +24,8 @@ namespace Nexus.Services
             PackageController, 
             ReadOnlyCollection<(ExtensionIdentificationAttribute Identification, Type Type)>> _packageControllerMap;
 
+        private ReadOnlyCollection<(ExtensionIdentificationAttribute Identification, Type Type)> _builtinExtensions;
+
         #endregion
 
         #region Constructors
@@ -32,6 +34,12 @@ namespace Nexus.Services
         {
             _logger = logger;
             _pathsOptions = pathsOptions.Value;
+
+            // add built-in extensions
+            var thisAssembly = Assembly.GetExecutingAssembly();
+            var thisAttributesAndTypes = this.ScanAssembly(thisAssembly);
+
+            _builtinExtensions = thisAttributesAndTypes;
         }
 
         #endregion
@@ -59,48 +67,15 @@ namespace Nexus.Services
 
             foreach (var packageReference in filteredPackageReferences)
             {
-                var controller = new PackageController(packageReference, _logger);
+                var packageController = new PackageController(packageReference, _logger);
                 using var scope = _logger.BeginScope(packageReference.ToDictionary(entry => entry.Key, entry => (object)entry.Value));
 
                 try
                 {
                     _logger.LogDebug("Load package.");
-                    var assembly = await controller.LoadAsync(_pathsOptions.Packages, cancellationToken);
-
-                    var attributesAndTypes = assembly.ExportedTypes
-                        .Where(type =>
-                        {
-                            var isClass = type.IsClass;
-                            var isInstantiatable = !type.IsAbstract;
-                            var isDataSource = typeof(IDataSource).IsAssignableFrom(type);
-                            var isDataWriter = typeof(IDataWriter).IsAssignableFrom(type);
-
-                            if (isClass && isInstantiatable && (isDataSource | isDataWriter))
-                            {
-                                var hasAttribute = type.IsDefined(typeof(ExtensionIdentificationAttribute), inherit: false);
-
-                                if (!hasAttribute)
-                                    _logger.LogWarning("Type {TypeName} from assembly {AssemblyName}, has no extension identification attribute.", type.FullName, assembly.FullName);
-
-                                var hasParameterlessConstructor = type.GetConstructor(Type.EmptyTypes) is not null;
-
-                                if (!hasParameterlessConstructor)
-                                    _logger.LogWarning("Type {TypeName} from assembly {AssemblyName}, has no parameterless constructor.", type.FullName, assembly.FullName);
-
-                                return hasAttribute && hasParameterlessConstructor;
-                            }
-
-                            return false;
-                        })
-                        .Select(type =>
-                        {
-                            var attribute = type.GetCustomAttribute<ExtensionIdentificationAttribute>(inherit: false);
-                            return (attribute, type);
-                        })
-                        .ToList()
-                        .AsReadOnly();
-
-                    packageControllerMap[controller] = attributesAndTypes;
+                    var assembly = await packageController.LoadAsync(_pathsOptions.Packages, cancellationToken);
+                    var attributesAndTypes = this.ScanAssembly(assembly);
+                    packageControllerMap[packageController] = attributesAndTypes;
                 }
                 catch (Exception ex)
                 {
@@ -109,6 +84,14 @@ namespace Nexus.Services
             }
 
             _packageControllerMap = packageControllerMap;
+        }
+
+        public T GetInstance<T>(string identifier) where T : IExtension
+        {
+            if (!TryGetInstance<T>(identifier, out var instance))
+                throw new Exception($"Could not find extension {identifier} of type {typeof(T).FullName}.");
+
+            return instance;
         }
 
         public bool TryGetInstance<T>(string identifier, out T instance) where T : IExtension
@@ -120,8 +103,8 @@ namespace Nexus.Services
 
             _logger.LogDebug("Instantiate extension {ExtensionIdentifier} of type {Type}.", identifier, typeof(T).FullName);
 
-            var type = _packageControllerMap
-                .SelectMany(entry => entry.Value)
+            var type = _builtinExtensions
+                .Concat(_packageControllerMap.SelectMany(entry => entry.Value))
                 .Where(extensionTuple => typeof(T).IsAssignableFrom(extensionTuple.Type) && extensionTuple.Identification.Id == identifier)
                 .Select(extenionTuple => extenionTuple.Type)
                 .FirstOrDefault();
@@ -136,6 +119,44 @@ namespace Nexus.Services
                 instance = (T)Activator.CreateInstance(type);
                 return true;
             }
+        }
+
+        private ReadOnlyCollection<(ExtensionIdentificationAttribute, Type)> ScanAssembly(Assembly assembly)
+        {
+            var attributesAndTypes = assembly.ExportedTypes
+                .Where(type =>
+                {
+                    var isClass = type.IsClass;
+                    var isInstantiatable = !type.IsAbstract;
+                    var isDataSource = typeof(IDataSource).IsAssignableFrom(type);
+                    var isDataWriter = typeof(IDataWriter).IsAssignableFrom(type);
+
+                    if (isClass && isInstantiatable && (isDataSource | isDataWriter))
+                    {
+                        var hasAttribute = type.IsDefined(typeof(ExtensionIdentificationAttribute), inherit: false);
+
+                        if (!hasAttribute)
+                            _logger.LogWarning("Type {TypeName} from assembly {AssemblyName}, has no extension identification attribute.", type.FullName, assembly.FullName);
+
+                        var hasParameterlessConstructor = type.GetConstructor(Type.EmptyTypes) is not null;
+
+                        if (!hasParameterlessConstructor)
+                            _logger.LogWarning("Type {TypeName} from assembly {AssemblyName}, has no parameterless constructor.", type.FullName, assembly.FullName);
+
+                        return hasAttribute && hasParameterlessConstructor;
+                    }
+
+                    return false;
+                })
+                .Select(type =>
+                {
+                    var attribute = type.GetCustomAttribute<ExtensionIdentificationAttribute>(inherit: false);
+                    return (attribute, type);
+                })
+                .ToList()
+                .AsReadOnly();
+
+            return attributesAndTypes;
         }
 
         #endregion

@@ -150,7 +150,7 @@ namespace Nexus
             services.AddHttpContextAccessor();
 
             services.AddScoped<MonacoService>();
-            services.AddScoped<UserIdService>();
+            services.AddScoped<IUserIdService, UserIdService>();
             services.AddScoped<UserState>();
             services.AddScoped<SettingsViewModel>();
             services.AddScoped<ToasterService>();
@@ -161,6 +161,7 @@ namespace Nexus
             services.AddTransient<AggregationService>();
 
             services.AddSingleton<ExtensionHive>();
+            services.AddSingleton<IDataSourceControllerService, DataSourceControllerService>();
             services.AddSingleton<AppState>();
             services.AddSingleton<IFileAccessManager, FileAccessManager>();
             services.AddSingleton<JobService<ExportJob>>();
@@ -168,7 +169,6 @@ namespace Nexus
             services.AddSingleton<IDatabaseManager, DatabaseManager>();
             services.AddSingleton<UserManager>();
 
-            services.Configure<LoggingOptions>(Configuration.GetSection(LoggingOptions.Section));
             services.Configure<GeneralOptions>(Configuration.GetSection(GeneralOptions.Section));
             services.Configure<ServerOptions>(Configuration.GetSection(ServerOptions.Section));
             services.Configure<PathsOptions>(Configuration.GetSection(PathsOptions.Section));

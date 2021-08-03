@@ -48,7 +48,7 @@ namespace Nexus
             return 0;
         }
 
-        private static IHostBuilder CreateHostBuilder(string currentDirectory, IConfiguration configuration, LogLevelUpdater logLeveLUpdater) => 
+        private static IHostBuilder CreateHostBuilder(string currentDirectory, IConfiguration configuration, LogLevelUpdater logLevelUpdater) => 
             Host.CreateDefaultBuilder()
                 .ConfigureAppConfiguration(builder =>
                 {
@@ -71,7 +71,7 @@ namespace Nexus
                 })
                 .ConfigureServices(services =>
                 {
-                    services.AddSingleton(logLeveLUpdater);
+                    services.AddSingleton(logLevelUpdater);
                 })
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
