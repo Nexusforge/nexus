@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Extensions
 {
-    [ExtensionIdentification("Nexus.Aggregation", "Nexus Aggregation", "Provides access to databases with Nexus aggregation files.")]
+    [ExtensionIdentification("Nexus.Builtin.Aggregation", "Nexus Aggregation", "Provides access to databases with Nexus aggregation files.")]
     public class AggregationDataSource : IDataSource
     {
         #region Fields

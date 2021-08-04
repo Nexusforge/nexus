@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Extensions
 {
-    [ExtensionIdentification("Nexus.Rpc", "Nexus RPC", "Provides access to databases via remote procedure calls.")]
+    [ExtensionIdentification("Nexus.Builtin.Rpc", "Nexus RPC", "Provides access to databases via remote procedure calls.")]
     public class RpcDataSource : IDataSource, IDisposable
     {
         #region Fields

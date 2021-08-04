@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Nexus.Utilities;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading;
@@ -14,10 +15,11 @@ namespace Nexus.Extensibility
     {
         #region Constructors
 
-        public DataWriterController(IDataWriter dataWriter, BackendSource backendSource, ILogger logger)
+        public DataWriterController(IDataWriter dataWriter, Uri resourceLocator, Dictionary<string, string>? configuration, ILogger logger)
         {
             this.DataWriter = dataWriter;
-            this.BackendSource = backendSource;
+            this.ResourceLocator = resourceLocator;
+            this.Configuration = configuration;
             this.Logger = logger;
         }
 
@@ -27,7 +29,9 @@ namespace Nexus.Extensibility
 
         private IDataWriter DataWriter { get; }
 
-        private BackendSource BackendSource { get; }
+        private Uri ResourceLocator { get; }
+
+        private Dictionary<string, string>? Configuration { get; }
 
         private ILogger Logger { get; }
 
@@ -39,8 +43,8 @@ namespace Nexus.Extensibility
         {
             var context = new DataWriterContext()
             {
-                ResourceLocator = this.BackendSource.ResourceLocator,
-                Configuration = this.BackendSource.Configuration,
+                ResourceLocator = this.ResourceLocator,
+                Configuration = this.Configuration,
                 Logger = this.Logger
             };
 

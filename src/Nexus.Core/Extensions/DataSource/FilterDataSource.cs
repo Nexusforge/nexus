@@ -22,7 +22,7 @@ namespace Nexus.Extensions
     {
         #region Fields
 
-        public const string Id = "Nexus.Filters";
+        public const string Id = "Nexus.Builtin.Filters";
 
         private ResourceCatalog[] _catalogs;
 

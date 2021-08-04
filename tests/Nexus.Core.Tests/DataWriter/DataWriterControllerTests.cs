@@ -93,13 +93,10 @@ namespace DataWriter
                 .Returns(Task.CompletedTask);
 
             // instantiate controller
-            var backendSource = new BackendSource()
-            {
-                ResourceLocator = new Uri("file:///empty"),
-                Configuration = new Dictionary<string, string>()
-            };
+            var resourceLocator = new Uri("file:///empty");
+            var configuration = new Dictionary<string, string>();
+            var controller = new DataWriterController(dataWriter, resourceLocator, configuration, NullLogger.Instance);
 
-            var controller = new DataWriterController(dataWriter, backendSource, NullLogger.Instance);
             await controller.InitializeAsync(CancellationToken.None);
 
             // read data

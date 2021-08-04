@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Services;
+using Nexus.Utilities;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -94,7 +95,7 @@ namespace Nexus.Controllers
 
             foreach (var catalogId in catalogIds)
             {
-                if (!Utilities.IsCatalogAccessible(this.HttpContext.User, catalogId, _databaseManager.Database))
+                if (!NexusUtilities.IsCatalogAccessible(this.HttpContext.User, catalogId, _databaseManager.Database))
                     return this.Unauthorized($"The current user is not authorized to access catalog '{catalogId}'.");
             }
 

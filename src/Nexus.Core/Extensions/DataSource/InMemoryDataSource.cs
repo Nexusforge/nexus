@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Extensions
 {
-    [ExtensionIdentification("Nexus.InMemory", "Nexus in-memory", "Provides an in-memory database.")]
+    [ExtensionIdentification("Nexus.Builtin.Inmemory", "Nexus in-memory", "Provides an in-memory database.")]
     public class InMemoryDataSource : IDataSource
     {
         #region Properties

@@ -1,9 +1,15 @@
-﻿using Nexus.Infrastructure;
+﻿using Nexus.DataModel;
 using System;
 using System.Collections.Generic;
 
-namespace Nexus.Core
+namespace Nexus.Services
 {
+    public enum ExportMode
+    {
+        Web = 0,
+        Local = 1
+    }
+
     public record ExportParameters
     {
         /// <example>2020-02-01T00:00:00Z</example>
@@ -12,11 +18,11 @@ namespace Nexus.Core
         /// <example>2020-02-02T00:00:00Z</example>
         public DateTime End { get; set; } = DateTime.UtcNow.Date.AddDays(-1);
 
-        /// <example>Hour</example>
-        public FileGranularity FileGranularity { get; set; } = FileGranularity.SingleFile;
+        /// <example>00:00:00</example>
+        public TimeSpan FilePeriod { get; set; } = TimeSpan.Zero;
 
-        /// <example>CSV</example>
-        public FileFormat FileFormat { get; set; } = FileFormat.CSV;
+        /// <example>Nexus.Builtin.Csv</example>
+        public string Writer { get; set; } = "Nexus.Builtin.Csv";
 
         /// <example>Web</example>
         public ExportMode ExportMode { get; set; } = ExportMode.Web;
@@ -27,4 +33,9 @@ namespace Nexus.Core
         /// <example>{ "RowIndexFormat": "Index", "SignificantFigures": "4" }</example>
         public Dictionary<string, string> Configuration { get; set; } = new Dictionary<string, string>();
     }
+
+    public record ExportContext(
+        TimeSpan SamplePeriod,
+        List<CatalogItem> CatalogItems,
+        ExportParameters ExportParameters);
 }

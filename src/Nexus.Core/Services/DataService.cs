@@ -24,6 +24,7 @@ namespace Nexus.Services
 
         private ILogger _logger;
         private PathsOptions _pathsOptions;
+        private ExtensionHive _extensionHive;
         private IUserIdService _userIdService;
         private IDatabaseManager _databaseManager;
         private IDataSourceControllerService _dataSourceControllerService;
@@ -32,18 +33,11 @@ namespace Nexus.Services
 
         #endregion
 
-        #region Types
-
-        private record ExportContext(TimeSpan SamplePeriod,
-                                     List<CatalogItem> CatalogItems,
-                                     ExportParameters ExportParameters);
-
-        #endregion
-
         #region Constructors
 
         public DataService(IDataSourceControllerService dataSourceControllerService,
                            IDatabaseManager databaseManager,
+                           ExtensionHive extensionHive,
                            IUserIdService userIdService,
                            ILogger<DataService> logger,
                            ILoggerFactory loggerFactory,
@@ -52,6 +46,7 @@ namespace Nexus.Services
         {
             _dataSourceControllerService = dataSourceControllerService;
             _databaseManager = databaseManager;
+            _extensionHive = extensionHive;
             _userIdService = userIdService;
             _logger = logger;
             _pathsOptions = pathsOptions.Value;
@@ -122,16 +117,20 @@ namespace Nexus.Services
             if (!catalogItems.Any() || exportParameters.Begin == exportParameters.End)
                 return string.Empty;
 
-            // find sample rate
-            var sampleRates = catalogItems
-                .Select(catalogItem => catalogItem.Representation.GetSampleRate())
+            // find sample period
+            var samplePeriods = catalogItems
+                .Select(catalogItem => catalogItem.Representation.SamplePeriod)
                 .Distinct()
                 .ToList();
 
-            if (sampleRates.Count != 1)
+            if (samplePeriods.Count != 1)
                 throw new ValidationException("All representations must be of the same sample period.");
 
-            var sampleRate = sampleRates.First();
+            var samplePeriod = samplePeriods.First();
+
+            // validate file period
+            if (exportParameters.FilePeriod.Ticks % samplePeriod.Ticks != 0)
+                throw new ValidationException("The file period must be a multiple of the sample period.");
 
             // log
             var username = _userIdService.GetUserId();
@@ -141,22 +140,38 @@ namespace Nexus.Services
             try
             {
                 // start
-                var zipFilePath = Path.Combine(_pathsOptions.Export, $"Nexus_{exportParameters.Begin.ToString("yyyy-MM-ddTHH-mm")}_{sampleRate.ToUnitString(underscore: true)}_{Guid.NewGuid().ToString().Substring(0, 8)}.zip");
+                var zipFilePath = Path.Combine(_pathsOptions.Export, $"Nexus_{exportParameters.Begin.ToString("yyyy-MM-ddTHH-mm-ss")}_{samplePeriod.ToUnitString()}_{Guid.NewGuid().ToString().Substring(0, 8)}.zip");
                 using var zipArchive = ZipFile.Open(zipFilePath, ZipArchiveMode.Create);
 
                 // create tmp/target directory
                 var directoryPath = exportParameters.ExportMode switch
                 {
                     ExportMode.Web => Path.Combine(Path.GetTempPath(), "Nexus", Guid.NewGuid().ToString()),
-                    ExportMode.Local => Path.Combine(_pathsOptions.Export, $"Nexus_{exportParameters.Begin.ToString("yyyy-MM-ddTHH-mm")}_{sampleRate.ToUnitString(underscore: true)}_{Guid.NewGuid().ToString().Substring(0, 8)}"),
+                    ExportMode.Local => Path.Combine(_pathsOptions.Export, $"Nexus_{exportParameters.Begin.ToString("yyyy-MM-ddTHH-mm-ss")}_{samplePeriod.ToUnitString()}_{Guid.NewGuid().ToString().Substring(0, 8)}"),
                     _ => throw new Exception("Unsupported export mode.")
                 };
 
                 Directory.CreateDirectory(directoryPath);
 
-                var exportContext = new ExportContext(sampleRate.Period, catalogItems, exportParameters);
-                await this.CreateFilesAsync(_userIdService.User, exportContext, directoryPath, cancellationToken);
+                // get data writer controller
+                var dataWriter = _extensionHive.GetInstance<IDataWriter>(exportParameters.Writer);
+                var resourceLocator = new Uri(directoryPath, UriKind.RelativeOrAbsolute);
+                var dataWriterController = new DataWriterController(dataWriter, resourceLocator, exportParameters.Configuration, _logger);
+                await dataWriterController.InitializeAsync(cancellationToken);
 
+                // write tmp files
+                try
+                {
+                    var exportContext = new ExportContext(samplePeriod, catalogItems, exportParameters);
+                    await this.CreateFilesAsync(_userIdService.User, exportContext, dataWriterController, cancellationToken);
+                }
+                finally
+                {
+                    var disposable = dataWriter as IDisposable;
+                    disposable?.Dispose();
+                }
+
+                // write zip archive
                 switch (exportParameters.ExportMode)
                 {
                     case ExportMode.Web:
@@ -183,11 +198,12 @@ namespace Nexus.Services
 
         private void WriteZipArchiveEntries(ZipArchive zipArchive, string directoryPath, CancellationToken cancellationToken)
         {
+#error Provide licenses as extra markdown file placed in ZIP!
+
             try
             {
                 // write zip archive entries
                 var filePathSet = Directory.GetFiles(directoryPath, "*", SearchOption.AllDirectories);
-                var currentFile = 0;
                 var fileCount = filePathSet.Count();
 
                 foreach (string filePath in filePathSet)
@@ -196,13 +212,10 @@ namespace Nexus.Services
 
                     var zipArchiveEntry = zipArchive.CreateEntry(Path.GetFileName(filePath), CompressionLevel.Optimal);
 
-                    this.OnReadProgress(new ProgressUpdatedEventArgs(currentFile / (double)fileCount, $"Writing file {currentFile + 1} / {fileCount} to ZIP archive ..."));
-
                     using var fileStream = File.Open(filePath, FileMode.Open, FileAccess.Read);
                     using var zipArchiveEntryStream = zipArchiveEntry.Open();
 
                     fileStream.CopyTo(zipArchiveEntryStream);
-                    currentFile++;
                 }
             }
             finally
@@ -211,94 +224,11 @@ namespace Nexus.Services
             }
         }
 
-        private async Task CreateFilesAsync(ClaimsPrincipal user, 
-                                            ExportContext exportContext,
-                                            string directoryPath,
-                                            CancellationToken cancellationToken)
-        {
-            var resourceDescriptionSet = sparseCatalog.ToResourceDescriptions();
-            var singleFile = exportParameters.FileGranularity == FileGranularity.SingleFile;
-
-            TimeSpan filePeriod;
-
-            if (singleFile)
-                filePeriod = exportParameters.End - exportParameters.Begin;
-            else
-                filePeriod = TimeSpan.FromSeconds((int)exportParameters.FileGranularity);
-
-            DataWriterExtensionSettingsBase settings;
-            DataWriterController dataWriter;
-
-            switch (exportParameters.FileFormat)
-            {
-                case FileFormat.CSV:
-
-                    settings = new CsvSettings()
-                    {
-                        FilePeriod = filePeriod,
-                        SingleFile = singleFile,
-                        RowIndexFormat = exportParameters.CsvRowIndexFormat,
-                        SignificantFigures = exportParameters.CsvSignificantFigures,
-                    };
-
-                    dataWriter = new CsvWriter((CsvSettings)settings, NullLogger.Instance);
-
-                    break;
-
-                case FileFormat.FAMOS:
-
-                    settings = new FamosSettings()
-                    {
-                        FilePeriod = filePeriod,
-                        SingleFile = singleFile,
-                    };
-
-                    dataWriter = new FamosWriter((FamosSettings)settings, NullLogger.Instance);
-
-                    break;
-
-                case FileFormat.MAT73:
-
-                    settings = new Mat73Settings()
-                    {
-                        FilePeriod = filePeriod,
-                        SingleFile = singleFile,
-                    };
-
-                    dataWriter = new Mat73Writer((Mat73Settings)settings, NullLogger.Instance);
-
-                    break;
-
-                default:
-                    throw new NotImplementedException();
-            }
-
-#error Provide licenses as extra markdown file placed in ZIP!
-
-            if (!string.IsNullOrWhiteSpace(sparseCatalog.License.FileMessage))
-                customMetadataEntrySet.Add(new CustomMetadataEntry("license", sparseCatalog.License.FileMessage, CustomMetadataEntryLevel.Catalog));
-
-            // initialize data writer
-            var catalogName_splitted = sparseCatalog.Id.Split('/');
-            var dataWriterContext = new DataWriterContext("Nexus", directoryPath, new NexusCatalogDescription(Guid.Empty, 0, catalogName_splitted[1], catalogName_splitted[2], catalogName_splitted[3]), customMetadataEntrySet);
-            dataWriter.Configure(dataWriterContext, resourceDescriptionSet);
-
-            try
-            {
-                // create temp files
-                await this.CreateFilesAsync(user, exportContext, dataWriter, cancellationToken);
-                dataWriter.Dispose();               
-            }
-            finally
-            {
-                dataWriter.Dispose();
-            }
-        }
-
-        private async Task CreateFilesAsync(ClaimsPrincipal user, 
-                                      ExportContext exportContext,
-                                      DataWriterController dataWriter,
-                                      CancellationToken cancellationToken)
+        private async Task CreateFilesAsync(
+            ClaimsPrincipal user, 
+            ExportContext exportContext,
+            DataWriterController dataWriterController,
+            CancellationToken cancellationToken)
         {
             /* reading groups */
             var catalogItemPipeReaders = new List<CatalogItemPipeReader>();
@@ -329,17 +259,23 @@ namespace Nexus.Services
                 exportParameters.End,
                 exportContext.SamplePeriod,
                 _chunkSize,
-                readingGroups,
+                readingGroups.ToArray(),
                 this.ReadProgress,
                 cancellationToken);
 
             /* write */
-            var writing = dataWriter.WriteAsync(
+            var singleFile = exportParameters.FilePeriod == default;
+
+            var filePeriod = singleFile
+                ? exportParameters.End - exportParameters.Begin
+                : exportParameters.FilePeriod;
+
+            var writing = dataWriterController.WriteAsync(
                 exportParameters.Begin,
                 exportParameters.End,
                 exportContext.SamplePeriod,
-                exportParameters.FileGranularity,
-                catalogItemPipeReaders,
+                filePeriod,
+                catalogItemPipeReaders.ToArray(),
                 this.WriteProgress,
                 cancellationToken
             );

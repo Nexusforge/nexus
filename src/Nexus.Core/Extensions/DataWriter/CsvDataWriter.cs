@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Extensions
 {
+    [ExtensionIdentification("Nexus.DataWriter.Csv", "Nexus CSV Writer", "Writes data into CSV files.")]
     public class CsvDataWriter : IDataWriter
     {
         #region "Fields"
@@ -70,70 +71,69 @@ namespace Nexus.Extensions
 
                     if (!File.Exists(filePath))
                     {
-                        using (var streamWriter = new StreamWriter(File.Open(filePath, FileMode.Append, FileAccess.Write), Encoding.UTF8))
+                        using var streamWriter = new StreamWriter(File.Open(filePath, FileMode.Append, FileAccess.Write), Encoding.UTF8);
+
+                        // comment
+                        streamWriter.WriteLine($"# format_version=1;");
+                        streamWriter.WriteLine($"# system_name=Nexus;");
+                        streamWriter.WriteLine($"# date_time={fileBegin.ToISO8601()};");
+                        streamWriter.WriteLine($"# sample_period={samplePeriod.ToUnitString()};");
+                        streamWriter.WriteLine($"# catalog_id={catalog.Id};");
+
+                        foreach (var entry in catalog.Metadata)
                         {
-                            // comment
-                            streamWriter.WriteLine($"# format_version=1;");
-                            streamWriter.WriteLine($"# system_name=Nexus;");
-                            streamWriter.WriteLine($"# date_time={fileBegin.ToISO8601()};");
-                            streamWriter.WriteLine($"# sample_period={samplePeriod.ToUnitString()};");
-                            streamWriter.WriteLine($"# catalog_id={catalog.Id};");
-
-                            foreach (var entry in catalog.Metadata)
-                            {
-                                streamWriter.WriteLine($"# {entry.Key}={entry.Value};");
-                            }
-
-                            /* resource name */
-                            var rowIndexFormat = this.Context.Configuration.TryGetValue("RowIndexFormat", out var value)
-                                ? value
-                                : "Index";
-
-                            switch (rowIndexFormat)
-                            {
-                                case "Index":
-                                    streamWriter.Write("index;");
-                                    break;
-
-                                case "Unix":
-                                    streamWriter.Write("Unix time;");
-                                    break;
-
-                                case "Excel":
-                                    streamWriter.Write("Excel time;");
-                                    break;
-
-                                default:
-                                    throw new NotSupportedException($"The row index format '{rowIndexFormat}' is not supported.");
-                            }
-
-                            foreach (var catalogItem in catalogItemGroup)
-                            {
-                                streamWriter.Write($"{catalogItem.Resource.Name};");
-                            }
-
-                            streamWriter.WriteLine();
-
-                            /* representation name */
-                            streamWriter.Write("-;");
-
-                            foreach (var catalogItem in catalogItemGroup)
-                            {
-                                streamWriter.Write($"{catalogItem.Representation.Id};");
-                            }
-
-                            streamWriter.WriteLine();
-
-                            /* unit */
-                            streamWriter.Write("-;");
-
-                            foreach (var catalogItem in catalogItemGroup)
-                            {
-                                streamWriter.Write($"{catalogItem.Resource.Unit};");
-                            }
-
-                            streamWriter.WriteLine();
+                            streamWriter.WriteLine($"# {entry.Key}={entry.Value};");
                         }
+
+                        /* resource name */
+                        var rowIndexFormat = this.Context.Configuration.TryGetValue("RowIndexFormat", out var value)
+                            ? value
+                            : "Index";
+
+                        switch (rowIndexFormat)
+                        {
+                            case "Index":
+                                streamWriter.Write("index;");
+                                break;
+
+                            case "Unix":
+                                streamWriter.Write("Unix time;");
+                                break;
+
+                            case "Excel":
+                                streamWriter.Write("Excel time;");
+                                break;
+
+                            default:
+                                throw new NotSupportedException($"The row index format '{rowIndexFormat}' is not supported.");
+                        }
+
+                        foreach (var catalogItem in catalogItemGroup)
+                        {
+                            streamWriter.Write($"{catalogItem.Resource.Name};");
+                        }
+
+                        streamWriter.WriteLine();
+
+                        /* representation name */
+                        streamWriter.Write("-;");
+
+                        foreach (var catalogItem in catalogItemGroup)
+                        {
+                            streamWriter.Write($"{catalogItem.Representation.Id};");
+                        }
+
+                        streamWriter.WriteLine();
+
+                        /* unit */
+                        streamWriter.Write("-;");
+
+                        foreach (var catalogItem in catalogItemGroup)
+                        {
+                            streamWriter.Write($"{catalogItem.Resource.Unit};");
+                        }
+
+                        streamWriter.WriteLine();
                     }
                 }
             });
@@ -161,44 +161,43 @@ namespace Nexus.Extensions
                         ? value2
                         : "4");
 
-                    using (StreamWriter streamWriter = new StreamWriter(File.Open(filePath, FileMode.Append, FileAccess.Write), Encoding.UTF8))
+                    using var streamWriter = new StreamWriter(File.Open(filePath, FileMode.Append, FileAccess.Write), Encoding.UTF8);
+
+                    var unixStart = _unixStart + fileOffset.TotalSeconds;
+                    var unixScalingFactor = (double)_lastSamplePeriod.Ticks / TimeSpan.FromSeconds(1).Ticks;
+
+                    var excelStart = _excelStart + fileOffset.TotalDays;
+                    var excelScalingFactor = (double)_lastSamplePeriod.Ticks / TimeSpan.FromDays(1).Ticks;
+
+                    var length = requestGroupArray.First().Data.Length;
+
+                    for (int rowIndex = 0; rowIndex < length; rowIndex++)
                     {
-                        var unixStart = _unixStart + fileOffset.TotalSeconds;
-                        var unixScalingFactor = (double)_lastSamplePeriod.Ticks / TimeSpan.FromSeconds(1).Ticks;
-
-                        var excelStart = _excelStart + fileOffset.TotalDays;
-                        var excelScalingFactor = (double)_lastSamplePeriod.Ticks / TimeSpan.FromDays(1).Ticks;
-
-                        var length = requestGroupArray.First().Data.Length;
-
-                        for (int rowIndex = 0; rowIndex < length; rowIndex++)
+                        switch (rowIndexFormat)
                         {
-                            switch (rowIndexFormat)
-                            {
-                                case "Index":
-                                    streamWriter.Write($"{string.Format(_nfi, "{0:N0}", offset + rowIndex)};");
-                                    break;
+                            case "Index":
+                                streamWriter.Write($"{string.Format(_nfi, "{0:N0}", offset + rowIndex)};");
+                                break;
 
-                                case "Unix":
-                                    streamWriter.Write($"{string.Format(_nfi, "{0:N5}", unixStart + rowIndex * unixScalingFactor)};");
-                                    break;
+                            case "Unix":
+                                streamWriter.Write($"{string.Format(_nfi, "{0:N5}", unixStart + rowIndex * unixScalingFactor)};");
+                                break;
 
-                                case "Excel":
-                                    streamWriter.Write($"{string.Format(_nfi, "{0:N9}", excelStart + rowIndex * excelScalingFactor)};");
-                                    break;
+                            case "Excel":
+                                streamWriter.Write($"{string.Format(_nfi, "{0:N9}", excelStart + rowIndex * excelScalingFactor)};");
+                                break;
 
-                                default:
-                                    throw new NotSupportedException($"The row index format '{rowIndexFormat}' is not supported.");
-                            }
-
-                            for (int i = 0; i < requestGroupArray.Length; i++)
-                            {
-                                var value = requestGroupArray[i].Data.Span[rowIndex];
-                                streamWriter.Write($"{string.Format(_nfi, $"{{0:G{significantFigures}}}", value)};");
-                            }
-
-                            streamWriter.WriteLine();
+                            default:
+                                throw new NotSupportedException($"The row index format '{rowIndexFormat}' is not supported.");
                         }
+
+                        for (int i = 0; i < requestGroupArray.Length; i++)
+                        {
+                            var value = requestGroupArray[i].Data.Span[rowIndex];
+                            streamWriter.Write($"{string.Format(_nfi, $"{{0:G{significantFigures}}}", value)};");
+                        }
+
+                        streamWriter.WriteLine();
                     }
                 }
             });
