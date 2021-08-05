@@ -1,11 +1,10 @@
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Nexus.Core;
-using Nexus.Logging;
-using Nexus.Services;
+using Serilog;
+using Serilog.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Other
@@ -22,77 +21,31 @@ namespace Other
 
     public class LoggingTests
     {
-        [Fact]
-        public void CanChangeLogLevel()
+        [Fact(Skip = "Manual test")]
+        public async Task CanLogToLokiAndSeqAsync()
         {
-            var logLevelUpdater = new LogLevelUpdater();
-            var configuration = NexusOptionsBase.BuildConfiguration(new string[0], logLevelUpdater);
+            // 1. Configure Serilog
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG_MINIMUMLEVEL_OVERRIDE_Nexus.Services", "Verbose");
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_1_NAME", "GrafanaLoki");
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_1_ARGS_URI", "http://localhost:3100");
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_1_ARGS_LABELS_0_KEY", "app");
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_1_ARGS_LABELS_0_VALUE", "nexus");
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_1_ARGS_OUTPUTTEMPLATE", "{Message}{NewLine}{Exception}");
 
-            Assert.Equal("Information", configuration[$"Logging:LogLevel:Default"]);
-            logLevelUpdater.SetLevel(LogLevel.Critical, "Default");
-            Assert.Equal("Critical", configuration[$"Logging:LogLevel:Default"]);
-            logLevelUpdater.ResetLevel("Default");
-            Assert.Equal("Information", configuration[$"Logging:LogLevel:Default"]);
-
-            logLevelUpdater.SetLevel(LogLevel.Critical, "Default", "MyProvider");
-            Assert.Equal("Critical", configuration[$"Logging:MyProvider:LogLevel:Default"]);
-            logLevelUpdater.ResetLevel("Default", "MyProvider");
-            Assert.Null(configuration[$"Logging:MyProvider:LogLevel:Default"]);
-        }
-
-        [Fact]
-        public void CanLogToSeq()
-        {
-            // 1. Prepare environment variables (server url and filters)
-
-            /* Seq server URL */
-            Environment.SetEnvironmentVariable("NEXUS_LOGGING_SEQ_SERVERURL", "http://localhost:5341");
-
-            /* How filtering rules are applied:
-             * https://docs.microsoft.com/en-us/aspnet/core/fundamentals/logging/?tabs=aspnetcore2x&view=aspnetcore-5.0#how-filtering-rules-are-applied
-             */
-
-            /* Seq Minimum Level (cannot override):
-             * if not defined: LevelAlias.Minimum = "Trace" (https://github.com/datalust/seq-extensions-logging/blob/90a7471e0c48d1065e60338a1c8f646a85e845c8/src/Seq.Extensions.Logging/Microsoft/Extensions/Logging/SeqLoggerExtensions.cs#L101)
-             * if invalid: Fallback = "Information" (https://github.com/datalust/seq-extensions-logging/blob/90a7471e0c48d1065e60338a1c8f646a85e845c8/src/Seq.Extensions.Logging/Microsoft/Extensions/Logging/SeqLoggerExtensions.cs#L131)
-             */
-            Environment.SetEnvironmentVariable("NEXUS_LOGGING_SEQ_MINIMUMLEVEL", "Trace");
-
-            /* Lower the log level for a specific logger: */
-            Environment.SetEnvironmentVariable("NEXUS_LOGGING_LOGLEVEL_Other.LoggingTests", "Trace");
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_2_NAME", "Seq");
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_2_ARGS_SERVERURL", "http://localhost:5341");
 
             // 2. Build the configuration
-            var logLevelUpdater = new LogLevelUpdater();
-            var configuration = NexusOptionsBase.BuildConfiguration(new string[0], logLevelUpdater);
+            var configuration = NexusOptionsBase.BuildConfiguration(new string[0]);
 
-            List<ILoggerProvider> loggerProviders = default;
+            using var serilogger = new LoggerConfiguration()
+                .ReadFrom.Configuration(configuration)
+                .CreateLogger();
 
-            var loggerFactory = LoggerFactory.Create(logging =>
-            {
-                /* ASP.NET Minimum Level (fallback if there is no other rule)
-                 * "Minimum level is only used when there are no rules matched at all":
-                 * https://github.com/datalust/seq-extensions-logging/issues/22#issuecomment-324172189
-                 * 
-                 * => LogLevel:Default:Information overrides this
-                 */
-                logging.SetMinimumLevel(LogLevel.Information);
-
-                /* It is very important to provide the correct section! */
-                logging.AddConfiguration(configuration.GetSection("Logging"));
-
-                /* Add seq sink */
-                if (configuration.GetSection("Logging:Seq").Exists())
-                    logging.AddSeq(configuration.GetSection("Logging:Seq"));
-
-                /* Get SerilogLoggerProvider provider to be able to dispose it later. */
-                loggerProviders = logging.Services
-                   .Where(descriptor => descriptor.ImplementationFactory is not null)
-                   .Select(descriptor => (ILoggerProvider)descriptor.ImplementationFactory(null))
-                   .ToList();
-            });
+            var loggerFactory = new SerilogLoggerFactory(serilogger);
 
             // 3. Create a logger
-            var logger = loggerFactory.CreateLogger<LoggingTests>();
+            var logger = loggerFactory.CreateLogger<Nexus.Services.DataService>();
 
             // 3.1 Log-levels
             logger.LogTrace("Trace");
@@ -101,7 +54,7 @@ namespace Other
             logger.LogWarning("Warning");
             logger.LogError("Error");
             logger.LogCritical("Critical");
-
+          
             // 3.2 Log with exception
             try
             {
@@ -167,42 +120,6 @@ namespace Other
             {
                 logger.LogInformation("Log with named scope");
             }
-
-            // 3.10 Log with increased log level (general)
-            logger.LogTrace("I am increasing the log level to critical-only!");
-
-            logLevelUpdater.SetLevel(LogLevel.Critical, category: "Other.LoggingTests");
-
-            logger.LogTrace("Trace: This should not be logged!");
-            logger.LogDebug("Debug: This should not be logged!");
-            logger.LogInformation("Information: This should not be logged!");
-            logger.LogWarning("Warning: This should not be logged!");
-            logger.LogError("Error: This should not be logged!");
-            logger.LogCritical("Critical: It worked! Now change back to previous value!");
-
-            logLevelUpdater.ResetLevel(category: "Other.LoggingTests");
-
-            logger.LogTrace("Trace: It worked!");
-            logger.LogDebug("Debug: It worked!");
-            logger.LogInformation("Information: It worked!");
-            logger.LogWarning("Warning: It worked!");
-            logger.LogError("Error: It worked!");
-            logger.LogCritical("Critical: It worked!");
-
-            // 3.11 Log with increased log level (provider-specific)
-            logger.LogTrace("I am increasing the log level for Seq logs to critical-only!");
-
-            logLevelUpdater.SetLevel(LogLevel.Critical, category: "Other.LoggingTests", provider: "Seq");
-
-            logger.LogTrace("Trace: This should not be logged!");
-            logger.LogDebug("Debug: This should not be logged!");
-            logger.LogInformation("Information: This should not be logged!");
-            logger.LogWarning("Warning: This should not be logged!");
-            logger.LogError("Error: This should not be logged!");
-            logger.LogCritical("Critical: It worked!");
-
-            // 4. Flush log messages
-            loggerProviders.ForEach(loggerProvider => loggerProvider.Dispose());
         }
     }
 }

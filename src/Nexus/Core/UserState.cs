@@ -6,7 +6,6 @@ using Nexus.DataModel;
 using Nexus.Roslyn;
 using Nexus.Services;
 using Nexus.ViewModels;
-using Nexus.Infrastructure;
 using Prism.Mvvm;
 using System;
 using System.Collections.Generic;

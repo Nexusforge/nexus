@@ -4,7 +4,6 @@ using System;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
-using static Nexus.Services.DatabaseManager;
 
 namespace Nexus.Services
 {

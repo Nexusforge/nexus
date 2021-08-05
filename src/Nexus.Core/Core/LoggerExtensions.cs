@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Nexus.Logging
+namespace Nexus.Core
 {
     public static class LoggerExtensions
 	{
@@ -11,7 +11,7 @@ namespace Nexus.Logging
             BeginNamedScope<T>(this ILogger<T> logger, string name, params ValueTuple<string, object>[] stateProperties)
         {
             var dictionary = stateProperties.ToDictionary(entry => entry.Item1, entry => entry.Item2);
-            dictionary[name + ".Scope"] = Guid.NewGuid();
+            dictionary[name + "_scope"] = Guid.NewGuid();
             return logger.BeginScope(dictionary);
         }
 
@@ -19,7 +19,7 @@ namespace Nexus.Logging
             BeginNamedScope<T>(this ILogger<T> logger, string name, IDictionary<string, object> stateProperties)
         {
             var dictionary = stateProperties;
-            dictionary[name + ".Scope"] = Guid.NewGuid();
+            dictionary[name + "_scope"] = Guid.NewGuid();
             return logger.BeginScope(dictionary);
         }
     }

@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Configuration;
-using Nexus.Services;
 using System;
 using System.IO;
 using System.Net;
@@ -14,7 +13,7 @@ namespace Nexus.Core
         // for testing only
         public string BlindSample { get; set; }
 
-        internal static IConfiguration BuildConfiguration(string[] args, LogLevelUpdater logLevelUpdater = default)
+        internal static IConfiguration BuildConfiguration(string[] args)
         {
             var settingsPath = Environment.GetEnvironmentVariable("NEXUS_PATHS_SETTINGS");
 
@@ -26,9 +25,6 @@ namespace Nexus.Core
                 .AddIniFile(settingsPath, optional: true)
                 .AddImprovedEnvironmentVariables(prefix: "NEXUS_")
                 .AddCommandLine(args);
-
-            if (logLevelUpdater != default)
-                builder.AddLoggingConfiguration(logLevelUpdater, "Logging");
 
             return builder.Build();
         }

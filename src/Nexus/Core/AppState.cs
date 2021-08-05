@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nexus.DataModel;
-using Nexus.Infrastructure;
 using Nexus.Services;
 using Nexus.Utilities;
 using Nexus.ViewModels;

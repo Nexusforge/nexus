@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
-using Nexus;
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
