@@ -2,7 +2,7 @@
 
 namespace Nexus.Services
 {
-    public interface IFileAccessManager
+    internal interface IFileAccessManager
     {
         void Register(string filePath, CancellationToken cancellationToken);
 

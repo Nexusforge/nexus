@@ -3,7 +3,7 @@ using System.Threading;
 
 namespace Nexus.Services
 {
-    public class FileAccessManager : IFileAccessManager
+    internal class FileAccessManager : IFileAccessManager
     {
         #region Fields
 

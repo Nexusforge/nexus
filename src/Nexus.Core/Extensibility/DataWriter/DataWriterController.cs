@@ -11,7 +11,7 @@ namespace Nexus.Extensibility
 {
 #warning Add "CheckFileSize" method (e.g. for Famos).
 
-    public class DataWriterController
+    public class DataWriterController : IDisposable, IDataWriterController
     {
         #region Constructors
 
@@ -197,6 +197,32 @@ namespace Nexus.Extensibility
 
             if (filePeriod.Ticks % samplePeriod.Ticks != 0)
                 throw new ValidationException("The file period parameter must be a multiple of the sample period.");
+        }
+
+        #endregion
+
+        #region IDisposable
+
+        private bool disposedValue;
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    var disposable = this.DataWriter as IDisposable;
+                    disposable?.Dispose();
+                }
+
+                disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
 
         #endregion

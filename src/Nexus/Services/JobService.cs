@@ -10,7 +10,7 @@ using Timer = System.Timers.Timer;
 
 namespace Nexus.Services
 {
-    public class JobService<T> : BindableBase where T : Job
+    internal class JobService<T> : BindableBase where T : Job
     {
         #region Fields
 
@@ -56,7 +56,7 @@ namespace Nexus.Services
 
         #region Methods
 
-        public JobControl<T> AddJob(T job, Progress<ProgressUpdatedEventArgs> progress, Func<JobControl<T>, CancellationTokenSource, Task<string>> createTask)
+        public JobControl<T> AddJob(T job, Progress<double> progress, Func<JobControl<T>, CancellationTokenSource, Task<string>> createTask)
         {
             var cancellationTokenSource = new CancellationTokenSource();
 
@@ -67,7 +67,7 @@ namespace Nexus.Services
                 CancellationTokenSource = cancellationTokenSource,
             };
 
-            var progressHandler = (EventHandler<ProgressUpdatedEventArgs>)((sender, e) =>
+            var progressHandler = (EventHandler<double>)((sender, e) =>
             {
                 jobControl.OnProgressUpdated(e);
                 this.RaisePropertyChanged("Jobs");

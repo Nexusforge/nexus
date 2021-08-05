@@ -159,9 +159,9 @@ namespace Nexus
 
             services.AddTransient<DataService>();
             services.AddTransient<AggregationService>();
+            services.AddTransient<IDataControllerService, DataControllerService>();
 
             services.AddSingleton<ExtensionHive>();
-            services.AddSingleton<IDataSourceControllerService, DataSourceControllerService>();
             services.AddSingleton<AppState>();
             services.AddSingleton<IFileAccessManager, FileAccessManager>();
             services.AddSingleton<JobService<ExportJob>>();
@@ -175,7 +175,6 @@ namespace Nexus
             services.Configure<SecurityOptions>(Configuration.GetSection(SecurityOptions.Section));
             services.Configure<UsersOptions>(Configuration.GetSection(UsersOptions.Section));
             services.Configure<SmtpOptions>(Configuration.GetSection(SmtpOptions.Section));
-            services.Configure<AggregationOptions>(Configuration.GetSection(AggregationOptions.Section));
         }
 
         public void Configure(IApplicationBuilder app,

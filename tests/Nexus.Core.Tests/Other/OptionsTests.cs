@@ -15,7 +15,6 @@ namespace Other
         [InlineData(SecurityOptions.Section, typeof(SecurityOptions))]
         [InlineData(UsersOptions.Section, typeof(UsersOptions))]
         [InlineData(SmtpOptions.Section, typeof(SmtpOptions))]
-        [InlineData(AggregationOptions.Section, typeof(AggregationOptions))]
         [Theory]
         public void CanBindOptions<T>(string section, Type optionsType)
         {

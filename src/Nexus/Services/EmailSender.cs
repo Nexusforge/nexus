@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Services
 {
-    public class EmailSender : IEmailSender
+    internal class EmailSender : IEmailSender
     {
         private ILogger<EmailSender> _logger;
         private SmtpOptions _smtpOptions;

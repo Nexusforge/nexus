@@ -9,6 +9,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Pipelines;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
@@ -46,7 +47,7 @@ namespace Nexus.Extensions
 
         public Func<string, bool> IsCatalogAccessible { get; set; }
 
-        public Func<BackendSource, Task<DataSourceController>> GetDataSourceAsync { get; set; }
+        public Func<BackendSource, Task<IDataSourceController>> GetDataSourceAsync { get; set; }
 
         private DataSourceContext Context { get; set; }
 
@@ -241,15 +242,27 @@ namespace Nexus.Extensions
                         if (!this.IsCatalogAccessible(catalog.Id))
                             throw new UnauthorizedAccessException("The current user is not allowed to access this filter.");
 
-#warning GetData Should be Async! Deadlock may happen
                         var dataSourceController = this.GetDataSourceAsync(representation.BackendSource).Result;
+                        var pipe = new Pipe();
 
-#warning GetData Should be Async! Deadlock may happen
-                        var progress = new Progress<double>();
-                        var request = new ReadRequest(catalogItem, data, status);
-                        dataSourceController.DataSource.ReadAsync(begin, end, new ReadRequest[] { request }, progress, cancellationToken).Wait();
-                        var doubleData = new double[status.Length];
-                        BufferUtilities.ApplyRepresentationStatusByDataType(representation.DataType, data, status, doubleData);
+                        var doubleStream = dataSourceController.ReadAsStream(
+                            begin,
+                            end, 
+                            catalogItem,
+                            this.Context.Logger);
+
+                        var doubleData = new double[doubleStream.Length / 8];
+                        var byteData = MemoryMarshal.AsBytes(doubleData.AsSpan());
+
+                        while (byteData.Length > 0)
+                        {
+                            var read = doubleStream.Read(byteData);
+
+                            if (read == 0)
+                                throw new Exception("The stream ended early.");
+
+                            byteData = byteData.Slice(read);
+                        }
 
                         return doubleData;
                     };

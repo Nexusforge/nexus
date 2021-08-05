@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace Nexus.Services
 {
-    public class LogLevelUpdater
+	internal class LogLevelUpdater
 	{
 		private readonly List<LoggingConfigurationProvider> _providers;
 

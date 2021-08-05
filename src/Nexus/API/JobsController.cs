@@ -26,7 +26,6 @@ namespace Nexus.Controllers
         private JobService<ExportJob> _exportJobService;
         private JobService<AggregationJob> _aggregationJobService;
         private PathsOptions _pathsOptions;
-        private AggregationOptions _aggregationOptions;
 
         #endregion
 
@@ -38,8 +37,7 @@ namespace Nexus.Controllers
             JobService<AggregationJob> aggregationJobService,
             IServiceProvider serviceProvider,
             ILogger<JobsController> logger,
-            IOptions<PathsOptions> pathOptions,
-            IOptions<AggregationOptions> aggregationOptions)
+            IOptions<PathsOptions> pathOptions)
         {
             _databaseManager = databaseManager;
             _serviceProvider = serviceProvider;
@@ -47,7 +45,6 @@ namespace Nexus.Controllers
             _aggregationJobService = aggregationJobService;
             _logger = logger;
             _pathsOptions = pathOptions.Value;
-            _aggregationOptions = aggregationOptions.Value;
         }
 
         #endregion
@@ -113,7 +110,8 @@ namespace Nexus.Controllers
                 var jobControl = _exportJobService.AddJob(job, dataService.ReadProgress, (jobControl, cts) =>
                 {
                     var userIdService = _serviceProvider.GetRequiredService<UserIdService>();
-                    var task = dataService.ExportDataAsync(parameters, catalogItems, cts.Token);
+#error ExportId should be ASP Request ID!
+                    var task = dataService.ExportAsync(parameters, catalogItems, exportId, cts.Token);
 
                     return task;
                 });
@@ -268,7 +266,6 @@ namespace Nexus.Controllers
                         {
                             var result = await aggregationService.AggregateDataAsync(
                                 _pathsOptions.Data,
-                                _aggregationOptions.ChunkSizeMB,
                                 setup,
                                 state,
                                 backendSource => databaseManager.GetDataSourceControllerAsync(userIdService.User, backendSource, cts.Token, state),

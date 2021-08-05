@@ -593,7 +593,7 @@ namespace Nexus.Core
             this.RaisePropertyChanged(nameof(UserState.ExportParameters));
         }
 
-        public bool IsRepresentationSeleced(RepresentationViewModel representation)
+        public bool IsRepresentationSelected(RepresentationViewModel representation)
         {
             return this.SelectedRepresentations.Contains(representation);
         }
@@ -654,7 +654,7 @@ namespace Nexus.Core
 
             if (this.CatalogContainer != null)
             {
-                var folderPath = Path.Combine(_pathsOptions.Data, "ATTACHMENTS", this.CatalogContainer.PhysicalName);
+                var folderPath = Path.Combine(_pathsOptions.Attachements, this.CatalogContainer.PhysicalName);
 
                 if (Directory.Exists(folderPath))
                     this.Attachments = Directory.GetFiles(folderPath, "*").ToList();

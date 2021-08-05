@@ -11,7 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Other
+namespace Services
 {
     public class ExtensionHiveTests
     {

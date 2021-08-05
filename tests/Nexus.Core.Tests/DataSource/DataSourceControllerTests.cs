@@ -1,4 +1,5 @@
-﻿using Nexus;
+﻿using Microsoft.Extensions.Logging.Abstractions;
+using Nexus;
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using System;
@@ -170,7 +171,14 @@ namespace DataSource
                 }
             });
 
-            var reading = DataSourceController.ReadAsync(begin, end, samplePeriod, 20000, readingGroups, default, CancellationToken.None);
+            var reading = DataSourceController.ReadAsync(
+                begin,
+                end, 
+                samplePeriod,
+                readingGroups,
+                progress: default, 
+                NullLogger.Instance,
+                CancellationToken.None);
 
             await Task.WhenAll(writing, reading);
 
@@ -200,7 +208,7 @@ namespace DataSource
             var resourcePath = "/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean";
             var catalogItem = controller.Catalogs.Find(resourcePath);
 
-            var stream = controller.ReadAsStream(begin, end, 10000, catalogItem);
+            var stream = controller.ReadAsStream(begin, end, catalogItem, NullLogger.Instance);
 
             double[] result = new double[86401];
 

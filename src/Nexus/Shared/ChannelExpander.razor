@@ -47,7 +47,7 @@
         <div class="resource-representations ml-auto">
             @foreach (var representation in _filteredRepresentations)
             {
-                <div class="resource-representation @(this.UserState.IsRepresentationSeleced(representation) ? "selected" : "")"
+                <div class="resource-representation @(this.UserState.IsRepresentationSelected(representation) ? "selected" : "")"
                      @onclick="() => this.UserState.ToggleRepresentationSelection(representation)">
                     @representation.Name
                 </div>

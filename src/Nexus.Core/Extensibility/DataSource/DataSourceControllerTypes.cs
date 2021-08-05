@@ -9,6 +9,6 @@ namespace Nexus.Extensibility
         PipeWriter? StatusWriter);
 
     public record DataReadingGroup(
-        DataSourceController Controller,
+        IDataSourceController Controller,
         CatalogItemPipeWriter[] CatalogItemPipeWriters);
 }

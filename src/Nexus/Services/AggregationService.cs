@@ -17,11 +17,10 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using static Nexus.Services.DatabaseManager;
 
 namespace Nexus.Services
 {
-    public class AggregationService
+    internal class AggregationService
     {
         #region Fields
 
@@ -106,7 +105,6 @@ namespace Nexus.Services
         }
 
         public Task<string> AggregateDataAsync(string databaseFolderPath,
-                                               uint aggregationChunkSizeMB,
                                                AggregationSetup setup,
                                                DatabaseManagerState state,
                                                Func<BackendSource, Task<DataSourceController>> getControllerAsync,
@@ -143,7 +141,6 @@ namespace Nexus.Services
                         await this.AggregateCatalogAsync(
                             databaseFolderPath,
                             catalogId,
-                            aggregationChunkSizeMB,
                             currentDay,
                             state,
                             setup,
@@ -161,7 +158,6 @@ namespace Nexus.Services
 
         private async Task AggregateCatalogAsync(string databaseFolderPath,
                                                  string catalogId,
-                                                 uint aggregationChunkSizeMB,
                                                  DateTime date,
                                                  DatabaseManagerState state,
                                                  AggregationSetup setup,
@@ -201,7 +197,6 @@ namespace Nexus.Services
                             representation,
                             aggregationResource.Aggregations,
                             date,
-                            aggregationChunkSizeMB,
                             setup.Force,
                             cancellationToken
                         };
@@ -230,7 +225,6 @@ namespace Nexus.Services
                                                            CatalogItem catalogItem,
                                                            List<Aggregation> aggregations,
                                                            DateTime date,
-                                                           uint aggregationChunkSizeMB,
                                                            bool force,
                                                            CancellationToken cancellationToken) where T : unmanaged
         {
@@ -303,7 +297,6 @@ namespace Nexus.Services
 
             // process data
             var endDate = date.AddDays(1);
-            var chunkSize = aggregationChunkSizeMB * 1000 * 1000;
 
             // read raw data
             var dataPipe = new Pipe();
@@ -312,10 +305,11 @@ namespace Nexus.Services
             var reading = dataSourceController.ReadSingleAsync(
                 date,
                 endDate,
-                chunkSize,
                 catalogItem,
                 dataPipe.Writer,
                 statusPipe.Writer,
+                progress: default,
+                _logger,
                 cancellationToken);
 
             var writing = this.AggregateSingleAsync<T>(
@@ -733,10 +727,10 @@ namespace Nexus.Services
 
             // group
             if (filters.ContainsKey(AggregationFilter.IncludeGroup))
-                result &= resource.Group.Split('\n').Any(groupName => Regex.IsMatch(groupName, filters[AggregationFilter.IncludeGroup]));
+                result &= resource.Groups.Any(groupName => Regex.IsMatch(groupName, filters[AggregationFilter.IncludeGroup]));
 
             if (filters.ContainsKey(AggregationFilter.ExcludeGroup))
-                result &= !resource.Group.Split('\n').Any(groupName => Regex.IsMatch(groupName, filters[AggregationFilter.ExcludeGroup]));
+                result &= !resource.Groups.Any(groupName => Regex.IsMatch(groupName, filters[AggregationFilter.ExcludeGroup]));
 
             // unit
             if (filters.ContainsKey(AggregationFilter.IncludeUnit))

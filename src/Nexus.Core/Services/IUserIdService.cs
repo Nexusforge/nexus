@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Services
 {
-    public interface IUserIdService
+    internal interface IUserIdService
     {
         IPAddress RemoteIpAddress { get; }
         ClaimsPrincipal User { get; }

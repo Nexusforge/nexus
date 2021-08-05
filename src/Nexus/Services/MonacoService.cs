@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Services
 {
-    public class MonacoService
+    internal class MonacoService
     {
         /// <summary>
         /// Blazor plus Roslyn - strange behavior:

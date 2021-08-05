@@ -8,7 +8,7 @@ using System.Security.Claims;
 
 namespace Nexus.Services
 {
-    public class UserManager
+    internal class UserManager
     {
         private ILogger _logger;
         private IServiceProvider _serviceProvider;

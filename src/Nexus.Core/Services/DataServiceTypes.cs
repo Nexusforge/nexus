@@ -28,14 +28,14 @@ namespace Nexus.Services
         public ExportMode ExportMode { get; set; } = ExportMode.Web;
 
         /// <example>["/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean", "/IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean"]</example>
-        public List<string> ResourcePaths { get; set; } = new List<string>();
+        public string[] ResourcePaths { get; set; } = new string[0];
 
         /// <example>{ "RowIndexFormat": "Index", "SignificantFigures": "4" }</example>
         public Dictionary<string, string> Configuration { get; set; } = new Dictionary<string, string>();
     }
 
-    public record ExportContext(
+    internal record ExportContext(
         TimeSpan SamplePeriod,
-        List<CatalogItem> CatalogItems,
+        IEnumerable<CatalogItem> CatalogItems,
         ExportParameters ExportParameters);
 }

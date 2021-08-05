@@ -1,10 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
-using Nexus.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -12,45 +10,35 @@ using System.IO;
 using System.IO.Compression;
 using System.IO.Pipelines;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nexus.Services
 {
-    public class DataService
+    internal class DataService
     {
         #region Fields
 
         private ILogger _logger;
-        private PathsOptions _pathsOptions;
-        private ExtensionHive _extensionHive;
-        private IUserIdService _userIdService;
         private IDatabaseManager _databaseManager;
-        private IDataSourceControllerService _dataSourceControllerService;
+        private IDataControllerService _dataControllerService;
 
-        private uint _chunkSize;
+        private PathsOptions _pathsOptions;
 
         #endregion
 
         #region Constructors
 
-        public DataService(IDataSourceControllerService dataSourceControllerService,
-                           IDatabaseManager databaseManager,
-                           ExtensionHive extensionHive,
-                           IUserIdService userIdService,
-                           ILogger<DataService> logger,
-                           ILoggerFactory loggerFactory,
-                           IOptions<AggregationOptions> aggregationOptions,
-                           IOptions<PathsOptions> pathsOptions)
+        public DataService(
+            IDataControllerService dataControllerService,
+            IDatabaseManager databaseManager,
+            ILogger<DataService> logger,
+            IOptions<PathsOptions> pathsOptions)
         {
-            _dataSourceControllerService = dataSourceControllerService;
+            _dataControllerService = dataControllerService;
             _databaseManager = databaseManager;
-            _extensionHive = extensionHive;
-            _userIdService = userIdService;
             _logger = logger;
             _pathsOptions = pathsOptions.Value;
-            _chunkSize = aggregationOptions.Value.ChunkSizeMB * 1000 * 1000;
 
             this.ReadProgress = new Progress<double>();
             this.WriteProgress = new Progress<double>();
@@ -68,51 +56,52 @@ namespace Nexus.Services
 
         #region Methods
 
-        public Task<AvailabilityResult[]> GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, AvailabilityGranularity granularity, CancellationToken cancellationToken)
+        public async Task<AvailabilityResult[]> GetAvailabilityAsync(
+            string catalogId, 
+            DateTime begin, 
+            DateTime end, 
+            AvailabilityGranularity granularity,
+            CancellationToken cancellationToken)
         {
-#warning this is OK! continue with more methods
+            var backendSources = _databaseManager.State.BackendSourceToCatalogsMap
+                // where the catalog list contains the catalog ID
+                .Where(entry => entry.Value.Any(catalog => catalog.Id == catalogId))
+                // select the backend source
+                .Select(entry => entry.Key);
 
-            return Task.Run(async () =>
+            var dataSourceControllerTasks = backendSources
+                .Select(backendSource => _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken));
+
+            var (controllers, exception) = await dataSourceControllerTasks.WhenAllEx();
+
+            try
             {
-                var backendSources = _databaseManager.State.BackendSourceToCatalogsMap
-                    // where the catalog list contains the catalog ID
-                    .Where(entry => entry.Value.Any(catalog => catalog.Id == catalogId))
-                    // select the backend source
-                    .Select(entry => entry.Key);
-
-                var dataSourceControllerTasks = backendSources
-                    .Select(backendSource => _dataSourceControllerService.GetControllerAsync(_userIdService.User, backendSource, cancellationToken));
-
-                var (controllers, exception) = await dataSourceControllerTasks.WhenAllEx();
-
-                try
+                if (!exception.InnerExceptions.Any())
                 {
-                    if (!exception.InnerExceptions.Any())
-                    {
-                        var availabilityTasks = controllers.Select(controller => controller.GetAvailabilityAsync(catalogId, begin, end, granularity, cancellationToken));
-                        var availabilityResults = await Task.WhenAll(availabilityTasks);
+                    var availabilityTasks = controllers.Select(controller => controller.GetAvailabilityAsync(catalogId, begin, end, granularity, cancellationToken));
+                    var availabilityResults = await Task.WhenAll(availabilityTasks);
 
-                        return availabilityResults;
-                    }
-                    else
-                    {
-                        throw exception;
-                    }
+                    return availabilityResults;
                 }
-                finally
+                else
                 {
-                    foreach (var controller in controllers)
-                    {
-                        var disposable = controller as IDisposable;
-                        disposable?.Dispose();
-                    }
+                    throw exception;
                 }
-            });
+            }
+            finally
+            {
+                foreach (var controller in controllers)
+                {
+                    controller.Dispose();
+                }
+            }
         }
 
-        public async Task<string> ExportDataAsync(ExportParameters exportParameters,
-                                                  List<CatalogItem> catalogItems,
-                                                  CancellationToken cancellationToken)
+        public async Task<string> ExportAsync(
+            ExportParameters exportParameters,
+            IEnumerable<CatalogItem> catalogItems,
+            Guid exportId,
+            CancellationToken cancellationToken)
         {
             if (!catalogItems.Any() || exportParameters.Begin == exportParameters.End)
                 return string.Empty;
@@ -132,102 +121,85 @@ namespace Nexus.Services
             if (exportParameters.FilePeriod.Ticks % samplePeriod.Ticks != 0)
                 throw new ValidationException("The file period must be a multiple of the sample period.");
 
-            // log
-            var username = _userIdService.GetUserId();
-            var message = $"User '{username}' exports data: {exportParameters.Begin.ToISO8601()} to {exportParameters.End.ToISO8601()} ... ";
-            _logger.LogInformation(message);
+            // start
+            var zipFilePath = Path.Combine(_pathsOptions.Export, $"Nexus_{exportParameters.Begin.ToString("yyyy-MM-ddTHH-mm-ss")}_{samplePeriod.ToUnitString()}_{exportId.ToString().Substring(0, 8)}.zip");
+            using var zipArchive = ZipFile.Open(zipFilePath, ZipArchiveMode.Create);
 
+            // create tmp/target directory
+            var tmpFolderPath = exportParameters.ExportMode switch
+            {
+                ExportMode.Web => Path.Combine(Path.GetTempPath(), "Nexus", Guid.NewGuid().ToString()),
+                ExportMode.Local => Path.Combine(_pathsOptions.Export, $"Nexus_{exportParameters.Begin.ToString("yyyy-MM-ddTHH-mm-ss")}_{samplePeriod.ToUnitString()}_{exportId.ToString().Substring(0, 8)}"),
+                _ => throw new Exception("Unsupported export mode.")
+            };
+
+            Directory.CreateDirectory(tmpFolderPath);
+
+            // copy available licenses
+            var catalogIds = catalogItems
+                .Select(catalogItem => catalogItem.Catalog.Id)
+                .Distinct();
+
+            foreach (var catalogId in catalogIds)
+            {
+                this.TryCopyLicense(catalogId, tmpFolderPath);
+            }
+
+            // get data writer controller
+            var resourceLocator = new Uri(tmpFolderPath, UriKind.RelativeOrAbsolute);
+            var controller = await _dataControllerService.GetDataWriterControllerAsync(resourceLocator, exportParameters, cancellationToken);
+
+            // write data files
             try
             {
-                // start
-                var zipFilePath = Path.Combine(_pathsOptions.Export, $"Nexus_{exportParameters.Begin.ToString("yyyy-MM-ddTHH-mm-ss")}_{samplePeriod.ToUnitString()}_{Guid.NewGuid().ToString().Substring(0, 8)}.zip");
-                using var zipArchive = ZipFile.Open(zipFilePath, ZipArchiveMode.Create);
-
-                // create tmp/target directory
-                var directoryPath = exportParameters.ExportMode switch
-                {
-                    ExportMode.Web => Path.Combine(Path.GetTempPath(), "Nexus", Guid.NewGuid().ToString()),
-                    ExportMode.Local => Path.Combine(_pathsOptions.Export, $"Nexus_{exportParameters.Begin.ToString("yyyy-MM-ddTHH-mm-ss")}_{samplePeriod.ToUnitString()}_{Guid.NewGuid().ToString().Substring(0, 8)}"),
-                    _ => throw new Exception("Unsupported export mode.")
-                };
-
-                Directory.CreateDirectory(directoryPath);
-
-                // get data writer controller
-                var dataWriter = _extensionHive.GetInstance<IDataWriter>(exportParameters.Writer);
-                var resourceLocator = new Uri(directoryPath, UriKind.RelativeOrAbsolute);
-                var dataWriterController = new DataWriterController(dataWriter, resourceLocator, exportParameters.Configuration, _logger);
-                await dataWriterController.InitializeAsync(cancellationToken);
-
-                // write tmp files
-                try
-                {
-                    var exportContext = new ExportContext(samplePeriod, catalogItems, exportParameters);
-                    await this.CreateFilesAsync(_userIdService.User, exportContext, dataWriterController, cancellationToken);
-                }
-                finally
-                {
-                    var disposable = dataWriter as IDisposable;
-                    disposable?.Dispose();
-                }
-
-                // write zip archive
-                switch (exportParameters.ExportMode)
-                {
-                    case ExportMode.Web:
-                        this.WriteZipArchiveEntries(zipArchive, directoryPath, cancellationToken);
-                        break;
-
-                    case ExportMode.Local:
-                        break;
-
-                    default:
-                        break;
-                }
-
-                _logger.LogInformation($"{message} Done.");
-
-                return $"export/{Path.GetFileName(zipFilePath)}";
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"{message} Fail. Reason: {ex.GetFullMessage()}");
-                throw;
-            }
-        }
-
-        private void WriteZipArchiveEntries(ZipArchive zipArchive, string directoryPath, CancellationToken cancellationToken)
-        {
-#error Provide licenses as extra markdown file placed in ZIP!
-
-            try
-            {
-                // write zip archive entries
-                var filePathSet = Directory.GetFiles(directoryPath, "*", SearchOption.AllDirectories);
-                var fileCount = filePathSet.Count();
-
-                foreach (string filePath in filePathSet)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    var zipArchiveEntry = zipArchive.CreateEntry(Path.GetFileName(filePath), CompressionLevel.Optimal);
-
-                    using var fileStream = File.Open(filePath, FileMode.Open, FileAccess.Read);
-                    using var zipArchiveEntryStream = zipArchiveEntry.Open();
-
-                    fileStream.CopyTo(zipArchiveEntryStream);
-                }
+                var exportContext = new ExportContext(samplePeriod, catalogItems, exportParameters);
+                await this.CreateFilesAsync(exportContext, controller, cancellationToken);
             }
             finally
             {
-                this.CleanUp(directoryPath);
+                controller.Dispose();
+            }
+
+            // write zip archive
+            switch (exportParameters.ExportMode)
+            {
+                case ExportMode.Web:
+                    this.WriteZipArchiveEntries(zipArchive, tmpFolderPath, cancellationToken);
+                    break;
+
+                case ExportMode.Local:
+                    break;
+
+                default:
+                    break;
+            }
+
+            return zipFilePath;
+        }
+
+        private void TryCopyLicense(string catalogId, string targetFolderPath)
+        {
+            if (!Directory.Exists(_pathsOptions.Attachements))
+                return;
+
+            var license = Directory
+                .EnumerateFiles(_pathsOptions.Attachements, "*", SearchOption.AllDirectories) // not case insensitive!
+                .Where(filePath => string.Equals(Path.GetFileName(filePath), "license.md", StringComparison.OrdinalIgnoreCase))
+                .FirstOrDefault();
+
+            if (license is not null)
+            {
+                var prefix = catalogId.TrimStart('/').Replace('/', '_');
+                var targetFileName = $"{prefix}_LICENSE.md";
+                var targetFilePath = Path.Combine(targetFolderPath, targetFileName);
+
+                File.Copy(license, targetFilePath);
             }
         }
 
         private async Task CreateFilesAsync(
-            ClaimsPrincipal user, 
             ExportContext exportContext,
-            DataWriterController dataWriterController,
+            IDataWriterController dataWriterController,
             CancellationToken cancellationToken)
         {
             /* reading groups */
@@ -238,7 +210,7 @@ namespace Nexus.Services
             foreach (var catalogItemGroup in groupedCatalogItems)
             {
                 var backendSource = catalogItemGroup.Key;
-                var controller = await _databaseManager.GetDataSourceControllerAsync(user, backendSource, cancellationToken);
+                var dataSourceController = await _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken);
                 var catalogItemPipeWriters = new List<CatalogItemPipeWriter>();
 
                 foreach (var catalogItem in catalogItemGroup)
@@ -248,7 +220,7 @@ namespace Nexus.Services
                     catalogItemPipeReaders.Add(new CatalogItemPipeReader(catalogItem, pipe.Reader));
                 }
 
-                readingGroups.Add(new DataReadingGroup(controller, catalogItemPipeWriters.ToArray()));
+                readingGroups.Add(new DataReadingGroup(dataSourceController, catalogItemPipeWriters.ToArray()));
             }
 
             /* read */
@@ -258,9 +230,9 @@ namespace Nexus.Services
                 exportParameters.Begin,
                 exportParameters.End,
                 exportContext.SamplePeriod,
-                _chunkSize,
                 readingGroups.ToArray(),
                 this.ReadProgress,
+                _logger,
                 cancellationToken);
 
             /* write */
@@ -282,6 +254,32 @@ namespace Nexus.Services
 
             /* wait */
             await Task.WhenAll(reading, writing);
+        }
+
+        private void WriteZipArchiveEntries(ZipArchive zipArchive, string sourceFolderPath, CancellationToken cancellationToken)
+        {
+            try
+            {
+                // write zip archive entries
+                var filePaths = Directory.GetFiles(sourceFolderPath, "*", SearchOption.AllDirectories);
+                var fileCount = filePaths.Count();
+
+                foreach (string filePath in filePaths)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    var zipArchiveEntry = zipArchive.CreateEntry(Path.GetFileName(filePath), CompressionLevel.Optimal);
+
+                    using var fileStream = File.Open(filePath, FileMode.Open, FileAccess.Read);
+                    using var zipArchiveEntryStream = zipArchiveEntry.Open();
+
+                    fileStream.CopyTo(zipArchiveEntryStream);
+                }
+            }
+            finally
+            {
+                this.CleanUp(sourceFolderPath);
+            }
         }
 
         private void CleanUp(string directoryPath)

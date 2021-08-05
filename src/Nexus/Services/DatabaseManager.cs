@@ -37,20 +37,8 @@ namespace Nexus.Services
      * *******************************************************************************
      */
 
-    public class DatabaseManager : IDatabaseManager
+    internal class DatabaseManager : IDatabaseManager
     {
-        #region Records
-
-        public record DatabaseManagerState
-        {
-            public BackendSource AggregationBackendSource { get; init; }
-            public NexusDatabase Database { get; init; }
-            public Dictionary<BackendSource, Type> BackendSourceToDataReaderTypeMap { get; init; }
-            public Dictionary<BackendSource, List<ResourceCatalog>> BackendSourceToCatalogsMap { get; init; }
-        }
-
-        #endregion
-
         #region Events
 
         public event EventHandler<NexusDatabase> DatabaseUpdated;
@@ -264,9 +252,9 @@ namespace Nexus.Services
                 try
                 {
                     Directory.CreateDirectory(dbFolderPath);
-                    Directory.CreateDirectory(Path.Combine(dbFolderPath, "ATTACHMENTS"));
+                    Directory.CreateDirectory(_pathsOptions.Attachements);
                     Directory.CreateDirectory(Path.Combine(dbFolderPath, "DATA"));
-                    Directory.CreateDirectory(Path.Combine(dbFolderPath, "EXPORT"));
+                    Directory.CreateDirectory(_pathsOptions.Export);
                     Directory.CreateDirectory(Path.Combine(dbFolderPath, "META"));
                     Directory.CreateDirectory(Path.Combine(dbFolderPath, "PRESETS"));
 
@@ -283,18 +271,18 @@ namespace Nexus.Services
                     }
 
                     // extend config with more data readers
-                    var inMemoryBackendSource = new BackendSource()
+                    var inmemoryBackendSource = new BackendSource()
                     {
-                        Type = "Nexus.InMemory",
+                        Type = "Nexus.Builtin.Inmemory",
                         ResourceLocator = new Uri("memory://localhost")
                     };
 
-                    if (!this.Config.BackendSources.Contains(inMemoryBackendSource))
-                        this.Config.BackendSources.Add(inMemoryBackendSource);
+                    if (!this.Config.BackendSources.Contains(inmemoryBackendSource))
+                        this.Config.BackendSources.Add(inmemoryBackendSource);
 
                     var filterBackendSource = new BackendSource()
                     {
-                        Type = "Nexus.Filters",
+                        Type = "Nexus.Builtin.Filters",
                         ResourceLocator = new Uri(_pathsOptions.Data, UriKind.RelativeOrAbsolute)
                     };
 
@@ -311,18 +299,6 @@ namespace Nexus.Services
             }
 
             _isInitialized = true;
-        }
-
-        private async Task<DataSourceController>
-            InstantiateDataSourceAsync(BackendSource backendSource, Type type, Dictionary<BackendSource, List<ResourceCatalog>> backendSourceToCatalogsMap, CancellationToken cancellationToken)
-        {
-           // move this:
-
-            // initialize
-            _ = backendSourceToCatalogsMap.TryGetValue(backendSource, out var catalogs);
-
-            //await controller.InitializeAsync(catalogs, cancellationToken);
-            backendSourceToCatalogsMap[backendSource] = controller.Catalogs;
         }
 
         private string GetCatalogMetaPath(string catalogName)

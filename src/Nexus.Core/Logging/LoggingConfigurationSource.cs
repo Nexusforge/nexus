@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace Nexus.Logging
 {
-    public class LoggingConfigurationSource : IConfigurationSource
+	internal class LoggingConfigurationSource : IConfigurationSource
 	{
 		private readonly LogLevelUpdater _updater;
 		private readonly IEnumerable<string> _parentPath;

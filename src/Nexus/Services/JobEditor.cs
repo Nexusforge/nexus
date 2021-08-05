@@ -8,7 +8,7 @@ using static Nexus.Services.DatabaseManager;
 
 namespace Nexus.Services
 {
-    public class JobEditor
+    internal class JobEditor
     {
         #region Events
 

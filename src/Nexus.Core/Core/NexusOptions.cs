@@ -1,11 +1,9 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Nexus.Services;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Runtime.InteropServices;
-using static System.Environment;
 
 namespace Nexus.Core
 {
@@ -16,7 +14,7 @@ namespace Nexus.Core
         // for testing only
         public string BlindSample { get; set; }
 
-        public static IConfiguration BuildConfiguration(string[] args, LogLevelUpdater logLevelUpdater = default)
+        internal static IConfiguration BuildConfiguration(string[] args, LogLevelUpdater logLevelUpdater = default)
         {
             var settingsPath = Environment.GetEnvironmentVariable("NEXUS_PATHS_SETTINGS");
 
@@ -56,17 +54,18 @@ namespace Nexus.Core
         public const string Section = "Paths";
 
         public static string DefaultSettingsPath { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-            ? Path.Combine(Environment.GetFolderPath(SpecialFolder.ApplicationData), "Nexus", "nexus.conf")
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Nexus", "nexus.conf")
             : "/etc/nexus/nexus.conf";
 
         public string Data { get; set; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-            ? Path.Combine(Environment.GetFolderPath(SpecialFolder.ApplicationData), "Nexus", "data")
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Nexus", "data")
             : "/var/lib/nexus/data";
 
         // GetGlobalPackagesFolder: https://github.com/NuGet/NuGet.Client/blob/0fc58e13683565e7bdf30e706d49e58fc497bbed/src/NuGet.Core/NuGet.Configuration/Utility/SettingsUtility.cs#L225-L254
         // GetFolderPath: https://github.com/NuGet/NuGet.Client/blob/1d75910076b2ecfbe5f142227cfb4fb45c093a1e/src/NuGet.Core/NuGet.Common/PathUtil/NuGetEnvironment.cs#L54-L57
-        public string Packages { get; set; } = Path.Combine(Environment.GetFolderPath(SpecialFolder.UserProfile), ".nexus", "packages");
+        public string Packages { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nexus", "packages");
 
+        public string Attachements => Path.Combine(this.Data, "ATTACHEMENTS");
         public string Export => Path.Combine(this.Data, "EXPORT");
     }
 
@@ -92,11 +91,5 @@ namespace Nexus.Core
         public ushort Port { get; set; }
         public string FromAddress { get; set; }
         public string FromName { get; set; }
-    }
-
-    public record AggregationOptions() : NexusOptionsBase
-    {
-        public const string Section = "Aggregation";
-        public uint ChunkSizeMB { get; set; }
     }
 }

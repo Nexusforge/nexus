@@ -154,7 +154,7 @@ namespace DataSource
             {
                 IsCatalogAccessible = _ => true,
                 Database = database,
-                GetDataSourceAsync = id => Task.FromResult(new DataSourceController(subDataSource, null, null))
+                GetDataSourceAsync = id => Task.FromResult((IDataSourceController)new DataSourceController(subDataSource, null, null))
             } as IDataSource;
 
             var context = new DataSourceContext()

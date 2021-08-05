@@ -1,9 +1,11 @@
 ﻿using Microsoft.Extensions.Logging;
+using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Utilities;
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.IO.Pipelines;
 using System.Linq;
@@ -12,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Extensibility
 {
-    public class DataSourceController : IDisposable
+    public class DataSourceController : IDisposable, IDataSourceController
     {
         #region Constructors
 
@@ -20,7 +22,6 @@ namespace Nexus.Extensibility
         {
             this.DataSource = dataSource;
             this.BackendSource = backendSource;
-            this.Progress = new Progress<double>();
             this.Logger = logger;
         }
 
@@ -28,13 +29,11 @@ namespace Nexus.Extensibility
 
         #region Properties
 
-        public ResourceCatalog[] Catalogs { get; private set; }
+        internal ResourceCatalog[] Catalogs { get; private set; }
 
         internal IDataSource DataSource { get; }
 
         private BackendSource BackendSource { get; }
-
-        private Progress<double> Progress { get; }
 
         private ILogger Logger { get; }
 
@@ -81,67 +80,7 @@ namespace Nexus.Extensibility
             }
         }
 
-        public DataSourceDoubleStream ReadAsStream(
-            DateTime begin,
-            DateTime end,
-            uint chunkSize,
-            CatalogItem catalogItem)
-        {
-            // DataSourceDoubleStream is only required to enable the browser to determine the download progress.
-            // Otherwise the PipeReader.AsStream() would be sufficient.
-
-            var samplePeriod = catalogItem.Representation.SamplePeriod;
-            var elementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, samplePeriod);
-            var totalLength = elementCount * NexusCoreUtilities.SizeOf(NexusDataType.FLOAT64);
-            var pipe = new Pipe();
-            
-            _ = this.ReadSingleAsync(
-                begin,
-                end,
-                chunkSize: chunkSize,
-                catalogItem,
-                pipe.Writer,
-                statusWriter: default,
-                progress: default,
-                CancellationToken.None);
-
-            return new DataSourceDoubleStream(totalLength, pipe.Reader);
-        }
-
-        public Task ReadSingleAsync(
-            DateTime begin,
-            DateTime end,
-            uint chunkSize,
-            CatalogItem catalogItem,
-            PipeWriter dataWriter,
-            PipeWriter? statusWriter,
-            IProgress<double>? progress,
-            CancellationToken cancellationToken)
-        {
-            /* This (instance) method calls into 
-             *  - the general static ReadAsync method which allows reading from more than one data source
-             *    and which then calls back into
-             *  - the instance method InternalReadAsync which contains the logic to write into the pipes. */
-
-            var samplePeriod = catalogItem.Representation.SamplePeriod;
-            DataSourceController.ValidateParameters(begin, end, samplePeriod);
-
-            var readingGroup = new DataReadingGroup(this, new CatalogItemPipeWriter[] 
-            { 
-                new CatalogItemPipeWriter(catalogItem, dataWriter, statusWriter) 
-            });
-
-            return DataSourceController.ReadAsync(
-                begin, 
-                end, 
-                samplePeriod,
-                chunkSize,
-                new DataReadingGroup[] { readingGroup },
-                progress,
-                cancellationToken);
-        }
-
-        public async Task<AvailabilityResult> 
+        public async Task<AvailabilityResult>
             GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, AvailabilityGranularity granularity, CancellationToken cancellationToken)
         {
             var dateBegin = begin.Date;
@@ -190,15 +129,15 @@ namespace Nexus.Extensibility
         }
 
         public async Task<TimeRangeResult>
-            GetTimeRangeAsync(string catalogId,  CancellationToken cancellationToken)
+            GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
         {
             (var begin, var end) = await this.DataSource.GetTimeRangeAsync(catalogId, cancellationToken);
 
-            return new TimeRangeResult() 
+            return new TimeRangeResult()
             {
                 BackendSource = this.BackendSource,
-                Begin = begin, 
-                End = end 
+                Begin = begin,
+                End = end
             };
         }
 
@@ -207,20 +146,17 @@ namespace Nexus.Extensibility
             return (await this.DataSource.GetAvailabilityAsync(catalogId, day, day.AddDays(1), cancellationToken)) > 0;
         }
 
-        public virtual void Dispose()
-        {
-            //
-        }
-
-        private async Task InternalReadAsync(
-            DateTime begin, 
+        public async Task ReadAsync(
+            DateTime begin,
             DateTime end,
             TimeSpan samplePeriod,
             CatalogItemPipeWriter[] catalogItemPipeWriters,
+            IProgress<double> progress,
             CancellationToken cancellationToken)
         {
             var count = catalogItemPipeWriters.Length;
             var elementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, samplePeriod);
+            var memoryOwners = new List<IMemoryOwner<byte>>();
 
             var requests = catalogItemPipeWriters.Select(catalogItemPipeWriter =>
             {
@@ -235,13 +171,15 @@ namespace Nexus.Extensibility
                     var dataLength = elementCount * elementSize;
 
                     /* data memory */
-                    using var dataOwner = MemoryPool<byte>.Shared.Rent(dataLength);
+                    var dataOwner = MemoryPool<byte>.Shared.Rent(dataLength);
                     var dataMemory = dataOwner.Memory.Slice(0, dataLength);
                     dataMemory.Span.Clear();
+                    memoryOwners.Add(dataOwner);
 
                     /* status memory */
-                    using var statusOwner = MemoryPool<byte>.Shared.Rent(elementCount);
+                    var statusOwner = MemoryPool<byte>.Shared.Rent(elementCount);
                     var statusMemory = statusOwner.Memory.Slice(0, elementCount);
+                    memoryOwners.Add(statusOwner);
                     statusMemory.Span.Clear();
 
                     /* get data */
@@ -277,52 +215,62 @@ namespace Nexus.Extensibility
                 return new ReadRequest(originalCatalogItem, data, status);
             }).ToArray();
 
-            await this.DataSource.ReadAsync(
+            try
+            {
+                await this.DataSource.ReadAsync(
                     begin,
                     end,
                     requests,
-                    this.Progress,
+                    progress,
                     cancellationToken);
 
-            foreach (var (catalogItemPipeWriter, readRequest) in catalogItemPipeWriters.Zip(requests))
-            {
-                var (catalogItem, dataWriter, statusWriter) = catalogItemPipeWriter;
-
-                if (statusWriter is null)
+                foreach (var (catalogItemPipeWriter, readRequest) in catalogItemPipeWriters.Zip(requests))
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
+                    var (catalogItem, dataWriter, statusWriter) = catalogItemPipeWriter;
 
-                    /* sizes */
-                    var elementSize = sizeof(double);
-                    var dataLength = elementCount * elementSize;
+                    if (statusWriter is null)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
 
-                    /* apply status */
-                    var buffer = dataWriter
-                        .GetMemory(dataLength)
-                        .Slice(0, dataLength);
+                        /* sizes */
+                        var elementSize = sizeof(double);
+                        var dataLength = elementCount * elementSize;
 
-                    BufferUtilities.ApplyRepresentationStatusByDataType(
-                        catalogItem.Representation.DataType,
-                        readRequest.Data,
-                        readRequest.Status,
-                        target: new CastMemoryManager<byte, double>(buffer).Memory);
+                        /* apply status */
+                        var buffer = dataWriter
+                            .GetMemory(dataLength)
+                            .Slice(0, dataLength);
 
-                    /* update progress */
-                    dataWriter.Advance(dataLength);
-                    await dataWriter.FlushAsync();
+                        BufferUtilities.ApplyRepresentationStatusByDataType(
+                            catalogItem.Representation.DataType,
+                            readRequest.Data,
+                            readRequest.Status,
+                            target: new CastMemoryManager<byte, double>(buffer).Memory);
+
+                        /* update progress */
+                        dataWriter.Advance(dataLength);
+                        await dataWriter.FlushAsync();
+                    }
+                    else
+                    {
+                        /* sizes */
+                        var elementSize = catalogItem.Representation.ElementSize;
+                        var dataLength = elementCount * elementSize;
+
+                        /* update progress */
+                        dataWriter.Advance(dataLength);
+                        await dataWriter.FlushAsync();
+
+                        statusWriter.Advance(elementCount);
+                        await statusWriter.FlushAsync();
+                    }
                 }
-                else
+            }
+            finally
+            {
+                foreach (var memoryOwner in memoryOwners)
                 {
-                    /* sizes */
-                    var elementSize = catalogItem.Representation.ElementSize;
-                    var dataLength = elementCount * elementSize;
-
-                    /* update progress */
-                    dataWriter.Advance(dataLength);
-                    await dataWriter.FlushAsync();
-
-                    statusWriter.Advance(elementCount);
-                    await statusWriter.FlushAsync();
+                    memoryOwner.Dispose();
                 }
             }
         }
@@ -335,9 +283,9 @@ namespace Nexus.Extensibility
             DateTime begin,
             DateTime end,
             TimeSpan samplePeriod,
-            uint chunkSize,
             DataReadingGroup[] readingGroups,
             IProgress<double>? progress,
+            ILogger logger,
             CancellationToken cancellationToken)
         {
             /* validation */
@@ -354,21 +302,9 @@ namespace Nexus.Extensibility
                 .SelectMany(readingGroup => readingGroup.CatalogItemPipeWriters)
                 .Sum(catalogItemPipeWriter => catalogItemPipeWriter.CatalogItem.Representation.ElementSize);
 
-            TimeSpan maxPeriodPerRequest;
-
-            if (chunkSize > 0)
-            {
-                var rows = chunkSize / bytesPerRow;
-
-                if (rows == 0)
-                    throw new ValidationException("The chunk size size is smaller than the expected row size.");
-
-                maxPeriodPerRequest = TimeSpan.FromTicks(samplePeriod.Ticks * rows);
-            }
-            else
-            {
-                maxPeriodPerRequest = TimeSpan.MaxValue;
-            }
+            var chunkSize = Math.Max(bytesPerRow, NexusConstants.ChunkSize);
+            var rows = chunkSize / bytesPerRow;
+            var maxPeriodPerRequest = TimeSpan.FromTicks(samplePeriod.Ticks * rows);
 
             /* periods */
             var totalPeriod = end - begin;
@@ -377,26 +313,7 @@ namespace Nexus.Extensibility
             var currentPeriod = default(TimeSpan);
 
             /* progress */
-            var currentDataSourceProgress = new ConcurrentDictionary<DataSourceController, double>();
-
-            foreach (var (controller, catalogItemPipeWriters) in readingGroups)
-            {
-                /* no need to remove handler because of short lifetime of IDataSource */
-                controller.Progress.ProgressChanged += (sender, progressValue) =>
-                {
-                    if (progressValue <= 1)
-                    {
-                        currentDataSourceProgress.AddOrUpdate(controller, progressValue, (_, _) => progressValue);
-
-                        // https://stackoverflow.com/a/62768272
-                        var baseProgress = consumedPeriod.Ticks / (double)totalPeriod.Ticks;
-                        var relativeProgressFactor = currentPeriod.Ticks / (double)totalPeriod.Ticks;
-                        var relativeProgress = currentDataSourceProgress.Sum(entry => entry.Value) * relativeProgressFactor;
-
-                        progress?.Report(baseProgress + relativeProgress);
-                    }
-                };
-            }
+            var currentDataSourceProgress = new ConcurrentDictionary<IDataSourceController, double>();
 
             /* go */
             while (consumedPeriod < totalPeriod)
@@ -412,16 +329,35 @@ namespace Nexus.Extensibility
 
                     try
                     {
-                        await controller.InternalReadAsync(
+                        /* no need to remove handler because of short lifetime of IDataSource */
+                        var dataSourceProgress = new Progress<double>();
+
+                        dataSourceProgress.ProgressChanged += (sender, progressValue) =>
+                        {
+                            if (progressValue <= 1)
+                            {
+                                currentDataSourceProgress.AddOrUpdate(controller, progressValue, (_, _) => progressValue);
+
+                                // https://stackoverflow.com/a/62768272
+                                var baseProgress = consumedPeriod.Ticks / (double)totalPeriod.Ticks;
+                                var relativeProgressFactor = currentPeriod.Ticks / (double)totalPeriod.Ticks;
+                                var relativeProgress = currentDataSourceProgress.Sum(entry => entry.Value) * relativeProgressFactor;
+
+                                progress?.Report(baseProgress + relativeProgress);
+                            }
+                        };
+
+                        await controller.ReadAsync(
                             currentBegin,
                             currentEnd,
                             samplePeriod,
                             catalogItemPipeWriters,
+                            dataSourceProgress,
                             cancellationToken);
                     }
                     catch (Exception ex)
                     {
-                        controller.Logger.LogWarning(ex.GetFullMessage());
+                        logger.LogWarning(ex.GetFullMessage());
                     }
                 });
 
@@ -463,6 +399,32 @@ namespace Nexus.Extensibility
 
             if (end.Ticks % samplePeriod.Ticks != 0)
                 throw new ValidationException("The end parameter must be a multiple of the sample period.");
+        }
+
+        #endregion
+
+        #region IDisposable
+
+        private bool disposedValue;
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    var disposable = this.DataSource as IDisposable;
+                    disposable?.Dispose();
+                }
+
+                disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
 
         #endregion
