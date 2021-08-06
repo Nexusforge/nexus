@@ -47,7 +47,7 @@ namespace Nexus.Extensions
 
         public Func<string, bool> IsCatalogAccessible { get; set; }
 
-        public Func<BackendSource, Task<IDataSourceController>> GetDataSourceAsync { get; set; }
+        public Func<BackendSource, Task<IDataSourceController>> GetDataSourceControllerAsync { get; set; }
 
         private DataSourceContext Context { get; set; }
 
@@ -242,7 +242,7 @@ namespace Nexus.Extensions
                         if (!this.IsCatalogAccessible(catalog.Id))
                             throw new UnauthorizedAccessException("The current user is not allowed to access this filter.");
 
-                        var dataSourceController = this.GetDataSourceAsync(representation.BackendSource).Result;
+                        var dataSourceController = this.GetDataSourceControllerAsync(representation.BackendSource).Result;
                         var pipe = new Pipe();
 
                         var doubleStream = dataSourceController.ReadAsStream(
@@ -252,11 +252,11 @@ namespace Nexus.Extensions
                             this.Context.Logger);
 
                         var doubleData = new double[doubleStream.Length / 8];
-                        var byteData = MemoryMarshal.AsBytes(doubleData.AsSpan());
+                        var byteData = new CastMemoryManager<double, byte>(doubleData.AsMemory()).Memory;
 
                         while (byteData.Length > 0)
                         {
-                            var read = doubleStream.Read(byteData);
+                            var read = doubleStream.ReadAsync(byteData, cancellationToken).Result;
 
                             if (read == 0)
                                 throw new Exception("The stream ended early.");

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Nexus;
 using Nexus.Core.Tests;
@@ -150,11 +151,18 @@ namespace DataSource
                 .Returns(Task.CompletedTask);
 
             // go
+            var backendSource = new BackendSource();
+
             var dataSource = new FilterDataSource()
             {
                 IsCatalogAccessible = _ => true,
                 Database = database,
-                GetDataSourceAsync = id => Task.FromResult((IDataSourceController)new DataSourceController(subDataSource, null, null))
+                GetDataSourceControllerAsync = async id =>
+                {
+                    var controller = new DataSourceController(subDataSource, backendSource, NullLogger.Instance);
+                    await controller.InitializeAsync(new[] { catalog }, default);
+                    return controller;
+                }
             } as IDataSource;
 
             var context = new DataSourceContext()

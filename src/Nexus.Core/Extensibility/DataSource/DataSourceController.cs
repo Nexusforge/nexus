@@ -28,6 +28,8 @@ namespace Nexus.Extensibility
 
         #region Properties
 
+        internal static uint ChunkSize { get; set; } = NexusConstants.DefaultChunkSize;
+
         internal ResourceCatalog[] Catalogs { get; private set; }
 
         internal IDataSource DataSource { get; }
@@ -301,7 +303,7 @@ namespace Nexus.Extensibility
                 .SelectMany(readingGroup => readingGroup.CatalogItemPipeWriters)
                 .Sum(catalogItemPipeWriter => catalogItemPipeWriter.CatalogItem.Representation.ElementSize);
 
-            var chunkSize = Math.Max(bytesPerRow, NexusConstants.ChunkSize);
+            var chunkSize = Math.Max(bytesPerRow, DataSourceController.ChunkSize);
             var rows = chunkSize / bytesPerRow;
             var maxPeriodPerRequest = TimeSpan.FromTicks(samplePeriod.Ticks * rows);
 

@@ -52,7 +52,7 @@ namespace Nexus.Services
                 filterDataSource.IsCatalogAccessible =
                     catalogId => NexusUtilities.IsCatalogAccessible(_userIdService.User, catalogId, _databaseManager.Database);
 
-                filterDataSource.GetDataSourceAsync =
+                filterDataSource.GetDataSourceControllerAsync =
                     backendSource => this.GetDataSourceControllerAsync(backendSource, cancellationToken);
             }
 
