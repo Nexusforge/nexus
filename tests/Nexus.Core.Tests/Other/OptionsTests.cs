@@ -46,7 +46,7 @@ namespace Other
         {
             lock (_lock)
             {
-                Environment.SetEnvironmentVariable("NEXUS_PATHS_SETTINGS", "myappsettings.json");
+                Environment.SetEnvironmentVariable("NEXUS_PATHS__SETTINGS", "myappsettings.json");
 
                 var configuration = NexusOptionsBase
                     .BuildConfiguration(new string[0]);
@@ -55,29 +55,9 @@ namespace Other
                     .GetSection(SmtpOptions.Section)
                     .Get<SmtpOptions>();
 
-                Environment.SetEnvironmentVariable("NEXUS_PATHS_SETTINGS", null);
+                Environment.SetEnvironmentVariable("NEXUS_PATHS__SETTINGS", null);
 
                 Assert.Equal(26, options.Port);
-            }
-        }
-
-        [Fact]
-        public void CanOverrideAppsettingsJson_With_Ini()
-        {
-            lock (_lock)
-            {
-                Environment.SetEnvironmentVariable("NEXUS_PATHS_SETTINGS", "myappsettings.ini");
-
-                var configuration = NexusOptionsBase
-                    .BuildConfiguration(new string[0]);
-
-                var options = configuration
-                    .GetSection(SmtpOptions.Section)
-                    .Get<SmtpOptions>();
-
-                Environment.SetEnvironmentVariable("NEXUS_PATHS_SETTINGS", null);
-
-                Assert.Equal(27, options.Port);
             }
         }
 
@@ -86,8 +66,8 @@ namespace Other
         {
             lock (_lock)
             {
-                Environment.SetEnvironmentVariable("NEXUS_PATHS_SETTINGS", "appsettings.ini");
-                Environment.SetEnvironmentVariable("NEXUS_SMTP_PORT", "27");
+                Environment.SetEnvironmentVariable("NEXUS_PATHS__SETTINGS", "appsettings.ini");
+                Environment.SetEnvironmentVariable("NEXUS_SMTP__PORT", "27");
 
                 var configuration = NexusOptionsBase
                    .BuildConfiguration(new string[0]);
@@ -96,8 +76,8 @@ namespace Other
                     .GetSection(SmtpOptions.Section)
                     .Get<SmtpOptions>();
 
-                Environment.SetEnvironmentVariable("NEXUS_PATHS_SETTINGS", null);
-                Environment.SetEnvironmentVariable("NEXUS_SMTP_PORT", null);
+                Environment.SetEnvironmentVariable("NEXUS_PATHS__SETTINGS", null);
+                Environment.SetEnvironmentVariable("NEXUS_SMTP__PORT", null);
 
                 Assert.Equal(27, options.Port);
             }
@@ -116,7 +96,7 @@ namespace Other
         {
             lock (_lock)
             {
-                Environment.SetEnvironmentVariable("NEXUS_SMTP_PORT", "27");
+                Environment.SetEnvironmentVariable("NEXUS_SMTP__PORT", "27");
 
                 var configuration = NexusOptionsBase
                     .BuildConfiguration(new string[] { arg });
@@ -125,7 +105,7 @@ namespace Other
                     .GetSection(SmtpOptions.Section)
                     .Get<SmtpOptions>();
 
-                Environment.SetEnvironmentVariable("NEXUS_SMTP_PORT", null);
+                Environment.SetEnvironmentVariable("NEXUS_SMTP__PORT", null);
 
                 Assert.Equal(28, options.Port);
             }

@@ -15,22 +15,19 @@ namespace Nexus.Core
 
         internal static IConfiguration BuildConfiguration(string[] args)
         {
-            var settingsPath = Environment.GetEnvironmentVariable("NEXUS_PATHS_SETTINGS");
-
-            if (string.IsNullOrWhiteSpace(settingsPath))
-                settingsPath = PathsOptions.DefaultSettingsPath;
-
             var builder = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json");
+                .AddJsonFile("settings.json");
+
+            var settingsPath = Environment.GetEnvironmentVariable("NEXUS_PATHS__SETTINGS");
+
+            if (settingsPath is null)
+                settingsPath = PathsOptions.DefaultSettingsPath;
 
             if (settingsPath.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
                 builder.AddJsonFile(settingsPath, optional: true);
 
-            else if (settingsPath.EndsWith(".ini", StringComparison.OrdinalIgnoreCase))
-                builder.AddIniFile(settingsPath, optional: true);
-
             builder
-                .AddImprovedEnvironmentVariables(prefix: "NEXUS_")
+                .AddEnvironmentVariables(prefix: "NEXUS_")
                 .AddCommandLine(args);
 
             return builder.Build();
@@ -57,8 +54,8 @@ namespace Nexus.Core
         public const string Section = "Paths";
 
         public static string DefaultSettingsPath { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Nexus", "nexus.conf")
-            : "/etc/nexus/nexus.conf";
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Nexus", "appsettings.json")
+            : "/etc/nexus/appsettings.json";
 
         public string Data { get; set; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
             ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Nexus", "data")

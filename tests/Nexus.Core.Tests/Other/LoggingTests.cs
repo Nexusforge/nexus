@@ -30,22 +30,22 @@ namespace Other
             Directory.CreateDirectory(root);
 
             // 1. Configure Serilog
-            Environment.SetEnvironmentVariable("NEXUS_SERILOG_MINIMUMLEVEL_OVERRIDE_Nexus.Services", "Verbose");
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG__MINIMUMLEVEL__OVERRIDE__Nexus.Services", "Verbose");
 
-            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_1_NAME", "File");
-            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_1_ARGS_PATH", Path.Combine(root, "log.txt"));
-            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_1_ARGS_OUTPUTTEMPLATE", "[{Level:u3}] {MyCustomProperty} {Message}{NewLine}{Exception}");
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG__WRITETO__1__NAME", "File");
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG__WRITETO__1__ARGS__PATH", Path.Combine(root, "log.txt"));
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG__WRITETO__1__ARGS__OUTPUTTEMPLATE", "[{Level:u3}] {MyCustomProperty} {Message}{NewLine}{Exception}");
 
-            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_2_NAME", "GrafanaLoki");
-            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_2_ARGS_URI", "http://localhost:3100");
-            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_2_ARGS_LABELS_0_KEY", "app");
-            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_2_ARGS_LABELS_0_VALUE", "nexus");
-            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_2_ARGS_OUTPUTTEMPLATE", "{Message}{NewLine}{Exception}");
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG__WRITETO__2__NAME", "GrafanaLoki");
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG__WRITETO__2__ARGS__URI", "http://localhost:3100");
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG__WRITETO__2__ARGS__LABELS__0__KEY", "app");
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG__WRITETO__2__ARGS__LABELS__0__VALUE", "nexus");
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG__WRITETO__2__ARGS__OUTPUTTEMPLATE", "{Message}{NewLine}{Exception}");
 
-            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_3_NAME", "Seq");
-            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_3_ARGS_SERVERURL", "http://localhost:5341");
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG__WRITETO__3__NAME", "Seq");
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG__WRITETO__3__ARGS__SERVERURL", "http://localhost:5341");
 
-            Environment.SetEnvironmentVariable("NEXUS_SERILOG_ENRICH_1", "WithMachineName");
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG__ENRICH__1", "WithMachineName");
 
             // 2. Build the configuration
             var configuration = NexusOptionsBase.BuildConfiguration(new string[0]);
