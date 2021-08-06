@@ -49,7 +49,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "benchmarks", "benchmarks", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nexus.Benchmarks", "benchmarks\Nexus.Benchmarks\Nexus.Benchmarks.csproj", "{E29181C1-EB63-46D9-92F5-B39B5D07A9E0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestExtensionProject", "tests\TestExtensionProject\TestExtensionProject.csproj", "{395E2F06-D665-4EEA-9BD7-2A2F8BCE4B7F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestExtensionProject", "tests\TestExtensionProject\TestExtensionProject.csproj", "{395E2F06-D665-4EEA-9BD7-2A2F8BCE4B7F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

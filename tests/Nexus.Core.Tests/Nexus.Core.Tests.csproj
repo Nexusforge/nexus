@@ -29,7 +29,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="appsettings.ini">
+    <None Update="expected-log.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="myappsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="myappsettings.ini">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="BashRpcDataSource.sh">

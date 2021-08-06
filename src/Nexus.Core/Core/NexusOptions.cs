@@ -21,8 +21,15 @@ namespace Nexus.Core
                 settingsPath = PathsOptions.DefaultSettingsPath;
 
             var builder = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json")
-                .AddIniFile(settingsPath, optional: true)
+                .AddJsonFile("appsettings.json");
+
+            if (settingsPath.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+                builder.AddJsonFile(settingsPath, optional: true);
+
+            else if (settingsPath.EndsWith(".ini", StringComparison.OrdinalIgnoreCase))
+                builder.AddIniFile(settingsPath, optional: true);
+
+            builder
                 .AddImprovedEnvironmentVariables(prefix: "NEXUS_")
                 .AddCommandLine(args);
 

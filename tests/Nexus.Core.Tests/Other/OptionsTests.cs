@@ -42,11 +42,11 @@ namespace Other
         }
 
         [Fact]
-        public void CanOverrideAppsettingsJson_With_Ini()
+        public void CanOverrideAppsettingsJson_With_Json()
         {
             lock (_lock)
             {
-                Environment.SetEnvironmentVariable("NEXUS_PATHS_SETTINGS", "appsettings.ini");
+                Environment.SetEnvironmentVariable("NEXUS_PATHS_SETTINGS", "myappsettings.json");
 
                 var configuration = NexusOptionsBase
                     .BuildConfiguration(new string[0]);
@@ -58,6 +58,26 @@ namespace Other
                 Environment.SetEnvironmentVariable("NEXUS_PATHS_SETTINGS", null);
 
                 Assert.Equal(26, options.Port);
+            }
+        }
+
+        [Fact]
+        public void CanOverrideAppsettingsJson_With_Ini()
+        {
+            lock (_lock)
+            {
+                Environment.SetEnvironmentVariable("NEXUS_PATHS_SETTINGS", "myappsettings.ini");
+
+                var configuration = NexusOptionsBase
+                    .BuildConfiguration(new string[0]);
+
+                var options = configuration
+                    .GetSection(SmtpOptions.Section)
+                    .Get<SmtpOptions>();
+
+                Environment.SetEnvironmentVariable("NEXUS_PATHS_SETTINGS", null);
+
+                Assert.Equal(27, options.Port);
             }
         }
 

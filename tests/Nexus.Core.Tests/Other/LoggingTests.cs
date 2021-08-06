@@ -4,6 +4,7 @@ using Serilog;
 using Serilog.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -21,25 +22,37 @@ namespace Other
 
     public class LoggingTests
     {
-        [Fact(Skip = "Manual test")]
-        public async Task CanLogToLokiAndSeqAsync()
+        [Fact]
+        public async Task CanSerilogAsync()
         {
+            // create dirs
+            var root = Path.Combine(Path.GetTempPath(), $"Nexus.Tests.{Guid.NewGuid()}");
+            Directory.CreateDirectory(root);
+
             // 1. Configure Serilog
             Environment.SetEnvironmentVariable("NEXUS_SERILOG_MINIMUMLEVEL_OVERRIDE_Nexus.Services", "Verbose");
-            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_1_NAME", "GrafanaLoki");
-            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_1_ARGS_URI", "http://localhost:3100");
-            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_1_ARGS_LABELS_0_KEY", "app");
-            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_1_ARGS_LABELS_0_VALUE", "nexus");
-            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_1_ARGS_OUTPUTTEMPLATE", "{Message}{NewLine}{Exception}");
 
-            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_2_NAME", "Seq");
-            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_2_ARGS_SERVERURL", "http://localhost:5341");
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_1_NAME", "File");
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_1_ARGS_PATH", Path.Combine(root, "log.txt"));
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_1_ARGS_OUTPUTTEMPLATE", "[{Level:u3}] {MyCustomProperty} {Message}{NewLine}{Exception}");
+
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_2_NAME", "GrafanaLoki");
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_2_ARGS_URI", "http://localhost:3100");
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_2_ARGS_LABELS_0_KEY", "app");
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_2_ARGS_LABELS_0_VALUE", "nexus");
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_2_ARGS_OUTPUTTEMPLATE", "{Message}{NewLine}{Exception}");
+
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_3_NAME", "Seq");
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG_WRITETO_3_ARGS_SERVERURL", "http://localhost:5341");
+
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG_ENRICH_1", "WithMachineName");
 
             // 2. Build the configuration
             var configuration = NexusOptionsBase.BuildConfiguration(new string[0]);
 
-            using var serilogger = new LoggerConfiguration()
+            var serilogger = new LoggerConfiguration()
                 .ReadFrom.Configuration(configuration)
+                .Enrich.WithProperty("MyCustomProperty", "MyCustomValue")
                 .CreateLogger();
 
             var loggerFactory = new SerilogLoggerFactory(serilogger);
@@ -119,6 +132,24 @@ namespace Other
             }))
             {
                 logger.LogInformation("Log with named scope");
+            }
+
+            serilogger.Dispose();
+
+            // assert
+            var expected = File.ReadAllText("expected-log.txt");
+            var actual = File.ReadAllText(Path.Combine(root, "log.txt"));
+
+            Assert.Equal(expected, actual);
+
+            // clean up
+            try
+            {
+                Directory.Delete(root, true);
+            }
+            catch
+            {
+                //
             }
         }
     }
