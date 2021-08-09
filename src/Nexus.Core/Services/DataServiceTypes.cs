@@ -4,12 +4,6 @@ using System.Collections.Generic;
 
 namespace Nexus.Services
 {
-    public enum ExportMode
-    {
-        Web = 0,
-        Local = 1
-    }
-
     public record ExportParameters
     {
         /// <example>2020-02-01T00:00:00Z</example>
@@ -23,9 +17,6 @@ namespace Nexus.Services
 
         /// <example>Nexus.Builtin.Csv</example>
         public string Writer { get; set; } = "Nexus.Builtin.Csv";
-
-        /// <example>Web</example>
-        public ExportMode ExportMode { get; set; } = ExportMode.Web;
 
         /// <example>["/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean", "/IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean"]</example>
         public string[] ResourcePaths { get; set; } = new string[0];

@@ -43,7 +43,7 @@ namespace Nexus.Extensions
 
         #region Properties
 
-        public INexusDatabase Database { get; set; }
+        public CatalogCollection Catalogs { get; set; }
 
         public Func<string, bool> IsCatalogAccessible { get; set; }
 
@@ -231,13 +231,13 @@ namespace Nexus.Extensions
                     GetFilterData getData = (string catalogId, string resourceId, string representationId, DateTime begin, DateTime end) =>
                     {
 #warning improve this (PhysicalName)
-                        var catalog = this.Database.CatalogContainers
+                        var catalog = this.Catalogs.CatalogContainers
                              .FirstOrDefault(container => container.Id == catalogId || container.PhysicalName == catalogId);
 
                         if (catalog == null)
                             throw new Exception($"Unable to find catalog with id '{catalogId}'.");
 
-                        var catalogItem = this.Database.Find(catalog.Id, resourceId, representationId);
+                        var catalogItem = this.Catalogs.Find(catalog.Id, resourceId, representationId);
 
                         if (!this.IsCatalogAccessible(catalog.Id))
                             throw new UnauthorizedAccessException("The current user is not allowed to access this filter.");
@@ -261,7 +261,7 @@ namespace Nexus.Extensions
                             if (read == 0)
                                 throw new Exception("The stream ended early.");
 
-                            byteData = byteData.Slice(read);
+                            byteData = byteData[read..];
                         }
 
                         return doubleData;
@@ -384,10 +384,7 @@ namespace Nexus.Extensions
             {
                 var catalogId = match.Groups[1].Value;
                 var resourceId = match.Groups[2].Value;
-
-#warning: Whenever the space in the representation name is removed, update this code
-                var regex = new Regex("_");
-                var representationId = regex.Replace(match.Groups[3].Value, " ", 1);
+                var representationId = match.Groups[3].Value;
 
                 return $"= getData(\"{catalogId}\", \"{resourceId}\", \"{representationId}\", begin, end);";
             });

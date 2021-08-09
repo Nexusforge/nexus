@@ -106,23 +106,19 @@ namespace DataSource
         [Fact]
         public async Task CanReadFullDay()
         {
-            // setup database
-            var database = Mock.Of<INexusDatabase>(x => x.CatalogContainers == new List<CatalogContainer>()
-            {
-                new CatalogContainer("/IN_MEMORY/TEST/ACCESSIBLE")
-            });
+            // setup catalog collection
+            var representation = new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "mean", DataType = NexusDataType.FLOAT64 };
 
-            var representation = new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "", DataType = NexusDataType.FLOAT64 };
-
-            var resource = new Resource() { Id = Guid.NewGuid() };
+            var resource = new Resource() { Id = Guid.NewGuid(), Name = "T1" };
             resource.Representations.Add(representation);
 
             var catalog = new ResourceCatalog() { Id = "/IN_MEMORY/TEST/ACCESSIBLE" };
             catalog.Resources.Add(resource);
 
-            Mock.Get(database)
-                .Setup(s => s.Find(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-                .Returns(new CatalogItem(catalog, resource, representation));
+            var catalogCollection = new CatalogCollection(new List<CatalogContainer>()
+            {
+                new CatalogContainer("/IN_MEMORY/TEST/ACCESSIBLE") { Catalog = catalog }
+            });
 
             // setup data source
             var subDataSource = Mock.Of<IDataSource>();
@@ -156,7 +152,7 @@ namespace DataSource
             var dataSource = new FilterDataSource()
             {
                 IsCatalogAccessible = _ => true,
-                Database = database,
+                Catalogs = catalogCollection,
                 GetDataSourceControllerAsync = async id =>
                 {
                     var controller = new DataSourceController(subDataSource, backendSource, NullLogger.Instance);

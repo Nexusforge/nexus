@@ -1,7 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Moq;
-using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Services;
@@ -38,10 +36,6 @@ namespace Services
             var data1 = new Dictionary<DateTime, double> { [begin.AddDays(0)] = 0.5, [begin.AddDays(1)] = 0.9 };
             var data2 = new Dictionary<DateTime, double> { [begin.AddDays(0)] = 0.6, [begin.AddDays(1)] = 0.8 };
 
-            // options
-            var pathsOptions = new PathsOptions();
-            var wrappedPathsOptions = Options.Create(pathsOptions);
-
             // DI services
             var dataSourceController1 = Mock.Of<IDataSourceController>();
             var dataSourceController2 = Mock.Of<IDataSourceController>();
@@ -70,18 +64,18 @@ namespace Services
                         throw new Exception("Invalid backend source.");
                 });
 
-            var databaseManagerState = new DatabaseManagerState() { BackendSourceToCatalogsMap = backendSourceToCatalogsMap };
+            var catalogManagerState = new CatalogManagerState() { BackendSourceToCatalogsMap = backendSourceToCatalogsMap };
 
-            var databaseManager = Mock.Of<IDatabaseManager>();
+            var catalogManager = Mock.Of<ICatalogManager>();
 
-            Mock.Get(databaseManager)
+            Mock.Get(catalogManager)
                 .SetupGet(s => s.State)
-                .Returns(databaseManagerState);
+                .Returns(catalogManagerState);
 
             var logger = Mock.Of<ILogger<DataService>>();
 
             // data service
-            var dataService = new DataService(dataControllerService, databaseManager, logger, wrappedPathsOptions);
+            var dataService = new DataService(dataControllerService, catalogManager, default, logger);
 
             // act
             var availability = await dataService.GetAvailabilityAsync("/A/B/C", begin, end, AvailabilityGranularity.Day, CancellationToken.None);
@@ -96,24 +90,14 @@ namespace Services
             Assert.Equal(data2, availability[1].Data);
         }
 
+        delegate void GobbleReturns(string catalogId, string searchPattern, EnumerationOptions enumerationOptions, out Stream attachment);
+
         [Fact]
         public async Task CanExportAsync()
         {
             // create dirs
             var root = Path.Combine(Path.GetTempPath(), $"Nexus.Tests.{Guid.NewGuid()}");
             Directory.CreateDirectory(root);
-
-            // options
-            var pathsOptions = new PathsOptions() { Data = root };
-            Directory.CreateDirectory(pathsOptions.Export);
-            Directory.CreateDirectory(pathsOptions.Attachements);
-            var wrappedPathOptions = Options.Create(pathsOptions);
-
-            // create licenses
-            Directory.CreateDirectory(Path.Combine(Path.Combine(pathsOptions.Attachements, "A_B_C")));
-            Directory.CreateDirectory(Path.Combine(Path.Combine(pathsOptions.Attachements, "F_G_H")));
-            await File.Create(Path.Combine(pathsOptions.Attachements, "A_B_C", "LICENSE.md")).DisposeAsync();
-            await File.Create(Path.Combine(pathsOptions.Attachements, "F_G_H", "license.MD")).DisposeAsync();
 
             // misc
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
@@ -168,6 +152,24 @@ namespace Services
                     return Task.FromResult(dataWriterController);
                 });
 
+            var databaseManager = Mock.Of<IDatabaseManager>();
+
+            Mock.Get(databaseManager)
+                .Setup(databaseManager => databaseManager.TryReadFirstAttachment(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<EnumerationOptions>(), 
+                    out It.Ref<Stream>.IsAny))
+                .Callback(new GobbleReturns((string catalogId, string searchPattern, EnumerationOptions enumerationOptions, out Stream attachment) =>
+                {
+                    attachment = new MemoryStream();
+                }))
+                .Returns(true);
+
+            Mock.Get(databaseManager)
+                .Setup(databaseManager => databaseManager.WriteExportFile(It.IsAny<string>()))
+                .Returns<string>((fileName) => File.OpenWrite(Path.Combine(root, fileName)));
+
             var logger = Mock.Of<ILogger<DataService>>();
 
             // catalog items
@@ -202,22 +204,23 @@ namespace Services
                 End = end,
                 FilePeriod = TimeSpan.FromSeconds(10),
                 Writer = "A",
-                ExportMode = ExportMode.Web,
                 ResourcePaths = new[] { catalogItem1.GetPath(), catalogItem2.GetPath() }
             };
 
             // data service
-            var dataService = new DataService(dataControllerService, default, logger, wrappedPathOptions);
+            var dataService = new DataService(dataControllerService, default, databaseManager, logger);
 
             // act
             try
             {
-                var zipFilePath = await dataService
+                var zipFileName = await dataService
                     .ExportAsync(exportParameters, new[] { catalogItem1, catalogItem2 }, Guid.NewGuid(), CancellationToken.None);
 
                 // assert
-                var unzipFolder = Path.GetDirectoryName(zipFilePath);
-                ZipFile.ExtractToDirectory(zipFilePath, unzipFolder);
+                var zipFile = Path.Combine(root, zipFileName);
+                var unzipFolder = Path.GetDirectoryName(zipFile);
+
+                ZipFile.ExtractToDirectory(zipFile, unzipFolder);
 
                 Assert.True(File.Exists(Path.Combine(unzipFolder, "A_B_C.dat")));
                 Assert.True(File.Exists(Path.Combine(unzipFolder, "A_B_C_LICENSE.md")));

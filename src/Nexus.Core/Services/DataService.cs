@@ -1,6 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using System;
@@ -20,10 +18,9 @@ namespace Nexus.Services
         #region Fields
 
         private ILogger _logger;
+        private ICatalogManager _catalogManager;
         private IDatabaseManager _databaseManager;
         private IDataControllerService _dataControllerService;
-
-        private PathsOptions _pathsOptions;
 
         #endregion
 
@@ -31,14 +28,14 @@ namespace Nexus.Services
 
         public DataService(
             IDataControllerService dataControllerService,
+            ICatalogManager catalogManager,
             IDatabaseManager databaseManager,
-            ILogger<DataService> logger,
-            IOptions<PathsOptions> pathsOptions)
+            ILogger<DataService> logger)
         {
             _dataControllerService = dataControllerService;
+            _catalogManager = catalogManager;
             _databaseManager = databaseManager;
             _logger = logger;
-            _pathsOptions = pathsOptions.Value;
 
             this.ReadProgress = new Progress<double>();
             this.WriteProgress = new Progress<double>();
@@ -63,7 +60,7 @@ namespace Nexus.Services
             AvailabilityGranularity granularity,
             CancellationToken cancellationToken)
         {
-            var backendSources = _databaseManager.State.BackendSourceToCatalogsMap
+            var backendSources = _catalogManager.State.BackendSourceToCatalogsMap
                 // where the catalog list contains the catalog ID
                 .Where(entry => entry.Value.Any(catalog => catalog.Id == catalogId))
                 // select the backend source
@@ -122,17 +119,12 @@ namespace Nexus.Services
                 throw new ValidationException("The file period must be a multiple of the sample period.");
 
             // start
-            var zipFilePath = Path.Combine(_pathsOptions.Export, $"Nexus_{exportParameters.Begin.ToString("yyyy-MM-ddTHH-mm-ss")}_{samplePeriod.ToUnitString()}_{exportId.ToString().Substring(0, 8)}.zip");
-            using var zipArchive = ZipFile.Open(zipFilePath, ZipArchiveMode.Create);
+            var zipFileName = $"Nexus_{exportParameters.Begin.ToString("yyyy-MM-ddTHH-mm-ss")}_{samplePeriod.ToUnitString()}_{exportId.ToString().Substring(0, 8)}.zip";
+            var zipArchiveStream = _databaseManager.WriteExportFile(zipFileName);
+            using var zipArchive = new ZipArchive(zipArchiveStream, ZipArchiveMode.Create);
 
             // create tmp/target directory
-            var tmpFolderPath = exportParameters.ExportMode switch
-            {
-                ExportMode.Web => Path.Combine(Path.GetTempPath(), "Nexus", Guid.NewGuid().ToString()),
-                ExportMode.Local => Path.Combine(_pathsOptions.Export, $"Nexus_{exportParameters.Begin.ToString("yyyy-MM-ddTHH-mm-ss")}_{samplePeriod.ToUnitString()}_{exportId.ToString().Substring(0, 8)}"),
-                _ => throw new Exception("Unsupported export mode.")
-            };
-
+            var tmpFolderPath = Path.Combine(Path.GetTempPath(), "Nexus", Guid.NewGuid().ToString());
             Directory.CreateDirectory(tmpFolderPath);
 
             // copy available licenses
@@ -142,7 +134,7 @@ namespace Nexus.Services
 
             foreach (var catalogId in catalogIds)
             {
-                this.TryCopyLicense(catalogId, tmpFolderPath);
+                this.CopyLicenseIfAvailable(catalogId, tmpFolderPath);
             }
 
             // get data writer controller
@@ -161,39 +153,27 @@ namespace Nexus.Services
             }
 
             // write zip archive
-            switch (exportParameters.ExportMode)
-            {
-                case ExportMode.Web:
-                    this.WriteZipArchiveEntries(zipArchive, tmpFolderPath, cancellationToken);
-                    break;
+            this.WriteZipArchiveEntries(zipArchive, tmpFolderPath, cancellationToken);
 
-                case ExportMode.Local:
-                    break;
-
-                default:
-                    break;
-            }
-
-            return zipFilePath;
+            return zipFileName;
         }
 
-        private void TryCopyLicense(string catalogId, string targetFolderPath)
+        private void CopyLicenseIfAvailable(string catalogId, string targetFolder)
         {
-            if (!Directory.Exists(_pathsOptions.Attachements))
-                return;
+            var enumeratonOptions = new EnumerationOptions() { MatchCasing = MatchCasing.CaseInsensitive };
 
-            var license = Directory
-                .EnumerateFiles(_pathsOptions.Attachements, "*", SearchOption.AllDirectories) // not case insensitive!
-                .Where(filePath => string.Equals(Path.GetFileName(filePath), "license.md", StringComparison.OrdinalIgnoreCase))
-                .FirstOrDefault();
-
-            if (license is not null)
+            if (_databaseManager.TryReadFirstAttachment(catalogId, "license.md", enumeratonOptions, out var licenseStream))
             {
                 var prefix = catalogId.TrimStart('/').Replace('/', '_');
                 var targetFileName = $"{prefix}_LICENSE.md";
-                var targetFilePath = Path.Combine(targetFolderPath, targetFileName);
+                var targetFile = Path.Combine(targetFolder, targetFileName);
 
-                File.Copy(license, targetFilePath);
+                using (var targetFileStream = new FileStream(targetFile, FileMode.OpenOrCreate))
+                {
+                    licenseStream.CopyTo(targetFileStream);
+                }
+
+                licenseStream.Dispose();
             }
         }
 

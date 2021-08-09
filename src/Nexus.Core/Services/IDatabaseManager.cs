@@ -1,15 +1,15 @@
-﻿using Nexus.DataModel;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.IO;
 
 namespace Nexus.Services
 {
     internal interface IDatabaseManager
     {
-        NexusDatabase Database { get; }
-        DatabaseManagerState State { get; }
-        void SaveConfig(string folderPath, NexusDatabaseConfig config);
-        void SaveCatalogMeta(CatalogProperties catalogMeta);
-        Task UpdateAsync(CancellationToken cancellationToken);
+        //void SaveConfig(string folderPath, NexusDatabaseConfig config);
+
+        //void SaveCatalogMeta(CatalogProperties catalogMeta);
+
+        bool TryReadFirstAttachment(string catalogId, string searchPattern, EnumerationOptions enumerationOptions, out Stream attachment);
+
+        Stream WriteExportFile(string fileName);
     }
 }

@@ -47,7 +47,7 @@ namespace Nexus.Services
             {
                 var filterDataSource = (FilterDataSource)dataSource;
 
-                filterDataSource.Database = _databaseManager.Database;
+                filterDataSource.Catalogs = _databaseManager.Database;
 
                 filterDataSource.IsCatalogAccessible =
                     catalogId => NexusUtilities.IsCatalogAccessible(_userIdService.User, catalogId, _databaseManager.Database);

@@ -18,7 +18,7 @@ namespace Nexus.Roslyn
     {
         #region Fields
 
-        private static object _mefLock = new object();
+        private static object _mefLock = new();
 
         #endregion
 
@@ -33,9 +33,9 @@ namespace Nexus.Roslyn
             RoslynProject.DefaultSharedCode = streamReader2.ReadToEnd();
         }
 
-        public RoslynProject(CodeDefinition filter, List<string> additionalCodeFiles, NexusDatabase database = null)
+        public RoslynProject(CodeDefinition filter, List<string> additionalCodeFiles, CatalogCollection catalogs = null)
         {
-            var isRealBuild = database is null;
+            var isRealBuild = catalogs is null;
 
             MefHostServices host;
 
@@ -78,7 +78,7 @@ namespace Nexus.Roslyn
             }
 
             // other code
-            if (database is not null)
+            if (catalogs is not null)
             {
                 // shared code
                 using var streamReader = new StreamReader(ResourceLoader.GetResourceStream("Nexus.Core.Resources.FilterTypesShared.cs"));
@@ -90,7 +90,7 @@ namespace Nexus.Roslyn
                 this.Workspace.AddDocument(project.Id, "FilterTypesShared.cs", SourceText.From(sharedCode));
 
                 // database code
-                var databaseCode = this.GenerateDatabaseCode(database, filter.SamplePeriod, filter.RequestedCatalogIds);
+                var databaseCode = this.GenerateDatabaseCode(catalogs, filter.SamplePeriod, filter.RequestedCatalogIds);
                 this.Workspace.AddDocument(project.Id, "DatabaseCode.cs", SourceText.From(databaseCode));
             }
         }
@@ -124,7 +124,7 @@ namespace Nexus.Roslyn
             } while (!this.Workspace.TryApplyChanges(updatedSolution));
         }
 
-        private string GenerateDatabaseCode(NexusDatabase database, TimeSpan samplePeriod, List<string> requestedCatalogIds)
+        private string GenerateDatabaseCode(CatalogCollection catalogs, TimeSpan samplePeriod, List<string> requestedCatalogIds)
         {
             // generate code
             var classStringBuilder = new StringBuilder();
@@ -147,7 +147,7 @@ namespace Nexus.Roslyn
             classStringBuilder.AppendLine($"return default;");
             classStringBuilder.AppendLine($"}}");
 
-            var filteredCatalogContainer = database.CatalogContainers
+            var filteredCatalogContainer = catalogs.CatalogContainers
                     .Where(catalogContainer => requestedCatalogIds.Contains(catalogContainer.Id));
 
             foreach (var catalogContainer in filteredCatalogContainer)

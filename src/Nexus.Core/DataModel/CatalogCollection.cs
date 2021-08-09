@@ -4,13 +4,18 @@ using System.Linq;
 
 namespace Nexus.DataModel
 {
-    public class NexusDatabase : INexusDatabase
+    public class CatalogCollection
     {
         #region Constructors
 
-        public NexusDatabase()
+        public CatalogCollection()
         {
             this.CatalogContainers = new List<CatalogContainer>();
+        }
+
+        public CatalogCollection(List<CatalogContainer> catalogContainers)
+        {
+            this.CatalogContainers = catalogContainers;
         }
 
         #endregion

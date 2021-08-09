@@ -418,6 +418,7 @@ namespace Nexus.Core
 
         public List<string> GetPresets()
         {
+#error Remove presets
             var folderPath = Path.Combine(_pathsOptions.Data, "PRESETS");
 
             if (!Directory.Exists(folderPath))
@@ -653,7 +654,7 @@ namespace Nexus.Core
 
             if (this.CatalogContainer != null)
             {
-                var folderPath = Path.Combine(_pathsOptions.Attachements, this.CatalogContainer.PhysicalName);
+                var folderPath = Path.Combine(_pathsOptions.Attachments, this.CatalogContainer.PhysicalName);
 
                 if (Directory.Exists(folderPath))
                     this.Attachments = Directory.GetFiles(folderPath, "*").ToList();

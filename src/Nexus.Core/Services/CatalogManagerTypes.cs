@@ -5,10 +5,10 @@ using System.Collections.Generic;
 
 namespace Nexus.Services
 {
-    internal record DatabaseManagerState
+    internal record CatalogManagerState
     {
         public BackendSource AggregationBackendSource { get; init; }
-        public NexusDatabase Database { get; init; }
+        public CatalogCollection Catalogs { get; init; }
         public Dictionary<BackendSource, Type> BackendSourceToDataReaderTypeMap { get; init; }
         public Dictionary<BackendSource, ResourceCatalog[]> BackendSourceToCatalogsMap { get; init; }
     }

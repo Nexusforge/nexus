@@ -35,17 +35,15 @@ namespace Nexus.Services
      * *******************************************************************************
      */
 
-    internal class DatabaseManager : IDatabaseManager
+    internal class CatalogManager : ICatalogManager
     {
         #region Events
 
-        public event EventHandler<NexusDatabase> DatabaseUpdated;
+        public event EventHandler<CatalogCollection> CatalogsUpdated;
 
         #endregion
 
         #region Fields
-
-        private PathsOptions _pathsOptions;
 
         private bool _isInitialized;
         private ILogger<DatabaseManager> _logger;
@@ -56,21 +54,18 @@ namespace Nexus.Services
 
         #region Constructors
 
-        public DatabaseManager(IServiceProvider serviceProvider, ILogger<DatabaseManager> logger, ILoggerFactory loggerFactory, IOptions<PathsOptions> pathsOptions)
+        public CatalogManager(IServiceProvider serviceProvider, ILogger<DatabaseManager> logger, ILoggerFactory loggerFactory)
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
             _loggerFactory = loggerFactory;
-            _pathsOptions = pathsOptions.Value;
         }
 
         #endregion
 
         #region Properties
 
-        public NexusDatabase Database => this.State?.Database;
-
-        public DatabaseManagerState State { get; private set; }
+        public CatalogManagerState State { get; private set; }
 
         private NexusDatabaseConfig Config { get; set; }
 
@@ -95,10 +90,10 @@ namespace Nexus.Services
             // so external calls use old maps and this method uses the new instances.
 
             FilterDataSource.ClearCache();
-            var database = new NexusDatabase();
+            var catalogCollection = new CatalogCollection();
 
             // create new empty catalogs map
-            var backendSourceToCatalogsMap = new Dictionary<BackendSource, List<ResourceCatalog>>();
+            var backendSourceToCatalogsMap = new Dictionary<BackendSource, ResourceCatalog[]>();
 
             // load data readers
             var backendSourceToDataReaderTypeMap = this.LoadDataReaders(this.Config.BackendSources);
@@ -175,7 +170,7 @@ namespace Nexus.Services
                         return;
 
                     // find catalog container or create a new one
-                    var container = database.CatalogContainers.FirstOrDefault(container => container.Id == catalog.Id);
+                    var container = catalogCollection.CatalogContainers.FirstOrDefault(container => container.Id == catalog.Id);
 
                     if (container == null)
                     {
@@ -183,7 +178,7 @@ namespace Nexus.Services
 
                         container = new CatalogContainer(catalog.Id);
                         container.CatalogSettings = catalogMeta;
-                        database.CatalogContainers.Add(container);
+                        catalogCollection.CatalogContainers.Add(container);
                     }
 
                     container.Catalog.Merge(catalog, MergeMode.ExclusiveOr);
@@ -192,7 +187,7 @@ namespace Nexus.Services
 
             // the purpose of this block is to initalize empty properties,
             // add missing resources and clean up empty resources
-            foreach (var catalogContainer in database.CatalogContainers)
+            foreach (var catalogContainer in catalogCollection.CatalogContainers)
             {
                 if (cancellationToken.IsCancellationRequested)
                     return;
@@ -210,98 +205,62 @@ namespace Nexus.Services
                 this.SaveCatalogMeta(catalogContainer.CatalogSettings);
             }
 
-            this.State = new DatabaseManagerState()
+            this.State = new CatalogManagerState()
             {
                 AggregationBackendSource = backendSource,
-                Database = database,
+                Catalogs = catalogCollection,
                 BackendSourceToCatalogsMap = backendSourceToCatalogsMap,
                 BackendSourceToDataReaderTypeMap = backendSourceToDataReaderTypeMap
             };
 
-            this.DatabaseUpdated?.Invoke(this, database);
+            this.CatalogsUpdated?.Invoke(this, catalogCollection);
             _logger.LogInformation("Database loaded.");
-        }
-
-        public void SaveCatalogMeta(ResourceCatalog catalogMeta)
-        {
-            var filePath = this.GetCatalogMetaPath(catalogMeta.Id);
-            var jsonString = JsonSerializer.Serialize(catalogMeta, new JsonSerializerOptions() { WriteIndented = true });
-            File.WriteAllText(filePath, jsonString);
-        }
-
-        public void SaveConfig(string folderPath, NexusDatabaseConfig config)
-        {
-            var filePath = Path.Combine(folderPath, "dbconfig.json");
-            var jsonString = JsonSerializer.Serialize(config, new JsonSerializerOptions() { WriteIndented = true });
-
-            File.WriteAllText(filePath, jsonString);
         }
 
         private void Initialize()
         {
-            var dbFolderPath = _pathsOptions.Data;
+            try
+            {
+                var filePath = Path.Combine(dbFolderPath, "dbconfig.json");
 
-            if (string.IsNullOrWhiteSpace(dbFolderPath))
+                if (File.Exists(filePath))
+                {
+                    var jsonString = File.ReadAllText(filePath);
+                    this.Config = JsonSerializer.Deserialize<NexusDatabaseConfig>(jsonString);
+                }
+                else
+                {
+                    this.Config = new NexusDatabaseConfig();
+                }
+
+                // extend config with more data readers
+                var inmemoryBackendSource = new BackendSource()
+                {
+                    Type = "Nexus.Builtin.Inmemory",
+                    ResourceLocator = new Uri("memory://localhost")
+                };
+
+                if (!this.Config.BackendSources.Contains(inmemoryBackendSource))
+                    this.Config.BackendSources.Add(inmemoryBackendSource);
+
+                var filterBackendSource = new BackendSource()
+                {
+                    Type = "Nexus.Builtin.Filters",
+                    ResourceLocator = new Uri(_pathsOptions.Data, UriKind.RelativeOrAbsolute)
+                };
+
+                if (!this.Config.BackendSources.Contains(filterBackendSource))
+                    this.Config.BackendSources.Add(filterBackendSource);
+
+                // save config to disk
+                this.SaveConfig(dbFolderPath, this.Config);
+            }
+            catch
             {
                 throw new Exception("Could not initialize database. Please check the database folder path and try again.");
             }
-            else
-            {
-                try
-                {
-                    Directory.CreateDirectory(dbFolderPath);
-                    Directory.CreateDirectory(_pathsOptions.Attachements);
-                    Directory.CreateDirectory(Path.Combine(dbFolderPath, "DATA"));
-                    Directory.CreateDirectory(_pathsOptions.Export);
-                    Directory.CreateDirectory(Path.Combine(dbFolderPath, "META"));
-                    Directory.CreateDirectory(Path.Combine(dbFolderPath, "PRESETS"));
-
-                    var filePath = Path.Combine(dbFolderPath, "dbconfig.json");
-
-                    if (File.Exists(filePath))
-                    {
-                        var jsonString = File.ReadAllText(filePath);
-                        this.Config = JsonSerializer.Deserialize<NexusDatabaseConfig>(jsonString);
-                    }
-                    else
-                    {
-                        this.Config = new NexusDatabaseConfig();
-                    }
-
-                    // extend config with more data readers
-                    var inmemoryBackendSource = new BackendSource()
-                    {
-                        Type = "Nexus.Builtin.Inmemory",
-                        ResourceLocator = new Uri("memory://localhost")
-                    };
-
-                    if (!this.Config.BackendSources.Contains(inmemoryBackendSource))
-                        this.Config.BackendSources.Add(inmemoryBackendSource);
-
-                    var filterBackendSource = new BackendSource()
-                    {
-                        Type = "Nexus.Builtin.Filters",
-                        ResourceLocator = new Uri(_pathsOptions.Data, UriKind.RelativeOrAbsolute)
-                    };
-
-                    if (!this.Config.BackendSources.Contains(filterBackendSource))
-                        this.Config.BackendSources.Add(filterBackendSource);
-
-                    // save config to disk
-                    this.SaveConfig(dbFolderPath, this.Config);
-                }
-                catch
-                {
-                    throw new Exception("Could not initialize database. Please check the database folder path and try again.");
-                }
-            }
 
             _isInitialized = true;
-        }
-
-        private string GetCatalogMetaPath(string catalogName)
-        {
-            return Path.Combine(_pathsOptions.Data, "META", $"{catalogName.TrimStart('/').Replace('/', '_')}.json");
         }
 
         private void CleanUpFilterCatalogs(List<ResourceCatalog> filterCatalogs,

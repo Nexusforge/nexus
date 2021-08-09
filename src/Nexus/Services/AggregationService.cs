@@ -52,7 +52,7 @@ namespace Nexus.Services
 
         #region Methods
 
-        public static List<AggregationInstruction> ComputeInstructions(AggregationSetup setup, DatabaseManagerState state, ILogger logger)
+        public static List<AggregationInstruction> ComputeInstructions(AggregationSetup setup, CatalogManagerState state, ILogger logger)
         {
             var catalogIds = setup.Aggregations
                 .Select(aggregation => aggregation.CatalogId)
@@ -106,7 +106,7 @@ namespace Nexus.Services
 
         public Task<string> AggregateDataAsync(string databaseFolderPath,
                                                AggregationSetup setup,
-                                               DatabaseManagerState state,
+                                               CatalogManagerState state,
                                                Func<BackendSource, Task<DataSourceController>> getControllerAsync,
                                                CancellationToken cancellationToken)
         {
@@ -159,7 +159,7 @@ namespace Nexus.Services
         private async Task AggregateCatalogAsync(string databaseFolderPath,
                                                  string catalogId,
                                                  DateTime date,
-                                                 DatabaseManagerState state,
+                                                 CatalogManagerState state,
                                                  AggregationSetup setup,
                                                  AggregationInstruction instruction,
                                                  Func<BackendSource, Task<DataSourceController>> getControllerAsync,

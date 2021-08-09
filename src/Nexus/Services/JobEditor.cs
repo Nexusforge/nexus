@@ -18,7 +18,7 @@ namespace Nexus.Services
         #region Fields
 
         private string _jsonString;
-        private DatabaseManagerState _state;
+        private CatalogManagerState _state;
 
         #endregion
 
