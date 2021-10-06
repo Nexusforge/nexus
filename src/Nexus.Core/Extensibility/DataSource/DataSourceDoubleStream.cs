@@ -81,14 +81,14 @@ namespace Nexus.Extensibility
 
         public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            var readCount = await _reader.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
+            var readCount = await _reader.ReadAsync(buffer, offset, count, cancellationToken);
             _position += readCount;
             return readCount;
         }
 
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            var readCount = await _reader.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+            var readCount = await _reader.ReadAsync(buffer, cancellationToken);
             _position += readCount;
             return readCount;
         }

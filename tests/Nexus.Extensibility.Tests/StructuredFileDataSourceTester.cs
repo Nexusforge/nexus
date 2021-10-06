@@ -123,7 +123,7 @@ namespace Nexus.Extensibility.Tests
         {
             if (_overrideFindFilePathsWithNoDateTime)
             {
-                var result = await base.FindFilePathsAsync(begin, config).ConfigureAwait(false);
+                var result = await base.FindFilePathsAsync(begin, config);
                 return (result.Item1, default);
             }
             else
@@ -146,7 +146,7 @@ namespace Nexus.Extensibility.Tests
             return await JsonSerializer
                 .DeserializeAsync<T>(jsonStream, options)
                 .AsTask()
-                .ConfigureAwait(false);
+                ;
         }
 
         #endregion

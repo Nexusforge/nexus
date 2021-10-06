@@ -161,7 +161,7 @@ namespace Nexus.Extensions
             while (buffer.Length > 0)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var readCount = await source.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+                var readCount = await source.ReadAsync(buffer, cancellationToken);
 
                 if (readCount == 0)
                     throw new Exception("The TCP connection closed early.");

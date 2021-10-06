@@ -74,7 +74,7 @@ namespace Nexus.Utilities
             {
                 try
                 {
-                    results[i] = await tasks[i].ConfigureAwait(false);
+                    results[i] = await tasks[i];
                 }
                 catch (Exception ex)
                 {

@@ -140,7 +140,7 @@ namespace Nexus.Extensibility
                         .Select(catalogItemPipeReader => catalogItemPipeReader.DataReader.ReadAsync(cancellationToken))
                         .ToArray();
 
-                    var readResults = await NexusCoreUtilities.WhenAll(readResultTasks).ConfigureAwait(false);
+                    var readResults = await NexusCoreUtilities.WhenAll(readResultTasks);
                     var bufferPeriod = readResults.Min(readResult => readResult.Buffer.First.Cast<byte, double>().Length) * samplePeriod;
 
                     if (bufferPeriod == default)

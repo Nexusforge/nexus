@@ -101,7 +101,7 @@ namespace Nexus.Extensibility
                         aggregatedData.TryAdd(date, availability);
                     });
 
-                    await Task.WhenAll(tasks).ConfigureAwait(false);
+                    await Task.WhenAll(tasks);
 
                     break;
 
@@ -362,7 +362,7 @@ namespace Nexus.Extensibility
                     }
                 });
 
-                await Task.WhenAll(readingTasks).ConfigureAwait(false);
+                await Task.WhenAll(readingTasks);
 
                 /* continue in time */
                 consumedPeriod += currentPeriod;
@@ -376,10 +376,10 @@ namespace Nexus.Extensibility
             {
                 foreach (var catalogItemPipeWriter in readingGroup.CatalogItemPipeWriters)
                 {
-                    await catalogItemPipeWriter.DataWriter.CompleteAsync().ConfigureAwait(false);
+                    await catalogItemPipeWriter.DataWriter.CompleteAsync();
 
                     if (catalogItemPipeWriter.StatusWriter is not null)
-                        await catalogItemPipeWriter.StatusWriter.CompleteAsync().ConfigureAwait(false);
+                        await catalogItemPipeWriter.StatusWriter.CompleteAsync();
                 }
             }
         }

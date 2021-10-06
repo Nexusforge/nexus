@@ -170,7 +170,7 @@ namespace Nexus.Extensibility
                         return availabilityTask;
                     });
 
-                    var availabilities = await Task.WhenAll(availabilityTasks).ConfigureAwait(false);
+                    var availabilities = await Task.WhenAll(availabilityTasks);
                     var actual = availabilities.Sum();
                     var total = (end - begin).Ticks / (double)fileSource.FilePeriod.Ticks;
 
@@ -266,7 +266,7 @@ namespace Nexus.Extensibility
 
                                 await this
                                     .ReadSingleAsync(readInfo, cancellationToken)
-                                    .ConfigureAwait(false);
+                                    ;
                             }
                             catch (Exception ex)
                             {
@@ -366,8 +366,8 @@ namespace Nexus.Extensibility
             this.Root = context.ResourceLocator.ToPath();
             this.Context = context;
 
-            await this.SetContextAsync(context, cancellationToken).ConfigureAwait(false);
-            this.FileSourceProvider = await this.GetFileSourceProviderAsync(cancellationToken).ConfigureAwait(false);
+            await this.SetContextAsync(context, cancellationToken);
+            this.FileSourceProvider = await this.GetFileSourceProviderAsync(cancellationToken);
         }
 
         async Task<ResourceCatalog[]> 

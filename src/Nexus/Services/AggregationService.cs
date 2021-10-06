@@ -352,10 +352,10 @@ namespace Nexus.Services
             while (true)
             {
                 // read
-                var dataResult = await dataReader.ReadAsync(cancellationToken).ConfigureAwait(false);
+                var dataResult = await dataReader.ReadAsync(cancellationToken);
                 var dataSequence = dataResult.Buffer;
 
-                var statusResult = await statusReader.ReadAsync(cancellationToken).ConfigureAwait(false);
+                var statusResult = await statusReader.ReadAsync(cancellationToken);
                 var statusSequence = statusResult.Buffer;
 
                 // aggregate

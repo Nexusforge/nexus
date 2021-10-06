@@ -200,7 +200,7 @@ namespace Nexus.PackageManagement
 
                 var assetResponse = await _httpClient
                     .SendAsync(assetRequest, HttpCompletionOption.ResponseHeadersRead)
-                    .ConfigureAwait(false);
+                    ;
 
                 assetResponse.EnsureSuccessStatusCode();
 
@@ -210,15 +210,15 @@ namespace Nexus.PackageManagement
             // download and extract
             if (assetName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
             {
-                using var assetResponse = await GetAssetResponseAsync().ConfigureAwait(false);
-                using var stream = await assetResponse.Content.ReadAsStreamAsync().ConfigureAwait(false);
+                using var assetResponse = await GetAssetResponseAsync();
+                using var stream = await assetResponse.Content.ReadAsStreamAsync();
                 using var zipArchive = new ZipArchive(stream, ZipArchiveMode.Read);
                 zipArchive.ExtractToDirectory(targetPath);
             }
             else if (assetName.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase))
             {
-                using var assetResponse = await GetAssetResponseAsync().ConfigureAwait(false);
-                using var stream = await assetResponse.Content.ReadAsStreamAsync().ConfigureAwait(false);
+                using var assetResponse = await GetAssetResponseAsync();
+                using var stream = await assetResponse.Content.ReadAsStreamAsync();
                 using var gzipStream = new GZipInputStream(stream);
                 using var tarArchive = TarArchive.CreateInputTarArchive(gzipStream, Encoding.UTF8);
                 tarArchive.ExtractContents(targetPath);
@@ -313,11 +313,11 @@ namespace Nexus.PackageManagement
                 request.Headers.Add("User-Agent", "Nexus");
                 request.Headers.Add("Accept", "application/vnd.github.v3+json");
 
-                using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                using var response = await _httpClient.SendAsync(request, cancellationToken);
                 response.EnsureSuccessStatusCode();
 
-                var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-                var jsonDocument = await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken).ConfigureAwait(false);
+                var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                var jsonDocument = await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken);
 
                 foreach (var githubRelease in jsonDocument.RootElement.EnumerateArray())
                 {
@@ -374,11 +374,11 @@ namespace Nexus.PackageManagement
                 request.Headers.Add("User-Agent", "Nexus");
                 request.Headers.Add("Accept", "application/vnd.github.v3+json");
 
-                using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                using var response = await _httpClient.SendAsync(request, cancellationToken);
                 response.EnsureSuccessStatusCode();
 
-                var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-                var jsonDocument = await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken).ConfigureAwait(false);
+                var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                var jsonDocument = await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken);
 
                 // find asset
                 var gitHubRelease = jsonDocument.RootElement;
@@ -405,7 +405,7 @@ namespace Nexus.PackageManagement
                     headers["Accept"] = "application/octet-stream";
 
                     _logger.LogDebug("Restore package from source {Source}.", assetBrowserUrl);
-                    await PackageController.DownloadAndExtractAsync(assetBrowserUrl, assetUrl, targetPath, headers, cancellationToken).ConfigureAwait(false);
+                    await PackageController.DownloadAndExtractAsync(assetBrowserUrl, assetUrl, targetPath, headers, cancellationToken);
                 }
                 else
                 {
@@ -512,12 +512,12 @@ namespace Nexus.PackageManagement
                     request.Headers.Add(entry.Key, entry.Value);
                 }
 
-                using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                using var response = await _httpClient.SendAsync(request, cancellationToken);
 
                 response.EnsureSuccessStatusCode();
 
-                var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-                var jsonDocument = await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken).ConfigureAwait(false);
+                var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                var jsonDocument = await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken);
 
                 // find asset
                 var asset = jsonDocument.RootElement.EnumerateArray()
@@ -530,7 +530,7 @@ namespace Nexus.PackageManagement
                     // download package file (https://docs.gitlab.com/ee/user/packages/generic_packages/index.html#download-package-file)
                     var assetUrl = $"{server}/api/v4/projects/{encodedProjectPath}/packages/generic/{package}/{version}/{fileName}";
                     _logger.LogDebug("Restore package from source {Source}.", assetUrl);
-                    await PackageController.DownloadAndExtractAsync(fileName, assetUrl, targetPath, headers, cancellationToken).ConfigureAwait(false);
+                    await PackageController.DownloadAndExtractAsync(fileName, assetUrl, targetPath, headers, cancellationToken);
                 }
                 else
                 {
@@ -563,11 +563,11 @@ namespace Nexus.PackageManagement
                     request.Headers.Add(entry.Key, entry.Value);
                 }
 
-                using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                using var response = await _httpClient.SendAsync(request, cancellationToken);
                 var message = await response.Content.ReadAsStringAsync(cancellationToken);
 
-                var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-                var jsonDocument = await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken).ConfigureAwait(false);
+                var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                var jsonDocument = await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken);
 
                 foreach (var gitlabPackage in jsonDocument.RootElement.EnumerateArray())
                 {
@@ -622,12 +622,12 @@ namespace Nexus.PackageManagement
         //        if (_packageReference.TryGetValue("Token", out var token))
         //            request.Headers.Add("PRIVATE-TOKEN", token);
 
-        //        using var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
+        //        using var response = await _httpClient.SendAsync(request);
 
         //        response.EnsureSuccessStatusCode();
 
-        //        var contentStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-        //        var jsonDocument = await JsonDocument.ParseAsync(contentStream).ConfigureAwait(false);
+        //        var contentStream = await response.Content.ReadAsStreamAsync();
+        //        var jsonDocument = await JsonDocument.ParseAsync(contentStream);
 
         //        foreach (var gitlabRelease in jsonDocument.RootElement.EnumerateArray())
         //        {
@@ -690,12 +690,12 @@ namespace Nexus.PackageManagement
         //        if (_packageReference.TryGetValue("Token", out var token))
         //            request.Headers.Add("PRIVATE-TOKEN", token);
 
-        //        using var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
+        //        using var response = await _httpClient.SendAsync(request);
 
         //        response.EnsureSuccessStatusCode();
 
-        //        var contentStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-        //        var jsonDocument = await JsonDocument.ParseAsync(contentStream).ConfigureAwait(false);
+        //        var contentStream = await response.Content.ReadAsStreamAsync();
+        //        var jsonDocument = await JsonDocument.ParseAsync(contentStream);
 
         //        // find asset
         //        var gitHubRelease = jsonDocument.RootElement;
@@ -713,7 +713,7 @@ namespace Nexus.PackageManagement
         //        {
         //            var assetUrl = new Uri(asset.GetProperty("direct_asset_url").GetString());
         //            _logger.LogDebug("Restore package from source {Source}.", assetUrl);
-        //            await PackageController.DownloadAndExtractAsync(fileName, assetUrl, targetPath, headers, cancellationToken).ConfigureAwait(false);
+        //            await PackageController.DownloadAndExtractAsync(fileName, assetUrl, targetPath, headers, cancellationToken);
         //        }
         //        else
         //        {
