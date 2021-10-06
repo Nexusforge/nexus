@@ -9,7 +9,6 @@ from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from typing import Awaitable, Dict, List, Tuple
 from urllib.parse import ParseResult, urlparse
-from uuid import UUID, uuid3
 
 
 class NexusDataType(enum.Enum):
@@ -69,16 +68,14 @@ class Representation:
 
 class Resource:
 
-    Id: UUID
-    Name: str
+    Id: str
     Unit: str
     Groups: List[str]
     Metadata: Dict[str, str]
     Representations: List[Representation]
 
-    def __init__(self, id: UUID, name: str, unit: str, groups: List[str], metadata: Dict[str, str], representations: List[Representation]):
+    def __init__(self, id: str, unit: str, groups: List[str], metadata: Dict[str, str], representations: List[Representation]):
         self.Id = id
-        self.Name = name
         self.Groups = groups
         self.Unit = unit
         self.Metadata = metadata

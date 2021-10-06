@@ -570,7 +570,7 @@ namespace Nexus.Core
             {
                 var pathSegments = value.Split('/');
                 var catalogName = $"/{pathSegments[1]}/{pathSegments[2]}/{pathSegments[3]}";
-                var resourceName = pathSegments[4];
+                var resourceId = pathSegments[4];
                 var representationName = pathSegments[5];
 
                 var catalogContainer = this.CatalogContainersInfo.Accessible.FirstOrDefault(current => current.Id == catalogName);
@@ -578,7 +578,7 @@ namespace Nexus.Core
                 if (catalogContainer != null)
                 {
                     var resources = _appState.GetResources(catalogContainer);
-                    var resource = resources.FirstOrDefault(current => current.Id.ToString() == resourceName);
+                    var resource = resources.FirstOrDefault(current => current.Id.ToString() == resourceId);
 
                     if (resource != null)
                     {

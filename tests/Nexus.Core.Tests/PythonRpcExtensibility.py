@@ -12,7 +12,6 @@ from io import TextIOWrapper
 from threading import Lock
 from typing import Awaitable, Dict, List, Tuple
 from urllib.parse import ParseResult, urlparse
-from uuid import UUID, uuid3
 
 from PythonRpcDataModel import Catalog, Representation
 

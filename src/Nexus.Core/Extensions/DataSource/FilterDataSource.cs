@@ -90,7 +90,7 @@ namespace Nexus.Extensions
             if (FilterDataSource.FilterDataSourceCache.TryGetValue(catalogItem.Representation.BackendSource.ResourceLocator, out var cacheEntries))
             {
                 var cacheEntry = cacheEntries
-                    .FirstOrDefault(entry => entry.SupportedChanneIds.Contains(catalogItem.Resource.Id));
+                    .FirstOrDefault(entry => entry.SupportedResourceIds.Contains(catalogItem.Resource.Id));
 
                 if (cacheEntry is not null)
                 {
@@ -170,16 +170,15 @@ namespace Nexus.Extensions
                             };
 
                         // create resource
-                        if (!NexusCoreUtilities.CheckNamingConvention(localFilterChannel.ResourceName, out var message))
+                        if (!NexusCoreUtilities.CheckNamingConvention(localFilterChannel.ResourceId, out var message))
                         {
-                            this.Context.Logger.LogWarning($"Skipping resource '{localFilterChannel.ResourceName}' due to the following reason: {message}.");
+                            this.Context.Logger.LogWarning($"Skipping resource '{localFilterChannel.ResourceId}' due to the following reason: {message}.");
                             continue;
                         }
 
                         var resource = new Resource()
                         {
-                            Id = localFilterChannel.ToGuid(cacheEntry.FilterCodeDefinition),
-                            Name = localFilterChannel.ResourceName,
+                            Id = localFilterChannel.ResourceId,
                             Groups = new [] { localFilterChannel.Group },
                             Unit = localFilterChannel.Unit,
                             Representations = representations,
@@ -222,7 +221,7 @@ namespace Nexus.Extensions
                 foreach (var (catalogItem, data, status) in requests)
                 {
                     var (catalog, resource, representation) = catalogItem;
-                    var cacheEntry = _cacheEntries.FirstOrDefault(current => current.SupportedChanneIds.Contains(resource.Id));
+                    var cacheEntry = _cacheEntries.FirstOrDefault(current => current.SupportedResourceIds.Contains(resource.Id));
 
                     if (cacheEntry is null)
                         throw new Exception("The requested filter resource ID could not be found.");
@@ -268,7 +267,7 @@ namespace Nexus.Extensions
                     };
 
                     // execute
-                    var filter = cacheEntry.FilterProvider.Filters.First(filter => filter.ToGuid(cacheEntry.FilterCodeDefinition) == resource.Id);
+                    var filter = cacheEntry.FilterProvider.Filters.First(filter => filter.ResourceId == resource.Id);
                     var filterResult = MemoryMarshal.Cast<byte, double>(data.Span);
 
                     cacheEntry.FilterProvider.Filter(begin, end, filter, getData, filterResult);
@@ -355,7 +354,7 @@ namespace Nexus.Extensions
                     try
                     {
                         var filterProvider = (FilterProviderBase)Activator.CreateInstance(filterType);
-                        var supportedChanneIds = filterProvider.Filters.Select(filter => filter.ToGuid(filterCodeDefinition)).ToList();
+                        var supportedChanneIds = filterProvider.Filters.Select(filter => filter.ResourceId).ToList();
                         cacheEntries[i] = new FilterDataSourceCacheEntry(filterCodeDefinition, loadContext, filterProvider, supportedChanneIds);
                     }
                     catch (Exception ex)

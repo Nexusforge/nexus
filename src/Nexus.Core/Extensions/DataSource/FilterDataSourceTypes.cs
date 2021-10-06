@@ -18,5 +18,5 @@ namespace Nexus.Extensions
         CodeDefinition FilterCodeDefinition,
         FilterDataSourceLoadContext LoadContext,
         FilterProviderBase FilterProvider,
-        List<Guid> SupportedChanneIds);
+        List<string> SupportedResourceIds);
 }

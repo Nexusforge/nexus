@@ -720,10 +720,10 @@ namespace Nexus.Services
 
             // resource
             if (filters.ContainsKey(AggregationFilter.IncludeResource))
-                result &= Regex.IsMatch(resource.Name, filters[AggregationFilter.IncludeResource]);
+                result &= Regex.IsMatch(resource.Id, filters[AggregationFilter.IncludeResource]);
 
             if (filters.ContainsKey(AggregationFilter.ExcludeResource))
-                result &= !Regex.IsMatch(resource.Name, filters[AggregationFilter.ExcludeResource]);
+                result &= !Regex.IsMatch(resource.Id, filters[AggregationFilter.ExcludeResource]);
 
             // group
             if (filters.ContainsKey(AggregationFilter.IncludeGroup))

@@ -31,17 +31,8 @@ namespace Nexus.Extensions
         {
             if (this.Context.Catalogs is null)
             {
-                var id11 = Guid.Parse("f01b6a96-1de6-4caa-9205-184d8a3eb2f8");
-                var id12 = Guid.Parse("d549a4dd-e003-4d24-98de-4d5bc8c72aca");
-                var id13 = Guid.Parse("7dec6d79-b92e-4af2-9358-21be1f3626c9");
-                var id14 = Guid.Parse("cf50190b-fd2a-477b-9655-48f4f41ba7bf");
-                var catalog_allowed = this.LoadCatalog("/IN_MEMORY/TEST/ACCESSIBLE", id11, id12, id13, id14);
-
-                var id21 = Guid.Parse("50d38fe5-a7a8-49e8-8bd4-3e98a48a951f");
-                var id22 = Guid.Parse("d47d1dc6-7c38-4b75-9459-742fa570ef9d");
-                var id23 = Guid.Parse("511d6e9c-9075-41ee-bac7-891d359f0dda");
-                var id24 = Guid.Parse("99b85689-5373-4a9a-8fd7-be04a89c9da8");
-                var catalog_restricted = this.LoadCatalog("/IN_MEMORY/TEST/RESTRICTED", id21, id22, id23, id24);
+                var catalog_allowed = this.LoadCatalog("/IN_MEMORY/TEST/ACCESSIBLE");
+                var catalog_restricted = this.LoadCatalog("/IN_MEMORY/TEST/RESTRICTED");
 
                 this.Context = this.Context with
                 {
@@ -86,7 +77,7 @@ namespace Nexus.Extensions
                     var elementCount = data.Length / representation.ElementSize;
                     var dt = representation.SamplePeriod.TotalSeconds;
 
-                    if (resource.Name.Contains("unix_time"))
+                    if (resource.Id.Contains("unix_time"))
                     {
                         dataDouble = Enumerable.Range(0, elementCount).Select(i => i * dt + beginTime).ToArray();
                     }
@@ -118,20 +109,20 @@ namespace Nexus.Extensions
             return Task.WhenAll(tasks);
         }
 
-        private ResourceCatalog LoadCatalog(string catalogId, Guid id1, Guid id2, Guid id3, Guid id4)
+        private ResourceCatalog LoadCatalog(string catalogId)
         {
             var catalog = new ResourceCatalog() { Id = catalogId };
 
-            var resourceA = new Resource() { Id = id1, Name = "T1", Unit = "°C", Groups = new[] { "Group 1" } };
+            var resourceA = new Resource() { Id = "T1", Unit = "°C", Groups = new[] { "Group 1" } };
             resourceA.Metadata["Description"] = "Test resource.";
 
-            var resourceB = new Resource() { Id = id2, Name = "V1", Unit = "m/s", Groups = new[] { "Group 1" } };
+            var resourceB = new Resource() { Id = "V1", Unit = "m/s", Groups = new[] { "Group 1" } };
             resourceB.Metadata["Description"] = "Test resource.";
 
-            var resourceC = new Resource() { Id = id3, Name = "unix_time1", Unit = "", Groups = new[] { "Group 2" } };
+            var resourceC = new Resource() { Id = "unix_time1", Unit = "", Groups = new[] { "Group 2" } };
             resourceC.Metadata["Description"] = "Test resource.";
 
-            var resourceD = new Resource() { Id = id4, Name = "unix_time2", Unit = "", Groups = new[] { "Group 2" } };
+            var resourceD = new Resource() { Id = "unix_time2", Unit = "", Groups = new[] { "Group 2" } };
             resourceD.Metadata["Description"] = "Test resource.";
 
             var representation1 = new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "mean", DataType = NexusDataType.FLOAT64 };

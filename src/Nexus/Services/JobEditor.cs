@@ -86,7 +86,7 @@ namespace Nexus.Services
                         foreach (var aggregationResource in aggregationResources)
                         {
                             sb.AppendLine();
-                            sb.AppendLine($"\t\t{aggregationResource.Resource.Name} / {aggregationResource.Resource.Group} / {aggregationResource.Resource.Unit}");
+                            sb.AppendLine($"\t\t{aggregationResource.Resource.Id} / {aggregationResource.Resource.Group} / {aggregationResource.Resource.Unit}");
 
                             foreach (var aggregation in aggregationResource.Aggregations)
                             {

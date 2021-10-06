@@ -197,7 +197,7 @@ namespace Nexus.Services
                 var resources = catalogContainer.Catalog.Resources;
 
                 resources
-                    .Where(resource => string.IsNullOrWhiteSpace(resource.Name))
+                    .Where(resource => string.IsNullOrWhiteSpace(resource.Id))
                     .ToList()
                     .ForEach(resource => resources.Remove(resource));
 

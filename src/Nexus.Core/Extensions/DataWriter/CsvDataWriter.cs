@@ -110,7 +110,7 @@ namespace Nexus.Extensions
 
                         foreach (var catalogItem in catalogItemGroup)
                         {
-                            streamWriter.Write($"{catalogItem.Resource.Name};");
+                            streamWriter.Write($"{catalogItem.Resource.Id};");
                         }
 
                         streamWriter.WriteLine();

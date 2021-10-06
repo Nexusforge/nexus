@@ -34,7 +34,7 @@ namespace Nexus.Filters
             {
                 new FilterChannel()
                 {
-                    ResourceName = "T1_squared",
+                    ResourceId = "T1_squared",
                     Unit = "°C²"
                 }
             };

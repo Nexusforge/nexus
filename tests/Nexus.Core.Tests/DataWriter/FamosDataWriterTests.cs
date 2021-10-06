@@ -69,12 +69,12 @@
 //            // Assert
 //        }
 
-//        private ResourceDescription CreateResourceDescription(string resourceName, string group, NexusDataType dataType, SampleRateContainer sampleRate, string unit)
+//        private ResourceDescription CreateResourceDescription(string resourceId, string group, NexusDataType dataType, SampleRateContainer sampleRate, string unit)
 //        {
 //            var guid = Guid.NewGuid();
 //            var representationName = sampleRate.ToUnitString();
 
-//            return new ResourceDescription(guid, resourceName, representationName, group, dataType, sampleRate, unit, BufferType.Simple);
+//            return new ResourceDescription(guid, resourceName, representationId, group, dataType, sampleRate, unit, BufferType.Simple);
 //        }
 
 //        private static void ConfigureServices(IServiceCollection services)

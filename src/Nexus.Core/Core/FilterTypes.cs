@@ -89,24 +89,4 @@ namespace Nexus.Core
 
         #endregion
     }
-
-    public static class FilterChannelExtensions
-    {
-        #region Methods
-
-        public static Guid ToGuid(this FilterChannel filterChannel, CodeDefinition codeDefinition)
-        {
-            // With the filter extension, resources are produced dynamically, so there
-            // is no way to generate an ID once and store it somewhere. Therefore the 
-            // ID must be generated each time the filter code is instantiated. To avoid 
-            // having ever changing IDs, the ID is effectively a good hash code based 
-            // on the project ID and resource name. In the end this means that the 
-            // resource name determines the ID. And so renaming a resource means changing 
-            // the ID.
-            var value = $"({codeDefinition.Id}) {filterChannel.CatalogId}/{filterChannel.ResourceName}";
-            return new Guid(value.Hash());
-        }
-
-        #endregion
-    }
 }

@@ -181,7 +181,7 @@ namespace Services
                 BackendSource = backendSource1
             };
 
-            var resource1 = new Resource() { Id = Guid.NewGuid() };
+            var resource1 = new Resource() { Id = "Resource1" };
             var catalog1 = new ResourceCatalog() { Id = "/A/B/C" };
             var catalogItem1 = new CatalogItem(catalog1, resource1, representation1);
 
@@ -193,7 +193,7 @@ namespace Services
                 BackendSource = backendSource2
             };
 
-            var resource2 = new Resource() { Id = Guid.NewGuid() };
+            var resource2 = new Resource() { Id = "Resource2" };
             var catalog2 = new ResourceCatalog() { Id = "/F/G/H" };
             var catalogItem2 = new CatalogItem(catalog2, resource2, representation2);
 

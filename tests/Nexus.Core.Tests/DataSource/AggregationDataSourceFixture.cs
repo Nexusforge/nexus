@@ -49,13 +49,10 @@ namespace DataSource
             var hourOffset = 360000;
             var halfHourOffset = hourOffset / 2;
 
-            var id1 = Guid.NewGuid();
-            var id2 = Guid.NewGuid();
-
             // day 1
             var dateTime1 = new DateTime(2020, 07, 08);
             var folderPath1 = Path.Combine(monthFolderCatalog1, dateTime1.ToString("yyyy-MM"), dateTime1.ToString("dd"));
-            var filePath1 = Path.Combine(folderPath1, $"{id1}_10_ms_mean.nex");
+            var filePath1 = Path.Combine(folderPath1, "a_10_ms_mean.nex");
 
             Directory.CreateDirectory(folderPath1);
 
@@ -70,7 +67,7 @@ namespace DataSource
             // day 2
             var dateTime2 = new DateTime(2020, 07, 09);
             var folderPath2 = Path.Combine(monthFolderCatalog1, dateTime2.ToString("yyyy-MM"), dateTime2.ToString("dd"));
-            var filePath2 = Path.Combine(folderPath2, $"{id1}_10_ms_mean.nex");
+            var filePath2 = Path.Combine(folderPath2, "a_10_ms_mean.nex");
 
             Directory.CreateDirectory(folderPath2);
 
@@ -87,7 +84,7 @@ namespace DataSource
 
             // second catalog
             var folderPath3 = Path.Combine(monthFolderCatalog2, dateTime1.ToString("yyyy-MM"), dateTime1.ToString("dd"));
-            var filePath3 = Path.Combine(folderPath3, $"{id2}_10_ms_mean.nex");
+            var filePath3 = Path.Combine(folderPath3, "b_10_ms_mean.nex");
 
             Directory.CreateDirectory(folderPath3);
 

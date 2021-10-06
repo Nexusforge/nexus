@@ -24,6 +24,13 @@ namespace Nexus.DataModel
                 throw new Exception("The catalog to be merged has a different ID.");
 
             // merge resources
+            var uniqueIds = catalog.Resources
+                .Select(current => current.Id)
+                .Distinct();
+
+            if (uniqueIds.Count() != catalog.Resources.Count)
+                throw new Exception("There are multiple resource with the same identifier.");
+
             var mergedResources = this.Resources
                 .Select(resource => resource.DeepCopy())
                 .ToList();
@@ -106,15 +113,13 @@ namespace Nexus.DataModel
 
             var pathParts = resourcePath.Split("/");
             var catalogId = string.Join('/', pathParts.Take(pathParts.Length - 2));
-            var isGuid = Guid.TryParse(pathParts[4], out var resourceId);
+            var resourceId = pathParts[4];
             var representationId = pathParts[5];
 
             if (catalogId != this.Id)
                 return false;
 
-            var resource = isGuid
-                ? this.Resources.FirstOrDefault(resource => resource.Id == resourceId)
-                : this.Resources.FirstOrDefault(resource => resource.Name == pathParts[4]);
+            var resource = this.Resources.FirstOrDefault(resource => resource.Id == resourceId);
 
             if (resource is null)
                 return false;

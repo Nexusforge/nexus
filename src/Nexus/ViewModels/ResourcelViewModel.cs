@@ -32,7 +32,7 @@ namespace Nexus.ViewModels
 
         public Guid Id => _resource.Id;
 
-        public string Name => _resource.Name;
+        public string Name => _resource.Id;
 
         public string Group => _resource.Group;
 

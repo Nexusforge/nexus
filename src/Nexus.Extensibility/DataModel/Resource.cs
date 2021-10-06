@@ -10,8 +10,7 @@ namespace Nexus.DataModel
     {
         #region Properties
 
-        public Guid Id { get; init; }
-        public string Name { get; init; }
+        public string Id { get; init; }
         public string Unit { get; init; }
         public string[] Groups { get; init; }
         public List<Representation> Representations { get; init; } = new List<Representation>();
@@ -24,6 +23,13 @@ namespace Nexus.DataModel
         internal Resource Merge(Resource resource, MergeMode mergeMode)
         {
             // merge representations
+            var uniqueIds = resource.Representations
+                .Select(current => current.Id)
+                .Distinct();
+
+            if (uniqueIds.Count() != resource.Representations.Count)
+                throw new Exception("There are multiple representations with the same identifier.");
+
             var mergedRepresentations = this.Representations
                .Select(representation => representation.DeepCopy())
                .ToList();
@@ -38,12 +44,12 @@ namespace Nexus.DataModel
                     {
                         case MergeMode.ExclusiveOr:
 
-                            throw new Exception($"There may be only a single representation with a given identifier.");
+                            throw new Exception("There may be only a single representation with a given identifier.");
 
                         case MergeMode.NewWins:
 
                             if (!representation.Equals(mergedRepresentations[index]))
-                                throw new Exception($"The representations to be merged are not equal.");
+                                throw new Exception("The representations to be merged are not equal.");
 
                             break;
 
@@ -77,24 +83,23 @@ namespace Nexus.DataModel
                             mergedMetadata1[key] = value;
                     }
 
-                    if (!string.IsNullOrWhiteSpace(this.Name) &&
-                        !string.IsNullOrWhiteSpace(resource.Name) &&
-                        this.Name != resource.Name)
-                        throw new Exception($"The resources cannot be merged because their names differ.");
+                    if (!string.IsNullOrWhiteSpace(this.Id) &&
+                        !string.IsNullOrWhiteSpace(resource.Id) &&
+                        this.Id != resource.Id)
+                        throw new Exception("The resources cannot be merged because their names differ.");
 
                     if (!string.IsNullOrWhiteSpace(this.Unit) &&
                         !string.IsNullOrWhiteSpace(resource.Unit) &&
                         this.Unit != resource.Unit)
-                        throw new Exception($"The resources cannot be merged because their units differ.");
+                        throw new Exception("The resources cannot be merged because their units differ.");
 
                     if (this.Groups is not null && resource.Groups is not null &&
                         this.Groups.SequenceEqual(resource.Groups))
-                        throw new Exception($"The resources cannot be merged because their groups differ.");
+                        throw new Exception("The resources cannot be merged because their groups differ.");
 
                     merged = new Resource()
                     {
-                        Id = this.Id,
-                        Name = string.IsNullOrWhiteSpace(this.Name) ? resource.Name : this.Name,
+                        Id = string.IsNullOrWhiteSpace(this.Id) ? resource.Id : this.Id,
                         Unit = string.IsNullOrWhiteSpace(this.Unit) ? resource.Unit : this.Unit,
                         Groups = this.Groups is null ? resource.Groups : this.Groups,
                         Metadata = mergedMetadata1,
@@ -115,8 +120,7 @@ namespace Nexus.DataModel
 
                     merged = new Resource()
                     {
-                        Id = this.Id,
-                        Name = resource.Name,
+                        Id = resource.Id,
                         Unit = resource.Unit,
                         Groups = resource.Groups,
                         Metadata = mergedMetadata2,

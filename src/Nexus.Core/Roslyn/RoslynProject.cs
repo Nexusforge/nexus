@@ -137,12 +137,12 @@ namespace Nexus.Roslyn
             classStringBuilder.AppendLine($"{{");
 
             // add Read() method
-            classStringBuilder.AppendLine($"public Span<double> Read(string catalogId, string resourceName, string representationId)");
+            classStringBuilder.AppendLine($"public Span<double> Read(string catalogId, string resourceId, string representationId)");
             classStringBuilder.AppendLine($"{{");
             classStringBuilder.AppendLine($"return default;");
             classStringBuilder.AppendLine($"}}");
 
-            classStringBuilder.AppendLine($"public Span<double> Read(string catalogId, string resourceName, string representationId, DateTime begin, DateTime end)");
+            classStringBuilder.AppendLine($"public Span<double> Read(string catalogId, string resourceId, string representationId, DateTime begin, DateTime end)");
             classStringBuilder.AppendLine($"{{");
             classStringBuilder.AppendLine($"return default;");
             classStringBuilder.AppendLine($"}}");
@@ -165,7 +165,7 @@ namespace Nexus.Roslyn
                     var resourceStringBuilder = new StringBuilder();
 
                     // resource class definition
-                    resourceStringBuilder.AppendLine($"public class {resource.Name}_TYPE");
+                    resourceStringBuilder.AppendLine($"public class {resource.Id}_TYPE");
                     resourceStringBuilder.AppendLine($"{{");
 
                     foreach (var representation in resource.Representations.Where(representation => representation.SamplePeriod == samplePeriod))
@@ -180,7 +180,7 @@ namespace Nexus.Roslyn
                     resourceStringBuilder.AppendLine($"}}");
 
                     // resource property
-                    resourceStringBuilder.AppendLine($"public {resource.Name}_TYPE {resource.Name} {{ get; }}");
+                    resourceStringBuilder.AppendLine($"public {resource.Id}_TYPE {resource.Id} {{ get; }}");
 
                     if (addResource)
                         catalogStringBuilder.AppendLine(resourceStringBuilder.ToString());

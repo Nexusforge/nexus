@@ -54,7 +54,7 @@ namespace Nexus.Extensibility.Tests
         public void CanFindCatalogItem()
         {
             var catalog1 = new ResourceCatalog() { Id = "/A/B/C" };
-            var resource1 = new Resource() { Id = Guid.NewGuid(), Name = "Resource1" };
+            var resource1 = new Resource() { Id = "Resource1" };
 
             var representation1 = new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "mean" };
 
@@ -62,7 +62,7 @@ namespace Nexus.Extensibility.Tests
             catalog1.Resources.Add(resource1);
 
             var catalog2 = new ResourceCatalog() { Id = "/D/E/F" };
-            var resource2 = new Resource() { Id = Guid.NewGuid(), Name = "Resource2" };
+            var resource2 = new Resource() { Id = "Resource2" };
             var representation2 = new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "mean" };
 
             resource2.Representations.Add(representation2);
@@ -74,9 +74,9 @@ namespace Nexus.Extensibility.Tests
             var catalogItem2 = new CatalogItem(catalog2, resource2, representation2);
 
             var foundCatalogItem1 = catalogs.Find(catalogItem1.GetPath());
-            var foundCatalogItem1ByName = catalogs.Find($"{catalogItem1.Catalog.Id}/{catalogItem1.Resource.Name}/{catalogItem1.Representation.Id}");
+            var foundCatalogItem1ByName = catalogs.Find($"{catalogItem1.Catalog.Id}/{catalogItem1.Resource.Id}/{catalogItem1.Representation.Id}");
             var foundCatalogItem2 = catalogs.Find(catalogItem2.GetPath());
-            var foundCatalogItem2ByName = catalogs.Find($"{catalogItem2.Catalog.Id}/{catalogItem2.Resource.Name}/{catalogItem2.Representation.Id}");
+            var foundCatalogItem2ByName = catalogs.Find($"{catalogItem2.Catalog.Id}/{catalogItem2.Resource.Id}/{catalogItem2.Representation.Id}");
 
             Assert.Equal(catalogItem1, foundCatalogItem1);
             Assert.Equal(catalogItem1, foundCatalogItem1ByName);
@@ -88,7 +88,7 @@ namespace Nexus.Extensibility.Tests
         public void CanTryFindCatalogItem()
         {
             var catalog1 = new ResourceCatalog() { Id = "/A/B/C" };
-            var resource1 = new Resource() { Id = Guid.NewGuid(), Name = "Resource1" };
+            var resource1 = new Resource() { Id = "Resource1" };
 
             var representation1 = new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "mean" };
 
@@ -96,7 +96,7 @@ namespace Nexus.Extensibility.Tests
             catalog1.Resources.Add(resource1);
 
             var catalog2 = new ResourceCatalog() { Id = "/D/E/F" };
-            var resource2 = new Resource() { Id = Guid.NewGuid(), Name = "Resource2" };
+            var resource2 = new Resource() { Id = "Resource2" };
             var representation2 = new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "mean" };
 
             resource2.Representations.Add(representation2);
@@ -118,13 +118,13 @@ namespace Nexus.Extensibility.Tests
         }
 
         [Theory]
-        [InlineData("/A/B/C", "2fbcfc9b-cb02-45c8-9d35-f8bb0d5ac51c", "1_s_max")]
-        [InlineData("/A/B/C", "2fbcfc9b-cb02-45c8-9d35-f8bb0d5ac51d", "1_s_mean")]
-        [InlineData("/A/B/D", "2fbcfc9b-cb02-45c8-9d35-f8bb0d5ac51c", "1_s_max")]
+        [InlineData("/A/B/C", "Resource1", "1_s_max")]
+        [InlineData("/A/B/C", "Resource2", "1_s_mean")]
+        [InlineData("/A/B/D", "Resource1", "1_s_max")]
         public void ThrowsForInvalidResourcePath(string catalogId, string resourceId, string datasetId)
         {
             var catalog = new ResourceCatalog() { Id = "/A/B/C" };
-            var resource = new Resource() { Id = Guid.Parse("2fbcfc9b-cb02-45c8-9d35-f8bb0d5ac51c"), Name = "Resource1" };
+            var resource = new Resource() { Id = "Resource1" };
 
             var representation = new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "mean" };
 

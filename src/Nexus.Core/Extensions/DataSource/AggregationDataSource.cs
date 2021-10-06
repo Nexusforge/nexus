@@ -504,7 +504,7 @@ namespace Nexus.Extensions
         private ResourceCatalog GetCatalog(string catalogId, string dayFolder)
         {
             var catalog = new ResourceCatalog() { Id = catalogId };
-            var resourceMap = new Dictionary<Guid, Resource>();
+            var resourceMap = new Dictionary<string, Resource>();
 
             Directory
                 .EnumerateFiles(dayFolder, "*.nex", SearchOption.TopDirectoryOnly)
@@ -513,7 +513,7 @@ namespace Nexus.Extensions
                 {
                     var fileName = Path.GetFileNameWithoutExtension(filePath);
                     var fileNameParts = fileName.Split('_', count: 4);
-                    var id = Guid.Parse(fileNameParts[0]);
+                    var id = fileNameParts[0];
                     var value = fileNameParts[1];
                     var unit = fileNameParts[2];
                     var samplePeriod = NexusCoreUtilities.ValueAndUnitToSamplePeriod(long.Parse(value), unit);

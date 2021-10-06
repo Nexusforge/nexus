@@ -7,8 +7,7 @@
       },
       "Resources": [
         {
-          "Id": "f77d8b65-2241-30eb-af6e-e7c050dcdabd",
-          "Name": "resource1",
+          "Id": "resource1",
           "Unit": "°C",
           "Groups": [ "group1" ],
           "Metadata": {
@@ -23,8 +22,7 @@
           ]
         },
         {
-          "Id": "0e1d5180-4a99-3b82-8a79-28c91eea4bc6",
-          "Name": "resource2",
+          "Id": "resource2",
           "Unit": "bar",
           "Groups": [ "group2" ],
           "Metadata": {
@@ -47,8 +45,7 @@
       },
       "Resources": [
         {
-          "Id": "3f06badd-00db-378a-9cc4-323d8d5565fc",
-          "Name": "resource1",
+          "Id": "resource1",
           "Unit": "m/s",
           "Groups": [ "group1" ],
           "Metadata": {

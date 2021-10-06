@@ -6,7 +6,6 @@ import sys
 from array import array
 from datetime import datetime, timedelta, timezone
 from urllib.request import url2pathname
-from uuid import uuid3
 
 from PythonRpcDataModel import Catalog, NexusDataType, Representation, Resource
 from PythonRpcExtensibility import IDataSource, LogLevel, RpcCommunicator
@@ -33,21 +32,18 @@ class PythonDataSource(IDataSource):
         if (self._context.catalogs is None):
 
             # catalog 1
-            catalog1_resource1_id = str(uuid3(NULL_NAMESPACE, "catalog1_resource1"))
             catalog1_resource1_representations = [Representation(timedelta(seconds=1), "mean", NexusDataType.INT64)]
             catalog1_resource1_meta = { "c": "d" }
-            catalog1_resource1 = Resource(catalog1_resource1_id, "resource1", "°C", ["group1"], catalog1_resource1_meta, catalog1_resource1_representations)
+            catalog1_resource1 = Resource("resource1", "°C", ["group1"], catalog1_resource1_meta, catalog1_resource1_representations)
 
-            catalog1_resource2_id = str(uuid3(NULL_NAMESPACE, "catalog1_resource2"))
             catalog1_resource2_representations = [Representation(timedelta(seconds=1), "mean", NexusDataType.FLOAT64)]
-            catalog1_resource2 = Resource(catalog1_resource2_id, "resource2", "bar", ["group2"], { }, catalog1_resource2_representations)
+            catalog1_resource2 = Resource("resource2", "bar", ["group2"], { }, catalog1_resource2_representations)
 
             catalog1 = Catalog("/A/B/C", metadata = { "a": "b" }, resources = [catalog1_resource1, catalog1_resource2])
 
             # catalog 2
-            catalog2_resource1_id = str(uuid3(NULL_NAMESPACE, "catalog2_resource1"))
             catalog2_resource1_representations = [Representation(timedelta(seconds=1), "mean", NexusDataType.FLOAT32)]
-            catalog2_resource1 = Resource(catalog2_resource1_id, "resource1", "m/s", ["group1"], { }, catalog2_resource1_representations)
+            catalog2_resource1 = Resource("resource1", "m/s", ["group1"], { }, catalog2_resource1_representations)
 
             catalog2 = Catalog("/D/E/F", metadata = {}, resources = [catalog2_resource1])
 

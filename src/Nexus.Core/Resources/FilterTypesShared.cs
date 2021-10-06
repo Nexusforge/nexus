@@ -21,10 +21,10 @@ namespace Nexus.Filters
             //
         }
 
-        public FilterChannel(string catalogId, string resourceName, string group, string unit, string description)
+        public FilterChannel(string catalogId, string resourceId, string group, string unit, string description)
         {
             this.CatalogId = catalogId;
-            this.ResourceName = resourceName;
+            this.ResourceId = resourceId;
             this.Group = group;
             this.Unit = unit;
             this.Description = description;
@@ -35,7 +35,7 @@ namespace Nexus.Filters
         #region Properties
 
         public string CatalogId { get; init; } = FilterConstants.SharedCatalogID;
-        public string ResourceName { get; init; } = string.Empty;
+        public string ResourceId { get; init; } = string.Empty;
         public string Group { get; init; } = string.Empty;
         public string Unit { get; init; } = string.Empty;
         public string Description { get; init; } = string.Empty;

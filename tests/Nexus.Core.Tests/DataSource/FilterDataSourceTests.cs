@@ -46,17 +46,17 @@ namespace DataSource
 
             // assert
             var actual = catalogs.First(catalog => catalog.Id == "/IN_MEMORY/FILTERS/SHARED");
-            var actualNames = actual.Resources.Select(resource => resource.Name).ToList();
+            var actualIds = actual.Resources.Select(resource => resource.Id).ToList();
             var actualUnits = actual.Resources.Select(resource => resource.Unit).ToList();
             var actualGroups = actual.Resources.SelectMany(resource => resource.Groups).ToList();
             var actualDataTypes = actual.Resources.SelectMany(resource => resource.Representations.Select(representation => representation.DataType)).ToList();
 
-            var expectedNames = new List<string>() { "T1_squared" };
+            var expectedIds = new List<string>() { "T1_squared" };
             var expectedUnits = new List<string>() { "°C²" };
             var expectedGroups = new List<string>() { "test" };
             var expectedDataTypes = new List<NexusDataType>() { NexusDataType.FLOAT64 };
 
-            Assert.True(expectedNames.SequenceEqual(actualNames));
+            Assert.True(expectedIds.SequenceEqual(actualIds));
             Assert.True(expectedUnits.SequenceEqual(actualUnits));
             Assert.True(expectedGroups.SequenceEqual(actualGroups));
             Assert.True(expectedDataTypes.SequenceEqual(actualDataTypes));
@@ -109,7 +109,7 @@ namespace DataSource
             // setup catalog collection
             var representation = new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "mean", DataType = NexusDataType.FLOAT64 };
 
-            var resource = new Resource() { Id = Guid.NewGuid(), Name = "T1" };
+            var resource = new Resource() { Id = "T1" };
             resource.Representations.Add(representation);
 
             var catalog = new ResourceCatalog() { Id = "/IN_MEMORY/TEST/ACCESSIBLE" };

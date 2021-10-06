@@ -261,7 +261,7 @@ namespace Nexus.Controllers
 
                         if (resource == null)
                             resource = catalog.Resources.FirstOrDefault(
-                                current => current.Name == resourceId);
+                                current => current.Id == resourceId);
 
                         if (resource == null)
                             return Task.FromResult((ActionResult<Resource>)this.NotFound($"{catalogId}/{resourceId}"));
@@ -312,7 +312,7 @@ namespace Nexus.Controllers
 
                         if (resource == null)
                             resource = catalog.Resources.FirstOrDefault(
-                                current => current.Name == resourceId);
+                                current => current.Id == resourceId);
 
                         if (resource == null)
                             return Task.FromResult((ActionResult<List<Representation>>)this.NotFound($"{catalogId}/{resourceId}"));
@@ -367,7 +367,7 @@ namespace Nexus.Controllers
 
                         if (resource == null)
                             resource = catalog.Resources.FirstOrDefault(
-                                current => current.Name == resourceId);
+                                current => current.Id == resourceId);
 
                         if (resource == null)
                             return Task.FromResult((ActionResult<Representation>)this.NotFound($"{catalogId}/{resourceId}"));
@@ -467,7 +467,7 @@ namespace Nexus.Controllers
             return new Resource()
             {
                 Id = resource.Id,
-                Name = resource.Name,
+                Name = resource.Id,
                 Group = resource.Group,
                 Unit = !string.IsNullOrWhiteSpace(resourceMeta.Unit)
                         ? resourceMeta.Unit

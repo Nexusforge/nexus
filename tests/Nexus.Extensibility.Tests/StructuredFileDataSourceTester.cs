@@ -90,7 +90,7 @@ namespace Nexus.Extensibility.Tests
             if (this.Context.Catalogs is null)
             {
                 var catalog = new ResourceCatalog() { Id = "/A/B/C" };
-                var resource = new Resource() { Id = Guid.NewGuid() };
+                var resource = new Resource() { Id = "Resource1" };
                 var representation = new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "mean", DataType = NexusDataType.INT64 };
 
                 resource.Representations.Add(representation);
