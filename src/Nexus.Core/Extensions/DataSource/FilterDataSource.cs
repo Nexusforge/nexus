@@ -179,12 +179,11 @@ namespace Nexus.Extensions
                         var resource = new Resource()
                         {
                             Id = localFilterChannel.ResourceId,
-                            Groups = new [] { localFilterChannel.Group },
                             Unit = localFilterChannel.Unit,
+                            Description = localFilterChannel.Description,
+                            Groups = new [] { localFilterChannel.Group },
                             Representations = representations,
                         };
-
-                        resource.Metadata["Description"] = localFilterChannel.Description;
 
                         // get or create catalog
                         if (!catalogs.TryGetValue(localFilterChannel.CatalogId, out var catalog))

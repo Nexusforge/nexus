@@ -65,6 +65,7 @@ namespace Nexus.Extensibility.Tests
             {
                 Id = "Resource0",
                 Unit = "U_0",
+                Description = "D_0",
                 Groups = null,
                 Metadata = new Dictionary<string, string>()
                 {
@@ -77,6 +78,7 @@ namespace Nexus.Extensibility.Tests
             {
                 Id = "Resource0",
                 Unit = "U_1",
+                Description = "D_1",
                 Groups = new[] { "G_1" },
                 Metadata = new Dictionary<string, string>()
                 {
@@ -89,6 +91,7 @@ namespace Nexus.Extensibility.Tests
             {
                 Id = "Resource0",
                 Unit = null,
+                Description = null,
                 Groups = new[] { "G_1" },
                 Metadata = new Dictionary<string, string>()
                 {
@@ -100,6 +103,7 @@ namespace Nexus.Extensibility.Tests
             {
                 Id = "Resource0",
                 Unit = "U_1",
+                Description = "D_1",
                 Groups = new[] { "G_1" },
                 Metadata = new Dictionary<string, string>()
                 {
@@ -113,6 +117,7 @@ namespace Nexus.Extensibility.Tests
             {
                 Id = "Resource0",
                 Unit = "U_0",
+                Description = "D_0",
                 Groups = new[] { "G_1" },
                 Metadata = new Dictionary<string, string>()
                 {
@@ -126,6 +131,7 @@ namespace Nexus.Extensibility.Tests
             {
                 Id = "Resource1",
                 Unit = "U_0",
+                Description = "D_0",
                 Groups = new[] { "G_0" },
                 Metadata = new Dictionary<string, string>()
                 {
@@ -138,6 +144,7 @@ namespace Nexus.Extensibility.Tests
             {
                 Id = "Resource2",
                 Unit = "U_0",
+                Description = "D_0",
                 Groups = new[] { "G_0" },
                 Metadata = new Dictionary<string, string>()
                 {

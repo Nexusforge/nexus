@@ -7,10 +7,11 @@ namespace Nexus.Filters
     {
         /* Use this method to do the calculations for a filter that can be based on one or more
          * resources of available and accessible catalogs.
-         *   begin:  Start of the current time period.
-         *   end:    End of the current time period.
-         *   data:   Contains data of the preselected catalogs.
-         *   result: The resulting double array with length matching the time period and sample rate.
+         *   begin:         Start of the current time period.
+         *   filter:        The filter channel to make the calculations for.
+         *   end:           End of the current time period.
+         *   dataProvider:  Contains data of the preselected catalogs.
+         *   result:        The resulting double array with length matching the time period and sample rate.
          */
         public override void Filter(DateTime begin, DateTime end, FilterChannel filter, DataProvider dataProvider, double[] result)
         {
@@ -35,7 +36,8 @@ namespace Nexus.Filters
                 new FilterChannel()
                 {
                     ResourceId = "T1_squared",
-                    Unit = "°C²"
+                    Unit = "°C²",
+                    Description = "Temperature squared."
                 }
             };
         }

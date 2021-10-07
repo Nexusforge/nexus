@@ -113,17 +113,10 @@ namespace Nexus.Extensions
         {
             var catalog = new ResourceCatalog() { Id = catalogId };
 
-            var resourceA = new Resource() { Id = "T1", Unit = "°C", Groups = new[] { "Group 1" } };
-            resourceA.Metadata["Description"] = "Test resource.";
-
-            var resourceB = new Resource() { Id = "V1", Unit = "m/s", Groups = new[] { "Group 1" } };
-            resourceB.Metadata["Description"] = "Test resource.";
-
-            var resourceC = new Resource() { Id = "unix_time1", Unit = "", Groups = new[] { "Group 2" } };
-            resourceC.Metadata["Description"] = "Test resource.";
-
-            var resourceD = new Resource() { Id = "unix_time2", Unit = "", Groups = new[] { "Group 2" } };
-            resourceD.Metadata["Description"] = "Test resource.";
+            var resourceA = new Resource() { Id = "T1", Unit = "°C", Description = "Test resource A", Groups = new[] { "Group 1" } };
+            var resourceB = new Resource() { Id = "V1", Unit = "m/s", Description = "Test resource B", Groups = new[] { "Group 1" } };
+            var resourceC = new Resource() { Id = "unix_time1", Unit = "", Description = "Test resource C", Groups = new[] { "Group 2" } };
+            var resourceD = new Resource() { Id = "unix_time2", Unit = "", Description = "Test resource D", Groups = new[] { "Group 2" } };
 
             var representation1 = new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "mean", DataType = NexusDataType.FLOAT64 };
             var representation2 = new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "mean", DataType = NexusDataType.FLOAT64 };

@@ -27,11 +27,10 @@ class Resource():
 
     def __init__(self, dict, resourcePath):      
         self.id = dict["id"]
-        self.name = dict["name"]
-        self.group = dict["group"]
         self.unit = dict["unit"]
-        self.representation_name = resourcePath.split("/")[-1]
         self.description = dict["description"]
+        self.group = dict["group"]
+        self.representation_name = resourcePath.split("/")[-1]
         self.metadata = dict["metadata"]
 
 class NexusConnector():

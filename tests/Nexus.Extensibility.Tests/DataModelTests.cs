@@ -55,13 +55,13 @@ namespace Nexus.Extensibility.Tests
         [InlineData("mea n", false)]
         [InlineData("mea-n", false)]
         [InlineData("mea*n", false)]
-        public void CanValidateName(string name, bool isValid)
+        public void CanValidateDetail(string detail, bool isValid)
         {
             if (isValid)
                 new Representation() 
                 {
                     SamplePeriod = TimeSpan.FromSeconds(1),
-                    Detail = name, 
+                    Detail = detail, 
                     DataType = NexusDataType.FLOAT64 
                 };
 
@@ -69,7 +69,7 @@ namespace Nexus.Extensibility.Tests
                 Assert.Throws<ArgumentException>(() => new Representation()
                 {
                     SamplePeriod = TimeSpan.FromSeconds(1),
-                    Detail = name,
+                    Detail = detail,
                     DataType = NexusDataType.FLOAT64
                 });
         }

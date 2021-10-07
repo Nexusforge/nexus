@@ -12,6 +12,7 @@ namespace Nexus.DataModel
 
         public string Id { get; init; }
         public string Unit { get; init; }
+        public string Description { get; init; }
         public string[] Groups { get; init; }
         public List<Representation> Representations { get; init; } = new List<Representation>();
         public Dictionary<string, string> Metadata { get; set; } = new Dictionary<string, string>();
@@ -93,6 +94,11 @@ namespace Nexus.DataModel
                         this.Unit != resource.Unit)
                         throw new Exception("The resources cannot be merged because their units differ.");
 
+                    if (!string.IsNullOrWhiteSpace(this.Description) &&
+                       !string.IsNullOrWhiteSpace(resource.Description) &&
+                       this.Description != resource.Description)
+                        throw new Exception("The resources cannot be merged because their descriptions differ.");
+
                     if (this.Groups is not null && resource.Groups is not null &&
                         this.Groups.SequenceEqual(resource.Groups))
                         throw new Exception("The resources cannot be merged because their groups differ.");
@@ -101,6 +107,7 @@ namespace Nexus.DataModel
                     {
                         Id = string.IsNullOrWhiteSpace(this.Id) ? resource.Id : this.Id,
                         Unit = string.IsNullOrWhiteSpace(this.Unit) ? resource.Unit : this.Unit,
+                        Description = string.IsNullOrWhiteSpace(this.Description) ? resource.Description : this.Description,
                         Groups = this.Groups is null ? resource.Groups : this.Groups,
                         Metadata = mergedMetadata1,
                         Representations = mergedRepresentations
@@ -122,6 +129,7 @@ namespace Nexus.DataModel
                     {
                         Id = resource.Id,
                         Unit = resource.Unit,
+                        Description = resource.Description,
                         Groups = resource.Groups,
                         Metadata = mergedMetadata2,
                         Representations = mergedRepresentations
