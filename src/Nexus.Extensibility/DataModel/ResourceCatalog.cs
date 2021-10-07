@@ -2,17 +2,41 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Nexus.DataModel
 {
     [DebuggerDisplay("{Id,nq}")]
     public record ResourceCatalog
     {
+        #region Fields
+
+        private static Regex _idValidator = new Regex(@"^(?:\/[a-zA-Z][a-zA-Z0-9_]*)+$");
+
+        private string _id;
+
+        #endregion
+
         #region Properties
 
-        public string Id { get; init; }
-        public Dictionary<string, string> Metadata { get; set; } = new Dictionary<string, string>();
-        public List<Resource> Resources { get; init; } = new List<Resource>();
+        public string Id
+        {
+            get
+            {
+                return _id;
+            }
+            init
+            {
+                if (!_idValidator.IsMatch(value))
+                    throw new ArgumentException($"The resource catalog identifier '{value}' is not valid.");
+
+                _id = value;
+            }
+        }
+
+        public Dictionary<string, string>? Metadata { get; set; }
+
+        public List<Resource>? Resources { get; init; }
 
         #endregion
 
@@ -21,7 +45,7 @@ namespace Nexus.DataModel
         public ResourceCatalog Merge(ResourceCatalog catalog, MergeMode mergeMode)
         {
             if (this.Id != catalog.Id)
-                throw new Exception("The catalog to be merged has a different ID.");
+                throw new ArgumentException("The catalogs to be merged have different identifiers.");
 
             // merge resources
             var uniqueIds = catalog.Resources
@@ -29,7 +53,7 @@ namespace Nexus.DataModel
                 .Distinct();
 
             if (uniqueIds.Count() != catalog.Resources.Count)
-                throw new Exception("There are multiple resource with the same identifier.");
+                throw new ArgumentException("There are multiple resource with the same identifier.");
 
             var mergedResources = this.Resources
                 .Select(resource => resource.DeepCopy())

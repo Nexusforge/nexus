@@ -2,20 +2,47 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Nexus.DataModel
 {
     [DebuggerDisplay("{Name,nq}")]
     public record Resource
     {
+        #region Fields
+
+        private static Regex _idValidator = new Regex(@"^[a-zA-Z][a-zA-Z0-9_]*$");
+
+        private string _id;
+
+        #endregion
+
         #region Properties
 
-        public string Id { get; init; }
-        public string Unit { get; init; }
-        public string Description { get; init; }
-        public string[] Groups { get; init; }
-        public List<Representation> Representations { get; init; } = new List<Representation>();
-        public Dictionary<string, string> Metadata { get; set; } = new Dictionary<string, string>();
+        public string Id
+        {
+            get
+            {
+                return _id;
+            }
+            init
+            {
+                if (!_idValidator.IsMatch(value))
+                    throw new ArgumentException($"The resource identifier '{value}' is not valid.");
+
+                _id = value;
+            }
+        }
+
+        public string? Unit { get; init; }
+
+        public string? Description { get; init; }
+
+        public string[]? Groups { get; init; }
+
+        public List<Representation>? Representations { get; init; }
+
+        public Dictionary<string, string>? Metadata { get; set; }
 
         #endregion
 
@@ -23,13 +50,16 @@ namespace Nexus.DataModel
 
         internal Resource Merge(Resource resource, MergeMode mergeMode)
         {
+            if (this.Id != resource.Id)
+                throw new ArgumentException("The resources to be merged have different identifiers.");
+
             // merge representations
             var uniqueIds = resource.Representations
                 .Select(current => current.Id)
                 .Distinct();
 
             if (uniqueIds.Count() != resource.Representations.Count)
-                throw new Exception("There are multiple representations with the same identifier.");
+                throw new ArgumentException("There are multiple representations with the same identifier.");
 
             var mergedRepresentations = this.Representations
                .Select(representation => representation.DeepCopy())

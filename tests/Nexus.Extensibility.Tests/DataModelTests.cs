@@ -16,9 +16,68 @@ namespace Nexus.Extensibility.Tests
         }
 
         [Theory]
+
+        // valid
+        [InlineData("/a", true)]
+        [InlineData("/ab_c", true)]
+        [InlineData("/a9_b/c__99", true)]
+
+        // invalid
+        [InlineData("", false)]
+        [InlineData("/", false)]
+        [InlineData("/a/", false)]
+        [InlineData("/9", false)]
+        [InlineData("a", false)]
+        public void CanValidateCatalogId(string id, bool isValid)
+        {
+            if (isValid)
+                new ResourceCatalog()
+                {
+                    Id = id
+                };
+
+            else
+                Assert.Throws<ArgumentException>(() => new ResourceCatalog()
+                {
+                    Id = id
+                });
+        }
+
+        [Theory]
+
+        // valid
+        [InlineData("temp", true)]
+        [InlineData("Temp", true)]
+        [InlineData("Temp_1", true)]
+
+        // invalid
+        [InlineData("", false)]
+        [InlineData("_temp", false)]
+        [InlineData("1temp", false)]
+        [InlineData("teßp", false)]
+        [InlineData("ª♫", false)]
+        [InlineData("tem p", false)]
+        [InlineData("tem-p", false)]
+        [InlineData("tem*p", false)]
+        public void CanValidateResourceId(string id, bool isValid)
+        {
+            if (isValid)
+                new Resource()
+                {
+                    Id = id
+                };
+
+            else
+                Assert.Throws<ArgumentException>(() => new Resource()
+                {
+                    Id = id
+                });
+        }
+
+        [Theory]
         [InlineData("00:01:00", true)]
         [InlineData("00:00:00", false)]
-        public void CanValidateSamplePeriod(string samplePeriodString, bool isValid)
+        public void CanValidateRepresentationSamplePeriod(string samplePeriodString, bool isValid)
         {
             var samplePeriod = TimeSpan.Parse(samplePeriodString);
 
@@ -55,7 +114,7 @@ namespace Nexus.Extensibility.Tests
         [InlineData("mea n", false)]
         [InlineData("mea-n", false)]
         [InlineData("mea*n", false)]
-        public void CanValidateDetail(string detail, bool isValid)
+        public void CanValidateRepresentationDetail(string detail, bool isValid)
         {
             if (isValid)
                 new Representation() 
@@ -78,7 +137,7 @@ namespace Nexus.Extensibility.Tests
         [InlineData(NexusDataType.FLOAT32, true)]
         [InlineData((NexusDataType)0, false)]
         [InlineData((NexusDataType)9999, false)]
-        public void CanValidateDataType(NexusDataType dataType, bool isValid)
+        public void CanValidateRepresentationDataType(NexusDataType dataType, bool isValid)
         {
             if (isValid)
                 new Representation() 
@@ -100,7 +159,7 @@ namespace Nexus.Extensibility.Tests
         [Theory]
         [InlineData("00:00:01", "mean", "1_s_mean")]
         [InlineData("00:00:01", "", "1_s")]
-        public void CanInferId(string smaplePeriodString, string name, string expected)
+        public void CanInferRepresentationId(string smaplePeriodString, string name, string expected)
         {
             var samplePeriod = TimeSpan.Parse(smaplePeriodString);
             var representation = new Representation() { SamplePeriod = samplePeriod, Detail = name, DataType = NexusDataType.FLOAT32 };
@@ -213,6 +272,134 @@ namespace Nexus.Extensibility.Tests
             var actual = JsonSerializer.Serialize(catalog0_actual);
 
             Assert.Equal(expected, actual);
+        }
+
+        [Fact]
+        public void CatalogMergeThrowsForNonMatchingIdentifiers()
+        {
+            // Arrange
+            var catalog1 = new ResourceCatalog()
+            {
+                Id = "C1"
+            };
+
+            var catalog2 = new ResourceCatalog()
+            {
+                Id = "C2"
+            };
+
+            // Act
+            Action action = () => catalog1.Merge(catalog2, MergeMode.ExclusiveOr);
+
+            // Assert
+            Assert.Throws<ArgumentException>(action);
+        }
+
+        [Fact]
+        public void CatalogMergeThrowsForNonUniqueResource()
+        {
+            // Arrange
+            var catalog1 = new ResourceCatalog() 
+            { 
+                Id = "C1",
+                Resources = new List<Resource>()
+                {
+                    new Resource()
+                    {
+                        Id = "R1",
+                    }
+                }
+            };
+
+            var catalog2 = new ResourceCatalog()
+            {
+                Id = "C1",
+                Resources = new List<Resource>()
+                {
+                    new Resource()
+                    {
+                        Id = "R1",
+                    },
+                    new Resource()
+                    {
+                        Id = "R2",
+                    },
+                    new Resource()
+                    {
+                        Id = "R2",
+                    }
+                }
+            };
+
+            // Act
+            Action action = () => catalog1.Merge(catalog2, MergeMode.ExclusiveOr);
+
+            // Assert
+            Assert.Throws<ArgumentException>(action);
+        }
+
+        [Fact]
+        public void ResourceMergeThrowsForNonUniqueRepresentation()
+        {
+            // Arrange
+            var resource1 = new Resource()
+            {
+                Id = "R1",
+                Representations = new List<Representation>()
+                {
+                    new Representation()
+                    {
+                        Detail = "RP1",
+                    }
+                }
+            };
+
+            var resource2 = new Resource()
+            {
+                Id = "R2",
+                Representations = new List<Representation>()
+                {
+                    new Representation()
+                    {
+                        Detail = "RP1",
+                    },
+                    new Representation()
+                    {
+                        Detail = "RP2",
+                    },
+                    new Representation()
+                    {
+                        Detail = "RP2",
+                    }
+                }
+            };
+
+            // Act
+            Action action = () => resource1.Merge(resource2, MergeMode.ExclusiveOr);
+
+            // Assert
+            Assert.Throws<ArgumentException>(action);
+        }
+
+        [Fact]
+        public void ResourceMergeThrowsForNonMatchingIdentifiers()
+        {
+            // Arrange
+            var resource1 = new Resource()
+            {
+                Id = "R1"
+            };
+
+            var resource2 = new Resource()
+            {
+                Id = "R2"
+            };
+
+            // Act
+            Action action = () => resource1.Merge(resource2, MergeMode.ExclusiveOr);
+
+            // Assert
+            Assert.Throws<ArgumentException>(action);
         }
     }
 }

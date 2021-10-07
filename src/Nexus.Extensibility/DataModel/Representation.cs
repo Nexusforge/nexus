@@ -49,7 +49,7 @@ namespace Nexus.DataModel
             }
         }
 
-        public string Detail
+        public string? Detail
         {
             get
             {
@@ -57,7 +57,7 @@ namespace Nexus.DataModel
             }
             init
             {
-                if (!_detailValidator.IsMatch(value))
+                if (value != null && !_detailValidator.IsMatch(value))
                     throw new ArgumentException($"The representation detail '{value}' is not valid.");
 
                 _detail = value;
