@@ -12,6 +12,8 @@ namespace Nexus.DataModel
         #region Fields
 
         private static Regex _idValidator = new Regex(@"^[a-zA-Z][a-zA-Z0-9_]*$");
+        private static IReadOnlyDictionary<string, string> _emptyProperties = new Dictionary<string, string>();
+        private static IReadOnlyList<Representation> _emptyRepresentations = new List<Representation>();
 
         private IReadOnlyDictionary<string, string>? _properties;
         private IReadOnlyList<Representation>? _representations;
@@ -58,19 +60,24 @@ namespace Nexus.DataModel
             if (this.Id != resource.Id)
                 throw new ArgumentException("The resources to be merged have different identifiers.");
 
+            var newProperties = resource.Properties ?? _emptyProperties;
+            var newRepresentations = resource.Representations ?? _emptyRepresentations;
+            var thisProperties = this.Properties ?? _emptyProperties;
+            var thisRepresentations = this.Representations ?? _emptyRepresentations;
+
             // merge representations
-            var uniqueIds = resource.Representations
+            var uniqueIds = newRepresentations
                 .Select(current => current.Id)
                 .Distinct();
 
-            if (uniqueIds.Count() != resource.Representations.Count)
+            if (uniqueIds.Count() != newRepresentations.Count)
                 throw new ArgumentException("There are multiple representations with the same identifier.");
 
-            var mergedRepresentations = this.Representations
+            var mergedRepresentations = thisRepresentations
                .Select(representation => representation.DeepCopy())
                .ToList();
 
-            foreach (var representation in resource.Representations)
+            foreach (var representation in newRepresentations)
             {
                 var index = mergedRepresentations.FindIndex(current => current.Id == representation.Id);
 
@@ -107,10 +114,10 @@ namespace Nexus.DataModel
             {
                 case MergeMode.ExclusiveOr:
 
-                    var mergedProperties1 = this.Properties
+                    var mergedProperties1 = thisProperties
                         .ToDictionary(entry => entry.Key, entry => entry.Value);
 
-                    foreach (var (key, value) in resource.Properties)
+                    foreach (var (key, value) in newProperties)
                     {
                         if (mergedProperties1.ContainsKey(key))
                             throw new Exception($"The left resource has already the property '{key}'.");
@@ -129,10 +136,10 @@ namespace Nexus.DataModel
 
                 case MergeMode.NewWins:
 
-                    var mergedProperties2 = this.Properties
+                    var mergedProperties2 = thisProperties
                         .ToDictionary(entry => entry.Key, entry => entry.Value);
 
-                    foreach (var (key, value) in resource.Properties)
+                    foreach (var (key, value) in newProperties)
                     {
                         mergedProperties2[key] = value;
                     }

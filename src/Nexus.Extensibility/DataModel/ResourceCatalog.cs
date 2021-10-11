@@ -12,6 +12,10 @@ namespace Nexus.DataModel
         #region Fields
 
         private static Regex _idValidator = new Regex(@"^(?:\/[a-zA-Z][a-zA-Z0-9_]*)+$");
+        private static IReadOnlyDictionary<string, string> _emptyProperties = new Dictionary<string, string>();
+        private static IReadOnlyList<Resource> _emptyResources = new List<Resource>();
+        private static IReadOnlyList<Representation> _emptyRepresentations = new List<Representation>();
+
         private IReadOnlyDictionary<string, string> _properties;
         private IReadOnlyList<Resource>? _resources;
 
@@ -57,19 +61,24 @@ namespace Nexus.DataModel
             if (this.Id != catalog.Id)
                 throw new ArgumentException("The catalogs to be merged have different identifiers.");
 
+            var newProperties = catalog.Properties ?? _emptyProperties;
+            var newResources = catalog.Resources ?? _emptyResources;
+            var thisProperties = this.Properties ?? _emptyProperties;
+            var thisResources = this.Resources ?? _emptyResources;
+
             // merge resources
-            var uniqueIds = catalog.Resources
+            var uniqueIds = newResources
                 .Select(current => current.Id)
                 .Distinct();
 
-            if (uniqueIds.Count() != catalog.Resources.Count)
+            if (uniqueIds.Count() != newResources.Count)
                 throw new ArgumentException("There are multiple resource with the same identifier.");
 
-            var mergedResources = this.Resources
+            var mergedResources = thisResources
                 .Select(resource => resource.DeepCopy())
                 .ToList();
 
-            foreach (var newResource in catalog.Resources)
+            foreach (var newResource in newResources)
             {
                 var index = mergedResources.FindIndex(current => current.Id == newResource.Id);
 
@@ -81,8 +90,8 @@ namespace Nexus.DataModel
                 {
                     mergedResources.Add(new Resource(
                         id: newResource.Id,
-                        representations: newResource.Representations.ToList(),
-                        properties: newResource.Properties.ToDictionary(entry => entry.Key, entry => entry.Value)));
+                        representations: (newResource.Representations ?? _emptyRepresentations).ToList(),
+                        properties: (newResource.Properties ?? _emptyProperties).ToDictionary(entry => entry.Key, entry => entry.Value)));
                 }
             }
 
@@ -93,10 +102,10 @@ namespace Nexus.DataModel
             {
                 case MergeMode.ExclusiveOr:
 
-                    var mergedProperties1 = this.Properties
+                    var mergedProperties1 = thisProperties
                         .ToDictionary(entry => entry.Key, entry => entry.Value);
 
-                    foreach (var (key, value) in catalog.Properties)
+                    foreach (var (key, value) in newProperties)
                     {
                         if (mergedProperties1.ContainsKey(key))
                             throw new Exception($"The left catalog has already the property '{key}'.");
@@ -111,10 +120,10 @@ namespace Nexus.DataModel
 
                 case MergeMode.NewWins:
 
-                    var mergedProperties2 = this.Properties
+                    var mergedProperties2 = thisProperties
                         .ToDictionary(entry => entry.Key, entry => entry.Value);
 
-                    foreach (var (key, value) in catalog.Properties)
+                    foreach (var (key, value) in newProperties)
                     {
                         mergedProperties2[key] = value;
                     }

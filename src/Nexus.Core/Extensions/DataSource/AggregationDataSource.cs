@@ -522,10 +522,10 @@ namespace Nexus.Extensions
                         ? fileNameParts[3]
                         : "";
 
-                    if (!resourceBuilderMap.TryGetValue(id, out var resource))
+                    if (!resourceBuilderMap.TryGetValue(id, out var resourceBuilder))
                     {
-                        resource = new ResourceBuilder(id);
-                        resourceBuilderMap[id] = resource;
+                        resourceBuilder = new ResourceBuilder(id);
+                        resourceBuilderMap[id] = resourceBuilder;
                     }
 
                     var representation = new Representation(
@@ -533,7 +533,7 @@ namespace Nexus.Extensions
                         samplePeriod: samplePeriod, 
                         detail: detail);
 
-                    resource.AddRepresentation(representation);
+                    resourceBuilder.AddRepresentation(representation);
                 });
 
             catalogBuilder.AddResources(resourceBuilderMap.Values.Select(value => value.Build()).ToList());
