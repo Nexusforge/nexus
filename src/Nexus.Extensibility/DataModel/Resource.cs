@@ -6,43 +6,48 @@ using System.Text.RegularExpressions;
 
 namespace Nexus.DataModel
 {
-    [DebuggerDisplay("{Name,nq}")]
+    [DebuggerDisplay("{Id,nq}")]
     public record Resource
     {
         #region Fields
 
         private static Regex _idValidator = new Regex(@"^[a-zA-Z][a-zA-Z0-9_]*$");
 
-        private string _id;
+        private IReadOnlyDictionary<string, string>? _properties;
+        private IReadOnlyList<Representation>? _representations;
+
+        #endregion
+
+        #region Constructors
+
+        public Resource(string id, IReadOnlyDictionary<string, string>? properties = null, IReadOnlyList<Representation>? representations = null)
+        {
+            if (!_idValidator.IsMatch(id))
+                throw new ArgumentException($"The resource identifier '{id}' is not valid.");
+
+            this.Id = id;
+
+            _properties = properties;
+            _representations = representations;
+        }
 
         #endregion
 
         #region Properties
 
-        public string Id
-        {
-            get
-            {
-                return _id;
-            }
-            init
-            {
-                if (!_idValidator.IsMatch(value))
-                    throw new ArgumentException($"The resource identifier '{value}' is not valid.");
+        public string Id { get; }
 
-                _id = value;
-            }
+        public IReadOnlyDictionary<string, string>? Properties
+        {
+            get => _properties;
+            init => _properties = value;
         }
 
-        public string? Unit { get; init; }
-
-        public string? Description { get; init; }
-
-        public string[]? Groups { get; init; }
-
-        public List<Representation>? Representations { get; init; }
-
-        public Dictionary<string, string>? Metadata { get; set; }
+        public IReadOnlyList<Representation>? Representations
+        {
+            get => _representations;
+            init => _representations = value;
+        }
 
         #endregion
 
@@ -102,67 +107,40 @@ namespace Nexus.DataModel
             {
                 case MergeMode.ExclusiveOr:
 
-                    var mergedMetadata1 = this.Metadata
+                    var mergedProperties1 = this.Properties
                         .ToDictionary(entry => entry.Key, entry => entry.Value);
 
-                    foreach (var (key, value) in resource.Metadata)
+                    foreach (var (key, value) in resource.Properties)
                     {
-                        if (mergedMetadata1.ContainsKey(key))
-                            throw new Exception($"The left resource's metadata already contains the key '{key}'.");
+                        if (mergedProperties1.ContainsKey(key))
+                            throw new Exception($"The left resource has already the property '{key}'.");
 
                         else
-                            mergedMetadata1[key] = value;
+                            mergedProperties1[key] = value;
                     }
 
-                    if (!string.IsNullOrWhiteSpace(this.Id) &&
-                        !string.IsNullOrWhiteSpace(resource.Id) &&
-                        this.Id != resource.Id)
-                        throw new Exception("The resources cannot be merged because their names differ.");
-
-                    if (!string.IsNullOrWhiteSpace(this.Unit) &&
-                        !string.IsNullOrWhiteSpace(resource.Unit) &&
-                        this.Unit != resource.Unit)
-                        throw new Exception("The resources cannot be merged because their units differ.");
-
-                    if (!string.IsNullOrWhiteSpace(this.Description) &&
-                       !string.IsNullOrWhiteSpace(resource.Description) &&
-                       this.Description != resource.Description)
-                        throw new Exception("The resources cannot be merged because their descriptions differ.");
-
-                    if (this.Groups is not null && resource.Groups is not null &&
-                        this.Groups.SequenceEqual(resource.Groups))
-                        throw new Exception("The resources cannot be merged because their groups differ.");
-
-                    merged = new Resource()
-                    {
-                        Id = string.IsNullOrWhiteSpace(this.Id) ? resource.Id : this.Id,
-                        Unit = string.IsNullOrWhiteSpace(this.Unit) ? resource.Unit : this.Unit,
-                        Description = string.IsNullOrWhiteSpace(this.Description) ? resource.Description : this.Description,
-                        Groups = this.Groups is null ? resource.Groups : this.Groups,
-                        Metadata = mergedMetadata1,
-                        Representations = mergedRepresentations
+                    merged = resource with
+                    { 
+                        Representations = mergedRepresentations, 
+                        Properties = mergedProperties1 
                     };
 
                     break;
 
                 case MergeMode.NewWins:
 
-                    var mergedMetadata2 = this.Metadata
+                    var mergedProperties2 = this.Properties
                         .ToDictionary(entry => entry.Key, entry => entry.Value);
 
-                    foreach (var (key, value) in resource.Metadata)
+                    foreach (var (key, value) in resource.Properties)
                     {
-                        mergedMetadata2[key] = value;
+                        mergedProperties2[key] = value;
                     }
 
-                    merged = new Resource()
+                    merged = resource with
                     {
-                        Id = resource.Id,
-                        Unit = resource.Unit,
-                        Description = resource.Description,
-                        Groups = resource.Groups,
-                        Metadata = mergedMetadata2,
-                        Representations = mergedRepresentations
+                        Representations = mergedRepresentations,
+                        Properties = mergedProperties2
                     };
 
                     break;
@@ -176,11 +154,10 @@ namespace Nexus.DataModel
 
         internal Resource DeepCopy()
         {
-            return this with
-            {
-                Metadata = this.Metadata.ToDictionary(entry => entry.Key, entry => entry.Value),
-                Representations = this.Representations.Select(representation => representation.DeepCopy()).ToList()
-            };
+            return new Resource(
+                id: this.Id,
+                representations: this.Representations.Select(representation => representation.DeepCopy()).ToList(),
+                properties: this.Properties.ToDictionary(entry => entry.Key, entry => entry.Value));
         }
 
         #endregion

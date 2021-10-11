@@ -1,6 +1,5 @@
 ﻿using Nexus.Core;
 using Nexus.Filters;
-using System;
 using System.Collections.Generic;
 using System.Runtime.Loader;
 

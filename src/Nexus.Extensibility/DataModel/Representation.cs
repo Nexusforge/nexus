@@ -15,9 +15,27 @@ namespace Nexus.DataModel
         private static Regex _detailValidator = new Regex(@"^(?:[a-zA-Z][a-zA-Z0-9_]*)?$");
         private static HashSet<NexusDataType> _nexusDataTypeValues = new HashSet<NexusDataType>(Enum.GetValues<NexusDataType>());
 
-        private TimeSpan _samplePeriod;
-        private string _detail;
-        private NexusDataType _dataType;
+        #endregion
+
+        #region Constructors
+
+        public Representation(NexusDataType dataType, TimeSpan samplePeriod, string? detail = null)
+        {
+            if (!_nexusDataTypeValues.Contains(dataType))
+                throw new ArgumentException($"The identifier '{dataType}' is not valid.");
+
+            this.DataType = dataType;
+
+            if (samplePeriod.Equals(default))
+                throw new ArgumentException($"The sample period '{samplePeriod}' is not valid.");
+
+            this.SamplePeriod = samplePeriod;
+
+            if (detail != null && !_detailValidator.IsMatch(detail))
+                throw new ArgumentException($"The representation detail '{detail}' is not valid.");
+
+            this.Detail = detail;
+        }
 
         #endregion
 
@@ -34,50 +52,11 @@ namespace Nexus.DataModel
             }
         }
 
-        public TimeSpan SamplePeriod
-        {
-            get
-            {
-                return _samplePeriod;
-            }
-            init
-            {
-                if (value.Equals(default))
-                    throw new ArgumentException($"The sample period '{value}' is not valid.");
+        public NexusDataType DataType { get; init; }
 
-                _samplePeriod = value;
-            }
-        }
+        public TimeSpan SamplePeriod { get; init; }
 
-        public string? Detail
-        {
-            get
-            {
-                return _detail;
-            }
-            init
-            {
-                if (value != null && !_detailValidator.IsMatch(value))
-                    throw new ArgumentException($"The representation detail '{value}' is not valid.");
-
-                _detail = value;
-            }
-        }
-
-        public NexusDataType DataType
-        {
-            get
-            {
-                return _dataType;
-            }
-            init
-            {
-                if (!_nexusDataTypeValues.Contains(value))
-                    throw new ArgumentException($"The identifier '{value}' is not valid.");
-
-                _dataType = value;
-            }
-        }
+        public string? Detail { get; init; }
 
         [JsonIgnore]
         public int ElementSize => ((int)this.DataType & 0xFF) >> 3;

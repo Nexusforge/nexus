@@ -44,8 +44,9 @@ namespace DataSource
             // assert
             var actual = catalogs.First(catalog => catalog.Id == "/IN_MEMORY/TEST/ACCESSIBLE");
             var actualIds = actual.Resources.Select(resource => resource.Id).ToList();
-            var actualUnits = actual.Resources.Select(resource => resource.Unit).ToList();
-            var actualGroups = actual.Resources.SelectMany(resource => resource.Groups).ToList();
+            var actualUnits = actual.Resources.Select(resource => resource.Properties["Unit"]).ToList();
+            var actualGroups = actual.Resources.SelectMany(
+                resource => resource.Properties.Where(current => current.Key.StartsWith("Nexus:Groups"))).Select(current => current.Value).ToList();
             var actualDataTypes = actual.Resources.SelectMany(resource => resource.Representations.Select(representation => representation.DataType)).ToList();
 
             var expectedIds = new List<string>() { "T1", "V1", "unix_time1", "unix_time2" };

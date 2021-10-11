@@ -10,9 +10,6 @@
           "Id": "resource1",
           "Unit": "°C",
           "Groups": [ "group1" ],
-          "Metadata": {
-            "c": "d"
-          },
           "Representations": [
             {
               "SamplePeriod": "00:00:01",
@@ -25,9 +22,6 @@
           "Id": "resource2",
           "Unit": "bar",
           "Groups": [ "group2" ],
-          "Metadata": {
-
-          },
           "Representations": [
             {
               "SamplePeriod": "00:00:01",
@@ -40,17 +34,11 @@
     },
     {
       "Id": "/D/E/F",
-      "Metadata": {
-
-      },
       "Resources": [
         {
           "Id": "resource1",
           "Unit": "m/s",
           "Groups": [ "group1" ],
-          "Metadata": {
-
-          },
           "Representations": [
             {
               "SamplePeriod": "00:00:01",

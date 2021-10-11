@@ -1,5 +1,6 @@
 using Nexus.DataModel;
 using System;
+using System.Collections.Generic;
 using Xunit;
 
 namespace Nexus.Extensibility.Tests
@@ -53,20 +54,21 @@ namespace Nexus.Extensibility.Tests
         [Fact]
         public void CanFindCatalogItem()
         {
-            var catalog1 = new ResourceCatalog() { Id = "/A/B/C" };
-            var resource1 = new Resource() { Id = "Resource1" };
+            var representation1 = new Representation(
+                dataType: NexusDataType.FLOAT32,
+                samplePeriod: TimeSpan.FromSeconds(1),
+                detail: "mean");
 
-            var representation1 = new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "mean" };
+            var resource1 = new Resource(id: "Resource1", representations: new List<Representation>() { representation1 });
+            var catalog1 = new ResourceCatalog(id: "/A/B/C", resources: new List<Resource>() { resource1 });
 
-            resource1.Representations.Add(representation1);
-            catalog1.Resources.Add(resource1);
+            var representation2 = new Representation(
+                dataType: NexusDataType.FLOAT32,
+                samplePeriod: TimeSpan.FromSeconds(1),
+                detail: "mean");
 
-            var catalog2 = new ResourceCatalog() { Id = "/D/E/F" };
-            var resource2 = new Resource() { Id = "Resource2" };
-            var representation2 = new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "mean" };
-
-            resource2.Representations.Add(representation2);
-            catalog2.Resources.Add(resource2);
+            var resource2 = new Resource(id: "Resource2", representations: new List<Representation>() { representation2 });
+            var catalog2 = new ResourceCatalog(id: "/D/E/F", resources: new List<Resource>() { resource2 });
 
             var catalogs = new[] { catalog1, catalog2 };
 
@@ -87,20 +89,21 @@ namespace Nexus.Extensibility.Tests
         [Fact]
         public void CanTryFindCatalogItem()
         {
-            var catalog1 = new ResourceCatalog() { Id = "/A/B/C" };
-            var resource1 = new Resource() { Id = "Resource1" };
+            var representation1 = new Representation(
+                dataType: NexusDataType.FLOAT32,
+                samplePeriod: TimeSpan.FromSeconds(1),
+                detail: "mean");
 
-            var representation1 = new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "mean" };
+            var resource1 = new Resource(id: "Resource1", representations: new List<Representation>() { representation1 });
+            var catalog1 = new ResourceCatalog(id: "/A/B/C", resources: new List<Resource>() { resource1 });
 
-            resource1.Representations.Add(representation1);
-            catalog1.Resources.Add(resource1);
+            var representation2 = new Representation(
+               dataType: NexusDataType.FLOAT32,
+               samplePeriod: TimeSpan.FromSeconds(1),
+               detail: "mean");
 
-            var catalog2 = new ResourceCatalog() { Id = "/D/E/F" };
-            var resource2 = new Resource() { Id = "Resource2" };
-            var representation2 = new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "mean" };
-
-            resource2.Representations.Add(representation2);
-            catalog2.Resources.Add(resource2);
+            var resource2 = new Resource(id: "Resource2", representations: new List<Representation>() { representation2 });
+            var catalog2 = new ResourceCatalog(id: "/D/E/F", resources: new List<Resource>() { resource2 });
 
             var catalogs = new[] { catalog1, catalog2 };
 
@@ -123,13 +126,13 @@ namespace Nexus.Extensibility.Tests
         [InlineData("/A/B/D", "Resource1", "1_s_max")]
         public void ThrowsForInvalidResourcePath(string catalogId, string resourceId, string datasetId)
         {
-            var catalog = new ResourceCatalog() { Id = "/A/B/C" };
-            var resource = new Resource() { Id = "Resource1" };
+            var representation = new Representation(
+               dataType: NexusDataType.FLOAT32,
+               samplePeriod: TimeSpan.FromSeconds(1),
+               detail: "mean");
 
-            var representation = new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "mean" };
-
-            resource.Representations.Add(representation);
-            catalog.Resources.Add(resource);
+            var resource = new Resource(id: "Resource1", representations: new List<Representation>() { representation });
+            var catalog = new ResourceCatalog(id: "/A/B/C", resources: new List<Resource>() { resource });
 
             var catalogs = new[] { catalog };
             var catalogItem = new CatalogItem(catalog, resource, representation);

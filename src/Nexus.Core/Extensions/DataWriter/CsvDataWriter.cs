@@ -80,7 +80,7 @@ namespace Nexus.Extensions
                         streamWriter.WriteLine($"# sample_period={samplePeriod.ToUnitString()};");
                         streamWriter.WriteLine($"# catalog_id={catalog.Id};");
 
-                        foreach (var entry in catalog.Metadata)
+                        foreach (var entry in catalog.Properties)
                         {
                             streamWriter.WriteLine($"# {entry.Key}={entry.Value};");
                         }
@@ -130,7 +130,10 @@ namespace Nexus.Extensions
 
                         foreach (var catalogItem in catalogItemGroup)
                         {
-                            streamWriter.Write($"{catalogItem.Resource.Unit};");
+                            if (catalogItem.Resource.Properties.TryGetValue("Unit", out var unit))
+                                streamWriter.Write($"{unit};");
+                            else
+                                streamWriter.Write(";");
                         }
 
                         streamWriter.WriteLine();

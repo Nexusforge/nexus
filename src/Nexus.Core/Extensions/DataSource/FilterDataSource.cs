@@ -158,16 +158,10 @@ namespace Nexus.Extensions
                             };
                         }
 
-                        // create representations
-                        var representations = new List<Representation>()
-                            {
-                                new Representation()
-                                {
-                                    SamplePeriod = filterCodeDefinition.SamplePeriod,
-                                    Detail = "",
-                                    DataType = NexusDataType.FLOAT64
-                                }
-                            };
+                        // create representation
+                        var representation = new Representation(
+                            dataType: NexusDataType.FLOAT64,
+                            samplePeriod: filterCodeDefinition.SamplePeriod);
 
                         // create resource
                         if (!NexusCoreUtilities.CheckNamingConvention(localFilterChannel.ResourceId, out var message))
@@ -176,23 +170,21 @@ namespace Nexus.Extensions
                             continue;
                         }
 
-                        var resource = new Resource()
-                        {
-                            Id = localFilterChannel.ResourceId,
-                            Unit = localFilterChannel.Unit,
-                            Description = localFilterChannel.Description,
-                            Groups = new [] { localFilterChannel.Group },
-                            Representations = representations,
-                        };
+                        var resource = new ResourceBuilder(id: localFilterChannel.ResourceId)
+                            .WithUnit(localFilterChannel.Unit)
+                            .WithDescription(localFilterChannel.Description)
+                            .WithGroups(new string[] { localFilterChannel.Group })
+                            .AddRepresentation(representation)
+                            .Build();
 
                         // get or create catalog
                         if (!catalogs.TryGetValue(localFilterChannel.CatalogId, out var catalog))
-                        {
-                            catalog = new ResourceCatalog() { Id = localFilterChannel.CatalogId };
-                            catalogs[localFilterChannel.CatalogId] = catalog;
-                        }
+                            catalog = new ResourceCatalog(id: localFilterChannel.CatalogId, resources: new List<Resource>() { resource });
 
-                        catalog.Resources.Add(resource);
+                        else
+                            catalog = catalog with { Resources = new List<Resource>() { resource } };
+
+                        catalogs[localFilterChannel.CatalogId] = catalog;
                     }
                 }
             }

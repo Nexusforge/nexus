@@ -31,16 +31,10 @@ namespace Nexus.Extensibility.Tests
         public void CanValidateCatalogId(string id, bool isValid)
         {
             if (isValid)
-                new ResourceCatalog()
-                {
-                    Id = id
-                };
+                new ResourceCatalog(id: id);
 
             else
-                Assert.Throws<ArgumentException>(() => new ResourceCatalog()
-                {
-                    Id = id
-                });
+                Assert.Throws<ArgumentException>(() => new ResourceCatalog(id: id));
         }
 
         [Theory]
@@ -62,16 +56,10 @@ namespace Nexus.Extensibility.Tests
         public void CanValidateResourceId(string id, bool isValid)
         {
             if (isValid)
-                new Resource()
-                {
-                    Id = id
-                };
+                new Resource(id: id);
 
             else
-                Assert.Throws<ArgumentException>(() => new Resource()
-                {
-                    Id = id
-                });
+                Assert.Throws<ArgumentException>(() => new Resource(id: id));
         }
 
         [Theory]
@@ -82,20 +70,16 @@ namespace Nexus.Extensibility.Tests
             var samplePeriod = TimeSpan.Parse(samplePeriodString);
 
             if (isValid)
-                new Representation()
-                {
-                    SamplePeriod = samplePeriod,
-                    Detail = "mean",
-                    DataType = NexusDataType.FLOAT64
-                };
+                new Representation(
+                    dataType: NexusDataType.FLOAT64,
+                    samplePeriod: samplePeriod,
+                    detail: "mean");
 
             else
-                Assert.Throws<ArgumentException>(() => new Representation()
-                {
-                    SamplePeriod = samplePeriod,
-                    Detail = "mean",
-                    DataType = NexusDataType.FLOAT64
-                });
+                Assert.Throws<ArgumentException>(() => new Representation(
+                    dataType: NexusDataType.FLOAT64,
+                    samplePeriod: samplePeriod,
+                    detail: "mean"));
         }
 
         [Theory]
@@ -117,20 +101,16 @@ namespace Nexus.Extensibility.Tests
         public void CanValidateRepresentationDetail(string detail, bool isValid)
         {
             if (isValid)
-                new Representation() 
-                {
-                    SamplePeriod = TimeSpan.FromSeconds(1),
-                    Detail = detail, 
-                    DataType = NexusDataType.FLOAT64 
-                };
+                new Representation(
+                    dataType: NexusDataType.FLOAT64,
+                    samplePeriod: TimeSpan.FromSeconds(1),
+                    detail: detail);
 
             else
-                Assert.Throws<ArgumentException>(() => new Representation()
-                {
-                    SamplePeriod = TimeSpan.FromSeconds(1),
-                    Detail = detail,
-                    DataType = NexusDataType.FLOAT64
-                });
+                Assert.Throws<ArgumentException>(() => new Representation(
+                    dataType: NexusDataType.FLOAT64,
+                    samplePeriod: TimeSpan.FromSeconds(1),
+                    detail: detail));
         }
 
         [Theory]
@@ -140,20 +120,16 @@ namespace Nexus.Extensibility.Tests
         public void CanValidateRepresentationDataType(NexusDataType dataType, bool isValid)
         {
             if (isValid)
-                new Representation() 
-                { 
-                    SamplePeriod = TimeSpan.FromSeconds(1),
-                    Detail = "mean", 
-                    DataType = dataType
-                };
+                new Representation(
+                     dataType: dataType,
+                     samplePeriod: TimeSpan.FromSeconds(1),
+                     detail: "mean");
 
             else
-                Assert.Throws<ArgumentException>(() => new Representation() 
-                { 
-                    SamplePeriod = TimeSpan.FromSeconds(1),
-                    Detail = "mean",
-                    DataType = dataType 
-                });
+                Assert.Throws<ArgumentException>(() => new Representation(
+                     dataType: dataType,
+                     samplePeriod: TimeSpan.FromSeconds(1),
+                     detail: "mean"));
         }
 
         [Theory]
@@ -162,7 +138,12 @@ namespace Nexus.Extensibility.Tests
         public void CanInferRepresentationId(string smaplePeriodString, string name, string expected)
         {
             var samplePeriod = TimeSpan.Parse(smaplePeriodString);
-            var representation = new Representation() { SamplePeriod = samplePeriod, Detail = name, DataType = NexusDataType.FLOAT32 };
+
+            var representation = new Representation(
+                dataType: NexusDataType.FLOAT32,
+                samplePeriod: samplePeriod,
+                detail: name);
+
             var actual = representation.Id;
 
             Assert.Equal(expected, actual);
@@ -174,43 +155,23 @@ namespace Nexus.Extensibility.Tests
             // arrange
 
             // prepare catalog 0
-            var catalog0_V0 = _fixture.Catalog0_V0 with { Resources = new List<Resource>() };
-            var resource0_V0 = _fixture.Resource0_V0 with { Representations = new List<Representation>() };
-            var resource1_V0 = _fixture.Resource1_V0 with { Representations = new List<Representation>() };
             var representation0_V0 = _fixture.Representation0_V0;
             var representation1_V0 = _fixture.Representation1_V0;
-
-            resource0_V0.Representations.Add(representation0_V0);
-            resource0_V0.Representations.Add(representation1_V0);
-
-            catalog0_V0.Resources.Add(resource0_V0);
-            catalog0_V0.Resources.Add(resource1_V0);
+            var resource0_V0 = _fixture.Resource0_V0 with { Representations = new List<Representation>() { representation0_V0, representation1_V0 } };
+            var resource1_V0 = _fixture.Resource1_V0 with { Representations = new List<Representation>() };
+            var catalog0_V0 = _fixture.Catalog0_V0 with { Resources = new List<Resource>() { resource0_V0, resource1_V0 } };
 
             // prepare catalog 1
-            var catalog0_V1 = _fixture.Catalog0_V1 with { Resources = new List<Resource>() };
-            var resource0_V1 = _fixture.Resource0_V1 with { Representations = new List<Representation>() };
-            var resource2_V0 = _fixture.Resource2_V0 with { Representations = new List<Representation>() };
             var representation0_V1 = _fixture.Representation0_V1;
             var representation2_V0 = _fixture.Representation2_V0;
-
-            resource0_V1.Representations.Add(representation0_V1);
-            resource0_V1.Representations.Add(representation2_V0);
-
-            catalog0_V1.Resources.Add(resource0_V1);
-            catalog0_V1.Resources.Add(resource2_V0);
+            var resource0_V1 = _fixture.Resource0_V1 with { Representations = new List<Representation>() { representation0_V1, representation2_V0 } };
+            var resource2_V0 = _fixture.Resource2_V0 with { Representations = new List<Representation>() };
+            var catalog0_V1 = _fixture.Catalog0_V1 with { Resources = new List<Resource>() { resource0_V1, resource2_V0 } };
 
             // prepare merged
-            var catalog0_Vnew = _fixture.Catalog0_Vmerged with { Resources = new List<Resource>() };
-            var resource0_Vnew = _fixture.Resource0_Vmerged with { Representations = new List<Representation>() };
             var representation0_Vnew = _fixture.Representation0_Vmerged;
-
-            resource0_Vnew.Representations.Add(representation0_Vnew);
-            resource0_Vnew.Representations.Add(representation1_V0);
-            resource0_Vnew.Representations.Add(representation2_V0);
-
-            catalog0_Vnew.Resources.Add(resource0_Vnew);
-            catalog0_Vnew.Resources.Add(resource1_V0);
-            catalog0_Vnew.Resources.Add(resource2_V0);
+            var resource0_Vnew = _fixture.Resource0_Vmerged with { Representations = new List<Representation>() { representation0_Vnew, representation1_V0, representation2_V0 } };
+            var catalog0_Vnew = _fixture.Catalog0_Vmerged with { Resources = new List<Resource>() { resource0_Vnew, resource1_V0, resource2_V0 } };
 
             // act
             var catalog0_actual = catalog0_V0.Merge(catalog0_V1, MergeMode.NewWins);
@@ -228,41 +189,22 @@ namespace Nexus.Extensibility.Tests
             // arrange
 
             // prepare catalog 0
-            var catalog0_V0 = _fixture.Catalog0_V0 with { Resources = new List<Resource>() };
-            var resource0_V0 = _fixture.Resource0_V0 with { Representations = new List<Representation>() };
-            var resource1_V0 = _fixture.Resource1_V0 with { Representations = new List<Representation>() };
             var representation0_V0 = _fixture.Representation0_V0;
             var representation1_V0 = _fixture.Representation1_V0;
-
-            resource0_V0.Representations.Add(representation0_V0);
-            resource0_V0.Representations.Add(representation1_V0);
-
-            catalog0_V0.Resources.Add(resource0_V0);
-            catalog0_V0.Resources.Add(resource1_V0);
+            var resource0_V0 = _fixture.Resource0_V0 with { Representations = new List<Representation>() { representation0_V0, representation1_V0 } };
+            var resource1_V0 = _fixture.Resource1_V0 with { Representations = new List<Representation>() };
+            var catalog0_V0 = _fixture.Catalog0_V0 with { Resources = new List<Resource>() { resource0_V0, resource1_V0 } };
 
             // prepare catalog 1
-            var catalog0_V2 = _fixture.Catalog0_V2 with { Resources = new List<Resource>() };
-            var resource0_V2 = _fixture.Resource0_V2 with { Representations = new List<Representation>() };
-            var resource2_V0 = _fixture.Resource2_V0 with { Representations = new List<Representation>() };
             var representation2_V0 = _fixture.Representation2_V0;
-
-            resource0_V2.Representations.Add(representation2_V0);
-
-            catalog0_V2.Resources.Add(resource0_V2);
-            catalog0_V2.Resources.Add(resource2_V0);
+            var resource0_V2 = _fixture.Resource0_V2 with { Representations = new List<Representation>() { representation2_V0 } };
+            var resource2_V0 = _fixture.Resource2_V0 with { Representations = new List<Representation>() };
+            var catalog0_V2 = _fixture.Catalog0_V2 with { Resources = new List<Resource>() { resource0_V2, resource2_V0 } };
 
             // prepare merged
-            var catalog0_Vxor = _fixture.Catalog0_Vxor with { Resources = new List<Resource>() };
-            var resource0_Vxor = _fixture.Resource0_Vxor with { Representations = new List<Representation>() };
             var representation0_Vxor = _fixture.Representation0_Vxor;
-
-            resource0_Vxor.Representations.Add(representation0_Vxor);
-            resource0_Vxor.Representations.Add(representation1_V0);
-            resource0_Vxor.Representations.Add(representation2_V0);
-
-            catalog0_Vxor.Resources.Add(resource0_Vxor);
-            catalog0_Vxor.Resources.Add(resource1_V0);
-            catalog0_Vxor.Resources.Add(resource2_V0);
+            var resource0_Vxor = _fixture.Resource0_Vxor with { Representations = new List<Representation>() { representation0_Vxor, representation1_V0, representation2_V0 } };
+            var catalog0_Vxor = _fixture.Catalog0_Vxor with { Resources = new List<Resource>() { resource0_Vxor, resource1_V0, resource2_V0 } };
 
             // act
             var catalog0_actual = catalog0_V0.Merge(catalog0_V2, MergeMode.ExclusiveOr);
@@ -278,15 +220,8 @@ namespace Nexus.Extensibility.Tests
         public void CatalogMergeThrowsForNonMatchingIdentifiers()
         {
             // Arrange
-            var catalog1 = new ResourceCatalog()
-            {
-                Id = "C1"
-            };
-
-            var catalog2 = new ResourceCatalog()
-            {
-                Id = "C2"
-            };
+            var catalog1 = new ResourceCatalog(id: "/C1");
+            var catalog2 = new ResourceCatalog(id: "/C2");
 
             // Act
             Action action = () => catalog1.Merge(catalog2, MergeMode.ExclusiveOr);
@@ -299,37 +234,21 @@ namespace Nexus.Extensibility.Tests
         public void CatalogMergeThrowsForNonUniqueResource()
         {
             // Arrange
-            var catalog1 = new ResourceCatalog() 
-            { 
-                Id = "C1",
-                Resources = new List<Resource>()
+            var catalog1 = new ResourceCatalog(
+                id: "/C1",
+                resources: new List<Resource>()
                 {
-                    new Resource()
-                    {
-                        Id = "R1",
-                    }
-                }
-            };
+                    new Resource(id: "R1")
+                });
 
-            var catalog2 = new ResourceCatalog()
-            {
-                Id = "C1",
-                Resources = new List<Resource>()
+            var catalog2 = new ResourceCatalog(
+                id: "/C1",
+                resources: new List<Resource>()
                 {
-                    new Resource()
-                    {
-                        Id = "R1",
-                    },
-                    new Resource()
-                    {
-                        Id = "R2",
-                    },
-                    new Resource()
-                    {
-                        Id = "R2",
-                    }
-                }
-            };
+                    new Resource(id: "R1"),
+                    new Resource(id: "R2"),
+                    new Resource(id: "R2")
+                });
 
             // Act
             Action action = () => catalog1.Merge(catalog2, MergeMode.ExclusiveOr);
@@ -342,37 +261,21 @@ namespace Nexus.Extensibility.Tests
         public void ResourceMergeThrowsForNonUniqueRepresentation()
         {
             // Arrange
-            var resource1 = new Resource()
-            {
-                Id = "R1",
-                Representations = new List<Representation>()
-                {
-                    new Representation()
-                    {
-                        Detail = "RP1",
-                    }
-                }
-            };
+            var resource1 = new Resource(
+                id: "R1",
+                representations: new List<Representation>() 
+                { 
+                    new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(1), detail: "RP1") 
+                });
 
-            var resource2 = new Resource()
-            {
-                Id = "R2",
-                Representations = new List<Representation>()
+            var resource2 = new Resource(
+                id: "R2",
+                representations: new List<Representation>()
                 {
-                    new Representation()
-                    {
-                        Detail = "RP1",
-                    },
-                    new Representation()
-                    {
-                        Detail = "RP2",
-                    },
-                    new Representation()
-                    {
-                        Detail = "RP2",
-                    }
-                }
-            };
+                    new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(1), detail: "RP1"),
+                    new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(1), detail: "RP2"),
+                    new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(1), detail: "RP3")
+                });
 
             // Act
             Action action = () => resource1.Merge(resource2, MergeMode.ExclusiveOr);
@@ -385,15 +288,8 @@ namespace Nexus.Extensibility.Tests
         public void ResourceMergeThrowsForNonMatchingIdentifiers()
         {
             // Arrange
-            var resource1 = new Resource()
-            {
-                Id = "R1"
-            };
-
-            var resource2 = new Resource()
-            {
-                Id = "R2"
-            };
+            var resource1 = new Resource(id: "R1");
+            var resource2 = new Resource(id: "R2");
 
             // Act
             Action action = () => resource1.Merge(resource2, MergeMode.ExclusiveOr);

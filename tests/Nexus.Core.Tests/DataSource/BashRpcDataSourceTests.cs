@@ -54,31 +54,25 @@ namespace DataSource
             var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
 
             // assert
-            var actualMetadata1 = catalogs.First().Metadata;
+            var actualProperties1 = catalogs.First().Properties;
             var actual = catalogs.First(catalog => catalog.Id == "/A/B/C");
             var actualIds = actual.Resources.Select(resource => resource.Id).ToList();
-            var actualUnits = actual.Resources.Select(resource => resource.Unit).ToList();
-            var actualGroups = actual.Resources.SelectMany(resource => resource.Groups).ToList();
-            var actualMetadata2 = actual.Resources.Select(resource => resource.Metadata).ToList();
+            var actualUnits = actual.Resources.Select(resource => resource.Properties["Unit"]).ToList();
+            var actualGroups = actual.Resources.SelectMany(
+                resource => resource.Properties.Where(current => current.Value.StartsWith("Nexus:Groups"))).Select(current => current.Value).ToList();
             var actualDataTypes = actual.Resources.SelectMany(resource => resource.Representations.Select(representation => representation.DataType)).ToList();
 
-            var expectedMetadata1 = new Dictionary<string, string>() { ["a"] = "b" };
+            var expectedProperties1 = new Dictionary<string, string>() { ["a"] = "b" };
             var expectedIds = new List<string>() { "resource1", "resource2" };
             var expectedUnits = new List<string>() { "°C", "bar" };
             var expectedGroups = new List<string>() { "group1", "group2" };
             var expectedDataTypes = new List<NexusDataType>() { NexusDataType.INT64, NexusDataType.FLOAT64 };
-            var expectedMetadata2 = new List<Dictionary<string, string>>() { new Dictionary<string, string>() { ["c"] = "d" }, new Dictionary<string, string>() };
 
-            Assert.True(actualMetadata1.SequenceEqual(expectedMetadata1));
+            Assert.True(actualProperties1.SequenceEqual(expectedProperties1));
             Assert.True(expectedIds.SequenceEqual(actualIds));
             Assert.True(expectedUnits.SequenceEqual(actualUnits));
             Assert.True(expectedGroups.SequenceEqual(actualGroups));
             Assert.True(expectedDataTypes.SequenceEqual(actualDataTypes));
-
-            for (int i = 0; i < expectedMetadata2.Count; i++)
-            {
-                Assert.True(expectedMetadata2[i].SequenceEqual(actualMetadata2[i]));
-            }
         }
 
 #if LINUX

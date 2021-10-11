@@ -346,7 +346,7 @@ namespace Nexus.Extensions
 
         private ResourceCatalog ScanFiles(string catalogId, string currentMonthFolder, AggregationVersioning versioning)
         {
-            var catalog = new ResourceCatalog() { Id = catalogId };
+            var catalog = new ResourceCatalog(catalogId);
 
             if (Directory.Exists(currentMonthFolder))
             {
@@ -503,8 +503,8 @@ namespace Nexus.Extensions
 
         private ResourceCatalog GetCatalog(string catalogId, string dayFolder)
         {
-            var catalog = new ResourceCatalog() { Id = catalogId };
-            var resourceMap = new Dictionary<string, Resource>();
+            var catalogBuilder = new ResourceCatalogBuilder(id: catalogId);
+            var resourceBuilderMap = new Dictionary<string, ResourceBuilder>();
 
             Directory
                 .EnumerateFiles(dayFolder, "*.nex", SearchOption.TopDirectoryOnly)
@@ -522,25 +522,23 @@ namespace Nexus.Extensions
                         ? fileNameParts[3]
                         : "";
 
-                    if (!resourceMap.TryGetValue(id, out var resource))
+                    if (!resourceBuilderMap.TryGetValue(id, out var resource))
                     {
-                        resource = new Resource() { Id = id };
-                        resourceMap[id] = resource;
+                        resource = new ResourceBuilder(id);
+                        resourceBuilderMap[id] = resource;
                     }
 
-                    var representation = new Representation()
-                    {
-                        SamplePeriod = samplePeriod,
-                        Detail = detail,
-                        DataType = NexusDataType.FLOAT64
-                    };
+                    var representation = new Representation(
+                        dataType: NexusDataType.FLOAT64,
+                        samplePeriod: samplePeriod, 
+                        detail: detail);
 
-                    resource.Representations.Add(representation);
+                    resource.AddRepresentation(representation);
                 });
 
-            catalog.Resources.AddRange(resourceMap.Values.ToList());
+            catalogBuilder.AddResources(resourceBuilderMap.Values.Select(value => value.Build()).ToList());
 
-            return catalog;
+            return catalogBuilder.Build();
         }
 
         #endregion

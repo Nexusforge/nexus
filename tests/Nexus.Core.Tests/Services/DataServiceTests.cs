@@ -28,9 +28,9 @@ namespace Services
 
             var backendSourceToCatalogsMap = new Dictionary<BackendSource, ResourceCatalog[]>()
             {
-                [backendSource1] = new[] { new ResourceCatalog() { Id = "/A/B/C" }, new ResourceCatalog() { Id = "/D/E/F" } },
-                [backendSource2] = new[] { new ResourceCatalog() { Id = "/G/H/I" }, new ResourceCatalog() { Id = "/J/K/L" } },
-                [backendSource3] = new[] { new ResourceCatalog() { Id = "/M/N/O" }, new ResourceCatalog() { Id = "/A/B/C" } }
+                [backendSource1] = new[] { new ResourceCatalog(id: "/A/B/C"), new ResourceCatalog(id: "/D/E/F")},
+                [backendSource2] = new[] { new ResourceCatalog(id: "/G/H/I"), new ResourceCatalog(id: "/J/K/L")},
+                [backendSource3] = new[] { new ResourceCatalog(id: "/M/N/O"), new ResourceCatalog(id: "/A/B/C")}
             };
 
             var data1 = new Dictionary<DateTime, double> { [begin.AddDays(0)] = 0.5, [begin.AddDays(1)] = 0.9 };
@@ -173,28 +173,22 @@ namespace Services
             var logger = Mock.Of<ILogger<DataService>>();
 
             // catalog items
-            var representation1 = new Representation() 
+            var representation1 = new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: samplePeriod, detail: "E") 
             { 
-                SamplePeriod = samplePeriod, 
-                Detail = "E",
-                DataType = NexusDataType.FLOAT32,
                 BackendSource = backendSource1
             };
 
-            var resource1 = new Resource() { Id = "Resource1" };
-            var catalog1 = new ResourceCatalog() { Id = "/A/B/C" };
+            var resource1 = new Resource(id: "Resource1");
+            var catalog1 = new ResourceCatalog(id: "/A/B/C");
             var catalogItem1 = new CatalogItem(catalog1, resource1, representation1);
 
-            var representation2 = new Representation() 
+            var representation2 = new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: samplePeriod, detail: "J") 
             { 
-                SamplePeriod = samplePeriod,
-                Detail = "J", 
-                DataType = NexusDataType.FLOAT32,
                 BackendSource = backendSource2
             };
 
-            var resource2 = new Resource() { Id = "Resource2" };
-            var catalog2 = new ResourceCatalog() { Id = "/F/G/H" };
+            var resource2 = new Resource(id: "Resource2");
+            var catalog2 = new ResourceCatalog(id: "/F/G/H");
             var catalogItem2 = new CatalogItem(catalog2, resource2, representation2);
 
             // export parameters

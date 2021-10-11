@@ -47,8 +47,9 @@ namespace DataSource
             // assert
             var actual = catalogs.First(catalog => catalog.Id == "/IN_MEMORY/FILTERS/SHARED");
             var actualIds = actual.Resources.Select(resource => resource.Id).ToList();
-            var actualUnits = actual.Resources.Select(resource => resource.Unit).ToList();
-            var actualGroups = actual.Resources.SelectMany(resource => resource.Groups).ToList();
+            var actualUnits = actual.Resources.Select(resource => resource.Properties["Unit"]).ToList();
+            var actualGroups = actual.Resources.SelectMany(
+                resource => resource.Properties.Where(current => current.Value.StartsWith("Nexus:Groups"))).Select(current => current.Value).ToList();
             var actualDataTypes = actual.Resources.SelectMany(resource => resource.Representations.Select(representation => representation.DataType)).ToList();
 
             var expectedIds = new List<string>() { "T1_squared" };
@@ -107,13 +108,15 @@ namespace DataSource
         public async Task CanReadFullDay()
         {
             // setup catalog collection
-            var representation = new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "mean", DataType = NexusDataType.FLOAT64 };
+            var representation = new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromSeconds(1), detail: "mean" );
 
-            var resource = new Resource() { Id = "T1" };
-            resource.Representations.Add(representation);
+            var resourceBuilder = new ResourceBuilder("T1");
+            resourceBuilder.AddRepresentation(representation);
 
-            var catalog = new ResourceCatalog() { Id = "/IN_MEMORY/TEST/ACCESSIBLE" };
-            catalog.Resources.Add(resource);
+            var catalogBuilder = new ResourceCatalogBuilder(id: "/IN_MEMORY/TEST/ACCESSIBLE");
+            catalogBuilder.AddResource(resourceBuilder.Build());
+
+            var catalog = catalogBuilder.Build();
 
             var catalogCollection = new CatalogCollection(new List<CatalogContainer>()
             {

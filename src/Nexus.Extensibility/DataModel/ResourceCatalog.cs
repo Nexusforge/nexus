@@ -12,31 +12,41 @@ namespace Nexus.DataModel
         #region Fields
 
         private static Regex _idValidator = new Regex(@"^(?:\/[a-zA-Z][a-zA-Z0-9_]*)+$");
+        private IReadOnlyDictionary<string, string> _properties;
+        private IReadOnlyList<Resource>? _resources;
 
-        private string _id;
+        #endregion
+
+        #region Constructors
+
+        public ResourceCatalog(string id, IReadOnlyDictionary<string, string>? properties = null, IReadOnlyList<Resource>? resources = null)
+        {
+            if (!_idValidator.IsMatch(id))
+                throw new ArgumentException($"The resource catalog identifier '{id}' is not valid.");
+
+            this.Id = id;
+
+            _properties = properties;
+            _resources = resources;
+        }
 
         #endregion
 
         #region Properties
 
-        public string Id
-        {
-            get
-            {
-                return _id;
-            }
-            init
-            {
-                if (!_idValidator.IsMatch(value))
-                    throw new ArgumentException($"The resource catalog identifier '{value}' is not valid.");
+        public string Id { get; }
 
-                _id = value;
-            }
+        public IReadOnlyDictionary<string, string>? Properties
+        {
+            get => _properties;
+            init => _properties = value;
         }
 
-        public Dictionary<string, string>? Metadata { get; set; }
-
-        public List<Resource>? Resources { get; init; }
+        public IReadOnlyList<Resource>? Resources
+        {
+            get => _resources;
+            init => _resources = value;
+        }
 
         #endregion
 
@@ -69,11 +79,10 @@ namespace Nexus.DataModel
                 }
                 else
                 {
-                    mergedResources.Add(newResource with
-                    {
-                        Metadata = newResource.Metadata.ToDictionary(entry => entry.Key, entry => entry.Value),
-                        Representations = newResource.Representations.ToList()
-                    });
+                    mergedResources.Add(new Resource(
+                        id: newResource.Id,
+                        representations: newResource.Representations.ToList(),
+                        properties: newResource.Properties.ToDictionary(entry => entry.Key, entry => entry.Value)));
                 }
             }
 
@@ -84,43 +93,33 @@ namespace Nexus.DataModel
             {
                 case MergeMode.ExclusiveOr:
 
-                    var mergedMetadata1 = this.Metadata
+                    var mergedProperties1 = this.Properties
                         .ToDictionary(entry => entry.Key, entry => entry.Value);
 
-                    foreach (var (key, value) in catalog.Metadata)
+                    foreach (var (key, value) in catalog.Properties)
                     {
-                        if (mergedMetadata1.ContainsKey(key))
-                            throw new Exception($"The left catalog's metadata already contains the key '{key}'.");
+                        if (mergedProperties1.ContainsKey(key))
+                            throw new Exception($"The left catalog has already the property '{key}'.");
 
                         else
-                            mergedMetadata1[key] = value;
+                            mergedProperties1[key] = value;
                     }
 
-                    merged = new ResourceCatalog()
-                    {
-                        Id = this.Id,
-                        Metadata = mergedMetadata1,
-                        Resources = mergedResources
-                    };
+                    merged = new ResourceCatalog(id: this.Id, resources: mergedResources, properties: mergedProperties1);
 
                     break;
 
                 case MergeMode.NewWins:
 
-                    var mergedMetadata2 = this.Metadata
+                    var mergedProperties2 = this.Properties
                         .ToDictionary(entry => entry.Key, entry => entry.Value);
 
-                    foreach (var (key, value) in catalog.Metadata)
+                    foreach (var (key, value) in catalog.Properties)
                     {
-                        mergedMetadata2[key] = value;
+                        mergedProperties2[key] = value;
                     }
 
-                    merged = new ResourceCatalog()
-                    {
-                        Id = this.Id,
-                        Metadata = mergedMetadata2,
-                        Resources = mergedResources
-                    };
+                    merged = new ResourceCatalog(id: this.Id, resources: mergedResources, properties: mergedProperties2);
 
                     break;
 

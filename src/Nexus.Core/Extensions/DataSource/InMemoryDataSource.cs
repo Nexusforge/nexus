@@ -111,36 +111,45 @@ namespace Nexus.Extensions
 
         private ResourceCatalog LoadCatalog(string catalogId)
         {
-            var catalog = new ResourceCatalog() { Id = catalogId };
+            var representation1 = new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromSeconds(1), detail: "mean");
+            var representation2 = new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromSeconds(1), detail: "mean");
+            var representation3 = new Representation(dataType: NexusDataType.INT32, samplePeriod: TimeSpan.FromMilliseconds(40), detail: "");
+            var representation4 = new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromSeconds(1), detail: "max");
+            var representation5 = new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromSeconds(1), detail: "mean");
 
-            var resourceA = new Resource() { Id = "T1", Unit = "°C", Description = "Test resource A", Groups = new[] { "Group 1" } };
-            var resourceB = new Resource() { Id = "V1", Unit = "m/s", Description = "Test resource B", Groups = new[] { "Group 1" } };
-            var resourceC = new Resource() { Id = "unix_time1", Unit = "", Description = "Test resource C", Groups = new[] { "Group 2" } };
-            var resourceD = new Resource() { Id = "unix_time2", Unit = "", Description = "Test resource D", Groups = new[] { "Group 2" } };
+            var resourceBuilderA = new ResourceBuilder(id: "T1")
+                .WithUnit("°C")
+                .WithDescription("Test Resource A")
+                .WithGroups("Group 1")
+                .AddRepresentation(representation1);
 
-            var representation1 = new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "mean", DataType = NexusDataType.FLOAT64 };
-            var representation2 = new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "mean", DataType = NexusDataType.FLOAT64 };
-            var representation3 = new Representation() { SamplePeriod = TimeSpan.FromMilliseconds(40), Detail = "", DataType = NexusDataType.INT32 };
-            var representation4 = new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "max", DataType = NexusDataType.FLOAT64 };
-            var representation5 = new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "mean", DataType = NexusDataType.FLOAT64 };
+            var resourceBuilderB = new ResourceBuilder(id: "V1")
+                .WithUnit("m/s")
+                .WithDescription("Test Resource B")
+                .WithGroups("Group 1")
+                .AddRepresentation(representation2);
 
-            // resource A
-            resourceA.Representations.Add(representation1);
-            resourceB.Representations.Add(representation2);
-            resourceC.Representations.Add(representation3);
-            resourceD.Representations.Add(representation4);
-            resourceD.Representations.Add(representation5);
+            var resourceBuilderC = new ResourceBuilder(id: "unix_time1")
+                .WithDescription("Test Resource C")
+                .WithGroups("Group 2")
+                .AddRepresentation(representation3);
 
-            // catalog
-            catalog.Resources.AddRange(new List<Resource>()
+            var resourceBuilderD = new ResourceBuilder(id: "unix_time2")
+                .WithDescription("Test Resource D")
+                .WithGroups("Group 2")
+                .AddRepresentations(representation4, representation5);
+
+            var catalogBuilder = new ResourceCatalogBuilder(catalogId);
+
+            catalogBuilder.AddResources(new List<Resource>()
             {
-                resourceA,
-                resourceB,
-                resourceC,
-                resourceD
+                resourceBuilderA.Build(),
+                resourceBuilderB.Build(),
+                resourceBuilderC.Build(),
+                resourceBuilderD.Build()
             });
 
-            return catalog;
+            return catalogBuilder.Build();
         }
 
         #endregion

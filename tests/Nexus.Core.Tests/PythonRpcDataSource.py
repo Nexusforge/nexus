@@ -33,7 +33,7 @@ class PythonDataSource(IDataSource):
 
             # catalog 1
             catalog1_resource1_representations = [Representation(timedelta(seconds=1), "mean", NexusDataType.INT64)]
-            catalog1_resource1_meta = { "c": "d" }
+            catalog1_resource1_meta = { "c": "d" } // remove this!!
             catalog1_resource1 = Resource("resource1", "°C", ["group1"], catalog1_resource1_meta, catalog1_resource1_representations)
 
             catalog1_resource2_representations = [Representation(timedelta(seconds=1), "mean", NexusDataType.FLOAT64)]

@@ -14,62 +14,33 @@ namespace DataWriter
             // catalog 1
             var representations1 = new List<Representation>()
             {
-                new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "mean", DataType = NexusDataType.FLOAT32 },
-                new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "max", DataType = NexusDataType.FLOAT64 },
+                new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(1), detail: "mean"),
+                new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromSeconds(1), detail: "max"),
             };
 
-            var resourceMetadata1 = new Dictionary<string, string>()
-            {
-                ["my-custom-parameter3"] = "my-custom-value3"
-            };
+            var resourceBuilder1 = new ResourceBuilder(id: "resource1")
+                .WithUnit("°C")
+                .WithGroups("group1")
+                .AddRepresentations(representations1);
 
-            var resources1 = new List<Resource>()
-            {
-                new Resource()
-                {
-                    Id = "resource1",
-                    Unit = "°C",
-                    Groups = new[] { "group1" },
-                    Metadata = resourceMetadata1,
-                    Representations = representations1
-                }
-            };
-
-            var catalog1 = new ResourceCatalog()
-            {
-                Id = "/A/B/C",
-                Resources = resources1
-            };
-
-            catalog1.Metadata["my-custom-parameter1"] = "my-custom-value1";
-            catalog1.Metadata["my-custom-parameter2"] = "my-custom-value2";
+            var catalogBuilder1 = new ResourceCatalogBuilder(id: "/A/B/C")
+                .WithProperty("my-custom-parameter1", "my-custom-value1")
+                .WithProperty("my-custom-parameter2", "my-custom-value2")
+                .AddResource(resourceBuilder1.Build());
 
             // catalog 2
-            var representations2 = new List<Representation>()
-            {
-                new Representation() { SamplePeriod = TimeSpan.FromSeconds(1), Detail = "std", DataType = NexusDataType.INT64 },
-            };
+            var representation2 = new Representation(dataType: NexusDataType.INT64, samplePeriod: TimeSpan.FromSeconds(1), detail: "std");
 
-            var resources2 = new List<Resource>()
-            {
-                new Resource()
-                {
-                    Id = "resource3",
-                    Unit = "m/s",
-                    Groups = new[] { "group2" },
-                    Representations = representations2
-                }
-            };
+            var resourceBuilder2 = new ResourceBuilder(id: "resource3")
+                .WithUnit("m/s")
+                .WithGroups("group2")
+                .AddRepresentation(representation2);
 
-            var catalog2 = new ResourceCatalog()
-            {
-                Id = "/D/E/F",
-                Resources = resources2
-            };
+            var catalogBuilder2 = new ResourceCatalogBuilder(id: "/D/E/F")
+                .WithProperty("my-custom-parameter3", "my-custom-value3")
+                .AddResource(resourceBuilder2.Build());
 
-            catalog2.Metadata["my-custom-parameter3"] = "my-custom-value3";
-
-            this.Catalogs = new[] { catalog1, catalog2 };
+            this.Catalogs = new[] { catalogBuilder1.Build(), catalogBuilder2.Build() };
         }
 
 
