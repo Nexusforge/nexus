@@ -1,5 +1,5 @@
 #!/bin/bash
-# test command = dotnet test --filter BashRpcDataSourceTests.CanProvideTimeRange ./tests/Nexus.Core.Tests/Nexus.Core.Tests.csproj
+# test command = dotnet test --filter BashRpcDataSourceTests ./tests/Nexus.Core.Tests/Nexus.Core.Tests.csproj
 
 # quit on error
 set -o errexit
