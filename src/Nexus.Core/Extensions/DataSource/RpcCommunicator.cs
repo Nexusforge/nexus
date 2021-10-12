@@ -72,9 +72,7 @@ namespace Nexus.Extensions
                 _process.ErrorDataReceived += (sender, e) => 
                 {
                     if (!string.IsNullOrWhiteSpace(e.Data))
-                    {
                         _logger.LogWarning(e.Data);
-                    }
                 };
 
                 _process.BeginErrorReadLine();
