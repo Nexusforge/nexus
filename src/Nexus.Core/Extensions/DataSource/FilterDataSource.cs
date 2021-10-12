@@ -173,13 +173,15 @@ namespace Nexus.Extensions
                         var resource = new ResourceBuilder(id: localFilterChannel.ResourceId)
                             .WithUnit(localFilterChannel.Unit)
                             .WithDescription(localFilterChannel.Description)
-                            .WithGroups(new string[] { localFilterChannel.Group })
+                            .WithGroups(localFilterChannel.Group)
                             .AddRepresentation(representation)
                             .Build();
 
                         // get or create catalog
                         if (!catalogs.TryGetValue(localFilterChannel.CatalogId, out var catalog))
-                            catalog = new ResourceCatalog(id: localFilterChannel.CatalogId, resources: new List<Resource>() { resource });
+                            catalog = new ResourceCatalogBuilder(id: localFilterChannel.CatalogId)
+                                .AddResource(resource)
+                                .Build();
 
                         else
                             catalog = catalog with { Resources = new List<Resource>() { resource } };

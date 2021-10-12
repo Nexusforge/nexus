@@ -49,7 +49,7 @@ namespace DataSource
             var actualIds = actual.Resources.Select(resource => resource.Id).ToList();
             var actualUnits = actual.Resources.Select(resource => resource.Properties["Unit"]).ToList();
             var actualGroups = actual.Resources.SelectMany(
-                resource => resource.Properties.Where(current => current.Value.StartsWith("Nexus:Groups"))).Select(current => current.Value).ToList();
+                resource => resource.Properties.Where(current => current.Key.StartsWith("Groups"))).Select(current => current.Value).ToList();
             var actualDataTypes = actual.Resources.SelectMany(resource => resource.Representations.Select(representation => representation.DataType)).ToList();
 
             var expectedIds = new List<string>() { "T1_squared" };

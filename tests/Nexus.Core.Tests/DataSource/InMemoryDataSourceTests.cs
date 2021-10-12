@@ -44,13 +44,13 @@ namespace DataSource
             // assert
             var actual = catalogs.First(catalog => catalog.Id == "/IN_MEMORY/TEST/ACCESSIBLE");
             var actualIds = actual.Resources.Select(resource => resource.Id).ToList();
-            var actualUnits = actual.Resources.Select(resource => resource.Properties["Unit"]).ToList();
+            var actualUnits = actual.Resources.Select(resource => resource.Properties.GetValueOrDefault("Unit")).ToList();
             var actualGroups = actual.Resources.SelectMany(
-                resource => resource.Properties.Where(current => current.Key.StartsWith("Nexus:Groups"))).Select(current => current.Value).ToList();
+                resource => resource.Properties.Where(current => current.Key.StartsWith("Groups"))).Select(current => current.Value).ToList();
             var actualDataTypes = actual.Resources.SelectMany(resource => resource.Representations.Select(representation => representation.DataType)).ToList();
 
             var expectedIds = new List<string>() { "T1", "V1", "unix_time1", "unix_time2" };
-            var expectedUnits = new List<string>() { "°C", "m/s", "", "" };
+            var expectedUnits = new List<string>() { "°C", "m/s", null, null };
             var expectedGroups = new List<string>() { "Group 1", "Group 1", "Group 2", "Group 2" };
             var expectedDataTypes = new List<NexusDataType>() { NexusDataType.FLOAT64, NexusDataType.FLOAT64, NexusDataType.INT32, NexusDataType.FLOAT64, NexusDataType.FLOAT64 };
 

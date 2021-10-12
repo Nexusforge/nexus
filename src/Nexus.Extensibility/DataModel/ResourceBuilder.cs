@@ -47,7 +47,7 @@ namespace Nexus.DataModel
 
         public ResourceBuilder AddRepresentations(params Representation[] representations)
         {
-            return this.AddRepresentations(representations);
+            return this.AddRepresentations((IEnumerable<Representation>)representations);
         }
 
         public ResourceBuilder AddRepresentations(IEnumerable<Representation> representations)

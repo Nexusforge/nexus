@@ -1,10 +1,7 @@
-import array
-import base64
 import enum
 import json
 import socket
 import struct
-import sys
 import time
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
@@ -13,7 +10,7 @@ from threading import Lock
 from typing import Awaitable, Dict, List, Tuple
 from urllib.parse import ParseResult, urlparse
 
-from PythonRpcDataModel import Catalog, Representation
+from PythonRpcDataModel import ResourceCatalog
 
 
 class LogLevel(enum.Enum):
@@ -53,9 +50,9 @@ class DataSourceContext:
     resource_locator: ParseResult
     configuration: Dict[str, str]
 
-    catalogs: List[Catalog]
+    catalogs: List[ResourceCatalog]
 
-    def __init__(self, resource_locator: ParseResult, configuration: Dict[str, str], logger: Logger, catalogs: List[Catalog]):
+    def __init__(self, resource_locator: ParseResult, configuration: Dict[str, str], logger: Logger, catalogs: List[ResourceCatalog]):
         self.resource_locator = resource_locator
         self.configuration = configuration
         self.logger = logger
@@ -67,7 +64,7 @@ class IDataSource(ABC):
         pass
 
     @abstractmethod
-    async def get_catalogs_async(self) -> Awaitable[List[Catalog]]:
+    async def get_catalogs_async(self) -> Awaitable[List[ResourceCatalog]]:
         pass
 
     @abstractmethod
@@ -171,7 +168,7 @@ class RpcCommunicator:
             response["id"] = request["id"]
 
             # send response
-            jsonResponse = json.dumps(response, default=lambda x: self._serializeJson(x), ensure_ascii = False)          
+            jsonResponse = json.dumps(response, default=lambda x: self._serializeJson(x), ensure_ascii = False)
             encodedResponse = jsonResponse.encode()
 
             with self._lock:
@@ -273,4 +270,4 @@ class RpcCommunicator:
             return x.isoformat()
 
         else:
-            return x.__dict__
+            return {key.lstrip('_'): value for key, value in vars(x).items()}

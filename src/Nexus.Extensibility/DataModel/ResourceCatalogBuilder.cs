@@ -45,7 +45,7 @@ namespace Nexus.DataModel
 
         public ResourceCatalogBuilder AddResources(params Resource[] resources)
         {
-            return this.AddResources(resources);
+            return this.AddResources((IEnumerable<Resource>)resources);
         }
 
         public ResourceCatalogBuilder AddResources(IEnumerable<Resource> resources)

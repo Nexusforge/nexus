@@ -60,7 +60,7 @@ namespace Nexus.Extensibility.Tests
                 .WithDescription("D_1")
                 .WithProperty("R_0_A", "A_1")
                 .WithProperty("R_0_B", "B_0")
-                .WithProperty("Nexus:Groups:0", "G_1")
+                .WithProperty("Groups:0", "G_1")
                 .WithProperty("R_0_C", "C_0")
                 .Build();
 
@@ -69,7 +69,7 @@ namespace Nexus.Extensibility.Tests
                 .WithDescription("D_0")
                 .WithProperty("R_0_A", "A_0")
                 .WithProperty("R_0_B", "B_0")
-                .WithProperty("Nexus:Groups:0", "G_1")
+                .WithProperty("Groups:0", "G_1")
                 .WithProperty("R_0_C", "C_0")
                 .Build();
 

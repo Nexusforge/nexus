@@ -55,7 +55,7 @@ namespace DataSource
             var actualIds = actual.Resources.Select(resource => resource.Id).ToList();
             var actualUnits = actual.Resources.Select(resource => resource.Properties["Unit"]).ToList();
             var actualGroups = actual.Resources.SelectMany(
-                resource => resource.Properties.Where(current => current.Key.StartsWith("Nexus:Groups"))).Select(current => current.Value).ToList();
+                resource => resource.Properties.Where(current => current.Key.StartsWith("Groups"))).Select(current => current.Value).ToList();
             var actualDataTypes = actual.Resources.SelectMany(resource => resource.Representations.Select(representation => representation.DataType)).ToList();
 
             var expectedProperties1 = new Dictionary<string, string>() { ["a"] = "b" };
@@ -78,14 +78,15 @@ namespace DataSource
 
             var representation = new Representation(dataType: NexusDataType.INT32, samplePeriod: TimeSpan.FromSeconds(1));
 
-            var resourceBuilder = new ResourceBuilder(id: "resource 1")
+            var resource = new ResourceBuilder(id: "resource1")
                 .WithUnit("unit 1")
-                .WithGroups("group 1");
+                .WithGroups("group 1")
+                .AddRepresentation(representation)
+                .Build();
 
-            resourceBuilder.AddRepresentation(representation);
-
-            var catalogBuilder = new ResourceCatalogBuilder(id: "/M/F/G");
-            catalogBuilder.AddResources(resourceBuilder.Build());
+            var catalog = new ResourceCatalogBuilder(id: "/M/F/G")
+                .AddResources(resource)
+                .Build();
 
             var dataSource = new RpcDataSource() as IDataSource;
 
@@ -100,7 +101,7 @@ namespace DataSource
                     ["listen-port"] = "44444",
                 },
                 Logger = _logger,
-                Catalogs = new [] { catalogBuilder.Build() }
+                Catalogs = new [] { catalog }
             };
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
@@ -114,10 +115,10 @@ namespace DataSource
             var actualIds = actual.Resources.Select(resource => resource.Id).ToList();
             var actualUnits = actual.Resources.Select(resource => resource.Properties["Unit"]).ToList();
             var actualGroups = actual.Resources.SelectMany(
-                resource => resource.Properties.Where(current => current.Key.StartsWith("Nexus:Groups"))).Select(current => current.Value).ToList();
+                resource => resource.Properties.Where(current => current.Key.StartsWith("Groups"))).Select(current => current.Value).ToList();
             var actualDataTypes = actual.Resources.SelectMany(resource => resource.Representations.Select(representation => representation.DataType)).ToList();
 
-            var expectedIds = new List<string>() { "resource 1" };
+            var expectedIds = new List<string>() { "resource1" };
             var expectedUnits = new List<string>() { "unit 1" };
             var expectedGroups = new List<string>() { "group 1" };
             var expectedDataTypes = new List<NexusDataType>() { NexusDataType.INT32 };

@@ -7,7 +7,8 @@ from array import array
 from datetime import datetime, timedelta, timezone
 from urllib.request import url2pathname
 
-from PythonRpcDataModel import Catalog, NexusDataType, Representation, Resource
+from PythonRpcDataModel import (NexusDataType, Representation, ResourceBuilder,
+                                ResourceCatalogBuilder)
 from PythonRpcExtensibility import IDataSource, LogLevel, RpcCommunicator
 
 
@@ -32,20 +33,39 @@ class PythonDataSource(IDataSource):
         if (self._context.catalogs is None):
 
             # catalog 1
-            catalog1_resource1_representations = [Representation(timedelta(seconds=1), "mean", NexusDataType.INT64)]
-            catalog1_resource1_meta = { "c": "d" } // remove this!!
-            catalog1_resource1 = Resource("resource1", "°C", ["group1"], catalog1_resource1_meta, catalog1_resource1_representations)
+            representation = Representation(NexusDataType.INT64, timedelta(seconds=1), "mean")
 
-            catalog1_resource2_representations = [Representation(timedelta(seconds=1), "mean", NexusDataType.FLOAT64)]
-            catalog1_resource2 = Resource("resource2", "bar", ["group2"], { }, catalog1_resource2_representations)
+            resource1 = ResourceBuilder("resource1") \
+                .WithUnit("°C") \
+                .WithGroups(["group1"]) \
+                .AddRepresentation(representation) \
+                .Build()
 
-            catalog1 = Catalog("/A/B/C", metadata = { "a": "b" }, resources = [catalog1_resource1, catalog1_resource2])
+            representation = Representation(NexusDataType.FLOAT64, timedelta(seconds=1), "mean")
+
+            resource2 = ResourceBuilder("resource2") \
+                .WithUnit("bar") \
+                .WithGroups(["group2"]) \
+                .AddRepresentation(representation) \
+                .Build()
+
+            catalog1 = ResourceCatalogBuilder("/A/B/C") \
+                .WithProperty("a", "b") \
+                .AddResources([resource1, resource2]) \
+                .Build()
 
             # catalog 2
-            catalog2_resource1_representations = [Representation(timedelta(seconds=1), "mean", NexusDataType.FLOAT32)]
-            catalog2_resource1 = Resource("resource1", "m/s", ["group1"], { }, catalog2_resource1_representations)
+            representation = Representation(NexusDataType.FLOAT32, timedelta(seconds=1), "mean")
 
-            catalog2 = Catalog("/D/E/F", metadata = {}, resources = [catalog2_resource1])
+            resource = ResourceBuilder("resource1") \
+                .WithUnit("m/s") \
+                .WithGroups(["group1"]) \
+                .AddRepresentation(representation) \
+                .Build()
+
+            catalog2 = ResourceCatalogBuilder("/D/E/F") \
+                .AddResource(resource) \
+                .Build()
 
             #
             self._context.catalogs = [catalog1, catalog2]
@@ -159,7 +179,7 @@ class PythonDataSource(IDataSource):
         catalog = next((catalog for catalog in self._context.catalogs if catalog.Id == catalogId), None)
 
         if catalog is None:
-            raise Exception(f"Catalog '{catalogId}' not found.")
+            raise Exception(f"ResourceCatalog '{catalogId}' not found.")
         
         resource = next((resource for resource in catalog.Resources if resource.Id == resourceId), None)
 

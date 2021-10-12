@@ -11,7 +11,17 @@ namespace Nexus.DataModel
 
         public static ResourceCatalogBuilder WithShortDescription(this ResourceCatalogBuilder catalogBuilder, string shortDescription)
         {
-            return catalogBuilder.WithProperty("Nexus:ShortDescription", shortDescription);
+            return catalogBuilder.WithProperty("ShortDescription", shortDescription);
+        }
+
+        public static ResourceCatalogBuilder WithLicense(this ResourceCatalogBuilder catalogBuilder, string license)
+        {
+            return catalogBuilder.WithProperty("License", license);
+        }
+
+        public static ResourceCatalogBuilder WithContact(this ResourceCatalogBuilder catalogBuilder, string contact)
+        {
+            return catalogBuilder.WithProperty("Contact", contact);
         }
 
         public static ResourceBuilder WithUnit(this ResourceBuilder resourceBuilder, string unit)
@@ -26,7 +36,7 @@ namespace Nexus.DataModel
 
         public static ResourceBuilder WithGroups(this ResourceBuilder resourceBuilder, params string[] groups)
         {
-            return resourceBuilder.WithGroups(groups);
+            return resourceBuilder.WithGroups((IEnumerable<string>)groups);
         }
 
         public static ResourceBuilder WithGroups(this ResourceBuilder resourceBuilder, IEnumerable<string> groups)
@@ -35,7 +45,7 @@ namespace Nexus.DataModel
 
             foreach (var group in groups)
             {
-                resourceBuilder.WithProperty($"Nexus:Groups:{counter}", group);
+                resourceBuilder.WithProperty($"Groups:{counter}", group);
                 counter++;
             }
 

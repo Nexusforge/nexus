@@ -17,30 +17,13 @@ namespace Nexus.DataModel
         Month
     }
 
-    public enum CatalogLicensingScheme
-    {
-        None = 0,
-        ManualRequest = 1,
-        AcceptLicense = 2
-    }
-
     public record CatalogProperties
     {
         public string Id { get; set; }
-        public string Contact { get; set; }
         public bool IsQualityControlled { get; set; }
         public bool IsHidden { get; set; }
-        public CatalogLicense License { get; set; }
         public List<string> Logbook { get; set; }
         public List<string> GroupMemberships { get; set; }
-    }
-
-    public record CatalogLicense
-    {
-        public CatalogLicensingScheme LicensingScheme { get; init; } = CatalogLicensingScheme.None;
-        public string DisplayMessage { get; init; } = string.Empty;
-        public string FileMessage { get; init; } = string.Empty;
-        public string Url { get; init; } = string.Empty;
     }
 
     public record AvailabilityResult
