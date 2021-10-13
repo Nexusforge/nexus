@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -17,19 +16,6 @@ namespace Nexus.Extensibility.Tests
         public record CatalogDescription()
         {
             public Dictionary<string, FileSource> Config { get; init; }
-        }
-
-        class TimeSpanConverter : JsonConverter<TimeSpan>
-        {
-            public override TimeSpan Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-            {
-                return TimeSpan.Parse(reader.GetString());
-            }
-
-            public override void Write(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options)
-            {
-                writer.WriteStringValue(value.ToString());
-            }
         }
 
         #endregion

@@ -30,6 +30,10 @@ namespace Nexus.DataModel
             this.Id = id;
 
             _properties = properties;
+
+            if (representations is not null)
+                this.ValidateRepresentations(representations);
+
             _representations = representations;
         }
 
@@ -47,8 +51,18 @@ namespace Nexus.DataModel
 
         public IReadOnlyList<Representation>? Representations
         {
-            get => _representations;
-            init => _representations = value;
+            get
+            {
+                return _representations;
+            }
+
+            init
+            {
+                if (value is not null)
+                    this.ValidateRepresentations(value);
+
+                _representations = value;
+            }
         }
 
         #endregion
@@ -66,13 +80,6 @@ namespace Nexus.DataModel
             var thisRepresentations = this.Representations ?? _emptyRepresentations;
 
             // merge representations
-            var uniqueIds = newRepresentations
-                .Select(current => current.Id)
-                .Distinct();
-
-            if (uniqueIds.Count() != newRepresentations.Count)
-                throw new ArgumentException("There are multiple representations with the same identifier.");
-
             var mergedRepresentations = thisRepresentations
                .Select(representation => representation.DeepCopy())
                .ToList();
@@ -127,9 +134,9 @@ namespace Nexus.DataModel
                     }
 
                     merged = resource with
-                    { 
-                        Representations = mergedRepresentations, 
-                        Properties = mergedProperties1 
+                    {
+                        Properties = mergedProperties1.Any() ? mergedProperties1 : null,
+                        Representations = mergedRepresentations.Any() ? mergedRepresentations : null
                     };
 
                     break;
@@ -146,8 +153,8 @@ namespace Nexus.DataModel
 
                     merged = resource with
                     {
-                        Representations = mergedRepresentations,
-                        Properties = mergedProperties2
+                        Properties = mergedProperties2.Any() ? mergedProperties2 : null,
+                        Representations = mergedRepresentations.Any() ? mergedRepresentations : null
                     };
 
                     break;
@@ -163,8 +170,22 @@ namespace Nexus.DataModel
         {
             return new Resource(
                 id: this.Id,
-                representations: this.Representations.Select(representation => representation.DeepCopy()).ToList(),
-                properties: this.Properties.ToDictionary(entry => entry.Key, entry => entry.Value));
+                representations: this.Representations is null 
+                    ? null
+                    : this.Representations.Select(representation => representation.DeepCopy()).ToList(),
+                properties: this.Properties is null
+                    ? null
+                    : this.Properties.ToDictionary(entry => entry.Key, entry => entry.Value));
+        }
+
+        private void ValidateRepresentations(IReadOnlyList<Representation> representations)
+        {
+            var uniqueIds = representations
+                .Select(current => current.Id)
+                .Distinct();
+
+            if (uniqueIds.Count() != representations.Count)
+                throw new ArgumentException("There are multiple representations with the same identifier.");
         }
 
         #endregion

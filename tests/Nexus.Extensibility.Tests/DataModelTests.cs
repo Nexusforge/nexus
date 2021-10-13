@@ -158,27 +158,36 @@ namespace Nexus.Extensibility.Tests
             var representation0_V0 = _fixture.Representation0_V0;
             var representation1_V0 = _fixture.Representation1_V0;
             var resource0_V0 = _fixture.Resource0_V0 with { Representations = new List<Representation>() { representation0_V0, representation1_V0 } };
-            var resource1_V0 = _fixture.Resource1_V0 with { Representations = new List<Representation>() };
-            var catalog0_V0 = _fixture.Catalog0_V0 with { Resources = new List<Resource>() { resource0_V0, resource1_V0 } };
+            var resource1_V0 = _fixture.Resource1_V0 with { Representations = null };
+            var resource3_V0 = _fixture.Resource3_V0 with { Representations = null };
+            var resource4_V0 = _fixture.Resource4_V0 with { Representations = new List<Representation>() { representation0_V0, representation1_V0 } };
+            var catalog0_V0 = _fixture.Catalog0_V0 with { Resources = new List<Resource>() { resource0_V0, resource1_V0, resource3_V0, resource4_V0 } };
 
             // prepare catalog 1
             var representation0_V1 = _fixture.Representation0_V1;
             var representation2_V0 = _fixture.Representation2_V0;
             var resource0_V1 = _fixture.Resource0_V1 with { Representations = new List<Representation>() { representation0_V1, representation2_V0 } };
-            var resource2_V0 = _fixture.Resource2_V0 with { Representations = new List<Representation>() };
-            var catalog0_V1 = _fixture.Catalog0_V1 with { Resources = new List<Resource>() { resource0_V1, resource2_V0 } };
+            var resource2_V0 = _fixture.Resource2_V0 with { Representations = null };
+            var resource3_V1 = _fixture.Resource3_V1 with { Representations = new List<Representation>() { representation0_V1, representation1_V0 } };
+            var resource4_V1 = _fixture.Resource4_V1 with { Representations = null };
+            var catalog0_V1 = _fixture.Catalog0_V1 with { Resources = new List<Resource>() { resource0_V1, resource2_V0, resource3_V1, resource4_V1 } };
 
             // prepare merged
             var representation0_Vnew = _fixture.Representation0_Vmerged;
             var resource0_Vnew = _fixture.Resource0_Vmerged with { Representations = new List<Representation>() { representation0_Vnew, representation1_V0, representation2_V0 } };
-            var catalog0_Vnew = _fixture.Catalog0_Vmerged with { Resources = new List<Resource>() { resource0_Vnew, resource1_V0, resource2_V0 } };
+            var resource3_Vnew = _fixture.Resource3_Vmerged with { Representations = new List<Representation>() { representation0_V1, representation1_V0 } };
+            var resource4_Vnew = _fixture.Resource4_Vmerged with { Representations = new List<Representation>() { representation0_V0, representation1_V0 } };
+            var catalog0_Vnew = _fixture.Catalog0_Vmerged with { Resources = new List<Resource>() { resource0_Vnew, resource1_V0, resource3_Vnew, resource4_Vnew, resource2_V0 } };
 
             // act
             var catalog0_actual = catalog0_V0.Merge(catalog0_V1, MergeMode.NewWins);
 
             // assert
-            var expected = JsonSerializer.Serialize(catalog0_Vnew);
-            var actual = JsonSerializer.Serialize(catalog0_actual);
+            var options = new JsonSerializerOptions();
+            options.Converters.Add(new TimeSpanConverter());
+
+            var expected = JsonSerializer.Serialize(catalog0_Vnew, options);
+            var actual = JsonSerializer.Serialize(catalog0_actual, options);
 
             Assert.Equal(expected, actual);
         }
@@ -231,27 +240,20 @@ namespace Nexus.Extensibility.Tests
         }
 
         [Fact]
-        public void CatalogMergeThrowsForNonUniqueResource()
+        public void CatalogConstructorThrowsForNonUniqueResource()
         {
-            // Arrange
-            var catalog1 = new ResourceCatalog(
-                id: "/C1",
-                resources: new List<Resource>()
-                {
-                    new Resource(id: "R1")
-                });
-
-            var catalog2 = new ResourceCatalog(
-                id: "/C1",
-                resources: new List<Resource>()
-                {
-                    new Resource(id: "R1"),
-                    new Resource(id: "R2"),
-                    new Resource(id: "R2")
-                });
-
             // Act
-            Action action = () => catalog1.Merge(catalog2, MergeMode.ExclusiveOr);
+            Action action = () =>
+            {
+                var catalog = new ResourceCatalog(
+                    id: "/C",
+                    resources: new List<Resource>()
+                    {
+                        new Resource(id: "R1"),
+                        new Resource(id: "R2"),
+                        new Resource(id: "R2")
+                    });
+            };
 
             // Assert
             Assert.Throws<ArgumentException>(action);

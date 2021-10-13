@@ -51,9 +51,9 @@ namespace Nexus.Extensibility.Tests
                 .Build();
 
             this.Resource0_V2 = new ResourceBuilder(id: "Resource0")
-               .WithGroups("G_1")
-               .WithProperty("R_0_C", "C_0")
-               .Build();
+                .WithGroups("G_1")
+                .WithProperty("R_0_C", "C_0")
+                .Build();
 
             this.Resource0_Vmerged = new ResourceBuilder(id: "Resource0")
                 .WithUnit("U_1")
@@ -89,6 +89,14 @@ namespace Nexus.Extensibility.Tests
                 .WithProperty("R_2_B", "B_0")
                 .Build();
 
+            this.Resource3_V0 = new Resource(id: "Resource3");
+            this.Resource3_V1 = Resource3_V0;
+            this.Resource3_Vmerged = Resource3_V0;
+
+            this.Resource4_V0 = new Resource(id: "Resource4");
+            this.Resource4_V1 = Resource4_V0;
+            this.Resource4_Vmerged = Resource4_V0;
+
             // representations
             this.Representation0_V0 = new Representation(
                 dataType: NexusDataType.FLOAT32,
@@ -102,7 +110,7 @@ namespace Nexus.Extensibility.Tests
 
             this.Representation1_V0 = new Representation(
                dataType: NexusDataType.FLOAT64,
-               samplePeriod: TimeSpan.FromMinutes(10));
+               samplePeriod: TimeSpan.FromMinutes(20));
 
             this.Representation2_V0 = new Representation(
                dataType: NexusDataType.UINT16,
@@ -122,6 +130,12 @@ namespace Nexus.Extensibility.Tests
         public Resource Resource0_Vxor { get; }
         public Resource Resource1_V0 { get; }
         public Resource Resource2_V0 { get; }
+        public Resource Resource3_V0 { get; }
+        public Resource Resource3_V1 { get; }
+        public Resource Resource3_Vmerged { get; }
+        public Resource Resource4_V0 { get; }
+        public Resource Resource4_V1 { get; }
+        public Resource Resource4_Vmerged { get; }
 
         public Representation Representation0_V0 { get; }
         public Representation Representation0_V1 { get; }

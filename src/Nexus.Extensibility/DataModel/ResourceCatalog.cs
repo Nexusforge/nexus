@@ -30,6 +30,9 @@ namespace Nexus.DataModel
 
             this.Id = id;
 
+            if (resources is not null)
+                this.ValidateResources(resources);
+
             _properties = properties;
             _resources = resources;
         }
@@ -48,8 +51,18 @@ namespace Nexus.DataModel
 
         public IReadOnlyList<Resource>? Resources
         {
-            get => _resources;
-            init => _resources = value;
+            get
+            {
+                return _resources;
+            }
+
+            init
+            {
+                if (value is not null)
+                    this.ValidateResources(value);
+
+                _resources = value;
+            }
         }
 
         #endregion
@@ -67,13 +80,6 @@ namespace Nexus.DataModel
             var thisResources = this.Resources ?? _emptyResources;
 
             // merge resources
-            var uniqueIds = newResources
-                .Select(current => current.Id)
-                .Distinct();
-
-            if (uniqueIds.Count() != newResources.Count)
-                throw new ArgumentException("There are multiple resource with the same identifier.");
-
             var mergedResources = thisResources
                 .Select(resource => resource.DeepCopy())
                 .ToList();
@@ -88,10 +94,11 @@ namespace Nexus.DataModel
                 }
                 else
                 {
-                    mergedResources.Add(new Resource(
-                        id: newResource.Id,
-                        representations: (newResource.Representations ?? _emptyRepresentations).ToList(),
-                        properties: (newResource.Properties ?? _emptyProperties).ToDictionary(entry => entry.Key, entry => entry.Value)));
+                    mergedResources.Add(newResource with
+                    {
+                        Properties = newResource.Properties?.ToDictionary(entry => entry.Key, entry => entry.Value),
+                        Representations = newResource.Representations?.ToList()
+                    });
                 }
             }
 
@@ -114,7 +121,11 @@ namespace Nexus.DataModel
                             mergedProperties1[key] = value;
                     }
 
-                    merged = new ResourceCatalog(id: this.Id, resources: mergedResources, properties: mergedProperties1);
+                    merged = catalog with
+                    {
+                        Properties = mergedProperties1.Any() ? mergedProperties1 : null,
+                        Resources = mergedResources.Any() ? mergedResources : null
+                    };
 
                     break;
 
@@ -128,7 +139,11 @@ namespace Nexus.DataModel
                         mergedProperties2[key] = value;
                     }
 
-                    merged = new ResourceCatalog(id: this.Id, resources: mergedResources, properties: mergedProperties2);
+                    merged = catalog with
+                    {
+                        Properties = mergedProperties2.Any() ? mergedProperties2 : null,
+                        Resources = mergedResources.Any() ? mergedResources : null
+                    };
 
                     break;
 
@@ -171,6 +186,16 @@ namespace Nexus.DataModel
                 throw new Exception($"The resource path '{resourcePath}' could not be found.");
 
             return catalogItem;
+        }
+
+        private void ValidateResources(IReadOnlyList<Resource> resources)
+        {
+            var uniqueIds = resources
+                .Select(current => current.Id)
+                .Distinct();
+
+            if (uniqueIds.Count() != resources.Count)
+                throw new ArgumentException("There are multiple resource with the same identifier.");
         }
 
         #endregion
