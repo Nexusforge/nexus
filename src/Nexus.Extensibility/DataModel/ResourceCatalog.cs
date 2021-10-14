@@ -14,7 +14,6 @@ namespace Nexus.DataModel
         private static Regex _idValidator = new Regex(@"^(?:\/[a-zA-Z][a-zA-Z0-9_]*)+$");
         private static IReadOnlyDictionary<string, string> _emptyProperties = new Dictionary<string, string>();
         private static IReadOnlyList<Resource> _emptyResources = new List<Resource>();
-        private static IReadOnlyList<Representation> _emptyRepresentations = new List<Representation>();
 
         private IReadOnlyDictionary<string, string> _properties;
         private IReadOnlyList<Resource>? _resources;
@@ -41,7 +40,7 @@ namespace Nexus.DataModel
 
         #region Properties
 
-        public string Id { get; }
+        public string Id { get; init;  }
 
         public IReadOnlyDictionary<string, string>? Properties
         {
