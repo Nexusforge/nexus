@@ -108,7 +108,7 @@ namespace Nexus.Extensions
                     // (5.a) cache file exists
                     if (File.Exists(cacheFilePath))
                     {
-                        cache = JsonSerializerHelper.Deserialize<List<ResourceCatalog>>(cacheFilePath);
+                        cache = JsonSerializerHelper.DeserializeFile<List<ResourceCatalog>>(cacheFilePath);
 
                         foreach (var catalogId in catalogIds)
                         {
@@ -172,7 +172,7 @@ namespace Nexus.Extensions
 
                         foreach (var cacheFile in cacheFiles)
                         {
-                            var cache = JsonSerializerHelper.Deserialize<List<ResourceCatalog>>(cacheFile);
+                            var cache = JsonSerializerHelper.DeserializeFile<List<ResourceCatalog>>(cacheFile);
 
                             foreach (var catalog in cache)
                             {
@@ -197,7 +197,7 @@ namespace Nexus.Extensions
                 }
                 else
                 {
-                    catalogs = JsonSerializerHelper.Deserialize<List<ResourceCatalog>>(mainCacheFilePath);
+                    catalogs = JsonSerializerHelper.DeserializeFile<List<ResourceCatalog>>(mainCacheFilePath);
                 }
 
                 _catalogs = catalogs.ToArray();

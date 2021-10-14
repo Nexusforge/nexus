@@ -24,6 +24,8 @@ namespace Nexus.Services
             _pathsOptions = pathsOptions.Value;
         }
 
+
+
         //public void SaveCatalogMeta(CatalogProperties catalogMeta)
         //{
         //    var filePath = this.GetCatalogMetaPath(catalogMeta.Id);
@@ -69,12 +71,41 @@ namespace Nexus.Services
             return false;
         }
 
+        private const string CatalogMetadataFileName = "metadata.json";
+
+        public bool TryReadCatalogMetadata(string catalogId, out Stream? stream)
+        {
+            var physcialId = catalogId.TrimStart('/').Replace('/', '_');
+            var filePath = Path.Combine(_pathsOptions.Catalogs, physcialId, CatalogMetadataFileName);
+
+            stream = null;
+
+            if (File.Exists(filePath))
+            {
+                stream = File.OpenRead(filePath);
+                return true;
+            }
+
+            return false;
+        }
+
+        public Stream WriteCatalogMetadata(string catalogId)
+        {
+            var physcialId = catalogId.TrimStart('/').Replace('/', '_');
+            var folderPath = Path.Combine(_pathsOptions.Catalogs, physcialId);
+
+            Directory.CreateDirectory(folderPath);
+
+            var filePath = Path.Combine(folderPath, CatalogMetadataFileName);
+
+            return File.Open(filePath, FileMode.Truncate, FileAccess.Write);
+        }
+
         public Stream WriteExportFile(string fileName)
         {
-            var exportFolder = Path.Combine(_pathsOptions.Export, "export");
-            Directory.CreateDirectory(exportFolder);
+            Directory.CreateDirectory(_pathsOptions.Export);
 
-            var file = Path.Combine(exportFolder, fileName);
+            var file = Path.Combine(_pathsOptions.Export, fileName);
 
             return File.OpenWrite(file);
         }

@@ -1,6 +1,8 @@
 using Nexus.Extensibility;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 
 namespace Nexus.DataModel
 {
@@ -17,13 +19,45 @@ namespace Nexus.DataModel
         Month
     }
 
-    public record CatalogProperties
+    [DebuggerDisplay("{Id,nq}")]
+    public record CatalogContainer(DateTime CatalogBegin, DateTime CatalogEnd, ResourceCatalog Catalog, CatalogMetadata CatalogMetadata)
     {
-        public string Id { get; set; }
-        public bool IsQualityControlled { get; set; }
-        public bool IsHidden { get; set; }
-        public List<string> Logbook { get; set; }
-        public List<string> GroupMemberships { get; set; }
+        public string Id => this.Catalog.Id;
+
+        public string PhysicalName => this.Id.TrimStart('/').Replace('/', '_');
+    }
+
+    public record CatalogContainerCollection(IReadOnlyList<CatalogContainer> CatalogContainers)
+    {
+        public bool TryFind(string catalogId, string resourceId, string representationId, out CatalogItem catalogItem)
+        {
+            var resourcePath = $"{catalogId}/{resourceId}/{representationId}";
+            return this.TryFind(resourcePath, out catalogItem);
+        }
+
+        public bool TryFind(string resourcePath, out CatalogItem catalogItem)
+        {
+            return this.CatalogContainers
+                .Select(container => container.Catalog)
+                .TryFind(resourcePath, out catalogItem);
+        }
+
+        public CatalogItem Find(string catalogId, string resourceId, string representationId)
+        {
+            if (!this.TryFind(catalogId, resourceId, representationId, out var catalogItem))
+                throw new Exception($"The resource path '{catalogId}/{resourceId}/{representationId}' could not be found.");
+
+            return catalogItem;
+        }
+    }
+
+    public record CatalogMetadata()
+    {
+        public bool IsQualityControlled { get; init; }
+        public bool IsHidden { get; init; }
+        public List<string> Logbook { get; init; }
+        public List<string> GroupMemberships { get; init; }
+        public ResourceCatalog Overrides { get; init; }
     }
 
     public record AvailabilityResult

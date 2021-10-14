@@ -36,7 +36,7 @@ namespace Nexus.Utilities
             return NexusUtilities.IsCatalogAccessible(principal, catalogMeta);
         }
 
-        public static bool IsCatalogAccessible(ClaimsPrincipal principal, CatalogProperties catalogMeta)
+        public static bool IsCatalogAccessible(ClaimsPrincipal principal, CatalogMetadata catalogMeta)
         {
             if (principal == null)
                 return false;
@@ -63,7 +63,7 @@ namespace Nexus.Utilities
             return false;
         }
 
-        public static bool IsCatalogEditable(ClaimsPrincipal principal, CatalogProperties catalogMeta)
+        public static bool IsCatalogEditable(ClaimsPrincipal principal, string catalogId)
         {
             if (principal == null)
                 return false;
@@ -75,7 +75,7 @@ namespace Nexus.Utilities
                 var isAdmin = principal.HasClaim(claim => claim.Type == Claims.IS_ADMIN && claim.Value == "true");
 
                 var canEditCatalog = principal.HasClaim(claim => claim.Type == Claims.CAN_EDIT_CATALOG
-                                                       && claim.Value.Split(";").Any(current => current == catalogMeta.Id));
+                                                       && claim.Value.Split(";").Any(current => current == catalogId));
 
                 return isAdmin || canEditCatalog;
             }
@@ -83,7 +83,7 @@ namespace Nexus.Utilities
             return false;
         }
 
-        public static bool IsCatalogVisible(ClaimsPrincipal principal, CatalogProperties catalogMeta, bool isCatalogAccessible)
+        public static bool IsCatalogVisible(ClaimsPrincipal principal, CatalogMetadata catalogMeta, bool isCatalogAccessible)
         {
             var identity = principal.Identity;
 

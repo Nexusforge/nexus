@@ -43,7 +43,7 @@ namespace Nexus.Extensions
 
         #region Properties
 
-        public CatalogCollection Catalogs { get; set; }
+        public CatalogContainerCollection Catalogs { get; set; }
 
         public Func<string, bool> IsCatalogAccessible { get; set; }
 
@@ -83,14 +83,14 @@ namespace Nexus.Extensions
             return Task.CompletedTask;
         }
 
-        public static bool TryGetFilterCodeDefinition(CatalogItem catalogItem, out CodeDefinition codeDefinition)
+        public static bool TryGetFilterCodeDefinition(string resourceId, BackendSource backendSource, out CodeDefinition codeDefinition)
         {
             codeDefinition = default;
 
-            if (FilterDataSource.FilterDataSourceCache.TryGetValue(catalogItem.Representation.BackendSource.ResourceLocator, out var cacheEntries))
+            if (FilterDataSource.FilterDataSourceCache.TryGetValue(backendSource.ResourceLocator, out var cacheEntries))
             {
                 var cacheEntry = cacheEntries
-                    .FirstOrDefault(entry => entry.SupportedResourceIds.Contains(catalogItem.Resource.Id));
+                    .FirstOrDefault(entry => entry.SupportedResourceIds.Contains(resourceId));
 
                 if (cacheEntry is not null)
                 {
@@ -285,7 +285,7 @@ namespace Nexus.Extensions
                 // read from disk
                 if (File.Exists(filePath))
                 {
-                    filterSettings = JsonSerializerHelper.Deserialize<FilterSettings>(filePath);
+                    filterSettings = JsonSerializerHelper.DeserializeFile<FilterSettings>(filePath);
 
                     // add to cache
                     var filterSettings2 = filterSettings; // to make compiler happy

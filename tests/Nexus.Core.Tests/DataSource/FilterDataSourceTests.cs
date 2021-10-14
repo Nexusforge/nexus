@@ -118,9 +118,9 @@ namespace DataSource
 
             var catalog = catalogBuilder.Build();
 
-            var catalogCollection = new CatalogCollection(new List<CatalogContainer>()
+            var catalogCollection = new CatalogContainerCollection(new List<CatalogContainer>()
             {
-                new CatalogContainer("/IN_MEMORY/TEST/ACCESSIBLE") { Catalog = catalog }
+                new ResourceCatalogContainer("/IN_MEMORY/TEST/ACCESSIBLE") { Catalog = catalog }
             });
 
             // setup data source

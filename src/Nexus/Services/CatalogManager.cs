@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Extensions;
@@ -11,6 +13,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Claims;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -37,26 +40,38 @@ namespace Nexus.Services
     {
         #region Events
 
-        public event EventHandler<CatalogCollection> CatalogsUpdated;
+        public event EventHandler<CatalogContainerCollection> CatalogsUpdated;
 
         #endregion
 
         #region Fields
 
         private bool _isInitialized;
-        private ILogger<DatabaseManager> _logger;
-        private ILoggerFactory _loggerFactory;
+        private IDataControllerService _dataControllerService;
+        private IDatabaseManager _databaseManager;
         private IServiceProvider _serviceProvider;
+        private ILogger<CatalogManager> _logger;
+        private PathsOptions _options;
+        private string _dataPath;
 
         #endregion
 
         #region Constructors
 
-        public CatalogManager(IServiceProvider serviceProvider, ILogger<DatabaseManager> logger, ILoggerFactory loggerFactory)
+        public CatalogManager(
+            IDataControllerService dataControllerService, 
+            IDatabaseManager databaseManager,
+            IServiceProvider serviceProvider,
+            ILogger<CatalogManager> logger,
+            IOptions<PathsOptions> options)
         {
+            _dataControllerService = dataControllerService;
+            _databaseManager = databaseManager;
             _serviceProvider = serviceProvider;
             _logger = logger;
-            _loggerFactory = loggerFactory;
+            _options = options.Value;
+
+            _dataPath = Path.Combine(_options.Cache, "..", "data");
         }
 
         #endregion
@@ -88,119 +103,76 @@ namespace Nexus.Services
             // so external calls use old maps and this method uses the new instances.
 
             FilterDataSource.ClearCache();
-            var catalogCollection = new CatalogCollection();
 
-            // create new empty catalogs map
-            var backendSourceToCatalogsMap = new Dictionary<BackendSource, ResourceCatalog[]>();
+            // load data sources and get catalogs
+            var backendSourceToCatalogsMap = (await Task.WhenAll(
+                this.Config.BackendSources.Select(async backendSource =>
+                    {
+                        using var controller = await _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken);
+                        var catalogs = await controller.GetCatalogsAsync(cancellationToken);
 
-            // load data readers
-            var backendSourceToDataReaderTypeMap = this.LoadDataReaders(this.Config.BackendSources);
+                        // ensure that the filter data reader plugin does not create catalogs and resources without permission
+                        if (backendSource.Type == FilterDataSource.Id)
+                        {
+                            using (var scope = _serviceProvider.CreateScope())
+                            {
+                                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+                                catalogs = this.CleanUpFilterCatalogs(catalogs, userManager);
+                            }
+                        }
 
-            // register aggregation data reader
+                        return new KeyValuePair<BackendSource, ResourceCatalog[]>(backendSource, catalogs);
+                    })))
+                .ToDictionary(entry => entry.Key, entry => entry.Value);
+
+            // instantiate aggregation data reader
             var backendSource = new BackendSource()
             {
                 Type = "Nexus.Aggregation",
                 ResourceLocator = new Uri(
                     !string.IsNullOrWhiteSpace(this.Config.AggregationDataReaderRootPath)
                         ? this.Config.AggregationDataReaderRootPath
-                        : _pathsOptions.Data,
+                        : _dataPath,
                     UriKind.RelativeOrAbsolute
                 )
             };
 
-            backendSourceToDataReaderTypeMap[backendSource] = typeof(AggregationDataSource);
-
-            // get catalogs
-            var tasks = backendSourceToDataReaderTypeMap
-                                .Select(entry => this.InstantiateDataSourceAsync(entry.Key, entry.Value, backendSourceToCatalogsMap, cancellationToken))
-                                .ToList();
-
-            var dataSources = await Task.WhenAll(tasks);
-
-            foreach (var dataSource in dataSources)
-            {
-                try
-                {
-                    dataSource.Dispose();
-                }
-                catch { }
-            }
-
-            // get catalog meta data
-            var catalogMetas = backendSourceToCatalogsMap
-                .SelectMany(entry => entry.Value)
-                .Select(catalog => catalog.Id)
-                .Distinct()
-                .Select(catalogId =>
-                {
-                    var filePath = this.GetCatalogMetaPath(catalogId);
-
-                    if (File.Exists(filePath))
-                    {
-                        var jsonString = File.ReadAllText(filePath);
-                        return JsonSerializer.Deserialize<ResourceCatalog>(jsonString);
-                    }
-                    else
-                    {
-                        return new Catalog(catalogId);
-                    }
-                })
-                .ToList();
-
-            // ensure that the filter data reader plugin does not create catalogs and resources without permission
-            var filterCatalogs = backendSourceToCatalogsMap
-                .Where(entry => entry.Key.Type == FilterDataSource.Id)
-                .SelectMany(entry => entry.Value)
-                .ToList();
-
-            using (var scope = _serviceProvider.CreateScope())
-            {
-                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
-                this.CleanUpFilterCatalogs(filterCatalogs, catalogMetas, userManager, cancellationToken);
-            }
+            using var controller = await _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken);
+            var catalogs = await controller.GetCatalogsAsync(cancellationToken);
+            backendSourceToCatalogsMap[backendSource] = catalogs;
 
             // merge all catalogs
+            var idToCatalogContainerMap = new Dictionary<string, CatalogContainer>();
+
             foreach (var entry in backendSourceToCatalogsMap)
             {
                 foreach (var catalog in entry.Value)
                 {
-                    if (cancellationToken.IsCancellationRequested)
-                        return;
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     // find catalog container or create a new one
-                    var container = catalogCollection.CatalogContainers.FirstOrDefault(container => container.Id == catalog.Id);
-
-                    if (container == null)
+                    if (!idToCatalogContainerMap.ContainsKey(catalog.Id))
                     {
-                        var catalogMeta = catalogMetas.First(catalogMeta => catalogMeta.Id == catalog.Id);
+                        var metadata = default(CatalogMetadata);
 
-                        container = new CatalogContainer(catalog.Id);
-                        container.CatalogSettings = catalogMeta;
-                        catalogCollection.CatalogContainers.Add(container);
+                        if (_databaseManager.TryReadCatalogMetadata(catalog.Id, out var stream))
+                        {
+                            var jsonString = await new StreamReader(stream, Encoding.UTF8).ReadToEndAsync();
+                            metadata = JsonSerializerHelper.Deserialize<CatalogMetadata>(jsonString);
+                        }
+                        else
+                        {
+                            metadata = new CatalogMetadata();
+                        }
+
+                        var container = new CatalogContainer(catalog, metadata);
+
+                        idToCatalogContainerMap[catalog.Id] = container;
                     }
+
 
                     container.Catalog.Merge(catalog, MergeMode.ExclusiveOr);
                 }
-            }
-
-            // the purpose of this block is to initalize empty properties,
-            // add missing resources and clean up empty resources
-            foreach (var catalogContainer in catalogCollection.CatalogContainers)
-            {
-                if (cancellationToken.IsCancellationRequested)
-                    return;
-
-                // remove all resources where no native representations are available
-                // because only these provide metadata like name and group
-                var resources = catalogContainer.Catalog.Resources;
-
-                resources
-                    .Where(resource => string.IsNullOrWhiteSpace(resource.Id))
-                    .ToList()
-                    .ForEach(resource => resources.Remove(resource));
-
-                // save catalog meta to disk
-                this.SaveCatalogMeta(catalogContainer.CatalogSettings);
             }
 
             this.State = new CatalogManagerState()
@@ -208,7 +180,6 @@ namespace Nexus.Services
                 AggregationBackendSource = backendSource,
                 Catalogs = catalogCollection,
                 BackendSourceToCatalogsMap = backendSourceToCatalogsMap,
-                BackendSourceToDataReaderTypeMap = backendSourceToDataReaderTypeMap
             };
 
             this.CatalogsUpdated?.Invoke(this, catalogCollection);
@@ -244,7 +215,7 @@ namespace Nexus.Services
                 var filterBackendSource = new BackendSource()
                 {
                     Type = "Nexus.Builtin.Filters",
-                    ResourceLocator = new Uri(_pathsOptions.Data, UriKind.RelativeOrAbsolute)
+                    ResourceLocator = new Uri(_dataPath, UriKind.RelativeOrAbsolute)
                 };
 
                 if (!this.Config.BackendSources.Contains(filterBackendSource))
@@ -261,31 +232,24 @@ namespace Nexus.Services
             _isInitialized = true;
         }
 
-        private void CleanUpFilterCatalogs(List<ResourceCatalog> filterCatalogs,
-                                           List<ResourceCatalog> catalogMetas,
-                                           UserManager<IdentityUser> userManager,
-                                           CancellationToken cancellationToken)
+        private ResourceCatalog[] CleanUpFilterCatalogs(
+            ResourceCatalog[] filterCatalogs,
+            UserManager<IdentityUser> userManager)
         {
             var usersMap = new Dictionary<string, ClaimsPrincipal>();
-            var catalogsToRemove = new List<ResourceCatalog>();
+            var filteredCatalogs = new List<ResourceCatalog>();
 
             foreach (var catalog in filterCatalogs)
             {
-                if (cancellationToken.IsCancellationRequested)
-                    return;
-
-                var catalogMeta = catalogMetas.First(catalogMeta => catalogMeta.Id == catalog.Id);
-                var resourcesToRemove = new List<Resource>();
+                var resources = new List<Resource>();
 
                 foreach (var resource in catalog.Resources)
                 {
-                    var representationsToRemove = new List<Representation>();
+                    var representations = new List<Representation>();
 
                     foreach (var representation in resource.Representations)
                     {
-                        var keep = false;
-
-                        if (FilterDataSource.TryGetFilterCodeDefinition(representation, out var codeDefinition))
+                        if (FilterDataSource.TryGetFilterCodeDefinition(resource.Id, representation.BackendSource, out var codeDefinition))
                         {
                             // get user
                             if (!usersMap.TryGetValue(codeDefinition.Owner, out var user))
@@ -297,35 +261,22 @@ namespace Nexus.Services
                                 usersMap[codeDefinition.Owner] = user;
                             }
 
-                            keep = catalogMeta.Id == FilterConstants.SharedCatalogID || NexusUtilities.IsCatalogEditable(user, catalogMeta);
+                            var keep = catalog.Id == FilterConstants.SharedCatalogID || NexusUtilities.IsCatalogEditable(user, catalog.Id);
+
+                            if (keep)
+                                representations.Add(representation);
                         }
-
-                        if (!keep)
-                            representationsToRemove.Add(representation);
                     }
 
-                    foreach (var representationToRemove in representationsToRemove)
-                    {
-                        resource.Representations.Remove(representationToRemove);
-
-                        if (!resource.Representations.Any())
-                            resourcesToRemove.Add(resource);
-                    }
+                    if (representations.Any())
+                        resources.Add(resource with { Representations = representations });
                 }
 
-                foreach (var resourceToRemove in resourcesToRemove)
-                {
-                    catalog.Resources.Remove(resourceToRemove);
-
-                    if (!catalog.Resources.Any())
-                        catalogsToRemove.Add(catalog);
-                }
+                if (resources.Any())
+                    filteredCatalogs.Add(catalog with { Resources = resources });
             }
 
-            foreach (var catalogToRemove in catalogsToRemove)
-            {
-                filterCatalogs.Remove(catalogToRemove);
-            }
+            return filteredCatalogs.ToArray();
         }
 
         #endregion

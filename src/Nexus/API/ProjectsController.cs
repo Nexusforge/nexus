@@ -390,17 +390,17 @@ namespace Nexus.Controllers
             }
         }
 
-        private Catalog CreateCatalogResponse(DataModel.ResourceCatalog catalog, CatalogProperties catalogMeta)
+        private Catalog CreateCatalogResponse(DataModel.ResourceCatalog catalog, CatalogMetadata catalogMetadata)
         {
             return new Catalog()
             {
                 Id = catalog.Id,
-                Contact = catalogMeta.Contact,
-                ShortDescription = catalogMeta.ShortDescription,
-                LongDescription = catalogMeta.LongDescription,
-                IsQualityControlled = catalogMeta.IsQualityControlled,
-                License = catalogMeta.License,
-                LogBook = catalogMeta.Logbook
+                Contact = catalogMetadata.Contact,
+                ShortDescription = catalogMetadata.ShortDescription,
+                LongDescription = catalogMetadata.LongDescription,
+                IsQualityControlled = catalogMetadata.IsQualityControlled,
+                License = catalogMetadata.License,
+                LogBook = catalogMetadata.Logbook
             };
         }
 
@@ -491,7 +491,7 @@ namespace Nexus.Controllers
         private async Task<ActionResult<T>> ProcessCatalogIdAsync<T>(
             string catalogId,
             string message,
-            Func<DataModel.ResourceCatalog, CatalogProperties, Task<ActionResult<T>>> action)
+            Func<DataModel.ResourceCatalog, CatalogMetadata, Task<ActionResult<T>>> action)
         {
             if (!NexusUtilities.IsCatalogAccessible(this.User, catalogId, _databaseManager.Database))
                 return this.Unauthorized($"The current user is not authorized to access the catalog '{catalogId}'.");

@@ -57,8 +57,12 @@ namespace Nexus.Services
             }
 
             var controller = new DataSourceController(dataSource, backendSource, logger);
-            _ = _databaseManager.State.BackendSourceToCatalogsMap.TryGetValue(backendSource, out var catalogs);
-            await controller.InitializeAsync(catalogs, cancellationToken);
+
+            if (_databaseManager.State.BackendSourceToCatalogsMap.TryGetValue(backendSource, out var catalogs))
+                await controller.InitializeAsync(catalogs, cancellationToken);
+
+            else
+                await controller.InitializeAsync(null, cancellationToken);
 
             return controller;
         }

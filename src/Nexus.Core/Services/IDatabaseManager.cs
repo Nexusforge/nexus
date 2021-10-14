@@ -9,6 +9,8 @@ namespace Nexus.Services
         //void SaveCatalogMeta(CatalogProperties catalogMeta);
 
         bool TryReadFirstAttachment(string catalogId, string searchPattern, EnumerationOptions enumerationOptions, out Stream attachment);
+        bool TryReadCatalogMetadata(string catalogId, out Stream? stream);
+        Stream WriteCatalogMetadata(string catalogId);
 
         Stream WriteExportFile(string fileName);
     }

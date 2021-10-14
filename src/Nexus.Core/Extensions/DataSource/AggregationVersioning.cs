@@ -25,7 +25,7 @@ namespace Nexus.Extensions
 
         public static AggregationVersioning Load(string filePath)
         {
-            return JsonSerializerHelper.Deserialize<AggregationVersioning>(filePath);
+            return JsonSerializerHelper.DeserializeFile<AggregationVersioning>(filePath);
         }
 
         #endregion

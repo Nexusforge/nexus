@@ -16,10 +16,15 @@ namespace Nexus.Utilities
             File.WriteAllText(filePath, jsonString);
         }
 
-        public static T Deserialize<T>(string filePath)
+        public static T DeserializeFile<T>(string filePath)
         {
             var jsonString = File.ReadAllText(filePath);
 
+            return JsonSerializerHelper.Deserialize<T>(jsonString);
+        }
+
+        public static T Deserialize<T>(string jsonString)
+        {
             var options = new JsonSerializerOptions();
             options.Converters.Add(new TimeSpanConverter());
 

@@ -13,8 +13,14 @@ using System.Threading.Tasks;
 
 namespace Nexus.Extensibility
 {
-    public class DataSourceController : IDisposable, IDataSourceController
+    public class DataSourceController : IDataSourceController
     {
+        #region Fields
+
+        public ResourceCatalog[] _catalogs;
+
+        #endregion
+
         #region Constructors
 
         public DataSourceController(IDataSource dataSource, BackendSource backendSource, ILogger logger)
@@ -29,8 +35,6 @@ namespace Nexus.Extensibility
         #region Properties
 
         internal static uint ChunkSize { get; set; } = NexusConstants.DefaultChunkSize;
-
-        internal ResourceCatalog[] Catalogs { get; private set; }
 
         internal IDataSource DataSource { get; }
 
@@ -53,14 +57,14 @@ namespace Nexus.Extensibility
             };
 
             await this.DataSource.SetContextAsync(context, cancellationToken);
+        }
 
-            if (catalogs is null)
+        public async Task<ResourceCatalog[]>
+           GetCatalogsAsync(CancellationToken cancellationToken)
+        {
+            if (_catalogs is null)
             {
-                catalogs = await this.DataSource.GetCatalogsAsync(cancellationToken);
-
-                catalogs = catalogs
-                    .Where(catalog => NexusCoreUtilities.CheckCatalogNamingConvention(catalog.Id, out var _))
-                    .ToArray();
+                var catalogs = await this.DataSource.GetCatalogsAsync(cancellationToken);
 
                 foreach (var catalog in catalogs)
                 {
@@ -73,12 +77,10 @@ namespace Nexus.Extensibility
                     }
                 }
 
-                this.Catalogs = catalogs;
+                _catalogs = catalogs;
             }
-            else
-            {
-                this.Catalogs = context.Catalogs;
-            }
+
+            return _catalogs;
         }
 
         public async Task<AvailabilityResult>
@@ -159,6 +161,9 @@ namespace Nexus.Extensibility
             var elementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, samplePeriod);
             var memoryOwners = new List<IMemoryOwner<byte>>();
 
+            if (_catalogs is null)
+                await this.GetCatalogsAsync(cancellationToken);
+
             var requests = catalogItemPipeWriters.Select(catalogItemPipeWriter =>
             {
                 var (catalogItem, dataWriter, statusWriter) = catalogItemPipeWriter;
@@ -212,7 +217,7 @@ namespace Nexus.Extensibility
                     status = statusMemory;
                 }
 
-                var originalCatalogItem = this.Catalogs.Find(catalogItem.GetPath());
+                var originalCatalogItem = _catalogs.Find(catalogItem.GetPath());
                 return new ReadRequest(originalCatalogItem, data, status);
             }).ToArray();
 
