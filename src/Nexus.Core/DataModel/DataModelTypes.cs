@@ -6,10 +6,10 @@ using System.Linq;
 
 namespace Nexus.DataModel
 {
-    public record NexusDatabaseConfig()
+    public record NexusProject()
     {
-        public string AggregationDataReaderRootPath { get; set; }
         public List<Dictionary<string, string>> ExtensionReferences { get; set; }
+
         public List<BackendSource> BackendSources { get; set; }
     }
 

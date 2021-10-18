@@ -59,7 +59,7 @@ namespace Nexus.Services
 
         public CatalogState? State { get; private set; }
 
-        private NexusDatabaseConfig Config { get; set; }
+        private NexusProject Project { get; set; }
 
         #endregion
 
@@ -71,7 +71,7 @@ namespace Nexus.Services
 
             // load data sources and get catalogs
             var backendSourceToCatalogDataMap = (await Task.WhenAll(
-                this.Config.BackendSources.Select(async backendSource =>
+                this.Project.BackendSources.Select(async backendSource =>
                     {
                         using var controller = await _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken);
                         var catalogs = await controller.GetCatalogsAsync(cancellationToken);
@@ -82,7 +82,7 @@ namespace Nexus.Services
                             using (var scope = _serviceProvider.CreateScope())
                             {
                                 var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
-                                catalogs = this.CleanUpFilterCatalogs(catalogs, userManager);
+                                catalogs = await this.CleanUpFilterCatalogsAsync(catalogs, userManager);
                             }
                         }
 
@@ -98,12 +98,7 @@ namespace Nexus.Services
             var backendSource = new BackendSource()
             {
                 Type = "Nexus.Aggregation",
-                ResourceLocator = new Uri(
-                    !string.IsNullOrWhiteSpace(this.Config.AggregationDataReaderRootPath)
-                        ? this.Config.AggregationDataReaderRootPath
-                        : _options.Cache,
-                    UriKind.RelativeOrAbsolute
-                )
+                ResourceLocator = new Uri(_options.Cache, UriKind.RelativeOrAbsolute)
             };
 
             using var controller = await _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken);
@@ -200,7 +195,7 @@ namespace Nexus.Services
             _logger.LogInformation("Catalog state updated.");
         }
 
-        private ResourceCatalog[] CleanUpFilterCatalogs(
+        private async Task<ResourceCatalog[]> CleanUpFilterCatalogsAsync(
             ResourceCatalog[] filterCatalogs,
             UserManager<IdentityUser> userManager)
         {
@@ -222,9 +217,8 @@ namespace Nexus.Services
                             // get user
                             if (!usersMap.TryGetValue(codeDefinition.Owner, out var user))
                             {
-                                user = NexusUtilities
-                                    .GetClaimsPrincipalAsync(codeDefinition.Owner, userManager)
-                                    .Result;
+                                user = await NexusUtilities
+                                    .GetClaimsPrincipalAsync(codeDefinition.Owner, userManager);
 
                                 usersMap[codeDefinition.Owner] = user;
                             }

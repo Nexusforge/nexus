@@ -19,38 +19,26 @@ namespace Nexus.Core
     {
         #region Fields
 
-        private UserManager _userManager;
         private bool _isDatabaseInitialized;
         private bool _isDatabaseUpdating;
         private SemaphoreSlim _updateDatabaseSemaphore;
         private CancellationTokenSource _updateDatabaseCancellationTokenSource;
-        private IDatabaseManager _databaseManager;
         private Dictionary<CatalogContainer, List<ResourceViewModel>> _resourceCache;
 
         #endregion
 
         #region Constructors
 
-        public AppState(ILogger<AppState> logger,
-                        IDatabaseManager databaseManager,
-                        UserManager userManager,
-                        ExtensionHive extensionHive,
-                        IOptions<PathsOptions> pathsOptions)
+        public AppState(ILogger<AppState> logger)
         {
             this.Logger = logger;
-            _databaseManager = databaseManager;
-            _userManager = userManager;
-
-            await extensionHive.LoadPackagesAsync(packageReferences, cancellationToken);
-
+            
             this.CsvRowIndexFormatValues = NexusUtilities.GetEnumValues<CsvRowIndexFormat>();
             this.CodeLanguageValues = NexusUtilities.GetEnumValues<CodeLanguage>();
             this.CodeTypeValues = NexusUtilities.GetEnumValues<CodeType>();
             this.FileFormatValues = NexusUtilities.GetEnumValues<FileFormat>();
             this.FileGranularityValues = NexusUtilities.GetEnumValues<FileGranularity>();
             this.Version = Assembly.GetEntryAssembly().GetName().Version.ToString();
-
-            this.InitializeApp(pathsOptions.Value);
         }
 
         #endregion
@@ -91,42 +79,17 @@ namespace Nexus.Core
 
         public List<CodeLanguage> CodeLanguageValues { get; }
 
-        public FilterSettingsViewModel FilterSettings { get; private set; }
+        public FilterSettingsViewModel FilterSettings { get; set; }
 
         #endregion
 
         #region Properties - News
 
-        public NewsPaper NewsPaper { get; private set; }
+        public NewsPaper NewsPaper { get; set; }
 
         #endregion
 
         #region Methods
-
-        public void InitializeApp(PathsOptions pathOptions)
-        {
-            try
-            {
-                Directory.CreateDirectory(pathOptions.Data);
-
-                this.NewsPaper = NewsPaper.Load(Path.Combine(pathOptions.Data, "news.json"));
-
-                var filterSettingsFilePath = Path.Combine(pathOptions.Data, "filters.json");
-                this.FilterSettings = new FilterSettingsViewModel(filterSettingsFilePath);
-                this.InitializeFilterSettings(this.FilterSettings.Model, filterSettingsFilePath);
-
-                _resourceCache = new Dictionary<CatalogContainer, List<ResourceViewModel>>();
-                _updateDatabaseSemaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
-                _userManager.Initialize();
-
-                _ = this.UpdateDatabaseAsync();
-            }
-            catch (Exception ex)
-            {
-                this.Logger.LogError(ex.GetFullMessage());
-                throw;
-            }
-        }
 
         public async Task UpdateDatabaseAsync()
         {
@@ -168,52 +131,6 @@ namespace Nexus.Core
             }
 
             return resources;
-        }
-
-        private void InitializeFilterSettings(FilterSettings filterSettings, string filePath)
-        {
-            // ensure that code samples of test user are present
-            var testCodes = filterSettings.CodeDefinitions.Where(code => code.Owner == "test@nexus.org");
-
-            if (!testCodes.Any(testCode => testCode.Name == "Simple filter (C#)"))
-            {
-                using var streamReader1 = new StreamReader(ResourceLoader.GetResourceStream("Nexus.Resources.TestUserFilterCodeTemplateSimple.cs"));
-
-                filterSettings.CodeDefinitions.Add(new CodeDefinition()
-                {
-                    Code = streamReader1.ReadToEnd(),
-                    CodeLanguage = CodeLanguage.CSharp,
-                    CodeType = CodeType.Filter,
-                    CreationDate = DateTime.UtcNow,
-                    IsEnabled = true,
-                    Name = "Simple filter (C#)",
-                    Owner = "test@nexus.org",
-                    RequestedCatalogIds = new List<string>() { "/IN_MEMORY/TEST/ACCESSIBLE" },
-                    SampleRate = "1 s"
-                });
-
-                filterSettings.Save(filePath);
-            }
-
-            if (!testCodes.Any(testCode => testCode.Name == "Simple shared (C#)"))
-            {
-                using var streamReader2 = new StreamReader(ResourceLoader.GetResourceStream("Nexus.Resources.TestUserSharedCodeTemplateSimple.cs"));
-
-                filterSettings.CodeDefinitions.Add(new CodeDefinition()
-                {
-                    Code = streamReader2.ReadToEnd(),
-                    CodeLanguage = CodeLanguage.CSharp,
-                    CodeType = CodeType.Shared,
-                    CreationDate = DateTime.UtcNow,
-                    IsEnabled = true,
-                    Name = "Simple shared (C#)",
-                    Owner = "test@nexus.org",
-                    RequestedCatalogIds = new List<string>(),
-                    SampleRate = string.Empty
-                });
-
-                filterSettings.Save(filePath);
-            }
         }
 
         #endregion

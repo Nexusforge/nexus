@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using Nexus.Core;
 using System;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace Nexus.Services
 {
@@ -22,7 +23,7 @@ namespace Nexus.Services
             _securityOptions = securityOptions.Value;
         }
 
-        public void Initialize()
+        public async Task InitializeAsync()
         {
             using (var scope = _serviceProvider.CreateScope())
             {
@@ -38,34 +39,34 @@ namespace Nexus.Services
                 var rootPassword = _securityOptions.RootPassword;
 
                 // ensure there is a root user
-                if (userManager.FindByNameAsync(rootUsername).Result == null)
+                if ((await userManager.FindByNameAsync(rootUsername)) == null)
                 {
                     var user = new IdentityUser(rootUsername);
-                    var result = userManager.CreateAsync(user, rootPassword).Result;
+                    var result = await userManager.CreateAsync(user, rootPassword);
 
                     if (result.Succeeded)
                     {
                         // confirm account
-                        var token = userManager.GenerateEmailConfirmationTokenAsync(user).Result;
-                        userManager.ConfirmEmailAsync(user, token);
+                        var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+                        await userManager.ConfirmEmailAsync(user, token);
 
                         // add claim
                         var claim = new Claim(Claims.IS_ADMIN, "true");
-                        userManager.AddClaimAsync(user, claim).Wait();
+                        await userManager.AddClaimAsync(user, claim);
 
                         // remove default root user
                         if (rootUsername != SecurityOptions.DefaultRootUser)
                         {
-                            var userToDelete = userManager.FindByNameAsync(SecurityOptions.DefaultRootUser).Result;
+                            var userToDelete = await userManager.FindByNameAsync(SecurityOptions.DefaultRootUser);
 
                             if (userToDelete != null)
-                                userManager.DeleteAsync(userToDelete);
+                                await userManager.DeleteAsync(userToDelete);
                         }
                     }
                     else
                     {
-                        var _ = userManager.CreateAsync(
-                            new IdentityUser(SecurityOptions.DefaultRootUser), SecurityOptions.DefaultRootPassword).Result;
+                        await userManager.CreateAsync(
+                            new IdentityUser(SecurityOptions.DefaultRootUser), SecurityOptions.DefaultRootPassword);
                     }
                 }
 
@@ -73,20 +74,20 @@ namespace Nexus.Services
                 var defaultTestUsername = "test@nexus.org";
                 var defaultTestPassword = "#test0/User1";
 
-                if (userManager.FindByNameAsync(defaultTestUsername).Result == null)
+                if ((await userManager.FindByNameAsync(defaultTestUsername)) == null)
                 {
                     var user = new IdentityUser(defaultTestUsername);
-                    var result = userManager.CreateAsync(user, defaultTestPassword).Result;
+                    var result = await userManager.CreateAsync(user, defaultTestPassword);
 
                     if (result.Succeeded)
                     {
                         // confirm account
-                        var token = userManager.GenerateEmailConfirmationTokenAsync(user).Result;
-                        userManager.ConfirmEmailAsync(user, token);
+                        var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+                        await userManager .ConfirmEmailAsync(user, token);
 
                         // add claim
                         var claim = new Claim(Claims.CAN_ACCESS_CATALOG, "/IN_MEMORY/TEST/ACCESSIBLE;/IN_MEMORY/TEST/RESTRICTED");
-                        userManager.AddClaimAsync(user, claim).Wait();
+                        await userManager.AddClaimAsync(user, claim);
                     }
                 }
             }

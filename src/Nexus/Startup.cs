@@ -14,7 +14,10 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Nexus.Core;
+using Nexus.DataModel;
+using Nexus.Extensibility;
 using Nexus.Services;
+using Nexus.Utilities;
 using Nexus.ViewModels;
 using System;
 using System.IO;
@@ -161,7 +164,6 @@ namespace Nexus
             services.AddTransient<AggregationService>();
             services.AddTransient<IDataControllerService, DataControllerService>();
 
-            services.AddSingleton<CatalogState>();
             services.AddSingleton<ExtensionHive>();
             services.AddSingleton<AppState>();
             services.AddSingleton<IFileAccessManager, FileAccessManager>();
@@ -180,7 +182,7 @@ namespace Nexus
 
         public void Configure(IApplicationBuilder app,
                               IWebHostEnvironment env,
-                              AppState appState, // needs to be called to initialize the database
+                              IServiceProvider serviceProvider,
                               IOptions<PathsOptions> pathOptions)
         {
             // https://docs.microsoft.com/en-us/aspnet/core/fundamentals/middleware/?view=aspnetcore-5.0
@@ -286,6 +288,129 @@ namespace Nexus
                 endpoints.MapBlazorHub();
                 endpoints.MapFallbackToPage("/_Host");
             });
+
+            // initialize app state
+            await this.InitializeAppAsync(serviceProvider);
+        }
+
+        private async Task InitializeAppAsync(IServiceProvider serviceProvier)
+        {
+            var appState = serviceProvier.GetRequiredService<AppState>();
+            var databaseManager = serviceProvier.GetRequiredService<IDatabaseManager>();
+            var userManager = serviceProvier.GetRequiredService<UserManager>();
+            var extensionHive = serviceProvier.GetRequiredService<ExtensionHive>();
+            var pathsOptions = serviceProvier.GetRequiredService<IOptions<PathsOptions>>().Value;
+
+            // package references
+            await extensionHive.LoadPackagesAsync(packageReferences, cancellationToken);
+
+            // news
+            if (databaseManager.TryReadNews(out var stream))
+            {
+                var jsonString = await new StreamReader(stream, Encoding.UTF8).ReadToEndAsync();
+                appState.NewsPaper = JsonSerializerHelper.Deserialize<NewsPaper>(jsonString);
+            }
+            else
+            {
+                appState.NewsPaper = new NewsPaper();
+            }
+
+            // filters
+            var filterSettingsFilePath = Path.Combine(pathOptions.Config, "filters.json");
+            appState.FilterSettings = new FilterSettingsViewModel(filterSettingsFilePath);
+            this.InitializeFilterSettings(appState.FilterSettings.Model, filterSettingsFilePath);
+
+#error not yet clean
+            // ??
+            _resourceCache = new Dictionary<CatalogContainer, List<ResourceViewModel>>();
+            _updateDatabaseSemaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
+
+            // project
+            await this.InitializeProjectAsync(appState, databaseManager, pathsOptions);
+
+            // user manager
+            await userManager.InitializeAsync();
+
+            // 
+            _ = this.UpdateDatabaseAsync();
+        }
+
+        private async Task InitializeProjectAsync(AppState appState, IDatabaseManager databaseManager, PathsOptions pathsOptions)
+        {
+            if (databaseManager.TryReadProject(out var stream))
+            {
+                var jsonString = await new StreamReader(stream, Encoding.UTF8).ReadToEndAsync();
+                appState.Project = JsonSerializerHelper.Deserialize<NexusProject>(jsonString);
+            }
+            else
+            {
+                appState.Project = new NexusProject();
+            }
+
+            // extend config with more data readers
+            var inmemoryBackendSource = new BackendSource()
+            {
+                Type = "Nexus.Builtin.Inmemory",
+                ResourceLocator = new Uri("memory://localhost")
+            };
+
+            if (!appState.Project.BackendSources.Contains(inmemoryBackendSource))
+                appState.Project.BackendSources.Add(inmemoryBackendSource);
+
+            var filterBackendSource = new BackendSource()
+            {
+                Type = "Nexus.Builtin.Filters",
+                ResourceLocator = new Uri(pathsOptions.Cache, UriKind.RelativeOrAbsolute)
+            };
+
+            if (!appState.Project.BackendSources.Contains(filterBackendSource))
+                appState.Project.BackendSources.Add(filterBackendSource);
+        }
+
+        private void InitializeFilterSettings(FilterSettings filterSettings, string filePath)
+        {
+            // ensure that code samples of test user are present
+            var testCodes = filterSettings.CodeDefinitions.Where(code => code.Owner == "test@nexus.org");
+
+            if (!testCodes.Any(testCode => testCode.Name == "Simple filter (C#)"))
+            {
+                using var streamReader1 = new StreamReader(ResourceLoader.GetResourceStream("Nexus.Resources.TestUserFilterCodeTemplateSimple.cs"));
+
+                filterSettings.CodeDefinitions.Add(new CodeDefinition()
+                {
+                    Code = streamReader1.ReadToEnd(),
+                    CodeLanguage = CodeLanguage.CSharp,
+                    CodeType = CodeType.Filter,
+                    CreationDate = DateTime.UtcNow,
+                    IsEnabled = true,
+                    Name = "Simple filter (C#)",
+                    Owner = "test@nexus.org",
+                    RequestedCatalogIds = new List<string>() { "/IN_MEMORY/TEST/ACCESSIBLE" },
+                    SampleRate = "1 s"
+                });
+
+                filterSettings.Save(filePath);
+            }
+
+            if (!testCodes.Any(testCode => testCode.Name == "Simple shared (C#)"))
+            {
+                using var streamReader2 = new StreamReader(ResourceLoader.GetResourceStream("Nexus.Resources.TestUserSharedCodeTemplateSimple.cs"));
+
+                filterSettings.CodeDefinitions.Add(new CodeDefinition()
+                {
+                    Code = streamReader2.ReadToEnd(),
+                    CodeLanguage = CodeLanguage.CSharp,
+                    CodeType = CodeType.Shared,
+                    CreationDate = DateTime.UtcNow,
+                    IsEnabled = true,
+                    Name = "Simple shared (C#)",
+                    Owner = "test@nexus.org",
+                    RequestedCatalogIds = new List<string>(),
+                    SampleRate = string.Empty
+                });
+
+                filterSettings.Save(filePath);
+            }
         }
 
         #endregion

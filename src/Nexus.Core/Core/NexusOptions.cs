@@ -53,7 +53,7 @@ namespace Nexus.Core
     {
         public const string Section = "Paths";
 
-        public string DbConfig { get; set; } = Path.Combine(PathsOptions.GetDataRoot(), "dbconfig.json");
+        public string Config { get; set; } = Path.Combine(PathsOptions.GetDataRoot(), "config");
         public string Cache { get; set; } = Path.Combine(PathsOptions.GetDataRoot(), "cache");
         public string Catalogs { get; set; } = Path.Combine(PathsOptions.GetDataRoot(), "catalogs");
         public string Export { get; set; } = Path.Combine(PathsOptions.GetDataRoot(), "export");
