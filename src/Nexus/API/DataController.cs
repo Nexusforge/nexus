@@ -19,17 +19,17 @@ namespace Nexus.Controllers
 
         private ILogger _logger;
         private UserIdService _userIdService;
-        private IDatabaseManager _databaseManager;
+        private ICatalogManager _catalogManager;
 
         #endregion
 
         #region Constructors
 
-        public DataController(IDatabaseManager databaseManager,
+        public DataController(ICatalogManager catalogManager,
                               UserIdService userIdService,
                               ILoggerFactory loggerFactory)
         {
-            _databaseManager = databaseManager;
+            _catalogManager = catalogManager;
             _userIdService = userIdService;
             _logger = loggerFactory.CreateLogger("Nexus");
         }
@@ -56,7 +56,7 @@ namespace Nexus.Controllers
             [BindRequired] DateTime end,
             CancellationToken cancellationToken)
         {
-            if (_databaseManager.Database == null)
+            if (_catalogManager.State == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
 
             catalogId = WebUtility.UrlDecode(catalogId);
@@ -84,17 +84,17 @@ namespace Nexus.Controllers
                 // representation
                 var path = $"{catalogId}/{resourceId}/{representationId}";
 
-                if (!_databaseManager.Database.TryFind(path, out var catalogItem))
+                if (!_catalogManager.Database.TryFind(path, out var catalogItem))
                     return this.NotFound($"Could not find representation on path '{path}'.");
 
                 var catalog = catalogItem.Catalog;
 
                 // security check
-                if (!NexusUtilities.IsCatalogAccessible(this.User, catalog.Id, _databaseManager.Database))
+                if (!NexusUtilities.IsCatalogAccessible(this.User, catalog.Id, _catalogManager.Database))
                     return this.Unauthorized($"The current user is not authorized to access the catalog '{catalog.Id}'.");
 
                 // controller
-                using var controller = await _databaseManager.GetDataSourceControllerAsync(
+                using var controller = await _catalogManager.GetDataSourceControllerAsync(
                     _userIdService.User, 
                     catalogItem.Representation.BackendSource,
                     cancellationToken);

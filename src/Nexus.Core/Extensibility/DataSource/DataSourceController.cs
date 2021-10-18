@@ -48,6 +48,8 @@ namespace Nexus.Extensibility
 
         public async Task InitializeAsync(ResourceCatalog[]? catalogs, CancellationToken cancellationToken)
         {
+            _catalogs = catalogs;
+
             var context = new DataSourceContext()
             {
                 ResourceLocator = this.BackendSource.ResourceLocator,
@@ -161,8 +163,7 @@ namespace Nexus.Extensibility
             var elementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, samplePeriod);
             var memoryOwners = new List<IMemoryOwner<byte>>();
 
-            if (_catalogs is null)
-                await this.GetCatalogsAsync(cancellationToken);
+            var catalogs = await this.GetCatalogsAsync(cancellationToken);
 
             var requests = catalogItemPipeWriters.Select(catalogItemPipeWriter =>
             {
@@ -217,7 +218,7 @@ namespace Nexus.Extensibility
                     status = statusMemory;
                 }
 
-                var originalCatalogItem = _catalogs.Find(catalogItem.GetPath());
+                var originalCatalogItem = catalogs.Find(catalogItem.GetPath());
                 return new ReadRequest(originalCatalogItem, data, status);
             }).ToArray();
 

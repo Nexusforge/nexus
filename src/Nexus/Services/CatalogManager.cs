@@ -14,45 +14,26 @@ using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nexus.Services
 {
-    /* 
-     * Algorithm:
-     * *******************************************************************************
-     * 01. load database.json (this.Database)
-     * 02. load and instantiate data reader extensions (_rootPathToDataReaderMap)
-     * 03. call Update() method
-     * 04.   for each data reader in _rootPathToDataReaderMap
-     * 05.       get catalog names
-     * 06.           for each catalog name
-     * 07.               find catalog container in current database or create new one
-     * 08.               get an up-to-date catalog instance from the data reader
-     * 09.               merge both catalogs
-     * 10. save updated database
-     * *******************************************************************************
-     */
-
     internal class CatalogManager : ICatalogManager
     {
         #region Events
 
-        public event EventHandler<CatalogContainerCollection> CatalogsUpdated;
+        public event EventHandler<CatalogState> CatalogStateChanged;
 
         #endregion
 
         #region Fields
 
-        private bool _isInitialized;
         private IDataControllerService _dataControllerService;
         private IDatabaseManager _databaseManager;
         private IServiceProvider _serviceProvider;
         private ILogger<CatalogManager> _logger;
         private PathsOptions _options;
-        private string _dataPath;
 
         #endregion
 
@@ -70,15 +51,13 @@ namespace Nexus.Services
             _serviceProvider = serviceProvider;
             _logger = logger;
             _options = options.Value;
-
-            _dataPath = Path.Combine(_options.Cache, "..", "data");
         }
 
         #endregion
 
         #region Properties
 
-        public CatalogManagerState State { get; private set; }
+        public CatalogState? State { get; private set; }
 
         private NexusDatabaseConfig Config { get; set; }
 
@@ -88,24 +67,10 @@ namespace Nexus.Services
 
         public async Task UpdateAsync(CancellationToken cancellationToken)
         {
-            if (!_isInitialized)
-                this.Initialize();
-
-            // Concept:
-            //
-            // 1) backendSourceToCatalogsMap, backendSourceToDataSourceTypeMap and database are instantiated in this method,
-            // combined into a new DatabaseManagerState and then set in an atomic operation to the State propery.
-            // 
-            // 2) Within this method, the backendSourceToCatalogsMap cache gets filled
-            //
-            // 3) It may happen that during this process, which might take a while, an external caller calls 
-            // GetDataReader. To divide both processes (external call vs this method),the State property is introduced, 
-            // so external calls use old maps and this method uses the new instances.
-
             FilterDataSource.ClearCache();
 
             // load data sources and get catalogs
-            var backendSourceToCatalogsMap = (await Task.WhenAll(
+            var backendSourceToCatalogDataMap = (await Task.WhenAll(
                 this.Config.BackendSources.Select(async backendSource =>
                     {
                         using var controller = await _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken);
@@ -121,7 +86,11 @@ namespace Nexus.Services
                             }
                         }
 
-                        return new KeyValuePair<BackendSource, ResourceCatalog[]>(backendSource, catalogs);
+                        // get begin and end of project
+                        var catalogData = await Task
+                            .WhenAll(catalogs.Select(async catalog => (catalog, await controller.GetTimeRangeAsync(catalog.Id, cancellationToken))));
+
+                        return new KeyValuePair<BackendSource, (ResourceCatalog, TimeRangeResult)[]>(backendSource, catalogData);
                     })))
                 .ToDictionary(entry => entry.Key, entry => entry.Value);
 
@@ -132,26 +101,60 @@ namespace Nexus.Services
                 ResourceLocator = new Uri(
                     !string.IsNullOrWhiteSpace(this.Config.AggregationDataReaderRootPath)
                         ? this.Config.AggregationDataReaderRootPath
-                        : _dataPath,
+                        : _options.Cache,
                     UriKind.RelativeOrAbsolute
                 )
             };
 
             using var controller = await _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken);
             var catalogs = await controller.GetCatalogsAsync(cancellationToken);
-            backendSourceToCatalogsMap[backendSource] = catalogs;
+
+            var catalogData = catalogs
+                .Select(catalog => (catalog, new TimeRangeResult() { Begin = DateTime.MaxValue, End = DateTime.MinValue, BackendSource = backendSource }))
+                .ToArray();
+
+            backendSourceToCatalogDataMap[backendSource] = catalogData;
 
             // merge all catalogs
             var idToCatalogContainerMap = new Dictionary<string, CatalogContainer>();
 
-            foreach (var entry in backendSourceToCatalogsMap)
+            foreach (var entry in backendSourceToCatalogDataMap)
             {
-                foreach (var catalog in entry.Value)
+                foreach (var (catalog, timeRangeResult) in entry.Value)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
                     // find catalog container or create a new one
-                    if (!idToCatalogContainerMap.ContainsKey(catalog.Id))
+                    if (idToCatalogContainerMap.TryGetValue(catalog.Id, out var container))
+                    {
+                        // merge time range
+                        var begin = container.CatalogBegin;
+                        var end = container.CatalogEnd;
+
+                        if (begin == DateTime.MinValue)
+                            begin = timeRangeResult.Begin;
+
+                        else
+                            begin = new DateTime(Math.Min(begin.Ticks, timeRangeResult.Begin.Ticks));
+
+                        if (end == DateTime.MinValue)
+                            end = timeRangeResult.End;
+
+                        else
+                            end = new DateTime(Math.Max(end.Ticks, timeRangeResult.End.Ticks));
+
+                        // merge catalog
+                        var mergedCatalog = container.Catalog.Merge(catalog, MergeMode.ExclusiveOr);
+
+                        // update catalog container
+                        idToCatalogContainerMap[catalog.Id] = container with
+                        {
+                            CatalogBegin = begin,
+                            CatalogEnd = end,
+                            Catalog = mergedCatalog
+                        };
+                    }
+                    else
                     {
                         var metadata = default(CatalogMetadata);
 
@@ -165,71 +168,36 @@ namespace Nexus.Services
                             metadata = new CatalogMetadata();
                         }
 
-                        var container = new CatalogContainer(catalog, metadata);
-
-                        idToCatalogContainerMap[catalog.Id] = container;
+                        idToCatalogContainerMap[catalog.Id] = new CatalogContainer(timeRangeResult.Begin, timeRangeResult.End, catalog, metadata);
                     }
-
-
-                    container.Catalog.Merge(catalog, MergeMode.ExclusiveOr);
                 }
             }
 
-            this.State = new CatalogManagerState()
+            // merge overrides
+            foreach (var entry in idToCatalogContainerMap)
+            {
+                var mergedCatalog = entry.Value.Catalog.Merge(entry.Value.CatalogMetadata.Overrides, MergeMode.NewWins);
+                
+                idToCatalogContainerMap[entry.Key] = entry.Value with
+                {
+                    Catalog = mergedCatalog
+                };
+            }
+
+            // 
+            var catalogCollection = new CatalogCollection(idToCatalogContainerMap.Values.ToList());
+
+            var state = new CatalogState()
             {
                 AggregationBackendSource = backendSource,
-                Catalogs = catalogCollection,
-                BackendSourceToCatalogsMap = backendSourceToCatalogsMap,
+                CatalogCollection = catalogCollection,
+                BackendSourceToCatalogsMap = backendSourceToCatalogDataMap.ToDictionary(
+                    entry => entry.Key, 
+                    entry => entry.Value.Select(current => current.Item1).ToArray()),
             };
 
-            this.CatalogsUpdated?.Invoke(this, catalogCollection);
-            _logger.LogInformation("Database loaded.");
-        }
-
-        private void Initialize()
-        {
-            try
-            {
-                var filePath = Path.Combine(dbFolderPath, "dbconfig.json");
-
-                if (File.Exists(filePath))
-                {
-                    var jsonString = File.ReadAllText(filePath);
-                    this.Config = JsonSerializer.Deserialize<NexusDatabaseConfig>(jsonString);
-                }
-                else
-                {
-                    this.Config = new NexusDatabaseConfig();
-                }
-
-                // extend config with more data readers
-                var inmemoryBackendSource = new BackendSource()
-                {
-                    Type = "Nexus.Builtin.Inmemory",
-                    ResourceLocator = new Uri("memory://localhost")
-                };
-
-                if (!this.Config.BackendSources.Contains(inmemoryBackendSource))
-                    this.Config.BackendSources.Add(inmemoryBackendSource);
-
-                var filterBackendSource = new BackendSource()
-                {
-                    Type = "Nexus.Builtin.Filters",
-                    ResourceLocator = new Uri(_dataPath, UriKind.RelativeOrAbsolute)
-                };
-
-                if (!this.Config.BackendSources.Contains(filterBackendSource))
-                    this.Config.BackendSources.Add(filterBackendSource);
-
-                // save config to disk
-                this.SaveConfig(dbFolderPath, this.Config);
-            }
-            catch
-            {
-                throw new Exception("Could not initialize database. Please check the database folder path and try again.");
-            }
-
-            _isInitialized = true;
+            this.CatalogStateChanged?.Invoke(this, state);
+            _logger.LogInformation("Catalog state updated.");
         }
 
         private ResourceCatalog[] CleanUpFilterCatalogs(

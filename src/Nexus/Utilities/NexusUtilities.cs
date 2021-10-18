@@ -24,26 +24,26 @@ namespace Nexus.Utilities
             return principal;
         }
 
-        public static bool IsCatalogAccessible(ClaimsPrincipal principal, string catalogId, NexusDatabase database)
+        public static bool IsCatalogAccessible(ClaimsPrincipal principal, string catalogId, CatalogCollection catalogCollection)
         {
             if (principal == null)
                 return false;
 
             var identity = principal.Identity;
-            var catalogContainer = database.CatalogContainers.First(current => current.Id == catalogId);
-            var catalogMeta = catalogContainer.CatalogSettings;
+            var catalogContainer = catalogCollection.CatalogContainers.First(current => current.Id == catalogId);
+            var catalogMeta = catalogContainer.CatalogMetadata;
 
             return NexusUtilities.IsCatalogAccessible(principal, catalogMeta);
         }
 
-        public static bool IsCatalogAccessible(ClaimsPrincipal principal, CatalogMetadata catalogMeta)
+        public static bool IsCatalogAccessible(ClaimsPrincipal principal, ResourceCatalog catalog)
         {
             if (principal == null)
                 return false;
 
             var identity = principal.Identity;
 
-            if (catalogMeta.License.LicensingScheme == CatalogLicensingScheme.None)
+            if (catalog.Properties.License.LicensingScheme == CatalogLicensingScheme.None)
             {
                 return true;
             }
@@ -52,10 +52,10 @@ namespace Nexus.Utilities
                 var isAdmin = principal.HasClaim(claim => claim.Type == Claims.IS_ADMIN && claim.Value == "true");
 
                 var canAccessCatalog = principal.HasClaim(claim => claim.Type == Claims.CAN_ACCESS_CATALOG &&
-                                                          claim.Value.Split(";").Any(current => current == catalogMeta.Id));
+                                                          claim.Value.Split(";").Any(current => current == catalog.Id));
 
                 var canAccessGroup = principal.HasClaim(claim => claim.Type == Claims.CAN_ACCESS_GROUP &&
-                                                        claim.Value.Split(";").Any(group => catalogMeta.GroupMemberships.Contains(group)));
+                                                        claim.Value.Split(";").Any(group => catalog.Properties.GroupMemberships.Contains(group)));
 
                 return isAdmin || canAccessCatalog || canAccessGroup;
             }
@@ -83,7 +83,7 @@ namespace Nexus.Utilities
             return false;
         }
 
-        public static bool IsCatalogVisible(ClaimsPrincipal principal, CatalogMetadata catalogMeta, bool isCatalogAccessible)
+        public static bool IsCatalogVisible(ClaimsPrincipal principal, string catalogId, CatalogMetadata catalogMeta, bool isCatalogAccessible)
         {
             var identity = principal.Identity;
 
@@ -97,7 +97,7 @@ namespace Nexus.Utilities
             }
 
             // 2. test catalogs are hidden by default
-            if (Constants.HiddenCatalogs.Contains(catalogMeta.Id))
+            if (Constants.HiddenCatalogs.Contains(catalogId))
                 return false;
 
             // 3. other catalogs

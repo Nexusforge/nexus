@@ -33,7 +33,7 @@ namespace Nexus.Roslyn
             RoslynProject.DefaultSharedCode = streamReader2.ReadToEnd();
         }
 
-        public RoslynProject(CodeDefinition filter, List<string> additionalCodeFiles, CatalogContainerCollection catalogs = null)
+        public RoslynProject(CodeDefinition filter, List<string> additionalCodeFiles, CatalogCollection catalogs = null)
         {
             var isRealBuild = catalogs is null;
 
@@ -124,7 +124,7 @@ namespace Nexus.Roslyn
             } while (!this.Workspace.TryApplyChanges(updatedSolution));
         }
 
-        private string GenerateDatabaseCode(CatalogContainerCollection catalogs, TimeSpan samplePeriod, List<string> requestedCatalogIds)
+        private string GenerateDatabaseCode(CatalogCollection catalogs, TimeSpan samplePeriod, List<string> requestedCatalogIds)
         {
             // generate code
             var classStringBuilder = new StringBuilder();

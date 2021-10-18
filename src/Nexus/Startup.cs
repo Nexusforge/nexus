@@ -161,6 +161,7 @@ namespace Nexus
             services.AddTransient<AggregationService>();
             services.AddTransient<IDataControllerService, DataControllerService>();
 
+            services.AddSingleton<CatalogState>();
             services.AddSingleton<ExtensionHive>();
             services.AddSingleton<AppState>();
             services.AddSingleton<IFileAccessManager, FileAccessManager>();

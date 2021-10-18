@@ -118,9 +118,9 @@ namespace DataSource
 
             var catalog = catalogBuilder.Build();
 
-            var catalogCollection = new CatalogContainerCollection(new List<CatalogContainer>()
+            var catalogCollection = new CatalogCollection(new List<CatalogContainer>()
             {
-                new ResourceCatalogContainer("/IN_MEMORY/TEST/ACCESSIBLE") { Catalog = catalog }
+                new CatalogContainer(DateTime.MinValue, DateTime.MaxValue, catalog, null)
             });
 
             // setup data source
@@ -155,7 +155,7 @@ namespace DataSource
             var dataSource = new FilterDataSource()
             {
                 IsCatalogAccessible = _ => true,
-                Catalogs = catalogCollection,
+                CatalogCollection = catalogCollection,
                 GetDataSourceControllerAsync = async id =>
                 {
                     var controller = new DataSourceController(subDataSource, backendSource, NullLogger.Instance);

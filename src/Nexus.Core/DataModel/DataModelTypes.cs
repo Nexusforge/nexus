@@ -27,7 +27,7 @@ namespace Nexus.DataModel
         public string PhysicalName => this.Id.TrimStart('/').Replace('/', '_');
     }
 
-    public record CatalogContainerCollection(IReadOnlyList<CatalogContainer> CatalogContainers)
+    public record CatalogCollection(IReadOnlyList<CatalogContainer> CatalogContainers)
     {
         public bool TryFind(string catalogId, string resourceId, string representationId, out CatalogItem catalogItem)
         {

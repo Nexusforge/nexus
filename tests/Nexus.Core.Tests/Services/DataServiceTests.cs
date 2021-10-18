@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Moq;
+using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Services;
@@ -64,7 +65,7 @@ namespace Services
                         throw new Exception("Invalid backend source.");
                 });
 
-            var catalogManagerState = new CatalogManagerState() { BackendSourceToCatalogsMap = backendSourceToCatalogsMap };
+            var catalogManagerState = new CatalogState() { BackendSourceToCatalogsMap = backendSourceToCatalogsMap };
 
             var catalogManager = Mock.Of<ICatalogManager>();
 

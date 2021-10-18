@@ -1,11 +1,12 @@
-﻿using System.Threading;
+﻿using Nexus.Core;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nexus.Services
 {
-    internal interface ICatalogManager
+    public interface ICatalogManager
     {
-        CatalogManagerState State { get; }
+        CatalogState State { get; }
 
         Task UpdateAsync(CancellationToken cancellationToken);
     }

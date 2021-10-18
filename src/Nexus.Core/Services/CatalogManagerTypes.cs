@@ -2,12 +2,13 @@
 using Nexus.Extensibility;
 using System.Collections.Generic;
 
-namespace Nexus.Services
+namespace Nexus.Core
 {
-    internal record CatalogManagerState
+    public record CatalogState
     {
         public BackendSource AggregationBackendSource { get; init; }
-        public CatalogContainerCollection Catalogs { get; init; }
+        public CatalogCollection CatalogCollection { get; init; }
         public Dictionary<BackendSource, ResourceCatalog[]> BackendSourceToCatalogsMap { get; init; }
+        public Dictionary<ResourceCatalog, TimeRangeResult> CatalogToTimeRangeMap { get; init; }
     }
 }
