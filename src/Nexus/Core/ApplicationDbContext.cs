@@ -16,7 +16,7 @@ namespace Nexus.Core
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            var filePath = Path.Combine(_pathsOptions.Data, "users.db");
+            var filePath = Path.Combine(_pathsOptions.Config, "users.db");
             optionsBuilder.UseSqlite($"Data Source={filePath}");
             base.OnConfiguring(optionsBuilder);
         }

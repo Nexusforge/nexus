@@ -14,7 +14,7 @@ namespace Nexus.Shared
         #region Fields
 
         private bool _showAdditionalInfo;
-        private List<RepresentationViewModel> _filteredRepresentations;
+        private IEnumerable<RepresentationViewModel> _filteredRepresentations;
 
         #endregion
 
@@ -53,19 +53,21 @@ namespace Nexus.Shared
 
         private void UpdateFilteredRepresentations()
         {
-            if (string.IsNullOrWhiteSpace(this.UserState.SampleRate))
-                _filteredRepresentations = new List<RepresentationViewModel>();
+            if (this.UserState.SamplePeriod == default)
+                _filteredRepresentations = Enumerable.Empty<RepresentationViewModel>();
+
             else
-                _filteredRepresentations = this.Resource.Representations.Where(representation => representation.Name.Contains(this.UserState.SampleRate)).ToList();
+                _filteredRepresentations = this.Resource.Representations
+                    .Where(representation => representation.SamplePeriod == this.UserState.SamplePeriod)
+                    .Select(representation => new RepresentationViewModel(this.Resource, representation));
         }
 
-        private List<string> GetSampleRates()
+        private IEnumerable<TimeSpan> GetSamplePeriods()
         {
             return this.Resource.Representations
-                .Select(representation => representation.Name.Split('_')[0])
+                .Select(representation => representation.SamplePeriod)
                 .Distinct()
-                .Where(sampleRate => sampleRate != this.UserState.SampleRate)
-                .OrderBy(x => x, new SampleRateStringComparer()).ToList();
+                .Where(samplePeriod => samplePeriod != this.UserState.SamplePeriod);
         }
 
         #endregion
@@ -74,7 +76,7 @@ namespace Nexus.Shared
 
         private void OnUserStatePropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(UserState.SampleRate))
+            if (e.PropertyName == nameof(UserState.SamplePeriod))
             {
                 this.InvokeAsync(() =>
                 {

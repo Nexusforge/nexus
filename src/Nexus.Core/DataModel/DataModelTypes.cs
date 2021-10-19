@@ -1,4 +1,5 @@
 using Nexus.Extensibility;
+using Nexus.PackageManagement;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -8,7 +9,7 @@ namespace Nexus.DataModel
 {
     public record NexusProject()
     {
-        public List<Dictionary<string, string>> ExtensionReferences { get; set; }
+        public List<PackageReference> PackageReferences { get; set; }
 
         public List<BackendSource> BackendSources { get; set; }
     }

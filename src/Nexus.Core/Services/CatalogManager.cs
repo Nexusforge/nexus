@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -21,12 +20,6 @@ namespace Nexus.Services
 {
     internal class CatalogManager : ICatalogManager
     {
-        #region Events
-
-        public event EventHandler<CatalogState> CatalogStateChanged;
-
-        #endregion
-
         #region Fields
 
         private IDataControllerService _dataControllerService;
@@ -57,15 +50,13 @@ namespace Nexus.Services
 
         #region Properties
 
-        public CatalogState? State { get; private set; }
-
         private NexusProject Project { get; set; }
 
         #endregion
 
         #region Methods
 
-        public async Task UpdateAsync(CancellationToken cancellationToken)
+        public async Task<CatalogState> LoadCatalogsAsync(CancellationToken cancellationToken)
         {
             FilterDataSource.ClearCache();
 
@@ -81,8 +72,8 @@ namespace Nexus.Services
                         {
                             using (var scope = _serviceProvider.CreateScope())
                             {
-                                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
-                                catalogs = await this.CleanUpFilterCatalogsAsync(catalogs, userManager);
+                                var userManagerWrapper = scope.ServiceProvider.GetRequiredService<IUserManagerWrapper>();
+                                catalogs = await this.CleanUpFilterCatalogsAsync(catalogs, userManagerWrapper);
                             }
                         }
 
@@ -191,13 +182,12 @@ namespace Nexus.Services
                     entry => entry.Value.Select(current => current.Item1).ToArray()),
             };
 
-            this.CatalogStateChanged?.Invoke(this, state);
-            _logger.LogInformation("Catalog state updated.");
+            return state;
         }
 
         private async Task<ResourceCatalog[]> CleanUpFilterCatalogsAsync(
             ResourceCatalog[] filterCatalogs,
-            UserManager<IdentityUser> userManager)
+            IUserManagerWrapper userManagerWrapper)
         {
             var usersMap = new Dictionary<string, ClaimsPrincipal>();
             var filteredCatalogs = new List<ResourceCatalog>();
@@ -217,13 +207,13 @@ namespace Nexus.Services
                             // get user
                             if (!usersMap.TryGetValue(codeDefinition.Owner, out var user))
                             {
-                                user = await NexusUtilities
-                                    .GetClaimsPrincipalAsync(codeDefinition.Owner, userManager);
+                                user = await userManagerWrapper
+                                    .GetClaimsPrincipalAsync(codeDefinition.Owner);
 
                                 usersMap[codeDefinition.Owner] = user;
                             }
 
-                            var keep = catalog.Id == FilterConstants.SharedCatalogID || NexusUtilities.IsCatalogEditable(user, catalog.Id);
+                            var keep = catalog.Id == FilterConstants.SharedCatalogID || AuthorizationUtilities.IsCatalogEditable(user, catalog.Id);
 
                             if (keep)
                                 representations.Add(representation);

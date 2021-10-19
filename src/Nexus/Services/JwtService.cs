@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Services
 {
-    internal class JwtService<TUser> where TUser : class
+    public class JwtService<TUser> where TUser : class
     {
         #region Fields
 

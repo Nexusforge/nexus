@@ -3,31 +3,35 @@
 
         @if (this.UserState.IsEditEnabled)
         {
-            <span>@this.Resource.Name&nbsp;</span><input type="text" @bind-value="this.Resource.Unit" />
+            <!--
+            <span>@this.Resource.Id&nbsp;</span><input type="text" @bind-value="this.Resource.Unit" />
+            -->
         }
         else
         {
             @if (string.IsNullOrWhiteSpace(this.Resource.Unit))
             {
-                @this.Resource.Name
+                @this.Resource.Id
             }
             else
             {
-                <span>@this.Resource.Name&nbsp;</span><span class="small-text">@this.Resource.Unit</span>
+                <span>@this.Resource.Id&nbsp;</span><span class="small-text">@this.Resource.Unit</span>
             }
         }
 
         <div class="resource-special-info">
             @if (this.UserState.IsEditEnabled)
             {
-                <input type="text" @bind-value="this.Resource.SpecialInfo" />
+                <!--
+                <input type="text" @bind-value="this.Resource.Note" />
+                -->
             }
             else
             {
-                @if (!string.IsNullOrWhiteSpace(this.Resource.SpecialInfo))
+                @if (!string.IsNullOrWhiteSpace(this.Resource.Note))
                 {
                     <span><i class="fas fa-exclamation-triangle"></i></span>
-                    @this.Resource.SpecialInfo
+                    @this.Resource.Note
                 }
             }
         </div>
@@ -35,10 +39,10 @@
         <div class="resource-sample-rates">
             @if (_showAdditionalInfo)
             {
-                @foreach (var sampleRate in this.GetSampleRates())
+                @foreach (var samplePeriod in this.GetSamplePeriods())
                 {
-                    <div class="resource-sample-rate" @onclick="() => this.UserState.SampleRate = sampleRate">
-                        @sampleRate
+                    <div class="resource-sample-rate" @onclick="() => this.UserState.SamplePeriod = samplePeriod">
+                        @samplePeriod.ToUnitString()
                     </div>
                 }
             }
@@ -49,7 +53,7 @@
             {
                 <div class="resource-representation @(this.UserState.IsRepresentationSelected(representation) ? "selected" : "")"
                      @onclick="() => this.UserState.ToggleRepresentationSelection(representation)">
-                    @representation.Name
+                    @representation.Id
                 </div>
             }
         </div>
@@ -57,7 +61,9 @@
     <span class="resource-description">
         @if (this.UserState.IsEditEnabled)
         {
+            <!--
             <input type="text" @bind-value="this.Resource.Description" />
+            -->
         }
         else
         {

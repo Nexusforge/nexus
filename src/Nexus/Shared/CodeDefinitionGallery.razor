@@ -14,7 +14,7 @@
                         <MatNavSubMenuList>
                             @foreach (var codeDefinition in @entry.Value)
                             {
-                                <MatNavItem @onclick="() => this.Accept(codeDefinition)"><MatIcon Icon="@Utilities.GetEnumIconName(codeDefinition.CodeType)"></MatIcon>&nbsp; @codeDefinition.Name</MatNavItem>
+                                <MatNavItem @onclick="() => this.Accept(codeDefinition)"><MatIcon Icon="@NexusUtilities.GetEnumIconName(codeDefinition.CodeType)"></MatIcon>&nbsp; @codeDefinition.Name</MatNavItem>
                             }
                         </MatNavSubMenuList>
                     </MatNavSubMenu>

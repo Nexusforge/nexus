@@ -6,9 +6,6 @@ using Nexus.Core;
 using Serilog;
 using System;
 using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Nexus
 {
@@ -16,46 +13,50 @@ namespace Nexus
     {
         #region Methods
 
-        public static async Task<int> Main(string[] args)
+        public static void Main(string[] args)
         {
-            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            // culture
             CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
             CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
             CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
-            // check interactivity
-            var isWindowsService = args.Contains("--non-interactive");
-
             // configuration
             var configuration = NexusOptionsBase.BuildConfiguration(args);
 
-            // service vs. interactive
-            var hostBuilder = Program.CreateHostBuilder(Environment.CurrentDirectory, configuration);
+            // logging (https://nblumhardt.com/2019/10/serilog-in-aspnetcore-3/)
+            Log.Logger = new LoggerConfiguration()
+                .ReadFrom.Configuration(configuration)
+                .CreateLogger();
 
-            if (isWindowsService)
-                await hostBuilder
-                    .UseWindowsService()
+            // run
+            try
+            {
+                Program
+                    .CreateHostBuilder(Environment.CurrentDirectory, configuration)
                     .Build()
-                    .RunAsync();
-            else
-                await hostBuilder
-                    .Build()
-                    .RunAsync();
-
-            return 0;
+                    .Run();
+            }
+            catch (Exception ex)
+            {
+                Log.Fatal(ex, "Application start-up failed.");
+            }
+            finally
+            {
+                Log.CloseAndFlush();
+            }
         }
 
         private static IHostBuilder CreateHostBuilder(string currentDirectory, IConfiguration configuration) => 
             Host.CreateDefaultBuilder()
+
+                .UseSerilog()
+
                 .ConfigureAppConfiguration(builder =>
                 {
                     builder.Sources.Clear();
                     builder.AddConfiguration(configuration);
                 })
-                .UseSerilog((context, services, loggerConfiguration) =>
-                {
-                    loggerConfiguration.ReadFrom.Configuration(context.Configuration);
-                }, writeToProviders: false)
+
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();

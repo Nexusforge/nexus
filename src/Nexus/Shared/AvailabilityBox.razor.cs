@@ -108,7 +108,7 @@ namespace Nexus.Shared
         #region Properties
 
         [Inject]
-        public IDatabaseManager DatabaseManager { get; set; }
+        public AppState AppState { get; set; }
 
         [Inject]
         public ToasterService ToasterService { get; set; }
@@ -166,22 +166,22 @@ namespace Nexus.Shared
                 var availability = await this.UserState.GetAvailabilityAsync(granularity, CancellationToken.None);
                 var hasCleared = false;
 
-                if (availability.Count != this.Config.Data.Representations.Count)
+                if (availability.Length != this.Config.Data.Datasets.Count)
                 {
-                    this.Config.Data.Representations.Clear();
+                    this.Config.Data.Datasets.Clear();
                     hasCleared = true;
                 }
 
-                for (int i = 0; i < availability.Count; i++)
+                for (int i = 0; i < availability.Length; i++)
                 {
-                    BarRepresentation<TimePoint> representation;
+                    BarDataset<TimePoint> representation;
 
                     if (hasCleared)
                     {
                         var backendSource = availability[i].BackendSource;
-                        var isAggregation = backendSource.Equals(this.DatabaseManager.State.AggregationBackendSource);
+                        var isAggregation = backendSource.Equals(this.AppState.CatalogState.AggregationBackendSource);
 
-                        representation = new BarRepresentation<TimePoint>
+                        representation = new BarDataset<TimePoint>
                         {
                             Label = isAggregation ? "Aggregations" : $"Raw ({backendSource.ResourceLocator} - {backendSource.Type})",
                             BackgroundColor = _backgroundColors[i % _backgroundColors.Count()],
@@ -189,11 +189,11 @@ namespace Nexus.Shared
                             BorderWidth = 2
                         };
 
-                        this.Config.Data.Representations.Add(representation);
+                        this.Config.Data.Datasets.Add(representation);
                     }
                     else
                     {
-                        representation = (BarRepresentation<TimePoint>)this.Config.Data.Representations[i];
+                        representation = (BarDataset<TimePoint>)this.Config.Data.Datasets[i];
                         representation.Clear();
                     }
 

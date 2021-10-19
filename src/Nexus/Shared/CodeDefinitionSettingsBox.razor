@@ -15,7 +15,7 @@
                        @bind-Value="this.UserState.CodeDefinition.CodeType"
                        Items="this.AppState.CodeTypeValues">
             <ItemTemplate Context="value">
-                @Utilities.GetEnumLocalization(@value)
+                @NexusUtilities.GetEnumLocalization(@value)
             </ItemTemplate>
         </MatSelectItem>
 
@@ -24,7 +24,7 @@
                        @bind-Value="this.UserState.CodeDefinition.CodeLanguage"
                        Items="this.AppState.CodeLanguageValues">
             <ItemTemplate Context="value">
-                @Utilities.GetEnumLocalization(@value)
+                @NexusUtilities.GetEnumLocalization(@value)
             </ItemTemplate>
         </MatSelectItem>
 
@@ -35,12 +35,6 @@
 
         @if (this.UserState.CodeDefinition.CodeType == CodeType.Filter)
         {
-            <MatSelectItem class="settings-control"
-                           Label="Sample Rate"
-                           @bind-Value="this.UserState.CodeDefinition.SampleRate"
-                           Items="this.UserState.SampleRateValues">
-            </MatSelectItem>
-
             <div class="configuration-panel mt-auto">
                 <div class="flex-row">
                     <div class="configuration-panel-hover">

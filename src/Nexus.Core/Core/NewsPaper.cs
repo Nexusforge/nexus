@@ -7,6 +7,12 @@ namespace Nexus.Core
 {
     public class NewsPaper
     {
+        #region Types
+
+        public record NewsEntry(DateTime Date, string Title, string Message);
+
+        #endregion
+
         #region Constructors
 
         public NewsPaper(List<NewsEntry> news)

@@ -22,7 +22,8 @@ namespace Nexus.Controllers
 
         private ILogger _logger;
         private IServiceProvider _serviceProvider;
-        private IDatabaseManager _databaseManager;
+        private IDataControllerService _dataControllerService;
+        private AppState _appState;
         private JobService<ExportJob> _exportJobService;
         private JobService<AggregationJob> _aggregationJobService;
         private PathsOptions _pathsOptions;
@@ -32,16 +33,18 @@ namespace Nexus.Controllers
         #region Constructors
 
         public JobsController(
-            IDatabaseManager databaseManager,
+            AppState appState,
             JobService<ExportJob> exportJobService,
             JobService<AggregationJob> aggregationJobService,
+            IDataControllerService dataControllerService,
             IServiceProvider serviceProvider,
             ILogger<JobsController> logger,
             IOptions<PathsOptions> pathOptions)
         {
-            _databaseManager = databaseManager;
+            _appState = appState;
             _serviceProvider = serviceProvider;
             _exportJobService = exportJobService;
+            _dataControllerService = dataControllerService;
             _aggregationJobService = aggregationJobService;
             _logger = logger;
             _pathsOptions = pathOptions.Value;
@@ -59,7 +62,7 @@ namespace Nexus.Controllers
         [HttpPost("export")]
         public ActionResult<ExportJob> CreateExportJob(ExportParameters parameters)
         {
-            if (_databaseManager.Database == null)
+            if (_appState.CatalogState == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
 
             parameters.Begin = parameters.Begin.ToUniversalTime();
@@ -68,11 +71,13 @@ namespace Nexus.Controllers
             // translate resource paths to representations
             List<CatalogItem> catalogItems;
 
+            var state = _appState.CatalogState;
+
             try
             {
                 catalogItems = parameters.ResourcePaths.Select(resourcePath =>
                 {
-                    if (!_databaseManager.Database.TryFind(resourcePath, out var catalogItem))
+                    if (!state.CatalogCollection.TryFind(resourcePath, out var catalogItem))
                         throw new ValidationException($"Could not find the resource with path '{resourcePath}'.");
 
                     return catalogItem;
@@ -92,7 +97,10 @@ namespace Nexus.Controllers
 
             foreach (var catalogId in catalogIds)
             {
-                if (!NexusUtilities.IsCatalogAccessible(this.HttpContext.User, catalogId, _databaseManager.Database))
+                var catalogContainer = state.CatalogCollection.CatalogContainers
+                    .First(container => container.Id == catalogId);
+
+                if (!AuthorizationUtilities.IsCatalogAccessible(this.HttpContext.User, catalogId, catalogContainer.CatalogMetadata))
                     return this.Unauthorized($"The current user is not authorized to access catalog '{catalogId}'.");
             }
 
@@ -110,7 +118,8 @@ namespace Nexus.Controllers
                 var jobControl = _exportJobService.AddJob(job, dataService.ReadProgress, (jobControl, cts) =>
                 {
                     var userIdService = _serviceProvider.GetRequiredService<UserIdService>();
-#error ExportId should be ASP Request ID!
+#warning ExportId should be ASP Request ID!
+                    var exportId = Guid.NewGuid();
                     var task = dataService.ExportAsync(parameters, catalogItems, exportId, cts.Token);
 
                     return task;
@@ -169,7 +178,6 @@ namespace Nexus.Controllers
                     {
                         Start = jobControl.Start,
                         Progress = jobControl.Progress,
-                        ProgressMessage = jobControl.ProgressMessage,
                         Status = jobControl.Task.Status,
                         ExceptionMessage = jobControl.Task.Exception != null
                             ? jobControl.Task.Exception.GetFullMessage(includeStackTrace: false)
@@ -230,7 +238,7 @@ namespace Nexus.Controllers
         [HttpPost("aggregation")]
         public ActionResult<AggregationJob> CreateAggregationJob(AggregationSetup setup)
         {
-            if (_databaseManager.Database == null)
+            if (_appState.CatalogState == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
 
             setup.Begin = setup.Begin.ToUniversalTime();
@@ -255,7 +263,6 @@ namespace Nexus.Controllers
                 var jobControl = _aggregationJobService.AddJob(job, aggregationService.Progress, (jobControl, cts) =>
                 {
                     var userIdService = _serviceProvider.GetRequiredService<UserIdService>();
-                    var state = databaseManager.State;
 
                     var task = Task.Run(async () =>
                     {
@@ -265,10 +272,10 @@ namespace Nexus.Controllers
                         try
                         {
                             var result = await aggregationService.AggregateDataAsync(
-                                _pathsOptions.Data,
+                                _pathsOptions.Cache,
                                 setup,
-                                state,
-                                backendSource => databaseManager.GetDataSourceControllerAsync(userIdService.User, backendSource, cts.Token, state),
+                                _appState.CatalogState,
+                                backendSource => _dataControllerService.GetDataSourceControllerAsync(backendSource, cts.Token),
                                 cts.Token);
 
                             _logger.LogInformation($"{message} Done.");
@@ -338,7 +345,6 @@ namespace Nexus.Controllers
                     {
                         Start = jobControl.Start,
                         Progress = jobControl.Progress,
-                        ProgressMessage = jobControl.ProgressMessage,
                         Status = jobControl.Task.Status,
                         ExceptionMessage = jobControl.Task.Exception != null
                             ? jobControl.Task.Exception.GetFullMessage(includeStackTrace: false)

@@ -9,17 +9,22 @@ using System.Threading.Tasks;
 
 namespace Nexus.Services
 {
-    internal class UserManager
+    public class UserManagerWrapper<T> : IUserManagerWrapper where T : class
     {
         private ILogger _logger;
         private IServiceProvider _serviceProvider;
         private SecurityOptions _securityOptions;
+        private UserManager<T> _wrapped;
 
-        // Both, userDB and userManager, cannot be pulled in here because they are scoped
-        public UserManager(IServiceProvider serviceProvider, ILoggerFactory loggerFactory, IOptions<SecurityOptions> securityOptions)
+        public UserManagerWrapper(
+            UserManager<T> wrapped,
+            IServiceProvider serviceProvider,
+            ILogger<UserManagerWrapper<T>> logger, 
+            IOptions<SecurityOptions> securityOptions)
         {
+            _wrapped = wrapped;
             _serviceProvider = serviceProvider;
-            _logger = loggerFactory.CreateLogger("Nexus");
+            _logger = logger;
             _securityOptions = securityOptions.Value;
         }
 
@@ -83,7 +88,7 @@ namespace Nexus.Services
                     {
                         // confirm account
                         var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
-                        await userManager .ConfirmEmailAsync(user, token);
+                        await userManager.ConfirmEmailAsync(user, token);
 
                         // add claim
                         var claim = new Claim(Claims.CAN_ACCESS_CATALOG, "/IN_MEMORY/TEST/ACCESSIBLE;/IN_MEMORY/TEST/RESTRICTED");
@@ -91,6 +96,19 @@ namespace Nexus.Services
                     }
                 }
             }
+        }
+
+        public async Task<ClaimsPrincipal> GetClaimsPrincipalAsync(string username)
+        {
+            var user = await _wrapped.FindByNameAsync(username);
+
+            if (user == null)
+                return null;
+
+            var claims = await _wrapped.GetClaimsAsync(user);
+            var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, "Fake authentication type"));
+
+            return principal;
         }
     }
 }

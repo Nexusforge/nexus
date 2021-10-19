@@ -1,5 +1,6 @@
 ﻿using Nexus.Core;
 using Prism.Mvvm;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
@@ -70,15 +71,15 @@ namespace Nexus.ViewModels
         }
 
         [Required]
-        public string SampleRate
+        public TimeSpan SamplePeriod
         {
             get 
             {
-                return this.Model.SampleRate; 
+                return this.Model.SamplePeriod; 
             }
             set 
             {
-                this.Model.SampleRate = value;
+                this.Model.SamplePeriod = value;
                 this.RaisePropertyChanged();
             }
         }

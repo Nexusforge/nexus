@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Identity;
 using Nexus.Core;
+using Nexus.Services;
 using Nexus.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -17,7 +17,7 @@ namespace Nexus.Shared
         public AppState AppState { get; set; }
 
         [Inject]
-        public UserManager<IdentityUser> UserManager { get; set; }
+        public IUserManagerWrapper UserManagerWrapper { get; set; }
 
         [Parameter]
         public bool IsOpen { get; set; }
@@ -54,7 +54,7 @@ namespace Nexus.Shared
 
         private async Task<List<CodeDefinitionViewModel>> GetCodeDefinitionsForOwnerAsync(string owner)
         {
-            var user = await Utilities.GetClaimsPrincipalAsync(owner, this.UserManager);
+            var user = await this.UserManagerWrapper.GetClaimsPrincipalAsync(owner);
 
             return this.AppState
                 .FilterSettings

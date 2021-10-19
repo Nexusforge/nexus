@@ -42,8 +42,8 @@ namespace Nexus.Core
         /// <example>{ "IncludeGroup": "GroupA|GroupB", "ExcludeUnit": "deg", "IncludeResources": "T1" }</example>
         public Dictionary<AggregationFilter, string> Filters { get; set; } = new Dictionary<AggregationFilter, string>();
 
-        /// <example>[ 1, 60, 600 ]</example>
-        public List<int> Periods { get; set; } = new List<int>();
+        /// <example>[ 00:00:01, 00:01:00, 00:10:00 ]</example>
+        public List<TimeSpan> Periods { get; set; } = new List<TimeSpan>();
     }
 
     public enum AggregationMethod
@@ -81,7 +81,7 @@ namespace Nexus.Core
     {
         public Aggregation Aggregation { get; init; }
 
-        public int Period { get; init; }
+        public TimeSpan Period { get; init; }
 
         public AggregationMethod Method { get; init; }
 

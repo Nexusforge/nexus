@@ -2,7 +2,7 @@
 
 namespace Nexus.Services
 {
-    internal class ToasterService
+    public class ToasterService
     {
         #region Fields
 

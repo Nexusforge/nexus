@@ -3,7 +3,7 @@
 <div class="catalog-box-available">
     <MatHeadline5>Available Catalogs</MatHeadline5>
 
-    @if (this.AppState.IsDatabaseInitialized)
+    @if (this.AppState.CatalogState != null)
     {
         <ul>
             @foreach (var catalogContainer in this.UserState.CatalogContainersInfo.Accessible.Concat(this.UserState.CatalogContainersInfo.Restricted))
@@ -19,7 +19,7 @@
                                     <span>&nbsp; &nbsp;<i class="fas fa-lock"></i></span>
                                 </MatTooltip>
                             }
-                            else if (catalogContainer.CatalogMeta.IsQualityControlled)
+                            else if (catalogContainer.CatalogMetadata.IsQualityControlled)
                             {
                                 @* Wrap is required due to https://github.com/SamProf/MatBlazor/issues/464. *@
                                 <MatTooltip Tooltip="This catalog is quality controlled." Wrap="true" Position="MatTooltipPosition.Top">
@@ -27,7 +27,9 @@
                                 </MatTooltip>
                             }
                         </div>
-                        <div class="small-text">&nbsp;&nbsp;&nbsp;@catalogContainer.CatalogMeta.ShortDescription</div>
+                        <!--
+                            <div class="small-text">&nbsp;&nbsp;&nbsp;@catalogContainer.CatalogMetadata.ShortDescription</div>
+                        -->
                     </div>
                 </li>
             }
@@ -43,9 +45,11 @@
     @if (this.UserState.CatalogContainer != null)
     {
         <MatHeadline5>@this.UserState.CatalogContainer.Id.TrimStart('/').Replace("/", " / ")</MatHeadline5>
+        <!--
         <p class="long-description small-text">
-            @this.UserState.CatalogContainer.CatalogMeta.LongDescription
+            @this.UserState.CatalogContainer.Description
         </p>
+        -->
         <div class="catalog-box-selected-footer">
             <div class="catalog-box-selected-footer-date">
                 <b>Start:&nbsp;</b> @this.UserState.CatalogContainer.CatalogBegin.ToString("dd.MM.yyyy") &nbsp;&nbsp;&nbsp; <b>End:&nbsp;</b> @this.UserState.CatalogContainer.CatalogEnd.ToString("dd.MM.yyyy")
@@ -60,7 +64,7 @@
                     </MatTooltip>
 
                     @* Wrap is required due to https://github.com/SamProf/MatBlazor/issues/464. *@
-                    @if (this.UserState.CatalogContainer.CatalogMeta.Logbook.Any())
+                    @if (this.UserState.CatalogContainer.CatalogMetadata.Logbook.Any())
                     {
                         <MatTooltip Tooltip="Logbook" Position="MatTooltipPosition.Top" Wrap="true">
                             <MatIconButton Icon="@MatIconNames.Event_note" OnClick="this.OpenLogBookDialog" />

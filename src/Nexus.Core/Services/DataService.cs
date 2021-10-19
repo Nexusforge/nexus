@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using System;
@@ -13,12 +14,13 @@ using System.Threading.Tasks;
 
 namespace Nexus.Services
 {
-    internal class DataService
+    public class DataService
     {
         #region Fields
 
+        private AppState _appState;
+
         private ILogger _logger;
-        private ICatalogManager _catalogManager;
         private IDatabaseManager _databaseManager;
         private IDataControllerService _dataControllerService;
 
@@ -27,13 +29,13 @@ namespace Nexus.Services
         #region Constructors
 
         public DataService(
+            AppState appState,
             IDataControllerService dataControllerService,
-            ICatalogManager catalogManager,
             IDatabaseManager databaseManager,
             ILogger<DataService> logger)
         {
+            _appState = appState;
             _dataControllerService = dataControllerService;
-            _catalogManager = catalogManager;
             _databaseManager = databaseManager;
             _logger = logger;
 
@@ -60,7 +62,7 @@ namespace Nexus.Services
             AvailabilityGranularity granularity,
             CancellationToken cancellationToken)
         {
-            var backendSources = _catalogManager.State.BackendSourceToCatalogsMap
+            var backendSources = _appState.CatalogState.BackendSourceToCatalogsMap
                 // where the catalog list contains the catalog ID
                 .Where(entry => entry.Value.Any(catalog => catalog.Id == catalogId))
                 // select the backend source

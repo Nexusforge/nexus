@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Options;
 using Nexus.Core;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -8,15 +9,21 @@ namespace Nexus.Services
 {
     internal class DatabaseManager : IDatabaseManager
     {
-        // data/config/project.json
-        // data/config/news.json
-        // data/catalogs/abc/attachements
-        // data/catalogs/abc/meta
-        // data/users/def/code
-        // data/users/users.db
-        // data/users/def/additional_extensions.json
-        // data/cache/abc
-        // data/export
+        // generated, small files:
+        //
+        // <application data>/config/project.json
+        // <application data>/config/news.json
+        // <application data>/config/users.db
+        // <application data>/config/catalogs/abc.json
+        // <application data>/config/users/def.json
+
+        // use defined, potentially large files:
+        //
+        // <application data>/catalogs/abc
+        // <application data>/users/def/code
+        // <application data>/cache
+        // <application data>/export
+        // <user profile>/.nexus/packages
 
         private PathsOptions _pathsOptions;
 
@@ -53,14 +60,52 @@ namespace Nexus.Services
             return false;
         }
 
+        public bool TryReadCatalogMetadata(string catalogId, out Stream? stream)
+        {
+            var catalogMetadataFileName = $"{WebUtility.UrlDecode(catalogId)}.json";
+            var filePath = Path.Combine(_pathsOptions.Config, "catalogs", catalogMetadataFileName);
+
+            stream = null;
+
+            if (File.Exists(filePath))
+            {
+                stream = File.OpenRead(filePath);
+                return true;
+            }
+
+            return false;
+        }
+
+        public Stream WriteCatalogMetadata(string catalogId)
+        {
+            var catalogMetadataFileName = $"{WebUtility.UrlDecode(catalogId)}.json";
+            var folderPath = Path.Combine(_pathsOptions.Config, "catalogs");
+
+            Directory.CreateDirectory(folderPath);
+
+            var filePath = Path.Combine(folderPath, catalogMetadataFileName);
+
+            return File.Open(filePath, FileMode.Truncate, FileAccess.Write);
+        }
+
+        public IEnumerable<string> EnumerateAttachements(string catalogId)
+        {
+            var catalogFolderName = WebUtility.UrlDecode(catalogId);
+            var attachementFolder = Path.Combine(_pathsOptions.Catalogs, catalogFolderName);
+
+            if (Directory.Exists(attachementFolder))
+                return Directory.GetFiles(attachementFolder);
+
+            else
+                return Enumerable.Empty<string>();
+        }
+
         public bool TryReadFirstAttachment(string catalogId, string searchPattern, EnumerationOptions enumerationOptions, out Stream attachment)
         {
             attachment = null;
 
             var catalogFolderName = WebUtility.UrlDecode(catalogId);
             var attachementFolder = Path.Combine(_pathsOptions.Catalogs, catalogFolderName);
-
-            Directory.CreateDirectory(catalogFolderName);
 
             if (Directory.Exists(attachementFolder))
             {
@@ -76,36 +121,6 @@ namespace Nexus.Services
             }
 
             return false;
-        }
-
-        private const string CatalogMetadataFileName = "metadata.json";
-
-        public bool TryReadCatalogMetadata(string catalogId, out Stream? stream)
-        {
-            var catalogFolderName = WebUtility.UrlDecode(catalogId);
-            var filePath = Path.Combine(_pathsOptions.Catalogs, catalogFolderName, CatalogMetadataFileName);
-
-            stream = null;
-
-            if (File.Exists(filePath))
-            {
-                stream = File.OpenRead(filePath);
-                return true;
-            }
-
-            return false;
-        }
-
-        public Stream WriteCatalogMetadata(string catalogId)
-        {
-            var physcialId = catalogId.TrimStart('/').Replace('/', '_');
-            var folderPath = Path.Combine(_pathsOptions.Catalogs, physcialId);
-
-            Directory.CreateDirectory(folderPath);
-
-            var filePath = Path.Combine(folderPath, CatalogMetadataFileName);
-
-            return File.Open(filePath, FileMode.Truncate, FileAccess.Write);
         }
 
         public Stream WriteExportFile(string fileName)

@@ -11,6 +11,11 @@ namespace Nexus.Utilities
 {
     internal static class NexusCoreUtilities
     {
+        public static List<T> GetEnumValues<T>()
+        {
+            return Enum.GetValues(typeof(T)).Cast<T>().ToList();
+        }
+
         public static TimeSpan ValueAndUnitToSamplePeriod(long value, string unit)
         {
             var ticksPerUnit = unit switch

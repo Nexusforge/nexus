@@ -36,8 +36,8 @@ namespace Nexus.Shared
 				{
 					this.ResourcePage = 0;
 				}
-				else if (e.PropertyName == nameof(AppState.IsDatabaseInitialized) ||
-						(e.PropertyName == nameof(AppState.IsDatabaseUpdating) && !this.AppState.IsDatabaseUpdating))
+				else if (e.PropertyName == nameof(AppState.CatalogState) ||
+						(e.PropertyName == nameof(AppState.IsCatalogStateUpdating) && !this.AppState.IsCatalogStateUpdating))
 				{
 					this.InvokeAsync(this.StateHasChanged);
 				}

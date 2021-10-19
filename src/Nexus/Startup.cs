@@ -20,11 +20,13 @@ using Nexus.Services;
 using Nexus.Utilities;
 using Nexus.ViewModels;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nexus
@@ -164,13 +166,14 @@ namespace Nexus
             services.AddTransient<AggregationService>();
             services.AddTransient<IDataControllerService, DataControllerService>();
 
+            services.AddSingleton<ICatalogManager, CatalogManager>();
+            services.AddSingleton<IUserManagerWrapper, UserManagerWrapper<IdentityUser>>();
             services.AddSingleton<ExtensionHive>();
             services.AddSingleton<AppState>();
             services.AddSingleton<IFileAccessManager, FileAccessManager>();
             services.AddSingleton<JobService<ExportJob>>();
             services.AddSingleton<JobService<AggregationJob>>();
             services.AddSingleton<IDatabaseManager, DatabaseManager>();
-            services.AddSingleton<UserManager>();
 
             services.Configure<GeneralOptions>(Configuration.GetSection(GeneralOptions.Section));
             services.Configure<ServerOptions>(Configuration.GetSection(ServerOptions.Section));
@@ -183,7 +186,7 @@ namespace Nexus
         public void Configure(IApplicationBuilder app,
                               IWebHostEnvironment env,
                               IServiceProvider serviceProvider,
-                              IOptions<PathsOptions> pathOptions)
+                              IOptions<PathsOptions> pathsOptions)
         {
             // https://docs.microsoft.com/en-us/aspnet/core/fundamentals/middleware/?view=aspnetcore-5.0
 
@@ -203,7 +206,7 @@ namespace Nexus
 
             app.UseStaticFiles(new StaticFileOptions
             {
-                FileProvider = new LazyPhysicalFileProvider(pathOptions.Value.Data, "ATTACHMENTS"),
+                FileProvider = new LazyPhysicalFileProvider(pathsOptions.Value.Catalogs),
                 RequestPath = "/attachments",
                 ServeUnknownFileTypes = true
             });
@@ -217,19 +220,13 @@ namespace Nexus
 
             app.UseStaticFiles(new StaticFileOptions
             {
-                FileProvider = new LazyPhysicalFileProvider(pathOptions.Value.Data, "EXPORT"),
+                FileProvider = new LazyPhysicalFileProvider(pathsOptions.Value.Export),
                 RequestPath = "/export"
-            });
-
-            app.UseStaticFiles(new StaticFileOptions
-            {
-                FileProvider = new LazyPhysicalFileProvider(pathOptions.Value.Data, "PRESETS"),
-                RequestPath = "/presets"
             });
 
             // swagger
             app.UseOpenApi();
-            app.UseSwaggerUi3(configure => configure.SwaggerRoutes);
+            app.UseSwaggerUi3();
 
             // routing (for REST API)
             app.UseRouting();
@@ -290,19 +287,19 @@ namespace Nexus
             });
 
             // initialize app state
-            await this.InitializeAppAsync(serviceProvider);
+            this.InitializeAppAsync(serviceProvider, pathsOptions.Value).Wait();
         }
 
-        private async Task InitializeAppAsync(IServiceProvider serviceProvier)
+        private async Task InitializeAppAsync(IServiceProvider serviceProvier, PathsOptions pathsOptions)
         {
             var appState = serviceProvier.GetRequiredService<AppState>();
-            var databaseManager = serviceProvier.GetRequiredService<IDatabaseManager>();
-            var userManager = serviceProvier.GetRequiredService<UserManager>();
+            var userManagerWrapper = serviceProvier.GetRequiredService<IUserManagerWrapper>();
             var extensionHive = serviceProvier.GetRequiredService<ExtensionHive>();
-            var pathsOptions = serviceProvier.GetRequiredService<IOptions<PathsOptions>>().Value;
+            var catalogManager = serviceProvier.GetRequiredService<ICatalogManager>();
+            var databaseManager = serviceProvier.GetRequiredService<IDatabaseManager>();
 
-            // package references
-            await extensionHive.LoadPackagesAsync(packageReferences, cancellationToken);
+            // project
+            await this.InitializeProjectAsync(appState, databaseManager, pathsOptions);
 
             // news
             if (databaseManager.TryReadNews(out var stream))
@@ -316,23 +313,28 @@ namespace Nexus
             }
 
             // filters
-            var filterSettingsFilePath = Path.Combine(pathOptions.Config, "filters.json");
+            var filterSettingsFilePath = Path.Combine(pathsOptions.Config, "filters.json");
             appState.FilterSettings = new FilterSettingsViewModel(filterSettingsFilePath);
             this.InitializeFilterSettings(appState.FilterSettings.Model, filterSettingsFilePath);
 
-#error not yet clean
-            // ??
-            _resourceCache = new Dictionary<CatalogContainer, List<ResourceViewModel>>();
-            _updateDatabaseSemaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
-
-            // project
-            await this.InitializeProjectAsync(appState, databaseManager, pathsOptions);
-
             // user manager
-            await userManager.InitializeAsync();
+            await userManagerWrapper.InitializeAsync();
 
-            // 
-            _ = this.UpdateDatabaseAsync();
+            // packages and catalogs
+            appState.IsCatalogStateUpdating = true;
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await extensionHive.LoadPackagesAsync(appState.Project.PackageReferences, CancellationToken.None);
+                    appState.CatalogState = await catalogManager.LoadCatalogsAsync(CancellationToken.None);
+                }
+                finally
+                {
+                    appState.IsCatalogStateUpdating = false;
+                }
+            });
         }
 
         private async Task InitializeProjectAsync(AppState appState, IDatabaseManager databaseManager, PathsOptions pathsOptions)
@@ -386,7 +388,7 @@ namespace Nexus
                     Name = "Simple filter (C#)",
                     Owner = "test@nexus.org",
                     RequestedCatalogIds = new List<string>() { "/IN_MEMORY/TEST/ACCESSIBLE" },
-                    SampleRate = "1 s"
+                    SamplePeriod = TimeSpan.FromSeconds(1)
                 });
 
                 filterSettings.Save(filePath);
@@ -406,7 +408,7 @@ namespace Nexus
                     Name = "Simple shared (C#)",
                     Owner = "test@nexus.org",
                     RequestedCatalogIds = new List<string>(),
-                    SampleRate = string.Empty
+                    SamplePeriod = default
                 });
 
                 filterSettings.Save(filePath);

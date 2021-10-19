@@ -1,13 +1,15 @@
 ﻿using Microsoft.Extensions.Logging.Abstractions;
 using Nexus.Core;
+using Nexus.DataModel;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
 
 namespace Nexus.Services
 {
-    internal class JobEditor
+    public class JobEditor
     {
         #region Events
 
@@ -24,9 +26,9 @@ namespace Nexus.Services
 
         #region Constructors
 
-        public JobEditor(IDatabaseManager databaseManager)
+        public JobEditor(AppState appState)
         {
-            _state = databaseManager.State;
+            _state = appState.CatalogState;
             this.Update();
         }
 
@@ -86,7 +88,7 @@ namespace Nexus.Services
                         foreach (var aggregationResource in aggregationResources)
                         {
                             sb.AppendLine();
-                            sb.AppendLine($"\t\t{aggregationResource.Resource.Id} / {aggregationResource.Resource.Group} / {aggregationResource.Resource.Unit}");
+                            sb.AppendLine($"\t\t{aggregationResource.Resource.Id} / {aggregationResource.Resource.Properties.GetValueOrDefault(DataModelExtensions.Unit, string.Empty)}");
 
                             foreach (var aggregation in aggregationResource.Aggregations)
                             {

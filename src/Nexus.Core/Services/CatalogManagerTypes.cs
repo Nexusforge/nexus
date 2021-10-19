@@ -9,6 +9,5 @@ namespace Nexus.Core
         public BackendSource AggregationBackendSource { get; init; }
         public CatalogCollection CatalogCollection { get; init; }
         public Dictionary<BackendSource, ResourceCatalog[]> BackendSourceToCatalogsMap { get; init; }
-        public Dictionary<ResourceCatalog, TimeRangeResult> CatalogToTimeRangeMap { get; init; }
     }
 }

@@ -6,25 +6,21 @@ namespace Nexus.Core
 {
     public class LazyPhysicalFileProvider : IFileProvider
     {
-        private string _relativePath;
-        private string _dataBaseFolderPath;
+        private string _folderPath;
         private PhysicalFileProvider _physicalFileProvider;
 
-        public LazyPhysicalFileProvider(string dataBaseFolderPath, string relativePath)
+        public LazyPhysicalFileProvider(string folderPath)
         {
-            _dataBaseFolderPath = dataBaseFolderPath;
-            _relativePath = relativePath;
+            _folderPath = folderPath;
         }
 
         private PhysicalFileProvider GetPhysicalFileProvider()
         {
-            var path = Path.Combine(_dataBaseFolderPath, _relativePath);
+            if (!Directory.Exists(_folderPath))
+                Directory.CreateDirectory(_folderPath);
 
-            if (!Directory.Exists(path))
-                Directory.CreateDirectory(path);
-
-            if (_physicalFileProvider == null || _physicalFileProvider.Root != path)
-                _physicalFileProvider = new PhysicalFileProvider(path);
+            if (_physicalFileProvider == null || _physicalFileProvider.Root != _folderPath)
+                _physicalFileProvider = new PhysicalFileProvider(_folderPath);
 
             return _physicalFileProvider;
         }

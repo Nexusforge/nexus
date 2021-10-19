@@ -46,7 +46,7 @@ namespace Nexus.Services
 
         #region Methods
 
-        public async Task LoadPackagesAsync(PackageReference[] packageReferences, CancellationToken cancellationToken)
+        public async Task LoadPackagesAsync(IEnumerable<PackageReference> packageReferences, CancellationToken cancellationToken)
         {
             // clean up
             if (_packageControllerMap is not null)

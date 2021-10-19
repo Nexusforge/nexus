@@ -5,6 +5,7 @@ using Nexus.Extensibility;
 using Nexus.Extensions;
 using Nexus.Utilities;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -44,7 +45,7 @@ namespace Nexus.Services
             var logger = _loggerFactory.CreateLogger($"{backendSource.Type} - {backendSource.ResourceLocator}");
             var dataSource = _extensionHive.GetInstance<IDataSource>(backendSource.Type);
 
-            var state = _serviceProvider.GetRequiredService<ICatalogManager>().State;
+            var state = _serviceProvider.GetRequiredService<AppState>().CatalogState;
 
             // special case checks
             if (dataSource.GetType() == typeof(AggregationDataSource))
@@ -58,7 +59,10 @@ namespace Nexus.Services
                 filterDataSource.CatalogCollection = state.CatalogCollection;
 
                 filterDataSource.IsCatalogAccessible =
-                    catalogId => NexusUtilities.IsCatalogAccessible(_userIdService.User, catalogId, state.CatalogCollection);
+                    catalogId => AuthorizationUtilities.IsCatalogAccessible(
+                        _userIdService.User, 
+                        catalogId, 
+                        state.CatalogCollection.CatalogContainers.First(container => container.Id == catalogId).CatalogMetadata);
 
                 filterDataSource.GetDataSourceControllerAsync =
                     backendSource => this.GetDataSourceControllerAsync(backendSource, cancellationToken);

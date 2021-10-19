@@ -1,12 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Logging;
+using Nexus.Core;
 using Nexus.DataModel;
+using Nexus.Extensibility;
 using Nexus.Services;
 using Nexus.Utilities;
 using NJsonSchema.Annotations;
 using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Net;
@@ -22,19 +23,23 @@ namespace Nexus.Controllers
         #region Fields
 
         private ILogger _logger;
+        private AppState _appState;
         private UserIdService _userIdService;
-        private IDatabaseManager _databaseManager;
+        private IDataControllerService _dataControllerService;
 
         #endregion
 
         #region Constructors
 
-        public CatalogsController(IDatabaseManager databaseManager,
-                                    UserIdService userIdService,
-                                    ILoggerFactory loggerFactory)
+        public CatalogsController(
+            AppState appState,
+            UserIdService userIdService,
+            IDataControllerService dataControllerService,
+            ILoggerFactory loggerFactory)
         {
+            _appState = appState;
             _userIdService = userIdService;
-            _databaseManager = databaseManager;
+            _dataControllerService = dataControllerService;
             _logger = loggerFactory.CreateLogger("Nexus");
         }
 
@@ -46,24 +51,24 @@ namespace Nexus.Controllers
         /// Gets a list of all accessible catalogs.
         /// </summary>
         [HttpGet]
-        public ActionResult<List<Catalog>> GetCatalogs()
+        public ActionResult<ResourceCatalog[]> GetCatalogs()
         {
-            if (_databaseManager.Database == null)
+            if (_appState.CatalogState == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
 
-            var catalogContainers = _databaseManager.Database.CatalogContainers;
+            var catalogContainers = _appState.CatalogState.CatalogCollection.CatalogContainers;
 
             catalogContainers = catalogContainers.Where(catalogContainer =>
             {
-                var isCatalogAccessible = NexusUtilities.IsCatalogAccessible(this.User, catalogContainer.Id, _databaseManager.Database);
-                var isCatalogVisible = NexusUtilities.IsCatalogVisible(this.User, catalogContainer.CatalogSettings, isCatalogAccessible);
+                var isCatalogAccessible = AuthorizationUtilities.IsCatalogAccessible(this.User, catalogContainer.Id, catalogContainer.CatalogMetadata);
+                var isCatalogVisible = AuthorizationUtilities.IsCatalogVisible(this.User, catalogContainer.Id, catalogContainer.CatalogMetadata, isCatalogAccessible);
 
                 return isCatalogAccessible && isCatalogVisible;
             }).ToList();
 
             var response = catalogContainers.Select(catalogContainer
-                => this.CreateCatalogResponse(catalogContainer.Catalog, catalogContainer.CatalogSettings))
-                .ToList();
+                => this.CreateCatalogResponse(catalogContainer.Catalog))
+                .ToArray();
 
             return response;
         }
@@ -73,9 +78,9 @@ namespace Nexus.Controllers
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
         [HttpGet("{catalogId}")]
-        public async Task<ActionResult<Catalog>> GetCatalog(string catalogId)
+        public async Task<ActionResult<ResourceCatalog>> GetCatalog(string catalogId)
         {
-            if (_databaseManager.Database == null)
+            if (_appState.CatalogState == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
 
             catalogId = WebUtility.UrlDecode(catalogId);
@@ -86,12 +91,11 @@ namespace Nexus.Controllers
 
             try
             {
-                return await this.ProcessCatalogIdAsync(catalogId, message,
-                    (catalog, catalogMeta) =>
-                    {
-                        _logger.LogInformation($"{message} Done.");
-                        return Task.FromResult((ActionResult<Catalog>)this.CreateCatalogResponse(catalog, catalogMeta));
-                    });
+                return await this.ProcessCatalogIdAsync(catalogId, message, catalog =>
+                {
+                    _logger.LogInformation($"{message} Done.");
+                    return Task.FromResult((ActionResult<ResourceCatalog>)this.CreateCatalogResponse(catalog));
+                });
             }
             catch (Exception ex)
             {
@@ -111,7 +115,7 @@ namespace Nexus.Controllers
                 string catalogId, 
                 CancellationToken cancellationToken)
         {
-            if (_databaseManager.Database == null)
+            if (_appState.CatalogState == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
 
             catalogId = WebUtility.UrlDecode(catalogId);
@@ -122,12 +126,11 @@ namespace Nexus.Controllers
 
             try
             {
-                return await this.ProcessCatalogIdAsync<TimeRangeResult[]>(catalogId, message,
-                    async (catalog, catalogMeta) =>
-                    {
-                        _logger.LogInformation($"{message} Done.");
-                        return await this.CreateTimeRangeResponseAsync(catalog, cancellationToken);
-                    });
+                return await this.ProcessCatalogIdAsync<TimeRangeResult[]>(catalogId, message, async catalog =>
+                {
+                    _logger.LogInformation($"{message} Done.");
+                    return await this.CreateTimeRangeResponseAsync(catalog, cancellationToken);
+                });
             }
             catch (Exception ex)
             {
@@ -145,7 +148,7 @@ namespace Nexus.Controllers
         /// <param name="granularity">Granularity of the resulting array.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpGet("{catalogId}/availability")]
-        public async Task<ActionResult<List<AvailabilityResult>>> 
+        public async Task<ActionResult<AvailabilityResult[]>>
             GetCatalogAvailability(
                 [BindRequired] string catalogId,
                 [BindRequired][JsonSchemaDate] DateTime begin,
@@ -153,7 +156,7 @@ namespace Nexus.Controllers
                 [BindRequired] AvailabilityGranularity granularity,
                 CancellationToken cancellationToken)
         {
-            if (_databaseManager.Database == null)
+            if (_appState.CatalogState == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
 
             catalogId = WebUtility.UrlDecode(catalogId);
@@ -164,12 +167,11 @@ namespace Nexus.Controllers
 
             try
             {
-                return await this.ProcessCatalogIdAsync<AvailabilityResult[]>(catalogId, message,
-                    async (catalog, catalogMeta) =>
-                    {
-                        _logger.LogInformation($"{message} Done.");
-                        return await this.CreateAvailabilityResponseAsync(catalog, begin, end, granularity, cancellationToken);
-                    });
+                return await this.ProcessCatalogIdAsync<AvailabilityResult[]>(catalogId, message, async catalog =>
+                {
+                    _logger.LogInformation($"{message} Done.");
+                    return await this.CreateAvailabilityResponseAsync(catalog, begin, end, granularity, cancellationToken);
+                });
             }
             catch (Exception ex)
             {
@@ -184,10 +186,10 @@ namespace Nexus.Controllers
         /// <param name="catalogId">The catalog identifier.</param>
         /// <returns></returns>
         [HttpGet("{catalogId}/resources")]
-        public async Task<ActionResult<List<Resource>>> GetResources(
+        public async Task<ActionResult<Resource[]>> GetResources(
             [BindRequired] string catalogId)
         {
-            if (_databaseManager.Database == null)
+            if (_appState.CatalogState == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
 
             catalogId = WebUtility.UrlDecode(catalogId);
@@ -207,21 +209,16 @@ namespace Nexus.Controllers
 
             try
             {
-                return await this.ProcessCatalogIdAsync(catalogId, message,
-                    (catalog, catalogMeta) =>
-                    {
-                        var resources = catalog.Resources.Select(resource =>
-                        {
-                            var resourceMeta = catalogMeta.Resources.First(
-                                current => current.Id == resource.Id);
+                return await this.ProcessCatalogIdAsync(catalogId, message, catalog =>
+                {
+                    var resources = catalog.Resources
+                        .Select(resource => this.CreateResourceResponse(resource))
+                        .ToArray();
 
-                            return this.CreateResourceResponse(resource, resourceMeta);
-                        }).ToList();
+                    _logger.LogInformation($"{message} Done.");
 
-                        _logger.LogInformation($"{message} Done.");
-
-                        return Task.FromResult((ActionResult<List<Resource>>)resources);
-                    });
+                    return Task.FromResult((ActionResult<Resource[]>)resources);
+                });
             }
             catch (Exception ex)
             {
@@ -241,7 +238,7 @@ namespace Nexus.Controllers
             string catalogId,
             string resourceId)
         {
-            if (_databaseManager.Database == null)
+            if (_appState.CatalogState == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
 
             catalogId = WebUtility.UrlDecode(catalogId);
@@ -253,26 +250,22 @@ namespace Nexus.Controllers
 
             try
             {
-                return await this.ProcessCatalogIdAsync(catalogId, message,
-                    (catalog, catalogMeta) =>
-                    {
-                        var resource = catalog.Resources.FirstOrDefault(
-                            current => current.Id.ToString() == resourceId);
+                return await this.ProcessCatalogIdAsync(catalogId, message, catalog =>
+                {
+                    var resource = catalog.Resources.FirstOrDefault(
+                        current => current.Id.ToString() == resourceId);
 
-                        if (resource == null)
-                            resource = catalog.Resources.FirstOrDefault(
-                                current => current.Id == resourceId);
+                    if (resource == null)
+                        resource = catalog.Resources.FirstOrDefault(
+                            current => current.Id == resourceId);
 
-                        if (resource == null)
-                            return Task.FromResult((ActionResult<Resource>)this.NotFound($"{catalogId}/{resourceId}"));
+                    if (resource == null)
+                        return Task.FromResult((ActionResult<Resource>)this.NotFound($"{catalogId}/{resourceId}"));
 
-                        var resourceMeta = catalogMeta.Resources.First(
-                            current => current.Id == resource.Id);
+                    _logger.LogInformation($"{message} Done.");
 
-                        _logger.LogInformation($"{message} Done.");
-
-                        return Task.FromResult((ActionResult<Resource>)this.CreateResourceResponse(resource, resourceMeta));
-                    });
+                    return Task.FromResult((ActionResult<Resource>)this.CreateResourceResponse(resource));
+                });
             }
             catch (Exception ex)
             {
@@ -288,11 +281,11 @@ namespace Nexus.Controllers
         /// <param name="resourceId">The resource identifier.</param>
         /// <returns></returns>
         [HttpGet("{catalogId}/resources/{resourceId}/representations")]
-        public async Task<ActionResult<List<Representation>>> GetRepresentations(
+        public async Task<ActionResult<Representation[]>> GetRepresentations(
             string catalogId,
             string resourceId)
         {
-            if (_databaseManager.Database == null)
+            if (_appState.CatalogState == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
 
             catalogId = WebUtility.UrlDecode(catalogId);
@@ -304,27 +297,26 @@ namespace Nexus.Controllers
 
             try
             {
-                return await this.ProcessCatalogIdAsync(catalogId, message,
-                    (catalog, catalogMeta) =>
-                    {
-                        var resource = catalog.Resources.FirstOrDefault(
-                            current => current.Id.ToString() == resourceId);
+                return await this.ProcessCatalogIdAsync(catalogId, message, catalog =>
+                {
+                    var resource = catalog.Resources.FirstOrDefault(
+                        current => current.Id.ToString() == resourceId);
 
-                        if (resource == null)
-                            resource = catalog.Resources.FirstOrDefault(
-                                current => current.Id == resourceId);
+                    if (resource == null)
+                        resource = catalog.Resources.FirstOrDefault(
+                            current => current.Id == resourceId);
 
-                        if (resource == null)
-                            return Task.FromResult((ActionResult<List<Representation>>)this.NotFound($"{catalogId}/{resourceId}"));
+                    if (resource == null)
+                        return Task.FromResult((ActionResult<Representation[]>)this.NotFound($"{catalogId}/{resourceId}"));
 
-                        _logger.LogInformation($"{message} Done.");
+                    _logger.LogInformation($"{message} Done.");
 
-                        var response = resource.Representations.Select(representation 
-                            => this.CreateRepresentationResponse(representation))
-                            .ToList();
+                    var response = resource.Representations.Select(representation 
+                        => this.CreateRepresentationResponse(representation))
+                        .ToArray();
 
-                        return Task.FromResult((ActionResult<List<Representation>>)response);
-                    });
+                    return Task.FromResult((ActionResult<Representation[]>)response);
+                });
             }
             catch (Exception ex)
             {
@@ -346,7 +338,7 @@ namespace Nexus.Controllers
             string resourceId,
             string representationId)
         {
-            if (_databaseManager.Database == null)
+            if (_appState.CatalogState == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
 
             catalogId = WebUtility.UrlDecode(catalogId);
@@ -359,29 +351,28 @@ namespace Nexus.Controllers
 
             try
             {
-                return await this.ProcessCatalogIdAsync<Representation>(catalogId, message,
-                    (catalog, catalogMeta) =>
-                    {
-                        var resource = catalog.Resources.FirstOrDefault(
-                            current => current.Id.ToString() == resourceId);
+                return await this.ProcessCatalogIdAsync<Representation>(catalogId, message, catalog =>
+                {
+                    var resource = catalog.Resources.FirstOrDefault(
+                        current => current.Id.ToString() == resourceId);
 
-                        if (resource == null)
-                            resource = catalog.Resources.FirstOrDefault(
-                                current => current.Id == resourceId);
+                    if (resource == null)
+                        resource = catalog.Resources.FirstOrDefault(
+                            current => current.Id == resourceId);
 
-                        if (resource == null)
-                            return Task.FromResult((ActionResult<Representation>)this.NotFound($"{catalogId}/{resourceId}"));
+                    if (resource == null)
+                        return Task.FromResult((ActionResult<Representation>)this.NotFound($"{catalogId}/{resourceId}"));
 
-                        var representation = resource.Representations.FirstOrDefault(
-                           current => current.Id == representationId);
+                    var representation = resource.Representations.FirstOrDefault(
+                        current => current.Id == representationId);
 
-                        if (representation == null)
-                            return Task.FromResult((ActionResult<Representation>)this.NotFound($"{catalogId}/{resourceId}/{representation}"));
+                    if (representation == null)
+                        return Task.FromResult((ActionResult<Representation>)this.NotFound($"{catalogId}/{resourceId}/{representation}"));
 
-                        _logger.LogInformation($"{message} Done.");
+                    _logger.LogInformation($"{message} Done.");
 
-                        return Task.FromResult((ActionResult<Representation>)this.CreateRepresentationResponse(representation));
-                    });
+                    return Task.FromResult((ActionResult<Representation>)this.CreateRepresentationResponse(representation));
+                });
             }
             catch (Exception ex)
             {
@@ -390,43 +381,34 @@ namespace Nexus.Controllers
             }
         }
 
-        private Catalog CreateCatalogResponse(DataModel.ResourceCatalog catalog, CatalogMetadata catalogMetadata)
+        private ResourceCatalog CreateCatalogResponse(ResourceCatalog catalog)
         {
-            return new Catalog()
-            {
-                Id = catalog.Id,
-                Contact = catalogMetadata.Contact,
-                ShortDescription = catalogMetadata.ShortDescription,
-                LongDescription = catalogMetadata.LongDescription,
-                IsQualityControlled = catalogMetadata.IsQualityControlled,
-                License = catalogMetadata.License,
-                LogBook = catalogMetadata.Logbook
-            };
+            return catalog;
         }
 
         private async Task<TimeRangeResult[]> 
-            CreateTimeRangeResponseAsync(DataModel.ResourceCatalog catalog, CancellationToken cancellationToken)
+            CreateTimeRangeResponseAsync(ResourceCatalog catalog, CancellationToken cancellationToken)
         {
-            var dataSources = await _databaseManager.GetDataSourcesAsync(_userIdService.User, catalog.Id, cancellationToken);
-
-            var tasks = dataSources.Select(async dataSourceForUsing =>
-            {
-                using var dataSource = dataSourceForUsing;
-                var timeRange = await dataSource.GetTimeRangeAsync(catalog.Id, cancellationToken);
-
-                var backendSource = new BackendSource()
+            var tasks = _appState.CatalogState.BackendSourceToCatalogsMap
+                .Where(entry => entry.Value.Any(catalog => catalog.Id == catalog.Id))
+                .Select(async entry =>
                 {
-                    Type = timeRange.BackendSource.Type,
-                    ResourceLocator = timeRange.BackendSource.ResourceLocator,
-                };
+                    using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(entry.Key, cancellationToken);
+                    var timeRange = await dataSource.GetTimeRangeAsync(catalog.Id, cancellationToken);
 
-                return new TimeRangeResult()
-                {
-                    BackendSource = backendSource,
-                    Begin = timeRange.Begin,
-                    End = timeRange.End
-                };
-            }).ToList();
+                    var backendSource = new BackendSource()
+                    {
+                        Type = timeRange.BackendSource.Type,
+                        ResourceLocator = timeRange.BackendSource.ResourceLocator,
+                    };
+
+                    return new TimeRangeResult()
+                    {
+                        BackendSource = backendSource,
+                        Begin = timeRange.Begin,
+                        End = timeRange.End
+                    };
+                }).ToList();
 
             var timeRangeResults = await Task
                  .WhenAll(tasks);
@@ -435,134 +417,65 @@ namespace Nexus.Controllers
         }
 
         private async Task<AvailabilityResult[]> 
-            CreateAvailabilityResponseAsync(DataModel.ResourceCatalog catalog, DateTime begin, DateTime end, AvailabilityGranularity granularity, CancellationToken cancellationToken)
+            CreateAvailabilityResponseAsync(ResourceCatalog catalog, DateTime begin, DateTime end, AvailabilityGranularity granularity, CancellationToken cancellationToken)
         {
-            var dataSources = await _databaseManager.GetDataSourcesAsync(_userIdService.User, catalog.Id, cancellationToken);
+            var tasks = _appState.CatalogState.BackendSourceToCatalogsMap
+               .Where(entry => entry.Value.Any(catalog => catalog.Id == catalog.Id))
+               .Select(async entry =>
+               {
+                   using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(entry.Key, cancellationToken);
+                   var availability = await dataSource.GetAvailabilityAsync(catalog.Id, begin, end, granularity, cancellationToken);
 
-            var tasks = dataSources.Select(async dataSourceForUsing =>
-            {
-                using var dataSource = dataSourceForUsing;
-                var availability = await dataSource.GetAvailabilityAsync(catalog.Id, begin, end, granularity, cancellationToken);
+                    var backendSource = new BackendSource()
+                    {
+                        ResourceLocator = availability.BackendSource.ResourceLocator,
+                        Type = availability.BackendSource.Type,
+                    };
 
-                var backendSource = new BackendSource()
-                {
-                    ResourceLocator = availability.BackendSource.ResourceLocator,
-                    Type = availability.BackendSource.Type,
-                };
-
-                return new AvailabilityResult()
-                {
-                    BackendSource = backendSource,
-                    Data = availability.Data
-                };
-            }).ToList();
+                    return new AvailabilityResult()
+                    {
+                        BackendSource = backendSource,
+                        Data = availability.Data
+                    };
+                }).ToList();
 
             var availabilityResults = await Task.WhenAll(tasks);
 
             return availabilityResults;
         }
 
-        private Resource CreateResourceResponse(DataModel.Resource resource, ResourceMeta resourceMeta)
+        private Resource CreateResourceResponse(Resource resource)
         {
-            return new Resource()
-            {
-                Id = resource.Id,
-                Name = resource.Id,
-                Group = resource.Group,
-                Unit = !string.IsNullOrWhiteSpace(resourceMeta.Unit)
-                        ? resourceMeta.Unit
-                        : resource.Unit,
-                Description = !string.IsNullOrWhiteSpace(resourceMeta.Description)
-                        ? resourceMeta.Description
-                        : resource.Description,
-                SpecialInfo = resourceMeta.SpecialInfo
-            };
+            return resource;
         }
 
-        private Representation CreateRepresentationResponse(DataModel.Representation representation)
+        private Representation CreateRepresentationResponse(Representation representation)
         {
-            return new Representation()
-            {
-                Id = representation.Id,
-                DataType = representation.DataType
-            };
+            return representation;
         }
 
         private async Task<ActionResult<T>> ProcessCatalogIdAsync<T>(
             string catalogId,
             string message,
-            Func<DataModel.ResourceCatalog, CatalogMetadata, Task<ActionResult<T>>> action)
+            Func<ResourceCatalog, Task<ActionResult<T>>> action)
         {
-            if (!NexusUtilities.IsCatalogAccessible(this.User, catalogId, _databaseManager.Database))
-                return this.Unauthorized($"The current user is not authorized to access the catalog '{catalogId}'.");
-
-            var catalogContainer = _databaseManager
-               .Database
-               .CatalogContainers
+            var catalogContainer = _appState.CatalogState.CatalogCollection.CatalogContainers
                .FirstOrDefault(container => container.Id == catalogId);
 
             if (catalogContainer != null)
             {
-                var catalog = catalogContainer.Catalog;
-                var catalogMeta = catalogContainer.CatalogSettings;
+                if (!AuthorizationUtilities.IsCatalogAccessible(this.User, catalogId, catalogContainer.CatalogMetadata))
+                    return this.Unauthorized($"The current user is not authorized to access the catalog '{catalogId}'.");
 
-                return await action.Invoke(catalog, catalogMeta);
+                var catalog = catalogContainer.Catalog;
+
+                return await action.Invoke(catalog);
             }
             else
             {
                 _logger.LogInformation($"{message} Not found.");
                 return this.NotFound(catalogId);
             }
-        }
-
-        #endregion
-
-        #region Types
-
-        public record BackendSource
-        {
-            public string Type { get; set; }
-            public Uri ResourceLocator { get; set; }
-        }
-
-        public record AvailabilityResult
-        {
-            public BackendSource BackendSource { get; set; }
-            public Dictionary<DateTime, double> Data { get; set; }
-        }
-
-        public record TimeRangeResult
-        {
-            public BackendSource BackendSource { get; set; }
-            public DateTime Begin { get; set; }
-            public DateTime End { get; set; }
-        }
-
-        public record Catalog
-        {
-            public string Id { get; set; }
-            public string Contact { get; set; }
-            public string ShortDescription { get; set; }
-            public string LongDescription { get; set; }
-            public bool IsQualityControlled { get; set; }
-            public CatalogLicense License { get;set;}
-            public List<string> LogBook { get; set; }
-        }
-
-        public record Resource()
-        {
-            public Guid Id { get; set; }
-            public string Name { get; set; }
-            public string Group { get; set; }
-            public string Unit { get; set; }
-            public string Description { get; set; }
-            public string SpecialInfo { get; set; }
-        }
-
-        public record Representation()
-        {
-            public string Id { get; set; }
-            public NexusDataType DataType { get; set; }
         }
 
         #endregion

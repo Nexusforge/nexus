@@ -1,10 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Logging;
+using Nexus.Core;
+using Nexus.Extensibility;
 using Nexus.Services;
 using Nexus.Utilities;
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,20 +21,20 @@ namespace Nexus.Controllers
         #region Fields
 
         private ILogger _logger;
-        private UserIdService _userIdService;
-        private ICatalogManager _catalogManager;
+        private IDataControllerService _dataControllerService;
+        private AppState _appState;
 
         #endregion
 
         #region Constructors
 
-        public DataController(ICatalogManager catalogManager,
-                              UserIdService userIdService,
-                              ILoggerFactory loggerFactory)
+        public DataController(AppState appState,
+                              IDataControllerService dataControllerService,
+                              ILogger<DataController> logger)
         {
-            _catalogManager = catalogManager;
-            _userIdService = userIdService;
-            _logger = loggerFactory.CreateLogger("Nexus");
+            _appState = appState;
+            _dataControllerService = dataControllerService;
+            _logger = logger;
         }
 
         #endregion
@@ -56,7 +59,7 @@ namespace Nexus.Controllers
             [BindRequired] DateTime end,
             CancellationToken cancellationToken)
         {
-            if (_catalogManager.State == null)
+            if (_appState.CatalogState is null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
 
             catalogId = WebUtility.UrlDecode(catalogId);
@@ -81,26 +84,31 @@ namespace Nexus.Controllers
 
             try
             {
+                var catalogCollection = _appState.CatalogState.CatalogCollection;
+
                 // representation
                 var path = $"{catalogId}/{resourceId}/{representationId}";
 
-                if (!_catalogManager.Database.TryFind(path, out var catalogItem))
+                if (!catalogCollection.TryFind(path, out var catalogItem))
                     return this.NotFound($"Could not find representation on path '{path}'.");
 
                 var catalog = catalogItem.Catalog;
 
+#warning better would be to get metadata directly
+                var metadata = catalogCollection.CatalogContainers
+                    .First(container => container.Id == catalog.Id).CatalogMetadata;
+
                 // security check
-                if (!NexusUtilities.IsCatalogAccessible(this.User, catalog.Id, _catalogManager.Database))
+                if (!AuthorizationUtilities.IsCatalogAccessible(this.User, catalog.Id, metadata))
                     return this.Unauthorized($"The current user is not authorized to access the catalog '{catalog.Id}'.");
 
                 // controller
-                using var controller = await _catalogManager.GetDataSourceControllerAsync(
-                    _userIdService.User, 
+                using var controller = await _dataControllerService.GetDataSourceControllerAsync(
                     catalogItem.Representation.BackendSource,
                     cancellationToken);
 
                 // read data
-                var stream = controller.ReadAsStream(begin, end, catalogItem);
+                var stream = controller.ReadAsStream(begin, end, catalogItem, _logger);
 
                 _logger.LogInformation($"{message} Done.");
 

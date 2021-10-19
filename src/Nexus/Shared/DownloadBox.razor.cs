@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 using Nexus.Core;
 using Nexus.Services;
+using Nexus.Utilities;
 using Nexus.ViewModels;
 using System;
 using System.Threading.Tasks;
@@ -36,7 +37,7 @@ namespace Nexus.Shared
 				{
 					this.InvokeAsync(this.StateHasChanged);
 				}
-				else if (e.PropertyName == nameof(UserState.FileGranularity))
+				else if (e.PropertyName == nameof(UserState.FilePeriod))
 				{
 					this.InvokeAsync(this.StateHasChanged);
 				}
@@ -63,7 +64,7 @@ namespace Nexus.Shared
 
 		private void CopyPath(RepresentationViewModel representation)
         {
-			this.JsRuntime.WriteToClipboard($"{representation.Parent.Parent.Id}/{representation.Parent.Name}/{representation.Model.Id}");
+			this.JsRuntime.WriteToClipboard(representation.GetPath());
         }
 
         #endregion
@@ -88,7 +89,7 @@ namespace Nexus.Shared
 			var byteCount = this.UserState.GetByteCount();
 
 			if (byteCount > 0)
-				return $"Download ({Utilities.FormatByteCount(byteCount)})";
+				return $"Download ({NexusUtilities.FormatByteCount(byteCount)})";
 			else
 				return $"Download";
 		}

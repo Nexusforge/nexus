@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 using Nexus.DataModel;
@@ -10,7 +9,6 @@ using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Threading;
@@ -28,7 +26,7 @@ namespace Nexus.Core
 
         private string _searchString;
         private string _downloadMessage;
-        private string _sampleRate;
+        private TimeSpan _samplePeriod;
 
         private double _downloadProgress;
         private double _visualizeProgress;
@@ -38,12 +36,12 @@ namespace Nexus.Core
 
         private ClientState _clientState;
         private IJSRuntime _jsRuntime;
+        private IDatabaseManager _databaseManager;
         private IServiceProvider _serviceProvider;
         private AppState _appState;
         private DataService _dataService;
         private UserIdService _userIdService;
         private PathsOptions _pathsOptions;
-        private IDatabaseManager _databaseManager;
         private ExportParameters _exportParameters;
         private CatalogContainer _catalogContainer;
         private CodeDefinitionViewModel _codeDefinition;
@@ -51,7 +49,7 @@ namespace Nexus.Core
         private AuthenticationStateProvider _authenticationStateProvider;
 
         private KeyValuePair<string, List<ResourceViewModel>> _groupedResourcesEntry;
-        private Dictionary<string, List<RepresentationViewModel>> _sampleRateToSelectedRepresentationsMap;
+        private Dictionary<TimeSpan, List<RepresentationViewModel>> _samplePeriodToSelectedRepresentationsMap = new Dictionary<TimeSpan, List<RepresentationViewModel>>();
 
         #endregion
 
@@ -59,34 +57,33 @@ namespace Nexus.Core
 
         public UserState(ILogger<UserState> logger,
                          IJSRuntime jsRuntime,
+                         IDatabaseManager databaseManager,
                          IServiceProvider serviceProvider,
                          AppState appState,
                          UserIdService userIdService,
                          AuthenticationStateProvider authenticationStateProvider,
-                         IDatabaseManager databaseManager,
                          IOptions<PathsOptions> pathsOptions,
                          DataService dataService)
         {
             this.Logger = logger;
 
             _jsRuntime = jsRuntime;
+            _databaseManager = databaseManager;
             _serviceProvider = serviceProvider;
             _appState = appState;
             _userIdService = userIdService;
             _authenticationStateProvider = authenticationStateProvider;
-            _databaseManager = databaseManager;
             _pathsOptions = pathsOptions.Value;
             _dataService = dataService;
             _codeDefinition = this.CreateCodeDefinition(CodeType.Filter);
 
             this.VisualizeBeginAtZero = true;
-            this.SampleRateValues = new List<string>();
             this.ExportParameters = new ExportParameters();
 
             _appState.PropertyChanged += this.OnAppStatePropertyChanged;
 
-            if (_appState.IsDatabaseInitialized)
-                this.Initialize(_databaseManager.Database);
+            if (_appState.CatalogState is not null)
+                this.Initialize(_appState.CatalogState.CatalogCollection);
         }
 
         #endregion
@@ -103,10 +100,10 @@ namespace Nexus.Core
 #warning Make this more efficient. Maybe by tracking changes.
                 if (_isEditEnabled && !value)
                 {
-                    _databaseManager.Database.CatalogContainers.ForEach(catalogContainer =>
+                    foreach (var catalogContainer in _appState.CatalogState.CatalogCollection.CatalogContainers)
                     {
-                        _databaseManager.SaveCatalogMeta(catalogContainer.CatalogSettings);
-                    });
+                        //_databaseManager.SaveCatalogMeta(catalogContainer.CatalogSettings);
+                    }
                 }
 
                 this.SetProperty(ref _isEditEnabled, value);
@@ -237,18 +234,16 @@ namespace Nexus.Core
             }
         }
 
-        public List<string> SampleRateValues { get; set; }
-
         public bool VisualizeBeginAtZero
         {
             get { return _visualizeBeginAtZero; }
             set { this.SetProperty(ref _visualizeBeginAtZero, value); }
         }
 
-        public string SampleRate
+        public TimeSpan SamplePeriod
         {
-            get { return _sampleRate; }
-            set { this.SetProperty(ref _sampleRate, value); }
+            get { return _samplePeriod; }
+            set { this.SetProperty(ref _samplePeriod, value); }
         }
 
         #endregion
@@ -263,11 +258,11 @@ namespace Nexus.Core
             }
             set
             {
-                // When database is updated and then the selected catalog is changed
+                // When database is updated and then the selected catalog is changed,
                 // "value" refers to an old catalog container that does not exist in 
                 // the database anymore.
-                if (value != null && !_databaseManager.Database.CatalogContainers.Contains(value))
-                    value = _databaseManager.Database.CatalogContainers.FirstOrDefault(container => container.Id == value.Id);
+                if (value != null && !_appState.CatalogState.CatalogCollection.CatalogContainers.Contains(value))
+                    value = _appState.CatalogState.CatalogCollection.CatalogContainers.FirstOrDefault(container => container.Id == value.Id);
 
                 this.SetProperty(ref _catalogContainer, value);
 
@@ -286,7 +281,7 @@ namespace Nexus.Core
             }
         }
 
-        public List<string> Attachments { get; private set; }
+        public IEnumerable<string> Attachments { get; private set; }
 
         public SplittedCatalogContainers CatalogContainersInfo { get; private set; }
 
@@ -358,25 +353,25 @@ namespace Nexus.Core
             }
         }
 
-        public FileGranularity FileGranularity
+        public TimeSpan FilePeriod
         {
-            get { return this.ExportParameters.FileGranularity; }
+            get { return this.ExportParameters.FilePeriod; }
             set 
             {
-                this.ExportParameters.FileGranularity = value;
+                this.ExportParameters.FilePeriod = value;
                 this.RaisePropertyChanged();
             }
         }
 
-        public FileFormat FileFormat
-        {
-            get { return this.ExportParameters.FileFormat; }
-            set
-            {
-                this.ExportParameters.FileFormat = value;
-                this.RaisePropertyChanged();
-            }
-        }
+        //public FileFormat FileFormat
+        //{
+        //    get { return this.ExportParameters.FileFormat; }
+        //    set
+        //    {
+        //        this.ExportParameters.FileFormat = value;
+        //        this.RaisePropertyChanged();
+        //    }
+        //}
 
         #endregion
 
@@ -412,36 +407,26 @@ namespace Nexus.Core
                 CodeType = codeType,
                 Code = code,
                 Name = name,
-                SampleRate = "1 s"
+                SamplePeriod = TimeSpan.FromSeconds(1)
             };
-        }
-
-        public List<string> GetPresets()
-        {
-#error Remove presets
-            var folderPath = Path.Combine(_pathsOptions.Data, "PRESETS");
-
-            if (!Directory.Exists(folderPath))
-                Directory.CreateDirectory(folderPath);
-
-            return Directory.EnumerateFiles(folderPath, "*.json", SearchOption.TopDirectoryOnly).ToList();
         }
 
         public bool CanDownload()
         {
-            if (this.SampleRate != null)
-            {
-                var samplePeriod = new SampleRateContainer(this.SampleRate).Period.TotalSeconds;
+            //if (this.SampleRate != null)
+            //{
+            //    var samplePeriod = new SampleRateContainer(this.SampleRate).Period.TotalSeconds;
 
 
-                return this.DateTimeBegin < this.DateTimeEnd &&
-                       this.SelectedRepresentations.Count > 0 &&
-                       (ulong)this.FileGranularity >= samplePeriod;
-            }
-            else
-            {
-                return false;
-            }
+            //    return this.DateTimeBegin < this.DateTimeEnd &&
+            //           this.SelectedRepresentations.Count > 0 &&
+            //           (ulong)this.FileGranularity >= samplePeriod;
+            //}
+            //else
+            //{
+            //    return false;
+            //}
+            return true;
         }
 
         public async Task DownloadAsync()
@@ -454,49 +439,49 @@ namespace Nexus.Core
 
             try
             {
-                this.ClientState = ClientState.PrepareDownload;
-                _dataService.ReadProgress.ProgressChanged += eventHandler;
+                //this.ClientState = ClientState.PrepareDownload;
+                //_dataService.ReadProgress.ProgressChanged += eventHandler;
 
-                var selectedRepresentations = this.GetSelectedRepresentations().Select(representation => representation.Model).ToList();
+                //var selectedRepresentations = this.GetSelectedRepresentations().Select(representation => representation.Model).ToList();
 
-                // security check
-                var catalogIds = selectedRepresentations.Select(representation => representation.Resource.Catalog.Id).Distinct();
+                //// security check
+                //var catalogIds = selectedRepresentations.Select(representation => representation.Resource.Catalog.Id).Distinct();
 
-                foreach (var catalogId in catalogIds)
-                {
-                    if (!NexusUtilities.IsCatalogAccessible(_userIdService.User, catalogId, _databaseManager.Database))
-                        throw new UnauthorizedAccessException($"The current user is not authorized to access catalog '{catalogId}'.");
-                }
+                //foreach (var catalogId in catalogIds)
+                //{
+                //    if (!NexusUtilities.IsCatalogAccessible(_userIdService.User, catalogId, _databaseManager.Database))
+                //        throw new UnauthorizedAccessException($"The current user is not authorized to access catalog '{catalogId}'.");
+                //}
 
-                //
-                var job = new ExportJob()
-                {
-                    Owner = _userIdService.User.Identity.Name,
-                    Parameters = this.ExportParameters
-                };
+                ////
+                //var job = new ExportJob()
+                //{
+                //    Owner = _userIdService.User.Identity.Name,
+                //    Parameters = this.ExportParameters
+                //};
 
-                var exportJobService = _serviceProvider.GetRequiredService<JobService<ExportJob>>();
+                //var exportJobService = _serviceProvider.GetRequiredService<JobService<ExportJob>>();
 
-                _exportJobControl = exportJobService.AddJob(job, _dataService.ReadProgress, (jobControl, cts) =>
-                {
-                    var task = _dataService.ExportDataAsync(this.ExportParameters,
-                                                            selectedRepresentations,
-                                                            cts.Token);
+                //_exportJobControl = exportJobService.AddJob(job, _dataService.ReadProgress, (jobControl, cts) =>
+                //{
+                //    var task = _dataService.ExportDataAsync(this.ExportParameters,
+                //                                            selectedRepresentations,
+                //                                            cts.Token);
 
-                    return task;
-                });
+                //    return task;
+                //});
 
-                var downloadLink = await _exportJobControl.Task;
+                //var downloadLink = await _exportJobControl.Task;
 
-                if (!string.IsNullOrWhiteSpace(downloadLink))
-                {
-                    var fileName = downloadLink.Split("/").Last();
-                    await _jsRuntime.FileSaveAs(fileName, downloadLink);
-                }
+                //if (!string.IsNullOrWhiteSpace(downloadLink))
+                //{
+                //    var fileName = downloadLink.Split("/").Last();
+                //    await _jsRuntime.FileSaveAs(fileName, downloadLink);
+                //}
             }
             finally
             {
-                _dataService.ReadProgress.ProgressChanged -= eventHandler;
+                //_dataService.ReadProgress.ProgressChanged -= eventHandler;
                 this.ClientState = ClientState.Normal;
                 this.DownloadMessage = string.Empty;
                 this.DownloadProgress = 0;
@@ -544,7 +529,7 @@ namespace Nexus.Core
         public async Task<AvailabilityResult[]> GetAvailabilityAsync(AvailabilityGranularity granularity, CancellationToken cancellationToken)
         {
             // security check
-            if (!NexusUtilities.IsCatalogAccessible(_userIdService.User, this.CatalogContainer.Id, _databaseManager.Database))
+            if (!AuthorizationUtilities.IsCatalogAccessible(_userIdService.User, this.CatalogContainer))
                 throw new UnauthorizedAccessException($"The current user is not authorized to access catalog '{this.CatalogContainer.Id}'.");
 
             return await _dataService.GetAvailabilityAsync(this.CatalogContainer.Id, this.DateTimeBegin, this.DateTimeEnd, granularity, cancellationToken);
@@ -552,45 +537,45 @@ namespace Nexus.Core
 
         public void SetExportParameters(ExportParameters exportParameters)
         {
-            _sampleRateToSelectedRepresentationsMap = this.SampleRateValues
-                .ToDictionary(sampleRate => sampleRate, sampleRate => new List<RepresentationViewModel>());
+            //_sampleRateToSelectedRepresentationsMap = this.SampleRateValues
+            //    .ToDictionary(sampleRate => sampleRate, sampleRate => new List<RepresentationViewModel>());
 
-            // find sample rate
-            var sampleRates = exportParameters.ResourcePaths.Select(resourcePath 
-                => new SampleRateContainer(resourcePath.Split("/").Last()).ToUnitString());
+            //// find sample rate
+            //var sampleRates = exportParameters.ResourcePaths.Select(resourcePath 
+            //    => new SampleRateContainer(resourcePath.Split("/").Last()).ToUnitString());
 
-            if (sampleRates.Any())
-                this.SampleRate = sampleRates.First();
+            //if (sampleRates.Any())
+            //    this.SampleRate = sampleRates.First();
 
-            //
-            this.ExportParameters = exportParameters;
-            var selectedRepresentations = this.GetSelectedRepresentations();
+            ////
+            //this.ExportParameters = exportParameters;
+            //var selectedRepresentations = this.GetSelectedRepresentations();
 
-            exportParameters.ResourcePaths.ForEach(value =>
-            {
-                var pathSegments = value.Split('/');
-                var catalogName = $"/{pathSegments[1]}/{pathSegments[2]}/{pathSegments[3]}";
-                var resourceId = pathSegments[4];
-                var representationName = pathSegments[5];
+            //exportParameters.ResourcePaths.ForEach(value =>
+            //{
+            //    var pathSegments = value.Split('/');
+            //    var catalogName = $"/{pathSegments[1]}/{pathSegments[2]}/{pathSegments[3]}";
+            //    var resourceId = pathSegments[4];
+            //    var representationName = pathSegments[5];
 
-                var catalogContainer = this.CatalogContainersInfo.Accessible.FirstOrDefault(current => current.Id == catalogName);
+            //    var catalogContainer = this.CatalogContainersInfo.Accessible.FirstOrDefault(current => current.Id == catalogName);
 
-                if (catalogContainer != null)
-                {
-                    var resources = _appState.GetResources(catalogContainer);
-                    var resource = resources.FirstOrDefault(current => current.Id.ToString() == resourceId);
+            //    if (catalogContainer != null)
+            //    {
+            //        var resources = _appState.GetResources(catalogContainer);
+            //        var resource = resources.FirstOrDefault(current => current.Id.ToString() == resourceId);
 
-                    if (resource != null)
-                    {
-                        var representation = resource.Representations.FirstOrDefault(current => current.Name == representationName);
+            //        if (resource != null)
+            //        {
+            //            var representation = resource.Representations.FirstOrDefault(current => current.Name == representationName);
 
-                        if (representation != null)
-                            selectedRepresentations.Add(representation);
-                    }
-                }
-            });
+            //            if (representation != null)
+            //                selectedRepresentations.Add(representation);
+            //        }
+            //    }
+            //});
 
-            this.RaisePropertyChanged(nameof(UserState.ExportParameters));
+            //this.RaisePropertyChanged(nameof(UserState.ExportParameters));
         }
 
         public bool IsRepresentationSelected(RepresentationViewModel representation)
@@ -600,12 +585,14 @@ namespace Nexus.Core
 
         public void ToggleRepresentationSelection(RepresentationViewModel representation)
         {
+            var selectedRepresentations = this.GetSelectedRepresentations();
             var isSelected = this.SelectedRepresentations.Contains(representation);
 
             if (isSelected)
-                this.GetSelectedRepresentations().Remove(representation);
+                selectedRepresentations.Remove(representation);
+
             else
-                this.GetSelectedRepresentations().Add(representation);
+                selectedRepresentations.Add(representation);
 
             this.UpdateExportParameters();
             this.RaisePropertyChanged(nameof(UserState.SelectedRepresentations));
@@ -613,33 +600,21 @@ namespace Nexus.Core
 
         public long GetByteCount()
         {
-            var totalDays = (this.DateTimeEnd - this.DateTimeBegin).TotalDays;
-            var frequency = string.IsNullOrWhiteSpace(this.SampleRate) ? 0 : new SampleRateContainer(this.SampleRate).SamplesPerDay;
+            var sampleCount = (this.DateTimeEnd - this.DateTimeBegin).Ticks / this.SamplePeriod.Ticks;
 
-            return (long)this.GetSelectedRepresentations().Sum(representation =>
+            return this.GetSelectedRepresentations().Sum(representation =>
             {
                 var elementSize = NexusCoreUtilities.SizeOf(representation.DataType);
-
-                return frequency * totalDays * elementSize;
+                return sampleCount * elementSize;
             });
         }
 
-        private void Initialize(NexusDatabase database)
+        private void Initialize(CatalogCollection catalogCollection)
         {
-            var catalogContainers = database.CatalogContainers;
-
-            this.CatalogContainersInfo = this.SplitCampainContainersAsync(catalogContainers, database).Result;
+            this.CatalogContainersInfo = this.SplitCampaignContainersAsync(catalogCollection).Result;
 
             // this triggers a search to find the new container instance
             this.CatalogContainer = this.CatalogContainer;
-
-            this.SampleRateValues = this.CatalogContainersInfo.Accessible.SelectMany(catalogContainer =>
-            {
-                return catalogContainer.Catalog.Resources.SelectMany(resource =>
-                {
-                    return resource.Representations.Select(representation => representation.Id.Split('_')[0]);
-                });
-            }).Distinct().OrderBy(x => x, new SampleRateStringComparer()).ToList();
 
             // to rebuilt list with new representation instances
             this.SetExportParameters(this.ExportParameters);
@@ -650,15 +625,11 @@ namespace Nexus.Core
 
         private void UpdateAttachments()
         {
-            this.Attachments = null;
-
             if (this.CatalogContainer != null)
-            {
-                var folderPath = Path.Combine(_pathsOptions.Attachments, this.CatalogContainer.PhysicalName);
+                this.Attachments = _databaseManager.EnumerateAttachements(this.CatalogContainer.Id).ToArray();
 
-                if (Directory.Exists(folderPath))
-                    this.Attachments = Directory.GetFiles(folderPath, "*").ToList();
-            }
+            else
+                this.Attachments = Enumerable.Empty<string>();
         }
 
         private void UpdateGroupedResources()
@@ -667,11 +638,20 @@ namespace Nexus.Core
             {
                 this.GroupedResources = new Dictionary<string, List<ResourceViewModel>>();
 
-                foreach (var resource in _appState.GetResources(this.CatalogContainer))
+                var resources = _appState.ResourceCache.GetOrAdd(this.CatalogContainer, catalogContainer =>
+                {
+                    var catalogViewModel = new ResourceCatalogViewModel(catalogContainer.Catalog);
+
+                    return this.CatalogContainer.Catalog.Resources
+                       .Select(resource => new ResourceViewModel(catalogViewModel, resource))
+                       .ToArray();
+                });
+
+                foreach (var resource in resources)
                 {
                     if (this.ResourceMatchesFilter(resource))
                     {
-                        var groupNames = resource.Group.Split('\n');
+                        var groupNames = resource.Groups;
 
                         foreach (string groupName in groupNames)
                         {
@@ -690,7 +670,7 @@ namespace Nexus.Core
 
                 foreach (var entry in this.GroupedResources)
                 {
-                    entry.Value.Sort((x, y) => x.Name.CompareTo(y.Name));
+                    entry.Value.Sort((x, y) => x.Id.CompareTo(y.Id));
                 }
 
                 if (this.GroupedResources.Any())
@@ -717,10 +697,13 @@ namespace Nexus.Core
 
         private void UpdateExportParameters()
         {
-            this.ExportParameters.ResourcePaths = this.GetSelectedRepresentations().Select(representation =>
+            this.ExportParameters = this.ExportParameters with
             {
-                return $"{representation.Parent.Parent.Id}/{representation.Parent.Id}/{representation.Name}";
-            }).ToList();
+                ResourcePaths = this
+                    .GetSelectedRepresentations()
+                    .Select(representation => representation.GetPath())
+                    .ToArray()
+            };
         }
 
         private bool ResourceMatchesFilter(ResourceViewModel resource)
@@ -728,8 +711,8 @@ namespace Nexus.Core
             if (string.IsNullOrWhiteSpace(this.SearchString))
                 return true;
 
-            if (resource.Name.Contains(this.SearchString, StringComparison.OrdinalIgnoreCase) 
-             || resource.Description.Contains(this.SearchString, StringComparison.OrdinalIgnoreCase))
+            if (resource.Id.Contains(this.SearchString, StringComparison.OrdinalIgnoreCase) ||
+                resource.Description.Contains(this.SearchString, StringComparison.OrdinalIgnoreCase))
                 return true;
 
             return false;
@@ -737,32 +720,32 @@ namespace Nexus.Core
 
         private List<RepresentationViewModel> GetSelectedRepresentations()
         {
-            var containsKey = !string.IsNullOrWhiteSpace(this.SampleRate) && _sampleRateToSelectedRepresentationsMap.ContainsKey(this.SampleRate);
+            if (!_samplePeriodToSelectedRepresentationsMap.TryGetValue(this.SamplePeriod, out var representations))
+            {
+                representations = new List<RepresentationViewModel>();
+                _samplePeriodToSelectedRepresentationsMap[this.SamplePeriod] = representations;
+            }
 
-            if (containsKey)
-                return _sampleRateToSelectedRepresentationsMap[this.SampleRate];
-            else
-                return new List<RepresentationViewModel>();
+            return representations;
         }
 
-        private async Task<SplittedCatalogContainers> SplitCampainContainersAsync(List<CatalogContainer> catalogContainers,
-                                                                                  NexusDatabase database)
+        private async Task<SplittedCatalogContainers> SplitCampaignContainersAsync(CatalogCollection catalogCollection)
         {
             var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
             var principal = authState.User;
 
-            var accessible = catalogContainers.Where(catalogContainer =>
+            var accessible = catalogCollection.CatalogContainers.Where(catalogContainer =>
             {
-                var isCatalogAccessible = NexusUtilities.IsCatalogAccessible(principal, catalogContainer.Id, database);
-                var isCatalogVisible = NexusUtilities.IsCatalogVisible(principal, catalogContainer.CatalogSettings, isCatalogAccessible);
+                var isCatalogAccessible = AuthorizationUtilities.IsCatalogAccessible(principal, catalogContainer);
+                var isCatalogVisible = AuthorizationUtilities.IsCatalogVisible(principal, catalogContainer.Id, catalogContainer.CatalogMetadata, isCatalogAccessible);
 
                 return isCatalogAccessible && isCatalogVisible;
             }).OrderBy(catalogContainer => catalogContainer.Id).ToList();
 
-            var restricted = catalogContainers.Where(catalogContainer =>
+            var restricted = catalogCollection.CatalogContainers.Where(catalogContainer =>
             {
-                var isCatalogAccessible = NexusUtilities.IsCatalogAccessible(principal, catalogContainer.Id, database);
-                var isCatalogVisible = NexusUtilities.IsCatalogVisible(principal, catalogContainer.CatalogSettings, isCatalogAccessible);
+                var isCatalogAccessible = AuthorizationUtilities.IsCatalogAccessible(principal, catalogContainer);
+                var isCatalogVisible = AuthorizationUtilities.IsCatalogVisible(principal, catalogContainer.Id, catalogContainer.CatalogMetadata, isCatalogAccessible);
 
                 return !isCatalogAccessible && isCatalogVisible;
             }).OrderBy(catalogContainer => catalogContainer.Id).ToList();
@@ -776,9 +759,9 @@ namespace Nexus.Core
 
         public void OnAppStatePropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(AppState.IsDatabaseInitialized) ||
-               (e.PropertyName == nameof(AppState.IsDatabaseUpdating) && !this._appState.IsDatabaseUpdating))
-                this.Initialize(_databaseManager.Database);
+            if (e.PropertyName == nameof(AppState.CatalogState) ||
+               (e.PropertyName == nameof(AppState.IsCatalogStateUpdating) && !_appState.IsCatalogStateUpdating))
+                this.Initialize(_appState.CatalogState.CatalogCollection);
         }
 
         #endregion

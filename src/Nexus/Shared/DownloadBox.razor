@@ -16,7 +16,7 @@
                      @onmouseout="() => _showCopyButton = false">
 
                     <div class="flex-row flex-space-between">
-                        <span class="selected-resource-name">@representation.Parent.Name (@representation.Name)</span>
+                        <span class="selected-resource-name">@representation.Resource.Id (@representation.Id)</span>
 
                         @if (_showCopyButton)
                         {
@@ -27,7 +27,7 @@
                         }
                     </div>
 
-                    <span class="selected-resource-catalog">@representation.Parent.Parent.Id.TrimStart('/').Replace("/", " / ")</span>
+                    <span class="selected-resource-catalog">@representation.Resource.Catalog.Id.TrimStart('/').Replace("/", " / ")</span>
                 </div>
             }
         }

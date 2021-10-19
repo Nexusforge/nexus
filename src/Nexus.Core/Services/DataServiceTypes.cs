@@ -25,6 +25,15 @@ namespace Nexus.Services
         public Dictionary<string, string> Configuration { get; set; } = new Dictionary<string, string>();
     }
 
+    public static class ExportParametersExtensions
+    {
+        public static ExportParameters UpdateVersion(this ExportParameters parameters)
+        {
+            // here we could adapt old parameter dictionary names or initialize fields that have been added later
+            return parameters;
+        }
+    }
+
     internal record ExportContext(
         TimeSpan SamplePeriod,
         IEnumerable<CatalogItem> CatalogItems,

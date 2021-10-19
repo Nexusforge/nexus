@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Nexus.Services;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -27,27 +28,24 @@ namespace Nexus.Core
         public DateTime Start { get; init; }
         public TaskStatus Status { get; init; }
         public double Progress { get; init; }
-        public string ProgressMessage { get; init; }
         public string ExceptionMessage { get; init; }
         public string Result { get; init; }
     }
 
     public record JobControl<T> where T : Job
     {
-        public event EventHandler<ProgressUpdatedEventArgs> ProgressUpdated;
+        public event EventHandler<double> ProgressUpdated;
         public event EventHandler Completed;
 
         public DateTime Start { get; init; }
         public double Progress { get; private set; }
-        public string ProgressMessage { get; private set; }
         public T Job { get; init; }
         public Task<string> Task { get; set; }
         public CancellationTokenSource CancellationTokenSource { get; init; }
 
-        public void OnProgressUpdated(ProgressUpdatedEventArgs e)
+        public void OnProgressUpdated(double e)
         {
-            this.Progress = e.Progress;
-            this.ProgressMessage = e.Message;
+            this.Progress = e;
             this.ProgressUpdated?.Invoke(this, e);
         }
 

@@ -6,8 +6,6 @@ namespace Nexus.Services
 {
     public interface ICatalogManager
     {
-        CatalogState State { get; }
-
-        Task UpdateAsync(CancellationToken cancellationToken);
+        Task<CatalogState> LoadCatalogsAsync(CancellationToken cancellationToken);
     }
 }

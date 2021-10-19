@@ -13,7 +13,7 @@ namespace Nexus.Shared
         {
 			this.PropertyChanged = (sender, e) =>
 			{
-				if (e.PropertyName == nameof(AppState.IsDatabaseUpdating))
+				if (e.PropertyName == nameof(AppState.IsCatalogStateUpdating))
 				{
 					this.InvokeAsync(this.StateHasChanged);
 				}
