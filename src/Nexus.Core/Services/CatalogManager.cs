@@ -22,9 +22,10 @@ namespace Nexus.Services
     {
         #region Fields
 
+        private AppState _appState;
         private IDataControllerService _dataControllerService;
         private IDatabaseManager _databaseManager;
-        private IServiceProvider _serviceProvider;
+        private IUserManagerWrapper _userManagerWrapper;
         private ILogger<CatalogManager> _logger;
         private PathsOptions _options;
 
@@ -33,24 +34,20 @@ namespace Nexus.Services
         #region Constructors
 
         public CatalogManager(
+            AppState appState,
             IDataControllerService dataControllerService, 
             IDatabaseManager databaseManager,
-            IServiceProvider serviceProvider,
+            IUserManagerWrapper userManagerWrapper,
             ILogger<CatalogManager> logger,
             IOptions<PathsOptions> options)
         {
+            _appState = appState;
             _dataControllerService = dataControllerService;
             _databaseManager = databaseManager;
-            _serviceProvider = serviceProvider;
+            _userManagerWrapper = userManagerWrapper;
             _logger = logger;
             _options = options.Value;
         }
-
-        #endregion
-
-        #region Properties
-
-        private NexusProject Project { get; set; }
 
         #endregion
 
@@ -62,20 +59,14 @@ namespace Nexus.Services
 
             // load data sources and get catalogs
             var backendSourceToCatalogDataMap = (await Task.WhenAll(
-                this.Project.BackendSources.Select(async backendSource =>
+                _appState.Project.BackendSources.Select(async backendSource =>
                     {
                         using var controller = await _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken);
                         var catalogs = await controller.GetCatalogsAsync(cancellationToken);
 
                         // ensure that the filter data reader plugin does not create catalogs and resources without permission
                         if (backendSource.Type == FilterDataSource.Id)
-                        {
-                            using (var scope = _serviceProvider.CreateScope())
-                            {
-                                var userManagerWrapper = scope.ServiceProvider.GetRequiredService<IUserManagerWrapper>();
-                                catalogs = await this.CleanUpFilterCatalogsAsync(catalogs, userManagerWrapper);
-                            }
-                        }
+                            catalogs = await this.CleanUpFilterCatalogsAsync(catalogs, _userManagerWrapper);
 
                         // get begin and end of project
                         var catalogData = await Task
@@ -86,17 +77,13 @@ namespace Nexus.Services
                 .ToDictionary(entry => entry.Key, entry => entry.Value);
 
             // instantiate aggregation data reader
-            var backendSource = new BackendSource()
-            {
-                Type = "Nexus.Aggregation",
-                ResourceLocator = new Uri(_options.Cache, UriKind.RelativeOrAbsolute)
-            };
+            var backendSource = new BackendSource(Type: "Nexus.Aggregation", ResourceLocator: new Uri(_options.Cache, UriKind.RelativeOrAbsolute));
 
             using var controller = await _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken);
             var catalogs = await controller.GetCatalogsAsync(cancellationToken);
 
             var catalogData = catalogs
-                .Select(catalog => (catalog, new TimeRangeResult() { Begin = DateTime.MaxValue, End = DateTime.MinValue, BackendSource = backendSource }))
+                .Select(catalog => (catalog, new TimeRangeResult(BackendSource: backendSource, Begin: DateTime.MaxValue, End: DateTime.MinValue)))
                 .ToArray();
 
             backendSourceToCatalogDataMap[backendSource] = catalogData;
@@ -162,7 +149,9 @@ namespace Nexus.Services
             // merge overrides
             foreach (var entry in idToCatalogContainerMap)
             {
-                var mergedCatalog = entry.Value.Catalog.Merge(entry.Value.CatalogMetadata.Overrides, MergeMode.NewWins);
+                var mergedCatalog = entry.Value.CatalogMetadata.Overrides is null 
+                    ? entry.Value.Catalog
+                    : entry.Value.Catalog.Merge(entry.Value.CatalogMetadata.Overrides, MergeMode.NewWins);
                 
                 idToCatalogContainerMap[entry.Key] = entry.Value with
                 {

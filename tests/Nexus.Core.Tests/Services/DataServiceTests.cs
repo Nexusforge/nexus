@@ -23,9 +23,9 @@ namespace Services
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 03, 0, 0, 0, DateTimeKind.Utc);
 
-            var backendSource1 = new BackendSource() { Type = "A" };
-            var backendSource2 = new BackendSource() { Type = "B" };
-            var backendSource3 = new BackendSource() { Type = "C" };
+            var backendSource1 = new BackendSource(Type: "A", default);
+            var backendSource2 = new BackendSource(Type: "B", default);
+            var backendSource3 = new BackendSource(Type: "C", default);
 
             var backendSourceToCatalogsMap = new Dictionary<BackendSource, ResourceCatalog[]>()
             {
@@ -43,11 +43,11 @@ namespace Services
 
             Mock.Get(dataSourceController1)
                 .Setup(s => s.GetAvailabilityAsync(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<AvailabilityGranularity>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(new AvailabilityResult() { BackendSource = backendSource1, Data = data1 }));
+                .Returns(Task.FromResult(new AvailabilityResult(BackendSource: backendSource1, Data: data1)));
 
             Mock.Get(dataSourceController2)
                 .Setup(s => s.GetAvailabilityAsync(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<AvailabilityGranularity>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(new AvailabilityResult() { BackendSource = backendSource3, Data = data2 }));
+                .Returns(Task.FromResult(new AvailabilityResult(BackendSource: backendSource3, Data: data2 )));
 
             var dataControllerService = Mock.Of<IDataControllerService>();
 
@@ -105,8 +105,8 @@ namespace Services
             var samplePeriod = TimeSpan.FromSeconds(1);
             var exportId = Guid.NewGuid();
 
-            var backendSource1 = new BackendSource() { Type = "A" };
-            var backendSource2 = new BackendSource() { Type = "B" };
+            var backendSource1 = new BackendSource(Type: "A", default);
+            var backendSource2 = new BackendSource(Type: "B", default);
 
             // DI services
             var dataSourceController1 = Mock.Of<IDataSourceController>();

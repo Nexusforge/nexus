@@ -18,12 +18,8 @@ namespace Nexus.Extensibility
         Memory<byte> Data,
         Memory<byte> Status);
 
-    public sealed record BackendSource
+    public sealed record BackendSource(string Type, Uri ResourceLocator, Dictionary<string, string>? Configuration = null)
     {
-        public string Type { get; init; }
-        public Uri ResourceLocator { get; init; }
-        public Dictionary<string, string>? Configuration { get; init; }
-
         public override int GetHashCode()
         {
             return HashCode.Combine(this.Type, this.ResourceLocator);

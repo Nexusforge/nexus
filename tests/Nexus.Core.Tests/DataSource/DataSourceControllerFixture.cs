@@ -11,12 +11,7 @@ namespace DataSource
         {
             var dataSource = new InMemoryDataSource();
 
-            this.BackendSource = new BackendSource()
-            {
-                Type = "Nexus.InMemory",
-                ResourceLocator = new Uri("memory://localhost")
-            };
-
+            this.BackendSource = new BackendSource(Type: "Nexus.InMemory", ResourceLocator: new Uri("memory://localhost"));
             this.Controller = new DataSourceController(dataSource, this.BackendSource, NullLogger.Instance);
         }
 

@@ -9,20 +9,17 @@ using System.Threading.Tasks;
 
 namespace Nexus.Services
 {
-    public class UserManagerWrapper<T> : IUserManagerWrapper where T : class
+    public class UserManagerWrapper : IUserManagerWrapper
     {
         private ILogger _logger;
         private IServiceProvider _serviceProvider;
         private SecurityOptions _securityOptions;
-        private UserManager<T> _wrapped;
 
         public UserManagerWrapper(
-            UserManager<T> wrapped,
             IServiceProvider serviceProvider,
-            ILogger<UserManagerWrapper<T>> logger, 
+            ILogger<UserManagerWrapper> logger, 
             IOptions<SecurityOptions> securityOptions)
         {
-            _wrapped = wrapped;
             _serviceProvider = serviceProvider;
             _logger = logger;
             _securityOptions = securityOptions.Value;
@@ -100,15 +97,19 @@ namespace Nexus.Services
 
         public async Task<ClaimsPrincipal> GetClaimsPrincipalAsync(string username)
         {
-            var user = await _wrapped.FindByNameAsync(username);
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+                var user = await userManager.FindByNameAsync(username);
 
-            if (user == null)
-                return null;
+                if (user == null)
+                    return null;
 
-            var claims = await _wrapped.GetClaimsAsync(user);
-            var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, "Fake authentication type"));
+                var claims = await userManager.GetClaimsAsync(user);
+                var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, "Fake authentication type"));
 
-            return principal;
+                return principal;
+            }
         }
     }
 }

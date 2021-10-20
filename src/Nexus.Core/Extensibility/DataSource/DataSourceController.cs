@@ -126,11 +126,9 @@ namespace Nexus.Extensibility
                     throw new NotSupportedException($"Availability granularity value '{granularity}' is not supported.");
             }
 
-            return new AvailabilityResult()
-            {
-                BackendSource = this.BackendSource,
-                Data = aggregatedData.ToDictionary(entry => entry.Key, entry => entry.Value)
-            };
+            return new AvailabilityResult(
+                BackendSource: this.BackendSource,
+                Data: aggregatedData.ToDictionary(entry => entry.Key, entry => entry.Value));
         }
 
         public async Task<TimeRangeResult>
@@ -138,12 +136,10 @@ namespace Nexus.Extensibility
         {
             (var begin, var end) = await this.DataSource.GetTimeRangeAsync(catalogId, cancellationToken);
 
-            return new TimeRangeResult()
-            {
-                BackendSource = this.BackendSource,
-                Begin = begin,
-                End = end
-            };
+            return new TimeRangeResult(
+                BackendSource: this.BackendSource,
+                Begin: begin,
+                End: end);
         }
 
         public async Task<bool> IsDataOfDayAvailableAsync(string catalogId, DateTime day, CancellationToken cancellationToken)

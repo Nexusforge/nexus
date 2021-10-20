@@ -396,18 +396,14 @@ namespace Nexus.Controllers
                     using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(entry.Key, cancellationToken);
                     var timeRange = await dataSource.GetTimeRangeAsync(catalog.Id, cancellationToken);
 
-                    var backendSource = new BackendSource()
-                    {
-                        Type = timeRange.BackendSource.Type,
-                        ResourceLocator = timeRange.BackendSource.ResourceLocator,
-                    };
+                    var backendSource = new BackendSource(
+                        Type: timeRange.BackendSource.Type,
+                        ResourceLocator: timeRange.BackendSource.ResourceLocator);
 
-                    return new TimeRangeResult()
-                    {
-                        BackendSource = backendSource,
-                        Begin = timeRange.Begin,
-                        End = timeRange.End
-                    };
+                    return new TimeRangeResult(
+                        BackendSource: backendSource,
+                        Begin: timeRange.Begin,
+                        End: timeRange.End);
                 }).ToList();
 
             var timeRangeResults = await Task
@@ -423,20 +419,16 @@ namespace Nexus.Controllers
                .Where(entry => entry.Value.Any(catalog => catalog.Id == catalog.Id))
                .Select(async entry =>
                {
-                   using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(entry.Key, cancellationToken);
-                   var availability = await dataSource.GetAvailabilityAsync(catalog.Id, begin, end, granularity, cancellationToken);
+                    using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(entry.Key, cancellationToken);
+                    var availability = await dataSource.GetAvailabilityAsync(catalog.Id, begin, end, granularity, cancellationToken);
 
-                    var backendSource = new BackendSource()
-                    {
-                        ResourceLocator = availability.BackendSource.ResourceLocator,
-                        Type = availability.BackendSource.Type,
-                    };
+                    var backendSource = new BackendSource(
+                        Type: availability.BackendSource.Type, 
+                        ResourceLocator: availability.BackendSource.ResourceLocator);
 
-                    return new AvailabilityResult()
-                    {
-                        BackendSource = backendSource,
-                        Data = availability.Data
-                    };
+                    return new AvailabilityResult(
+                        BackendSource: backendSource,
+                        Data: availability.Data);
                 }).ToList();
 
             var availabilityResults = await Task.WhenAll(tasks);

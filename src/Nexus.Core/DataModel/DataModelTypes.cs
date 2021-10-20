@@ -7,12 +7,7 @@ using System.Linq;
 
 namespace Nexus.DataModel
 {
-    public record NexusProject()
-    {
-        public List<PackageReference> PackageReferences { get; set; }
-
-        public List<BackendSource> BackendSources { get; set; }
-    }
+    public record NexusProject(List<PackageReference> PackageReferences, List<BackendSource> BackendSources);
 
     public enum AvailabilityGranularity
     {
@@ -56,21 +51,12 @@ namespace Nexus.DataModel
     {
         public bool IsQualityControlled { get; init; }
         public bool IsHidden { get; init; }
-        public string[] Logbook { get; init; }
-        public string[] GroupMemberships { get; init; }
-        public ResourceCatalog Overrides { get; init; }
+        public string[]? Logbook { get; init; }
+        public string[]? GroupMemberships { get; init; }
+        public ResourceCatalog? Overrides { get; init; }
     }
 
-    public record AvailabilityResult
-    {
-        public BackendSource BackendSource { get; set; }
-        public Dictionary<DateTime, double> Data { get; set; }
-    }
+    public record AvailabilityResult(BackendSource BackendSource, Dictionary<DateTime, double> Data);
 
-    public record TimeRangeResult
-    {
-        public BackendSource BackendSource { get; set; }
-        public DateTime Begin { get; set; }
-        public DateTime End { get; set; }
-    }
+    public record TimeRangeResult(BackendSource BackendSource, DateTime Begin, DateTime End);
 }

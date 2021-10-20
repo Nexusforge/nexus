@@ -167,7 +167,7 @@ namespace Nexus
             services.AddTransient<IDataControllerService, DataControllerService>();
 
             services.AddSingleton<ICatalogManager, CatalogManager>();
-            services.AddSingleton<IUserManagerWrapper, UserManagerWrapper<IdentityUser>>();
+            services.AddSingleton<IUserManagerWrapper, UserManagerWrapper>();
             services.AddSingleton<ExtensionHive>();
             services.AddSingleton<AppState>();
             services.AddSingleton<IFileAccessManager, FileAccessManager>();
@@ -346,24 +346,20 @@ namespace Nexus
             }
             else
             {
-                appState.Project = new NexusProject();
+                appState.Project = new NexusProject(default, default);
             }
 
             // extend config with more data readers
-            var inmemoryBackendSource = new BackendSource()
-            {
-                Type = "Nexus.Builtin.Inmemory",
-                ResourceLocator = new Uri("memory://localhost")
-            };
+            var inmemoryBackendSource = new BackendSource(
+                Type: "Nexus.Builtin.Inmemory",
+                ResourceLocator: new Uri("memory://localhost"));
 
             if (!appState.Project.BackendSources.Contains(inmemoryBackendSource))
                 appState.Project.BackendSources.Add(inmemoryBackendSource);
 
-            var filterBackendSource = new BackendSource()
-            {
-                Type = "Nexus.Builtin.Filters",
-                ResourceLocator = new Uri(pathsOptions.Cache, UriKind.RelativeOrAbsolute)
-            };
+            var filterBackendSource = new BackendSource(
+                Type: "Nexus.Builtin.Filters",
+                ResourceLocator: new Uri(pathsOptions.Cache, UriKind.RelativeOrAbsolute));
 
             if (!appState.Project.BackendSources.Contains(filterBackendSource))
                 appState.Project.BackendSources.Add(filterBackendSource);

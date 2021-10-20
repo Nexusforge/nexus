@@ -197,7 +197,7 @@ namespace Other
             var actual = GenericBitOr<T>.BitOr(a, b);
 
             // Assert
-            Assert.True(expected.Equals(actual));
+            Assert.Equal(expected, actual);
         }
 
         public static IList<object[]> BitAndData = new List<object[]>
@@ -224,7 +224,7 @@ namespace Other
             var actual = GenericBitAnd<T>.BitAnd(a, b);
 
             // Assert
-            Assert.True(expected.Equals(actual));
+            Assert.Equal(expected, actual);
         }
 
         record MyType(int A, string B, TimeSpan C);
@@ -240,7 +240,7 @@ namespace Other
             var actual = JsonSerializerHelper.Deserialize<MyType>(jsonString);
 
             // Assert
-            Assert.True(expected.Equals(actual));
+            Assert.Equal(expected, actual);
         }
 
         [Fact]
@@ -271,7 +271,7 @@ namespace Other
             var actual = values.Select(value => (ushort)value & 0x00FF);
 
             // Assert
-            Assert.True(expected.SequenceEqual(actual));
+            Assert.Equal(expected, actual);
         }
     }
 }
