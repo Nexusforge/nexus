@@ -12,9 +12,6 @@ from PythonRpcDataModel import (NexusDataType, Representation, ResourceBuilder,
 from PythonRpcExtensibility import IDataSource, LogLevel, RpcCommunicator
 
 
-class NULL_NAMESPACE:
-    bytes = b''
-
 class PythonDataSource(IDataSource):
     
     _context = None
