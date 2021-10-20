@@ -1,6 +1,7 @@
 ﻿using Nexus.Utilities;
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Nexus.Extensions
 {
@@ -25,7 +26,8 @@ namespace Nexus.Extensions
 
         public static AggregationVersioning Load(string filePath)
         {
-            return JsonSerializerHelper.DeserializeFile<AggregationVersioning>(filePath);
+            var jsonString = File.ReadAllText(filePath);
+            return JsonSerializerHelper.Deserialize<AggregationVersioning>(jsonString);
         }
 
         #endregion

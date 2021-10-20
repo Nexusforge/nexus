@@ -94,12 +94,11 @@ namespace Nexus.Controllers
 
                 var catalog = catalogItem.Catalog;
 
-#warning better would be to get metadata directly
-                var metadata = catalogCollection.CatalogContainers
-                    .First(container => container.Id == catalog.Id).CatalogMetadata;
+#warning better would be to get container directly
+                var container = catalogCollection.CatalogContainers.First(container => container.Id == catalog.Id);
 
                 // security check
-                if (!AuthorizationUtilities.IsCatalogAccessible(this.User, catalog.Id, metadata))
+                if (!AuthorizationUtilities.IsCatalogAccessible(this.User, container))
                     return this.Unauthorized($"The current user is not authorized to access the catalog '{catalog.Id}'.");
 
                 // controller

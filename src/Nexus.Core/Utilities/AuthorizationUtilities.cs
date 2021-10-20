@@ -12,27 +12,19 @@ namespace Nexus.Utilities
             if (principal == null)
                 return false;
 
-            var catalogMetadata = catalogContainer.CatalogMetadata;
-
-            return AuthorizationUtilities.IsCatalogAccessible(principal, catalogContainer.Id, catalogMetadata);
-        }
-
-        public static bool IsCatalogAccessible(ClaimsPrincipal principal, string catalogId, CatalogMetadata catalogMetadata)
-        {
-            if (principal == null)
-                return false;
-
             var identity = principal.Identity;
 
             if (identity.IsAuthenticated)
             {
                 var isAdmin = principal.HasClaim(claim => claim.Type == Claims.IS_ADMIN && claim.Value == "true");
 
-                var canAccessCatalog = principal.HasClaim(claim => claim.Type == Claims.CAN_ACCESS_CATALOG &&
-                                                          claim.Value.Split(";").Any(current => current == catalogId));
+                var canAccessCatalog = principal.HasClaim(
+                    claim => claim.Type == Claims.CAN_ACCESS_CATALOG &&
+                    claim.Value.Split(";").Any(current => current == catalogContainer.Id));
 
-                var canAccessGroup = principal.HasClaim(claim => claim.Type == Claims.CAN_ACCESS_GROUP &&
-                                                        claim.Value.Split(";").Any(group => catalogMetadata.GroupMemberships.Contains(group)));
+                var canAccessGroup = principal.HasClaim(
+                    claim => claim.Type == Claims.CAN_ACCESS_GROUP &&
+                    claim.Value.Split(";").Any(group => catalogContainer.CatalogMetadata.GroupMemberships.Contains(group)));
 
                 return isAdmin || canAccessCatalog || canAccessGroup;
             }
@@ -60,7 +52,7 @@ namespace Nexus.Utilities
             return false;
         }
 
-        public static bool IsCatalogVisible(ClaimsPrincipal principal, string catalogId, CatalogMetadata catalogMeta, bool isCatalogAccessible)
+        public static bool IsCatalogVisible(ClaimsPrincipal principal, CatalogContainer catalogContainer, bool isCatalogAccessible)
         {
             var identity = principal.Identity;
 
@@ -74,13 +66,13 @@ namespace Nexus.Utilities
             }
 
             // 2. test catalogs are hidden by default
-            if (Constants.HiddenCatalogs.Contains(catalogId))
+            if (Constants.HiddenCatalogs.Contains(catalogContainer.Id))
                 return false;
 
             // 3. other catalogs
 
             // catalog is hidden, addtional checks required
-            if (catalogMeta.IsHidden)
+            if (catalogContainer.CatalogMetadata.IsHidden)
                 // ignore hidden property in case user has access to catalog
                 return isCatalogAccessible;
 

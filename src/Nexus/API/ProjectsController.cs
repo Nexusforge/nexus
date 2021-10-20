@@ -60,8 +60,8 @@ namespace Nexus.Controllers
 
             catalogContainers = catalogContainers.Where(catalogContainer =>
             {
-                var isCatalogAccessible = AuthorizationUtilities.IsCatalogAccessible(this.User, catalogContainer.Id, catalogContainer.CatalogMetadata);
-                var isCatalogVisible = AuthorizationUtilities.IsCatalogVisible(this.User, catalogContainer.Id, catalogContainer.CatalogMetadata, isCatalogAccessible);
+                var isCatalogAccessible = AuthorizationUtilities.IsCatalogAccessible(this.User, catalogContainer);
+                var isCatalogVisible = AuthorizationUtilities.IsCatalogVisible(this.User, catalogContainer, isCatalogAccessible);
 
                 return isCatalogAccessible && isCatalogVisible;
             }).ToList();
@@ -464,7 +464,7 @@ namespace Nexus.Controllers
 
             if (catalogContainer != null)
             {
-                if (!AuthorizationUtilities.IsCatalogAccessible(this.User, catalogId, catalogContainer.CatalogMetadata))
+                if (!AuthorizationUtilities.IsCatalogAccessible(this.User, catalogContainer))
                     return this.Unauthorized($"The current user is not authorized to access the catalog '{catalogId}'.");
 
                 var catalog = catalogContainer.Catalog;

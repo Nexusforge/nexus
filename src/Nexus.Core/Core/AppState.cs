@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using Nexus.DataModel;
 using Nexus.Utilities;
 using Nexus.ViewModels;
@@ -20,10 +19,8 @@ namespace Nexus.Core
 
         #region Constructors
 
-        public AppState(ILogger<AppState> logger)
+        public AppState()
         {
-            this.Logger = logger;
-            
             this.CodeLanguageValues = NexusCoreUtilities.GetEnumValues<CodeLanguage>();
             this.CodeTypeValues = NexusCoreUtilities.GetEnumValues<CodeType>();
             this.Version = Assembly.GetEntryAssembly().GetName().Version.ToString();
@@ -48,8 +45,6 @@ namespace Nexus.Core
             get { return _isCatalogStateUpdating; }
             set { this.SetProperty(ref _isCatalogStateUpdating, value); }
         }
-
-        public ILogger<AppState> Logger { get; }
 
         public string Version { get; }
 

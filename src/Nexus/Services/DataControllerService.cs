@@ -61,8 +61,7 @@ namespace Nexus.Services
                 filterDataSource.IsCatalogAccessible =
                     catalogId => AuthorizationUtilities.IsCatalogAccessible(
                         _userIdService.User, 
-                        catalogId, 
-                        state.CatalogCollection.CatalogContainers.First(container => container.Id == catalogId).CatalogMetadata);
+                        state.CatalogCollection.CatalogContainers.First(container => container.Id == catalogId));
 
                 filterDataSource.GetDataSourceControllerAsync =
                     backendSource => this.GetDataSourceControllerAsync(backendSource, cancellationToken);

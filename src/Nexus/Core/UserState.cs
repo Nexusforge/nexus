@@ -737,7 +737,7 @@ namespace Nexus.Core
             var accessible = catalogCollection.CatalogContainers.Where(catalogContainer =>
             {
                 var isCatalogAccessible = AuthorizationUtilities.IsCatalogAccessible(principal, catalogContainer);
-                var isCatalogVisible = AuthorizationUtilities.IsCatalogVisible(principal, catalogContainer.Id, catalogContainer.CatalogMetadata, isCatalogAccessible);
+                var isCatalogVisible = AuthorizationUtilities.IsCatalogVisible(principal, catalogContainer, isCatalogAccessible);
 
                 return isCatalogAccessible && isCatalogVisible;
             }).OrderBy(catalogContainer => catalogContainer.Id).ToList();
@@ -745,7 +745,7 @@ namespace Nexus.Core
             var restricted = catalogCollection.CatalogContainers.Where(catalogContainer =>
             {
                 var isCatalogAccessible = AuthorizationUtilities.IsCatalogAccessible(principal, catalogContainer);
-                var isCatalogVisible = AuthorizationUtilities.IsCatalogVisible(principal, catalogContainer.Id, catalogContainer.CatalogMetadata, isCatalogAccessible);
+                var isCatalogVisible = AuthorizationUtilities.IsCatalogVisible(principal, catalogContainer, isCatalogAccessible);
 
                 return !isCatalogAccessible && isCatalogVisible;
             }).OrderBy(catalogContainer => catalogContainer.Id).ToList();

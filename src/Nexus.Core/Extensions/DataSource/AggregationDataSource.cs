@@ -108,7 +108,8 @@ namespace Nexus.Extensions
                     // (5.a) cache file exists
                     if (File.Exists(cacheFilePath))
                     {
-                        cache = JsonSerializerHelper.DeserializeFile<List<ResourceCatalog>>(cacheFilePath);
+                        var jsonString = File.ReadAllText(cacheFilePath);
+                        cache = JsonSerializerHelper.Deserialize<List<ResourceCatalog>>(jsonString);
 
                         foreach (var catalogId in catalogIds)
                         {
@@ -149,8 +150,11 @@ namespace Nexus.Extensions
                     // (6) save cache and versioning files
                     if (cacheChanged)
                     {
-                        JsonSerializerHelper.Serialize(cache, cacheFilePath);
-                        JsonSerializerHelper.Serialize(versioning, versioningFilePath);
+                        var jsonString = JsonSerializerHelper.Serialize(cache);
+                        File.WriteAllText(cacheFilePath, jsonString);
+
+                        jsonString = JsonSerializerHelper.Serialize(versioning);
+                        File.WriteAllText(versioningFilePath, jsonString);
                     }
 
                     currentMonth = currentMonth.AddMonths(1);
@@ -172,7 +176,8 @@ namespace Nexus.Extensions
 
                         foreach (var cacheFile in cacheFiles)
                         {
-                            var cache = JsonSerializerHelper.DeserializeFile<List<ResourceCatalog>>(cacheFile);
+                            var jsonString2 = File.ReadAllText(cacheFile);
+                            var cache = JsonSerializerHelper.Deserialize<List<ResourceCatalog>>(jsonString2);
 
                             foreach (var catalog in cache)
                             {
@@ -193,11 +198,13 @@ namespace Nexus.Extensions
                         throw;
                     }
 
-                    JsonSerializerHelper.Serialize(catalogs, mainCacheFilePath);
+                    var jsonString = JsonSerializerHelper.Serialize(catalogs);
+                    File.WriteAllText(mainCacheFilePath, jsonString);
                 }
                 else
                 {
-                    catalogs = JsonSerializerHelper.DeserializeFile<List<ResourceCatalog>>(mainCacheFilePath);
+                    var jsonString = File.ReadAllText(mainCacheFilePath);
+                    catalogs = JsonSerializerHelper.Deserialize<List<ResourceCatalog>>(jsonString);
                 }
 
                 _catalogs = catalogs.ToArray();

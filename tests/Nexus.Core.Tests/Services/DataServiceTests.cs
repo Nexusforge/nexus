@@ -65,18 +65,17 @@ namespace Services
                         throw new Exception("Invalid backend source.");
                 });
 
-            var catalogManagerState = new CatalogState() { BackendSourceToCatalogsMap = backendSourceToCatalogsMap };
+            var catalogState = new CatalogState() { BackendSourceToCatalogsMap = backendSourceToCatalogsMap };
 
-            var catalogManager = Mock.Of<ICatalogManager>();
-
-            Mock.Get(catalogManager)
-                .SetupGet(s => s.State)
-                .Returns(catalogManagerState);
+            var appState = new AppState()
+            {
+                CatalogState = catalogState
+            };
 
             var logger = Mock.Of<ILogger<DataService>>();
 
             // data service
-            var dataService = new DataService(dataControllerService, catalogManager, default, logger);
+            var dataService = new DataService(appState, dataControllerService, default, logger);
 
             // act
             var availability = await dataService.GetAvailabilityAsync("/A/B/C", begin, end, AvailabilityGranularity.Day, CancellationToken.None);
@@ -203,7 +202,7 @@ namespace Services
             };
 
             // data service
-            var dataService = new DataService(dataControllerService, default, databaseManager, logger);
+            var dataService = new DataService(default, dataControllerService, databaseManager, logger);
 
             // act
             try

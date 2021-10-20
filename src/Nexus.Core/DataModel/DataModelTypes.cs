@@ -56,8 +56,8 @@ namespace Nexus.DataModel
     {
         public bool IsQualityControlled { get; init; }
         public bool IsHidden { get; init; }
-        public List<string> Logbook { get; init; }
-        public List<string> GroupMemberships { get; init; }
+        public string[] Logbook { get; init; }
+        public string[] GroupMemberships { get; init; }
         public ResourceCatalog Overrides { get; init; }
     }
 

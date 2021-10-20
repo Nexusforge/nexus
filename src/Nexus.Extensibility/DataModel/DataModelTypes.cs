@@ -1,6 +1,6 @@
 ﻿namespace Nexus.DataModel
 {
-    public enum NexusDataType
+    public enum NexusDataType : ushort
     {
         UINT8 = 0x108,
         INT8 = 0x208,

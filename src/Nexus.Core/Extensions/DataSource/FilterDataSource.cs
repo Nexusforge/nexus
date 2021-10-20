@@ -164,29 +164,30 @@ namespace Nexus.Extensions
                             samplePeriod: filterCodeDefinition.SamplePeriod);
 
                         // create resource
-                        if (!NexusCoreUtilities.CheckNamingConvention(localFilterChannel.ResourceId, out var message))
+                        try
                         {
-                            this.Context.Logger.LogWarning($"Skipping resource '{localFilterChannel.ResourceId}' due to the following reason: {message}.");
-                            continue;
-                        }
-
-                        var resource = new ResourceBuilder(id: localFilterChannel.ResourceId)
-                            .WithUnit(localFilterChannel.Unit)
-                            .WithDescription(localFilterChannel.Description)
-                            .WithGroups(localFilterChannel.Group)
-                            .AddRepresentation(representation)
-                            .Build();
-
-                        // get or create catalog
-                        if (!catalogs.TryGetValue(localFilterChannel.CatalogId, out var catalog))
-                            catalog = new ResourceCatalogBuilder(id: localFilterChannel.CatalogId)
-                                .AddResource(resource)
+                            var resource = new ResourceBuilder(id: localFilterChannel.ResourceId)
+                                .WithUnit(localFilterChannel.Unit)
+                                .WithDescription(localFilterChannel.Description)
+                                .WithGroups(localFilterChannel.Group)
+                                .AddRepresentation(representation)
                                 .Build();
 
-                        else
-                            catalog = catalog with { Resources = new List<Resource>() { resource } };
+                            // get or create catalog
+                            if (!catalogs.TryGetValue(localFilterChannel.CatalogId, out var catalog))
+                                catalog = new ResourceCatalogBuilder(id: localFilterChannel.CatalogId)
+                                    .AddResource(resource)
+                                    .Build();
 
-                        catalogs[localFilterChannel.CatalogId] = catalog;
+                            else
+                                catalog = catalog with { Resources = new List<Resource>() { resource } };
+
+                            catalogs[localFilterChannel.CatalogId] = catalog;
+                        }
+                        catch (Exception ex)
+                        {
+                            this.Context.Logger.LogError(ex, "Skip creation of resource '{resourceId}'.", localFilterChannel.ResourceId);
+                        }
                     }
                 }
             }
@@ -285,7 +286,8 @@ namespace Nexus.Extensions
                 // read from disk
                 if (File.Exists(filePath))
                 {
-                    filterSettings = JsonSerializerHelper.DeserializeFile<FilterSettings>(filePath);
+                    var jsonString = File.ReadAllText(filePath);
+                    filterSettings = JsonSerializerHelper.Deserialize<FilterSettings>(jsonString);
 
                     // add to cache
                     var filterSettings2 = filterSettings; // to make compiler happy

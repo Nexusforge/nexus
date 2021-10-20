@@ -3,15 +3,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Nexus.Utilities
 {
     internal static class NexusCoreUtilities
     {
-        public static List<T> GetEnumValues<T>()
+        public static List<T> GetEnumValues<T>() where T : Enum
         {
             return Enum.GetValues(typeof(T)).Cast<T>().ToList();
         }
@@ -39,7 +37,8 @@ namespace Nexus.Utilities
         public static async Task FileLoopAsync(
             DateTime begin,
             DateTime end,
-            TimeSpan filePeriod, Func<DateTime, TimeSpan, TimeSpan, Task> func)
+            TimeSpan filePeriod, 
+            Func<DateTime, TimeSpan, TimeSpan, Task> func)
         {
             var lastFileBegin = default(DateTime);
             var currentBegin = begin;
@@ -118,39 +117,12 @@ namespace Nexus.Utilities
 
         public static int SizeOf(NexusDataType dataType)
         {
-            return NexusCoreUtilities.SizeOf(NexusCoreUtilities.GetTypeFromNexusDataType(dataType));
-        }
-
-        public static int SizeOf(Type type)
-        {
-            if (type == typeof(bool))
-                return 1;
-            else
-                return Marshal.SizeOf(type);
+            return (ushort)dataType & 0x00FF;
         }
 
         public static T GetFirstAttribute<T>(this Type type) where T : Attribute
         {
             return type.GetCustomAttributes(false).OfType<T>().FirstOrDefault();
-        }
-
-        public static bool CheckNamingConvention(string value, out string errorDescription, bool includeValue = false)
-        {
-#warning Should not be necessary anymore! Replace with NameValidator of Resource class
-            var valueAsString = string.Empty;
-
-            if (includeValue)
-                valueAsString = $" (value: '{value}')";
-
-            errorDescription = true switch
-            {
-                true when string.IsNullOrWhiteSpace(value)      => $"{ErrorMessage.NexusUtilities_NameEmpty}{valueAsString}",
-                true when Regex.IsMatch(value, "[^A-Za-z0-9_]") => $"{ErrorMessage.NexusUtilities_InvalidCharacters}{valueAsString}",
-                true when Regex.IsMatch(value, "^[0-9_]")       => $"{ErrorMessage.NexusUtilities_InvalidLeadingCharacter}{valueAsString}",
-                _                                               => string.Empty
-            };
-
-            return string.IsNullOrWhiteSpace(errorDescription);
         }
 
         public static object InvokeGenericMethod<T>(T instance, string methodName, BindingFlags bindingFlags, Type genericType, object[] parameters)

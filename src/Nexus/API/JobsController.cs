@@ -100,7 +100,7 @@ namespace Nexus.Controllers
                 var catalogContainer = state.CatalogCollection.CatalogContainers
                     .First(container => container.Id == catalogId);
 
-                if (!AuthorizationUtilities.IsCatalogAccessible(this.HttpContext.User, catalogId, catalogContainer.CatalogMetadata))
+                if (!AuthorizationUtilities.IsCatalogAccessible(this.HttpContext.User, catalogContainer))
                     return this.Unauthorized($"The current user is not authorized to access catalog '{catalogId}'.");
             }
 

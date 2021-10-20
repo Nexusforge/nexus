@@ -29,26 +29,6 @@ namespace Nexus.Utilities
         }
     }
 
-    public static class GenericAdd<T>
-    {
-        private static Func<T, T, T> _add_function = GenericAdd<T>.EmitAddFunction();
-
-        private static Func<T, T, T> EmitAddFunction()
-        {
-            var _parameterA = Expression.Parameter(typeof(T), "a");
-            var _parameterB = Expression.Parameter(typeof(T), "b");
-
-            var _body = Expression.Add(_parameterA, _parameterB);
-
-            return Expression.Lambda<Func<T, T, T>>(_body, _parameterA, _parameterB).Compile();
-        }
-
-        public static T Add(T a, T b)
-        {
-            return _add_function(a, b);
-        }
-    }
-
     public static class GenericBitOr<T>
     {
         private static Func<T, T, T> _bit_or_function = GenericBitOr<T>.EmitBitOrFunction();
