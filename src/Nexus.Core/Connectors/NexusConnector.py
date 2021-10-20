@@ -219,7 +219,7 @@ class NexusConnector():
             with ZipFile(target_file, "r") as zipFile:
                 zipFile.extractall(target_folder)
 
-            self.logger.info(f"Unziping ... Done.")
+            self.logger.info(f"Unzipping ... Done.")
 
     async def _getJobStatus(self, url):
 
