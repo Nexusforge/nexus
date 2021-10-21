@@ -4,7 +4,6 @@ using Nexus.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Security.Claims;
 using Xunit;
 
@@ -265,10 +264,10 @@ namespace Other
         {
             // Arrange
             var values = NexusCoreUtilities.GetEnumValues<NexusDataType>();
-            var expected = new[] { 8, 16, 32, 64, 8, 16, 32, 64, 32, 64 };
+            var expected = new[] { 1, 2, 4, 8, 1, 2, 4, 8, 4, 8 };
 
             // Act
-            var actual = values.Select(value => (ushort)value & 0x00FF);
+            var actual = values.Select(value => NexusCoreUtilities.SizeOf(value));
 
             // Assert
             Assert.Equal(expected, actual);

@@ -117,7 +117,7 @@ namespace Nexus.Utilities
 
         public static int SizeOf(NexusDataType dataType)
         {
-            return (ushort)dataType & 0x00FF;
+            return ((ushort)dataType & 0x00FF) / 8;
         }
 
         public static T GetFirstAttribute<T>(this Type type) where T : Attribute

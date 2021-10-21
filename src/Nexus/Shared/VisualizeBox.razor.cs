@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using Nexus.Core;
-using Nexus.DataModel;
 using Nexus.Services;
 using System.Collections.Generic;
 using System.Linq;
