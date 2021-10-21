@@ -1,5 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup>
+    <TargetFramework>$(TargetFrameworkVersion)</TargetFramework>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Remove="Resources\DefaultFilterCodeTemplate.cs" />
     <Compile Remove="Resources\DefaultSharedCodeTemplate.cs" />

@@ -29,7 +29,7 @@ namespace Nexus.ViewModels
 
         public string Description => _model.Properties.GetValueOrDefault(DataModelExtensions.Description, string.Empty);
 
-        public string Note => _model.Properties.GetValueOrDefault("Note", string.Empty);
+        public string Warning => _model.Properties.GetValueOrDefault(DataModelExtensions.Warning, string.Empty);
 
         public string Unit => _model.Properties.GetValueOrDefault(DataModelExtensions.Unit, string.Empty);
 

@@ -6,6 +6,7 @@ namespace Nexus.DataModel
     {
         internal const string Description = "Description";
         internal const string ShortDescription = "ShortDescription";
+        internal const string Warning = "Warning";
         internal const string Contact = "Contact";
         internal const string Unit = "Unit";
         internal const string Groups = "Groups";
@@ -33,6 +34,11 @@ namespace Nexus.DataModel
         public static ResourceBuilder WithDescription(this ResourceBuilder resourceBuilder, string description)
         {
             return resourceBuilder.WithProperty(Description, description);
+        }
+
+        public static ResourceBuilder WithWarning(this ResourceBuilder resourceBuilder, string warning)
+        {
+            return resourceBuilder.WithProperty(Warning, warning);
         }
 
         public static ResourceBuilder WithGroups(this ResourceBuilder resourceBuilder, params string[] groups)

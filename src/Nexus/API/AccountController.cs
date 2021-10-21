@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Nexus.Core;
 using Nexus.Services;
@@ -13,14 +12,14 @@ namespace Nexus.Controllers
     {
         #region Fields
 
-        private JwtService<IdentityUser> _jwtService;
+        private JwtService _jwtService;
         private ILogger _logger;
 
         #endregion
 
         #region Constructors
 
-        public AccountController(JwtService<IdentityUser> jwtService,
+        public AccountController(JwtService jwtService,
                                  ILoggerFactory loggerFactory)
         {
             _jwtService = jwtService;

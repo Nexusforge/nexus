@@ -154,32 +154,32 @@ namespace Nexus
 #warning replace httpcontextaccessor by async authenticationStateProvider (https://github.com/dotnet/aspnetcore/issues/17585)
             services.AddHttpContextAccessor();
 
-            services.AddScoped<MonacoService>();
             services.AddScoped<IUserIdService, UserIdService>();
-            services.AddScoped<UserState>();
+            services.AddScoped<JobEditor>();
+            services.AddScoped<JwtService>();
+            services.AddScoped<MonacoService>();
             services.AddScoped<SettingsViewModel>();
             services.AddScoped<ToasterService>();
-            services.AddScoped<JwtService<IdentityUser>>();
-            services.AddScoped<JobEditor>();
+            services.AddScoped<UserState>();
 
-            services.AddTransient<DataService>();
             services.AddTransient<AggregationService>();
+            services.AddTransient<DataService>();
             services.AddTransient<IDataControllerService, DataControllerService>();
 
-            services.AddSingleton<ICatalogManager, CatalogManager>();
-            services.AddSingleton<IUserManagerWrapper, UserManagerWrapper>();
-            services.AddSingleton<IExtensionHive, ExtensionHive>();
             services.AddSingleton<AppState>();
-            services.AddSingleton<JobService<ExportJob>>();
-            services.AddSingleton<JobService<AggregationJob>>();
+            services.AddSingleton<ICatalogManager, CatalogManager>();
             services.AddSingleton<IDatabaseManager, DatabaseManager>();
+            services.AddSingleton<IExtensionHive, ExtensionHive>();
+            services.AddSingleton<IUserManagerWrapper, UserManagerWrapper>();
+            services.AddSingleton<JobService<AggregationJob>>();
+            services.AddSingleton<JobService<ExportJob>>();
 
             services.Configure<GeneralOptions>(Configuration.GetSection(GeneralOptions.Section));
-            services.Configure<ServerOptions>(Configuration.GetSection(ServerOptions.Section));
             services.Configure<PathsOptions>(Configuration.GetSection(PathsOptions.Section));
             services.Configure<SecurityOptions>(Configuration.GetSection(SecurityOptions.Section));
-            services.Configure<UsersOptions>(Configuration.GetSection(UsersOptions.Section));
+            services.Configure<ServerOptions>(Configuration.GetSection(ServerOptions.Section));
             services.Configure<SmtpOptions>(Configuration.GetSection(SmtpOptions.Section));
+            services.Configure<UsersOptions>(Configuration.GetSection(UsersOptions.Section));
         }
 
         public void Configure(IApplicationBuilder app,

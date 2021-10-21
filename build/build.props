@@ -6,15 +6,14 @@
     <DebugType>embedded</DebugType>
     <EmbedAllSources>true</EmbedAllSources>
     <LangVersion>latest</LangVersion>
-    <TargetFramework>net5.0</TargetFramework>
-    <NoPackageAnalysis>true</NoPackageAnalysis>
+    <TargetFrameworkVersion>net5.0</TargetFrameworkVersion>
   </PropertyGroup>
     
   <PropertyGroup>
     <Major Condition="$(Major) == ''">1</Major>
     <Minor Condition="$(Minor) == ''">0</Minor>
     <Revision Condition="$(Revision) == ''">0</Revision>
-    <VersionSuffix Condition="$(VersionSuffix) == ''">alpha.1</VersionSuffix>
+    <VersionSuffix Condition="$(VersionSuffix) == ''">beta.1</VersionSuffix>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -26,7 +25,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <GetPackageVersionDependsOn>$(GetPackageVersionDependsOn);CreateMetaData</GetPackageVersionDependsOn>
+    <GetPackageVersionDependsOn>$(GetPackageVersionDependsOn);CreateMetadata</GetPackageVersionDependsOn>
   </PropertyGroup>
   
 </Project>

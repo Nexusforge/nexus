@@ -7,22 +7,22 @@ namespace Nexus.Services
     public record ExportParameters
     {
         /// <example>2020-02-01T00:00:00Z</example>
-        public DateTime Begin { get; init; } = DateTime.UtcNow.Date.AddDays(-2);
+        public DateTime Begin { get; set; } = DateTime.UtcNow.Date.AddDays(-2);
 
         /// <example>2020-02-02T00:00:00Z</example>
-        public DateTime End { get; init; } = DateTime.UtcNow.Date.AddDays(-1);
+        public DateTime End { get; set; } = DateTime.UtcNow.Date.AddDays(-1);
 
         /// <example>00:00:00</example>
-        public TimeSpan FilePeriod { get; init; }
+        public TimeSpan FilePeriod { get; set; }
 
         /// <example>Nexus.Builtin.Csv</example>
-        public string Writer { get; init; } = "Nexus.Builtin.Csv";
+        public string Writer { get; set; } = "Nexus.Builtin.Csv";
 
         /// <example>["/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean", "/IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean"]</example>
-        public string[] ResourcePaths { get; init; }
+        public string[] ResourcePaths { get; set; }
 
         /// <example>{ "RowIndexFormat": "Index", "SignificantFigures": "4" }</example>
-        public Dictionary<string, string> Configuration { get; init; }
+        public Dictionary<string, string> Configuration { get; set; }
     }
 
     public static class ExportParametersExtensions

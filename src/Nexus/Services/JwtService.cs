@@ -9,20 +9,20 @@ using System.Threading.Tasks;
 
 namespace Nexus.Services
 {
-    public class JwtService<TUser> where TUser : class
+    public class JwtService
     {
         #region Fields
 
         private static JwtSecurityTokenHandler _tokenHandler = new JwtSecurityTokenHandler();
-        private SignInManager<TUser> _signInManager;
-        private UserManager<TUser> _userManager;
+        private SignInManager<IdentityUser> _signInManager;
+        private UserManager<IdentityUser> _userManager;
         private UsersOptions _usersOptions;
 
         #endregion
 
         #region Constructors
 
-        public JwtService(SignInManager<TUser> signInManager, UserManager<TUser> userManager, IOptions<UsersOptions> usersOptions)
+        public JwtService(SignInManager<IdentityUser> signInManager, UserManager<IdentityUser> userManager, IOptions<UsersOptions> usersOptions)
         {
             _signInManager = signInManager;
             _userManager = userManager;

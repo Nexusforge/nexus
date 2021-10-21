@@ -1,9 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Contains extensibility interfaces and base classe definitions for the Nexus time-series data GUI.</Description>
+    <Description>Type definitions to implement data sources and data writers for the Nexus system.</Description>
     <PackageTags>Nexus extensibility time-series data lake</PackageTags>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <TargetFramework>$(TargetFrameworkVersion)</TargetFramework>
     <!-- wait for https://github.com/dotnet/csharplang/blob/main/proposals/required-members.md -->
     <!--<Nullable>enable</Nullable>-->
   </PropertyGroup>

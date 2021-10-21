@@ -35,18 +35,19 @@ namespace Nexus.Core
         private bool _visualizeBeginAtZero;
 
         private ClientState _clientState;
-        private IJSRuntime _jsRuntime;
         private IDatabaseManager _databaseManager;
+        private IJSRuntime _jsRuntime;
         private IServiceProvider _serviceProvider;
+
         private AppState _appState;
-        private DataService _dataService;
-        private UserIdService _userIdService;
-        private PathsOptions _pathsOptions;
-        private ExportParameters _exportParameters;
+        private AuthenticationStateProvider _authenticationStateProvider;
         private CatalogContainer _catalogContainer;
         private CodeDefinitionViewModel _codeDefinition;
+        private DataService _dataService;
+        private ExportParameters _exportParameters;
         private JobControl<ExportJob> _exportJobControl;
-        private AuthenticationStateProvider _authenticationStateProvider;
+        private PathsOptions _pathsOptions;
+        private UserIdService _userIdService;
 
         private KeyValuePair<string, List<ResourceViewModel>> _groupedResourcesEntry;
         private Dictionary<TimeSpan, List<RepresentationViewModel>> _samplePeriodToSelectedRepresentationsMap = new Dictionary<TimeSpan, List<RepresentationViewModel>>();
@@ -431,10 +432,10 @@ namespace Nexus.Core
 
         public async Task DownloadAsync()
         {
-            EventHandler<ProgressUpdatedEventArgs> eventHandler = (sender, e) =>
+            EventHandler<double> eventHandler = (sender, e) =>
             {
-                this.DownloadMessage = e.Message;
-                this.DownloadProgress = e.Progress;
+                //this.DownloadMessage = e.Message;
+                this.DownloadProgress = e;//.Progress;
             };
 
             try
