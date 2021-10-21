@@ -4,8 +4,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 using Nexus.Core;
 using Nexus.Services;
+using Nexus.Utilities;
 using Nexus.ViewModels;
-using Nexus.Types;
 using System;
 using System.Threading.Tasks;
 
@@ -37,11 +37,11 @@ namespace Nexus.Shared
 				{
 					this.InvokeAsync(this.StateHasChanged);
 				}
-				else if (e.PropertyName == nameof(UserState.FileGranularity))
+				else if (e.PropertyName == nameof(UserState.FilePeriod))
 				{
 					this.InvokeAsync(this.StateHasChanged);
 				}
-				else if (e.PropertyName == nameof(UserState.SelectedDatasets))
+				else if (e.PropertyName == nameof(UserState.SelectedRepresentations))
 				{
 					this.InvokeAsync(this.StateHasChanged);
 				}
@@ -53,18 +53,18 @@ namespace Nexus.Shared
 		#region Properties - Injected
 
 		[Inject]
-		public IJSRuntime JsRuntime { get; set; }
+		private IJSRuntime JsRuntime { get; set; }
 
 		[Inject]
-		public ToasterService ToasterService { get; set; }
+		private ToasterService ToasterService { get; set; }
 
         #endregion
 
         #region Commands
 
-		private void CopyPath(DatasetInfoViewModel dataset)
+		private void CopyPath(RepresentationViewModel representation)
         {
-			this.JsRuntime.WriteToClipboard($"{dataset.Parent.Parent.Id}/{dataset.Parent.Name}/{dataset.Model.Id}");
+			this.JsRuntime.WriteToClipboard(representation.GetPath());
         }
 
         #endregion
@@ -89,7 +89,7 @@ namespace Nexus.Shared
 			var byteCount = this.UserState.GetByteCount();
 
 			if (byteCount > 0)
-				return $"Download ({Utilities.FormatByteCount(byteCount)})";
+				return $"Download ({NexusUtilities.FormatByteCount(byteCount)})";
 			else
 				return $"Download";
 		}

@@ -31,7 +31,7 @@ namespace Nexus.Pages
         {
             this.PropertyChanged = (sender, e) =>
             {
-                if (e.PropertyName == nameof(AppState.IsDatabaseInitialized))
+                if (e.PropertyName == nameof(AppState.CatalogState))
                 {
                     this.InvokeAsync(this.StateHasChanged);
                 }
@@ -46,7 +46,7 @@ namespace Nexus.Pages
 
         #region Properties
 
-        public List<Diagnostic> Diagnostics { get; set; }
+        private List<Diagnostic> Diagnostics { get; set; }
 
         [Inject]
         private ToasterService ToasterService { get; set; }
@@ -95,7 +95,7 @@ namespace Nexus.Pages
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
-            if (this.User.Identity.IsAuthenticated && this.AppState.IsDatabaseInitialized && !_monacoIsInitialized)
+            if (this.User.Identity.IsAuthenticated && this.AppState.CatalogState != null && !_monacoIsInitialized)
                 await this.InitializeMonacoAsync();
         }
 
@@ -189,7 +189,7 @@ namespace Nexus.Pages
 
         private void OnCodeDefinitionPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(CodeDefinitionViewModel.SampleRate))
+            if (e.PropertyName == nameof(CodeDefinitionViewModel.SamplePeriod))
             {
                 this.InvokeAsync(async () =>
                 {
@@ -198,7 +198,7 @@ namespace Nexus.Pages
                 });
             }
 
-            else if (e.PropertyName == nameof(CodeDefinitionViewModel.RequestedProjectIds))
+            else if (e.PropertyName == nameof(CodeDefinitionViewModel.RequestedCatalogIds))
             {
                 this.InvokeAsync(async () =>
                 {
@@ -242,7 +242,7 @@ namespace Nexus.Pages
             this.UserState.CodeDefinition = this.UserState.CreateCodeDefinition(codeType);
 
             if (codeType == CodeType.Filter)
-                this.CodeDefinitionSettingsBox.OpenCodeDefinitionProjectRequestDialog();
+                this.CodeDefinitionSettingsBox.OpenCodeDefinitionCatalogRequestDialog();
         }
 
         private async Task SaveCodeDefinitionAsync()
@@ -261,8 +261,8 @@ namespace Nexus.Pages
 
             await this.InvokeAsync(() => this.StateHasChanged());
 
-            // update database
-            await this.AppState.UpdateDatabaseAsync();
+            //// update database
+            //await this.AppState.UpdateDatabaseAsync();
         }
 
         private async Task DeleteFilterAsync()
@@ -280,8 +280,8 @@ namespace Nexus.Pages
             this.ToasterService.ShowSuccess(message: "The code definition has been deleted.", icon: MatIconNames.Delete);
             await this.InvokeAsync(() => this.StateHasChanged());
 
-            // update database
-            await this.AppState.UpdateDatabaseAsync();
+            //// update database
+            //await this.AppState.UpdateDatabaseAsync();
         }
 
         private void OpenGalleryDialog()

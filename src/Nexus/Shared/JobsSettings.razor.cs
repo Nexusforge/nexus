@@ -28,10 +28,10 @@ namespace Nexus.Shared
         #region Properties
 
         [Inject]
-        public JobService<ExportJob> ExportJobsService { get; set; }
+		private JobService<ExportJob> ExportJobsService { get; set; }
 
 		[Inject]
-		public JobService<AggregationJob> AggregationJobsService { get; set; }
+		private JobService<AggregationJob> AggregationJobsService { get; set; }
 
 		#endregion
 

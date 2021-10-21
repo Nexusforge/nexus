@@ -1,0 +1,73 @@
+﻿<div class="resource-expander" @onclick="this.OnClick" @onmouseover="() => _showAdditionalInfo = true" @onmouseout="() => _showAdditionalInfo = false">
+    <div class="resource-name">
+
+        @if (this.UserState.IsEditEnabled)
+        {
+            <!--
+            <span>@this.Resource.Id&nbsp;</span><input type="text" @bind-value="this.Resource.Unit" />
+            -->
+        }
+        else
+        {
+            @if (string.IsNullOrWhiteSpace(this.Resource.Unit))
+            {
+                @this.Resource.Id
+            }
+            else
+            {
+                <span>@this.Resource.Id&nbsp;</span><span class="small-text">@this.Resource.Unit</span>
+            }
+        }
+
+        <div class="resource-special-info">
+            @if (this.UserState.IsEditEnabled)
+            {
+                <!--
+                <input type="text" @bind-value="this.Resource.Note" />
+                -->
+            }
+            else
+            {
+                @if (!string.IsNullOrWhiteSpace(this.Resource.Warning))
+                {
+                    <span><i class="fas fa-exclamation-triangle"></i></span>
+                    @this.Resource.Warning
+                }
+            }
+        </div>
+
+        <div class="resource-sample-rates">
+            @if (_showAdditionalInfo)
+            {
+                @foreach (var samplePeriod in this.GetSamplePeriods())
+                {
+                    <div class="resource-sample-rate" @onclick="() => this.UserState.SamplePeriod = samplePeriod">
+                        @samplePeriod.ToUnitString()
+                    </div>
+                }
+            }
+        </div>
+
+        <div class="resource-representations ml-auto">
+            @foreach (var representation in _filteredRepresentations)
+            {
+                <div class="resource-representation @(this.UserState.IsRepresentationSelected(representation) ? "selected" : "")"
+                     @onclick="() => this.UserState.ToggleRepresentationSelection(representation)">
+                    @representation.Id
+                </div>
+            }
+        </div>
+    </div>
+    <span class="resource-description">
+        @if (this.UserState.IsEditEnabled)
+        {
+            <!--
+            <input type="text" @bind-value="this.Resource.Description" />
+            -->
+        }
+        else
+        {
+            @this.Resource.Description
+        }
+    </span>
+</div>

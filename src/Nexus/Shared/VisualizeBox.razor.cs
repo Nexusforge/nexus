@@ -1,12 +1,7 @@
-﻿using MatBlazor;
-using Microsoft.AspNetCore.Components;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using Nexus.Core;
 using Nexus.Services;
-using Nexus.Infrastructure;
-using Nexus.Types;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -52,7 +47,7 @@ namespace Nexus.Shared
 					{
 						await this.UpdateChartAsync();
 					}
-					else if (e.PropertyName == nameof(UserState.SelectedDatasets))
+					else if (e.PropertyName == nameof(UserState.SelectedRepresentations))
 					{
 						await this.UpdateChartAsync();
 					}
@@ -73,10 +68,10 @@ namespace Nexus.Shared
 		#region Properties
 
 		[Inject]
-		public ToasterService ToasterService { get; set; }
+		private ToasterService ToasterService { get; set; }
 
 		[Inject]
-		public IJSRuntime JsRuntime { get; set; }
+		private IJSRuntime JsRuntime { get; set; }
 
 		#endregion
 
@@ -102,17 +97,17 @@ namespace Nexus.Shared
 		{
 			var chartEntries = new List<ChartEntry>();
 
-			foreach (var dataset in this.UserState.SelectedDatasets.ToList())
+			foreach (var representation in this.UserState.SelectedRepresentations.ToList())
 			{
-				var name = dataset.Parent.Name;
-				var datasetNameParts = dataset.Name.Split('_');
+				var name = representation.Resource.Id;
+				var representationNameParts = representation.Id.Split('_');
 
-				if (datasetNameParts.Count() == 2)
-					name += $" ({datasetNameParts[1]})";
+				if (representationNameParts.Count() == 2)
+					name += $" ({representationNameParts[1]})";
 
-				var path = dataset.Model.GetPath();
+				var path = representation.GetPath();
 
-				chartEntries.Add(new ChartEntry(name, path, dataset.Parent.Unit));
+				chartEntries.Add(new ChartEntry(name, path, representation.Resource.Unit));
 			}
 
 			return chartEntries;
@@ -120,39 +115,39 @@ namespace Nexus.Shared
 
 		private async Task UpdateChartAsync()
 		{
-            try
-            {
-				var chartEntries = this.BuildChartEntriesAsync();
-				var begin = this.UserState.DateTimeBegin;
-				var end = this.UserState.DateTimeEnd;
-				var sampleRate = (double)new SampleRateContainer(this.UserState.SampleRate).SamplesPerSecond;
-				var dt = 1 / sampleRate;
+   //         try
+   //         {
+			//	var chartEntries = this.BuildChartEntriesAsync();
+			//	var begin = this.UserState.DateTimeBegin;
+			//	var end = this.UserState.DateTimeEnd;
+			//	var sampleRate = (double)new SampleRateContainer(this.UserState.SampleRate).SamplesPerSecond;
+			//	var dt = 1 / sampleRate;
 
-				var count = (int)((end - begin).TotalSeconds * sampleRate);
+			//	var count = (int)((end - begin).TotalSeconds * sampleRate);
 
-				await this.InvokeAsync(this.StateHasChanged);
-				await this.JsRuntime.UpdateChartAsync(this.UserState, chartEntries, begin, end, count, dt, this.UserState.VisualizeBeginAtZero);
-			}
-            catch (TaskCanceledException)
-            {
-				// prevent that the whole app crashes in the followig case:
-				// - Nexus calculates aggregations and locks current file
-				// GUI wants to load data from that locked file and times out
-				// TaskCanceledException is thrown: app crashes.
-				this.UserState.ClientState = ClientState.Normal;
-			}
-			catch (UnauthorizedAccessException ex)
-            {
-				this.UserState.Logger.LogError(ex.GetFullMessage());
-				this.ToasterService.ShowError(message: "Unauthorized.", icon: MatIconNames.Lock);
-				this.UserState.ClientState = ClientState.Normal;
-			}
-			catch (Exception ex)
-			{
-				this.UserState.Logger.LogError(ex.GetFullMessage());
-				this.ToasterService.ShowError(message: "Unable to stream data.", icon: MatIconNames.Error_outline);
-				this.UserState.ClientState = ClientState.Normal;
-			}
+			//	await this.InvokeAsync(this.StateHasChanged);
+			//	await this.JsRuntime.UpdateChartAsync(this.UserState, chartEntries, begin, end, count, dt, this.UserState.VisualizeBeginAtZero);
+			//}
+   //         catch (TaskCanceledException)
+   //         {
+			//	// prevent that the whole app crashes in the followig case:
+			//	// - Nexus calculates aggregations and locks current file
+			//	// GUI wants to load data from that locked file and times out
+			//	// TaskCanceledException is thrown: app crashes.
+			//	this.UserState.ClientState = ClientState.Normal;
+			//}
+			//catch (UnauthorizedAccessException ex)
+   //         {
+			//	this.UserState.Logger.LogError(ex.GetFullMessage());
+			//	this.ToasterService.ShowError(message: "Unauthorized.", icon: MatIconNames.Lock);
+			//	this.UserState.ClientState = ClientState.Normal;
+			//}
+			//catch (Exception ex)
+			//{
+			//	this.UserState.Logger.LogError(ex.GetFullMessage());
+			//	this.ToasterService.ShowError(message: "Unable to stream data.", icon: MatIconNames.Error_outline);
+			//	this.UserState.ClientState = ClientState.Normal;
+			//}
 		}
 
 		#endregion

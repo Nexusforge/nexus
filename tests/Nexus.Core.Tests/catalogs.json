@@ -1,0 +1,59 @@
+{
+  "Catalogs": [
+    {
+      "Id": "/A/B/C",
+      "Properties": {
+        "a": "b"
+      },
+      "Resources": [
+        {
+          "Id": "resource1",
+          "Properties": {
+            "Unit": "°C",
+            "Groups:0": "group1"
+          },
+          "Representations": [
+            {
+              "DataType": "INT64",
+              "SamplePeriod": "00:00:01",
+              "Detail": "mean"
+            }
+          ]
+        },
+        {
+          "Id": "resource2",
+          "Properties": {
+            "Unit": "bar",
+            "Groups:0": "group2"
+          },
+          "Representations": [
+            {
+              "DataType": "FLOAT64",
+              "SamplePeriod": "00:00:01",
+              "Detail": "mean"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "/D/E/F",
+      "Resources": [
+        {
+          "Id": "resource1",
+          "Properties": {
+            "Unit": "m/s",
+            "Groups:0": "group1"
+          },
+          "Representations": [
+            {
+              "DataType": "FLOAT32",
+              "SamplePeriod": "00:00:01",
+              "Detail": "mean"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

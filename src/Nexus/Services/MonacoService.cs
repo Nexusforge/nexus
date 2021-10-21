@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Services
 {
-    public class MonacoService
+    internal class MonacoService
     {
         /// <summary>
         /// Blazor plus Roslyn - strange behavior:
@@ -51,7 +51,7 @@ namespace Nexus.Services
 
         private ILoggerFactory _loggerFactory;
         private FormattingOptions _formattingOptions;
-        private DatabaseManager _databaseManager;
+        private AppState _appState;
         private RoslynProject _completionProject;
         private RoslynProject _diagnosticProject;
         private OmniSharpCompletionService _completionService;
@@ -74,9 +74,9 @@ namespace Nexus.Services
 
         #region Constructors
 
-        public MonacoService(DatabaseManager databaseManager)
+        public MonacoService(AppState appState)
         {
-            _databaseManager = databaseManager;
+            _appState = appState;
             _loggerFactory = LoggerFactory.Create(configure => { });
             _formattingOptions = new FormattingOptions();
         }
@@ -157,8 +157,8 @@ namespace Nexus.Services
         {
             await Task.Run(() =>
             {
-                _completionProject = new RoslynProject(filter, additionalCodeFiles, _databaseManager.Database);
-                _diagnosticProject = new RoslynProject(filter, additionalCodeFiles, _databaseManager.Database);
+                _completionProject = new RoslynProject(filter, additionalCodeFiles, _appState.CatalogState.CatalogCollection.CatalogContainers);
+                _diagnosticProject = new RoslynProject(filter, additionalCodeFiles, _appState.CatalogState.CatalogCollection.CatalogContainers);
 
                 _completionService = new OmniSharpCompletionService(_completionProject.Workspace, _formattingOptions, _loggerFactory);
                 _signatureService = new OmniSharpSignatureHelpService(_completionProject.Workspace);

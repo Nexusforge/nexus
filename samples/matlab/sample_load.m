@@ -9,7 +9,7 @@ dateTimeBegin 	= datetime(2020, 02, 01, 0, 0, 0, 'TimeZone', 'UTC');
 dateTimeEnd 	= datetime(2020, 02, 02, 0, 0, 0, 'TimeZone', 'UTC');
 
 % must all be of the same sample rate
-channelPaths = { ...
+resourcePaths = { ...
     '/IN_MEMORY/TEST/ACCESSIBLE/T1/1 s_mean'
     '/IN_MEMORY/TEST/ACCESSIBLE/V1/1 s_mean'
 };
@@ -25,7 +25,7 @@ addpath(connectorFolderPath)
 connector = NexusConnector(scheme, host, port, username, password);
 % without authentication: connector = NexusConnector(scheme, host, port)
 
-params.ChannelPaths = channelPaths;
+params.ResourcePaths = resourcePaths;
 data                = connector.Load(dateTimeBegin, dateTimeEnd, params);
 
 %% prepare plot

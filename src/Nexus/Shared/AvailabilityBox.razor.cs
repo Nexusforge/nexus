@@ -8,14 +8,14 @@ using ChartJs.Blazor.Common.Time;
 using MatBlazor;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
-using Nexus.Database;
+using Nexus.DataModel;
 using Nexus.Core;
 using Nexus.Services;
-using Nexus.Types;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Nexus.Shared
 {
@@ -108,10 +108,10 @@ namespace Nexus.Shared
         #region Properties
 
         [Inject]
-        public DatabaseManager DatabaseManager { get; set; }
+        private AppState AppState { get; set; }
 
         [Inject]
-        public ToasterService ToasterService { get; set; }
+        private ToasterService ToasterService { get; set; }
 
         private BarConfig Config { get; set; }
 
@@ -131,7 +131,7 @@ namespace Nexus.Shared
                 {
                     await this.UpdateChart();
                 }
-                else if (e.PropertyName == nameof(UserState.ProjectContainer))
+                else if (e.PropertyName == nameof(UserState.CatalogContainer))
                 {
                     await this.UpdateChart();
                 }
@@ -163,38 +163,38 @@ namespace Nexus.Shared
                     ? AvailabilityGranularity.Day
                     : AvailabilityGranularity.Month;
 
-                var availability = await this.UserState.GetAvailabilityAsync(granularity);
+                var availability = await this.UserState.GetAvailabilityAsync(granularity, CancellationToken.None);
                 var hasCleared = false;
 
-                if (availability.Count != this.Config.Data.Datasets.Count)
+                if (availability.Length != this.Config.Data.Datasets.Count)
                 {
                     this.Config.Data.Datasets.Clear();
                     hasCleared = true;
                 }
 
-                for (int i = 0; i < availability.Count; i++)
+                for (int i = 0; i < availability.Length; i++)
                 {
-                    BarDataset<TimePoint> dataset;
+                    BarDataset<TimePoint> representation;
 
                     if (hasCleared)
                     {
-                        var registration = availability[i].DataReaderRegistration;
-                        var isAggregation = registration.Equals(this.DatabaseManager.State.AggregationRegistration);
+                        var backendSource = availability[i].BackendSource;
+                        var isAggregation = backendSource.Equals(this.AppState.CatalogState.AggregationBackendSource);
 
-                        dataset = new BarDataset<TimePoint>
+                        representation = new BarDataset<TimePoint>
                         {
-                            Label = isAggregation ? "Aggregations" : $"Raw ({registration.RootPath} - {registration.DataReaderId})",
+                            Label = isAggregation ? "Aggregations" : $"Raw ({backendSource.ResourceLocator} - {backendSource.Type})",
                             BackgroundColor = _backgroundColors[i % _backgroundColors.Count()],
                             BorderColor = _borderColors[i % _borderColors.Count()],
                             BorderWidth = 2
                         };
 
-                        this.Config.Data.Datasets.Add(dataset);
+                        this.Config.Data.Datasets.Add(representation);
                     }
                     else
                     {
-                        dataset = (BarDataset<TimePoint>)this.Config.Data.Datasets[i];
-                        dataset.Clear();
+                        representation = (BarDataset<TimePoint>)this.Config.Data.Datasets[i];
+                        representation.Clear();
                     }
 
                     switch (granularity)
@@ -203,7 +203,7 @@ namespace Nexus.Shared
 
                             axis.Time.Unit = TimeMeasurement.Day;
 
-                            dataset.AddRange(availability[i].Data
+                            representation.AddRange(availability[i].Data
                                 .Select((entry, i) =>
                                 {
                                     return new TimePoint(entry.Key, entry.Value * 100);
@@ -216,7 +216,7 @@ namespace Nexus.Shared
 
                             axis.Time.Unit = TimeMeasurement.Month;
 
-                            dataset.AddRange(availability[i].Data
+                            representation.AddRange(availability[i].Data
                                 .Select((entry, i) =>
                                 {
                                     return new TimePoint(entry.Key, entry.Value * 100);

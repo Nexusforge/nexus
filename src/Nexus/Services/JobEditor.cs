@@ -1,14 +1,15 @@
 ﻿using Microsoft.Extensions.Logging.Abstractions;
 using Nexus.Core;
+using Nexus.DataModel;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
-using static Nexus.Services.DatabaseManager;
 
 namespace Nexus.Services
 {
-    public class JobEditor
+    internal class JobEditor
     {
         #region Events
 
@@ -19,15 +20,15 @@ namespace Nexus.Services
         #region Fields
 
         private string _jsonString;
-        private DatabaseManagerState _state;
+        private CatalogState _state;
 
         #endregion
 
         #region Constructors
 
-        public JobEditor(DatabaseManager databaseManager)
+        public JobEditor(AppState appState)
         {
-            _state = databaseManager.State;
+            _state = appState.CatalogState;
             this.Update();
         }
 
@@ -75,21 +76,21 @@ namespace Nexus.Services
 
             foreach (var instruction in instructions)
             {
-                sb.AppendLine($"Project '{instruction.Container.Id}'");
+                sb.AppendLine($"Catalog '{instruction.Container.Id}'");
 
-                foreach (var (registration, aggregationChannels) in instruction.DataReaderToAggregationsMap)
+                foreach (var (backendSource, aggregationResources) in instruction.DataReaderToAggregationsMap)
                 {
-                    if (aggregationChannels.Any())
+                    if (aggregationResources.Any())
                     {
                         sb.AppendLine();
-                        sb.AppendLine($"\tData Reader '{registration.DataReaderId}' ({registration.RootPath})");
+                        sb.AppendLine($"\tData Reader '{backendSource.Type}' ({backendSource.ResourceLocator})");
 
-                        foreach (var aggregationChannel in aggregationChannels)
+                        foreach (var aggregationResource in aggregationResources)
                         {
                             sb.AppendLine();
-                            sb.AppendLine($"\t\t{aggregationChannel.Channel.Name} / {aggregationChannel.Channel.Group} / {aggregationChannel.Channel.Unit}");
+                            sb.AppendLine($"\t\t{aggregationResource.Resource.Id} / {aggregationResource.Resource.Properties.GetValueOrDefault(DataModelExtensions.Unit, string.Empty)}");
 
-                            foreach (var aggregation in aggregationChannel.Aggregations)
+                            foreach (var aggregation in aggregationResource.Aggregations)
                             {
                                 foreach (var period in aggregation.Periods)
                                 {

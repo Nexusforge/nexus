@@ -15,7 +15,7 @@
                        @bind-Value="this.UserState.CodeDefinition.CodeType"
                        Items="this.AppState.CodeTypeValues">
             <ItemTemplate Context="value">
-                @Utilities.GetEnumLocalization(@value)
+                @NexusUtilities.GetEnumLocalization(@value)
             </ItemTemplate>
         </MatSelectItem>
 
@@ -24,7 +24,7 @@
                        @bind-Value="this.UserState.CodeDefinition.CodeLanguage"
                        Items="this.AppState.CodeLanguageValues">
             <ItemTemplate Context="value">
-                @Utilities.GetEnumLocalization(@value)
+                @NexusUtilities.GetEnumLocalization(@value)
             </ItemTemplate>
         </MatSelectItem>
 
@@ -35,24 +35,18 @@
 
         @if (this.UserState.CodeDefinition.CodeType == CodeType.Filter)
         {
-            <MatSelectItem class="settings-control"
-                           Label="Sample Rate"
-                           @bind-Value="this.UserState.CodeDefinition.SampleRate"
-                           Items="this.UserState.SampleRateValues">
-            </MatSelectItem>
-
             <div class="configuration-panel mt-auto">
                 <div class="flex-row">
                     <div class="configuration-panel-hover">
-                        <div class="icon-button" @onclick="this.OpenCodeDefinitionProjectRequestDialog">
-                            @this.UserState.CodeDefinition.RequestedProjectIds.Count
-                            @if (this.UserState.CodeDefinition.RequestedProjectIds.Count == 1)
+                        <div class="icon-button" @onclick="this.OpenCodeDefinitionCatalogRequestDialog">
+                            @this.UserState.CodeDefinition.RequestedCatalogIds.Count
+                            @if (this.UserState.CodeDefinition.RequestedCatalogIds.Count == 1)
                             {
-                                <MatSubtitle2 class="clear-margin">Project Reference</MatSubtitle2>
+                                <MatSubtitle2 class="clear-margin">Catalog Reference</MatSubtitle2>
                             }
                             else
                             {
-                                <MatSubtitle2 class="clear-margin">Project References</MatSubtitle2>
+                                <MatSubtitle2 class="clear-margin">Catalog References</MatSubtitle2>
                             }
                         </div>
                     </div>
@@ -72,6 +66,6 @@
 
 <!-- Should be outside the form, otherwise there will come the following error:
  MatBlazor.MatCheckbox`1[System.Boolean] requires a value for the 'ValueExpression' parameter. Normally this is provided automatically when using 'bind-Value'. -->
-<CodeDefinitionProjectRequestModal OnProjectIdsSelected="this.SelectProjectIds"
-                                   @bind-IsOpen="this.CodeDefinitionProjectRequestDialogIsOpen"
-                                   SelectedProjectIds="this.UserState.CodeDefinition.RequestedProjectIds" />
+<CodeDefinitionCatalogRequestModal OnCatalogIdsSelected="this.SelectCatalogIds"
+                                   @bind-IsOpen="this.CodeDefinitionCatalogRequestDialogIsOpen"
+                                   SelectedCatalogIds="this.UserState.CodeDefinition.RequestedCatalogIds" />

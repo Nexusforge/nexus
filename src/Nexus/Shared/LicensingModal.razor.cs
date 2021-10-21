@@ -15,16 +15,16 @@ namespace Nexus.Shared
         #region Properties
 
         [Inject]
-        public UserState UserState { get; set; }
+        private UserState UserState { get; set; }
 
         [Inject]
-        public AuthenticationStateProvider AuthenticationStateProvider { get; set; }
+        private AuthenticationStateProvider AuthenticationStateProvider { get; set; }
 
         [Inject]
-        public ToasterService ToasterService { get; set; }
+        private ToasterService ToasterService { get; set; }
 
         [Inject]
-        public UserManager<IdentityUser> UserManager { get; set; }
+        private UserManager<IdentityUser> UserManager { get; set; }
 
         [Parameter]
         public bool IsOpen { get; set; }
@@ -40,26 +40,26 @@ namespace Nexus.Shared
         {
             var authenticationState = await this.AuthenticationStateProvider.GetAuthenticationStateAsync();
             var principal = authenticationState.User;
-            var claimType = Claims.CAN_ACCESS_PROJECT;
+            var claimType = Claims.CAN_ACCESS_CATALOG;
 
             if (principal.Identity.IsAuthenticated)
             {
                 var user = await this.UserManager.GetUserAsync(principal);
                 var claims = await this.UserManager.GetClaimsAsync(user);
                 var claim = claims.FirstOrDefault(claim => claim.Type == claimType);
-                var projectId = this.UserState.ProjectContainer.Id;
+                var catalogId = this.UserState.CatalogContainer.Id;
 
                 if (claim == null)
                 {
-                    var newValue = projectId;
+                    var newValue = catalogId;
                     claim = new Claim(claimType, newValue);
                     await this.UserManager.AddClaimAsync(user, claim);
                 }
-                else if (!claim.Value.Split(';').Contains(projectId))
+                else if (!claim.Value.Split(';').Contains(catalogId))
                 {
                     var newValue = claim != null
-                        ? string.Join(';', claim.Value, projectId)
-                        : projectId;
+                        ? string.Join(';', claim.Value, catalogId)
+                        : catalogId;
                     var newClaim = new Claim(claimType, newValue);
                     await this.UserManager.ReplaceClaimAsync(user, claim, newClaim);
                 }

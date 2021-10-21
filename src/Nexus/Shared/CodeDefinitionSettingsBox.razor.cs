@@ -2,6 +2,7 @@
 using Nexus.ViewModels;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Nexus.Shared
 {
@@ -9,31 +10,38 @@ namespace Nexus.Shared
     {
         #region Properties
 
-        [Parameter]
-        public CodeDefinitionViewModel CodeDefinition { get; set; }
+        //[Parameter]
+        private CodeDefinitionViewModel CodeDefinition { get; set; }
 
         [Parameter]
         public Action OnSave { get; set; }
 
-        private bool CodeDefinitionProjectRequestDialogIsOpen { get; set; }
+        private bool CodeDefinitionCatalogRequestDialogIsOpen { get; set; }
 
         #endregion
 
         #region Commands
 
-        private void SelectProjectIds(List<string> projectIds)
+        private void SelectCatalogIds(List<string> catalogIds)
         {
-            this.UserState.CodeDefinition.RequestedProjectIds = projectIds;
+            this.UserState.CodeDefinition.RequestedCatalogIds = catalogIds;
         }
 
-        public void OpenCodeDefinitionProjectRequestDialog()
+        public void OpenCodeDefinitionCatalogRequestDialog()
         {
-            this.CodeDefinitionProjectRequestDialogIsOpen = true;
+            this.CodeDefinitionCatalogRequestDialogIsOpen = true;
         }
 
         #endregion
 
         #region Methods
+
+        public override Task SetParametersAsync(ParameterView parameters)
+        {
+            CodeDefinition = parameters.GetValueOrDefault<CodeDefinitionViewModel>(nameof(CodeDefinition));
+
+            return base.SetParametersAsync(parameters);
+        }
 
         private void HandleValidSubmit()
         {

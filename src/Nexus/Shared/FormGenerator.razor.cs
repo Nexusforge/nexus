@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
 using Microsoft.AspNetCore.Components.Web;
+using Nexus.Utilities;
 using System;
 using System.Collections;
 using System.Linq;
@@ -150,7 +151,7 @@ namespace Nexus.Shared
                                     }
                                 });
 
-                                sequence = (int)NexusUtilities.InvokeGenericMethod(
+                                sequence = (int)NexusCoreUtilities.InvokeGenericMethod(
                                     this.GetType(),
                                     this,
                                     nameof(AddGenericPrimitive),
@@ -254,7 +255,7 @@ namespace Nexus.Shared
                                 }
                             });
 
-                            sequence = (int)NexusUtilities.InvokeGenericMethod(
+                            sequence = (int)NexusCoreUtilities.InvokeGenericMethod(
                                    this.GetType(),
                                    this,
                                    nameof(AddGenericPrimitive),
@@ -276,7 +277,7 @@ namespace Nexus.Shared
                                     this.OnChanged();
                                 };
 
-                                sequence = (int)NexusUtilities.InvokeGenericMethod(
+                                sequence = (int)NexusCoreUtilities.InvokeGenericMethod(
                                     this.GetType(),
                                     this,
                                     nameof(AddGenericPrimitive),

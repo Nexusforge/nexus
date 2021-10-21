@@ -14,7 +14,7 @@
                         <MatNavSubMenuList>
                             @foreach (var codeDefinition in @entry.Value)
                             {
-                                <MatNavItem @onclick="() => this.Accept(codeDefinition)"><MatIcon Icon="@Utilities.GetEnumIconName(codeDefinition.CodeType)"></MatIcon>&nbsp; @codeDefinition.Name</MatNavItem>
+                                <MatNavItem @onclick="() => this.Accept(codeDefinition)"><MatIcon Icon="@NexusUtilities.GetEnumIconName(codeDefinition.CodeType)"></MatIcon>&nbsp; @codeDefinition.Name</MatNavItem>
                             }
                         </MatNavSubMenuList>
                     </MatNavSubMenu>
@@ -22,7 +22,7 @@
             }
             else
             {
-                <MatSubtitle1>Sorry, no channel filters or shared code files are available yet.</MatSubtitle1>
+                <MatSubtitle1>Sorry, no resource filters or shared code files are available yet.</MatSubtitle1>
             }
         </MatNavMenu>
     </MatDialogContent>

@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Components;
-using Nexus.Core;
 using Nexus.Services;
 using Nexus.ViewModels;
 using System;
@@ -17,13 +16,10 @@ namespace Nexus.Shared
         #region Properties
 
         [Inject]
-        public SettingsViewModel Settings { get; set; }
+        private SettingsViewModel Settings { get; set; }
 
         [Inject]
-        public NexusOptions Options { get; set; }
-
-        [Inject]
-        public JobEditor JobEditor { get; set; }
+        private JobEditor JobEditor { get; set; }
 
         #endregion
 
@@ -35,11 +31,6 @@ namespace Nexus.Shared
             this.JobEditor.Changed += _handler;
 
             base.OnParametersSet();
-        }
-
-        public void SaveOptions()
-        {
-            this.Options.Save(Program.OptionsFilePath);
         }
 
         public void Dipose()

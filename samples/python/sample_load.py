@@ -19,7 +19,7 @@ begin = datetime(2020, 2, 1, 0, 0, tzinfo=timezone.utc)
 end   = datetime(2020, 2, 2, 0, 0, tzinfo=timezone.utc)
 
 # must all be of the same sample rate
-channel_paths = [
+resource_paths = [
     "/IN_MEMORY/TEST/ACCESSIBLE/T1/1 s_mean",
     "/IN_MEMORY/TEST/ACCESSIBLE/V1/1 s_mean"
 ]
@@ -39,7 +39,7 @@ connector = NexusConnector(scheme, host, port, username, password)
 # without authentication: connector = NexusConnector(scheme, host, port)
 
 params = {
-    "ChannelPaths": channel_paths,
+    "ResourcePaths": resource_paths,
 }
 
 data = asyncio.run(connector.load(begin, end, params))

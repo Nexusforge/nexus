@@ -8,7 +8,7 @@ using System.Security.Claims;
 namespace Nexus.ViewModels
 {
 #warning: update user cookie when modifying claims
-    public class SettingsViewModel : BindableBase
+    internal class SettingsViewModel : BindableBase
     {
         #region Fields
 

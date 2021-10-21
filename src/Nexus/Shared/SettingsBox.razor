@@ -21,48 +21,6 @@
                        AllowInput="true">
         </MatDatePicker>
 
-        <MatSelectItem class="settings-control"
-                       Label="File Granularity"
-                       @bind-Value="this.UserState.FileGranularity"
-                       Items="this.AppState.FileGranularityValues">
-            <ItemTemplate Context="value">
-                @Utilities.GetEnumLocalization(@value)
-            </ItemTemplate>
-        </MatSelectItem>
-
-        <MatSelectItem class="settings-control"
-                       Label="File Type"
-                       @bind-Value="this.UserState.FileFormat"
-                       Items="this.AppState.FileFormatValues">
-            <ItemTemplate Context="value">
-                @Utilities.GetEnumLocalization(@value)
-            </ItemTemplate>
-        </MatSelectItem>
-
-        @if (this.UserState.FileFormat == Infrastructure.FileFormat.CSV)
-        {
-            <MatSelectItem class="settings-control"
-                           Label="Row index format"
-                           @bind-Value="this.UserState.ExportParameters.CsvRowIndexFormat"
-                           Items="this.AppState.CsvRowIndexFormatValues">
-                <ItemTemplate Context="value">
-                    @Utilities.GetEnumLocalization(@value)
-                </ItemTemplate>
-            </MatSelectItem>
-
-            <MatTextField class="settings-control"
-                          Type="number"
-                          Label="Significant figures"
-                          @bind-Value="this.UserState.ExportParameters.CsvSignificantFigures">
-            </MatTextField>
-        }
-
-        <MatSelectItem class="settings-control"
-                       Label="Sample Rate"
-                       @bind-Value="this.UserState.SampleRate"
-                       Items="this.UserState.SampleRateValues">
-        </MatSelectItem>
-
         @if (this.UserState.ClientState == ClientState.DataVisualizing)
         {
             <div class="chart-settings">
@@ -76,13 +34,6 @@
     </div>
 
 <div>
-    <div class="preset-panel">
-        <MatDivider></MatDivider>
-        <MatButton Icon="@MatIconNames.File_copy" 
-                   OnClick="this.OpenPresetsDialog"
-                   Label="Load Presets"></MatButton>
-        <MatDivider></MatDivider>
-    </div>
 
     <div class="configuration-panel">
 
@@ -126,5 +77,3 @@
         </div>
     </div>
 </div>
-
-<PresetsModal @bind-IsOpen="this.PresetsDialogIsOpen" />

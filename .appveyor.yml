@@ -2,7 +2,6 @@ version: '{build}'
 clone_depth: 1
 
 image:
-  # - Visual Studio 2019
   - Ubuntu
 
 environment:
@@ -25,22 +24,19 @@ before_build:
   - ps: "Get-ChildItem Env:"
 
 build_script:
- - ps: if ($isLinux) { sudo docker build -t apollo3zehn/nexus:1.0.0.alpha.1.$Env:APPVEYOR_BUILD_NUMBER . }
-
-#  - ps: if ($isWindows) { msbuild .\src\Nexus.Deployment\Nexus.Deployment.wixproj       /p:Configuraton=$Env:CONFIGURATION /p:Build=$Env:APPVEYOR_BUILD_NUMBER /p:IsFinalBuild=$Env:APPVEYOR_REPO_TAG }
+ - ps: sudo docker build -t apollo3zehn/nexus:1.0.0.alpha.1.$Env:APPVEYOR_BUILD_NUMBER .
 
 test_script:
  - ps: dotnet test ./tests/Nexus.Tests -c $Env:CONFIGURATION
 
 artifacts:
   - path: ./artifacts/packages/**/*.nupkg
-  - path: ./artifacts/msi/**/*.msi
 
 after_test:
 
 # Docker
-  - ps: if ($isLinux) { docker login -u="apollo3zehn" -p="$env:DOCKER_PASSWORD" }
-  - ps: if ($isLinux) { docker push apollo3zehn/nexus:1.0.0.alpha.1.$Env:APPVEYOR_BUILD_NUMBER }
+  - ps: docker login -u="apollo3zehn" -p="$env:DOCKER_PASSWORD"
+  - ps: docker push apollo3zehn/nexus:1.0.0.alpha.1.$Env:APPVEYOR_BUILD_NUMBER
 
 deploy:
 
@@ -59,7 +55,7 @@ deploy:
   - provider: NuGet
     server: https://www.nuget.org/api/v2/package
     api_key:
-      secure: WqZcnRwOmzIa+INti/HnihBrUz0u71rTRNElX/2wbuAIbzMX6SV8h4OxJtCaX2vN
+      secure: /+MsVllJKX6M/MHBmCXaBFf1ttNDSqO04J7frGM81UUgBwfDUs6Wn4WufiU0Wl3/
     skip_symbols: true
     artifact: /.*\.nupkg/ 
     on:

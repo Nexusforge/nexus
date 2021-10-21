@@ -5,7 +5,7 @@
     <Authorized>
         <div class="left-column">
             <div class="settings-box mat-elevation-z11">
-                @if (this.AppState.IsDatabaseInitialized)
+                @if (this.AppState.CatalogState != null)
                 {
                     <CodeDefinitionSettingsBox @ref="this.CodeDefinitionSettingsBox" CodeDefinition="this.UserState.CodeDefinition" OnSave="async () => await this.SaveCodeDefinitionAsync()" />
 
@@ -56,8 +56,8 @@
             </div>
         </div>
         <div class="right-column">
-            <div class="selected-channel-box mat-elevation-z11">
-                @if (this.AppState.IsDatabaseInitialized)
+            <div class="selected-resource-box mat-elevation-z11">
+                @if (this.AppState.CatalogState != null)
                 {
                     @if (this.CodeDefinitions != null && this.CodeDefinitions.Any())
                     {
@@ -66,7 +66,7 @@
 
                             <div class="codedefinition-item @(this.UserState.CodeDefinition.Id == codeDefinition.Id ? "active" : "")"
                                  @onclick="() => this.UserState.CodeDefinition = codeDefinition">
-                                <MatIcon Icon="@Utilities.GetEnumIconName(codeDefinition.CodeType)"></MatIcon>&nbsp; @codeDefinition.Name
+                                <MatIcon Icon="@NexusUtilities.GetEnumIconName(codeDefinition.CodeType)"></MatIcon>&nbsp; @codeDefinition.Name
                             </div>
                         }
                     }

@@ -4,11 +4,13 @@
         @if (this.IsOpen)
         {
             <div class="licensing">
-                <p>@this.UserState.ProjectContainer.ProjectMeta.License.DisplayMessage</p>
-                @if (!string.IsNullOrWhiteSpace(this.UserState.ProjectContainer.ProjectMeta.License.Url))
+                <!-- 
+                <p>@this.UserState.CatalogContainer.CatalogMeta.License.DisplayMessage</p>
+                @if (!string.IsNullOrWhiteSpace(this.UserState.CatalogContainer.CatalogMeta.License.Url))
                 {
-                    <p><a href="@this.UserState.ProjectContainer.ProjectMeta.License.Url" target="_blank">License</a></p>
+                    <p><a href="@this.UserState.CatalogContainer.CatalogMeta.License.Url" target="_blank">License</a></p>
                 }
+                -->
             </div>
         }
     </MatDialogContent>
