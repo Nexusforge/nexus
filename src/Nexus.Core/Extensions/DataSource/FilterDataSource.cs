@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 namespace Nexus.Extensions
 {
     [ExtensionIdentification(FilterDataSource.Id, "Nexus filters", "Dynamically loads and compiles user-defined filters.")]
-    public class FilterDataSource : IDataSource
+    internal class FilterDataSource : IDataSource
     {
         #region Fields
 

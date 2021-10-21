@@ -25,7 +25,7 @@ namespace Nexus.Services
         public Dictionary<string, string> Configuration { get; set; }
     }
 
-    public static class ExportParametersExtensions
+    internal static class ExportParametersExtensions
     {
         public static ExportParameters UpdateVersion(this ExportParameters parameters)
         {

@@ -9,7 +9,7 @@ using System.Globalization;
 
 namespace Nexus
 {
-    public class Program
+    internal class Program
     {
         #region Methods
 

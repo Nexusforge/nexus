@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Services
 {
-    public interface ICatalogManager
+    internal interface ICatalogManager
     {
         Task<CatalogState> LoadCatalogsAsync(CancellationToken cancellationToken);
     }

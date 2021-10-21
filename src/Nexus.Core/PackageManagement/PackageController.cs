@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.PackageManagement
 {
-    public class PackageController
+    internal class PackageController
     {
         #region Fields
 

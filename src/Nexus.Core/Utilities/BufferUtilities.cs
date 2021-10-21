@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Utilities
 {
-    public static class BufferUtilities
+    internal static class BufferUtilities
     {
         public static void ApplyRepresentationStatusByDataType(NexusDataType dataType, Memory<byte> data, Memory<byte> status, Memory<double> target)
         {

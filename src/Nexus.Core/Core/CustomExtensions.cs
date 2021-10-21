@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Nexus
 {
-    public static class CustomExtensions
+    internal static class CustomExtensions
     {
         public static async Task<(T[] Results, AggregateException Exception)> WhenAllEx<T>(this IEnumerable<Task<T>> tasks)
         {

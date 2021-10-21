@@ -4,7 +4,7 @@ using System.Reflection.Emit;
 
 namespace Nexus.Utilities
 {
-    public static class GenericToDouble<T>
+    internal static class GenericToDouble<T>
     {
         private static Func<T, double> _to_double_function = GenericToDouble<T>.EmitToDoubleConverter();
 
@@ -29,7 +29,7 @@ namespace Nexus.Utilities
         }
     }
 
-    public static class GenericBitOr<T>
+    internal static class GenericBitOr<T>
     {
         private static Func<T, T, T> _bit_or_function = GenericBitOr<T>.EmitBitOrFunction();
 
@@ -49,7 +49,7 @@ namespace Nexus.Utilities
         }
     }
 
-    public static class GenericBitAnd<T>
+    internal static class GenericBitAnd<T>
     {
         private static Func<T, T, T> _bit_and_function = GenericBitAnd<T>.EmitBitAndFunction();
 

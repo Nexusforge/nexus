@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Extensions
 {
-    public class RpcCommunicator
+    internal class RpcCommunicator
     {
         #region Fields
 

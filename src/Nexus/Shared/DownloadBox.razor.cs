@@ -53,10 +53,10 @@ namespace Nexus.Shared
 		#region Properties - Injected
 
 		[Inject]
-		public IJSRuntime JsRuntime { get; set; }
+		private IJSRuntime JsRuntime { get; set; }
 
 		[Inject]
-		public ToasterService ToasterService { get; set; }
+		private ToasterService ToasterService { get; set; }
 
         #endregion
 

@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 
 namespace Nexus.Core
 {
-    public static class VariableNameGenerator
+    internal static class VariableNameGenerator
     {
         #region Records
 

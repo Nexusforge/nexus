@@ -2,7 +2,7 @@
 
 namespace Nexus.ViewModels
 {
-    public class ClaimViewModel
+    internal class ClaimViewModel
     {
         #region Constructors
 

@@ -2,7 +2,7 @@
 
 namespace Nexus.ViewModels
 {
-    public class RepresentationViewModel
+    internal class RepresentationViewModel
     {
         #region Fields
 

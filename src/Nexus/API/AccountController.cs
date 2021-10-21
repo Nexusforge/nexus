@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Nexus.Core;
+using Nexus.Models;
 using Nexus.Services;
 using System.Threading.Tasks;
 
@@ -8,7 +8,7 @@ namespace Nexus.Controllers
 {
     [Route("api/v1/account")]
     [ApiController]
-    public class AccountController : ControllerBase
+    internal class AccountController : ControllerBase
     {
         #region Fields
 

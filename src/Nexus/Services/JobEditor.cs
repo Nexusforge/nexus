@@ -9,7 +9,7 @@ using System.Text.Json;
 
 namespace Nexus.Services
 {
-    public class JobEditor
+    internal class JobEditor
     {
         #region Events
 

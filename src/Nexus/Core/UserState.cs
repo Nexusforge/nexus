@@ -17,7 +17,7 @@ using Nexus.Utilities;
 
 namespace Nexus.Core
 {
-    public class UserState : BindableBase, IDisposable
+    internal class UserState : BindableBase, IDisposable
     {
         #region Fields
 

@@ -68,10 +68,10 @@ namespace Nexus.Shared
 		#region Properties
 
 		[Inject]
-		public ToasterService ToasterService { get; set; }
+		private ToasterService ToasterService { get; set; }
 
 		[Inject]
-		public IJSRuntime JsRuntime { get; set; }
+		private IJSRuntime JsRuntime { get; set; }
 
 		#endregion
 

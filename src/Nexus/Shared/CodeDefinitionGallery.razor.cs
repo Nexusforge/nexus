@@ -14,10 +14,10 @@ namespace Nexus.Shared
         #region Properties
 
         [Inject]
-        public AppState AppState { get; set; }
+        private AppState AppState { get; set; }
 
         [Inject]
-        public IUserManagerWrapper UserManagerWrapper { get; set; }
+        private IUserManagerWrapper UserManagerWrapper { get; set; }
 
         [Parameter]
         public bool IsOpen { get; set; }
@@ -25,14 +25,21 @@ namespace Nexus.Shared
         [Parameter]
         public EventCallback<bool> IsOpenChanged { get; set; }
 
-        [Parameter]
-        public Action<CodeDefinitionViewModel> OnCodeDefinitionSelected { get; set; }
+        //[Parameter]
+        private Action<CodeDefinitionViewModel> OnCodeDefinitionSelected { get; set; }
 
         private Dictionary<string, List<CodeDefinitionViewModel>> OwnerToCodeDefinitionsMap { get; set; }
 
         #endregion
 
         #region Methods
+
+        public override Task SetParametersAsync(ParameterView parameters)
+        {
+            OnCodeDefinitionSelected = parameters.GetValueOrDefault<Action<CodeDefinitionViewModel>>(nameof(OnCodeDefinitionSelected));
+
+            return base.SetParametersAsync(parameters);
+        }
 
         protected override async Task OnParametersSetAsync()
         {

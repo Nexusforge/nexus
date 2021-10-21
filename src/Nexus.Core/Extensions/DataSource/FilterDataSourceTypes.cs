@@ -5,7 +5,7 @@ using System.Runtime.Loader;
 
 namespace Nexus.Extensions
 {
-    public class FilterDataSourceLoadContext : AssemblyLoadContext
+    internal class FilterDataSourceLoadContext : AssemblyLoadContext
     {
         public FilterDataSourceLoadContext() : base(isCollectible: true) 
         {
@@ -13,7 +13,7 @@ namespace Nexus.Extensions
         }
     }
 
-    public record FilterDataSourceCacheEntry(
+    internal record FilterDataSourceCacheEntry(
         CodeDefinition FilterCodeDefinition,
         FilterDataSourceLoadContext LoadContext,
         FilterProviderBase FilterProvider,

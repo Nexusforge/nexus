@@ -21,13 +21,13 @@ namespace Nexus.Shared
         #region Properties
 
         [Inject]
-        public UserState UserState { get; set; }
+        private UserState UserState { get; set; }
 
         [Parameter]
         public bool IsExpanded { get; set; }
 
-        [Parameter]
-        public ResourceViewModel Resource { get; set; }
+        //[Parameter]
+        private ResourceViewModel Resource { get; set; }
 
         #endregion
 
@@ -36,6 +36,13 @@ namespace Nexus.Shared
         public void Dispose()
         {
             this.UserState.PropertyChanged -= this.OnUserStatePropertyChanged;
+        }
+
+        public override Task SetParametersAsync(ParameterView parameters)
+        {
+            Resource = parameters.GetValueOrDefault<ResourceViewModel>(nameof(Resource));
+
+            return base.SetParametersAsync(parameters);
         }
 
         protected override Task OnParametersSetAsync()

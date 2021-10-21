@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Extensions
 {
-    public interface IJsonRpcServer
+    internal interface IJsonRpcServer
     {
         public Task<ApiVersionResponse> 
             GetApiVersionAsync(CancellationToken cancellationToken);
@@ -28,13 +28,13 @@ namespace Nexus.Extensions
             ReadSingleAsync(string resourcePath, int elementCount, DateTime begin, DateTime end, CancellationToken cancellationToken);
     }
 
-    public record ApiVersionResponse(int ApiVersion);
-    public record CatalogsResponse(ResourceCatalog[] Catalogs);
-    public record TimeRangeResponse(DateTime Begin, DateTime End);
-    public record AvailabilityResponse(double Availability);
-    public record LogMessage(LogLevel LogLevel, string Message);
+    internal record ApiVersionResponse(int ApiVersion);
+    internal record CatalogsResponse(ResourceCatalog[] Catalogs);
+    internal record TimeRangeResponse(DateTime Begin, DateTime End);
+    internal record AvailabilityResponse(double Availability);
+    internal record LogMessage(LogLevel LogLevel, string Message);
 
-    public class RpcException : Exception
+    internal class RpcException : Exception
     {
         public RpcException(string message, Exception innerException = null)
             : base(message, innerException)

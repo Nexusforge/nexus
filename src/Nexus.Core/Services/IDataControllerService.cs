@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Services
 {
-    public interface IDataControllerService
+    internal interface IDataControllerService
     {
         Task<IDataSourceController> GetDataSourceControllerAsync(BackendSource backendSource, CancellationToken cancellationToken);
 

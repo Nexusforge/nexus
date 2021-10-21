@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace Nexus.Extensions
 {
     [ExtensionIdentification("Nexus.Builtin.Inmemory", "Nexus in-memory", "Provides an in-memory database.")]
-    public class InMemoryDataSource : IDataSource
+    internal class InMemoryDataSource : IDataSource
     {
         #region Properties
 

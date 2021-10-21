@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Extensibility
 {
-    public class DataSourceDoubleStream : Stream
+    internal class DataSourceDoubleStream : Stream
     {
         #region Fields
 

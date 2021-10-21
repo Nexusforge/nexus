@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Services
 {
-    public class DataService
+    internal class DataService
     {
         #region Fields
 

@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace Nexus.Extensions
 {
     [ExtensionIdentification("Nexus.Builtin.Csv", "Nexus CSV Writer", "Writes data into CSV files.")]
-    public class CsvDataWriter : IDataWriter
+    internal class CsvDataWriter : IDataWriter
     {
         #region "Fields"
 

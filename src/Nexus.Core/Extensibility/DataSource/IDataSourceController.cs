@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Extensibility
 {
-    public interface IDataSourceController : IDisposable
+    internal interface IDataSourceController : IDisposable
     {
         Task InitializeAsync(ResourceCatalog[] catalogs, CancellationToken cancellationToken);
         Task<ResourceCatalog[]> GetCatalogsAsync(CancellationToken cancellationToken);

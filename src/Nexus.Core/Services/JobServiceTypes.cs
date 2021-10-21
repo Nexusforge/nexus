@@ -32,7 +32,7 @@ namespace Nexus.Core
         public string Result { get; init; }
     }
 
-    public record JobControl<T> where T : Job
+    internal record JobControl<T> where T : Job
     {
         public event EventHandler<double> ProgressUpdated;
         public event EventHandler Completed;

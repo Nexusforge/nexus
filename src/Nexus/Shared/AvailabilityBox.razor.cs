@@ -108,10 +108,10 @@ namespace Nexus.Shared
         #region Properties
 
         [Inject]
-        public AppState AppState { get; set; }
+        private AppState AppState { get; set; }
 
         [Inject]
-        public ToasterService ToasterService { get; set; }
+        private ToasterService ToasterService { get; set; }
 
         private BarConfig Config { get; set; }
 

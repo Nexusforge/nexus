@@ -8,7 +8,7 @@ using System.Reflection;
 
 namespace Nexus.Core
 {
-    public class AppState : BindableBase
+    internal class AppState : BindableBase
     {
         #region Fields
 

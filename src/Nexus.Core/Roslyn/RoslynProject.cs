@@ -13,7 +13,7 @@ using System.Text;
 
 namespace Nexus.Roslyn
 {
-    public class RoslynProject
+    internal class RoslynProject
     {
         #region Fields
 

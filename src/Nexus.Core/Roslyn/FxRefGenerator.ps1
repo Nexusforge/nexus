@@ -15,7 +15,7 @@ function Add-TargetFramework($name, $packagePath)
 "@;
 
   $refContent = @"
-    public static class $name
+    internal static class $name
     {
 
 "@

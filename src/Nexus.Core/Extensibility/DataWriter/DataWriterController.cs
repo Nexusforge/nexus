@@ -11,7 +11,7 @@ namespace Nexus.Extensibility
 {
 #warning Add "CheckFileSize" method (e.g. for Famos).
 
-    public class DataWriterController : IDataWriterController
+    internal class DataWriterController : IDataWriterController
     {
         #region Constructors
 

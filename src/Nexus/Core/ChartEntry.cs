@@ -1,6 +1,6 @@
 ﻿namespace Nexus.Core
 {
-    public class ChartEntry
+    internal class ChartEntry
     {
         #region Constructors
 

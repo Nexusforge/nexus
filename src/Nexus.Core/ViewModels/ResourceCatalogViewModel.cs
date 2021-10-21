@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Nexus.ViewModels
 {
-    public class ResourceCatalogViewModel
+    internal class ResourceCatalogViewModel
     {
         #region Fields
 

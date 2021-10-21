@@ -4,7 +4,7 @@ using System.IO;
 
 namespace Nexus.Core
 {
-    public class LazyPhysicalFileProvider : IFileProvider
+    internal class LazyPhysicalFileProvider : IFileProvider
     {
         private string _folderPath;
         private PhysicalFileProvider _physicalFileProvider;

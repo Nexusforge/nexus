@@ -7,7 +7,7 @@ namespace Nexus.Shared
     public partial class NavMenu
     {
 		[Inject]
-		public IOptions<GeneralOptions> GeneralOptions { get; set; }
+		private IOptions<GeneralOptions> GeneralOptions { get; set; }
 
         public NavMenu()
         {

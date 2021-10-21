@@ -16,7 +16,7 @@ namespace Nexus.Controllers
 {
     [Route("api/v1/data")]
     [ApiController]
-    public class DataController : ControllerBase
+    internal class DataController : ControllerBase
     {
         #region Fields
 

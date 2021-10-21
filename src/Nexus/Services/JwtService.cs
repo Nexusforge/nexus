@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Nexus.Core;
+using Nexus.Models;
 using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -9,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Services
 {
-    public class JwtService
+    internal class JwtService
     {
         #region Fields
 

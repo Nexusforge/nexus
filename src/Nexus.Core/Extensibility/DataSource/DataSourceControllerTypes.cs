@@ -3,12 +3,12 @@ using System.IO.Pipelines;
 
 namespace Nexus.Extensibility
 {
-    public record CatalogItemPipeWriter(
+    internal record CatalogItemPipeWriter(
         CatalogItem CatalogItem, 
         PipeWriter DataWriter, 
         PipeWriter? StatusWriter);
 
-    public record DataReadingGroup(
+    internal record DataReadingGroup(
         IDataSourceController Controller,
         CatalogItemPipeWriter[] CatalogItemPipeWriters);
 }

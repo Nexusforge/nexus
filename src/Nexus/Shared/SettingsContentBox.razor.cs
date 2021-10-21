@@ -16,10 +16,10 @@ namespace Nexus.Shared
         #region Properties
 
         [Inject]
-        public SettingsViewModel Settings { get; set; }
+        private SettingsViewModel Settings { get; set; }
 
         [Inject]
-        public JobEditor JobEditor { get; set; }
+        private JobEditor JobEditor { get; set; }
 
         #endregion
 

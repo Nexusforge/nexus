@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Extensibility
 {
-    public class DataSourceController : IDataSourceController
+    internal class DataSourceController : IDataSourceController
     {
         #region Fields
 

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Services
 {
-    public class UserManagerWrapper : IUserManagerWrapper
+    internal class UserManagerWrapper : IUserManagerWrapper
     {
         private ILogger _logger;
         private IServiceProvider _serviceProvider;

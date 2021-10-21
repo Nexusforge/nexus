@@ -5,7 +5,7 @@ using System.IO;
 
 namespace Nexus.ViewModels
 {
-    public class FilterSettingsViewModel : BindableBase
+    internal class FilterSettingsViewModel : BindableBase
     {
         #region Fields
 

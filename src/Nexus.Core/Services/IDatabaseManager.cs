@@ -3,7 +3,7 @@ using System.IO;
 
 namespace Nexus.Services
 {
-    public interface IDatabaseManager
+    internal interface IDatabaseManager
     {
         bool TryReadProject(out Stream stream);
 

@@ -2,7 +2,7 @@
 
 namespace Nexus.PackageManagement
 {
-    public class PackageReference : Dictionary<string, string>
+    internal class PackageReference : Dictionary<string, string>
     {
         //
     }

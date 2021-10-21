@@ -5,7 +5,7 @@ using System.IO;
 
 namespace Nexus.Extensions
 {
-    public class AggregationVersioning
+    internal class AggregationVersioning
     {
         #region Constructors
 

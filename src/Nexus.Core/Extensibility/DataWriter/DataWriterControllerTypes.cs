@@ -3,7 +3,7 @@ using System.IO.Pipelines;
 
 namespace Nexus.Extensibility
 {
-    public record CatalogItemPipeReader(
+    internal record CatalogItemPipeReader(
         CatalogItem CatalogItem,
         PipeReader DataReader);
 }

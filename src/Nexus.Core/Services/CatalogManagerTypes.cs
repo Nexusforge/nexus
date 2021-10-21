@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace Nexus.Core
 {
-    public record CatalogState
+    internal record CatalogState
     {
         public BackendSource AggregationBackendSource { get; init; }
         public CatalogCollection CatalogCollection { get; init; }

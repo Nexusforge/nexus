@@ -52,7 +52,7 @@ namespace Nexus.Shared
         #region Properties
 
         [Inject]
-        public IJSRuntime JsRuntime { get; set; }
+        private IJSRuntime JsRuntime { get; set; }
 
         #endregion
 

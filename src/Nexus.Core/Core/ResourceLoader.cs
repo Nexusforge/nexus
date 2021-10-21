@@ -4,7 +4,7 @@ using System.Reflection;
 
 namespace Nexus.Core
 {
-    public static class ResourceLoader
+    internal static class ResourceLoader
     {
         public static Stream GetResourceStream(string name)
         {

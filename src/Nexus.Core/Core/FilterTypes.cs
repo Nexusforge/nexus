@@ -6,18 +6,18 @@ using System.Text.Json;
 
 namespace Nexus.Core
 {
-    public enum CodeType
+    internal enum CodeType
     {
         Filter = 1,
         Shared = 99
     }
 
-    public enum CodeLanguage
+    internal enum CodeLanguage
     {
         CSharp = 1
     }
 
-    public record CodeDefinition()
+    internal record CodeDefinition()
     {
         public CodeDefinition(string owner) : this()
         {
@@ -45,7 +45,7 @@ namespace Nexus.Core
         public DateTime CreationDate { get; set; } = DateTime.UtcNow;
     }
 
-    public record FilterSettings
+    internal record FilterSettings
     {
         #region Constructors
 

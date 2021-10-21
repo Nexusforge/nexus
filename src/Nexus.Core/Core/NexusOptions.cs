@@ -8,7 +8,7 @@ namespace Nexus.Core
 {
     // template: https://grafana.com/docs/grafana/latest/administration/configuration/
 
-    public abstract record NexusOptionsBase()
+    internal abstract record NexusOptionsBase()
     {
         // for testing only
         public string BlindSample { get; set; }
@@ -34,14 +34,14 @@ namespace Nexus.Core
         }
     }
 
-    public record GeneralOptions() : NexusOptionsBase
+    internal record GeneralOptions() : NexusOptionsBase
     {
         public const string Section = "General";
         public string InstanceName { get; } = Dns.GetHostName();
         public string Language { get; }
     }
 
-    public record ServerOptions() : NexusOptionsBase
+    internal record ServerOptions() : NexusOptionsBase
     {
         public const string Section = "Server";
         public string HttpScheme { get; set; }
@@ -49,7 +49,7 @@ namespace Nexus.Core
         public int HttpPort { get; set; }
     }
 
-    public record PathsOptions() : NexusOptionsBase
+    internal record PathsOptions() : NexusOptionsBase
     {
         public const string Section = "Paths";
 
@@ -75,7 +75,7 @@ namespace Nexus.Core
         #endregion
     }
 
-    public record SecurityOptions() : NexusOptionsBase
+    internal record SecurityOptions() : NexusOptionsBase
     {
         public const string Section = "Security";
         public static string DefaultRootUser { get; } = "root@nexus.localhost";
@@ -84,13 +84,13 @@ namespace Nexus.Core
         public string RootPassword { get; set; } = SecurityOptions.DefaultRootPassword;
     }
 
-    public record UsersOptions() : NexusOptionsBase
+    internal record UsersOptions() : NexusOptionsBase
     {
         public const string Section = "Users";
         public bool VerifyEmail { get; set; }
     }
 
-    public record SmtpOptions : NexusOptionsBase
+    internal record SmtpOptions : NexusOptionsBase
     {
         public const string Section = "Smtp";
         public string Host { get; set; }

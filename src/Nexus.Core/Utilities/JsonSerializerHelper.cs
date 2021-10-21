@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace Nexus.Utilities
 {
-    public static class JsonSerializerHelper
+    internal static class JsonSerializerHelper
     {
         public static string Serialize<T>(T value)
         {

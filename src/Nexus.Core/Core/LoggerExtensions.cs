@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace Nexus.Core
 {
-    public static class LoggerExtensions
+    internal static class LoggerExtensions
 	{
         public static IDisposable
             BeginNamedScope<T>(this ILogger<T> logger, string name, params ValueTuple<string, object>[] stateProperties)

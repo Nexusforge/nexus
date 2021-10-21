@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Services
 {
-    public interface IUserManagerWrapper
+    internal interface IUserManagerWrapper
     {
         Task InitializeAsync();
         Task<ClaimsPrincipal> GetClaimsPrincipalAsync(string username);

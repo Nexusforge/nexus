@@ -10,7 +10,7 @@ using Timer = System.Timers.Timer;
 
 namespace Nexus.Services
 {
-    public class JobService<T> : BindableBase where T : Job
+    internal class JobService<T> : BindableBase where T : Job
     {
         #region Fields
 

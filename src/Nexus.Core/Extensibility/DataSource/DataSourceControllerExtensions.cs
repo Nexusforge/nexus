@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Extensibility
 {
-    public static class DataSourceControllerExtensions
+    internal static class DataSourceControllerExtensions
     {
         public static DataSourceDoubleStream ReadAsStream(
             this IDataSourceController controller,

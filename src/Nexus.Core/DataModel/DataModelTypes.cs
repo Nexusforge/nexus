@@ -7,23 +7,23 @@ using System.Linq;
 
 namespace Nexus.DataModel
 {
-    public record NexusProject(List<PackageReference> PackageReferences, List<BackendSource> BackendSources);
+    internal record NexusProject(List<PackageReference> PackageReferences, List<BackendSource> BackendSources);
 
-    public enum AvailabilityGranularity
+    internal enum AvailabilityGranularity
     {
         Day,
         Month
     }
 
     [DebuggerDisplay("{Id,nq}")]
-    public record CatalogContainer(DateTime CatalogBegin, DateTime CatalogEnd, ResourceCatalog Catalog, CatalogMetadata CatalogMetadata)
+    internal record CatalogContainer(DateTime CatalogBegin, DateTime CatalogEnd, ResourceCatalog Catalog, CatalogMetadata CatalogMetadata)
     {
         public string Id => this.Catalog.Id;
 
         public string PhysicalName => this.Id.TrimStart('/').Replace('/', '_');
     }
 
-    public record CatalogCollection(IReadOnlyList<CatalogContainer> CatalogContainers)
+    internal record CatalogCollection(IReadOnlyList<CatalogContainer> CatalogContainers)
     {
         public bool TryFind(string catalogId, string resourceId, string representationId, out CatalogItem catalogItem)
         {
@@ -47,7 +47,7 @@ namespace Nexus.DataModel
         }
     }
 
-    public record CatalogMetadata()
+    internal record CatalogMetadata()
     {
         public bool IsQualityControlled { get; init; }
         public bool IsHidden { get; init; }

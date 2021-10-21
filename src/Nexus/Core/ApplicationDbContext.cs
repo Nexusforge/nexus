@@ -5,7 +5,7 @@ using System.IO;
 
 namespace Nexus.Core
 {
-    public class ApplicationDbContext : IdentityDbContext
+    internal class ApplicationDbContext : IdentityDbContext
     {
         private PathsOptions _pathsOptions;
 

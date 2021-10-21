@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Nexus.ViewModels
 {
-    public class CodeDefinitionViewModel : BindableBase /* Must be a class to ensure reference equality! Otherwise there would be created a new copy with every modification. */
+    internal class CodeDefinitionViewModel : BindableBase /* Must be a class to ensure reference equality! Otherwise there would be created a new copy with every modification. */
     {
         #region Constructors
 

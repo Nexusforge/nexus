@@ -15,16 +15,16 @@ namespace Nexus.Shared
         #region Properties
 
         [Inject]
-        public UserState UserState { get; set; }
+        private UserState UserState { get; set; }
 
         [Inject]
-        public AuthenticationStateProvider AuthenticationStateProvider { get; set; }
+        private AuthenticationStateProvider AuthenticationStateProvider { get; set; }
 
         [Inject]
-        public ToasterService ToasterService { get; set; }
+        private ToasterService ToasterService { get; set; }
 
         [Inject]
-        public UserManager<IdentityUser> UserManager { get; set; }
+        private UserManager<IdentityUser> UserManager { get; set; }
 
         [Parameter]
         public bool IsOpen { get; set; }

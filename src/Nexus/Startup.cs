@@ -31,7 +31,7 @@ using System.Threading.Tasks;
 
 namespace Nexus
 {
-    public class Startup
+    internal class Startup
     {
         #region Properties
 

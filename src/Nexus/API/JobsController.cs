@@ -16,7 +16,7 @@ namespace Nexus.Controllers
 {
     [Route("api/v1/jobs")]
     [ApiController]
-    public class JobsController : ControllerBase
+    internal class JobsController : ControllerBase
     {
         #region Fields
 

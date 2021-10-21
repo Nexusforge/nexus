@@ -1,6 +1,6 @@
 ﻿namespace Nexus.Core
 {
-    public enum ClientState
+    internal enum ClientState
     {
         Normal,
         PrepareDownload,

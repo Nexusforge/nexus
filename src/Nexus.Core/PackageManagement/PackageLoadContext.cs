@@ -4,7 +4,7 @@ using System.Runtime.Loader;
 
 namespace Nexus.PackageManagement
 {
-    public class PackageLoadContext : AssemblyLoadContext
+    internal class PackageLoadContext : AssemblyLoadContext
     {
         #region Fields
 

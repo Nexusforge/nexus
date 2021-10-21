@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Nexus.Core;
 using System;
+using System.Threading.Tasks;
 
 namespace Nexus.Shared
 {
@@ -14,12 +15,19 @@ namespace Nexus.Shared
         [Parameter]
         public EventCallback<bool> IsOpenChanged { get; set; }
 
-        [Parameter]
-        public Action<CodeType> OnCodeTypeSelected { get; set; }
+        //[Parameter]
+        private Action<CodeType> OnCodeTypeSelected { get; set; }
 
         #endregion
 
         #region Methods
+
+        public override Task SetParametersAsync(ParameterView parameters)
+        {
+            OnCodeTypeSelected = parameters.GetValueOrDefault<Action<CodeType>>(nameof(OnCodeTypeSelected));
+
+            return base.SetParametersAsync(parameters);
+        }
 
         private void Accept(CodeType codeType)
         {

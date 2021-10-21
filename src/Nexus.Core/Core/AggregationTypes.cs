@@ -58,14 +58,14 @@ namespace Nexus.Core
         ExcludeUnit = 5
     }
 
-    public record AggregationResource
+    internal record AggregationResource
     {
         public Resource Resource { get; init; }
 
         public List<Aggregation> Aggregations { get; init; }
     }
 
-    public record AggregationUnit
+    internal record AggregationUnit
     {
         public Aggregation Aggregation { get; init; }
 
@@ -82,5 +82,5 @@ namespace Nexus.Core
         public string TargetFilePath { get; init; }
     }
 
-    public record AggregationInstruction(CatalogContainer Container, Dictionary<BackendSource, List<AggregationResource>> DataReaderToAggregationsMap);
+    internal record AggregationInstruction(CatalogContainer Container, Dictionary<BackendSource, List<AggregationResource>> DataReaderToAggregationsMap);
 }

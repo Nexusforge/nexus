@@ -46,7 +46,7 @@ namespace Nexus.Pages
 
         #region Properties
 
-        public List<Diagnostic> Diagnostics { get; set; }
+        private List<Diagnostic> Diagnostics { get; set; }
 
         [Inject]
         private ToasterService ToasterService { get; set; }

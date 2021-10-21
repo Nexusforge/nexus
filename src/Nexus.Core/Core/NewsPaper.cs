@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace Nexus.Core
 {
-    public class NewsPaper
+    internal class NewsPaper
     {
         #region Types
 

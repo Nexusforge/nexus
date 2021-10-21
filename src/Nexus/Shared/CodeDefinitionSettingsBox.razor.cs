@@ -2,6 +2,7 @@
 using Nexus.ViewModels;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Nexus.Shared
 {
@@ -9,8 +10,8 @@ namespace Nexus.Shared
     {
         #region Properties
 
-        [Parameter]
-        public CodeDefinitionViewModel CodeDefinition { get; set; }
+        //[Parameter]
+        private CodeDefinitionViewModel CodeDefinition { get; set; }
 
         [Parameter]
         public Action OnSave { get; set; }
@@ -34,6 +35,13 @@ namespace Nexus.Shared
         #endregion
 
         #region Methods
+
+        public override Task SetParametersAsync(ParameterView parameters)
+        {
+            CodeDefinition = parameters.GetValueOrDefault<CodeDefinitionViewModel>(nameof(CodeDefinition));
+
+            return base.SetParametersAsync(parameters);
+        }
 
         private void HandleValidSubmit()
         {

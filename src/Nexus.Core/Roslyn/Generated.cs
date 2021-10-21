@@ -186,7 +186,7 @@ namespace Nexus.Roslyn
         private static byte[]? _SystemXmlXPathXDocument_dll; internal static byte[] SystemXmlXPathXDocument_dll => ResourceLoader.GetOrCreateResource(ref _SystemXmlXPathXDocument_dll, "net50.System.Xml.XPath.XDocument.dll");
         private static byte[]? _SystemXmlXPathXDocument_xml; internal static byte[] SystemXmlXPathXDocument_xml => ResourceLoader.GetOrCreateResource(ref _SystemXmlXPathXDocument_xml, "net50.System.Xml.XPath.XDocument.xml");
     }
-    public static class Net50
+    internal static class Net50
     {
         public static PortableExecutableReference MicrosoftCSharp { get; } = AssemblyMetadata.CreateFromImage(Net50Resources.MicrosoftCSharp_dll).GetReference(display: "Microsoft.CSharp (net50)", documentation: XmlDocumentationProvider.CreateFromBytes(Net50Resources.MicrosoftCSharp_xml));
         public static PortableExecutableReference MicrosoftWin32Primitives { get; } = AssemblyMetadata.CreateFromImage(Net50Resources.MicrosoftWin32Primitives_dll).GetReference(display: "Microsoft.Win32.Primitives (net50)", documentation: XmlDocumentationProvider.CreateFromBytes(Net50Resources.MicrosoftWin32Primitives_xml));

@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Nexus.ViewModels
 {
-    public class ResourceViewModel
+    internal class ResourceViewModel
     {
         #region Fields
 

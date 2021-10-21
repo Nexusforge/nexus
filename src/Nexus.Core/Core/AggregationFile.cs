@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace Nexus.Core
 {
-    public class AggregationFile : IDisposable
+    internal class AggregationFile : IDisposable
     {
         #region Fields
 

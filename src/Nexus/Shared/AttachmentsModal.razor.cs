@@ -9,7 +9,7 @@ namespace Nexus.Shared
         #region Properties
 
         [Inject]
-        public UserState UserState { get; set; }
+        private UserState UserState { get; set; }
 
         [Parameter]
         public bool IsOpen { get; set; }
