@@ -763,13 +763,13 @@ namespace Nexus.Services
             // unit
             if (filters.ContainsKey(AggregationFilter.IncludeUnit))
             {
-                var unit = resource.Properties.GetValueOrDefault(DataModelExtensions.Unit, string.Empty);
+                var unit = resource.Properties.GetValueOrDefault(DataModel.DataModelExtensions.Unit, string.Empty);
                 result &= Regex.IsMatch(unit, filters[AggregationFilter.IncludeUnit]);
             }
 
             if (filters.ContainsKey(AggregationFilter.ExcludeUnit))
             {
-                var unit = resource.Properties.GetValueOrDefault(DataModelExtensions.Unit, string.Empty);
+                var unit = resource.Properties.GetValueOrDefault(DataModel.DataModelExtensions.Unit, string.Empty);
                 result &= !Regex.IsMatch(unit, filters[AggregationFilter.ExcludeUnit]);
             }
 

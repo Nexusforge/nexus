@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Nexus.Extensibility.Tests
 {
-    public class CustomExtensionsTests
+    public class DateModelExtensionsTests
     {
         [Theory]
         [InlineData("00:00:00.0000001", "100_ns")]

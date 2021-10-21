@@ -4,7 +4,6 @@ using Microsoft.CodeAnalysis.Host.Mef;
 using Microsoft.CodeAnalysis.Text;
 using Nexus.Core;
 using Nexus.DataModel;
-using Nexus.Extensibility;
 using Nexus.Filters;
 using System;
 using System.Collections.Generic;
@@ -171,7 +170,7 @@ namespace Nexus.Roslyn
                     foreach (var representation in resource.Representations.Where(representation => representation.SamplePeriod == samplePeriod))
                     {
                         // representation property
-                        resourceStringBuilder.AppendLine($"public Span<double> {ExtensibilityUtilities.EnforceNamingConvention(representation.Id, prefix: "REPRESENTATION")} {{ get; set; }}");
+                        resourceStringBuilder.AppendLine($"public Span<double> {$"REPRESENTATION_{representation.Id}"} {{ get; set; }}");
 
                         addResource = true;
                         addCatalog = true;

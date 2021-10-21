@@ -1,7 +1,6 @@
 ﻿using Nexus.DataModel;
 using System;
 using System.Buffers;
-using System.Text.RegularExpressions;
 
 namespace Nexus.Extensibility
 {
@@ -22,19 +21,6 @@ namespace Nexus.Extensibility
             return (data, status);
         }
 
-        public static string EnforceNamingConvention(string value, string prefix = "X")
-        {
-            if (string.IsNullOrWhiteSpace(value))
-                value = "unnamed";
-
-            value = Regex.Replace(value, "[^A-Za-z0-9_]", "_");
-
-            if (Regex.IsMatch(value, "^[0-9_]"))
-                value = $"{prefix}_" + value;
-
-            return value;
-        }
-
         internal static int CalculateElementCount(DateTime begin, DateTime end, TimeSpan samplePeriod)
         {
             return (int)((end.Ticks - begin.Ticks) / samplePeriod.Ticks);
@@ -49,6 +35,7 @@ namespace Nexus.Extensibility
         {
             if (includeStackTrace)
                 return $"{ex.InternalGetFullMessage()} - stack trace: {ex.StackTrace}";
+
             else
                 return ex.InternalGetFullMessage();
         }

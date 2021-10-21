@@ -28,10 +28,10 @@
             }
             else
             {
-                @if (!string.IsNullOrWhiteSpace(this.Resource.Note))
+                @if (!string.IsNullOrWhiteSpace(this.Resource.Warning))
                 {
                     <span><i class="fas fa-exclamation-triangle"></i></span>
-                    @this.Resource.Note
+                    @this.Resource.Warning
                 }
             }
         </div>

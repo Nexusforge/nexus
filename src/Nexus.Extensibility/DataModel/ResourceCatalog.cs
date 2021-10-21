@@ -153,7 +153,7 @@ namespace Nexus.DataModel
             return merged;
         }
 
-        public bool TryFind(string resourcePath, out CatalogItem catalogItem)
+        internal bool TryFind(string resourcePath, out CatalogItem catalogItem)
         {
             catalogItem = null;
 
@@ -179,7 +179,7 @@ namespace Nexus.DataModel
             return true;
         }
 
-        public CatalogItem Find(string resourcePath)
+        internal CatalogItem Find(string resourcePath)
         {
             if (!this.TryFind(resourcePath, out var catalogItem))
                 throw new Exception($"The resource path '{resourcePath}' could not be found.");
