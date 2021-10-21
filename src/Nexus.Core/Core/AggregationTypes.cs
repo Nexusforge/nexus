@@ -19,18 +19,6 @@ namespace Nexus.Core
         public List<Aggregation> Aggregations { get; set; } = new List<Aggregation>();
     }
 
-    public record DataSourceConfiguration
-    {
-        /// <example>/IN_MEMORY/TEST/ACCESSIBLE</example>
-        public string CatalogId { get; set; } = string.Empty;
-
-        /// <example>Nexus.InMemory</example>
-        public string DataSourceId { get; set; } = string.Empty;
-
-        /// <example>:memory:</example>
-        public string DataReaderRootPath { get; set; } = string.Empty;
-    }
-
     public record Aggregation
     {
         /// <example>/IN_MEMORY/TEST/ACCESSIBLE</example>

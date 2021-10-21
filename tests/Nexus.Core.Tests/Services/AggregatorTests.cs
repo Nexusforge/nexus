@@ -27,8 +27,7 @@ namespace Nexus.Tests
         public void CanAggregate1(AggregationMethod method, double nanLimit, double[] data, double expected)
         {
             // Arrange
-            var fileAccessManager = Mock.Of<IFileAccessManager>();
-            var aggregator = new AggregationService(fileAccessManager, NullLogger<AggregationService>.Instance);
+            var aggregator = new AggregationService(NullLogger<AggregationService>.Instance);
             var kernelSize = data.Length;
 
             // Act
@@ -48,8 +47,7 @@ namespace Nexus.Tests
         public void CanAggregate2(AggregationMethod method, double nanLimit, int[] data, byte[] status, double expected)
         {
             // Arrange
-            var fileAccessManager = Mock.Of<IFileAccessManager>();
-            var aggregator = new AggregationService(fileAccessManager, NullLogger<AggregationService>.Instance);
+            var aggregator = new AggregationService(NullLogger<AggregationService>.Instance);
             var kernelSize = data.Length;
 
             // Act

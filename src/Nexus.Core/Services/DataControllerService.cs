@@ -13,28 +13,21 @@ namespace Nexus.Services
 {
     internal class DataControllerService : IDataControllerService
     {
-        private AppState _appstate;
-        private ExtensionHive _extensionHive;
+        private IExtensionHive _extensionHive;
         private IServiceProvider _serviceProvider;
-        private IFileAccessManager _fileAccessManager;
         private IUserIdService _userIdService;
         private ILogger _logger;
         private ILoggerFactory _loggerFactory;
 
         public DataControllerService(
-            AppState appstate,
-            ExtensionHive extensionHive,
+            IExtensionHive extensionHive,
             IServiceProvider serviceProvider,
-            IDatabaseManager databaseManager,
-            IFileAccessManager fileAccessManager,
             IUserIdService userIdService,
             ILogger<DataControllerService> logger,
             ILoggerFactory loggerFactory)
         {
-            _appstate = appstate;
             _extensionHive = extensionHive;
             _serviceProvider = serviceProvider;
-            _fileAccessManager = fileAccessManager;
             _userIdService = userIdService;
             _logger = logger;
             _loggerFactory = loggerFactory;
@@ -44,15 +37,10 @@ namespace Nexus.Services
         {
             var logger = _loggerFactory.CreateLogger($"{backendSource.Type} - {backendSource.ResourceLocator}");
             var dataSource = _extensionHive.GetInstance<IDataSource>(backendSource.Type);
-
             var state = _serviceProvider.GetRequiredService<AppState>().CatalogState;
 
             // special case checks
-            if (dataSource.GetType() == typeof(AggregationDataSource))
-            {
-                ((AggregationDataSource)dataSource).FileAccessManager = _fileAccessManager;
-            }
-            else if (dataSource.GetType() == typeof(FilterDataSource))
+            if (dataSource.GetType() == typeof(FilterDataSource))
             {
                 var filterDataSource = (FilterDataSource)dataSource;
 

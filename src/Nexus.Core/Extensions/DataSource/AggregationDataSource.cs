@@ -2,7 +2,6 @@
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
-using Nexus.Services;
 using Nexus.Utilities;
 using System;
 using System.Collections.Generic;
@@ -25,8 +24,6 @@ namespace Nexus.Extensions
         #endregion
 
         #region Properties
-
-        public IFileAccessManager FileAccessManager { get; set; }
 
         private DataSourceContext Context { get; set; }
 
@@ -298,7 +295,6 @@ namespace Nexus.Extensions
                         {
                             try
                             {
-                                this.FileAccessManager?.Register(filePath, CancellationToken.None);
                                 var aggregationData = AggregationFile.Read<byte>(filePath);
 
                                 // write data
@@ -316,10 +312,6 @@ namespace Nexus.Extensions
                             catch (Exception ex)
                             {
                                 this.Context.Logger.LogWarning($"Could not process file '{filePath}'. Reason: {ex.GetFullMessage()}");
-                            }
-                            finally
-                            {
-                                this.FileAccessManager?.Unregister(filePath);
                             }
                         }
 

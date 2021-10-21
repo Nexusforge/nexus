@@ -26,17 +26,13 @@ namespace Nexus.Services
 
         private ILogger _logger;
 
-        private IFileAccessManager _fileAccessManager;
-
         #endregion
 
         #region Constructors
 
         public AggregationService(
-            IFileAccessManager fileAccessManager,
             ILogger<AggregationService> logger)
         {
-            _fileAccessManager = fileAccessManager;
             _logger = logger;
 
             this.Progress = new Progress<double>();
@@ -115,7 +111,7 @@ namespace Nexus.Services
 
             return Task.Run(async () =>
             {
-                var progress = (IProgress<ProgressUpdatedEventArgs>)this.Progress;
+                var progress = (IProgress<double>)this.Progress;
                 var instructions = AggregationService.ComputeInstructions(setup, state, _logger);
                 var days = (setup.End - setup.Begin).TotalDays;
                 var totalDays = instructions.Count() * days;
@@ -132,8 +128,7 @@ namespace Nexus.Services
                         var currentDay = setup.Begin.AddDays(j);
                         var progressMessage = $"Processing catalog '{catalogId}': {currentDay.ToString("yyyy-MM-dd")}";
                         var progressValue = (i * days + j) / totalDays;
-                        var eventArgs = new ProgressUpdatedEventArgs(progressValue, progressMessage);
-                        progress.Report(eventArgs);
+                        progress.Report(progressValue);
 
                         await this.AggregateCatalogAsync(
                             databaseFolderPath,
@@ -316,19 +311,54 @@ namespace Nexus.Services
             // write data to file
             foreach (var unit in units)
             {
+                var tmpFilePath = Path.Combine($".temp_{unit.TargetFilePath}");
+
                 try
                 {
-                    _fileAccessManager.Register(unit.TargetFilePath, cancellationToken);
+                    AggregationFile.Create<double>(tmpFilePath, unit.Buffer);
 
-                    if (File.Exists(unit.TargetFilePath))
-                        File.Delete(unit.TargetFilePath);
+                    var lastException = default(Exception);
 
-                    // create data file
-                    AggregationFile.Create<double>(unit.TargetFilePath, unit.Buffer);
+                    for (int i = 0; i < 10; i++)
+                    {
+                        try
+                        {
+                            File.Move(tmpFilePath, unit.TargetFilePath, overwrite: true);
+                            break;
+                        }
+                        catch (Exception ex)
+                        {
+                            lastException = ex;
+                            await Task.Delay(TimeSpan.FromSeconds(2));
+                        }
+                    }
+
+                    if (lastException is not null)
+                        _logger.LogError(lastException, "Unable to rename temporary file.");
                 }
-                finally
+                catch (Exception ex)
                 {
-                    _fileAccessManager.Unregister(unit.TargetFilePath);
+                    _logger.LogError(ex, "An error occured trying to create the aggregation file.");
+
+                    try
+                    {
+                        if (File.Exists(tmpFilePath))
+                            File.Delete(tmpFilePath);
+                    }
+                    catch (Exception ex2)
+                    {
+                        _logger.LogError(ex2, "Unable to delete temporary file.");
+                    }
+
+                    try
+                    {
+                        if (File.Exists(unit.TargetFilePath))
+                            File.Delete(unit.TargetFilePath);
+                    }
+                    catch (Exception ex2)
+                    {
+                        _logger.LogError(ex2, "Unable to delete aggregation file.");
+                    }
                 }
             }
         }

@@ -168,9 +168,8 @@ namespace Nexus
 
             services.AddSingleton<ICatalogManager, CatalogManager>();
             services.AddSingleton<IUserManagerWrapper, UserManagerWrapper>();
-            services.AddSingleton<ExtensionHive>();
+            services.AddSingleton<IExtensionHive, ExtensionHive>();
             services.AddSingleton<AppState>();
-            services.AddSingleton<IFileAccessManager, FileAccessManager>();
             services.AddSingleton<JobService<ExportJob>>();
             services.AddSingleton<JobService<AggregationJob>>();
             services.AddSingleton<IDatabaseManager, DatabaseManager>();
@@ -294,7 +293,7 @@ namespace Nexus
         {
             var appState = serviceProvier.GetRequiredService<AppState>();
             var userManagerWrapper = serviceProvier.GetRequiredService<IUserManagerWrapper>();
-            var extensionHive = serviceProvier.GetRequiredService<ExtensionHive>();
+            var extensionHive = serviceProvier.GetRequiredService<IExtensionHive>();
             var catalogManager = serviceProvier.GetRequiredService<ICatalogManager>();
             var databaseManager = serviceProvier.GetRequiredService<IDatabaseManager>();
 

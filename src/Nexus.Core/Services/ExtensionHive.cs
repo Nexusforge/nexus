@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace Nexus.Services
 {
-    internal class ExtensionHive
+    internal class ExtensionHive : IExtensionHive
     {
         #region Fields
 
@@ -21,7 +21,7 @@ namespace Nexus.Services
         private PathsOptions _pathsOptions;
 
         private Dictionary<
-            PackageController, 
+            PackageController,
             ReadOnlyCollection<(ExtensionIdentificationAttribute Identification, Type Type)>> _packageControllerMap;
 
         private ReadOnlyCollection<(ExtensionIdentificationAttribute Identification, Type Type)> _builtinExtensions;

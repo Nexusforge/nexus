@@ -55,7 +55,7 @@ namespace Nexus.Core
         {
             // target stream
             Directory.CreateDirectory(Path.GetDirectoryName(filePath));
-            var targetStream = File.Open(filePath, FileMode.CreateNew, FileAccess.Write);
+            var targetStream = File.Open(filePath, FileMode.Truncate, FileAccess.Write);
 
             // format signature
             targetStream.Write(_signature);
