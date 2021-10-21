@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Nexus.Models
+namespace Nexus.Models.V1
 {
     public record UserCredentials
     {

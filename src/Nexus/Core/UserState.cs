@@ -37,7 +37,7 @@ namespace Nexus.Core
         private ClientState _clientState;
         private IDatabaseManager _databaseManager;
         private IJSRuntime _jsRuntime;
-        private IServiceProvider _serviceProvider;
+        private IUserIdService _userIdService;
 
         private AppState _appState;
         private AuthenticationStateProvider _authenticationStateProvider;
@@ -46,8 +46,6 @@ namespace Nexus.Core
         private DataService _dataService;
         private ExportParameters _exportParameters;
         private JobControl<ExportJob> _exportJobControl;
-        private PathsOptions _pathsOptions;
-        private UserIdService _userIdService;
 
         private KeyValuePair<string, List<ResourceViewModel>> _groupedResourcesEntry;
         private Dictionary<TimeSpan, List<RepresentationViewModel>> _samplePeriodToSelectedRepresentationsMap = new Dictionary<TimeSpan, List<RepresentationViewModel>>();
@@ -59,22 +57,18 @@ namespace Nexus.Core
         public UserState(ILogger<UserState> logger,
                          IJSRuntime jsRuntime,
                          IDatabaseManager databaseManager,
-                         IServiceProvider serviceProvider,
+                         IUserIdService userIdService,
                          AppState appState,
-                         UserIdService userIdService,
                          AuthenticationStateProvider authenticationStateProvider,
-                         IOptions<PathsOptions> pathsOptions,
                          DataService dataService)
         {
             this.Logger = logger;
 
             _jsRuntime = jsRuntime;
             _databaseManager = databaseManager;
-            _serviceProvider = serviceProvider;
-            _appState = appState;
             _userIdService = userIdService;
+            _appState = appState;
             _authenticationStateProvider = authenticationStateProvider;
-            _pathsOptions = pathsOptions.Value;
             _dataService = dataService;
             _codeDefinition = this.CreateCodeDefinition(CodeType.Filter);
 

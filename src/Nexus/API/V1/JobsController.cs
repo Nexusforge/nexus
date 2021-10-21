@@ -12,10 +12,11 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Nexus.Controllers
+namespace Nexus.Controllers.V1
 {
-    [Route("api/v1/jobs")]
     [ApiController]
+    [ApiVersion("1.0")]
+    [Route("api/[controller]")]
     internal class JobsController : ControllerBase
     {
         #region Fields

@@ -10,6 +10,7 @@ namespace Nexus.Pages
         [Inject]
         private IOptions<GeneralOptions> GeneralOptions { get; set; }
 
-        public string Language => this.GeneralOptions.Value.Language;
+#warning repair null references
+        public string Language => "en"; //this.GeneralOptions.Value.Language;
     }
 }

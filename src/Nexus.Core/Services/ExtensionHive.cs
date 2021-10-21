@@ -17,7 +17,7 @@ namespace Nexus.Services
     {
         #region Fields
 
-        private ILogger _logger;
+        private ILogger<ExtensionHive> _logger;
         private PathsOptions _pathsOptions;
 
         private Dictionary<
@@ -30,7 +30,7 @@ namespace Nexus.Services
 
         #region Constructors
 
-        public ExtensionHive(IOptions<PathsOptions> pathsOptions, ILogger logger)
+        public ExtensionHive(IOptions<PathsOptions> pathsOptions, ILogger<ExtensionHive> logger)
         {
             _logger = logger;
             _pathsOptions = pathsOptions.Value;

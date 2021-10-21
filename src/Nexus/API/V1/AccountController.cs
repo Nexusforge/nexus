@@ -1,13 +1,14 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Nexus.Models;
+using Nexus.Models.V1;
 using Nexus.Services;
 using System.Threading.Tasks;
 
-namespace Nexus.Controllers
+namespace Nexus.Controllers.V1
 {
-    [Route("api/v1/account")]
     [ApiController]
+    [ApiVersion("1.0")]
+    [Route("api/[controller]")]
     internal class AccountController : ControllerBase
     {
         #region Fields
@@ -38,7 +39,7 @@ namespace Nexus.Controllers
             (var result, var success) = await _jwtService.GenerateTokenAsync(credentials);
 
             if (success)
-                return new JsonResult(result);
+                return this.Ok(result);
 
             else
                 return this.Unauthorized(result);

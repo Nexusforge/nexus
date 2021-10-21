@@ -6,7 +6,6 @@ using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Services;
 using Nexus.Utilities;
-using NJsonSchema.Annotations;
 using System;
 using System.Data;
 using System.Linq;
@@ -14,10 +13,11 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Nexus.Controllers
+namespace Nexus.Controllers.V1
 {
-    [Route("api/v1/catalogs")]
     [ApiController]
+    [ApiVersion("1.0")]
+    [Route("api/[controller]")]
     internal class CatalogsController : ControllerBase
     {
         #region Fields
@@ -151,8 +151,8 @@ namespace Nexus.Controllers
         public async Task<ActionResult<AvailabilityResult[]>>
             GetCatalogAvailability(
                 [BindRequired] string catalogId,
-                [BindRequired][JsonSchemaDate] DateTime begin,
-                [BindRequired][JsonSchemaDate] DateTime end,
+                [BindRequired] DateTime begin,
+                [BindRequired] DateTime end,
                 [BindRequired] AvailabilityGranularity granularity,
                 CancellationToken cancellationToken)
         {

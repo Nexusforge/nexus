@@ -22,13 +22,11 @@ namespace Nexus.Services
         public DataControllerService(
             IExtensionHive extensionHive,
             IServiceProvider serviceProvider,
-            IUserIdService userIdService,
             ILogger<DataControllerService> logger,
             ILoggerFactory loggerFactory)
         {
             _extensionHive = extensionHive;
             _serviceProvider = serviceProvider;
-            _userIdService = userIdService;
             _logger = logger;
             _loggerFactory = loggerFactory;
         }
@@ -46,9 +44,11 @@ namespace Nexus.Services
 
                 filterDataSource.CatalogCollection = state.CatalogCollection;
 
+#warning !!! "default" should be UserIdService.User
+
                 filterDataSource.IsCatalogAccessible =
                     catalogId => AuthorizationUtilities.IsCatalogAccessible(
-                        _userIdService.User, 
+                        default, 
                         state.CatalogCollection.CatalogContainers.First(container => container.Id == catalogId));
 
                 filterDataSource.GetDataSourceControllerAsync =

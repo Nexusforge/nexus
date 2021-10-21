@@ -12,10 +12,11 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Nexus.Controllers
+namespace Nexus.Controllers.V1
 {
-    [Route("api/v1/data")]
     [ApiController]
+    [ApiVersion("1.0")]
+    [Route("api/[controller]")]
     internal class DataController : ControllerBase
     {
         #region Fields

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -19,6 +20,7 @@ using Nexus.Extensibility;
 using Nexus.Services;
 using Nexus.Utilities;
 using Nexus.ViewModels;
+using Swashbuckle.AspNetCore.SwaggerGen;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -48,7 +50,7 @@ namespace Nexus
 
         public IConfiguration Configuration { get; }
 
-        public void ConfigureServices(IServiceCollection services, IOptions<UsersOptions> usersOptions)
+        public void ConfigureServices(IServiceCollection services)
         {
             // database
             services.AddDbContext<ApplicationDbContext>();
@@ -66,14 +68,15 @@ namespace Nexus
             services.AddDefaultIdentity<IdentityUser>()
                 .AddEntityFrameworkStores<ApplicationDbContext>();
 
+#warning Repair this!
             services.Configure<IdentityOptions>(options =>
             {
                 // Instead of RequireConfirmedEmail, this one has the desired effect!
-                options.SignIn.RequireConfirmedAccount = usersOptions.Value.VerifyEmail;
+                //options.SignIn.RequireConfirmedAccount = usersOptions.Value.VerifyEmail;
             });
 
-            if (usersOptions.Value.VerifyEmail)
-                services.AddTransient<IEmailSender, EmailSender>();
+            //if (usersOptions.Value.VerifyEmail)
+            //    services.AddTransient<IEmailSender, EmailSender>();
 
             // blazor
             services.AddRazorPages();
@@ -128,31 +131,43 @@ namespace Nexus
                 options.AddPolicy("RequireAdmin", policy => policy.RequireClaim(Claims.IS_ADMIN, "true"));
             });
 
-            // swagger
+            // swagger (https://github.com/dotnet/aspnet-api-versioning/tree/master/samples/aspnetcore/SwaggerSample)
             services.AddControllers()
-                .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+                .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()))
+                .ConfigureApplicationPartManager(
+                    manager =>
+                    {
+                        manager.FeatureProviders.Add(new InternalControllerFeatureProvider());
+                    });
 
-            services.AddSwaggerDocument(config =>
-            {
-                config.Title = "Nexus REST API";
-                config.Version = "v1";
-                config.Description = "Explore resources and get their data.";
-                config.DocumentName = "v1";
-                //config.OperationProcessors.Add(new OperationSecurityScopeProcessor("JWT Token"));
-                //config.AddSecurity("JWT Token", Enumerable.Empty<string>(),
-                //    new OpenApiSecurityScheme()
-                //    {
-                //        Type = OpenApiSecuritySchemeType.ApiKey,
-                //        Name = "Authorization",
-                //        In = OpenApiSecurityApiKeyLocation.Header,
-                //        Description = "Copy this into the value field: Bearer {token}"
-                //    }
-                //);
-            });
+            services.AddApiVersioning(
+                options =>
+                {
+                    options.ReportApiVersions = true;
+                });
+
+            services.AddVersionedApiExplorer(
+                options =>
+                {
+                    options.GroupNameFormat = "'v'VVV";
+                    options.SubstituteApiVersionInUrl = true;
+                });
+
+            services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
+
+            services.AddSwaggerGen(
+                options =>
+                {
+                    //options.OperationFilter<SwaggerDefaultValues>();
+                    options.IncludeXmlComments(Path.ChangeExtension(typeof(Startup).Assembly.Location, "xml"));
+                });
 
             // custom
 #warning replace httpcontextaccessor by async authenticationStateProvider (https://github.com/dotnet/aspnetcore/issues/17585)
             services.AddHttpContextAccessor();
+
+            services.AddTransient<AggregationService>();
+            services.AddTransient<DataService>();
 
             services.AddScoped<IUserIdService, UserIdService>();
             services.AddScoped<JobEditor>();
@@ -162,11 +177,8 @@ namespace Nexus
             services.AddScoped<ToasterService>();
             services.AddScoped<UserState>();
 
-            services.AddTransient<AggregationService>();
-            services.AddTransient<DataService>();
-            services.AddTransient<IDataControllerService, DataControllerService>();
-
             services.AddSingleton<AppState>();
+            services.AddSingleton<IDataControllerService, DataControllerService>();
             services.AddSingleton<ICatalogManager, CatalogManager>();
             services.AddSingleton<IDatabaseManager, DatabaseManager>();
             services.AddSingleton<IExtensionHive, ExtensionHive>();
@@ -179,12 +191,13 @@ namespace Nexus
             services.Configure<SecurityOptions>(Configuration.GetSection(SecurityOptions.Section));
             services.Configure<ServerOptions>(Configuration.GetSection(ServerOptions.Section));
             services.Configure<SmtpOptions>(Configuration.GetSection(SmtpOptions.Section));
-            services.Configure<UsersOptions>(Configuration.GetSection(UsersOptions.Section));
+#warning Repair this!
+            //services.Configure<UsersOptions>(Configuration.GetSection(UsersOptions.Section));
         }
 
         public void Configure(IApplicationBuilder app,
                               IWebHostEnvironment env,
-                              IServiceProvider serviceProvider,
+                              IApiVersionDescriptionProvider provider,
                               IOptions<PathsOptions> pathsOptions)
         {
             // https://docs.microsoft.com/en-us/aspnet/core/fundamentals/middleware/?view=aspnetcore-5.0
@@ -224,12 +237,21 @@ namespace Nexus
             });
 
             // swagger
-            app.UseOpenApi();
-            app.UseSwaggerUi3();
+            app.UseSwagger();
+            app.UseSwaggerUI(
+                options =>
+                {
+                    options.RoutePrefix = "api";
+
+                    foreach (var description in provider.ApiVersionDescriptions)
+                    {
+                        options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", description.GroupName.ToUpperInvariant());
+                    }
+                });
 
             // routing (for REST API)
             app.UseRouting();
-
+            
             // default authentication
             app.UseAuthentication();
 
@@ -286,7 +308,7 @@ namespace Nexus
             });
 
             // initialize app state
-            this.InitializeAppAsync(serviceProvider, pathsOptions.Value).Wait();
+            //this.InitializeAppAsync(serviceProvider, pathsOptions.Value).Wait();
         }
 
         private async Task InitializeAppAsync(IServiceProvider serviceProvier, PathsOptions pathsOptions)
