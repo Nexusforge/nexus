@@ -25,7 +25,7 @@ namespace DataSource
         [Theory]
         [InlineData(AvailabilityGranularity.Day,  "2020-01-01T00:00:00Z", "2020-01-03T00:00:00Z")]
         [InlineData(AvailabilityGranularity.Month, "2020-01-01T00:00:00Z", "2021-01-01T00:00:00Z")]
-        public async Task CanGetAvailability(AvailabilityGranularity granularity, string beginString, string endString)
+        internal async Task CanGetAvailability(AvailabilityGranularity granularity, string beginString, string endString)
         {
             var controller = _fixture.Controller;
             await controller.InitializeAsync(default, CancellationToken.None);

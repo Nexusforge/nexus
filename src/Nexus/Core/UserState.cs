@@ -595,7 +595,9 @@ namespace Nexus.Core
 
         public long GetByteCount()
         {
-            var sampleCount = (this.DateTimeEnd - this.DateTimeBegin).Ticks / this.SamplePeriod.Ticks;
+            var sampleCount = this.SamplePeriod.Ticks == default
+                ? 0 
+                : (this.DateTimeEnd - this.DateTimeBegin).Ticks / this.SamplePeriod.Ticks;
 
             return this.GetSelectedRepresentations().Sum(representation =>
             {

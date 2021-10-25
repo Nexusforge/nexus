@@ -73,7 +73,7 @@ namespace Nexus.Services
                 }
 
                 // ensure there is a test user
-                var defaultTestUsername = "test@nexus.org";
+                var defaultTestUsername = "test@nexus.localhost";
                 var defaultTestPassword = "#test0/User1";
 
                 if ((await userManager.FindByNameAsync(defaultTestUsername)) == null)

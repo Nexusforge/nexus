@@ -45,7 +45,7 @@ namespace Nexus.Core
         public DateTime CreationDate { get; set; } = DateTime.UtcNow;
     }
 
-    internal record FilterSettings
+    internal class FilterSettings
     {
         #region Constructors
 
@@ -71,19 +71,6 @@ namespace Nexus.Core
                           codeDefinition.Owner == userName &&
                           codeDefinition.CodeType == CodeType.Shared)
                    .ToList();
-        }
-
-        public static FilterSettings Load(string filePath)
-        {
-            var jsonString = File.ReadAllText(filePath);
-            return JsonSerializer.Deserialize<FilterSettings>(jsonString);
-        }
-
-        public void Save(string filePath)
-        {
-            var options = new JsonSerializerOptions() { WriteIndented = true };
-            var jsonString = JsonSerializer.Serialize(this, options);
-            File.WriteAllText(filePath, jsonString);
         }
 
         #endregion

@@ -15,6 +15,7 @@ namespace Nexus.Extensions
     {
         #region "Fields"
 
+        public const string Id = "Nexus.Builtin.Csv";
         private double _unixStart;
         private double _excelStart;
         private DateTime _unixEpoch;

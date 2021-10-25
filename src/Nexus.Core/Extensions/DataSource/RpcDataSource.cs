@@ -13,6 +13,7 @@ namespace Nexus.Extensions
     {
         #region Fields
 
+        public const string Id = "Nexus.Builtin.Rpc";
         private static int API_LEVEL = 1;
         private RpcCommunicator _communicator;
         private IJsonRpcServer _rpcServer;

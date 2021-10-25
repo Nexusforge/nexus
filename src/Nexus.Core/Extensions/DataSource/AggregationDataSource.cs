@@ -19,6 +19,7 @@ namespace Nexus.Extensions
     {
         #region Fields
 
+        public const string Id = "Nexus.Builtin.Aggregation";
         private ResourceCatalog[] _catalogs;
 
         #endregion
@@ -65,7 +66,7 @@ namespace Nexus.Extensions
                     : new AggregationVersioning();
 
                 // (1) find beginning of database
-                var dataFolderPath = Path.Combine(this.Root, "DATA");
+                var dataFolderPath = Path.Combine(this.Root);
                 Directory.CreateDirectory(dataFolderPath);
 
                 var firstMonth = DateTime.MaxValue;
@@ -83,7 +84,7 @@ namespace Nexus.Extensions
                 var months = ((now.Year - firstMonth.Year) * 12) + now.Month - firstMonth.Month + 1;
                 var currentMonth = firstMonth;
 
-                var cacheFolderPath = Path.Combine(this.Root, "CACHE");
+                var cacheFolderPath = this.Root;
                 var mainCacheFilePath = Path.Combine(cacheFolderPath, "main.json");
                 Directory.CreateDirectory(cacheFolderPath);
 

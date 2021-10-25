@@ -7,7 +7,19 @@ using System.Linq;
 
 namespace Nexus.DataModel
 {
-    internal record NexusProject(List<PackageReference> PackageReferences, List<BackendSource> BackendSources);
+    internal class NexusProject
+    {
+        // There is only a single project file per Nexus instance so its okay to initialize arrays.
+        public NexusProject(List<PackageReference>? packageReferences, List<BackendSource>? backendSources)
+        {
+            this.PackageReferences = packageReferences ?? new List<PackageReference>();
+            this.BackendSources = backendSources ?? new List<BackendSource>();
+        }
+
+        public List<PackageReference> PackageReferences { get; init; }
+
+        public List<BackendSource> BackendSources { get; init; }
+    }
 
     internal enum AvailabilityGranularity
     {

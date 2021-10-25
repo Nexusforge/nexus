@@ -10,9 +10,15 @@ using System.Threading.Tasks;
 
 namespace Nexus.Extensions
 {
-    [ExtensionIdentification("Nexus.Builtin.Inmemory", "Nexus in-memory", "Provides an in-memory database.")]
+    [ExtensionIdentification("Nexus.Builtin.InMemory", "Nexus in-memory", "Provides an in-memory database.")]
     internal class InMemoryDataSource : IDataSource
     {
+        #region Fields
+
+        public const string Id = "Nexus.Builtin.InMemory";
+
+        #endregion
+
         #region Properties
 
         private DataSourceContext Context { get; set; }

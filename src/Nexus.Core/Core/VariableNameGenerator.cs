@@ -27,7 +27,7 @@ namespace Nexus.Core
         {
             _random = new Random();
 
-            var blob = ResourceLoader.GetResourceBlob("Nexus.Resources.RandomWords.json");
+            var blob = ResourceLoader.GetResourceBlob("Resources.RandomWords.json", addRootNamespace: true);
             var options = new JsonSerializerOptions() { ReadCommentHandling = JsonCommentHandling.Skip };
 
             _randomWords = JsonSerializer.Deserialize<RandomWords>(blob, options);

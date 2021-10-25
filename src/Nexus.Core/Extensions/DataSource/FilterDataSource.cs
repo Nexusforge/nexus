@@ -43,7 +43,7 @@ namespace Nexus.Extensions
 
         #region Properties
 
-        public CatalogCollection CatalogCollection { get; set; }
+        public Func<CatalogCollection> GetCatalogCollection { get; set; }
 
         public Func<string, bool> IsCatalogAccessible { get; set; }
 
@@ -211,6 +211,7 @@ namespace Nexus.Extensions
             return Task.Run(() =>
             {
                 var counter = 0.0;
+                var catalogCollection = this.GetCatalogCollection();
 
                 foreach (var (catalogItem, data, status) in requests)
                 {
@@ -224,13 +225,13 @@ namespace Nexus.Extensions
                     GetFilterData getData = (string catalogId, string resourceId, string representationId, DateTime begin, DateTime end) =>
                     {
 #warning improve this (PhysicalName)
-                        var catalog = this.CatalogCollection.CatalogContainers
+                        var catalog = catalogCollection.CatalogContainers
                             .FirstOrDefault(container => container.Id == catalogId || container.PhysicalName == catalogId);
 
                         if (catalog == null)
                             throw new Exception($"Unable to find catalog with id '{catalogId}'.");
 
-                        var catalogItem = this.CatalogCollection.Find(catalog.Id, resourceId, representationId);
+                        var catalogItem = catalogCollection.Find(catalog.Id, resourceId, representationId);
 
                         if (!this.IsCatalogAccessible(catalog.Id))
                             throw new UnauthorizedAccessException("The current user is not allowed to access this filter.");

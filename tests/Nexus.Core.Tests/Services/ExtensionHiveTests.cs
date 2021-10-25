@@ -48,7 +48,7 @@ namespace Services
                     Packages = restoreRoot
                 };
 
-                var hive = new ExtensionHive(Options.Create(pathsOptions), NullLogger.Instance);
+                var hive = new ExtensionHive(Options.Create(pathsOptions), NullLogger<ExtensionHive>.Instance);
 
                 var version = "v1.0.0-unit.test";
 

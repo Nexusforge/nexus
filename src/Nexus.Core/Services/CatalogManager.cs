@@ -75,17 +75,29 @@ namespace Nexus.Services
                     })))
                 .ToDictionary(entry => entry.Key, entry => entry.Value);
 
-            // instantiate aggregation data reader
-            var backendSource = new BackendSource(Type: "Nexus.Aggregation", ResourceLocator: new Uri(_options.Cache, UriKind.RelativeOrAbsolute));
+            // instantiate built-in data sources
+            var aggregationBackendSource = new BackendSource(
+                Type: AggregationDataSource.Id,
+                ResourceLocator: new Uri(_options.Cache, UriKind.RelativeOrAbsolute));
 
-            using var controller = await _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken);
-            var catalogs = await controller.GetCatalogsAsync(cancellationToken);
+            var builtinBackendSources = new BackendSource[]
+            {
+                aggregationBackendSource,
+                new BackendSource(Type: InMemoryDataSource.Id, ResourceLocator: new Uri("memory://localhost")),
+                new BackendSource(Type: FilterDataSource.Id, ResourceLocator: new Uri(_options.Config))
+            };
 
-            var catalogData = catalogs
-                .Select(catalog => (catalog, new TimeRangeResult(BackendSource: backendSource, Begin: DateTime.MaxValue, End: DateTime.MinValue)))
-                .ToArray();
+            foreach (var backendSource in builtinBackendSources)
+            {
+                using var controller = await _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken);
+                var catalogs = await controller.GetCatalogsAsync(cancellationToken);
 
-            backendSourceToCatalogDataMap[backendSource] = catalogData;
+                var catalogData = catalogs
+                    .Select(catalog => (catalog, new TimeRangeResult(BackendSource: backendSource, Begin: DateTime.MaxValue, End: DateTime.MinValue)))
+                    .ToArray();
+
+                backendSourceToCatalogDataMap[backendSource] = catalogData;
+            }
 
             // merge all catalogs
             var idToCatalogContainerMap = new Dictionary<string, CatalogContainer>();
@@ -161,14 +173,13 @@ namespace Nexus.Services
             // 
             var catalogCollection = new CatalogCollection(idToCatalogContainerMap.Values.ToList());
 
-            var state = new CatalogState()
-            {
-                AggregationBackendSource = backendSource,
-                CatalogCollection = catalogCollection,
-                BackendSourceToCatalogsMap = backendSourceToCatalogDataMap.ToDictionary(
+            var state = new CatalogState(
+                AggregationBackendSource: aggregationBackendSource,
+                CatalogCollection: catalogCollection,
+                BackendSourceToCatalogsMap: backendSourceToCatalogDataMap.ToDictionary(
                     entry => entry.Key, 
-                    entry => entry.Value.Select(current => current.Item1).ToArray()),
-            };
+                    entry => entry.Value.Select(current => current.Item1).ToArray())
+            );
 
             return state;
         }

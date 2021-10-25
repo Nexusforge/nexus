@@ -1,4 +1,5 @@
 ﻿using Nexus.Core;
+using Nexus.Utilities;
 using Prism.Mvvm;
 using System.Collections.Generic;
 using System.IO;
@@ -20,7 +21,8 @@ namespace Nexus.ViewModels
         public FilterSettingsViewModel(string filePath)
         {
             if (File.Exists(filePath))
-                this.Model = FilterSettings.Load(filePath);
+                this.Model = JsonSerializerHelper.Deserialize<FilterSettings>(File.ReadAllText(filePath));
+
             else
                 this.Model = new FilterSettings();
 
@@ -47,7 +49,8 @@ namespace Nexus.ViewModels
                 if (!this.Model.CodeDefinitions.Contains(description.Model))
                     this.Model.CodeDefinitions.Add(description.Model);
 
-                this.Model.Save(_filePath);
+                var jsonString = JsonSerializerHelper.Serialize(this.Model);
+                File.WriteAllText(_filePath, jsonString);
             }
 
             this.RaisePropertyChanged(nameof(this.CodeDefinitions));
@@ -58,7 +61,9 @@ namespace Nexus.ViewModels
             lock (_editLock)
             {
                 this.Model.CodeDefinitions.Remove(description.Model);
-                this.Model.Save(_filePath);
+
+                var jsonString = JsonSerializerHelper.Serialize(this.Model);
+                File.WriteAllText(_filePath, jsonString);
             }
 
             this.RaisePropertyChanged(nameof(this.CodeDefinitions));

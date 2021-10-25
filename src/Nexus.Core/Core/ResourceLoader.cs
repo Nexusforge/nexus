@@ -6,22 +6,22 @@ namespace Nexus.Core
 {
     internal static class ResourceLoader
     {
-        public static Stream GetResourceStream(string name)
+        public static Stream GetResourceStream(string resourceName, bool addRootNamespace = false)
         {
             var assembly = typeof(ResourceLoader).GetTypeInfo().Assembly;
-            var stream = assembly.GetManifestResourceStream(name);
+            var rootNamespace = assembly.GetName().Name;
+            var fullQualitifedName = addRootNamespace ? $"{rootNamespace}.{resourceName}" : resourceName;
+            var stream = assembly.GetManifestResourceStream(fullQualitifedName);
 
             if (stream == null)
-            {
-                throw new InvalidOperationException($"Resource '{name}' not found in {assembly.FullName}.");
-            }
+                throw new InvalidOperationException($"Resource '{fullQualitifedName}' not found in {assembly.FullName}.");
 
             return stream;
         }
 
-        public static byte[] GetResourceBlob(string name)
+        public static byte[] GetResourceBlob(string name, bool addRootNamespace = false)
         {
-            using (var stream = GetResourceStream(name))
+            using (var stream = GetResourceStream(name, addRootNamespace))
             {
                 var bytes = new byte[stream.Length];
 

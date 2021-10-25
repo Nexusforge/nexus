@@ -6,11 +6,18 @@ using Nexus.Core;
 using Serilog;
 using System;
 using System.Globalization;
+using System.Linq;
 
 namespace Nexus
 {
     internal class Program
     {
+        #region Properties
+
+        public static string Language { get; private set; }
+
+        #endregion
+
         #region Methods
 
         public static void Main(string[] args)
@@ -31,6 +38,8 @@ namespace Nexus
             // run
             try
             {
+                Program.Language = configuration.GetValue<string>("General:Language");
+
                 Program
                     .CreateHostBuilder(Environment.CurrentDirectory, configuration)
                     .Build()
@@ -53,7 +62,6 @@ namespace Nexus
 
                 .ConfigureAppConfiguration(builder =>
                 {
-                    builder.Sources.Clear();
                     builder.AddConfiguration(configuration);
                 })
 
@@ -61,18 +69,14 @@ namespace Nexus
                 {
                     webBuilder.UseStartup<Startup>();
 
-                    if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") != "Development")
-                    {
-                        var serverOptions = configuration
-                            .GetSection(ServerOptions.Section)
-                            .Get<ServerOptions>();
+                    var serverOptions = configuration
+                        .GetSection(ServerOptions.Section)
+                        .Get<ServerOptions>();
 
-                        var baseUrl = $"{serverOptions.HttpScheme}://{serverOptions.HttpAddress}:{serverOptions.HttpPort}";
-                        webBuilder.UseUrls(baseUrl);
-                    }
+                    var baseUrl = $"{serverOptions.HttpScheme}://{serverOptions.HttpAddress}:{serverOptions.HttpPort}";
 
+                    webBuilder.UseUrls(baseUrl);
                     webBuilder.UseContentRoot(currentDirectory);
-                    webBuilder.SuppressStatusMessages(true);
                 });
 
         #endregion

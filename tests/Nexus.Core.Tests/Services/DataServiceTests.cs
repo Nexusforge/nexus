@@ -65,7 +65,11 @@ namespace Services
                         throw new Exception("Invalid backend source.");
                 });
 
-            var catalogState = new CatalogState() { BackendSourceToCatalogsMap = backendSourceToCatalogsMap };
+            var catalogState = new CatalogState(
+                default,
+                default,
+                BackendSourceToCatalogsMap: backendSourceToCatalogsMap
+            );
 
             var appState = new AppState()
             {

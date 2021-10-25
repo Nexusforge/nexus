@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,7 +15,6 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Nexus.Core;
 using Nexus.DataModel;
-using Nexus.Extensibility;
 using Nexus.Services;
 using Nexus.Utilities;
 using Nexus.ViewModels;
@@ -178,6 +176,7 @@ namespace Nexus
             services.AddScoped<UserState>();
 
             services.AddSingleton<AppState>();
+            services.AddSingleton<AppStateController>();
             services.AddSingleton<IDataControllerService, DataControllerService>();
             services.AddSingleton<ICatalogManager, CatalogManager>();
             services.AddSingleton<IDatabaseManager, DatabaseManager>();
@@ -197,6 +196,7 @@ namespace Nexus
 
         public void Configure(IApplicationBuilder app,
                               IWebHostEnvironment env,
+                              IServiceProvider serviceProvider,
                               IApiVersionDescriptionProvider provider,
                               IOptions<PathsOptions> pathsOptions)
         {
@@ -308,24 +308,31 @@ namespace Nexus
             });
 
             // initialize app state
-            //this.InitializeAppAsync(serviceProvider, pathsOptions.Value).Wait();
+            this.InitializeAppAsync(serviceProvider, pathsOptions.Value).Wait();
         }
 
         private async Task InitializeAppAsync(IServiceProvider serviceProvier, PathsOptions pathsOptions)
         {
             var appState = serviceProvier.GetRequiredService<AppState>();
+            var appStateController = serviceProvier.GetRequiredService<AppStateController>();
             var userManagerWrapper = serviceProvier.GetRequiredService<IUserManagerWrapper>();
-            var extensionHive = serviceProvier.GetRequiredService<IExtensionHive>();
-            var catalogManager = serviceProvier.GetRequiredService<ICatalogManager>();
             var databaseManager = serviceProvier.GetRequiredService<IDatabaseManager>();
 
             // project
-            await this.InitializeProjectAsync(appState, databaseManager, pathsOptions);
+            if (databaseManager.TryReadProject(out var stream1))
+            {
+                var jsonString = await new StreamReader(stream1, Encoding.UTF8).ReadToEndAsync();
+                appState.Project = JsonSerializerHelper.Deserialize<NexusProject>(jsonString);
+            }
+            else
+            {
+                appState.Project = new NexusProject(default, default);
+            }
 
             // news
-            if (databaseManager.TryReadNews(out var stream))
+            if (databaseManager.TryReadNews(out var stream2))
             {
-                var jsonString = await new StreamReader(stream, Encoding.UTF8).ReadToEndAsync();
+                var jsonString = await new StreamReader(stream2, Encoding.UTF8).ReadToEndAsync();
                 appState.NewsPaper = JsonSerializerHelper.Deserialize<NewsPaper>(jsonString);
             }
             else
@@ -342,48 +349,7 @@ namespace Nexus
             await userManagerWrapper.InitializeAsync();
 
             // packages and catalogs
-            appState.IsCatalogStateUpdating = true;
-
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await extensionHive.LoadPackagesAsync(appState.Project.PackageReferences, CancellationToken.None);
-                    appState.CatalogState = await catalogManager.LoadCatalogsAsync(CancellationToken.None);
-                }
-                finally
-                {
-                    appState.IsCatalogStateUpdating = false;
-                }
-            });
-        }
-
-        private async Task InitializeProjectAsync(AppState appState, IDatabaseManager databaseManager, PathsOptions pathsOptions)
-        {
-            if (databaseManager.TryReadProject(out var stream))
-            {
-                var jsonString = await new StreamReader(stream, Encoding.UTF8).ReadToEndAsync();
-                appState.Project = JsonSerializerHelper.Deserialize<NexusProject>(jsonString);
-            }
-            else
-            {
-                appState.Project = new NexusProject(default, default);
-            }
-
-            // extend config with more data readers
-            var inmemoryBackendSource = new BackendSource(
-                Type: "Nexus.Builtin.Inmemory",
-                ResourceLocator: new Uri("memory://localhost"));
-
-            if (!appState.Project.BackendSources.Contains(inmemoryBackendSource))
-                appState.Project.BackendSources.Add(inmemoryBackendSource);
-
-            var filterBackendSource = new BackendSource(
-                Type: "Nexus.Builtin.Filters",
-                ResourceLocator: new Uri(pathsOptions.Cache, UriKind.RelativeOrAbsolute));
-
-            if (!appState.Project.BackendSources.Contains(filterBackendSource))
-                appState.Project.BackendSources.Add(filterBackendSource);
+            _ = appStateController.ReloadCatalogsAsync(CancellationToken.None);
         }
 
         private void InitializeFilterSettings(FilterSettings filterSettings, string filePath)
@@ -393,7 +359,7 @@ namespace Nexus
 
             if (!testCodes.Any(testCode => testCode.Name == "Simple filter (C#)"))
             {
-                using var streamReader1 = new StreamReader(ResourceLoader.GetResourceStream("Nexus.Resources.TestUserFilterCodeTemplateSimple.cs"));
+                using var streamReader1 = new StreamReader(ResourceLoader.GetResourceStream("Resources.TestUserFilterCodeTemplateSimple.cs", addRootNamespace: true));
 
                 filterSettings.CodeDefinitions.Add(new CodeDefinition()
                 {
@@ -408,12 +374,13 @@ namespace Nexus
                     SamplePeriod = TimeSpan.FromSeconds(1)
                 });
 
-                filterSettings.Save(filePath);
+                var jsonString = JsonSerializerHelper.Serialize(filterSettings);
+                File.WriteAllText(filePath, jsonString);
             }
 
             if (!testCodes.Any(testCode => testCode.Name == "Simple shared (C#)"))
             {
-                using var streamReader2 = new StreamReader(ResourceLoader.GetResourceStream("Nexus.Resources.TestUserSharedCodeTemplateSimple.cs"));
+                using var streamReader2 = new StreamReader(ResourceLoader.GetResourceStream("Resources.TestUserSharedCodeTemplateSimple.cs", addRootNamespace: true));
 
                 filterSettings.CodeDefinitions.Add(new CodeDefinition()
                 {
@@ -428,7 +395,8 @@ namespace Nexus
                     SamplePeriod = default
                 });
 
-                filterSettings.Save(filePath);
+                var jsonString = JsonSerializerHelper.Serialize(filterSettings);
+                File.WriteAllText(filePath, jsonString);
             }
         }
 

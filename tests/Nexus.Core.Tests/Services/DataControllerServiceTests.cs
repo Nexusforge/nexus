@@ -27,23 +27,23 @@ namespace Services
               .Setup(extensionHive => extensionHive.GetInstance<IDataSource>(It.IsAny<string>()))
               .Returns(new InMemoryDataSource());
 
-            var backendSource = new BackendSource(Type: "Nexus.Builtin.Inmemory", new Uri("A", UriKind.Relative));
+            var backendSource = new BackendSource(Type: "Nexus.Builtin.InMemory", new Uri("A", UriKind.Relative));
             var expectedCatalog = new ResourceCatalog(id: "/A/B/C");
 
-            var catalogState = new CatalogState()
-            {
-                BackendSourceToCatalogsMap = new Dictionary<BackendSource, ResourceCatalog[]>()
+            var catalogState = new CatalogState(
+                default, 
+                default,
+                BackendSourceToCatalogsMap: new Dictionary<BackendSource, ResourceCatalog[]>()
                 {
                     [backendSource] = new[] { new ResourceCatalog(id: "/A/B/C") }
                 }
-            };
+            );
 
+            var appState = new AppState() { CatalogState = catalogState };
             var serviceCollection = new ServiceCollection();
-            serviceCollection.AddSingleton(new AppState() { CatalogState = catalogState });
-
             var serviceProvider = serviceCollection.BuildServiceProvider();
             var loggerFactory = Mock.Of<ILoggerFactory>();
-            var dataControllerService = new DataControllerService(extensionHive, serviceProvider, default, default, loggerFactory);
+            var dataControllerService = new DataControllerService(appState, extensionHive, serviceProvider, default, loggerFactory);
 
             // Act
             var actual = await dataControllerService.GetDataSourceControllerAsync(backendSource, CancellationToken.None);
@@ -69,7 +69,7 @@ namespace Services
             var exportParameters = new ExportParameters();
 
             // Act
-            var dataControllerService = new DataControllerService(extensionHive, default, default, default, loggerFactory);
+            var dataControllerService = new DataControllerService(new AppState(), extensionHive, default, default, loggerFactory);
             var actual = await dataControllerService.GetDataWriterControllerAsync(resourceLocator, exportParameters, CancellationToken.None);
 
             // Assert

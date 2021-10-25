@@ -34,7 +34,7 @@ namespace Nexus.Core
 
         public NexusProject Project { get; set; }
 
-        public CatalogState CatalogState
+        public CatalogState? CatalogState
         {
             get { return _catalogState; }
             set { this.SetProperty(ref _catalogState, value); }

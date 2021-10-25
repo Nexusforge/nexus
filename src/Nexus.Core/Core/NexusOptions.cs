@@ -80,7 +80,7 @@ namespace Nexus.Core
         public const string Section = "Security";
         public static string DefaultRootUser { get; } = "root@nexus.localhost";
         public static string DefaultRootPassword { get; } = "#root0/User1";
-        public string RootUser { get; set; } = SecurityOptions.DefaultRootPassword;
+        public string RootUser { get; set; } = SecurityOptions.DefaultRootUser;
         public string RootPassword { get; set; } = SecurityOptions.DefaultRootPassword;
     }
 
