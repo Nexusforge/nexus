@@ -42,7 +42,7 @@ namespace Nexus.Shared
         {
             Resource = parameters.GetValueOrDefault<ResourceViewModel>(nameof(Resource));
 
-            return base.SetParametersAsync(parameters);
+            return Task.CompletedTask;
         }
 
         protected override Task OnParametersSetAsync()

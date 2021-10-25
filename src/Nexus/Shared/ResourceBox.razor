@@ -33,7 +33,7 @@
             <div>
                 @foreach (var resource in this.UserState.GroupedResourcesEntry.Value.Skip(this.ResourcePage * this.ResourcePageSize).Take(this.ResourcePageSize))
                 {
-                    <ResourceExpander Resource="resource" />
+                    <ResourceExpander Resource="@resource" />
                 }
             </div>
 

@@ -56,9 +56,23 @@ namespace Nexus.Services
         {
             FilterDataSource.ClearCache();
 
+            // prepare built-in backend sources
+            var aggregationBackendSource = new BackendSource(
+                Type: AggregationDataSource.Id,
+                ResourceLocator: new Uri(_options.Cache, UriKind.RelativeOrAbsolute));
+
+            var builtinBackendSources = new BackendSource[]
+            {
+                aggregationBackendSource,
+                new BackendSource(Type: InMemoryDataSource.Id, ResourceLocator: default),
+                new BackendSource(Type: FilterDataSource.Id, ResourceLocator: new Uri(_options.Config))
+            };
+
+            var extenedBackendSources = builtinBackendSources.Concat(_appState.Project.BackendSources);
+
             // load data sources and get catalogs
             var backendSourceToCatalogDataMap = (await Task.WhenAll(
-                _appState.Project.BackendSources.Select(async backendSource =>
+                extenedBackendSources.Select(async backendSource =>
                     {
                         using var controller = await _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken);
                         var catalogs = await controller.GetCatalogsAsync(cancellationToken);
@@ -68,36 +82,20 @@ namespace Nexus.Services
                             catalogs = await this.CleanUpFilterCatalogsAsync(catalogs, _userManagerWrapper);
 
                         // get begin and end of project
-                        var catalogData = await Task
-                            .WhenAll(catalogs.Select(async catalog => (catalog, await controller.GetTimeRangeAsync(catalog.Id, cancellationToken))));
+                        (ResourceCatalog, TimeRangeResult)[] catalogData;
+
+                        if (backendSource.Equals(aggregationBackendSource))
+                            catalogData = catalogs
+                                .Select(catalog => (catalog, new TimeRangeResult(BackendSource: backendSource, Begin: DateTime.MaxValue, End: DateTime.MinValue)))
+                                .ToArray();
+
+                        else
+                            catalogData = await Task
+                                .WhenAll(catalogs.Select(async catalog => (catalog, await controller.GetTimeRangeAsync(catalog.Id, cancellationToken))));
 
                         return new KeyValuePair<BackendSource, (ResourceCatalog, TimeRangeResult)[]>(backendSource, catalogData);
                     })))
                 .ToDictionary(entry => entry.Key, entry => entry.Value);
-
-            // instantiate built-in data sources
-            var aggregationBackendSource = new BackendSource(
-                Type: AggregationDataSource.Id,
-                ResourceLocator: new Uri(_options.Cache, UriKind.RelativeOrAbsolute));
-
-            var builtinBackendSources = new BackendSource[]
-            {
-                aggregationBackendSource,
-                new BackendSource(Type: InMemoryDataSource.Id, ResourceLocator: new Uri("memory://localhost")),
-                new BackendSource(Type: FilterDataSource.Id, ResourceLocator: new Uri(_options.Config))
-            };
-
-            foreach (var backendSource in builtinBackendSources)
-            {
-                using var controller = await _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken);
-                var catalogs = await controller.GetCatalogsAsync(cancellationToken);
-
-                var catalogData = catalogs
-                    .Select(catalog => (catalog, new TimeRangeResult(BackendSource: backendSource, Begin: DateTime.MaxValue, End: DateTime.MinValue)))
-                    .ToArray();
-
-                backendSourceToCatalogDataMap[backendSource] = catalogData;
-            }
 
             // merge all catalogs
             var idToCatalogContainerMap = new Dictionary<string, CatalogContainer>();

@@ -763,7 +763,7 @@ namespace Nexus.Core
 
         #endregion
 
-        #region Records
+        #region Types
 
         public record SplittedCatalogContainers(List<CatalogContainer> Accessible, List<CatalogContainer> Restricted);
 

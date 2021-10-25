@@ -27,9 +27,16 @@
                                 </MatTooltip>
                             }
                         </div>
-                        <!--
-                            <div class="small-text">&nbsp;&nbsp;&nbsp;@catalogContainer.CatalogMetadata.ShortDescription</div>
-                        -->
+
+                        @if (@catalogContainer.Catalog.Properties is not null)
+                        {
+                            <div class="small-text">&nbsp;&nbsp;&nbsp;@catalogContainer.Catalog.Properties.GetValueOrDefault("ShortDescription", "<no description available>")</div>
+                        }
+                        else
+                        {
+                            <div class="small-text">&lt;no description available&gt;</div>
+                        }
+
                     </div>
                 </li>
             }
@@ -43,13 +50,22 @@
 <div class="catalog-box-selected">
 
     @if (this.UserState.CatalogContainer != null)
-    {
+                        {
         <MatHeadline5>@this.UserState.CatalogContainer.Id.TrimStart('/').Replace("/", " / ")</MatHeadline5>
-        <!--
         <p class="long-description small-text">
-            @this.UserState.CatalogContainer.Description
+            @if (this.UserState.CatalogContainer.Catalog.Properties is not null)
+            {
+                <p class="long-description small-text">
+                    @this.UserState.CatalogContainer.Catalog.Properties.GetValueOrDefault("Description", "<no description available>")
+                </p>
+            }
+            else
+            {
+                <p class="long-description small-text">
+                    &lt;no description available&gt;
+                </p>
+            }
         </p>
-        -->
         <div class="catalog-box-selected-footer">
             <div class="catalog-box-selected-footer-date">
                 <b>Start:&nbsp;</b> @this.UserState.CatalogContainer.CatalogBegin.ToString("dd.MM.yyyy") &nbsp;&nbsp;&nbsp; <b>End:&nbsp;</b> @this.UserState.CatalogContainer.CatalogEnd.ToString("dd.MM.yyyy")
@@ -64,14 +80,6 @@
                     </MatTooltip>
 
                     @* Wrap is required due to https://github.com/SamProf/MatBlazor/issues/464. *@
-                    @if (this.UserState.CatalogContainer.CatalogMetadata.Logbook.Any())
-                    {
-                        <MatTooltip Tooltip="Logbook" Position="MatTooltipPosition.Top" Wrap="true">
-                            <MatIconButton Icon="@MatIconNames.Event_note" OnClick="this.OpenLogBookDialog" />
-                        </MatTooltip>
-                    }
-
-                    @* Wrap is required due to https://github.com/SamProf/MatBlazor/issues/464. *@
                     @if (this.UserState.Attachments != null && this.UserState.Attachments.Any())
                     {
                         <MatTooltip Tooltip="Attachments" Position="MatTooltipPosition.Top" Wrap="true">
@@ -80,7 +88,6 @@
                     }
                 </div>
 
-                <LogBookModal @bind-IsOpen="this.LogBookDialogIsOpen" />
                 <AttachmentsModal @bind-IsOpen="this.AttachmentsDialogIsOpen" />
             }
         </div>
