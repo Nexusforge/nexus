@@ -8,7 +8,7 @@ namespace Nexus.Controllers.V1
 {
     [ApiController]
     [ApiVersion("1.0")]
-    [Route("api/[controller]")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     internal class AccountController : ControllerBase
     {
         #region Fields

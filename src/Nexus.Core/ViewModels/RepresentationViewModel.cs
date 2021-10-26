@@ -1,4 +1,5 @@
 ﻿using Nexus.DataModel;
+using System;
 
 namespace Nexus.ViewModels
 {
@@ -24,6 +25,8 @@ namespace Nexus.ViewModels
         #region Properties
 
         public string Id => _model.Id;
+
+        public TimeSpan SamplePeriod => _model.SamplePeriod;
 
         public ResourceViewModel Resource => _resource;
 

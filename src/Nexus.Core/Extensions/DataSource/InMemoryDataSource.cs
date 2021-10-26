@@ -119,7 +119,7 @@ namespace Nexus.Extensions
         {
             var representation1 = new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromSeconds(1), detail: "mean");
             var representation2 = new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromSeconds(1), detail: "mean");
-            var representation3 = new Representation(dataType: NexusDataType.INT32, samplePeriod: TimeSpan.FromMilliseconds(40), detail: "");
+            var representation3 = new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromMilliseconds(40), detail: "");
             var representation4 = new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromSeconds(1), detail: "max");
             var representation5 = new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromSeconds(1), detail: "mean");
 

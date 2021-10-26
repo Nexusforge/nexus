@@ -8,6 +8,7 @@ namespace Nexus.ViewModels
     {
         #region Fields
 
+        private List<RepresentationViewModel> _representations;
         private ResourceCatalogViewModel _catalog;
         private Resource _model;
 
@@ -33,6 +34,19 @@ namespace Nexus.ViewModels
 
         public string Unit => _model.Properties.GetValueOrDefault(DataModelExtensions.Unit, string.Empty);
 
+        public IEnumerable<RepresentationViewModel> Representations
+        {
+            get
+            {
+                if (_representations is null && _model.Representations is not null)
+                    _representations = _model.Representations
+                        .Select(representation => new RepresentationViewModel(this, representation))
+                        .ToList();
+
+                return _representations ?? Enumerable.Empty<RepresentationViewModel>();
+            }
+        }
+
         public IEnumerable<string> Groups
         {
             get
@@ -42,8 +56,6 @@ namespace Nexus.ViewModels
                     .Select(entry => entry.Value.Split(':').Last());
             }
         }
-
-        public IReadOnlyList<Representation>? Representations => _model.Representations;
 
         public ResourceCatalogViewModel Catalog => _catalog;
 

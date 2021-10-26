@@ -23,9 +23,6 @@ namespace Nexus.Shared
         [Inject]
         private UserState UserState { get; set; }
 
-        [Parameter]
-        public bool IsExpanded { get; set; }
-
         //[Parameter]
         private ResourceViewModel Resource { get; set; }
 
@@ -38,35 +35,23 @@ namespace Nexus.Shared
             this.UserState.PropertyChanged -= this.OnUserStatePropertyChanged;
         }
 
+        // Workaround to avoid making "Resource" property public (type ResourceViewModel should stay internal)
         public override Task SetParametersAsync(ParameterView parameters)
         {
-            Resource = parameters.GetValueOrDefault<ResourceViewModel>(nameof(Resource));
+            this.Resource = parameters.GetValueOrDefault<ResourceViewModel>(nameof(this.Resource));
+            this.UserState.PropertyChanged += this.OnUserStatePropertyChanged;
+
+            this.UpdateFilteredRepresentations();
+            this.StateHasChanged();
 
             return Task.CompletedTask;
         }
 
-        protected override Task OnParametersSetAsync()
-        {
-            this.UpdateFilteredRepresentations();
-            this.UserState.PropertyChanged += this.OnUserStatePropertyChanged;
-
-            return base.OnParametersSetAsync();
-        }
-
-        private void OnClick()
-        {
-            this.IsExpanded = !this.IsExpanded;
-        }
-
         private void UpdateFilteredRepresentations()
         {
-            if (this.UserState.SamplePeriod == default)
-                _filteredRepresentations = Enumerable.Empty<RepresentationViewModel>();
-
-            else
-                _filteredRepresentations = this.Resource.Representations
-                    .Where(representation => representation.SamplePeriod == this.UserState.SamplePeriod)
-                    .Select(representation => new RepresentationViewModel(this.Resource, representation));
+            _filteredRepresentations = this.Resource.Representations
+                .Where(representation => representation.SamplePeriod == this.UserState.SamplePeriod)
+                .ToList();
         }
 
         private IEnumerable<TimeSpan> GetSamplePeriods()

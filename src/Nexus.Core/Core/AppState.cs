@@ -30,7 +30,7 @@ namespace Nexus.Core
 
         #region Properties - General
 
-        public ConcurrentDictionary<CatalogContainer, ResourceViewModel[]> ResourceCache => new ConcurrentDictionary<CatalogContainer, ResourceViewModel[]>();
+        public ConcurrentDictionary<CatalogContainer, ResourceViewModel[]> ResourceCache { get; } = new ConcurrentDictionary<CatalogContainer, ResourceViewModel[]>();
 
         public NexusProject Project { get; set; }
 
