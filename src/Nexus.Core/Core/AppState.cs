@@ -1,4 +1,5 @@
 using Nexus.DataModel;
+using Nexus.Extensibility;
 using Nexus.Utilities;
 using Nexus.ViewModels;
 using Prism.Mvvm;
@@ -47,6 +48,8 @@ namespace Nexus.Core
         }
 
         public string Version { get; }
+
+        public Dictionary<string, (string FormatName, OptionAttrbute[] Options)> DataWriterInfoMap { get; set; }
 
         #endregion
 

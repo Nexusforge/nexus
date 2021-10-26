@@ -24,6 +24,8 @@ namespace Nexus.ViewModels
 
         #region Properties
 
+        public Representation Model => _model;
+
         public string Id => _model.Id;
 
         public TimeSpan SamplePeriod => _model.SamplePeriod;

@@ -205,6 +205,10 @@ namespace Nexus.Services
                 readingGroups.Add(new DataReadingGroup(dataSourceController, catalogItemPipeWriters.ToArray()));
             }
 
+            /* cancellation */
+            var cts = new CancellationTokenSource();
+            cancellationToken.Register(() => cts.Cancel());
+
             /* read */
             var exportParameters = exportContext.ExportParameters;
 
@@ -215,7 +219,7 @@ namespace Nexus.Services
                 readingGroups.ToArray(),
                 this.ReadProgress,
                 _logger,
-                cancellationToken);
+                cts.Token);
 
             /* write */
             var singleFile = exportParameters.FilePeriod == default;
@@ -231,11 +235,24 @@ namespace Nexus.Services
                 filePeriod,
                 catalogItemPipeReaders.ToArray(),
                 this.WriteProgress,
-                cancellationToken
+                cts.Token
             );
 
-            /* wait */
-            await Task.WhenAll(reading, writing);
+            /* "WhenAllFailFast": Task.WhenAll does not return when one of the methods fail. */
+            var tasks = new List<Task>() { reading, writing };
+
+            while (tasks.Any())
+            {
+                var task = await Task.WhenAny(tasks);
+
+                if (task.Exception != null)
+                {
+                    cts.Cancel();
+                    throw task.Exception.InnerException;
+                }
+
+                tasks.Remove(task);
+            }
         }
 
         private void WriteZipArchiveEntries(ZipArchive zipArchive, string sourceFolderPath, CancellationToken cancellationToken)

@@ -7,6 +7,7 @@ using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.IO.Pipelines;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -227,6 +228,10 @@ namespace Nexus.Extensibility
                     progress,
                     cancellationToken);
 
+                var dataTasks = new List<ValueTask<FlushResult>>(capacity: catalogItemPipeWriters.Length);
+                var statusTasks = new List<ValueTask<FlushResult>>(capacity: catalogItemPipeWriters.Length);
+
+                /* start all tasks */
                 foreach (var (catalogItemPipeWriter, readRequest) in catalogItemPipeWriters.Zip(requests))
                 {
                     var (catalogItem, dataWriter, statusWriter) = catalogItemPipeWriter;
@@ -252,7 +257,7 @@ namespace Nexus.Extensibility
 
                         /* update progress */
                         dataWriter.Advance(dataLength);
-                        await dataWriter.FlushAsync();
+                        dataTasks.Add(dataWriter.FlushAsync());
                     }
                     else
                     {
@@ -262,12 +267,16 @@ namespace Nexus.Extensibility
 
                         /* update progress */
                         dataWriter.Advance(dataLength);
-                        await dataWriter.FlushAsync();
+                        dataTasks.Add(dataWriter.FlushAsync());
 
                         statusWriter.Advance(elementCount);
-                        await statusWriter.FlushAsync();
+                        statusTasks.Add(statusWriter.FlushAsync());
                     }
                 }
+
+                /* wait for tasks to finish */
+                await NexusCoreUtilities.WhenAll(dataTasks.ToArray());
+                await NexusCoreUtilities.WhenAll(statusTasks.ToArray());
             }
             finally
             {

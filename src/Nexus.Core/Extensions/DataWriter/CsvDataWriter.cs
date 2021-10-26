@@ -1,6 +1,7 @@
 ﻿using Nexus.DataModel;
 using Nexus.Extensibility;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -10,6 +11,9 @@ using System.Threading.Tasks;
 
 namespace Nexus.Extensions
 {
+    [DataWriterFormatName("Comma-separated (*.csv)")]
+    [DataWriterSelectOptionAttribute("RowIndexFormat", "Row index format", "Excel", new string[] { "Excel", "Index", "Unix" }, new string[] { "Excel time", "Index-based", "Unix time" })]
+    [DataWriterIntegerNumberInputOption("SignificantFigures", "Significant figures", 4, 0, int.MaxValue)]
     [ExtensionIdentification("Nexus.Builtin.Csv", "Nexus CSV Writer", "Writes data into CSV files.")]
     internal class CsvDataWriter : IDataWriter
     {
@@ -81,15 +85,16 @@ namespace Nexus.Extensions
                         streamWriter.WriteLine($"# sample_period={samplePeriod.ToUnitString()};");
                         streamWriter.WriteLine($"# catalog_id={catalog.Id};");
 
-                        foreach (var entry in catalog.Properties)
+                        if (catalog.Properties != null)
                         {
-                            streamWriter.WriteLine($"# {entry.Key}={entry.Value};");
+                            foreach (var entry in catalog.Properties)
+                            {
+                                streamWriter.WriteLine($"# {entry.Key}={entry.Value};");
+                            }
                         }
 
                         /* resource name */
-                        var rowIndexFormat = this.Context.Configuration.TryGetValue("RowIndexFormat", out var value)
-                            ? value
-                            : "Index";
+                        var rowIndexFormat = this.Context.Configuration.GetValueOrDefault("RowIndexFormat", "Index");
 
                         switch (rowIndexFormat)
                         {
@@ -131,8 +136,9 @@ namespace Nexus.Extensions
 
                         foreach (var catalogItem in catalogItemGroup)
                         {
-                            if (catalogItem.Resource.Properties.TryGetValue("Unit", out var unit))
+                            if (catalogItem.Resource.Properties != null && catalogItem.Resource.Properties.TryGetValue("Unit", out var unit))
                                 streamWriter.Write($"{unit};");
+
                             else
                                 streamWriter.Write(";");
                         }
@@ -156,14 +162,8 @@ namespace Nexus.Extensions
                     var physicalId = catalog.Id.TrimStart('/').Replace('/', '_');
                     var root = this.Context.ResourceLocator.ToPath();
                     var filePath = Path.Combine(root, $"{physicalId}_{_lastFileBegin.ToISO8601()}_{_lastSamplePeriod.ToUnitString()}.csv");
-
-                    var rowIndexFormat = this.Context.Configuration.TryGetValue("RowIndexFormat", out var value1)
-                        ? value1
-                        : "Index";
-
-                    var significantFigures = uint.Parse(this.Context.Configuration.TryGetValue("SignificantFigures", out var value2)
-                        ? value2
-                        : "4");
+                    var rowIndexFormat = this.Context.Configuration.GetValueOrDefault("RowIndexFormat", "Index");
+                    var significantFigures = uint.Parse(this.Context.Configuration.GetValueOrDefault("SignificantFigures", "4"));
 
                     using var streamWriter = new StreamWriter(File.Open(filePath, FileMode.Append, FileAccess.Write), Encoding.UTF8);
 

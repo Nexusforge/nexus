@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Nexus.Core;
-using Nexus.Models;
 using Nexus.Models.V1;
 using System;
 using System.IdentityModel.Tokens.Jwt;

@@ -1,4 +1,9 @@
-﻿using Nexus.Core;
+﻿using Microsoft.Extensions.Logging;
+using Nexus.Core;
+using Nexus.Extensibility;
+using Nexus.Utilities;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -10,6 +15,7 @@ namespace Nexus.Services
 
         private IExtensionHive _extensionHive;
         private ICatalogManager _catalogManager;
+        private ILogger<AppStateController> _logger;
         private AppState _appState;
         private SemaphoreSlim _reloadCatalogsSemaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
 
@@ -20,11 +26,13 @@ namespace Nexus.Services
         public AppStateController(
             AppState appState,
             IExtensionHive extensionHive,
-            ICatalogManager catalogManager)
+            ICatalogManager catalogManager,
+            ILogger<AppStateController> logger)
         {
             _appState = appState;
             _extensionHive = extensionHive;
             _catalogManager = catalogManager;
+            _logger = logger;
         }
 
         #endregion
@@ -66,6 +74,34 @@ namespace Nexus.Services
                     _appState.IsCatalogStateUpdating = false;
                 }
             }
+
+            /* update GUI with possible new data writers */
+            var dataWriterInfoMap = new Dictionary<string, (string FormatName, OptionAttrbute[] Options)>();
+
+            foreach (var dataWriterType in _extensionHive.GetExtensions<IDataWriter>())
+            {
+                var extensionIdentification = dataWriterType.GetFirstAttribute<ExtensionIdentificationAttribute>();
+
+                string formatName;
+
+                try
+                {
+                    formatName = dataWriterType.GetFirstAttribute<DataWriterFormatNameAttribute>().FormatName;
+                }
+                catch
+                {
+                    _logger.LogWarning($"Data writer {extensionIdentification.Id} has no format name attribute. Skipping.");
+                    continue;
+                }
+
+                var options = dataWriterType
+                    .GetCustomAttributes<OptionAttrbute>()
+                    .ToArray();
+
+                dataWriterInfoMap[extensionIdentification.Id] = (formatName, options);
+            }
+
+            _appState.DataWriterInfoMap = dataWriterInfoMap;
         }
 
         #endregion

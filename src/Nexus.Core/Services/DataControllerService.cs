@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Nexus.Core;
 using Nexus.Extensibility;
 using Nexus.Extensions;
@@ -37,15 +36,7 @@ namespace Nexus.Services
         public async Task<IDataSourceController> GetDataSourceControllerAsync(BackendSource backendSource, CancellationToken cancellationToken)
         {
             var logger = _loggerFactory.CreateLogger($"{backendSource.Type} - {backendSource.ResourceLocator}");
-
-            var dataSource = backendSource.Type switch
-            {
-                AggregationDataSource.Id    => new AggregationDataSource(),
-                FilterDataSource.Id         => new FilterDataSource(),
-                InMemoryDataSource.Id       => new InMemoryDataSource(),
-                RpcDataSource.Id            => new RpcDataSource(),
-                _                           => _extensionHive.GetInstance<IDataSource>(backendSource.Type)
-            };
+            var dataSource = _extensionHive.GetInstance<IDataSource>(backendSource.Type);
 
             // special case checks
             if (dataSource.GetType() == typeof(FilterDataSource))
@@ -79,14 +70,9 @@ namespace Nexus.Services
         public async Task<IDataWriterController> GetDataWriterControllerAsync(Uri resourceLocator, ExportParameters exportParameters, CancellationToken cancellationToken)
         {
             var logger = _loggerFactory.CreateLogger($"{exportParameters.Writer} - {resourceLocator}");
-
-            var dataWriter = exportParameters.Writer switch
-            {
-                CsvDataWriter.Id    => new CsvDataWriter(),
-                _                   => _extensionHive.GetInstance<IDataWriter>(exportParameters.Writer)
-            };
-
+            var dataWriter = _extensionHive.GetInstance<IDataWriter>(exportParameters.Writer);
             var controller = new DataWriterController(dataWriter, resourceLocator, exportParameters.Configuration, logger);
+
             await controller.InitializeAsync(cancellationToken);
 
             return controller;

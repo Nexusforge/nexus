@@ -37,7 +37,7 @@ namespace Nexus.Services
 
             // add built-in extensions
             var thisAssembly = Assembly.GetExecutingAssembly();
-            var thisAttributesAndTypes = this.ScanAssembly(thisAssembly);
+            var thisAttributesAndTypes = this.ScanAssembly(thisAssembly, thisAssembly.DefinedTypes);
 
             _builtinExtensions = thisAttributesAndTypes;
         }
@@ -74,7 +74,7 @@ namespace Nexus.Services
                 {
                     _logger.LogDebug("Load package.");
                     var assembly = await packageController.LoadAsync(_pathsOptions.Packages, cancellationToken);
-                    var attributesAndTypes = this.ScanAssembly(assembly);
+                    var attributesAndTypes = this.ScanAssembly(assembly, assembly.ExportedTypes);
                     packageControllerMap[packageController] = attributesAndTypes;
                 }
                 catch (Exception ex)
@@ -84,6 +84,18 @@ namespace Nexus.Services
             }
 
             _packageControllerMap = packageControllerMap;
+        }
+
+        public IEnumerable<Type> GetExtensions<T>() where T : IExtension
+        {
+            var actualMap = _packageControllerMap is null
+                ? _builtinExtensions
+                : _builtinExtensions.Concat(_packageControllerMap.SelectMany(entry => entry.Value));
+
+            return actualMap
+                .Where(extensionTuple => typeof(T).IsAssignableFrom(extensionTuple.Type))
+                .Select(extenionTuple => extenionTuple.Type)
+                .ToList();
         }
 
         public T GetInstance<T>(string identifier) where T : IExtension
@@ -98,13 +110,13 @@ namespace Nexus.Services
         {
             instance = default(T);
 
-            if (_packageControllerMap is null)
-                return false;
-
             _logger.LogDebug("Instantiate extension {ExtensionIdentifier} of type {Type}.", identifier, typeof(T).FullName);
 
-            var type = _builtinExtensions
-                .Concat(_packageControllerMap.SelectMany(entry => entry.Value))
+            var actualMap = _packageControllerMap is null
+                ? _builtinExtensions
+                : _builtinExtensions.Concat(_packageControllerMap.SelectMany(entry => entry.Value));
+
+            var type = actualMap
                 .Where(extensionTuple => typeof(T).IsAssignableFrom(extensionTuple.Type) && extensionTuple.Identification.Id == identifier)
                 .Select(extenionTuple => extenionTuple.Type)
                 .FirstOrDefault();
@@ -121,9 +133,9 @@ namespace Nexus.Services
             }
         }
 
-        private ReadOnlyCollection<(ExtensionIdentificationAttribute, Type)> ScanAssembly(Assembly assembly)
+        private ReadOnlyCollection<(ExtensionIdentificationAttribute, Type)> ScanAssembly(Assembly assembly, IEnumerable<Type> types)
         {
-            var attributesAndTypes = assembly.ExportedTypes
+            var attributesAndTypes = types
                 .Where(type =>
                 {
                     var isClass = type.IsClass;

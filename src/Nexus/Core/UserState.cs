@@ -12,8 +12,10 @@ using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Threading;
-using Microsoft.Extensions.Options;
 using Nexus.Utilities;
+using Microsoft.Extensions.DependencyInjection;
+using System.IO;
+using Microsoft.Extensions.Options;
 
 namespace Nexus.Core
 {
@@ -38,6 +40,8 @@ namespace Nexus.Core
         private IDatabaseManager _databaseManager;
         private IJSRuntime _jsRuntime;
         private IUserIdService _userIdService;
+        private IServiceProvider _serviceProvider;
+        private PathsOptions _pathsOptions;
 
         private AppState _appState;
         private AuthenticationStateProvider _authenticationStateProvider;
@@ -58,6 +62,8 @@ namespace Nexus.Core
                          IJSRuntime jsRuntime,
                          IDatabaseManager databaseManager,
                          IUserIdService userIdService,
+                         IServiceProvider serviceProvider,
+                         IOptions<PathsOptions> pathsOptions,
                          AppState appState,
                          AuthenticationStateProvider authenticationStateProvider,
                          DataService dataService)
@@ -67,6 +73,8 @@ namespace Nexus.Core
             _jsRuntime = jsRuntime;
             _databaseManager = databaseManager;
             _userIdService = userIdService;
+            _serviceProvider = serviceProvider;
+            _pathsOptions = pathsOptions.Value;
             _appState = appState;
             _authenticationStateProvider = authenticationStateProvider;
             _dataService = dataService;
@@ -358,15 +366,23 @@ namespace Nexus.Core
             }
         }
 
-        //public FileFormat FileFormat
-        //{
-        //    get { return this.ExportParameters.FileFormat; }
-        //    set
-        //    {
-        //        this.ExportParameters.FileFormat = value;
-        //        this.RaisePropertyChanged();
-        //    }
-        //}
+        public string Writer
+        {
+            get { return this.ExportParameters.Writer; }
+            set
+            {
+                this.ExportParameters.Writer = value;
+                this.RaisePropertyChanged();
+            }
+        }
+
+        public Dictionary<string, string> Configuration
+        {
+            get
+            {
+                return this.ExportParameters.Configuration;
+            }
+        }
 
         #endregion
 
@@ -408,20 +424,16 @@ namespace Nexus.Core
 
         public bool CanDownload()
         {
-            //if (this.SampleRate != null)
-            //{
-            //    var samplePeriod = new SampleRateContainer(this.SampleRate).Period.TotalSeconds;
-
-
-            //    return this.DateTimeBegin < this.DateTimeEnd &&
-            //           this.SelectedRepresentations.Count > 0 &&
-            //           (ulong)this.FileGranularity >= samplePeriod;
-            //}
-            //else
-            //{
-            //    return false;
-            //}
-            return true;
+            if (this.SamplePeriod != default)
+            {
+                return this.DateTimeBegin < this.DateTimeEnd &&
+                       this.SelectedRepresentations.Count > 0 &&
+                       this.FilePeriod.Ticks % this.SamplePeriod.Ticks == 0;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         public async Task DownloadAsync()
@@ -434,45 +446,47 @@ namespace Nexus.Core
 
             try
             {
-                //this.ClientState = ClientState.PrepareDownload;
-                //_dataService.ReadProgress.ProgressChanged += eventHandler;
+                this.ClientState = ClientState.PrepareDownload;
+                _dataService.ReadProgress.ProgressChanged += eventHandler;
 
-                //var selectedRepresentations = this.GetSelectedRepresentations().Select(representation => representation.Model).ToList();
+                var selectedRepresentations = this.GetSelectedRepresentations();
 
-                //// security check
-                //var catalogIds = selectedRepresentations.Select(representation => representation.Resource.Catalog.Id).Distinct();
+                // authorization
+                var catalogIds = selectedRepresentations.Select(representation => representation.Resource.Catalog.Id).Distinct();
 
-                //foreach (var catalogId in catalogIds)
-                //{
-                //    if (!NexusUtilities.IsCatalogAccessible(_userIdService.User, catalogId, _databaseManager.Database))
-                //        throw new UnauthorizedAccessException($"The current user is not authorized to access catalog '{catalogId}'.");
-                //}
+                foreach (var catalogId in catalogIds)
+                {
+                    var catalogContainer = _appState.CatalogState.CatalogCollection.CatalogContainers
+                        .First(container => container.Id == catalogId);
 
-                ////
-                //var job = new ExportJob()
-                //{
-                //    Owner = _userIdService.User.Identity.Name,
-                //    Parameters = this.ExportParameters
-                //};
+                    if (!AuthorizationUtilities.IsCatalogAccessible(_userIdService.User, catalogContainer))
+                        throw new UnauthorizedAccessException($"The current user is not authorized to access catalog '{catalogId}'.");
+                }
 
-                //var exportJobService = _serviceProvider.GetRequiredService<JobService<ExportJob>>();
+                //
+                var job = new ExportJob()
+                {
+                    Owner = _userIdService.User.Identity.Name,
+                    Parameters = this.ExportParameters
+                };
 
-                //_exportJobControl = exportJobService.AddJob(job, _dataService.ReadProgress, (jobControl, cts) =>
-                //{
-                //    var task = _dataService.ExportDataAsync(this.ExportParameters,
-                //                                            selectedRepresentations,
-                //                                            cts.Token);
+                var exportJobService = _serviceProvider.GetRequiredService<JobService<ExportJob>>();
 
-                //    return task;
-                //});
+                _exportJobControl = exportJobService.AddJob(job, _dataService.ReadProgress, (jobControl, cts) =>
+                {
+                    var task = _dataService.ExportAsync(
+                        this.ExportParameters,
+                        selectedRepresentations.Select(current => new CatalogItem(current.Resource.Catalog.Model, current.Resource.Model, current.Model)),
+                        Guid.NewGuid(),
+                        cts.Token);
 
-                //var downloadLink = await _exportJobControl.Task;
+                    return task;
+                });
 
-                //if (!string.IsNullOrWhiteSpace(downloadLink))
-                //{
-                //    var fileName = downloadLink.Split("/").Last();
-                //    await _jsRuntime.FileSaveAs(fileName, downloadLink);
-                //}
+                var fileName = await _exportJobControl.Task;
+
+                if (!string.IsNullOrWhiteSpace(fileName))
+                    await _jsRuntime.FileSaveAs(fileName, $"export/{fileName}");
             }
             finally
             {

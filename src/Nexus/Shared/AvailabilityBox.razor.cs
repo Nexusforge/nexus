@@ -121,34 +121,48 @@ namespace Nexus.Shared
 
         protected override void OnInitialized()
         {
-            this.PropertyChanged = async (sender, e) =>
+            this.PropertyChanged = (sender, e) =>
             {
-                if (e.PropertyName == nameof(UserState.DateTimeBegin))
+                switch (e.PropertyName)
                 {
-                    await this.UpdateChart();
-                }
-                else if (e.PropertyName == nameof(UserState.DateTimeEnd))
-                {
-                    await this.UpdateChart();
-                }
-                else if (e.PropertyName == nameof(UserState.CatalogContainer))
-                {
-                    await this.UpdateChart();
+                    case nameof(UserState.DateTimeBegin):
+                    case nameof(UserState.DateTimeEnd):
+                    case nameof(UserState.CatalogContainer):
+
+                        _ = this.UpdateChartAsync();
+
+                        break;
+
+                    default:
+                        break;
                 }
             };
 
             base.OnInitialized();
         }
 
+        private int iteration = 0;
+
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
+            // The problem here is that the child chart is not yet fully initialized. The chart initializes itself in it's OnAfterRenderMethod,
+            // which is called AFTER this method. So the following code is needed to let the child initialize first before we call Chart.Update();.
+            // Reference: https://github.com/dotnet/aspnetcore/issues/13781#issuecomment-531257109
+
+            // 1. render: trigger another render
             if (firstRender)
-                await this.UpdateChart();
+                this.StateHasChanged();
+
+            // 2. render: update chart
+            if (iteration == 1)
+                await this.UpdateChartAsync();
+
+            iteration++;
 
             await base.OnAfterRenderAsync(firstRender);
         }
 
-        private async Task UpdateChart()
+        private async Task UpdateChartAsync()
         {
             var totalDays = (int)(this.UserState.DateTimeEnd.Date - this.UserState.DateTimeBegin.Date).TotalDays;
 

@@ -126,37 +126,4 @@
   <data name="CodeType_Shared" xml:space="preserve">
     <value>Shared code</value>
   </data>
-  <data name="CsvRowIndexFormat_Excel" xml:space="preserve">
-    <value>Excel time</value>
-  </data>
-  <data name="CsvRowIndexFormat_Index" xml:space="preserve">
-    <value>Index-based</value>
-  </data>
-  <data name="CsvRowIndexFormat_Unix" xml:space="preserve">
-    <value>Unix time</value>
-  </data>
-  <data name="FileFormat_CSV" xml:space="preserve">
-    <value>Comma-separated (*.csv)</value>
-  </data>
-  <data name="FileFormat_FAMOS" xml:space="preserve">
-    <value>imc FAMOS v2 (*.dat)</value>
-  </data>
-  <data name="FileFormat_MAT73" xml:space="preserve">
-    <value>Matlab v7.3 (*.mat)</value>
-  </data>
-  <data name="FileGranularity_Day" xml:space="preserve">
-    <value>1 file per day</value>
-  </data>
-  <data name="FileGranularity_Hour" xml:space="preserve">
-    <value>1 file per hour</value>
-  </data>
-  <data name="FileGranularity_Minute_1" xml:space="preserve">
-    <value>1 file per minute</value>
-  </data>
-  <data name="FileGranularity_Minute_10" xml:space="preserve">
-    <value>1 file per 10 minutes</value>
-  </data>
-  <data name="FileGranularity_SingleFile" xml:space="preserve">
-    <value>Single file</value>
-  </data>
 </root>

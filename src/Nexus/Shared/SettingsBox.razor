@@ -1,37 +1,109 @@
 ﻿@inherits StateComponentBase
 
-    <div>
-        <MatDatePicker class="settings-control"
-                       Label="From (UTC)"
-                       Format="dd.MM.yyyy HH:mm"
-                       @bind-Value="this.UserState.DateTimeBeginWorkaround"
-                       EnableTime="true"
-                       EnableSeconds="false"
-                       Enable24hours="true"
-                       AllowInput="true">
-        </MatDatePicker>
+<div>
+    <MatDatePicker class="settings-control"
+                   Label="From (UTC)"
+                   Format="dd.MM.yyyy HH:mm"
+                   @bind-Value="this.UserState.DateTimeBeginWorkaround"
+                   EnableTime="true"
+                   EnableSeconds="false"
+                   Enable24hours="true"
+                   AllowInput="true">
+    </MatDatePicker>
 
-        <MatDatePicker class="settings-control"
-                       Label="To (UTC)"
-                       Format="dd.MM.yyyy HH:mm"
-                       @bind-Value="this.UserState.DateTimeEndWorkaround"
-                       EnableTime="true"
-                       EnableSeconds="false"
-                       Enable24hours="true"
-                       AllowInput="true">
-        </MatDatePicker>
+    <MatDatePicker class="settings-control"
+                   Label="To (UTC)"
+                   Format="dd.MM.yyyy HH:mm"
+                   @bind-Value="this.UserState.DateTimeEndWorkaround"
+                   EnableTime="true"
+                   EnableSeconds="false"
+                   Enable24hours="true"
+                   AllowInput="true">
+    </MatDatePicker>
 
-        @if (this.UserState.ClientState == ClientState.DataVisualizing)
+    <MatSelectItem class="settings-control"
+                   Label="File Period"
+                   @bind-Value="this.UserState.FilePeriod"
+                   Items="new List<TimeSpan>() { TimeSpan.FromDays(1), TimeSpan.FromHours(1), TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(1), TimeSpan.Zero }">
+        <ItemTemplate Context="value">
+            @if (value == TimeSpan.FromDays(1))
+            {
+                @:1 file per day
+            }
+            else if (value == TimeSpan.FromHours(1))
+            {
+                @:1 file per hour
+            }
+            else if (value == TimeSpan.FromMinutes(10))
+            {
+                @:1 file per minute
+            }
+            else if (value == TimeSpan.FromMinutes(1))
+            {
+                @:1 file per 10 minutes
+            }
+            else
+            {
+                @:Single file
+            }
+        </ItemTemplate>
+    </MatSelectItem>
+
+    <MatSelectItem class="settings-control"
+                   Label="File Format"
+                   @bind-Value="this.UserState.Writer"
+                   Items="this.AppState.DataWriterInfoMap.Keys.ToList()">
+        <ItemTemplate Context="key">
+            @this.AppState.DataWriterInfoMap[key].FormatName
+        </ItemTemplate>
+    </MatSelectItem>
+
+    @if (this.AppState.DataWriterInfoMap.TryGetValue(this.UserState.Writer, out var value))
+    {
+        foreach (var option in value.Options)
         {
-            <div class="chart-settings">
-                <MatSubtitle1>Chart Settings</MatSubtitle1>
+            DataWriterSelectOptionAttribute selectOption;
+            DataWriterIntegerNumberInputOptionAttribute numberInputOption;
 
-                <div>
-                    <MatCheckbox @bind-Value="@this.UserState.VisualizeBeginAtZero" Label="Begin at Zero"></MatCheckbox>
-                </div>
-            </div>
+            if ((selectOption = option as DataWriterSelectOptionAttribute) is not null)
+            {
+                var store = new DictionaryStore<string>(selectOption.DefaultKey, selectOption.ConfigurationKey, this.UserState.Configuration);
+
+                <MatSelectItem class="settings-control"
+                               @bind-Value="@store.Value"
+                               Label="@selectOption.Label"
+                               Items="@selectOption.KeyValueMap.Keys.ToList()">
+                    <ItemTemplate Context="key">
+                        @selectOption.KeyValueMap[key]
+                    </ItemTemplate>
+                </MatSelectItem>
+            }
+            else if ((numberInputOption = option as DataWriterIntegerNumberInputOptionAttribute) is not null)
+            {
+                var store = new DictionaryStore<int>(numberInputOption.DefaultValue, numberInputOption.ConfigurationKey, this.UserState.Configuration);
+
+                <MatNumericUpDownField class="settings-control"
+                                       @bind-Value="@store.Value"
+                                       Label="@numberInputOption.Label"
+                                       DecimalPlaces=0
+                                       Minimum=numberInputOption.Minmum 
+                                       Maximum=numberInputOption.Maximum>
+                </MatNumericUpDownField>
+            }
         }
-    </div>
+    }
+
+    @if (this.UserState.ClientState == ClientState.DataVisualizing)
+    {
+        <div class="chart-settings">
+            <MatSubtitle1>Chart Settings</MatSubtitle1>
+
+            <div>
+                <MatCheckbox @bind-Value="@this.UserState.VisualizeBeginAtZero" Label="Begin at Zero"></MatCheckbox>
+            </div>
+        </div>
+    }
+</div>
 
 <div>
 

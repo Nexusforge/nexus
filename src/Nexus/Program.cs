@@ -6,7 +6,6 @@ using Nexus.Core;
 using Serilog;
 using System;
 using System.Globalization;
-using System.Linq;
 
 namespace Nexus
 {

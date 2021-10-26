@@ -1,4 +1,5 @@
 ﻿using Nexus.DataModel;
+using Nexus.Extensions;
 using System;
 using System.Collections.Generic;
 
@@ -16,13 +17,13 @@ namespace Nexus.Services
         public TimeSpan FilePeriod { get; set; }
 
         /// <example>Nexus.Builtin.Csv</example>
-        public string Writer { get; set; } = "Nexus.Builtin.Csv";
+        public string Writer { get; set; } = CsvDataWriter.Id;
 
         /// <example>["/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean", "/IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean"]</example>
-        public string[] ResourcePaths { get; set; }
+        public string[] ResourcePaths { get; set; } = new string[0];
 
         /// <example>{ "RowIndexFormat": "Index", "SignificantFigures": "4" }</example>
-        public Dictionary<string, string> Configuration { get; set; }
+        public Dictionary<string, string> Configuration { get; set; } = new Dictionary<string, string>();
     }
 
     internal static class ExportParametersExtensions

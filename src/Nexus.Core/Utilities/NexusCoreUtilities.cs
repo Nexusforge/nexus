@@ -125,6 +125,11 @@ namespace Nexus.Utilities
             return type.GetCustomAttributes(false).OfType<T>().FirstOrDefault();
         }
 
+        public static IEnumerable<T> GetCustomAttributes<T>(this Type type) where T : Attribute
+        {
+            return type.GetCustomAttributes(false).OfType<T>();
+        }
+
         public static object InvokeGenericMethod<T>(T instance, string methodName, BindingFlags bindingFlags, Type genericType, object[] parameters)
         {
             return NexusCoreUtilities.InvokeGenericMethod(typeof(T), instance, methodName, bindingFlags, genericType, parameters);
