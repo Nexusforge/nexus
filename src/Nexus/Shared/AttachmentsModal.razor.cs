@@ -1,9 +1,13 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Nexus.Core;
 using System.IO;
+using System.Net;
 
 namespace Nexus.Shared
 {
+
+#warning Make attachements available via API -> this would directly enforce authorization
+
     public partial class AttachmentsModal
     {
         #region Properties
@@ -46,7 +50,7 @@ namespace Nexus.Shared
 
         public string GetHref(string filePath)
         {
-            return $"/attachments/{this.UserState.CatalogContainer.PhysicalName}/{this.GetFileName(filePath)}";
+            return $"/attachments/{WebUtility.UrlEncode(this.UserState.CatalogContainer.Id)}/{this.GetFileName(filePath)}";
         }
 
         private void OnIsOpenChanged(bool value)

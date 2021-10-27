@@ -1,21 +1,20 @@
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.JSInterop;
 using Nexus.DataModel;
 using Nexus.Roslyn;
 using Nexus.Services;
+using Nexus.Utilities;
 using Nexus.ViewModels;
 using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Threading;
-using Nexus.Utilities;
-using Microsoft.Extensions.DependencyInjection;
-using System.IO;
-using Microsoft.Extensions.Options;
+using System.Threading.Tasks;
 
 namespace Nexus.Core
 {
@@ -758,20 +757,17 @@ namespace Nexus.Core
             var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
             var principal = authState.User;
 
-            var accessible = catalogCollection.CatalogContainers.Where(catalogContainer =>
-            {
-                var isCatalogAccessible = AuthorizationUtilities.IsCatalogAccessible(principal, catalogContainer);
-                var isCatalogVisible = AuthorizationUtilities.IsCatalogVisible(principal, catalogContainer, isCatalogAccessible);
+            // all accessible catalogs are "accessible"
+            var accessible = catalogCollection.CatalogContainers
+                .Where(catalogContainer => AuthorizationUtilities.IsCatalogAccessible(principal, catalogContainer))
+                .OrderBy(catalogContainer => catalogContainer.Id).ToList();
 
-                return isCatalogAccessible && isCatalogVisible;
-            }).OrderBy(catalogContainer => catalogContainer.Id).ToList();
-
+            // all other catalogs except hidden ones are "restricted"
             var restricted = catalogCollection.CatalogContainers.Where(catalogContainer =>
             {
-                var isCatalogAccessible = AuthorizationUtilities.IsCatalogAccessible(principal, catalogContainer);
-                var isCatalogVisible = AuthorizationUtilities.IsCatalogVisible(principal, catalogContainer, isCatalogAccessible);
+                var isCatalogVisible = AuthorizationUtilities.IsCatalogVisible(principal, catalogContainer);
 
-                return !isCatalogAccessible && isCatalogVisible;
+                return !accessible.Contains(catalogContainer) && isCatalogVisible;
             }).OrderBy(catalogContainer => catalogContainer.Id).ToList();
 
             return new SplittedCatalogContainers(accessible, restricted);

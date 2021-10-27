@@ -1,5 +1,6 @@
 ﻿@inherits StateComponentBase
 @inject IHttpContextAccessor ContextAccessor
+@using System.IO
 
 @if (this.UserState.GroupedResources != null) // user has access to catalog
 {
@@ -43,25 +44,32 @@
 }
 else if (this.UserState.CatalogContainer != null) // user has no access to catalog
 {
-    <div class="flex-centered h-100 w-100">
+    <div class="catalog-no-access">
         @if (this.ContextAccessor.HttpContext.User.Identity.IsAuthenticated)
         {
-            <!--
-            @if (this.UserState.CatalogContainer.CatalogMeta.License.LicensingScheme == DataModel.CatalogLicensingScheme.ManualRequest)
+            var enumeratonOptions = new System.IO.EnumerationOptions() { MatchCasing = System.IO.MatchCasing.CaseInsensitive };
+
+            @if (this.DatabaseManager.TryReadFirstAttachment(this.UserState.CatalogContainer.Id, "LICENSE.md", enumeratonOptions, out var attachment))
             {
-                <span>You do not have access to this catalog.@(!string.IsNullOrWhiteSpace(this.UserState.CatalogContainer.CatalogMeta.Contact) ? $" Please contact {this.UserState.CatalogContainer.CatalogMeta.Contact} to request permission." : "")</span>
+                <MarkdownRenderer MarkdownString="@(new StreamReader(attachment).ReadToEnd())" />
+                attachment.Dispose();
             }
-            else if (this.UserState.CatalogContainer.CatalogMeta.License.LicensingScheme == DataModel.CatalogLicensingScheme.AcceptLicense)
+            else
             {
-                <MatButton Outlined="true" Icon="@MatIconNames.Lock_open" @onclick="this.OpenLicenseDialog">Unlock</MatButton>
+                @if (this.UserState.CatalogContainer.Catalog.Properties is not null &&
+                         this.UserState.CatalogContainer.Catalog.Properties.TryGetValue(DataModelExtensions.Contact, out var contact))
+                {
+                    <span>You do not have access to this catalog. Please contact @contact to request permission.</span>
+                }
+                else
+                {
+                    <span>You do not have access to this catalog.</span>
+                }
             }
-            -->
         }
         else
         {
             <span>You are not logged in. Access to catalog denied.</span>
         }
     </div>
-
-    <LicensingModal @bind-IsOpen="this.LicenseDialogIsOpen" />
 }

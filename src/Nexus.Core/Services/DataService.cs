@@ -163,7 +163,7 @@ namespace Nexus.Services
         private void CopyLicenseIfAvailable(string catalogId, string targetFolder)
         {
             var enumeratonOptions = new EnumerationOptions() { MatchCasing = MatchCasing.CaseInsensitive };
-
+            
             if (_databaseManager.TryReadFirstAttachment(catalogId, "license.md", enumeratonOptions, out var licenseStream))
             {
                 var prefix = catalogId.TrimStart('/').Replace('/', '_');

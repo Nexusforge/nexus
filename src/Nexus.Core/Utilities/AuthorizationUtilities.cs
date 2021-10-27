@@ -43,8 +43,8 @@ namespace Nexus.Utilities
             {
                 var isAdmin = principal.HasClaim(claim => claim.Type == Claims.IS_ADMIN && claim.Value == "true");
 
-                var canEditCatalog = principal.HasClaim(claim => claim.Type == Claims.CAN_EDIT_CATALOG
-                                                       && claim.Value.Split(";").Any(current => current == catalogId));
+                var canEditCatalog = principal.HasClaim(claim => claim.Type == Claims.CAN_EDIT_CATALOG &&
+                                                        claim.Value.Split(";").Any(current => current == catalogId));
 
                 return isAdmin || canEditCatalog;
             }
@@ -52,11 +52,11 @@ namespace Nexus.Utilities
             return false;
         }
 
-        public static bool IsCatalogVisible(ClaimsPrincipal principal, CatalogContainer catalogContainer, bool isCatalogAccessible)
+        public static bool IsCatalogVisible(ClaimsPrincipal principal, CatalogContainer catalogContainer)
         {
             var identity = principal.Identity;
 
-            // 1. catalog is visible if user is admin (this check must come before 2.)
+            // 1. catalog is visible if user is admin
             if (identity.IsAuthenticated)
             {
                 var isAdmin = principal.HasClaim(claim => claim.Type == Claims.IS_ADMIN && claim.Value == "true");
@@ -65,20 +65,8 @@ namespace Nexus.Utilities
                     return true; // not "return isAdmin"!!
             }
 
-            // 2. test catalogs are hidden by default
-            if (Constants.HiddenCatalogs.Contains(catalogContainer.Id))
-                return false;
-
-            // 3. other catalogs
-
-            // catalog is hidden, addtional checks required
-            if (catalogContainer.CatalogMetadata.IsHidden)
-                // ignore hidden property in case user has access to catalog
-                return isCatalogAccessible;
-
-            // catalog is visible
-            else
-                return true;
+            // 2. other catalogs
+            return !catalogContainer.CatalogMetadata.IsHidden;
         }
     }
 }

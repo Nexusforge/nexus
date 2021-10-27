@@ -58,16 +58,12 @@ namespace Nexus.Controllers.V1
 
             var catalogContainers = _appState.CatalogState.CatalogCollection.CatalogContainers;
 
-            catalogContainers = catalogContainers.Where(catalogContainer =>
-            {
-                var isCatalogAccessible = AuthorizationUtilities.IsCatalogAccessible(this.User, catalogContainer);
-                var isCatalogVisible = AuthorizationUtilities.IsCatalogVisible(this.User, catalogContainer, isCatalogAccessible);
+            catalogContainers = catalogContainers
+                .Where(catalogContainer => AuthorizationUtilities.IsCatalogAccessible(this.User, catalogContainer))
+                .ToList();
 
-                return isCatalogAccessible && isCatalogVisible;
-            }).ToList();
-
-            var response = catalogContainers.Select(catalogContainer
-                => this.CreateCatalogResponse(catalogContainer.Catalog))
+            var response = catalogContainers
+                .Select(catalogContainer => this.CreateCatalogResponse(catalogContainer.Catalog))
                 .ToArray();
 
             return response;

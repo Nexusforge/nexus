@@ -63,7 +63,7 @@ namespace Nexus.Services
 
         public bool TryReadCatalogMetadata(string catalogId, out Stream? stream)
         {
-            var catalogMetadataFileName = $"{WebUtility.UrlDecode(catalogId)}.json";
+            var catalogMetadataFileName = $"{WebUtility.UrlEncode(catalogId)}.json";
             var filePath = Path.Combine(_pathsOptions.Config, "catalogs", catalogMetadataFileName);
 
             stream = null;
@@ -79,7 +79,7 @@ namespace Nexus.Services
 
         public Stream WriteCatalogMetadata(string catalogId)
         {
-            var catalogMetadataFileName = $"{WebUtility.UrlDecode(catalogId)}.json";
+            var catalogMetadataFileName = $"{WebUtility.UrlEncode(catalogId)}.json";
             var folderPath = Path.Combine(_pathsOptions.Config, "catalogs");
 
             Directory.CreateDirectory(folderPath);
@@ -91,7 +91,7 @@ namespace Nexus.Services
 
         public IEnumerable<string> EnumerateAttachements(string catalogId)
         {
-            var catalogFolderName = WebUtility.UrlDecode(catalogId);
+            var catalogFolderName = WebUtility.UrlEncode(catalogId);
             var attachementFolder = Path.Combine(_pathsOptions.Catalogs, catalogFolderName);
 
             if (Directory.Exists(attachementFolder))
@@ -105,7 +105,7 @@ namespace Nexus.Services
         {
             attachment = null;
 
-            var catalogFolderName = WebUtility.UrlDecode(catalogId);
+            var catalogFolderName = WebUtility.UrlEncode(catalogId);
             var attachementFolder = Path.Combine(_pathsOptions.Catalogs, catalogFolderName);
 
             if (Directory.Exists(attachementFolder))

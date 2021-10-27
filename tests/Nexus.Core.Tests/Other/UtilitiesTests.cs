@@ -78,21 +78,18 @@ namespace Other
 
         [Theory]
 
-        [InlineData("/A/B/C", "Basic", "true", true, false, true)]                          //    admin,     hidden, not accessible
-        [InlineData("/IN_MEMORY/TEST/ACCESSIBLE", "Basic", "true", true, false, true)]      //    admin,     hidden, not accessible (specially hidden catalog)
-        [InlineData("/A/B/C", "Basic", "false", false, true, true)]                         // no admin, not hidden,     accessible
-        [InlineData("/A/B/C", "Basic", "false", true, true, true)]                          // no admin,     hidden,     accessible
-        [InlineData("/A/B/C", "Basic", "false", false, false, true)]                        // no admin, not hidden, not accessible
+        [InlineData("/A/B/C", "Basic", "true", true, false)]                          //    admin,     hidden
+        [InlineData("/A/B/C", "Basic", "false", false, true)]                         // no admin, not hidden
+        [InlineData("/A/B/C", "Basic", "false", true, true)]                          // no admin,     hidden
+        [InlineData("/A/B/C", "Basic", "false", false, false)]                        // no admin, not hidden
 
-        [InlineData("/A/B/C", "Basic", "false", true, false, false)]                        // no admin,     hidden, not accessible
-        [InlineData("/IN_MEMORY/TEST/ACCESSIBLE", "Basic", "false", false, true, false)]    // no admin, not hidden, accessible (specially hidden catalog)
-        [InlineData("/A/B/C", null, "true", true, false, false)]                            // not authenticated
+        [InlineData("/A/B/C", "Basic", "false", true, false)]                         // no admin,     hidden
+        [InlineData("/A/B/C", null, "true", true, false)]                             // not authenticated
         public void CanDetermineCatalogVisibility(
             string catalogId,
             string authenticationType,
             string isAdmin,
             bool isHidden,
-            bool isAccessible,
             bool expected)
         {
             // Arrange
@@ -106,7 +103,7 @@ namespace Other
             }, authenticationType));
 
             // Act
-            var actual = AuthorizationUtilities.IsCatalogVisible(principal, catalogContainer, isAccessible);
+            var actual = AuthorizationUtilities.IsCatalogVisible(principal, catalogContainer);
 
             // Assert
             Assert.Equal(expected, actual);

@@ -1,4 +1,6 @@
 ﻿using MatBlazor;
+using Microsoft.AspNetCore.Components;
+using Nexus.Services;
 
 namespace Nexus.Shared
 {
@@ -48,7 +50,8 @@ namespace Nexus.Shared
 
 		#region Properties
 
-		public bool LicenseDialogIsOpen { get; set; }
+		[Inject]
+		private IDatabaseManager DatabaseManager { get; set; }
 
 		public int GroupPageSize { get; set; } = 15;
 
@@ -57,15 +60,6 @@ namespace Nexus.Shared
 		public int ResourcePageSize { get; set; } = 9;
 
 		public int ResourcePage { get; set; } = 0;
-
-		#endregion
-
-		#region Methods
-
-		private void OpenLicenseDialog()
-		{
-			this.LicenseDialogIsOpen = true;
-		}
 
 		#endregion
 	}

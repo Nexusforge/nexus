@@ -608,6 +608,11 @@ app {
         margin-left: 0.5rem;
     }
 
+.catalog-no-access {
+    padding: 10px;
+    display: block     
+}
+
 .right-column {
     display: flex;
     flex-direction: column;
