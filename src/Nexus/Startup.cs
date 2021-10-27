@@ -355,7 +355,7 @@ namespace Nexus
         private void InitializeFilterSettings(FilterSettings filterSettings, string filePath)
         {
             // ensure that code samples of test user are present
-            var testCodes = filterSettings.CodeDefinitions.Where(code => code.Owner == "test@nexus.org");
+            var testCodes = filterSettings.CodeDefinitions.Where(code => code.Owner == "test@nexus.localhost");
 
             if (!testCodes.Any(testCode => testCode.Name == "Simple filter (C#)"))
             {
@@ -369,7 +369,7 @@ namespace Nexus
                     CreationDate = DateTime.UtcNow,
                     IsEnabled = true,
                     Name = "Simple filter (C#)",
-                    Owner = "test@nexus.org",
+                    Owner = "test@nexus.localhost",
                     RequestedCatalogIds = new List<string>() { "/IN_MEMORY/TEST/ACCESSIBLE" },
                     SamplePeriod = TimeSpan.FromSeconds(1)
                 });
@@ -391,7 +391,7 @@ namespace Nexus
                     CreationDate = DateTime.UtcNow,
                     IsEnabled = true,
                     Name = "Simple shared (C#)",
-                    Owner = "test@nexus.org",
+                    Owner = "test@nexus.localhost",
                     RequestedCatalogIds = new List<string>(),
                     SamplePeriod = default
                 });

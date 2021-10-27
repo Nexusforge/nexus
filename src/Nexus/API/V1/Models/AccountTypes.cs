@@ -4,7 +4,7 @@ namespace Nexus.Models.V1
 {
     public record UserCredentials
     {
-        /// <example>test@nexus.org</example>
+        /// <example>test@nexus.localhost</example>
         [JsonPropertyName("username")]
         public string Username { get; set; }
 

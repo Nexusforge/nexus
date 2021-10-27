@@ -9,7 +9,7 @@ namespace Nexus.Core
     {
         /// <example>06f8eb30-5924-4a71-bdff-322f92343f5b</example>
         public Guid Id { get; init; } = Guid.NewGuid();
-        /// <example>test@nexus.org</example>
+        /// <example>test@nexus.localhost</example>
         public string Owner { get; init; } = string.Empty;
     }
 
