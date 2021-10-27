@@ -244,6 +244,7 @@ namespace Nexus.Services
             while (tasks.Any())
             {
                 var task = await Task.WhenAny(tasks);
+                cts.Token.ThrowIfCancellationRequested();
 
                 if (task.Exception != null)
                 {

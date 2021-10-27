@@ -130,7 +130,7 @@ namespace Nexus.Extensibility
                 lastFileBegin = fileBegin;
 
                 /* loop */
-                var consumedPeriod = TimeSpan.Zero;
+                var consumedFilePeriod = TimeSpan.Zero;
                 var remainingPeriod = duration;
 
                 while (remainingPeriod > TimeSpan.Zero)
@@ -147,7 +147,7 @@ namespace Nexus.Extensibility
                         throw new ValidationException("The pipe is empty.");
 
                     /* write */
-                    var currentPeriod = new TimeSpan(Math.Min(remainingPeriod.Ticks, bufferPeriod.Ticks));
+                    currentPeriod = new TimeSpan(Math.Min(remainingPeriod.Ticks, bufferPeriod.Ticks));
                     var currentLength = (int)(currentPeriod.Ticks / samplePeriod.Ticks);
 
                     var requests = catalogItemPipeReaders.Zip(readResults).Select(zipped =>
@@ -162,7 +162,7 @@ namespace Nexus.Extensibility
                     }).ToArray();
 
                     await this.DataWriter.WriteAsync(
-                        fileOffset + consumedPeriod,
+                        fileOffset + consumedFilePeriod,
                         requests,
                         dataWriterProgress,
                         cancellationToken);
@@ -175,9 +175,10 @@ namespace Nexus.Extensibility
 
                     /* update loop state */
                     consumedPeriod += currentPeriod;
+                    consumedFilePeriod += currentPeriod;
                     remainingPeriod -= currentPeriod;
 
-                    progress?.Report(consumedPeriod.Ticks / (double)totalPeriod.Ticks);
+                    progress?.Report(consumedFilePeriod.Ticks / (double)duration.Ticks);
                 }
             });
 

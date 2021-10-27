@@ -63,7 +63,7 @@ namespace Nexus.Extensions
             return Task.FromResult(new Random((int)begin.Ticks).NextDouble() / 10 + 0.9);
         }
 
-        public Task ReadAsync(DateTime begin, DateTime end, ReadRequest[] requests, IProgress<double> progress, CancellationToken cancellationToken)
+        public async Task ReadAsync(DateTime begin, DateTime end, ReadRequest[] requests, IProgress<double> progress, CancellationToken cancellationToken)
         {
             var tasks = requests.Select(request =>
             {
@@ -110,9 +110,22 @@ namespace Nexus.Extensions
                     status.Span
                         .Fill(1);
                 });
-            });
+            }).ToList();
 
-            return Task.WhenAll(tasks);
+            var finishedTasks = 0;
+
+            while (tasks.Any())
+            {
+                var task = await Task.WhenAny(tasks);
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if (task.Exception != null)
+                    throw task.Exception.InnerException;
+
+                finishedTasks++;
+                progress.Report(finishedTasks / (double)requests.Length);
+                tasks.Remove(task);
+            }
         }
 
         private ResourceCatalog LoadCatalog(string catalogId)

@@ -155,7 +155,13 @@ namespace Nexus.Extensions
             {
                 var offset = fileOffset.Ticks / _lastSamplePeriod.Ticks;
 
-                foreach (var requestGroup in requests.GroupBy(request => request.CatalogItem.Catalog))
+                var requestGroups = requests
+                    .GroupBy(request => request.CatalogItem.Catalog)
+                    .ToList();
+
+                var groupIndex = 0;
+
+                foreach (var requestGroup in requestGroups)
                 {
                     var catalog = requestGroup.Key;
                     var requestGroupArray = requestGroup.ToArray();
@@ -177,6 +183,12 @@ namespace Nexus.Extensions
 
                     for (int rowIndex = 0; rowIndex < length; rowIndex++)
                     {
+                        if (rowIndex % 10000 == 0)
+                        {
+                            cancellationToken.ThrowIfCancellationRequested();
+                            progress.Report((groupIndex + rowIndex / (double)length) / requestGroups.Count);
+                        }
+
                         switch (rowIndexFormat)
                         {
                             case "Index":
@@ -203,6 +215,8 @@ namespace Nexus.Extensions
 
                         streamWriter.WriteLine();
                     }
+
+                    groupIndex++;
                 }
             });
         }

@@ -53,11 +53,11 @@ namespace Nexus.Core
     {
         public const string Section = "Paths";
 
-        public string Config { get; set; } = Path.Combine(PathsOptions.GetDataRoot(), "config");
-        public string Cache { get; set; } = Path.Combine(PathsOptions.GetDataRoot(), "cache");
-        public string Catalogs { get; set; } = Path.Combine(PathsOptions.GetDataRoot(), "catalogs");
-        public string Export { get; set; } = Path.Combine(PathsOptions.GetDataRoot(), "export");
-        public string Users { get; set; } = Path.Combine(PathsOptions.GetDataRoot(), "users");
+        public string Config { get; set; } = Path.Combine(PathsOptions.PlatformSpecificRoot, "config");
+        public string Cache { get; set; } = Path.Combine(PathsOptions.PlatformSpecificRoot, "cache");
+        public string Catalogs { get; set; } = Path.Combine(PathsOptions.PlatformSpecificRoot, "catalogs");
+        public string Export { get; set; } = Path.Combine(PathsOptions.PlatformSpecificRoot, "export");
+        public string Users { get; set; } = Path.Combine(PathsOptions.PlatformSpecificRoot, "users");
         public string Packages { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nexus", "packages");
         // GetGlobalPackagesFolder: https://github.com/NuGet/NuGet.Client/blob/0fc58e13683565e7bdf30e706d49e58fc497bbed/src/NuGet.Core/NuGet.Configuration/Utility/SettingsUtility.cs#L225-L254
         // GetFolderPath: https://github.com/NuGet/NuGet.Client/blob/1d75910076b2ecfbe5f142227cfb4fb45c093a1e/src/NuGet.Core/NuGet.Common/PathUtil/NuGetEnvironment.cs#L54-L57
@@ -68,9 +68,9 @@ namespace Nexus.Core
             ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Nexus", "settings.json")
             : "/etc/nexus/settings.json";
 
-        private static string GetDataRoot() => RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Nexus", "data")
-            : "/var/lib/nexus/data";
+        private static string PlatformSpecificRoot { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Nexus")
+            : "/var/lib/nexus";
 
         #endregion
     }

@@ -375,6 +375,7 @@ namespace Nexus
                 });
 
                 var jsonString = JsonSerializerHelper.Serialize(filterSettings);
+                Directory.CreateDirectory(Path.GetDirectoryName(filePath));
                 File.WriteAllText(filePath, jsonString);
             }
 
@@ -396,6 +397,7 @@ namespace Nexus
                 });
 
                 var jsonString = JsonSerializerHelper.Serialize(filterSettings);
+                Directory.CreateDirectory(Path.GetDirectoryName(filePath));
                 File.WriteAllText(filePath, jsonString);
             }
         }

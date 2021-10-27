@@ -1,0 +1,186 @@
+﻿:root {
+    /* --color-text-link: rgb(87, 165, 254);
+	--pre-code-foreground: white;
+	--code-foreground: rgb(215, 186, 125);
+	--code-background: rgba(10, 10, 10, 0.4);
+	--text-foreground: rgb(212, 212, 212);
+	--background: rgb(30, 30, 30);
+	--table-header: rgba(255, 255, 255, 0.69);
+	--border: rgba(255, 255, 255, 0.18); */
+
+    --color-text-link: rgb(8, 91, 187);
+    --pre-code-foreground: rgb(43, 43, 43);
+    --code-foreground: rgb(215, 186, 125);
+    --code-background: rgba(153, 153, 153, 0.2);
+    --text-foreground: rgb(53, 53, 53);
+    --background: rgb(235, 235, 235);
+    --table-header: rgba(0, 0, 0, 0.69);
+    --border: rgba(0, 0, 0, 0.18);
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 22px;
+    word-wrap: break-word;
+    color: var(--text-foreground);
+    background-color: var(--background);
+    height: 100%;
+}
+
+.main {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.content {
+    width: 900px;
+}
+
+/* css below taken from https://github.com/microsoft/vscode/blob/main/extensions/markdown-language-features/media/markdown.css
+ * em values modified, mostly by factor 2
+ */
+
+/* Reset margin top for elements */
+h1, h2, h3, h4, h5, h6,
+p, ol, ul, pre {
+    margin-top: 0;
+}
+
+h1 {
+    margin-top: 2em;
+}
+
+h2, h3, h4, h5, h6 {
+    font-weight: normal;
+    margin-bottom: 0.6em;
+}
+
+ul ul,
+ul ol,
+ol ul,
+ol ol {
+    margin-bottom: 0;
+}
+
+img {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+a {
+    color: var(--color-text-link);
+    text-decoration: none;
+}
+
+    a:hover {
+        text-decoration: underline;
+    }
+
+    a:focus,
+    input:focus,
+    select:focus,
+    textarea:focus {
+        outline: 1px solid -webkit-focus-ring-color;
+        outline-offset: -1px;
+    }
+
+p {
+    margin-bottom: 1.4em;
+}
+
+ul,
+ol {
+    margin-bottom: 1.4em;
+}
+
+li {
+    margin-bottom: 0.4em;
+}
+
+
+hr {
+    border: 0;
+    height: 2px;
+    border-bottom: 2px solid;
+}
+
+h1 {
+    padding-bottom: 0.3em;
+    line-height: 1.2;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+    font-weight: normal;
+}
+
+table {
+    border-collapse: collapse;
+    margin-bottom: 1.4em;
+}
+
+th {
+    text-align: left;
+    border-bottom: 1px solid;
+}
+
+th,
+td {
+    padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+    border-top: 1px solid;
+}
+
+blockquote {
+    margin: 0 7px 0 5px;
+    padding: 0 16px 0 10px;
+    border-left-width: 5px;
+    border-left-style: solid;
+}
+
+code {
+    font-family: var(--vscode-editor-font-family, "SF Mono", Monaco, Menlo, Consolas, "Ubuntu Mono", "Liberation Mono", "DejaVu Sans Mono", "Courier New", monospace);
+    font-size: 1em;
+    line-height: 1.357em;
+}
+
+code {
+    color: var(--code-foreground);
+}
+
+body.wordWrap pre {
+    white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+    padding: 16px;
+    border-radius: 3px;
+    overflow: auto;
+}
+
+pre code {
+    color: var(--pre-code-foreground);
+    tab-size: 4;
+}
+
+/** Theming */
+
+pre {
+    background-color: var(--code-background);
+}
+
+th {
+    border-color: var(--table-header);
+}
+
+h1,
+hr,
+td {
+    border-color: var(--border);
+}

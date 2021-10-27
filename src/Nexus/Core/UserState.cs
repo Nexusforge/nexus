@@ -488,10 +488,15 @@ namespace Nexus.Core
                     return task;
                 });
 
-                var fileName = await _exportJobControl.Task;
-
-                if (!string.IsNullOrWhiteSpace(fileName))
+                try
+                {
+                    var fileName = await _exportJobControl.Task;
                     await _jsRuntime.FileSaveAs(fileName, $"export/{fileName}");
+                }
+                catch (OperationCanceledException)
+                {
+                    //
+                }
             }
             finally
             {
