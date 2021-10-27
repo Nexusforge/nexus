@@ -67,28 +67,28 @@
 
             if ((selectOption = option as DataWriterSelectOptionAttribute) is not null)
             {
-                var store = new DictionaryStore<string>(selectOption.DefaultKey, selectOption.ConfigurationKey, this.UserState.Configuration);
-
-                <MatSelectItem class="settings-control"
-                               @bind-Value="@store.Value"
-                               Label="@selectOption.Label"
-                               Items="@selectOption.KeyValueMap.Keys.ToList()">
-                    <ItemTemplate Context="key">
-                        @selectOption.KeyValueMap[key]
-                    </ItemTemplate>
-                </MatSelectItem>
+                <DataWriterOption Key="@selectOption.ConfigurationKey" DefaultValue="selectOption.DefaultValue" Store="this.UserState.Configuration">
+                    <MatSelectItem class="settings-control"
+                                   @bind-Value="@context.Value"
+                                   Label="@selectOption.Label"
+                                   Items="@selectOption.KeyValueMap.Keys.ToList()">
+                        <ItemTemplate Context="key">
+                            @selectOption.KeyValueMap[key]
+                        </ItemTemplate>
+                    </MatSelectItem>
+                </DataWriterOption>
             }
             else if ((numberInputOption = option as DataWriterIntegerNumberInputOptionAttribute) is not null)
             {
-                var store = new DictionaryStore<int>(numberInputOption.DefaultValue, numberInputOption.ConfigurationKey, this.UserState.Configuration);
-
-                <MatNumericUpDownField class="settings-control"
-                                       @bind-Value="@store.Value"
-                                       Label="@numberInputOption.Label"
-                                       DecimalPlaces=0
-                                       Minimum=numberInputOption.Minmum 
-                                       Maximum=numberInputOption.Maximum>
-                </MatNumericUpDownField>
+                <DataWriterOption Key="@numberInputOption.ConfigurationKey" DefaultValue="numberInputOption.DefaultValue" Store="this.UserState.Configuration">
+                    <MatNumericUpDownField class="settings-control"
+                                           @bind-Value="@context.Value"
+                                           Label="@numberInputOption.Label"
+                                           DecimalPlaces=0
+                                           Minimum=numberInputOption.Minmum
+                                           Maximum=numberInputOption.Maximum>
+                    </MatNumericUpDownField>
+                </DataWriterOption>
             }
         }
     }

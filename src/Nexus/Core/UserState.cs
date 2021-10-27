@@ -27,10 +27,10 @@ namespace Nexus.Core
         private DateTime _dateTimeEndWorkaround;
 
         private string _searchString;
-        private string _downloadMessage;
         private TimeSpan _samplePeriod;
 
-        private double _downloadProgress;
+        private double _readProgress;
+        private double _writeProgress;
         private double _visualizeProgress;
 
         private bool _isEditEnabled;
@@ -119,16 +119,16 @@ namespace Nexus.Core
             set { this.SetProperty(ref _clientState, value); }
         }
 
-        public double DownloadProgress
+        public double ReadProgress
         {
-            get { return _downloadProgress; }
-            set { this.SetProperty(ref _downloadProgress, value); }
+            get { return _readProgress; }
+            set { this.SetProperty(ref _readProgress, value); }
         }
 
-        public string DownloadMessage
+        public double WriteProgress
         {
-            get { return _downloadMessage; }
-            set { this.SetProperty(ref _downloadMessage, value); }
+            get { return _writeProgress; }
+            set { this.SetProperty(ref _writeProgress, value); }
         }
 
         public ExportParameters ExportParameters
@@ -438,16 +438,21 @@ namespace Nexus.Core
 
         public async Task DownloadAsync()
         {
-            EventHandler<double> eventHandler = (sender, e) =>
+            EventHandler<double> readProgressEventHandler = (sender, e) =>
             {
-                //this.DownloadMessage = e.Message;
-                this.DownloadProgress = e;//.Progress;
+                this.ReadProgress = e;
+            };
+
+            EventHandler<double> writeProgressEventHandler = (sender, e) =>
+            {
+                this.WriteProgress = e;
             };
 
             try
             {
                 this.ClientState = ClientState.PrepareDownload;
-                _dataService.ReadProgress.ProgressChanged += eventHandler;
+                _dataService.ReadProgress.ProgressChanged += readProgressEventHandler;
+                _dataService.WriteProgress.ProgressChanged += writeProgressEventHandler;
 
                 var selectedRepresentations = this.GetSelectedRepresentations();
 
@@ -490,10 +495,13 @@ namespace Nexus.Core
             }
             finally
             {
-                //_dataService.ReadProgress.ProgressChanged -= eventHandler;
+                _dataService.ReadProgress.ProgressChanged -= readProgressEventHandler;
+                _dataService.WriteProgress.ProgressChanged -= writeProgressEventHandler;
+
                 this.ClientState = ClientState.Normal;
-                this.DownloadMessage = string.Empty;
-                this.DownloadProgress = 0;
+
+                this.ReadProgress = 0;
+                this.WriteProgress = 0;
             }
         }
 

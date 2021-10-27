@@ -76,7 +76,7 @@ namespace Nexus.Services
             }
 
             /* update GUI with possible new data writers */
-            var dataWriterInfoMap = new Dictionary<string, (string FormatName, OptionAttrbute[] Options)>();
+            var dataWriterInfoMap = new Dictionary<string, (string FormatName, OptionAttribute[] Options)>();
 
             foreach (var dataWriterType in _extensionHive.GetExtensions<IDataWriter>())
             {
@@ -95,7 +95,7 @@ namespace Nexus.Services
                 }
 
                 var options = dataWriterType
-                    .GetCustomAttributes<OptionAttrbute>()
+                    .GetCustomAttributes<OptionAttribute>()
                     .ToArray();
 
                 dataWriterInfoMap[extensionIdentification.Id] = (formatName, options);

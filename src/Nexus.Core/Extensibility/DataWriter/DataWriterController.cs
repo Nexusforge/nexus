@@ -173,11 +173,11 @@ namespace Nexus.Extensibility
                         dataReader.AdvanceTo(readResult.Buffer.GetPosition(currentLength * sizeof(double)));
                     }
 
-                    progress?.Report(consumedPeriod.Ticks / (double)totalPeriod.Ticks);
-
                     /* update loop state */
                     consumedPeriod += currentPeriod;
                     remainingPeriod -= currentPeriod;
+
+                    progress?.Report(consumedPeriod.Ticks / (double)totalPeriod.Ticks);
                 }
             });
 

@@ -6,9 +6,14 @@
 
 <div class="downloader-content">
     <div class="small-text">
-        @this.UserState.DownloadMessage
+        Read progress:
     </div>
-    <MatProgressBar Progress="@this.UserState.DownloadProgress"></MatProgressBar>
+    <MatProgressBar Progress="@this.UserState.ReadProgress"></MatProgressBar>
+
+    <div class="small-text">
+        Write progress:
+    </div>
+    <MatProgressBar Progress="@this.UserState.WriteProgress"></MatProgressBar>
 
     @if (!this.IsCancelling)
     {

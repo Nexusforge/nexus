@@ -8,13 +8,16 @@
 		{
 			this.PropertyChanged = (sender, e) =>
 			{
-				if (e.PropertyName == nameof(UserState.DownloadMessage))
-				{
-					this.InvokeAsync(this.StateHasChanged);
-				}
-				else if (e.PropertyName == nameof(UserState.DownloadProgress))
-				{
-					this.InvokeAsync(this.StateHasChanged);
+                switch (e.PropertyName)
+                {
+					case nameof(UserState.ReadProgress):
+					case nameof(UserState.WriteProgress):
+
+						this.InvokeAsync(this.StateHasChanged);
+						break;
+
+					default:
+						break;
 				}
 			};
 		}

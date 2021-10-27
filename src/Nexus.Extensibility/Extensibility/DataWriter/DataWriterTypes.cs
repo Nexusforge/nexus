@@ -28,9 +28,9 @@ namespace Nexus.Extensibility
         public string FormatName { get; }
     }
 
-    internal abstract class OptionAttrbute : Attribute
+    internal abstract class OptionAttribute : Attribute
     {
-        public OptionAttrbute(string configurationKey, string label)
+        public OptionAttribute(string configurationKey, string label)
         {
             this.ConfigurationKey = configurationKey;
             this.Label = label;
@@ -42,29 +42,31 @@ namespace Nexus.Extensibility
     }
 
     [AttributeUsage(AttributeTargets.Class)]
-    internal class DataWriterSelectOptionAttribute : OptionAttrbute
+    internal class DataWriterSelectOptionAttribute : OptionAttribute
     {
-        public DataWriterSelectOptionAttribute(string configurationKey, string label, string defaultKey, string[] keys, string[] values)
+        public DataWriterSelectOptionAttribute(string configurationKey, string label, string defaultValue, string[] keys, string[] values)
             : base(configurationKey, label)
         {
-            this.DefaultKey = defaultKey;
+            this.DefaultValue = defaultValue;
 
             this.KeyValueMap = keys
                 .Zip(values)
                 .ToDictionary(entry => entry.First, entry => entry.Second);
         }
 
-        public string DefaultKey { get; }
+        public string DefaultValue { get; }
+
         public Dictionary<string, string> KeyValueMap { get; }
     }
 
     [AttributeUsage(AttributeTargets.Class)]
-    internal class DataWriterIntegerNumberInputOptionAttribute : OptionAttrbute
+    internal class DataWriterIntegerNumberInputOptionAttribute : OptionAttribute
     {
         public DataWriterIntegerNumberInputOptionAttribute(string configurationKey, string label, int defaultValue, int minmum, int maximum) 
             : base(configurationKey, label)
         {
             this.DefaultValue = defaultValue;
+
             this.Minmum = minmum;
             this.Maximum = maximum;
         }
