@@ -319,10 +319,9 @@ namespace Nexus
             var databaseManager = serviceProvier.GetRequiredService<IDatabaseManager>();
 
             // project
-            if (databaseManager.TryReadProject(out var stream1))
+            if (databaseManager.TryReadProject(out var project))
             {
-                var jsonString = await new StreamReader(stream1, Encoding.UTF8).ReadToEndAsync();
-                appState.Project = JsonSerializerHelper.Deserialize<NexusProject>(jsonString);
+                appState.Project = JsonSerializerHelper.Deserialize<NexusProject>(project);
             }
             else
             {
@@ -330,10 +329,9 @@ namespace Nexus
             }
 
             // news
-            if (databaseManager.TryReadNews(out var stream2))
+            if (databaseManager.TryReadNews(out var news))
             {
-                var jsonString = await new StreamReader(stream2, Encoding.UTF8).ReadToEndAsync();
-                appState.NewsPaper = JsonSerializerHelper.Deserialize<NewsPaper>(jsonString);
+                appState.NewsPaper = JsonSerializerHelper.Deserialize<NewsPaper>(news);
             }
             else
             {

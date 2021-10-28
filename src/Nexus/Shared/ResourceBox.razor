@@ -51,14 +51,20 @@ else if (this.UserState.CatalogContainer != null) // user has no access to catal
 
         @if (this.DatabaseManager.TryReadFirstAttachment(this.UserState.CatalogContainer.Id, "LICENSE.md", enumeratonOptions, out var attachment))
         {
-            <MarkdownRenderer MarkdownString="@(new StreamReader(attachment).ReadToEnd())" />
-            attachment.Dispose();
-            <MatButton OnClick="this.AcceptLicenseAsync" Raised="true">Accept</MatButton>
+            try
+            {
+                <MarkdownRenderer MarkdownString="@(new StreamReader(attachment).ReadToEnd())" />
+                <MatButton OnClick="this.AcceptLicenseAsync" Raised="true">Accept</MatButton>
+            }
+            finally
+            {
+                attachment.Dispose();
+            }
         }
         else
         {
             @if (this.UserState.CatalogContainer.Catalog.Properties is not null &&
-                    this.UserState.CatalogContainer.Catalog.Properties.TryGetValue(DataModelExtensions.Contact, out var contact))
+                   this.UserState.CatalogContainer.Catalog.Properties.TryGetValue(DataModelExtensions.Contact, out var contact))
             {
                 <span>You do not have access to this catalog. Please contact @contact to request permission.</span>
             }

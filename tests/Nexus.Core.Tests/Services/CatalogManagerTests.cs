@@ -20,7 +20,7 @@ namespace Services
 {
     public class CatalogManagerTests
     {
-        delegate bool GobbleReturns(string catalogId, out Stream stream);
+        delegate bool GobbleReturns(string catalogId, out string catalogMetadata);
 
         [Fact]
         public async Task LoadCatalogs()
@@ -133,18 +133,18 @@ namespace Services
             Mock.Get(databaseManager)
                .Setup(databaseManager => databaseManager.TryReadCatalogMetadata(
                    It.IsAny<string>(),
-                   out It.Ref<Stream>.IsAny))
-               .Returns(new GobbleReturns((string catalogId, out Stream stream) =>
+                   out It.Ref<string>.IsAny))
+               .Returns(new GobbleReturns((string catalogId, out string catalogMetadataString) =>
                {
                    if (catalogId == "/A")
                    {
-                       stream = new MemoryStream(Encoding.UTF8.GetBytes(JsonSerializerHelper.Serialize(catalogMetadata)));
+                       catalogMetadataString = JsonSerializerHelper.Serialize(catalogMetadata);
                        return true;
                    }
 
                    else
                    {
-                       stream = null;
+                       catalogMetadataString = null;
                        return false;
                    }
                }));

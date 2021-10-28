@@ -33,44 +33,44 @@ namespace Nexus.Services
             _pathsOptions = pathsOptions.Value;
         }
 
-        public bool TryReadProject(out Stream? stream)
+        public bool TryReadProject(out string? project)
         {
             var filePath = Path.Combine(_pathsOptions.Config, "project.json");
-            stream = null;
+            project = null;
 
             if (File.Exists(filePath))
             {
-                stream = File.OpenRead(filePath);
+                project = File.ReadAllText(filePath);
                 return true;
             }
 
             return false;
         }
 
-        public bool TryReadNews(out Stream? stream)
+        public bool TryReadNews(out string? news)
         {
             var filePath = Path.Combine(_pathsOptions.Config, "news.json");
-            stream = null;
+            news = null;
 
             if (File.Exists(filePath))
             {
-                stream = File.OpenRead(filePath);
+                news = File.ReadAllText(filePath);
                 return true;
             }
 
             return false;
         }
 
-        public bool TryReadCatalogMetadata(string catalogId, out Stream? stream)
+        public bool TryReadCatalogMetadata(string catalogId, out string? catalogMetadata)
         {
             var catalogMetadataFileName = $"{WebUtility.UrlEncode(catalogId)}.json";
             var filePath = Path.Combine(_pathsOptions.Config, "catalogs", catalogMetadataFileName);
 
-            stream = null;
+            catalogMetadata = null;
 
             if (File.Exists(filePath))
             {
-                stream = File.OpenRead(filePath);
+                catalogMetadata = File.ReadAllText(filePath);
                 return true;
             }
 

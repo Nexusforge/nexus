@@ -140,15 +140,11 @@ namespace Nexus.Services
                     {
                         var metadata = default(CatalogMetadata);
 
-                        if (_databaseManager.TryReadCatalogMetadata(catalog.Id, out var stream))
-                        {
-                            var jsonString = await new StreamReader(stream, Encoding.UTF8).ReadToEndAsync();
-                            metadata = JsonSerializerHelper.Deserialize<CatalogMetadata>(jsonString);
-                        }
+                        if (_databaseManager.TryReadCatalogMetadata(catalog.Id, out var catalogMetadata))
+                            metadata = JsonSerializerHelper.Deserialize<CatalogMetadata>(catalogMetadata);
+
                         else
-                        {
                             metadata = new CatalogMetadata();
-                        }
 
                         idToCatalogContainerMap[catalog.Id] = new CatalogContainer(timeRangeResult.Begin, timeRangeResult.End, catalog, metadata);
                     }

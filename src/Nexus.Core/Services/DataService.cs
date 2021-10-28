@@ -169,16 +169,21 @@ namespace Nexus.Services
             
             if (_databaseManager.TryReadFirstAttachment(catalogId, "license.md", enumeratonOptions, out var licenseStream))
             {
-                var prefix = catalogId.TrimStart('/').Replace('/', '_');
-                var targetFileName = $"{prefix}_LICENSE.md";
-                var targetFile = Path.Combine(targetFolder, targetFileName);
-
-                using (var targetFileStream = new FileStream(targetFile, FileMode.OpenOrCreate))
+                try
                 {
-                    licenseStream.CopyTo(targetFileStream);
-                }
+                    var prefix = catalogId.TrimStart('/').Replace('/', '_');
+                    var targetFileName = $"{prefix}_LICENSE.md";
+                    var targetFile = Path.Combine(targetFolder, targetFileName);
 
-                licenseStream.Dispose();
+                    using (var targetFileStream = new FileStream(targetFile, FileMode.OpenOrCreate))
+                    {
+                        licenseStream.CopyTo(targetFileStream);
+                    }
+                }
+                finally
+                {
+                    licenseStream.Dispose();
+                }
             }
         }
 

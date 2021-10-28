@@ -5,15 +5,15 @@ namespace Nexus.Services
 {
     internal interface IDatabaseManager
     {
-        bool TryReadProject(out Stream stream);
+        bool TryReadProject(out string? project);
 
-        bool TryReadNews(out Stream stream);
+        bool TryReadNews(out string? news);
+
+        bool TryReadCatalogMetadata(string catalogId, out string? catalogMetadata);
 
         IEnumerable<string> EnumerateAttachements(string catalogId);
 
-        bool TryReadFirstAttachment(string catalogId, string searchPattern, EnumerationOptions enumerationOptions, out Stream attachment);
-
-        bool TryReadCatalogMetadata(string catalogId, out Stream? stream);
+        bool TryReadFirstAttachment(string catalogId, string searchPattern, EnumerationOptions enumerationOptions, out Stream? attachment);
 
         Stream WriteCatalogMetadata(string catalogId);
 
