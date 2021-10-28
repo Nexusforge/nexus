@@ -609,8 +609,11 @@ app {
     }
 
 .catalog-no-access {
-    padding: 10px;
-    display: block     
+    margin-left: 15px;
+    margin-right: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .right-column {

@@ -44,32 +44,33 @@
 }
 else if (this.UserState.CatalogContainer != null) // user has no access to catalog
 {
-    <div class="catalog-no-access">
-        @if (this.ContextAccessor.HttpContext.User.Identity.IsAuthenticated)
-        {
-            var enumeratonOptions = new System.IO.EnumerationOptions() { MatchCasing = System.IO.MatchCasing.CaseInsensitive };
+<div class="catalog-no-access">
+    @if (this.ContextAccessor.HttpContext.User.Identity.IsAuthenticated)
+    {
+        var enumeratonOptions = new System.IO.EnumerationOptions() { MatchCasing = System.IO.MatchCasing.CaseInsensitive };
 
-            @if (this.DatabaseManager.TryReadFirstAttachment(this.UserState.CatalogContainer.Id, "LICENSE.md", enumeratonOptions, out var attachment))
-            {
-                <MarkdownRenderer MarkdownString="@(new StreamReader(attachment).ReadToEnd())" />
-                attachment.Dispose();
-            }
-            else
-            {
-                @if (this.UserState.CatalogContainer.Catalog.Properties is not null &&
-                         this.UserState.CatalogContainer.Catalog.Properties.TryGetValue(DataModelExtensions.Contact, out var contact))
-                {
-                    <span>You do not have access to this catalog. Please contact @contact to request permission.</span>
-                }
-                else
-                {
-                    <span>You do not have access to this catalog.</span>
-                }
-            }
+        @if (this.DatabaseManager.TryReadFirstAttachment(this.UserState.CatalogContainer.Id, "LICENSE.md", enumeratonOptions, out var attachment))
+        {
+            <MarkdownRenderer MarkdownString="@(new StreamReader(attachment).ReadToEnd())" />
+            attachment.Dispose();
+            <MatButton OnClick="this.AcceptLicenseAsync" Raised="true">Accept</MatButton>
         }
         else
         {
-            <span>You are not logged in. Access to catalog denied.</span>
+            @if (this.UserState.CatalogContainer.Catalog.Properties is not null &&
+                    this.UserState.CatalogContainer.Catalog.Properties.TryGetValue(DataModelExtensions.Contact, out var contact))
+            {
+                <span>You do not have access to this catalog. Please contact @contact to request permission.</span>
+            }
+            else
+            {
+                <span>You do not have access to this catalog.</span>
+            }
         }
-    </div>
+    }
+    else
+    {
+        <span>You are not logged in. Access to catalog denied.</span>
+    }
+</div>
 }
