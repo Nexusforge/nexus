@@ -25,26 +25,21 @@ namespace Nexus.Shared
         {
 			this.PropertyChanged = (sender, e) =>
 			{
-				if (e.PropertyName == nameof(UserState.ExportParameters))
-				{
-					this.InvokeAsync(this.StateHasChanged);
-				}
-				else if (e.PropertyName == nameof(UserState.DateTimeBegin))
-				{
-					this.InvokeAsync(this.StateHasChanged);
-				}
-				else if (e.PropertyName == nameof(UserState.DateTimeEnd))
-				{
-					this.InvokeAsync(this.StateHasChanged);
-				}
-				else if (e.PropertyName == nameof(UserState.FilePeriod))
-				{
-					this.InvokeAsync(this.StateHasChanged);
-				}
-				else if (e.PropertyName == nameof(UserState.SelectedRepresentations))
-				{
-					this.InvokeAsync(this.StateHasChanged);
-				}
+                switch (e.PropertyName)
+                {
+					case nameof(UserState.ExportParameters):
+					case nameof(UserState.DateTimeBegin):
+					case nameof(UserState.DateTimeEnd):
+					case nameof(UserState.FilePeriod):
+					case nameof(UserState.SamplePeriod):
+					case nameof(UserState.SelectedRepresentations):
+
+						this.InvokeAsync(this.StateHasChanged);
+						break;
+
+					default:
+                        break;
+                }
 			};
 		}
 

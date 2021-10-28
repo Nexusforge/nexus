@@ -244,8 +244,15 @@ namespace Nexus.Core
 
         public TimeSpan SamplePeriod
         {
-            get { return _samplePeriod; }
-            set { this.SetProperty(ref _samplePeriod, value); }
+            get
+            {
+                return _samplePeriod;
+            }
+            set
+            {
+                this.SetProperty(ref _samplePeriod, value);
+                this.UpdateExportParameters();
+            }
         }
 
         #endregion
@@ -558,45 +565,60 @@ namespace Nexus.Core
 
         public void SetExportParameters(ExportParameters exportParameters)
         {
-            //_sampleRateToSelectedRepresentationsMap = this.SampleRateValues
-            //    .ToDictionary(sampleRate => sampleRate, sampleRate => new List<RepresentationViewModel>());
+            _samplePeriodToSelectedRepresentationsMap.Clear();
 
-            //// find sample rate
-            //var sampleRates = exportParameters.ResourcePaths.Select(resourcePath 
-            //    => new SampleRateContainer(resourcePath.Split("/").Last()).ToUnitString());
+            // find catalog items
+            var representations = new List<RepresentationViewModel>();
 
-            //if (sampleRates.Any())
-            //    this.SampleRate = sampleRates.First();
+            foreach (var resourcePath in exportParameters.ResourcePaths)
+            {
+                // if resource path exists
+                if (_appState.CatalogState.CatalogCollection.TryFind(resourcePath, out var catalogItem))
+                {
+                    // if catalog is accessible
+                    var catalogContainer = this.CatalogContainersInfo.Accessible
+                        .FirstOrDefault(catalogContainer => catalogContainer.Id == catalogItem.Catalog.Id);
 
-            ////
-            //this.ExportParameters = exportParameters;
-            //var selectedRepresentations = this.GetSelectedRepresentations();
+                    if (catalogContainer is not null)
+                    {
+                        var resources = _appState.ResourceCache.GetOrAdd(catalogContainer, catalogContainer =>
+                        {
+                            var catalogViewModel = new ResourceCatalogViewModel(catalogContainer.Catalog);
 
-            //exportParameters.ResourcePaths.ForEach(value =>
-            //{
-            //    var pathSegments = value.Split('/');
-            //    var catalogName = $"/{pathSegments[1]}/{pathSegments[2]}/{pathSegments[3]}";
-            //    var resourceId = pathSegments[4];
-            //    var representationName = pathSegments[5];
+                            return catalogContainer.Catalog.Resources
+                               .Select(resource => new ResourceViewModel(catalogViewModel, resource))
+                               .ToArray();
+                        });
 
-            //    var catalogContainer = this.CatalogContainersInfo.Accessible.FirstOrDefault(current => current.Id == catalogName);
+                        var resource = resources.FirstOrDefault(resource => resource.Id == catalogItem.Resource.Id);
 
-            //    if (catalogContainer != null)
-            //    {
-            //        var resources = _appState.GetResources(catalogContainer);
-            //        var resource = resources.FirstOrDefault(current => current.Id.ToString() == resourceId);
+                        if (resource is not null)
+                        {
+                            var representation = resource.Representations.FirstOrDefault(representation => representation.Id == catalogItem.Representation.Id);
 
-            //        if (resource != null)
-            //        {
-            //            var representation = resource.Representations.FirstOrDefault(current => current.Name == representationName);
+                            if (representation is not null)
+                                representations.Add(representation);
+                        }
+                    }
+                }
+            }
 
-            //            if (representation != null)
-            //                selectedRepresentations.Add(representation);
-            //        }
-            //    }
-            //});
+            // find and set sample period
+            var samplePeriods = representations.Select(representation => representation.SamplePeriod);
 
-            //this.RaisePropertyChanged(nameof(UserState.ExportParameters));
+            if (samplePeriods.Any())
+                this.SamplePeriod = samplePeriods.First();
+
+            // set exportParameters
+            this.ExportParameters = exportParameters;
+
+            // fill selected representations list
+            var selectedRepresentations = this.GetSelectedRepresentations();
+
+            selectedRepresentations.AddRange(representations);
+
+            // trigger re-render
+            this.RaisePropertyChanged(nameof(UserState.ExportParameters));
         }
 
         public bool IsRepresentationSelected(RepresentationViewModel representation)

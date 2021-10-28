@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
 using Nexus.Core;
 using Nexus.Services;
+using Nexus.Utilities;
+using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -61,7 +63,7 @@ namespace Nexus.Shared
         private async Task OnSaveExportSettingsAsync()
         {
 			var configuration = this.UserState.ExportParameters;
-			var jsonString = JsonSerializer.Serialize(configuration, new JsonSerializerOptions() { WriteIndented = true });
+			var jsonString = JsonSerializerHelper.Serialize(configuration);
 			await this.JsRuntime.BlobSaveAs("export.json", Encoding.UTF8.GetBytes(jsonString));
 		}
 
@@ -71,8 +73,9 @@ namespace Nexus.Shared
 
             if (file != null)
             {
-                using var utf8json = file.OpenReadStream();
-                var exportParameters = await JsonSerializer.DeserializeAsync<ExportParameters>(utf8json);
+                using var streamReader = new StreamReader(file.OpenReadStream());
+                var jsonString = await streamReader.ReadToEndAsync();
+                var exportParameters = JsonSerializerHelper.Deserialize<ExportParameters>(jsonString);
                 exportParameters = exportParameters.UpdateVersion();
                 this.UserState.SetExportParameters(exportParameters);
             }
