@@ -170,7 +170,7 @@ namespace Nexus.Roslyn
                     foreach (var representation in resource.Representations.Where(representation => representation.SamplePeriod == samplePeriod))
                     {
                         // representation property
-                        resourceStringBuilder.AppendLine($"public Span<double> {$"REPRESENTATION_{representation.Id}"} {{ get; set; }}");
+                        resourceStringBuilder.AppendLine($"public double[] {$"REPRESENTATION_{representation.Id}"} {{ get; set; }}");
 
                         addResource = true;
                         addCatalog = true;

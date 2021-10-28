@@ -9,10 +9,10 @@ namespace Nexus.Shared
     {
         #region Properties
 
-        [Parameter]
+        //[Parameter]
         public bool IsOpen { get; set; }
 
-        [Parameter]
+        //[Parameter]
         public EventCallback<bool> IsOpenChanged { get; set; }
 
         //[Parameter]
@@ -24,9 +24,11 @@ namespace Nexus.Shared
 
         public override Task SetParametersAsync(ParameterView parameters)
         {
+            IsOpen = parameters.GetValueOrDefault<bool>(nameof(IsOpen));
+            IsOpenChanged = parameters.GetValueOrDefault<EventCallback<bool>>(nameof(IsOpenChanged));
             OnCodeTypeSelected = parameters.GetValueOrDefault<Action<CodeType>>(nameof(OnCodeTypeSelected));
-
-            return base.SetParametersAsync(parameters);
+            this.StateHasChanged();
+            return Task.CompletedTask;
         }
 
         private void Accept(CodeType codeType)

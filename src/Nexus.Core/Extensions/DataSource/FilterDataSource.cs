@@ -231,18 +231,18 @@ namespace Nexus.Extensions
                         if (catalog == null)
                             throw new Exception($"Unable to find catalog with id '{catalogId}'.");
 
-                        var catalogItem = catalogCollection.Find(catalog.Id, resourceId, representationId);
+                        var subCatalogItem = catalogCollection.Find(catalog.Id, resourceId, representationId);
 
                         if (!this.IsCatalogAccessible(catalog.Id))
                             throw new UnauthorizedAccessException("The current user is not allowed to access this filter.");
 
-                        var dataSourceController = this.GetDataSourceControllerAsync(representation.BackendSource).Result;
+                        var dataSourceController = this.GetDataSourceControllerAsync(subCatalogItem.Representation.BackendSource).Result;
                         var pipe = new Pipe();
 
                         var doubleStream = dataSourceController.ReadAsStream(
                             begin,
                             end, 
-                            catalogItem,
+                            subCatalogItem,
                             this.Context.Logger);
 
                         var doubleData = new double[doubleStream.Length / 8];

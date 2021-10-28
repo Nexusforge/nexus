@@ -19,10 +19,10 @@ namespace Nexus.Shared
         [Inject]
         private IUserManagerWrapper UserManagerWrapper { get; set; }
 
-        [Parameter]
+        //[Parameter]
         public bool IsOpen { get; set; }
 
-        [Parameter]
+        //[Parameter]
         public EventCallback<bool> IsOpenChanged { get; set; }
 
         //[Parameter]
@@ -34,15 +34,12 @@ namespace Nexus.Shared
 
         #region Methods
 
-        public override Task SetParametersAsync(ParameterView parameters)
+        public async override Task SetParametersAsync(ParameterView parameters)
         {
+            IsOpen = parameters.GetValueOrDefault<bool>(nameof(IsOpen));
+            IsOpenChanged = parameters.GetValueOrDefault<EventCallback<bool>>(nameof(IsOpenChanged));
             OnCodeDefinitionSelected = parameters.GetValueOrDefault<Action<CodeDefinitionViewModel>>(nameof(OnCodeDefinitionSelected));
 
-            return base.SetParametersAsync(parameters);
-        }
-
-        protected override async Task OnParametersSetAsync()
-        {
             var owners = this.AppState.FilterSettings.CodeDefinitions
                    .Where(current => current.IsEnabled)
                    .Select(current => current.Owner)
@@ -56,7 +53,7 @@ namespace Nexus.Shared
                 this.OwnerToCodeDefinitionsMap[owner] = await this.GetCodeDefinitionsForOwnerAsync(owner);
             }
 
-            await base.OnParametersSetAsync();
+            this.StateHasChanged();
         }
 
         private async Task<List<CodeDefinitionViewModel>> GetCodeDefinitionsForOwnerAsync(string owner)

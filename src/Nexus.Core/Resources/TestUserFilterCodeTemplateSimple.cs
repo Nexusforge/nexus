@@ -13,10 +13,10 @@ namespace Nexus.Filters
          *   dataProvider:  Contains data of the preselected catalogs.
          *   result:        The resulting double array with length matching the time period and sample rate.
          */
-        public override void Filter(DateTime begin, DateTime end, FilterChannel filter, DataProvider dataProvider, double[] result)
+        public override void Filter(DateTime begin, DateTime end, FilterChannel filter, DataProvider dataProvider, Span<double> result)
         {
             /* This dataset has the same length as the result array. */
-            var t1 = dataProvider.IN_MEMORY_TEST_ACCESSIBLE.T1.DATASET_1_s_mean;
+            var t1 = dataProvider.IN_MEMORY_TEST_ACCESSIBLE.T1.REPRESENTATION_1_s_mean;
 
             for (int i = 0; i < result.Length; i++)
             {

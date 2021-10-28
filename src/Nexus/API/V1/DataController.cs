@@ -22,6 +22,7 @@ namespace Nexus.Controllers.V1
         #region Fields
 
         private ILogger _logger;
+        private IUserIdService _userIdService;
         private IDataControllerService _dataControllerService;
         private AppState _appState;
 
@@ -29,11 +30,14 @@ namespace Nexus.Controllers.V1
 
         #region Constructors
 
-        public DataController(AppState appState,
-                              IDataControllerService dataControllerService,
-                              ILogger<DataController> logger)
+        public DataController(
+            AppState appState,
+            IDataControllerService dataControllerService,
+            IUserIdService userIdService,
+            ILogger<DataController> logger)
         {
             _appState = appState;
+            _userIdService = userIdService;
             _dataControllerService = dataControllerService;
             _logger = logger;
         }
@@ -103,7 +107,8 @@ namespace Nexus.Controllers.V1
                     return this.Unauthorized($"The current user is not authorized to access the catalog '{catalog.Id}'.");
 
                 // controller
-                using var controller = await _dataControllerService.GetDataSourceControllerAsync(
+                using var controller = await _dataControllerService.GetDataSourceControllerForDataAccessAsync(
+                    _userIdService.User,
                     catalogItem.Representation.BackendSource,
                     cancellationToken);
 

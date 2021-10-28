@@ -1,10 +1,12 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Nexus.Core;
 using Nexus.Extensibility;
 using Nexus.Extensions;
 using Nexus.Utilities;
 using System;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,7 +17,6 @@ namespace Nexus.Services
         private AppState _appState;
         private IExtensionHive _extensionHive;
         private IServiceProvider _serviceProvider;
-        private IUserIdService _userIdService;
         private ILogger _logger;
         private ILoggerFactory _loggerFactory;
 
@@ -33,29 +34,35 @@ namespace Nexus.Services
             _loggerFactory = loggerFactory;
         }
 
-        public async Task<IDataSourceController> GetDataSourceControllerAsync(BackendSource backendSource, CancellationToken cancellationToken)
+        public async Task<IDataSourceController> GetDataSourceControllerForDataAccessAsync(ClaimsPrincipal user, BackendSource backendSource, CancellationToken cancellationToken)
         {
-            var logger = _loggerFactory.CreateLogger($"{backendSource.Type} - {backendSource.ResourceLocator}");
-            var dataSource = _extensionHive.GetInstance<IDataSource>(backendSource.Type);
+            var controller = await this.GetDataSourceControllerAsync(backendSource, cancellationToken);
 
             // special case checks
+            var dataSource = ((DataSourceController)controller).DataSource;
+
             if (dataSource.GetType() == typeof(FilterDataSource))
             {
                 var filterDataSource = (FilterDataSource)dataSource;
-                
-                filterDataSource.GetCatalogCollection = () => _appState.CatalogState.CatalogCollection;
 
-#warning !!! "default" should be UserIdService.User
+                filterDataSource.GetCatalogCollection = () => _appState.CatalogState.CatalogCollection;
 
                 filterDataSource.IsCatalogAccessible =
                     catalogId => AuthorizationUtilities.IsCatalogAccessible(
-                        default,
+                        user,
                         _appState.CatalogState.CatalogCollection.CatalogContainers.First(container => container.Id == catalogId));
 
                 filterDataSource.GetDataSourceControllerAsync =
                     backendSource => this.GetDataSourceControllerAsync(backendSource, cancellationToken);
             }
 
+            return controller;
+        }
+
+        public async Task<IDataSourceController> GetDataSourceControllerAsync(BackendSource backendSource, CancellationToken cancellationToken)
+        {
+            var logger = _loggerFactory.CreateLogger($"{backendSource.Type} - {backendSource.ResourceLocator}");
+            var dataSource = _extensionHive.GetInstance<IDataSource>(backendSource.Type);
             var controller = new DataSourceController(dataSource, backendSource, logger);
 
             if (_appState.CatalogState is not null && _appState.CatalogState.BackendSourceToCatalogsMap.TryGetValue(backendSource, out var catalogs))

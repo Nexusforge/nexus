@@ -13,7 +13,7 @@ namespace Nexus.Shared
         //[Parameter]
         private CodeDefinitionViewModel CodeDefinition { get; set; }
 
-        [Parameter]
+        //[Parameter]
         public Action OnSave { get; set; }
 
         private bool CodeDefinitionCatalogRequestDialogIsOpen { get; set; }
@@ -39,8 +39,10 @@ namespace Nexus.Shared
         public override Task SetParametersAsync(ParameterView parameters)
         {
             CodeDefinition = parameters.GetValueOrDefault<CodeDefinitionViewModel>(nameof(CodeDefinition));
+            OnSave = parameters.GetValueOrDefault<Action>(nameof(OnSave));
 
-            return base.SetParametersAsync(parameters);
+            this.StateHasChanged();
+            return Task.CompletedTask;
         }
 
         private void HandleValidSubmit()

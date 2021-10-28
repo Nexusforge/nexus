@@ -16,6 +16,8 @@ namespace Nexus.Extensions
         #region Fields
 
         public const string Id = "Nexus.Builtin.InMemory";
+        public const string AccessibleCatalogId = "/IN_MEMORY/TEST/ACCESSIBLE";
+        public const string RestrictedCatalogId = "/IN_MEMORY/TEST/RESTRICTED";
 
         #endregion
 

@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 using static Nexus.Services.MonacoService;
 
@@ -58,7 +59,10 @@ namespace Nexus.Pages
         private MonacoService MonacoService { get; set; }
 
         [Inject]
-        private UserIdService UserIdService { get; set; }
+        private AppStateController AppStateController { get; set; }
+
+        [Inject]
+        private IUserIdService UserIdService { get; set; }
 
         private ClaimsPrincipal User { get; set; }
 
@@ -261,8 +265,8 @@ namespace Nexus.Pages
 
             await this.InvokeAsync(() => this.StateHasChanged());
 
-            //// update database
-            //await this.AppState.UpdateDatabaseAsync();
+            // update database
+            await this.AppStateController.ReloadCatalogsAsync(CancellationToken.None);
         }
 
         private async Task DeleteFilterAsync()
@@ -280,8 +284,8 @@ namespace Nexus.Pages
             this.ToasterService.ShowSuccess(message: "The code definition has been deleted.", icon: MatIconNames.Delete);
             await this.InvokeAsync(() => this.StateHasChanged());
 
-            //// update database
-            //await this.AppState.UpdateDatabaseAsync();
+            // update database
+            await this.AppStateController.ReloadCatalogsAsync(CancellationToken.None);
         }
 
         private void OpenGalleryDialog()

@@ -24,6 +24,7 @@ namespace Nexus.Controllers.V1
         private ILogger _logger;
         private IServiceProvider _serviceProvider;
         private IDataControllerService _dataControllerService;
+        private IUserIdService _userIdService;
         private AppState _appState;
         private JobService<ExportJob> _exportJobService;
         private JobService<AggregationJob> _aggregationJobService;
@@ -39,6 +40,7 @@ namespace Nexus.Controllers.V1
             JobService<AggregationJob> aggregationJobService,
             IDataControllerService dataControllerService,
             IServiceProvider serviceProvider,
+            IUserIdService userIdService,
             ILogger<JobsController> logger,
             IOptions<PathsOptions> pathOptions)
         {
@@ -47,6 +49,7 @@ namespace Nexus.Controllers.V1
             _exportJobService = exportJobService;
             _dataControllerService = dataControllerService;
             _aggregationJobService = aggregationJobService;
+            _userIdService = userIdService;
             _logger = logger;
             _pathsOptions = pathOptions.Value;
         }
@@ -276,7 +279,7 @@ namespace Nexus.Controllers.V1
                                 _pathsOptions.Cache,
                                 setup,
                                 _appState.CatalogState,
-                                backendSource => _dataControllerService.GetDataSourceControllerAsync(backendSource, cts.Token),
+                                backendSource => _dataControllerService.GetDataSourceControllerForDataAccessAsync(_userIdService.User, backendSource, cts.Token),
                                 cts.Token);
 
                             _logger.LogInformation($"{message} Done.");

@@ -7,7 +7,7 @@
             <div class="settings-box mat-elevation-z11">
                 @if (this.AppState.CatalogState != null)
                 {
-                    <CodeDefinitionSettingsBox @ref="this.CodeDefinitionSettingsBox" CodeDefinition="this.UserState.CodeDefinition" OnSave="async () => await this.SaveCodeDefinitionAsync()" />
+                    <CodeDefinitionSettingsBox @ref="this.CodeDefinitionSettingsBox" CodeDefinition="@this.UserState.CodeDefinition" OnSave="@((Action)(() => this.SaveCodeDefinitionAsync()))" />
 
                     <div class="configuration-panel">
 
@@ -37,8 +37,8 @@
                     </div>
                 }
             </div>
-            <CodeDefinitionGallery @bind-IsOpen="this.CodeDefinitionGalleryIsOpen" OnCodeDefinitionSelected="async (filter) => await this.CopyCodeDefinitionAsync(filter)" />
-            <CodeDefinitionCreateModal @bind-IsOpen="this.CodeDefinitionCreateDialogIsOpen" OnCodeTypeSelected="this.PrepareCodeDefinition" />
+            <CodeDefinitionGallery @bind-IsOpen="this.CodeDefinitionGalleryIsOpen" OnCodeDefinitionSelected="@((Action<CodeDefinitionViewModel>)(filter => this.CopyCodeDefinitionAsync(filter)))" />
+            <CodeDefinitionCreateModal @bind-IsOpen="this.CodeDefinitionCreateDialogIsOpen" OnCodeTypeSelected="@((Action<CodeType>)(codeType => this.PrepareCodeDefinition(codeType)))" />
             <CodeDefinitionDeleteModal @bind-IsOpen="this.CodeDefinitionDeleteDialogIsOpen" OnDelete="async () => await this.DeleteFilterAsync()" />
         </div>
         <div class="center-column monaco-editor-root-container">

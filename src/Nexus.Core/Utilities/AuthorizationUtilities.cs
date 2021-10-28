@@ -1,5 +1,7 @@
 ﻿using Nexus.Core;
 using Nexus.DataModel;
+using Nexus.Extensions;
+using Nexus.Filters;
 using System.Linq;
 using System.Security.Claims;
 
@@ -26,7 +28,11 @@ namespace Nexus.Utilities
                     claim => claim.Type == Claims.CAN_ACCESS_GROUP &&
                     claim.Value.Split(";").Any(group => catalogContainer.CatalogMetadata.GroupMemberships.Contains(group)));
 
-                return isAdmin || canAccessCatalog || canAccessGroup;
+                var implicitAccess = 
+                    catalogContainer.Id == FilterConstants.SharedCatalogID ||
+                    catalogContainer.Id == InMemoryDataSource.Id;
+
+                return isAdmin || canAccessCatalog || canAccessGroup || implicitAccess;
             }
 
             return false;
