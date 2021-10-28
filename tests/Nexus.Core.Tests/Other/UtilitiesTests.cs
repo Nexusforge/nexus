@@ -78,13 +78,11 @@ namespace Other
 
         [Theory]
 
-        [InlineData("/A/B/C", "Basic", "true", true, false)]                          //    admin,     hidden
-        [InlineData("/A/B/C", "Basic", "false", false, true)]                         // no admin, not hidden
-        [InlineData("/A/B/C", "Basic", "false", true, true)]                          // no admin,     hidden
-        [InlineData("/A/B/C", "Basic", "false", false, false)]                        // no admin, not hidden
+        [InlineData("/A/B/C", "Basic", "true", true, true)]         //    admin,     hidden
+        [InlineData("/A/B/C", "Basic", "false", false, true)]       // no admin, not hidden
 
-        [InlineData("/A/B/C", "Basic", "false", true, false)]                         // no admin,     hidden
-        [InlineData("/A/B/C", null, "true", true, false)]                             // not authenticated
+        [InlineData("/A/B/C", "Basic", "false", true, false)]       // no admin,     hidden
+        [InlineData("/A/B/C", null, "true", true, false)]           // not authenticated
         public void CanDetermineCatalogVisibility(
             string catalogId,
             string authenticationType,

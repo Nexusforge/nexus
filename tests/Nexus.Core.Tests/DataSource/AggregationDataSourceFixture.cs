@@ -36,11 +36,11 @@ namespace DataSource
             var catalog1 = "/A/B/C";
             var catalog2 = "/A2/B/C";
 
-            var monthFolderCatalog1 = Path.Combine(root, "DATA", WebUtility.UrlEncode(catalog1));
+            var monthFolderCatalog1 = Path.Combine(root, WebUtility.UrlEncode(catalog1));
             var dataFolderPathEmpty1 = Path.Combine(monthFolderCatalog1, "2020-06");
             Directory.CreateDirectory(dataFolderPathEmpty1);
 
-            var monthFolderCatalog2 = Path.Combine(root, "DATA", WebUtility.UrlEncode(catalog2));
+            var monthFolderCatalog2 = Path.Combine(root, WebUtility.UrlEncode(catalog2));
             var dataFolderPathEmpty2 = Path.Combine(monthFolderCatalog2, "2020-06");
             Directory.CreateDirectory(dataFolderPathEmpty2);
 

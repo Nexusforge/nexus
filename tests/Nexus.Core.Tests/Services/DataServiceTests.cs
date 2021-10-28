@@ -79,7 +79,7 @@ namespace Services
             var logger = Mock.Of<ILogger<DataService>>();
 
             // data service
-            var dataService = new DataService(appState, dataControllerService, default, logger);
+            var dataService = new DataService(appState, dataControllerService, default, default, logger);
 
             // act
             var availability = await dataService.GetAvailabilityAsync("/A/B/C", begin, end, AvailabilityGranularity.Day, CancellationToken.None);
@@ -174,6 +174,8 @@ namespace Services
                 .Setup(databaseManager => databaseManager.WriteExportFile(It.IsAny<string>()))
                 .Returns<string>((fileName) => File.OpenWrite(Path.Combine(root, fileName)));
 
+            var userIdService = Mock.Of<IUserIdService>();
+
             var logger = Mock.Of<ILogger<DataService>>();
 
             // catalog items
@@ -206,7 +208,7 @@ namespace Services
             };
 
             // data service
-            var dataService = new DataService(default, dataControllerService, databaseManager, logger);
+            var dataService = new DataService(default, dataControllerService, databaseManager, userIdService, logger);
 
             // act
             try

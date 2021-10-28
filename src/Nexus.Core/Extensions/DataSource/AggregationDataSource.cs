@@ -212,7 +212,7 @@ namespace Nexus.Extensions
 
         public Task<(DateTime Begin, DateTime End)> GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
         {
-            var catalogFolderPath = Path.Combine(this.Root, "DATA", WebUtility.UrlEncode(catalogId));
+            var catalogFolderPath = Path.Combine(this.Root, WebUtility.UrlEncode(catalogId));
 
             // first
             var catalogFirstMonth = this.GetCatalogFirstMonthWithData(catalogFolderPath);
@@ -240,7 +240,6 @@ namespace Nexus.Extensions
                 {
                     var folderPath = Path.Combine(
                         this.Root,
-                        "DATA",
                         WebUtility.UrlEncode(catalogId),
                         currentBegin.ToString("yyyy-MM"),
                         currentBegin.ToString("dd")
@@ -269,7 +268,7 @@ namespace Nexus.Extensions
                     cancellationToken.ThrowIfCancellationRequested();
 
                     var (catalog, resource, representation) = catalogItem;
-                    var catalogFolderPath = Path.Combine(this.Root, "DATA", WebUtility.UrlEncode(catalog.Id));
+                    var catalogFolderPath = Path.Combine(this.Root, WebUtility.UrlEncode(catalog.Id));
                     var samplePeriod = representation.SamplePeriod;
 
                     if (!Directory.Exists(catalogFolderPath))
@@ -390,7 +389,7 @@ namespace Nexus.Extensions
         private DateTime GetCatalogFirstMonthWithData(string catalogFolderPath)
         {
             var monthFolders = Directory
-                    .EnumerateDirectories(catalogFolderPath);
+                .EnumerateDirectories(catalogFolderPath);
 
             if (monthFolders.Any())
             {

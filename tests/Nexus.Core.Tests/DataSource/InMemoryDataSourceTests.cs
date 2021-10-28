@@ -52,7 +52,7 @@ namespace DataSource
             var expectedIds = new List<string>() { "T1", "V1", "unix_time1", "unix_time2" };
             var expectedUnits = new List<string>() { "°C", "m/s", null, null };
             var expectedGroups = new List<string>() { "Group 1", "Group 1", "Group 2", "Group 2" };
-            var expectedDataTypes = new List<NexusDataType>() { NexusDataType.FLOAT64, NexusDataType.FLOAT64, NexusDataType.INT32, NexusDataType.FLOAT64, NexusDataType.FLOAT64 };
+            var expectedDataTypes = new List<NexusDataType>() { NexusDataType.FLOAT64, NexusDataType.FLOAT64, NexusDataType.FLOAT64, NexusDataType.FLOAT64, NexusDataType.FLOAT64 };
 
             Assert.True(expectedIds.SequenceEqual(actualIds));
             Assert.True(expectedUnits.SequenceEqual(actualUnits));

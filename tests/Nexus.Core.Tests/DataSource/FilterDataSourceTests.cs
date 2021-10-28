@@ -155,7 +155,7 @@ namespace DataSource
             var dataSource = new FilterDataSource()
             {
                 IsCatalogAccessible = _ => true,
-                CatalogCollection = catalogCollection,
+                GetCatalogCollection = () => catalogCollection,
                 GetDataSourceControllerAsync = async id =>
                 {
                     var controller = new DataSourceController(subDataSource, backendSource, NullLogger.Instance);
