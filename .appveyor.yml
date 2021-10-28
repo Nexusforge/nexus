@@ -27,7 +27,7 @@ build_script:
  - ps: sudo docker build -t apollo3zehn/nexus:1.0.0.alpha.1.$Env:APPVEYOR_BUILD_NUMBER .
 
 test_script:
- - ps: dotnet test ./tests/Nexus.Tests -c $Env:CONFIGURATION
+ - ps: dotnet test -c $Env:CONFIGURATION
 
 artifacts:
   - path: ./artifacts/packages/**/*.nupkg
