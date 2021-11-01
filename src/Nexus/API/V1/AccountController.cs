@@ -14,17 +14,14 @@ namespace Nexus.Controllers.V1
         #region Fields
 
         private JwtService _jwtService;
-        private ILogger _logger;
 
         #endregion
 
         #region Constructors
 
-        public AccountController(JwtService jwtService,
-                                 ILoggerFactory loggerFactory)
+        public AccountController(JwtService jwtService)
         {
             _jwtService = jwtService;
-            _logger = loggerFactory.CreateLogger("Nexus");
         }
 
         #endregion

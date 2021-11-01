@@ -18,6 +18,7 @@ namespace Nexus.Services
         #region Fields
 
         private ILogger<ExtensionHive> _logger;
+        private ILoggerFactory _loggerFactory;
         private PathsOptions _pathsOptions;
 
         private Dictionary<
@@ -30,9 +31,10 @@ namespace Nexus.Services
 
         #region Constructors
 
-        public ExtensionHive(IOptions<PathsOptions> pathsOptions, ILogger<ExtensionHive> logger)
+        public ExtensionHive(IOptions<PathsOptions> pathsOptions, ILogger<ExtensionHive> logger, ILoggerFactory loggerFactory)
         {
             _logger = logger;
+            _loggerFactory = loggerFactory;
             _pathsOptions = pathsOptions.Value;
 
             // add built-in extensions
@@ -49,6 +51,8 @@ namespace Nexus.Services
         public async Task LoadPackagesAsync(IEnumerable<PackageReference> packageReferences, CancellationToken cancellationToken)
         {
             // clean up
+            _logger.LogInformation("Unload previously laoded packages.");
+
             if (_packageControllerMap is not null)
             {
                 foreach (var (controller, _) in _packageControllerMap)
@@ -67,7 +71,7 @@ namespace Nexus.Services
 
             foreach (var packageReference in filteredPackageReferences)
             {
-                var packageController = new PackageController(packageReference, _logger);
+                var packageController = new PackageController(packageReference, _loggerFactory.CreateLogger<PackageController>());
                 using var scope = _logger.BeginScope(packageReference.ToDictionary(entry => entry.Key, entry => (object)entry.Value));
 
                 try
@@ -79,7 +83,7 @@ namespace Nexus.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Load package failed.");
+                    _logger.LogError(ex, "Loading package failed.");
                 }
             }
 

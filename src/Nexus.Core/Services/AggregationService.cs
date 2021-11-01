@@ -25,15 +25,18 @@ namespace Nexus.Services
         #region Fields
 
         private ILogger _logger;
+        private ILoggerFactory _loggerFactory;
 
         #endregion
 
         #region Constructors
 
         public AggregationService(
-            ILogger<AggregationService> logger)
+            ILogger<AggregationService> logger,
+            ILoggerFactory loggerFactory)
         {
             _logger = logger;
+            _loggerFactory = loggerFactory;
 
             this.Progress = new Progress<double>();
         }
@@ -178,6 +181,11 @@ namespace Nexus.Services
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
+                    using var scope = _logger.BeginScope(new Dictionary<string, object>()
+                    {
+                        ["ResourcePath"] = aggregationResource.Resource.Id
+                    });
+
                     try
                     {
                         var representation = aggregationResource.Resource.Representations.First();
@@ -206,7 +214,7 @@ namespace Nexus.Services
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex.GetFullMessage());
+                        _logger.LogError(ex, "Aggregating resource failed.");
                     }
                 }
             }
@@ -296,7 +304,7 @@ namespace Nexus.Services
                 dataPipe.Writer,
                 statusPipe.Writer,
                 progress: default,
-                _logger,
+                _loggerFactory.CreateLogger<DataSourceController>(),
                 cancellationToken);
 
             var writing = this.AggregateSingleAsync<T>(
@@ -450,7 +458,7 @@ namespace Nexus.Services
 
                     default:
 
-                        _logger.LogWarning($"The aggregation method '{unit.Method}' is not known. Skipping period {period}.");
+                        _logger.LogWarning("The aggregation method {Method} is not known. Skipping period {Period}.", unit.Method, period);
 
                         continue;
                 }
@@ -622,7 +630,7 @@ namespace Nexus.Services
 
                 default:
 
-                    logger.LogWarning($"The aggregation method '{method}' is not known. Skipping period.");
+                    logger.LogWarning("The aggregation method {Method} is not known. Skipping period.", method);
 
                     break;
 
@@ -702,7 +710,7 @@ namespace Nexus.Services
                     break;
 
                 default:
-                    logger.LogWarning($"The aggregation method '{method}' is not known. Skipping period.");
+                    logger.LogWarning("The aggregation method {Method} is not known. Skipping period.", method);
                     break;
 
             }

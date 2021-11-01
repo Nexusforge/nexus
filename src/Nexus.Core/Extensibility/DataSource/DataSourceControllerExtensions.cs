@@ -15,7 +15,7 @@ namespace Nexus.Extensibility
             DateTime begin,
             DateTime end,
             CatalogItem catalogItem,
-            ILogger logger)
+            ILogger<DataSourceController> logger)
         {
             // DataSourceDoubleStream is only required to enable the browser to determine the download progress.
             // Otherwise the PipeReader.AsStream() would be sufficient.
@@ -46,7 +46,7 @@ namespace Nexus.Extensibility
             PipeWriter dataWriter,
             PipeWriter? statusWriter,
             IProgress<double>? progress,
-            ILogger logger,
+            ILogger<DataSourceController> logger,
             CancellationToken cancellationToken)
         {
             var samplePeriod = catalogItem.Representation.SamplePeriod;

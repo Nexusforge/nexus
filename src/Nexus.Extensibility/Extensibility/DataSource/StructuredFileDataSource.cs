@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Nexus.DataModel;
 using System;
 using System.Collections.Generic;
@@ -89,6 +89,9 @@ namespace Nexus.Extensibility
                     {
                         cancellationToken.ThrowIfCancellationRequested();
 
+                        using var scope = this.Context.Logger.BeginScope(fileSource);
+                        this.Context.Logger.LogDebug("Analyzing file source.");
+
                         // first
                         var firstDateTime = StructuredFileDataSource
                             .GetCandidateFiles(this.Root, DateTime.MinValue, DateTime.MinValue, fileSource, cancellationToken)
@@ -119,7 +122,13 @@ namespace Nexus.Extensibility
 
                         if (lastDateTime > maxDateTime)
                             maxDateTime = lastDateTime;
+
+                        this.Context.Logger.LogDebug("Analyzing file source resulted in begin = {FirstDateTime} and end = {LastDateTime}.", firstDateTime, lastDateTime);
                     }
+                }
+                else
+                {
+                    this.Context.Logger.LogDebug("Folder {Root} does not exist. Return default time range.", this.Root);
                 }
 
                 return (minDateTime, maxDateTime);
@@ -138,46 +147,58 @@ namespace Nexus.Extensibility
             // no true async file enumeration available: https://github.com/dotnet/runtime/issues/809
             return Task.Run(async () =>
             {
-                if (!Directory.Exists(this.Root))
-                    return 0;
+                double availability;
 
-                var summedAvailability = 0.0;
-                var fileSources = this.FileSourceProvider.All[catalogId];
-
-                foreach (var fileSource in fileSources)
+                if (Directory.Exists(this.Root))
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
+                    var summedAvailability = 0.0;
+                    var fileSources = this.FileSourceProvider.All[catalogId];
 
-                    var localBegin = begin.Add(fileSource.UtcOffset);
-                    var localEnd = end.Add(fileSource.UtcOffset);
-
-                    var candidateFiles = StructuredFileDataSource
-                        .GetCandidateFiles(this.Root, localBegin, localEnd, fileSource, cancellationToken);
-
-                    var files = candidateFiles
-                        .Where(current => localBegin <= current.DateTime && current.DateTime < localEnd)
-                        .ToList();
-
-                    var availabilityTasks = files.Select(file =>
+                    foreach (var fileSource in fileSources)
                     {
-                        var availabilityTask = this.GetFileAvailabilityAsync(file.FilePath, cancellationToken);
+                        using var scope = this.Context.Logger.BeginScope(fileSource);
+                        this.Context.Logger.LogDebug("Analyzing file source.");
 
-                        _ = availabilityTask.ContinueWith(
-                            x => this.Context.Logger.LogWarning($"Could not process file '{file.FilePath}'. Reason: {ExtensibilityUtilities.GetFullMessage(availabilityTask.Exception)}"),
-                            TaskContinuationOptions.OnlyOnFaulted
-                        );
+                        cancellationToken.ThrowIfCancellationRequested();
 
-                        return availabilityTask;
-                    });
+                        var localBegin = begin.Add(fileSource.UtcOffset);
+                        var localEnd = end.Add(fileSource.UtcOffset);
 
-                    var availabilities = await Task.WhenAll(availabilityTasks);
-                    var actual = availabilities.Sum();
-                    var total = (end - begin).Ticks / (double)fileSource.FilePeriod.Ticks;
+                        var candidateFiles = StructuredFileDataSource
+                            .GetCandidateFiles(this.Root, localBegin, localEnd, fileSource, cancellationToken);
 
-                    summedAvailability += actual / total;
+                        var files = candidateFiles
+                            .Where(current => localBegin <= current.DateTime && current.DateTime < localEnd)
+                            .ToList();
+
+                        var availabilityTasks = files.Select(file =>
+                        {
+                            var availabilityTask = this.GetFileAvailabilityAsync(file.FilePath, cancellationToken);
+
+                            _ = availabilityTask.ContinueWith(
+                                x => this.Context.Logger.LogWarning($"Could not process file '{file.FilePath}'. Reason: {ExtensibilityUtilities.GetFullMessage(availabilityTask.Exception)}"),
+                                TaskContinuationOptions.OnlyOnFaulted
+                            );
+
+                            return availabilityTask;
+                        });
+
+                        var availabilities = await Task.WhenAll(availabilityTasks);
+                        var actual = availabilities.Sum();
+                        var total = (end - begin).Ticks / (double)fileSource.FilePeriod.Ticks;
+
+                        summedAvailability += actual / total;
+                    }
+
+                    availability = summedAvailability / fileSources.Length;
+                }
+                else
+                {
+                    availability = 0.0;
+                    this.Context.Logger.LogDebug("Folder {Root} does not exist. Return default availability.", this.Root);
                 }
 
-                return summedAvailability / fileSources.Length;
+                return availability;
             });
         }
 
@@ -213,7 +234,7 @@ namespace Nexus.Extensibility
                 if (filePaths is not null && fileBegin == default)
                 {
                     if (!StructuredFileDataSource.TryGetFileBeginByPath(filePaths.First(), fileSource, out fileBegin, default))
-                        throw new Exception("Unable to determine file date/time.");
+                        throw new Exception($"Unable to determine date/time of file {filePaths.First()}.");
                 }
 
                 /* CB = Current Begin, FP = File Period
@@ -229,7 +250,7 @@ namespace Nexus.Extensibility
 
                 /* normal case: current begin may be greater than file begin if: 
                  * - this is the very first iteration
-                 * - the current file begin later than expected (incomplete file)
+                 * - the current file begins later than expected (incomplete file)
                  */
                 if (CB_MINUS_FP < fileBegin && fileBegin <= currentBegin)
                 {
@@ -237,6 +258,8 @@ namespace Nexus.Extensibility
                     var remainingFilePeriod = fileSource.FilePeriod - consumedFilePeriod;
 
                     currentPeriod = TimeSpan.FromTicks(Math.Min(remainingFilePeriod.Ticks, remainingPeriod.Ticks));
+                    this.Context.Logger.LogDebug("Process period {CurrentBegin} to {CurrentEnd}.", currentBegin, currentBegin + currentPeriod);
+
                     fileBlock = (int)(currentPeriod.Ticks / samplePeriod.Ticks);
 
                     var fileOffset = consumedFilePeriod.Ticks / samplePeriod.Ticks;
@@ -245,6 +268,8 @@ namespace Nexus.Extensibility
                     {
                         if (File.Exists(filePath))
                         {
+                            this.Context.Logger.LogTrace("Process file {FilePath}.", filePath);
+
                             try
                             {
                                 var slicedData = data
@@ -265,19 +290,23 @@ namespace Nexus.Extensibility
                                 );
 
                                 await this
-                                    .ReadSingleAsync(readInfo, cancellationToken)
-                                    ;
+                                    .ReadSingleAsync(readInfo, cancellationToken);
                             }
                             catch (Exception ex)
                             {
-                                this.Context.Logger.LogWarning($"Could not process file '{filePath}'. Reason: {ExtensibilityUtilities.GetFullMessage(ex)}");
+                                this.Context.Logger.LogError(ex, "Could not process file {FilePath}.", filePath);
                             }
+                        }
+                        else
+                        {
+                            this.Context.Logger.LogDebug("File {FilePath} does not exist.", filePath);
                         }
                     }
                 }
                 /* there was an incomplete file, skip the incomplete part */
                 else if (CB_PLUS_FP <= fileBegin && fileBegin < end)
                 {
+                    this.Context.Logger.LogDebug("Skipping period {FileBegin} to {CurrentBegin}.", fileBegin, currentBegin);
                     currentPeriod = fileBegin - currentBegin;
                     fileBlock = (int)(currentPeriod.Ticks / samplePeriod.Ticks);
                 }
@@ -375,12 +404,18 @@ namespace Nexus.Extensibility
         {
             if (this.Context.Catalogs is null)
             {
+                this.Context.Logger.LogDebug("No catalogs found in cache. Consult dervied class for catalogs.");
+
                 var catalogs = await this.GetCatalogsAsync(cancellationToken);
 
                 this.Context = this.Context with
                 {
                     Catalogs = catalogs
                 };
+            }
+            else
+            {
+                this.Context.Logger.LogDebug("{Count} catalogs found in cache.", this.Context.Catalogs.Count);
             }
 
             return this.Context.Catalogs;
@@ -411,13 +446,20 @@ namespace Nexus.Extensibility
 
             foreach (var (catalogItem, dataBuffer, statusBuffer) in requests)
             {
+                using var scope = this.Context.Logger.BeginScope(new Dictionary<string, object>()
+                {
+                    ["ResourcePath"] = catalogItem.GetPath()
+                });
+
+                this.Context.Logger.LogDebug("Read catalog item.");
+
                 try
                 {
                     await this.ReadSingleAsync(catalogItem, begin, end, dataBuffer, statusBuffer, cancellationToken);
                 }
                 catch (Exception ex)
                 {
-                    this.Context.Logger.LogWarning($"Could not read catalog item '{catalogItem.GetPath()}'. Reason: {ExtensibilityUtilities.GetFullMessage(ex)}");
+                    this.Context.Logger.LogError(ex, "Could not read catalog item.");
                 }
 
                 progress.Report(++counter / requests.Length);

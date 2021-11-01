@@ -61,19 +61,21 @@ namespace Nexus.Extensibility
             CancellationToken cancellationToken)
         {
             /* validation */
+            if (!catalogItemPipeReaders.Any())
+                return;
+
             foreach (var catalogItemPipeReader in catalogItemPipeReaders)
             {
                 if (catalogItemPipeReader.CatalogItem.Representation.SamplePeriod != samplePeriod)
                     throw new ValidationException("All representations must be of the same sample period.");
             }
 
-            if (!catalogItemPipeReaders.Any())
-                return;
-
             DataWriterController.ValidateParameters(begin, samplePeriod, filePeriod);
 
             /* periods */
             var totalPeriod = end - begin;
+            this.Logger.LogDebug("The total period is {TotalPeriod}.", totalPeriod);
+
             var consumedPeriod = TimeSpan.Zero;
             var currentPeriod = default(TimeSpan);
 
@@ -111,6 +113,9 @@ namespace Nexus.Extensibility
                  */
 
                 cancellationToken.ThrowIfCancellationRequested();
+
+                var currentBegin = fileBegin + fileOffset;
+                this.Logger.LogTrace("Process period {CurrentBegin} to {CurrentEnd}.", currentBegin, currentBegin + duration);
 
                 /* close / open */
                 if (fileBegin != lastFileBegin)

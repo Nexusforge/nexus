@@ -35,7 +35,7 @@ namespace Nexus.PackageManagement
 
         #region Constructors
 
-        public PackageController(PackageReference packageReference, ILogger logger)
+        public PackageController(PackageReference packageReference, ILogger<PackageController> logger)
         {
             _packageReference = packageReference;
             _logger = logger;
@@ -87,7 +87,6 @@ namespace Nexus.PackageManagement
                 throw new Exception("The extension is already loaded.");
 
             var restoreFolderPath = await this.RestoreAsync(restoreRoot, cancellationToken);
-
             var depsJsonExtension = ".deps.json";
 
             var depsJsonFilePath = Directory
@@ -155,6 +154,8 @@ namespace Nexus.PackageManagement
                 default:
                     throw new ArgumentException($"The provider '{provider}' is not supported.");
             }
+
+            _logger.LogDebug("Restored package to path {RestoreFolderPath}.", restoreFolderPath);
 
             return restoreFolderPath;
         }

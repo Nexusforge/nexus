@@ -119,14 +119,18 @@ namespace Nexus.Controllers.V1
 
             try
             {
-                var jobControl = _exportJobService.AddJob(job, dataService.ReadProgress, (jobControl, cts) =>
+                var jobControl = _exportJobService.AddJob(job, dataService.ReadProgress, async (jobControl, cts) =>
                 {
                     var userIdService = _serviceProvider.GetRequiredService<UserIdService>();
 #warning ExportId should be ASP Request ID!
                     var exportId = Guid.NewGuid();
-                    var task = dataService.ExportAsync(parameters, catalogItems, exportId, cts.Token);
 
-                    return task;
+                    using var scope = this.Context.Logger.BeginScope(new Dictionary<string, object>()
+                    {
+                        ["ResourcePath"] = catalogItem.GetPath()
+                    });
+
+                    return await dataService.ExportAsync(parameters, catalogItems, exportId, cts.Token);
                 });
 
                 return this.Accepted($"{this.GetBasePath()}{this.Request.Path}/{jobControl.Job.Id}/status", jobControl.Job);

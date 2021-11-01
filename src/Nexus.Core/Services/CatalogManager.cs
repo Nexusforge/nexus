@@ -8,10 +8,8 @@ using Nexus.Filters;
 using Nexus.Utilities;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Security.Claims;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -68,11 +66,11 @@ namespace Nexus.Services
                 new BackendSource(Type: FilterDataSource.Id, ResourceLocator: new Uri(_options.Config))
             };
 
-            var extenedBackendSources = builtinBackendSources.Concat(_appState.Project.BackendSources);
+            var extendedBackendSources = builtinBackendSources.Concat(_appState.Project.BackendSources);
 
             // load data sources and get catalogs
             var backendSourceToCatalogDataMap = (await Task.WhenAll(
-                extenedBackendSources.Select(async backendSource =>
+                extendedBackendSources.Select(async backendSource =>
                     {
                         using var controller = await _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken);
                         var catalogs = await controller.GetCatalogsAsync(cancellationToken);
@@ -174,6 +172,10 @@ namespace Nexus.Services
                     entry => entry.Key, 
                     entry => entry.Value.Select(current => current.Item1).ToArray())
             );
+
+            _logger.LogInformation("Loaded {CatalogCount} catalogs from {BackendSourceCount} backend sources.",
+                catalogCollection.CatalogContainers.Count,
+                backendSourceToCatalogDataMap.Keys.Count);
 
             return state;
         }

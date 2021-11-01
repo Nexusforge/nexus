@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Nexus.Core;
 using Nexus.Extensibility;
 using Nexus.Extensions;
@@ -16,20 +15,17 @@ namespace Nexus.Services
     {
         private AppState _appState;
         private IExtensionHive _extensionHive;
-        private IServiceProvider _serviceProvider;
         private ILogger _logger;
         private ILoggerFactory _loggerFactory;
 
         public DataControllerService(
             AppState appState,
             IExtensionHive extensionHive,
-            IServiceProvider serviceProvider,
             ILogger<DataControllerService> logger,
             ILoggerFactory loggerFactory)
         {
             _appState = appState;
             _extensionHive = extensionHive;
-            _serviceProvider = serviceProvider;
             _logger = logger;
             _loggerFactory = loggerFactory;
         }

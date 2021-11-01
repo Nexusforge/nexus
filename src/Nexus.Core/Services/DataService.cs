@@ -21,6 +21,7 @@ namespace Nexus.Services
         private AppState _appState;
 
         private ILogger _logger;
+        private ILoggerFactory _loggerFactory;
         private IDatabaseManager _databaseManager;
         private IUserIdService _userIdService;
         private IDataControllerService _dataControllerService;
@@ -34,13 +35,15 @@ namespace Nexus.Services
             IDataControllerService dataControllerService,
             IDatabaseManager databaseManager,
             IUserIdService userIdService,
-            ILogger<DataService> logger)
+            ILogger<DataService> logger,
+            ILoggerFactory loggerFactory)
         {
             _appState = appState;
             _dataControllerService = dataControllerService;
             _userIdService = userIdService;
             _databaseManager = databaseManager;
             _logger = logger;
+            _loggerFactory = loggerFactory;
 
             this.ReadProgress = new Progress<double>();
             this.WriteProgress = new Progress<double>();
@@ -226,7 +229,7 @@ namespace Nexus.Services
                 exportContext.SamplePeriod,
                 readingGroups.ToArray(),
                 this.ReadProgress,
-                _logger,
+                _loggerFactory.CreateLogger<DataSourceController>(),
                 cts.Token);
 
             /* write */
@@ -275,6 +278,8 @@ namespace Nexus.Services
                 foreach (string filePath in filePaths)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
+
+                    _logger.LogTrace("Write content of {filePath} to the ZIP archive.");
 
                     var zipArchiveEntry = zipArchive.CreateEntry(Path.GetFileName(filePath), CompressionLevel.Optimal);
 

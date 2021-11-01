@@ -34,13 +34,13 @@ namespace Nexus.Controllers.V1
         public CatalogsController(
             AppState appState,
             UserIdService userIdService,
-            IDataControllerService dataControllerService,
-            ILoggerFactory loggerFactory)
+            ILogger<CatalogsController> logger,
+            IDataControllerService dataControllerService)
         {
             _appState = appState;
             _userIdService = userIdService;
+            _logger = logger;
             _dataControllerService = dataControllerService;
-            _logger = loggerFactory.CreateLogger("Nexus");
         }
 
         #endregion

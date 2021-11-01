@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Utilities;
@@ -236,6 +236,11 @@ namespace Nexus.Extensibility
                 {
                     var (catalogItem, dataWriter, statusWriter) = catalogItemPipeWriter;
 
+                    using var scope = this.Logger.BeginScope(new Dictionary<string, object>()
+                    {
+                        ["ResourcePath"] = catalogItem.GetPath()
+                    });
+
                     if (statusWriter is null)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
@@ -249,6 +254,9 @@ namespace Nexus.Extensibility
                             .GetMemory(dataLength)
                             .Slice(0, dataLength);
 
+                        this.Logger.LogTrace("Merge status buffer and data buffer.");
+
+#warning this is blocking
                         BufferUtilities.ApplyRepresentationStatusByDataType(
                             catalogItem.Representation.DataType,
                             readRequest.Data,
@@ -256,6 +264,7 @@ namespace Nexus.Extensibility
                             target: new CastMemoryManager<byte, double>(buffer).Memory);
 
                         /* update progress */
+                        this.Logger.LogTrace("Advance data pipe writer by {DataLength} bytes.", dataLength);
                         dataWriter.Advance(dataLength);
                         dataTasks.Add(dataWriter.FlushAsync());
                     }
@@ -266,9 +275,11 @@ namespace Nexus.Extensibility
                         var dataLength = elementCount * elementSize;
 
                         /* update progress */
+                        this.Logger.LogTrace("Advance data pipe writer by {DataLength} bytes.", dataLength);
                         dataWriter.Advance(dataLength);
                         dataTasks.Add(dataWriter.FlushAsync());
 
+                        this.Logger.LogTrace("Advance status pipe writer by {StatusLength} bytes.", elementCount);
                         statusWriter.Advance(elementCount);
                         statusTasks.Add(statusWriter.FlushAsync());
                     }
@@ -297,29 +308,42 @@ namespace Nexus.Extensibility
             TimeSpan samplePeriod,
             DataReadingGroup[] readingGroups,
             IProgress<double>? progress,
-            ILogger logger,
+            ILogger<DataSourceController> logger,
             CancellationToken cancellationToken)
         {
             /* validation */
-            foreach (var catalogItemPipeWriters in readingGroups.SelectMany(readingGroup => readingGroup.CatalogItemPipeWriters))
+            var catalogItemPipeWriters = readingGroups.SelectMany(readingGroup => readingGroup.CatalogItemPipeWriters);
+
+            if (!catalogItemPipeWriters.Any())
+                return;
+
+            foreach (var catalogItemPipeWriter in catalogItemPipeWriters)
             {
-                if (catalogItemPipeWriters.CatalogItem.Representation.SamplePeriod != samplePeriod)
-                    throw new ValidationException("All representations must be of the same sample period.");
+                if (catalogItemPipeWriter.CatalogItem.Representation.SamplePeriod != samplePeriod)
+                    throw new ValidationException("All representations must be based on the same sample period.");
             }
 
             DataSourceController.ValidateParameters(begin, end, samplePeriod);
 
             /* pre-calculation */
-            var bytesPerRow = readingGroups
-                .SelectMany(readingGroup => readingGroup.CatalogItemPipeWriters)
+            var bytesPerRow = catalogItemPipeWriters
                 .Sum(catalogItemPipeWriter => catalogItemPipeWriter.CatalogItem.Representation.ElementSize);
 
+            logger.LogDebug("A single row has a size of {BytesPerRow} bytes.", bytesPerRow);
+
             var chunkSize = Math.Max(bytesPerRow, DataSourceController.ChunkSize);
+            logger.LogDebug("The chunk size is {ChunkSize} bytes.", chunkSize);
+
             var rows = chunkSize / bytesPerRow;
+            logger.LogDebug("{RowCount} rows will be processed per chunk.", rows);
+
             var maxPeriodPerRequest = TimeSpan.FromTicks(samplePeriod.Ticks * rows);
+            logger.LogDebug("The maximum period per request is {MaxPeriodPerRequest}.", maxPeriodPerRequest);
 
             /* periods */
             var totalPeriod = end - begin;
+            logger.LogDebug("The total period is {TotalPeriod}.", totalPeriod);
+
             var consumedPeriod = TimeSpan.Zero;
             var remainingPeriod = totalPeriod;
             var currentPeriod = default(TimeSpan);
@@ -333,11 +357,14 @@ namespace Nexus.Extensibility
                 currentDataSourceProgress.Clear();
                 currentPeriod = TimeSpan.FromTicks(Math.Min(remainingPeriod.Ticks, maxPeriodPerRequest.Ticks));
 
+                var currentBegin = begin + consumedPeriod;
+                var currentEnd = currentBegin + currentPeriod;
+
+                logger.LogDebug("Process period {CurrentBegin} to {CurrentEnd}.", currentBegin, currentEnd);
+
                 var readingTasks = readingGroups.Select(async readingGroup =>
                 {
                     var (controller, catalogItemPipeWriters) = readingGroup;
-                    var currentBegin = begin + consumedPeriod;
-                    var currentEnd = currentBegin + currentPeriod;
 
                     try
                     {
@@ -350,7 +377,7 @@ namespace Nexus.Extensibility
                             {
                                 currentDataSourceProgress.AddOrUpdate(controller, progressValue, (_, _) => progressValue);
 
-                                // https://stackoverflow.com/a/62768272
+                                // https://stackoverflow.com/a/62768272 (currentDataSourceProgress)
                                 var baseProgress = consumedPeriod.Ticks / (double)totalPeriod.Ticks;
                                 var relativeProgressFactor = currentPeriod.Ticks / (double)totalPeriod.Ticks;
                                 var relativeProgress = currentDataSourceProgress.Sum(entry => entry.Value) * relativeProgressFactor;
@@ -369,10 +396,11 @@ namespace Nexus.Extensibility
                     }
                     catch (Exception ex)
                     {
-                        logger.LogWarning(ex.GetFullMessage());
+                        logger.LogError(ex, $"Processing period {currentBegin} to {currentEnd} failed.");
                     }
                 });
 
+#warning fail fast?
                 await Task.WhenAll(readingTasks);
 
                 /* continue in time */
