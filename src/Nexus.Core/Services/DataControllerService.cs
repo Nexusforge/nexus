@@ -41,6 +41,8 @@ namespace Nexus.Services
             {
                 var filterDataSource = (FilterDataSource)dataSource;
 
+                filterDataSource.DataSourceControllerLogger = _loggerFactory.CreateLogger<DataSourceController>();
+
                 filterDataSource.GetCatalogCollection = () => _appState.CatalogState.CatalogCollection;
 
                 filterDataSource.IsCatalogAccessible =

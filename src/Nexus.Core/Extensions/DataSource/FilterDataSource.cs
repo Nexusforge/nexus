@@ -43,6 +43,8 @@ namespace Nexus.Extensions
 
         #region Properties
 
+        public ILogger<DataSourceController> DataSourceControllerLogger { get; set; }
+
         public Func<CatalogCollection> GetCatalogCollection { get; set; }
 
         public Func<string, bool> IsCatalogAccessible { get; set; }
@@ -186,7 +188,7 @@ namespace Nexus.Extensions
                         }
                         catch (Exception ex)
                         {
-                            this.Context.Logger.LogError(ex, "Skip creation of resource '{resourceId}'.", localFilterChannel.ResourceId);
+                            this.Context.Logger.LogError(ex, "Skip creation of resource {resourceId}.", localFilterChannel.ResourceId);
                         }
                     }
                 }
@@ -219,7 +221,7 @@ namespace Nexus.Extensions
                     var cacheEntry = _cacheEntries.FirstOrDefault(current => current.SupportedResourceIds.Contains(resource.Id));
 
                     if (cacheEntry is null)
-                        throw new Exception("The requested filter resource ID could not be found.");
+                        throw new Exception($"The requested resource path {catalogItem.GetPath()} could not be found.");
 
                     // fill database
                     GetFilterData getData = (string catalogId, string resourceId, string representationId, DateTime begin, DateTime end) =>
@@ -229,7 +231,7 @@ namespace Nexus.Extensions
                             .FirstOrDefault(container => container.Id == catalogId || container.PhysicalName == catalogId);
 
                         if (catalog == null)
-                            throw new Exception($"Unable to find catalog with id '{catalogId}'.");
+                            throw new Exception($"Unable to find catalog {catalogId}.");
 
                         var subCatalogItem = catalogCollection.Find(catalog.Id, resourceId, representationId);
 
@@ -243,7 +245,7 @@ namespace Nexus.Extensions
                             begin,
                             end, 
                             subCatalogItem,
-                            this.Context.Logger);
+                            this.DataSourceControllerLogger);
 
                         var doubleData = new double[doubleStream.Length / 8];
                         var byteData = new CastMemoryManager<double, byte>(doubleData.AsMemory()).Memory;
@@ -307,8 +309,7 @@ namespace Nexus.Extensions
                 .Where(filterSetting => filterSetting.CodeType == CodeType.Filter && filterSetting.IsEnabled)
                 .ToList();
 
-            var message = $"Compiling {filterCodeDefinitions.Count} filter(s) ...";
-            this.Context.Logger.LogInformation(message);
+            this.Context.Logger.LogInformation("Compile {FilterCount} filter(s).", filterCodeDefinitions.Count);
 
             var cacheEntries = new FilterDataSourceCacheEntry[filterCodeDefinitions.Count];
 
@@ -355,7 +356,7 @@ namespace Nexus.Extensions
                     }
                     catch (Exception ex)
                     {
-                        this.Context.Logger.LogError($"Failed to instantiate the filter provider '{filterCodeDefinition.Name}' of user {filterCodeDefinition.Owner}. Detailed error: {ex.GetFullMessage()}");
+                        this.Context.Logger.LogError(ex, "Failed to instantiate the filter provider {FilterName} of user {FilterOwner}.", filterCodeDefinition.Name, filterCodeDefinition.Owner);
                     }
                 })
                 .ToArray();
@@ -363,7 +364,6 @@ namespace Nexus.Extensions
             await Task.WhenAll(compileTasks);
 
             _cacheEntries.AddRange(cacheEntries.Where(cacheEntry => cacheEntry is not null));
-            this.Context.Logger.LogInformation($"{message} Done.");
         }
 
         private string PrepareCode(string code)

@@ -21,10 +21,9 @@ namespace Nexus.Controllers.V1
     {
         #region Fields
 
-        private ILogger _logger;
-        private IUserIdService _userIdService;
-        private IDataControllerService _dataControllerService;
         private AppState _appState;
+        private IDataControllerService _dataControllerService;
+        private ILoggerFactory _loggerFactory;
 
         #endregion
 
@@ -33,13 +32,11 @@ namespace Nexus.Controllers.V1
         public DataController(
             AppState appState,
             IDataControllerService dataControllerService,
-            IUserIdService userIdService,
-            ILogger<DataController> logger)
+            ILoggerFactory loggerFactory)
         {
             _appState = appState;
-            _userIdService = userIdService;
             _dataControllerService = dataControllerService;
-            _logger = logger;
+            _loggerFactory = loggerFactory;
         }
 
         #endregion
@@ -84,9 +81,6 @@ namespace Nexus.Controllers.V1
             begin = DateTime.SpecifyKind(begin, DateTimeKind.Utc);
             end = DateTime.SpecifyKind(end, DateTimeKind.Utc);
 
-            var message = $"User '{userName}' ({remoteIpAddress}) streams data: {begin.ToISO8601()} to {end.ToISO8601()} ...";
-            _logger.LogInformation(message);
-
             try
             {
                 var catalogCollection = _appState.CatalogState.CatalogCollection;
@@ -108,14 +102,12 @@ namespace Nexus.Controllers.V1
 
                 // controller
                 using var controller = await _dataControllerService.GetDataSourceControllerForDataAccessAsync(
-                    _userIdService.User,
+                    this.User,
                     catalogItem.Representation.BackendSource,
                     cancellationToken);
 
                 // read data
-                var stream = controller.ReadAsStream(begin, end, catalogItem, _logger);
-
-                _logger.LogInformation($"{message} Done.");
+                var stream = controller.ReadAsStream(begin, end, catalogItem, _loggerFactory.CreateLogger<DataSourceController>());
 
                 this.Response.Headers.ContentLength = stream.Length;
                 return this.File(stream, "application/octet-stream", "data.bin");
@@ -123,11 +115,6 @@ namespace Nexus.Controllers.V1
             catch (ValidationException ex)
             {
                 return this.UnprocessableEntity(ex.GetFullMessage(includeStackTrace: false));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"{message} {ex.GetFullMessage()}");
-                throw;
             }
         }
     }

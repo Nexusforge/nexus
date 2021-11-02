@@ -256,7 +256,7 @@ namespace Nexus.Shared
             }
             catch (Exception ex)
             {
-                this.UserState.Logger.LogError(ex.GetFullMessage());
+                this.UserState.Logger.LogError(ex, "Load availability data failed.");
                 this.ToasterService.ShowError(message: "Unable to load availability data.", icon: MatIconNames.Error_outline);
             }
         }

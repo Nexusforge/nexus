@@ -176,7 +176,7 @@ namespace Nexus.Extensibility
                             var availabilityTask = this.GetFileAvailabilityAsync(file.FilePath, cancellationToken);
 
                             _ = availabilityTask.ContinueWith(
-                                x => this.Context.Logger.LogWarning($"Could not process file '{file.FilePath}'. Reason: {ExtensibilityUtilities.GetFullMessage(availabilityTask.Exception)}"),
+                                x => this.Context.Logger.LogError(availabilityTask.Exception, "Could not process file {FilePath}.", file.FilePath),
                                 TaskContinuationOptions.OnlyOnFaulted
                             );
 
@@ -415,7 +415,7 @@ namespace Nexus.Extensibility
             }
             else
             {
-                this.Context.Logger.LogDebug("{Count} catalogs found in cache.", this.Context.Catalogs.Count);
+                this.Context.Logger.LogDebug("{Count} catalogs found in cache.", this.Context.Catalogs.Length);
             }
 
             return this.Context.Catalogs;

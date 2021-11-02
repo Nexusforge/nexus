@@ -51,7 +51,7 @@ namespace Nexus.Services
         public async Task LoadPackagesAsync(IEnumerable<PackageReference> packageReferences, CancellationToken cancellationToken)
         {
             // clean up
-            _logger.LogInformation("Unload previously laoded packages.");
+            _logger.LogInformation("Unload previously loaded packages.");
 
             if (_packageControllerMap is not null)
             {

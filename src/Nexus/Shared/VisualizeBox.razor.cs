@@ -131,13 +131,13 @@ namespace Nexus.Shared
             }
             catch (UnauthorizedAccessException ex)
             {
-                this.UserState.Logger.LogError(ex.GetFullMessage());
+                this.UserState.Logger.LogError(ex, "Unauthorized.");
                 this.ToasterService.ShowError(message: "Unauthorized.", icon: MatIconNames.Lock);
                 this.UserState.ClientState = ClientState.Normal;
             }
             catch (Exception ex)
             {
-                this.UserState.Logger.LogError(ex.GetFullMessage());
+                this.UserState.Logger.LogError(ex, "Stream data failed.");
                 this.ToasterService.ShowError(message: "Unable to stream data.", icon: MatIconNames.Error_outline);
                 this.UserState.ClientState = ClientState.Normal;
             }

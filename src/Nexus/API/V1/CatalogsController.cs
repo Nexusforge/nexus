@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.Extensions.Logging;
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
@@ -22,9 +21,7 @@ namespace Nexus.Controllers.V1
     {
         #region Fields
 
-        private ILogger _logger;
         private AppState _appState;
-        private UserIdService _userIdService;
         private IDataControllerService _dataControllerService;
 
         #endregion
@@ -33,13 +30,9 @@ namespace Nexus.Controllers.V1
 
         public CatalogsController(
             AppState appState,
-            UserIdService userIdService,
-            ILogger<CatalogsController> logger,
             IDataControllerService dataControllerService)
         {
             _appState = appState;
-            _userIdService = userIdService;
-            _logger = logger;
             _dataControllerService = dataControllerService;
         }
 
@@ -81,23 +74,10 @@ namespace Nexus.Controllers.V1
 
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            // log
-            var message = $"User '{_userIdService.GetUserId()}' requests catalog '{catalogId}' ...";
-            _logger.LogInformation(message);
-
-            try
+            return await this.ProcessCatalogIdAsync(catalogId, catalog =>
             {
-                return await this.ProcessCatalogIdAsync(catalogId, message, catalog =>
-                {
-                    _logger.LogInformation($"{message} Done.");
-                    return Task.FromResult((ActionResult<ResourceCatalog>)this.CreateCatalogResponse(catalog));
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"{message} {ex.GetFullMessage()}");
-                throw;
-            }
+                return Task.FromResult((ActionResult<ResourceCatalog>)this.CreateCatalogResponse(catalog));
+            });
         }
 
         /// <summary>
@@ -116,23 +96,10 @@ namespace Nexus.Controllers.V1
 
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            // log
-            var message = $"User '{_userIdService.GetUserId()}' requests time range of catalog '{catalogId}' ...";
-            _logger.LogInformation(message);
-
-            try
+            return await this.ProcessCatalogIdAsync<TimeRangeResult[]>(catalogId, async catalog =>
             {
-                return await this.ProcessCatalogIdAsync<TimeRangeResult[]>(catalogId, message, async catalog =>
-                {
-                    _logger.LogInformation($"{message} Done.");
-                    return await this.CreateTimeRangeResponseAsync(catalog, cancellationToken);
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"{message} {ex.GetFullMessage()}");
-                throw;
-            }
+                return await this.CreateTimeRangeResponseAsync(catalog, cancellationToken);
+            });
         }
 
         /// <summary>
@@ -157,23 +124,10 @@ namespace Nexus.Controllers.V1
 
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            // log
-            var message = $"User '{_userIdService.GetUserId()}' requests availability of catalog '{catalogId}' ...";
-            _logger.LogInformation(message);
-
-            try
+            return await this.ProcessCatalogIdAsync<AvailabilityResult[]>(catalogId, async catalog =>
             {
-                return await this.ProcessCatalogIdAsync<AvailabilityResult[]>(catalogId, message, async catalog =>
-                {
-                    _logger.LogInformation($"{message} Done.");
-                    return await this.CreateAvailabilityResponseAsync(catalog, begin, end, granularity, cancellationToken);
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"{message} {ex.GetFullMessage()}");
-                throw;
-            }
+                return await this.CreateAvailabilityResponseAsync(catalog, begin, end, granularity, cancellationToken);
+            });
         }
 
         /// <summary>
@@ -192,35 +146,14 @@ namespace Nexus.Controllers.V1
 
             var remoteIpAddress = this.HttpContext.Connection.RemoteIpAddress;
 
-            // log
-            string userName;
-
-            if (this.User.Identity.IsAuthenticated)
-                userName = this.User.Identity.Name;
-            else
-                userName = "anonymous";
-
-            var message = $"User '{userName}' ({remoteIpAddress}) requests resources for catalog '{catalogId}' ...";
-            _logger.LogInformation(message);
-
-            try
+            return await this.ProcessCatalogIdAsync(catalogId, catalog =>
             {
-                return await this.ProcessCatalogIdAsync(catalogId, message, catalog =>
-                {
-                    var resources = catalog.Resources
-                        .Select(resource => this.CreateResourceResponse(resource))
-                        .ToArray();
+                var resources = catalog.Resources
+                    .Select(resource => this.CreateResourceResponse(resource))
+                    .ToArray();
 
-                    _logger.LogInformation($"{message} Done.");
-
-                    return Task.FromResult((ActionResult<Resource[]>)resources);
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"{message} {ex.GetFullMessage()}");
-                throw;
-            }
+                return Task.FromResult((ActionResult<Resource[]>)resources);
+            });
         }
 
         /// <summary>
@@ -240,34 +173,20 @@ namespace Nexus.Controllers.V1
             catalogId = WebUtility.UrlDecode(catalogId);
             resourceId = WebUtility.UrlDecode(resourceId);
 
-            // log
-            var message = $"User '{_userIdService.GetUserId()}' requests resource '{catalogId}/{resourceId}' ...";
-            _logger.LogInformation(message);
-
-            try
+            return await this.ProcessCatalogIdAsync(catalogId, catalog =>
             {
-                return await this.ProcessCatalogIdAsync(catalogId, message, catalog =>
-                {
-                    var resource = catalog.Resources.FirstOrDefault(
-                        current => current.Id.ToString() == resourceId);
+                var resource = catalog.Resources.FirstOrDefault(
+                    current => current.Id.ToString() == resourceId);
 
-                    if (resource == null)
-                        resource = catalog.Resources.FirstOrDefault(
-                            current => current.Id == resourceId);
+                if (resource == null)
+                    resource = catalog.Resources.FirstOrDefault(
+                        current => current.Id == resourceId);
 
-                    if (resource == null)
-                        return Task.FromResult((ActionResult<Resource>)this.NotFound($"{catalogId}/{resourceId}"));
+                if (resource == null)
+                    return Task.FromResult((ActionResult<Resource>)this.NotFound($"{catalogId}/{resourceId}"));
 
-                    _logger.LogInformation($"{message} Done.");
-
-                    return Task.FromResult((ActionResult<Resource>)this.CreateResourceResponse(resource));
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"{message} {ex.GetFullMessage()}");
-                throw;
-            }
+                return Task.FromResult((ActionResult<Resource>)this.CreateResourceResponse(resource));
+            });
         }
 
         /// <summary>
@@ -287,38 +206,24 @@ namespace Nexus.Controllers.V1
             catalogId = WebUtility.UrlDecode(catalogId);
             resourceId = WebUtility.UrlDecode(resourceId);
 
-            // log
-            var message = $"User '{_userIdService.GetUserId()}' requests representations for resource '{catalogId}/{resourceId}' ...";
-            _logger.LogInformation(message);
-
-            try
+            return await this.ProcessCatalogIdAsync(catalogId, catalog =>
             {
-                return await this.ProcessCatalogIdAsync(catalogId, message, catalog =>
-                {
-                    var resource = catalog.Resources.FirstOrDefault(
-                        current => current.Id.ToString() == resourceId);
+                var resource = catalog.Resources.FirstOrDefault(
+                    current => current.Id.ToString() == resourceId);
 
-                    if (resource == null)
-                        resource = catalog.Resources.FirstOrDefault(
-                            current => current.Id == resourceId);
+                if (resource == null)
+                    resource = catalog.Resources.FirstOrDefault(
+                        current => current.Id == resourceId);
 
-                    if (resource == null)
-                        return Task.FromResult((ActionResult<Representation[]>)this.NotFound($"{catalogId}/{resourceId}"));
+                if (resource == null)
+                    return Task.FromResult((ActionResult<Representation[]>)this.NotFound($"{catalogId}/{resourceId}"));
 
-                    _logger.LogInformation($"{message} Done.");
+                var response = resource.Representations.Select(representation
+                    => this.CreateRepresentationResponse(representation))
+                    .ToArray();
 
-                    var response = resource.Representations.Select(representation 
-                        => this.CreateRepresentationResponse(representation))
-                        .ToArray();
-
-                    return Task.FromResult((ActionResult<Representation[]>)response);
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"{message} {ex.GetFullMessage()}");
-                throw;
-            }
+                return Task.FromResult((ActionResult<Representation[]>)response);
+            });
         }
 
         /// <summary>
@@ -342,39 +247,26 @@ namespace Nexus.Controllers.V1
             representationId = WebUtility.UrlDecode(representationId);
 
             // log
-            var message = $"User '{_userIdService.GetUserId()}' requests representation '{catalogId}/{resourceId}/{representationId}' ...";
-            _logger.LogInformation(message);
-
-            try
+            return await this.ProcessCatalogIdAsync<Representation>(catalogId,  catalog =>
             {
-                return await this.ProcessCatalogIdAsync<Representation>(catalogId, message, catalog =>
-                {
-                    var resource = catalog.Resources.FirstOrDefault(
-                        current => current.Id.ToString() == resourceId);
+                var resource = catalog.Resources.FirstOrDefault(
+                    current => current.Id.ToString() == resourceId);
 
-                    if (resource == null)
-                        resource = catalog.Resources.FirstOrDefault(
-                            current => current.Id == resourceId);
+                if (resource == null)
+                    resource = catalog.Resources.FirstOrDefault(
+                        current => current.Id == resourceId);
 
-                    if (resource == null)
-                        return Task.FromResult((ActionResult<Representation>)this.NotFound($"{catalogId}/{resourceId}"));
+                if (resource == null)
+                    return Task.FromResult((ActionResult<Representation>)this.NotFound($"{catalogId}/{resourceId}"));
 
-                    var representation = resource.Representations.FirstOrDefault(
-                        current => current.Id == representationId);
+                var representation = resource.Representations.FirstOrDefault(
+                    current => current.Id == representationId);
 
-                    if (representation == null)
-                        return Task.FromResult((ActionResult<Representation>)this.NotFound($"{catalogId}/{resourceId}/{representation}"));
+                if (representation == null)
+                    return Task.FromResult((ActionResult<Representation>)this.NotFound($"{catalogId}/{resourceId}/{representation}"));
 
-                    _logger.LogInformation($"{message} Done.");
-
-                    return Task.FromResult((ActionResult<Representation>)this.CreateRepresentationResponse(representation));
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"{message} {ex.GetFullMessage()}");
-                throw;
-            }
+                return Task.FromResult((ActionResult<Representation>)this.CreateRepresentationResponse(representation));
+            });
         }
 
         private ResourceCatalog CreateCatalogResponse(ResourceCatalog catalog)
@@ -444,7 +336,6 @@ namespace Nexus.Controllers.V1
 
         private async Task<ActionResult<T>> ProcessCatalogIdAsync<T>(
             string catalogId,
-            string message,
             Func<ResourceCatalog, Task<ActionResult<T>>> action)
         {
             var catalogContainer = _appState.CatalogState.CatalogCollection.CatalogContainers
@@ -461,7 +352,6 @@ namespace Nexus.Controllers.V1
             }
             else
             {
-                _logger.LogInformation($"{message} Not found.");
                 return this.NotFound(catalogId);
             }
         }

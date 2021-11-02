@@ -1,0 +1,7 @@
+{
+  "profiles": {
+    "Nexus.Core.Tests": {
+      "commandName": "Project"
+    }
+  }
+}

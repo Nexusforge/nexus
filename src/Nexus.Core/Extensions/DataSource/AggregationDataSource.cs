@@ -166,34 +166,22 @@ namespace Nexus.Extensions
                     var cacheFiles = Directory.EnumerateFiles(cacheFolderPath, "*-*.json");
                     catalogs = new List<ResourceCatalog>();
 
-                    var message = "Merging cache files into main cache ...";
+                    this.Context.Logger.LogDebug("Merge cache files into main cache.");
 
-                    try
+                    foreach (var cacheFile in cacheFiles)
                     {
-                        this.Context.Logger.LogInformation(message);
+                        var jsonString2 = File.ReadAllText(cacheFile);
+                        var cache = JsonSerializerHelper.Deserialize<List<ResourceCatalog>>(jsonString2);
 
-                        foreach (var cacheFile in cacheFiles)
+                        foreach (var catalog in cache)
                         {
-                            var jsonString2 = File.ReadAllText(cacheFile);
-                            var cache = JsonSerializerHelper.Deserialize<List<ResourceCatalog>>(jsonString2);
+                            var reference = catalogs.FirstOrDefault(current => current.Id == catalog.Id);
 
-                            foreach (var catalog in cache)
-                            {
-                                var reference = catalogs.FirstOrDefault(current => current.Id == catalog.Id);
-
-                                if (reference != null)
-                                    reference.Merge(catalog, MergeMode.NewWins);
-                                else
-                                    catalogs.Add(catalog);
-                            }
+                            if (reference != null)
+                                reference.Merge(catalog, MergeMode.NewWins);
+                            else
+                                catalogs.Add(catalog);
                         }
-
-                        this.Context.Logger.LogInformation($"{message} Done.");
-                    }
-                    catch (Exception ex)
-                    {
-                        this.Context.Logger.LogError($"{message} Error: {ex.GetFullMessage()}");
-                        throw;
                     }
 
                     var jsonString = JsonSerializerHelper.Serialize(catalogs);
@@ -311,7 +299,7 @@ namespace Nexus.Extensions
                             }
                             catch (Exception ex)
                             {
-                                this.Context.Logger.LogWarning($"Could not process file '{filePath}'. Reason: {ex.GetFullMessage()}");
+                                this.Context.Logger.LogError(ex, "Could not process file {FilePath}.", filePath);
                             }
                         }
 
@@ -349,8 +337,8 @@ namespace Nexus.Extensions
 
             if (Directory.Exists(currentMonthFolder))
             {
-                var message = $"Scanning files for {Path.GetFileName(currentMonthFolder)} ...";
-                this.Context.Logger.LogInformation(message);
+                var monthFolder = Path.GetFileName(currentMonthFolder);
+                this.Context.Logger.LogInformation("Scan files for {MonthFolder)}.", monthFolder);
 
                 var dayFolders = Directory.EnumerateDirectories(currentMonthFolder);
 
@@ -374,12 +362,10 @@ namespace Nexus.Extensions
                     {
                         versioning.ScannedUntilMap[catalogId] = scannedUntil;
                     }
-
-                    this.Context.Logger.LogInformation($"{message} Done.");
                 }
                 catch (Exception ex)
                 {
-                    this.Context.Logger.LogError($"{message} Error: {ex.GetFullMessage()}");
+                    this.Context.Logger.LogError(ex, "Scan files for {MonthFolder)} failed.", monthFolder);
                 }
             }
 

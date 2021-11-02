@@ -396,7 +396,7 @@ namespace Nexus.Extensibility
                     }
                     catch (Exception ex)
                     {
-                        logger.LogError(ex, $"Processing period {currentBegin} to {currentEnd} failed.");
+                        logger.LogError(ex, "Process period {Begin} to {End} failed.", currentBegin, currentEnd);
                     }
                 });
 

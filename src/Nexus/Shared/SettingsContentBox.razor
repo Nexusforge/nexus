@@ -37,6 +37,12 @@
 
         </MatTab>
 
+        <MatTab Label="Settings">
+
+            <MatButton Icon="@MatIconNames.Autorenew" @onclick="async () => await this.AppStateController.ReloadCatalogsAsync(System.Threading.CancellationToken.None)">Reload Database</MatButton>
+
+        </MatTab>
+
         <MatTab Label="Job Creator">
 
             <div class="flex-row h-100">

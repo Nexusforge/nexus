@@ -18,6 +18,7 @@ using Nexus.DataModel;
 using Nexus.Services;
 using Nexus.Utilities;
 using Nexus.ViewModels;
+using Serilog;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System;
 using System.Collections.Generic;
@@ -69,7 +70,7 @@ namespace Nexus
 #warning Repair this!
             services.Configure<IdentityOptions>(options =>
             {
-                // Instead of RequireConfirmedEmail, this one has the desired effect!
+                //Instead of RequireConfirmedEmail, this one has the desired effect!
                 //options.SignIn.RequireConfirmedAccount = usersOptions.Value.VerifyEmail;
             });
 
@@ -248,6 +249,10 @@ namespace Nexus
                         options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", description.GroupName.ToUpperInvariant());
                     }
                 });
+
+            // Serilog Request Logging (https://andrewlock.net/using-serilog-aspnetcore-in-asp-net-core-3-reducing-log-verbosity/)
+            // LogContext properties are not included by default in request logging, workaround: https://nblumhardt.com/2019/10/serilog-mvc-logging/
+            app.UseSerilogRequestLogging();
 
             // routing (for REST API)
             app.UseRouting();

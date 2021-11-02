@@ -3,6 +3,8 @@ using Nexus.Extensibility;
 using Nexus.Utilities;
 using Nexus.ViewModels;
 using Prism.Mvvm;
+using Serilog.Core;
+using Serilog.Events;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
@@ -30,6 +32,8 @@ namespace Nexus.Core
         #endregion
 
         #region Properties - General
+
+        public LoggingLevelSwitch MinimumLoglevelSwitch { get; set; }
 
         public ConcurrentDictionary<CatalogContainer, ResourceViewModel[]> ResourceCache { get; } = new ConcurrentDictionary<CatalogContainer, ResourceViewModel[]>();
 

@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using Nexus.Models.V1;
 using Nexus.Services;
 using System.Threading.Tasks;

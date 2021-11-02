@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Nexus.Core;
 using Serilog;
+using Serilog.Core;
 using System;
 using System.Globalization;
 
@@ -29,15 +30,23 @@ namespace Nexus
             // configuration
             var configuration = NexusOptionsBase.BuildConfiguration(args);
 
+            var generalOptions = new GeneralOptions();
+            configuration.GetSection(GeneralOptions.Section).Bind(generalOptions);
+
+            Program.Language = generalOptions.Language;
+
             // logging (https://nblumhardt.com/2019/10/serilog-in-aspnetcore-3/)
+            var instanceName = generalOptions.InstanceName;
+
             Log.Logger = new LoggerConfiguration()
                 .ReadFrom.Configuration(configuration)
+                .Enrich.WithProperty("Instance", instanceName)
                 .CreateLogger();
 
             // run
             try
             {
-                Program.Language = configuration.GetValue<string>("General:Language");
+                Log.Information("Start host.");
 
                 Program
                     .CreateHostBuilder(Environment.CurrentDirectory, configuration)
@@ -46,7 +55,8 @@ namespace Nexus
             }
             catch (Exception ex)
             {
-                Log.Fatal(ex, "Application start-up failed.");
+                Log.Fatal(ex, "Host terminated unexpectedly.");
+                throw;
             }
             finally
             {

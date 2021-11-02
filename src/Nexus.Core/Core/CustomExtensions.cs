@@ -1,4 +1,4 @@
-﻿using Nexus.Utilities;
+using Nexus.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -60,21 +60,6 @@ namespace Nexus
         public static DateTime RoundDown(this DateTime dateTime, TimeSpan timeSpan)
         {
             return new DateTime(dateTime.Ticks - (dateTime.Ticks % timeSpan.Ticks), dateTime.Kind);
-        }
-
-        public static string GetFullMessage(this Exception ex, bool includeStackTrace = true)
-        {
-            if (includeStackTrace)
-                return $"{ex.InternalGetFullMessage()} - stack trace: {ex.StackTrace}";
-            else
-                return ex.InternalGetFullMessage();
-        }
-
-        private static string InternalGetFullMessage(this Exception ex)
-        {
-            return ex.InnerException == null
-                 ? ex.Message
-                 : ex.Message + " --> " + ex.InnerException.GetFullMessage();
         }
     }
 }

@@ -6,6 +6,7 @@ using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Services;
 using Nexus.Utilities;
+using Serilog.Context;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -24,7 +25,7 @@ namespace Nexus.Controllers.V1
         private ILogger _logger;
         private IServiceProvider _serviceProvider;
         private IDataControllerService _dataControllerService;
-        private IUserIdService _userIdService;
+        private Serilog.IDiagnosticContext _diagnosticContext;
         private AppState _appState;
         private JobService<ExportJob> _exportJobService;
         private JobService<AggregationJob> _aggregationJobService;
@@ -39,8 +40,8 @@ namespace Nexus.Controllers.V1
             JobService<ExportJob> exportJobService,
             JobService<AggregationJob> aggregationJobService,
             IDataControllerService dataControllerService,
+            Serilog.IDiagnosticContext diagnosticContext,
             IServiceProvider serviceProvider,
-            IUserIdService userIdService,
             ILogger<JobsController> logger,
             IOptions<PathsOptions> pathOptions)
         {
@@ -48,8 +49,8 @@ namespace Nexus.Controllers.V1
             _serviceProvider = serviceProvider;
             _exportJobService = exportJobService;
             _dataControllerService = dataControllerService;
+            _diagnosticContext = diagnosticContext;
             _aggregationJobService = aggregationJobService;
-            _userIdService = userIdService;
             _logger = logger;
             _pathsOptions = pathOptions.Value;
         }
@@ -66,6 +67,8 @@ namespace Nexus.Controllers.V1
         [HttpPost("export")]
         public ActionResult<ExportJob> CreateExportJob(ExportParameters parameters)
         {
+            _diagnosticContext.Set("Body", JsonSerializerHelper.Serialize(parameters));
+
             if (_appState.CatalogState == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
 
@@ -96,7 +99,7 @@ namespace Nexus.Controllers.V1
             if (!catalogItems.Any())
                 return this.BadRequest("The list of resource paths is empty.");
 
-            // security check
+            // authorize
             var catalogIds = catalogItems.Select(catalogItem => catalogItem.Catalog.Id).Distinct();
 
             foreach (var catalogId in catalogIds)
@@ -124,11 +127,6 @@ namespace Nexus.Controllers.V1
                     var userIdService = _serviceProvider.GetRequiredService<UserIdService>();
 #warning ExportId should be ASP Request ID!
                     var exportId = Guid.NewGuid();
-
-                    using var scope = this.Context.Logger.BeginScope(new Dictionary<string, object>()
-                    {
-                        ["ResourcePath"] = catalogItem.GetPath()
-                    });
 
                     return await dataService.ExportAsync(parameters, catalogItems, exportId, cts.Token);
                 });
@@ -246,13 +244,15 @@ namespace Nexus.Controllers.V1
         [HttpPost("aggregation")]
         public ActionResult<AggregationJob> CreateAggregationJob(AggregationSetup setup)
         {
+            _diagnosticContext.Set("Body", JsonSerializerHelper.Serialize(setup));
+
             if (_appState.CatalogState == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
 
             setup.Begin = setup.Begin.ToUniversalTime();
             setup.End = setup.End.ToUniversalTime();
 
-            // security check
+            // authorize
             if (!this.User.HasClaim(Claims.IS_ADMIN, "true"))
                 return this.Unauthorized($"The current user is not authorized to create an aggregation job.");
 
@@ -265,34 +265,28 @@ namespace Nexus.Controllers.V1
 
             var aggregationService = _serviceProvider.GetRequiredService<AggregationService>();
             var databaseManager = _serviceProvider.GetRequiredService<IDatabaseManager>();
+            var user = this.User;
 
             try
             {
                 var jobControl = _aggregationJobService.AddJob(job, aggregationService.Progress, (jobControl, cts) =>
                 {
-                    var userIdService = _serviceProvider.GetRequiredService<UserIdService>();
-
                     var task = Task.Run(async () =>
                     {
-                        var message = $"User '{userIdService.GetUserId()}' aggregates data: {setup.Begin.ToISO8601()} to {setup.End.ToISO8601()} ... ";
-                        _logger.LogInformation(message);
-
                         try
                         {
                             var result = await aggregationService.AggregateDataAsync(
                                 _pathsOptions.Cache,
                                 setup,
                                 _appState.CatalogState,
-                                backendSource => _dataControllerService.GetDataSourceControllerForDataAccessAsync(_userIdService.User, backendSource, cts.Token),
+                                backendSource => _dataControllerService.GetDataSourceControllerForDataAccessAsync(user, backendSource, cts.Token),
                                 cts.Token);
-
-                            _logger.LogInformation($"{message} Done.");
 
                             return result;
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogError(ex.GetFullMessage());
+                            _logger.LogError(ex, "Aggregation failed.");
                             throw;
                         }
                     });

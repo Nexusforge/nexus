@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using System;
 using System.IO;
-using System.Net;
 using System.Runtime.InteropServices;
 
 namespace Nexus.Core
@@ -24,7 +23,7 @@ namespace Nexus.Core
                 settingsPath = PathsOptions.DefaultSettingsPath;
 
             if (settingsPath.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
-                builder.AddJsonFile(settingsPath, optional: true);
+                builder.AddJsonFile(settingsPath, optional: true, /* for serilog */ reloadOnChange: true);
 
             builder
                 .AddEnvironmentVariables(prefix: "NEXUS_")
@@ -37,8 +36,8 @@ namespace Nexus.Core
     internal record GeneralOptions() : NexusOptionsBase
     {
         public const string Section = "General";
-        public string InstanceName { get; } = Dns.GetHostName();
-        public string Language { get; }
+        public string InstanceName { get; set; }
+        public string Language { get; set; }
     }
 
     internal record ServerOptions() : NexusOptionsBase

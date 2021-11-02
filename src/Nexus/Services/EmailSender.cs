@@ -21,8 +21,7 @@ namespace Nexus.Services
 
         public async Task SendEmailAsync(string email, string subject, string message)
         {
-            var logMessage = $"Sending mail to address {email} via host {_smtpOptions.Host}:{_smtpOptions.Port} ... ";
-            _logger.LogInformation(logMessage);
+            _logger.LogInformation("Send mail to address {MailAddress}.", email);
 
             try
             {
@@ -38,12 +37,10 @@ namespace Nexus.Services
                 };
 
                 await client.SendMailAsync(mailMessage);
-
-                _logger.LogInformation(logMessage + "Done.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(logMessage + $"Failed. Reason: {ex.GetFullMessage()}");
+                _logger.LogError(ex, "Send mail to address {MailAddress} failed.", email);
             }
         }
     }

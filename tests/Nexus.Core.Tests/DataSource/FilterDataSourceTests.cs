@@ -154,6 +154,7 @@ namespace DataSource
 
             var dataSource = new FilterDataSource()
             {
+                DataSourceControllerLogger = NullLogger<DataSourceController>.Instance,
                 IsCatalogAccessible = _ => true,
                 GetCatalogCollection = () => catalogCollection,
                 GetDataSourceControllerAsync = async id =>

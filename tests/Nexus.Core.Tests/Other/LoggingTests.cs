@@ -37,7 +37,7 @@ namespace Other
             Environment.SetEnvironmentVariable("NEXUS_SERILOG__WRITETO__1__ARGS__OUTPUTTEMPLATE", "[{Level:u3}] {MyCustomProperty} {Message}{NewLine}{Exception}");
 
             Environment.SetEnvironmentVariable("NEXUS_SERILOG__WRITETO__2__NAME", "GrafanaLoki");
-            Environment.SetEnvironmentVariable("NEXUS_SERILOG__WRITETO__2__ARGS__URI", "http://awf.iwes.fraunhofer.de");
+            Environment.SetEnvironmentVariable("NEXUS_SERILOG__WRITETO__2__ARGS__URI", "http://localhost:3100");
             Environment.SetEnvironmentVariable("NEXUS_SERILOG__WRITETO__2__ARGS__LABELS__0__KEY", "app");
             Environment.SetEnvironmentVariable("NEXUS_SERILOG__WRITETO__2__ARGS__LABELS__0__VALUE", "nexus");
             Environment.SetEnvironmentVariable("NEXUS_SERILOG__WRITETO__2__ARGS__OUTPUTTEMPLATE", "{Message}{NewLine}{Exception}");
