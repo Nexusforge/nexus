@@ -25,6 +25,7 @@ To change the log level at runtime, make sure you have an `settings.json` file c
 {
   "Serilog": {
     "MinimumLevel": {
+      "Default": "Information",
       "Override": {
         "Microsoft.Hosting.Lifetime": "Information",
         "Microsoft": "Warning",
