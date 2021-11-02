@@ -19,7 +19,7 @@ The default log level is `Information`, which can be easily modified using one o
 [Here](https://github.com/Nexusforge/Nexus/blob/master/tests/Nexus.Core.Tests/Other/LoggingTests.cs) you can find some more examples to enable the `File`, `GrafanaLoki` or `Seq` using environment variables. You can do the same using your own configuration file or command line args as shown in [[Configuration]].
 
 # Change Log Level at Runtime
-To change the log level at runtime, make sure you have an `settings.json` file created before the application starts. The location of the file can be defined by either the environment variable `NEXUS_PATHS__SETTINGS`, otherwise the [default](https://github.com/Nexusforge/Nexus/blob/c69425659927956cb12efcd0749ca64d00464509/src/Nexus.Core/Core/NexusOptions.cs#L67 path) is used. The contents of the file should look like:
+To change the log level at runtime, make sure you have an `settings.json` file created before the application starts. The location of the file can be defined by the environment variable `NEXUS_PATHS__SETTINGS`, otherwise the [default path](https://github.com/Nexusforge/Nexus/blob/c69425659927956cb12efcd0749ca64d00464509/src/Nexus.Core/Core/NexusOptions.cs#L67) is used. The contents of the file should look like:
 
 ```json
 {
