@@ -222,6 +222,7 @@ namespace Nexus.Services
 
             /* read */
             var exportParameters = exportContext.ExportParameters;
+            var logger = _loggerFactory.CreateLogger<DataSourceController>();
 
             var reading = DataSourceController.ReadAsync(
                 exportParameters.Begin,
@@ -229,7 +230,7 @@ namespace Nexus.Services
                 exportContext.SamplePeriod,
                 readingGroups.ToArray(),
                 this.ReadProgress,
-                _loggerFactory.CreateLogger<DataSourceController>(),
+                logger,
                 cts.Token);
 
             /* write */

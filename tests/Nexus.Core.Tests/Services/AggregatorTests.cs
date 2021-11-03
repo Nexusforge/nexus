@@ -1,4 +1,6 @@
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using Nexus.Core;
 using Nexus.Services;
 using Xunit;
@@ -26,7 +28,8 @@ namespace Nexus.Tests
         public void CanAggregate1(AggregationMethod method, double nanLimit, double[] data, double expected)
         {
             // Arrange
-            var aggregator = new AggregationService(NullLogger<AggregationService>.Instance);
+            var loggerFactory = Mock.Of<ILoggerFactory>();
+            var aggregator = new AggregationService(NullLogger<AggregationService>.Instance, loggerFactory);
             var kernelSize = data.Length;
 
             // Act
@@ -46,7 +49,8 @@ namespace Nexus.Tests
         public void CanAggregate2(AggregationMethod method, double nanLimit, int[] data, byte[] status, double expected)
         {
             // Arrange
-            var aggregator = new AggregationService(NullLogger<AggregationService>.Instance);
+            var loggerFactory = Mock.Of<ILoggerFactory>();
+            var aggregator = new AggregationService(NullLogger<AggregationService>.Instance, loggerFactory);
             var kernelSize = data.Length;
 
             // Act

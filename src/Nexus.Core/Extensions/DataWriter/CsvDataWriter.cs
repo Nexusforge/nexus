@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 namespace Nexus.Extensions
 {
     [DataWriterFormatName("Comma-separated (*.csv)")]
-    [DataWriterSelectOptionAttribute("RowIndexFormat", "Row index format", "Excel", new string[] { "Excel", "Index", "Unix" }, new string[] { "Excel time", "Index-based", "Unix time" })]
+    [DataWriterSelectOption("RowIndexFormat", "Row index format", "Excel", new string[] { "Excel", "Index", "Unix" }, new string[] { "Excel time", "Index-based", "Unix time" })]
     [DataWriterIntegerNumberInputOption("SignificantFigures", "Significant figures", 4, 0, int.MaxValue)]
     [ExtensionIdentification("Nexus.Builtin.Csv", "Nexus CSV Writer", "Writes data into CSV files.")]
     internal class CsvDataWriter : IDataWriter

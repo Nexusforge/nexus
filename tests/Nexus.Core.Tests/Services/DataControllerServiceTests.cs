@@ -43,7 +43,7 @@ namespace Services
             var serviceCollection = new ServiceCollection();
             var serviceProvider = serviceCollection.BuildServiceProvider();
             var loggerFactory = Mock.Of<ILoggerFactory>();
-            var dataControllerService = new DataControllerService(appState, extensionHive, serviceProvider, default, loggerFactory);
+            var dataControllerService = new DataControllerService(appState, extensionHive, default, loggerFactory);
 
             // Act
             var actual = await dataControllerService.GetDataSourceControllerAsync(backendSource, CancellationToken.None);
@@ -69,7 +69,7 @@ namespace Services
             var exportParameters = new ExportParameters();
 
             // Act
-            var dataControllerService = new DataControllerService(new AppState(), extensionHive, default, default, loggerFactory);
+            var dataControllerService = new DataControllerService(new AppState(), extensionHive, default, loggerFactory);
             var actual = await dataControllerService.GetDataWriterControllerAsync(resourceLocator, exportParameters, CancellationToken.None);
 
             // Assert

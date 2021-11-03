@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -77,9 +78,10 @@ namespace Services
             };
 
             var logger = Mock.Of<ILogger<DataService>>();
+            var loggerFactory = Mock.Of<ILoggerFactory>();
 
             // data service
-            var dataService = new DataService(appState, dataControllerService, default, default, logger);
+            var dataService = new DataService(appState, dataControllerService, default, default, logger, loggerFactory);
 
             // act
             var availability = await dataService.GetAvailabilityAsync("/A/B/C", begin, end, AvailabilityGranularity.Day, CancellationToken.None);
@@ -135,8 +137,8 @@ namespace Services
             var dataControllerService = Mock.Of<IDataControllerService>();
 
             Mock.Get(dataControllerService)
-                .Setup(s => s.GetDataSourceControllerAsync(It.IsAny<BackendSource>(), It.IsAny<CancellationToken>()))
-                .Returns<BackendSource, CancellationToken>((backendSource, cancellationToken) =>
+                .Setup(s => s.GetDataSourceControllerForDataAccessAsync(It.IsAny<ClaimsPrincipal>(), It.IsAny<BackendSource>(), It.IsAny<CancellationToken>()))
+                .Returns<ClaimsPrincipal, BackendSource, CancellationToken>((user, backendSource, cancellationToken) =>
                 {
                     if (backendSource.Equals(backendSource1))
                         return Task.FromResult(dataSourceController1);
@@ -177,6 +179,13 @@ namespace Services
             var userIdService = Mock.Of<IUserIdService>();
 
             var logger = Mock.Of<ILogger<DataService>>();
+            var logger2 = Mock.Of<ILogger<DataSourceController>>();
+
+            var loggerFactory = Mock.Of<ILoggerFactory>();
+
+            Mock.Get(loggerFactory)
+                .Setup(loggerFactory => loggerFactory.CreateLogger(It.IsAny<string>()))
+                .Returns(logger2);
 
             // catalog items
             var representation1 = new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: samplePeriod, detail: "E") 
@@ -208,7 +217,7 @@ namespace Services
             };
 
             // data service
-            var dataService = new DataService(default, dataControllerService, databaseManager, userIdService, logger);
+            var dataService = new DataService(default, dataControllerService, databaseManager, userIdService, logger, loggerFactory);
 
             // act
             try

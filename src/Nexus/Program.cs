@@ -41,9 +41,6 @@ namespace Nexus
             Log.Logger = new LoggerConfiguration()
                 .ReadFrom.Configuration(configuration)
                 .Enrich.WithProperty("ApplicationName", applicationName)
-                .WriteTo.GrafanaLoki(
-                    "https://awf.iwes.fraunhofer.de",
-                    outputTemplate: "{Message}{NewLine}{Exception}")
                 .CreateLogger();
 
             // run

@@ -91,7 +91,7 @@ namespace Other
             string restoreRoot, string fileToDelete, PackageReference packageReference)
         {
             // load
-            var packageController = new PackageController(packageReference, NullLogger.Instance);
+            var packageController = new PackageController(packageReference, NullLogger<PackageController>.Instance);
             var assembly = await packageController.LoadAsync(restoreRoot, CancellationToken.None);
 
             var dataSourceType = assembly
@@ -153,7 +153,7 @@ namespace Other
                     ["Path"] = root,
                 };
 
-                var packageController = new PackageController(packageReference, NullLogger.Instance);
+                var packageController = new PackageController(packageReference, NullLogger<PackageController>.Instance);
 
                 var actual = (await packageController
                     .DiscoverAsync(CancellationToken.None))
@@ -202,7 +202,7 @@ namespace Other
                     ["Version"] = version
                 };
 
-                var packageController = new PackageController(packageReference, NullLogger.Instance);
+                var packageController = new PackageController(packageReference, NullLogger<PackageController>.Instance);
                 await packageController.RestoreAsync(restoreRoot, CancellationToken.None);
 
                 Assert.True(File.Exists(Path.Combine(restoreFolderPath, "sub", "a.deps.json")));
@@ -257,7 +257,7 @@ namespace Other
                 ["Token"] = Encoding.ASCII.GetString(token)
             };
 
-            var packageController = new PackageController(packageReference, NullLogger.Instance);
+            var packageController = new PackageController(packageReference, NullLogger<PackageController>.Instance);
 
             var actual = (await packageController
                 .DiscoverAsync(CancellationToken.None))
@@ -309,7 +309,7 @@ namespace Other
                     ["Token"] = Encoding.ASCII.GetString(token)
                 };
 
-                var packageController = new PackageController(packageReference, NullLogger.Instance);
+                var packageController = new PackageController(packageReference, NullLogger<PackageController>.Instance);
                 await packageController.RestoreAsync(restoreRoot, CancellationToken.None);
 
                 Assert.True(File.Exists(Path.Combine(restoreFolderPath, "sub", "a.deps.json")));
@@ -352,7 +352,7 @@ namespace Other
                 ["Token"] = "doQyXYqgmFxS1LUsupue"
             };
 
-            var packageController = new PackageController(packageReference, NullLogger.Instance);
+            var packageController = new PackageController(packageReference, NullLogger<PackageController>.Instance);
 
             var actual = (await packageController
                 .DiscoverAsync(CancellationToken.None))
@@ -393,7 +393,7 @@ namespace Other
                     ["Token"] = "doQyXYqgmFxS1LUsupue"
                 };
 
-                var packageController = new PackageController(packageReference, NullLogger.Instance);
+                var packageController = new PackageController(packageReference, NullLogger<PackageController>.Instance);
                 await packageController.RestoreAsync(restoreRoot, CancellationToken.None);
 
                 Assert.True(File.Exists(Path.Combine(restoreFolderPath, "sub", "a.deps.json")));
@@ -437,7 +437,7 @@ namespace Other
                 ["Token"] = "zNSQJjP6eWpQ8k-zpvDs",
             };
 
-            var packageController = new PackageController(packageReference, NullLogger.Instance);
+            var packageController = new PackageController(packageReference, NullLogger<PackageController>.Instance);
 
             var actual = (await packageController
                 .DiscoverAsync(CancellationToken.None))
@@ -479,7 +479,7 @@ namespace Other
                     ["Token"] = "zNSQJjP6eWpQ8k-zpvDs",
                 };
 
-                var packageController = new PackageController(packageReference, NullLogger.Instance);
+                var packageController = new PackageController(packageReference, NullLogger<PackageController>.Instance);
                 await packageController.RestoreAsync(restoreRoot, CancellationToken.None);
 
                 Assert.True(File.Exists(Path.Combine(restoreFolderPath, "sub", "a.deps.json")));

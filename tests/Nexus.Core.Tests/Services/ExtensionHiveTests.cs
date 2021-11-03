@@ -1,5 +1,7 @@
-﻿using Microsoft.Extensions.Logging.Abstractions;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Moq;
 using Nexus.Core;
 using Nexus.Extensibility;
 using Nexus.PackageManagement;
@@ -48,7 +50,8 @@ namespace Services
                     Packages = restoreRoot
                 };
 
-                var hive = new ExtensionHive(Options.Create(pathsOptions), NullLogger<ExtensionHive>.Instance);
+                var loggerFactory = Mock.Of<ILoggerFactory>();
+                var hive = new ExtensionHive(Options.Create(pathsOptions), NullLogger<ExtensionHive>.Instance, loggerFactory);
 
                 var version = "v1.0.0-unit.test";
 

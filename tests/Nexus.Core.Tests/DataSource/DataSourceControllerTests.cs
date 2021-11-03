@@ -179,7 +179,7 @@ namespace DataSource
                 samplePeriod,
                 readingGroups,
                 progress: default, 
-                NullLogger.Instance,
+                NullLogger<DataSourceController>.Instance,
                 CancellationToken.None);
 
             await Task.WhenAll(writing, reading);
@@ -211,7 +211,7 @@ namespace DataSource
             var catalogItem = (await controller.GetCatalogsAsync(CancellationToken.None)).Find(resourcePath);
 
             DataSourceController.ChunkSize = 10000;
-            var stream = controller.ReadAsStream(begin, end, catalogItem, NullLogger.Instance);
+            var stream = controller.ReadAsStream(begin, end, catalogItem, NullLogger<DataSourceController>.Instance);
 
             double[] result = new double[86401];
 
