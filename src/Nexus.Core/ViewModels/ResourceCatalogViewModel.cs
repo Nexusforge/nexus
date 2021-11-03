@@ -28,8 +28,6 @@ namespace Nexus.ViewModels
 
         public string Description => _model.Properties.GetValueOrDefault(DataModelExtensions.Description, string.Empty);
 
-        public string ShortDescription => _model.Properties.GetValueOrDefault(DataModelExtensions.ShortDescription, string.Empty);
-
         #endregion
     }
 }

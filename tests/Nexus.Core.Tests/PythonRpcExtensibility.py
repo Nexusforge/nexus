@@ -49,14 +49,12 @@ class DataSourceContext:
 
     resource_locator: ParseResult
     configuration: Dict[str, str]
+    logger: Logger
 
-    catalogs: List[ResourceCatalog]
-
-    def __init__(self, resource_locator: ParseResult, configuration: Dict[str, str], logger: Logger, catalogs: List[ResourceCatalog]):
+    def __init__(self, resource_locator: ParseResult, configuration: Dict[str, str], logger: Logger):
         self.resource_locator = resource_locator
         self.configuration = configuration
         self.logger = logger
-        self.catalogs = catalogs
 
 class IDataSource(ABC):
 
@@ -64,7 +62,11 @@ class IDataSource(ABC):
         pass
 
     @abstractmethod
-    async def get_catalogs_async(self) -> Awaitable[List[ResourceCatalog]]:
+    async def get_catalog_ids_async(self) -> Awaitable[List[str]]:
+        pass
+
+    @abstractmethod
+    async def get_catalog_async(self, catalogId: str) -> Awaitable[ResourceCatalog]:
         pass
 
     @abstractmethod
@@ -200,17 +202,25 @@ class RpcCommunicator:
             resource_locator = urlparse(params[0])
             configuration = params[1]
             logger = Logger(self._tcpCommSocket, self._lock)
-            catalogs = params[2]
-            context = DataSourceContext(resource_locator, configuration, logger, catalogs)
+            context = DataSourceContext(resource_locator, configuration, logger)
 
             await self._dataSource.set_context_async(context)
 
-        elif methodName== "getCatalogsAsync":
+        elif methodName == "getCatalogIdsAsync":
 
-            catalogs = await self._dataSource.get_catalogs_async()
+            catalogIds = await self._dataSource.get_catalog_ids_async()
 
             result = {
-                "Catalogs": catalogs
+                "CatalogIds": catalogIds
+            }
+
+        elif methodName == "getCatalogAsync":
+
+            catalogId = params[0]
+            catalog = await self._dataSource.get_catalog_async(catalogId)
+
+            result = {
+                "Catalogs": catalog
             }
 
         elif methodName == "getTimeRangeAsync":

@@ -9,7 +9,6 @@ namespace Nexus.DataModel
         #region Fluent API
 
         internal const string Description = "Description";
-        internal const string ShortDescription = "ShortDescription";
         internal const string Warning = "Warning";
         internal const string Contact = "Contact";
         internal const string Unit = "Unit";
@@ -18,11 +17,6 @@ namespace Nexus.DataModel
         public static ResourceCatalogBuilder WithDescription(this ResourceCatalogBuilder catalogBuilder, string description)
         {
             return catalogBuilder.WithProperty(Description, description);
-        }
-
-        public static ResourceCatalogBuilder WithShortDescription(this ResourceCatalogBuilder catalogBuilder, string shortDescription)
-        {
-            return catalogBuilder.WithProperty(ShortDescription, shortDescription);
         }
 
         public static ResourceCatalogBuilder WithContact(this ResourceCatalogBuilder catalogBuilder, string contact)

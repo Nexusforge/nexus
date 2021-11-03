@@ -83,26 +83,29 @@ namespace Nexus.Extensions
                 throw new Exception($"The API level '{apiVersion}' is not supported.");
 
             await _rpcServer
-                .SetContextAsync(context.ResourceLocator.ToString(), context.Configuration, context.Catalogs, timeoutTokenSource.Token);
+                .SetContextAsync(context.ResourceLocator.ToString(), context.Configuration, timeoutTokenSource.Token);
         }
 
-        public async Task<ResourceCatalog[]> GetCatalogsAsync(CancellationToken cancellationToken)
+        public async Task<string[]> GetCatalogIdsAsync(CancellationToken cancellationToken)
         {
-            if (this.Context.Catalogs is null)
-            {
-                var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromMinutes(1));
-                cancellationToken.Register(() => timeoutTokenSource.Cancel());
+            var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromMinutes(1));
+            cancellationToken.Register(() => timeoutTokenSource.Cancel());
 
-                var response = await _rpcServer
-                    .GetCatalogsAsync(timeoutTokenSource.Token);
+            var response = await _rpcServer
+                .GetCatalogIdsAsync(timeoutTokenSource.Token);
 
-                this.Context = this.Context with
-                { 
-                    Catalogs = response.Catalogs
-                };
-            }
+            return response.CatalogIds;
+        }
 
-            return this.Context.Catalogs;
+        public async Task<ResourceCatalog> GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
+        {
+            var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromMinutes(1));
+            cancellationToken.Register(() => timeoutTokenSource.Cancel());
+
+            var response = await _rpcServer
+                .GetCatalogAsync(catalogId, timeoutTokenSource.Token);
+
+            return response.Catalog;
         }
 
         public async Task<(DateTime Begin, DateTime End)> GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)

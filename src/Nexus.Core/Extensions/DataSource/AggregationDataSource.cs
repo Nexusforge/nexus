@@ -54,7 +54,7 @@ namespace Nexus.Extensions
             return Task.CompletedTask;
         }
 
-        public Task<ResourceCatalog[]> GetCatalogsAsync(CancellationToken cancellationToken)
+        public Task<string[]> GetCatalogIdsAsync(CancellationToken cancellationToken)
         {
             return Task.Run(() =>
             {
@@ -194,8 +194,13 @@ namespace Nexus.Extensions
                 }
 
                 _catalogs = catalogs.ToArray();
-                return _catalogs;
+                return _catalogs.Select(catalog => catalog.Id).ToArray();
             });
+        }
+
+        public Task<ResourceCatalog> GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(_catalogs.First(catalog => catalog.Id == catalogId));
         }
 
         public Task<(DateTime Begin, DateTime End)> GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)

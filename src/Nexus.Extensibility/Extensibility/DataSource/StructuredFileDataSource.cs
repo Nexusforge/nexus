@@ -64,7 +64,10 @@ namespace Nexus.Extensibility
         protected abstract Task<FileSourceProvider>
             GetFileSourceProviderAsync(CancellationToken cancellationToken);
 
-        // GetCatalogsAsync:
+        protected abstract Task<string[]>
+           GetCatalogIdsAsync(CancellationToken cancellationToken);
+
+        // GetCatalogAsync:
         // It is not uncommon to have measurement data files with varying channel list over
         // time. This may be caused by updated logger configurations, etc. To support these
         // scenarios, it is easy use an own mechanism. The simplest solution for a data source
@@ -72,8 +75,8 @@ namespace Nexus.Extensibility
         // file version, e.g. [".../fileV1.dat", ".../fileV2.dat" ] or
         // [".../2020-01-01.dat", ".../2020-06-01.dat" ].
 
-        protected abstract Task<ResourceCatalog[]>
-            GetCatalogsAsync(CancellationToken cancellationToken);
+        protected abstract Task<ResourceCatalog>
+            GetCatalogAsync(string catalogId, CancellationToken cancellationToken);
 
         protected virtual Task<(DateTime Begin, DateTime End)> 
             GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
@@ -399,26 +402,16 @@ namespace Nexus.Extensibility
             this.FileSourceProvider = await this.GetFileSourceProviderAsync(cancellationToken);
         }
 
-        async Task<ResourceCatalog[]> 
-            IDataSource.GetCatalogsAsync(CancellationToken cancellationToken)
+        Task<string[]>
+           IDataSource.GetCatalogIdsAsync(CancellationToken cancellationToken)
         {
-            if (this.Context.Catalogs is null)
-            {
-                this.Context.Logger.LogDebug("No catalogs found in cache, consult dervied class for catalogs");
+            return this.GetCatalogIdsAsync(cancellationToken);
+        }
 
-                var catalogs = await this.GetCatalogsAsync(cancellationToken);
-
-                this.Context = this.Context with
-                {
-                    Catalogs = catalogs
-                };
-            }
-            else
-            {
-                this.Context.Logger.LogDebug("{Count} catalogs found in cache", this.Context.Catalogs.Length);
-            }
-
-            return this.Context.Catalogs;
+        Task<ResourceCatalog> 
+            IDataSource.GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
+        {
+            return this.GetCatalogAsync(catalogId, cancellationToken);
         }
 
         Task<(DateTime Begin, DateTime End)> 

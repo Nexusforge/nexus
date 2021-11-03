@@ -13,10 +13,13 @@ namespace Nexus.Extensions
             GetApiVersionAsync(CancellationToken cancellationToken);
 
         public Task 
-            SetContextAsync(string resourceLocator, Dictionary<string, string> configuration, ResourceCatalog[] catalogs, CancellationToken cancellationToken);
+            SetContextAsync(string resourceLocator, Dictionary<string, string> configuration, CancellationToken cancellationToken);
 
-        public Task<CatalogsResponse>
-            GetCatalogsAsync(CancellationToken cancellationToken);
+        public Task<CatalogIdsResponse>
+            GetCatalogIdsAsync(CancellationToken cancellationToken);
+
+        public Task<CatalogResponse>
+            GetCatalogAsync(string catalogId, CancellationToken cancellationToken);
 
         public Task<TimeRangeResponse>
             GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken);
@@ -29,7 +32,8 @@ namespace Nexus.Extensions
     }
 
     internal record ApiVersionResponse(int ApiVersion);
-    internal record CatalogsResponse(ResourceCatalog[] Catalogs);
+    internal record CatalogIdsResponse(string[] CatalogIds);
+    internal record CatalogResponse(ResourceCatalog Catalog);
     internal record TimeRangeResponse(DateTime Begin, DateTime End);
     internal record AvailabilityResponse(double Availability);
     internal record LogMessage(LogLevel LogLevel, string Message);

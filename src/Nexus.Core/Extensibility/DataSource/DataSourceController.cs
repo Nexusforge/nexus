@@ -18,7 +18,7 @@ namespace Nexus.Extensibility
     {
         #region Fields
 
-        public ResourceCatalog[] _catalogs;
+        public ConcurrentDictionary<string, ResourceCatalog> _catalogMap;
 
         #endregion
 
@@ -47,43 +47,53 @@ namespace Nexus.Extensibility
 
         #region Methods
 
-        public async Task InitializeAsync(ResourceCatalog[]? catalogs, CancellationToken cancellationToken)
+        public async Task InitializeAsync(ConcurrentDictionary<string, ResourceCatalog> catalogMap, CancellationToken cancellationToken)
         {
-            _catalogs = catalogs;
+            _catalogMap = catalogMap;
 
             var context = new DataSourceContext()
             {
                 ResourceLocator = this.BackendSource.ResourceLocator,
                 Configuration = this.BackendSource.Configuration,
-                Logger = this.Logger,
-                Catalogs = catalogs
+                Logger = this.Logger
             };
 
             await this.DataSource.SetContextAsync(context, cancellationToken);
         }
 
-        public async Task<ResourceCatalog[]>
-           GetCatalogsAsync(CancellationToken cancellationToken)
+        public async Task<string[]>
+           GetCatalogIdsAsync(CancellationToken cancellationToken)
         {
-            if (_catalogs is null)
-            {
-                var catalogs = await this.DataSource.GetCatalogsAsync(cancellationToken);
+            return await this.DataSource.GetCatalogIdsAsync(cancellationToken);
+        }
 
-                foreach (var catalog in catalogs)
+        public async Task<ResourceCatalog>
+           GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
+        {
+            if (!_catalogMap.TryGetValue(catalogId, out var catalog))
+            {
+                this.Logger.LogDebug("Load catalog {CatalogId} from data source", catalogId);
+
+                catalog = await this.DataSource.GetCatalogAsync(catalogId, cancellationToken);
+
+                foreach (var resource in catalog.Resources)
                 {
-                    foreach (var resource in catalog.Resources)
+                    foreach (var representation in resource.Representations)
                     {
-                        foreach (var representation in resource.Representations)
-                        {
-                            representation.BackendSource = this.BackendSource;
-                        }
+                        representation.BackendSource = this.BackendSource;
                     }
                 }
 
-                _catalogs = catalogs;
+                /* GetOrAdd is not working because it requires a synchronous delegate */
+                _catalogMap.TryAdd(catalogId, catalog);
             }
 
-            return _catalogs;
+            else
+            {
+                this.Logger.LogDebug("Catalog {CatalogId} found in cache.", catalogId);
+            }
+
+            return catalog;
         }
 
         public async Task<AvailabilityResult>
@@ -160,8 +170,7 @@ namespace Nexus.Extensibility
             var elementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, samplePeriod);
             var memoryOwners = new List<IMemoryOwner<byte>>();
 
-            var catalogs = await this.GetCatalogsAsync(cancellationToken);
-
+            /* prepare requests variable */
             var requests = catalogItemPipeWriters.Select(catalogItemPipeWriter =>
             {
                 var (catalogItem, dataWriter, statusWriter) = catalogItemPipeWriter;
@@ -215,7 +224,9 @@ namespace Nexus.Extensibility
                     status = statusMemory;
                 }
 
-                var originalCatalogItem = catalogs.Find(catalogItem.GetPath());
+                /* _catalogMap is guaranteed to contain the current catalog 
+                 * because GetCatalogAsync is called before ReadAsync */
+                var originalCatalogItem = _catalogMap.Values.Find(catalogItem.GetPath());
                 return new ReadRequest(originalCatalogItem, data, status);
             }).ToArray();
 

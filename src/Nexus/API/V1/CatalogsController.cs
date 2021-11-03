@@ -278,7 +278,7 @@ namespace Nexus.Controllers.V1
             CreateTimeRangeResponseAsync(ResourceCatalog catalog, CancellationToken cancellationToken)
         {
             var tasks = _appState.CatalogState.BackendSourceToCatalogsMap
-                .Where(entry => entry.Value.Any(catalog => catalog.Id == catalog.Id))
+                .Where(entry => entry.Value.Any(subEntry => subEntry.Value.Id == catalog.Id))
                 .Select(async entry =>
                 {
                     using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(entry.Key, cancellationToken);
@@ -304,7 +304,7 @@ namespace Nexus.Controllers.V1
             CreateAvailabilityResponseAsync(ResourceCatalog catalog, DateTime begin, DateTime end, AvailabilityGranularity granularity, CancellationToken cancellationToken)
         {
             var tasks = _appState.CatalogState.BackendSourceToCatalogsMap
-               .Where(entry => entry.Value.Any(catalog => catalog.Id == catalog.Id))
+               .Where(entry => entry.Value.Any(subEntry => subEntry.Value.Id == catalog.Id))
                .Select(async entry =>
                {
                     using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(entry.Key, cancellationToken);

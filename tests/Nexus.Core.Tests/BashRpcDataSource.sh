@@ -66,9 +66,12 @@ listen() {
         elif [ "$method" = "setContextAsync" ]; then
             response='{ "jsonrpc": "2.0", "id": '$id', "result": null }'
 
-        elif [ "$method" = "getCatalogsAsync" ]; then
-            catalogs=$(<catalogs.json)
-            response='{ "jsonrpc": "2.0", "id": '$id', "result": '"$catalogs"' }'
+        elif [ "$method" = "getCatalogIdsAsync" ]; then
+            response='{ "jsonrpc": "2.0", "id": '$id', "result": { "CatalogIds": [ "/A/B/C" ] } }'
+
+        elif [ "$method" = "getCatalogAsync" ]; then
+            catalog=$(<catalog.json)
+            response='{ "jsonrpc": "2.0", "id": '$id', "result": '"$catalog"' }'
 
         elif [ "$method" = "getTimeRangeAsync" ]; then
             response='{ "jsonrpc": "2.0", "id": '$id', "result": { "Begin": "2019-12-31T12:00:00Z", "End": "2020-01-02T09:50:00Z" } }'

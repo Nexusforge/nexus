@@ -25,11 +25,13 @@ class PythonDataSource(IDataSource):
 
         context.logger.log(LogLevel.Information, "Logging works!")
 
-    async def get_catalogs_async(self):
+    async def get_catalog_ids_async(self):
+         return ["/A/B/C", "/D/E/F"]
 
-        if (self._context.catalogs is None):
+    async def get_catalog_async(self, catalogId: str):
 
-            # catalog 1
+        if (catalogId == "/A/B/C"):
+
             representation = Representation(NexusDataType.INT64, timedelta(seconds=1), "mean")
 
             resource1 = ResourceBuilder("resource1") \
@@ -46,12 +48,13 @@ class PythonDataSource(IDataSource):
                 .AddRepresentation(representation) \
                 .Build()
 
-            catalog1 = ResourceCatalogBuilder("/A/B/C") \
+            catalog = ResourceCatalogBuilder("/A/B/C") \
                 .WithProperty("a", "b") \
                 .AddResources([resource1, resource2]) \
                 .Build()
 
-            # catalog 2
+        else if (catalogId == "/D/E/F"):
+
             representation = Representation(NexusDataType.FLOAT32, timedelta(seconds=1), "mean")
 
             resource = ResourceBuilder("resource1") \
@@ -60,15 +63,14 @@ class PythonDataSource(IDataSource):
                 .AddRepresentation(representation) \
                 .Build()
 
-            catalog2 = ResourceCatalogBuilder("/D/E/F") \
+            catalog = ResourceCatalogBuilder("/D/E/F") \
                 .AddResource(resource) \
                 .Build()
 
-            #
-            self._context.catalogs = [catalog1, catalog2]
+        else:
+            raise Exception("Unknown catalog ID.")
 
-        # return
-        return self._context.catalogs
+        return catalog
 
     async def get_time_range_async(self, catalogId: str):
 

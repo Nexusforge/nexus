@@ -148,12 +148,6 @@ class ResourceCatalogBuilder:
     def WithDescription(self, description: str) -> ResourceCatalogBuilder:
         return self.WithProperty("Description", description)
 
-    def WithShortDescription(self, shortDescription: str) -> ResourceCatalogBuilder:
-        return self.WithProperty("ShortDescription", shortDescription)
-
-    def WithLicense(self, license: str) -> ResourceCatalogBuilder:
-        return self.WithProperty("License", license)
-
     def WithContact(self, contact: str) -> ResourceCatalogBuilder:
         return self.WithProperty("Contact", contact)
 
@@ -204,6 +198,9 @@ class ResourceBuilder:
 
     def WithDescription(self, description: str) -> ResourceBuilder:
         return self.WithProperty("Description", description)
+
+    def WithWarning(self, warning: str) -> ResourceBuilder:
+        return self.WithProperty("Warning", warning)
 
     def WithGroups(self, groups: List[str]) -> ResourceBuilder:
 

@@ -25,7 +25,7 @@ namespace Nexus.Extensions
 
         public const string Id = "Nexus.Builtin.Filters";
 
-        private ResourceCatalog[] _catalogs;
+        private Dictionary<string, ResourceCatalog> _catalogMap = new Dictionary<string, ResourceCatalog>();
 
         private List<FilterDataSourceCacheEntry> _cacheEntries;
 
@@ -121,81 +121,106 @@ namespace Nexus.Extensions
             }
         }
 
-        public async Task<ResourceCatalog[]> GetCatalogsAsync(CancellationToken cancellationToken)
+        public async Task<string[]> GetCatalogIdsAsync(CancellationToken cancellationToken)
         {
-            var catalogs = new Dictionary<string, ResourceCatalog>();
-
             if (this.TryGetFilterSettings(out var filterSettings))
             {
-                await this.PopulateCacheAsync(filterSettings, cancellationToken);
-                var filterCodeDefinitions = filterSettings.CodeDefinitions.Where(filter => filter.CodeType == CodeType.Filter);
+                await this.CompileAsync(filterSettings, cancellationToken);
 
-                foreach (var filterCodeDefinition in filterCodeDefinitions)
-                {
-                    var cacheEntry = _cacheEntries.FirstOrDefault(current => current.FilterCodeDefinition == filterCodeDefinition);
-
-                    if (cacheEntry is null)
-                        continue;
-
-                    var filterProvider = cacheEntry.FilterProvider;
-                    var filterChannels = filterProvider.Filters;
-
-                    foreach (var filterChannel in filterChannels)
+                return filterSettings.CodeDefinitions
+                    .Where(filterCodeDefinition => filterCodeDefinition.CodeType == CodeType.Filter)
+                    .SelectMany(filterCodeDefinition =>
                     {
-                        var localFilterChannel = filterChannel;
+                        var cacheEntry = _cacheEntries.FirstOrDefault(current => current.FilterCodeDefinition == filterCodeDefinition);
+                        return cacheEntry.FilterProvider.Filters.Select(filter => filter.CatalogId);
+                    })
+                    .ToArray();
+            }
+            else
+            {
+                return new string[0];
+            }
+        }
 
-                        // enforce group
-                        if (localFilterChannel.CatalogId == FilterConstants.SharedCatalogID)
+        public Task<ResourceCatalog> GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
+        {
+            if (!_catalogMap.TryGetValue(catalogId, out var catalog))
+            {
+                if (this.TryGetFilterSettings(out var filterSettings))
+                {
+                    var filterCodeDefinitions = filterSettings.CodeDefinitions
+                        .Where(filter => filter.CodeType == CodeType.Filter);
+
+                    var catalogBuilder = new ResourceCatalogBuilder(catalogId);
+
+                    foreach (var filterCodeDefinition in filterCodeDefinitions)
+                    {
+                        var cacheEntry = _cacheEntries.FirstOrDefault(current => current.FilterCodeDefinition == filterCodeDefinition);
+
+                        if (cacheEntry is null)
+                            continue;
+
+                        var filterProvider = cacheEntry.FilterProvider;
+                        var filterChannels = filterProvider.Filters;
+
+                        var filteredFilterChannels = filterChannels
+                            .Where(filterChannel => filterChannel.CatalogId == catalogId);
+
+                        foreach (var filterChannel in filteredFilterChannels)
                         {
-                            localFilterChannel = localFilterChannel with
+                            var localFilterChannel = filterChannel;
+
+                            // enforce group
+                            if (localFilterChannel.CatalogId == FilterConstants.SharedCatalogID)
                             {
-                                Group = filterCodeDefinition.Owner.Split('@')[0]
-                            };
-                        }
-                        else if (string.IsNullOrWhiteSpace(localFilterChannel.Group))
-                        {
-                            localFilterChannel = localFilterChannel with
+                                localFilterChannel = localFilterChannel with
+                                {
+                                    Group = filterCodeDefinition.Owner.Split('@')[0]
+                                };
+                            }
+                            else if (string.IsNullOrWhiteSpace(localFilterChannel.Group))
                             {
-                                Group = "General"
-                            };
-                        }
+                                localFilterChannel = localFilterChannel with
+                                {
+                                    Group = "Default"
+                                };
+                            }
 
-                        // create representation
-                        var representation = new Representation(
-                            dataType: NexusDataType.FLOAT64,
-                            samplePeriod: filterCodeDefinition.SamplePeriod);
+                            // create representation
+                            var representation = new Representation(
+                                dataType: NexusDataType.FLOAT64,
+                                samplePeriod: filterCodeDefinition.SamplePeriod);
 
-                        // create resource
-                        try
-                        {
-                            var resource = new ResourceBuilder(id: localFilterChannel.ResourceId)
-                                .WithUnit(localFilterChannel.Unit)
-                                .WithDescription(localFilterChannel.Description)
-                                .WithGroups(localFilterChannel.Group)
-                                .AddRepresentation(representation)
-                                .Build();
-
-                            // get or create catalog
-                            if (!catalogs.TryGetValue(localFilterChannel.CatalogId, out var catalog))
-                                catalog = new ResourceCatalogBuilder(id: localFilterChannel.CatalogId)
-                                    .AddResource(resource)
+                            // create resource
+                            try
+                            {
+                                var resource = new ResourceBuilder(id: localFilterChannel.ResourceId)
+                                    .WithUnit(localFilterChannel.Unit)
+                                    .WithDescription(localFilterChannel.Description)
+                                    .WithGroups(localFilterChannel.Group)
+                                    .AddRepresentation(representation)
                                     .Build();
 
-                            else
-                                catalog = catalog with { Resources = new List<Resource>() { resource } };
-
-                            catalogs[localFilterChannel.CatalogId] = catalog;
-                        }
-                        catch (Exception ex)
-                        {
-                            this.Context.Logger.LogError(ex, "Skip creation of resource {resourceId}", localFilterChannel.ResourceId);
+                                catalogBuilder.AddResource(resource);
+                            }
+                            catch (Exception ex)
+                            {
+                                this.Context.Logger.LogError(ex, "Creation of resource {resourceId} failed", localFilterChannel.ResourceId);
+                            }
                         }
                     }
+
+                    catalog = catalogBuilder.Build();
+                    _catalogMap[catalogId] = catalog;
+                }
+
+                else
+                {
+                    throw new Exception($"Unable to find catalog {catalogId}.");
                 }
             }
 
-            _catalogs = catalogs.Values.ToArray();
-            return _catalogs;
+            return Task.FromResult(catalog);
         }
 
         public Task<(DateTime Begin, DateTime End)> GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
@@ -303,7 +328,7 @@ namespace Nexus.Extensions
             return false;
         }
 
-        private async Task PopulateCacheAsync(FilterSettings filterSettings, CancellationToken cancellationToken)
+        private async Task CompileAsync(FilterSettings filterSettings, CancellationToken cancellationToken)
         {
             var filterCodeDefinitions = filterSettings.CodeDefinitions
                 .Where(filterSetting => filterSetting.CodeType == CodeType.Filter && filterSetting.IsEnabled)

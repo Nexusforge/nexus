@@ -35,24 +35,14 @@ namespace Nexus.Extensions
             return Task.CompletedTask;
         }
 
-        public Task<ResourceCatalog[]> GetCatalogsAsync(CancellationToken cancellationToken)
+        public Task<string[]> GetCatalogIdsAsync(CancellationToken cancellationToken)
         {
-            if (this.Context.Catalogs is null)
-            {
-                var catalog_allowed = this.LoadCatalog("/IN_MEMORY/TEST/ACCESSIBLE");
-                var catalog_restricted = this.LoadCatalog("/IN_MEMORY/TEST/RESTRICTED");
+            return Task.FromResult(new string[] { AccessibleCatalogId, RestrictedCatalogId });
+        }
 
-                this.Context = this.Context with
-                {
-                    Catalogs = new[]
-                    { 
-                        catalog_allowed,
-                        catalog_restricted 
-                    }
-                };
-            }
-
-            return Task.FromResult(this.Context.Catalogs);
+        public Task<ResourceCatalog> GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(this.LoadCatalog(catalogId));
         }
 
         public Task<(DateTime Begin, DateTime End)> GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)

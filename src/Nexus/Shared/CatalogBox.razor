@@ -27,16 +27,6 @@
                                 </MatTooltip>
                             }
                         </div>
-
-                        @if (@catalogContainer.Catalog.Properties is not null)
-                        {
-                            <div class="small-text">&nbsp;&nbsp;&nbsp;@catalogContainer.Catalog.Properties.GetValueOrDefault("ShortDescription", "<no description available>")</div>
-                        }
-                        else
-                        {
-                            <div class="small-text">&lt;no description available&gt;</div>
-                        }
-
                     </div>
                 </li>
             }

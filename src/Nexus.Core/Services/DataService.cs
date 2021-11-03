@@ -70,7 +70,7 @@ namespace Nexus.Services
         {
             var backendSources = _appState.CatalogState.BackendSourceToCatalogsMap
                 // where the catalog list contains the catalog ID
-                .Where(entry => entry.Value.Any(catalog => catalog.Id == catalogId))
+                .Where(entry => entry.Value.Any(subEntry => subEntry.Value.Id == catalogId))
                 // select the backend source
                 .Select(entry => entry.Key);
 
