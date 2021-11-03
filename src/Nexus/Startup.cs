@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -51,6 +52,9 @@ namespace Nexus
 
         public void ConfigureServices(IServiceCollection services)
         {
+            var usersOptions = new UsersOptions();
+            this.Configuration.GetSection(UsersOptions.Section).Bind(usersOptions);
+
             // database
             services.AddDbContext<ApplicationDbContext>();
 
@@ -67,15 +71,14 @@ namespace Nexus
             services.AddDefaultIdentity<IdentityUser>()
                 .AddEntityFrameworkStores<ApplicationDbContext>();
 
-#warning Repair this!
             services.Configure<IdentityOptions>(options =>
             {
-                //Instead of RequireConfirmedEmail, this one has the desired effect!
-                //options.SignIn.RequireConfirmedAccount = usersOptions.Value.VerifyEmail;
+                // Instead of RequireConfirmedEmail, this one has the desired effect!
+                options.SignIn.RequireConfirmedAccount = usersOptions.VerifyEmail;
             });
 
-            //if (usersOptions.Value.VerifyEmail)
-            //    services.AddTransient<IEmailSender, EmailSender>();
+            if (usersOptions.VerifyEmail)
+                services.AddTransient<IEmailSender, EmailSender>();
 
             // blazor
             services.AddRazorPages();
@@ -191,8 +194,7 @@ namespace Nexus
             services.Configure<SecurityOptions>(Configuration.GetSection(SecurityOptions.Section));
             services.Configure<ServerOptions>(Configuration.GetSection(ServerOptions.Section));
             services.Configure<SmtpOptions>(Configuration.GetSection(SmtpOptions.Section));
-#warning Repair this!
-            //services.Configure<UsersOptions>(Configuration.GetSection(UsersOptions.Section));
+            services.Configure<UsersOptions>(Configuration.GetSection(UsersOptions.Section));
         }
 
         public void Configure(IApplicationBuilder app,
