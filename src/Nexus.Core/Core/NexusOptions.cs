@@ -36,7 +36,7 @@ namespace Nexus.Core
     internal record GeneralOptions() : NexusOptionsBase
     {
         public const string Section = "General";
-        public string InstanceName { get; set; }
+        public string ApplicationName { get; set; }
         public string Language { get; set; }
     }
 

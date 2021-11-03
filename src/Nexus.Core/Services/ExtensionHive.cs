@@ -51,7 +51,7 @@ namespace Nexus.Services
         public async Task LoadPackagesAsync(IEnumerable<PackageReference> packageReferences, CancellationToken cancellationToken)
         {
             // clean up
-            _logger.LogInformation("Unload previously loaded packages.");
+            _logger.LogDebug("Unload previously loaded packages");
 
             if (_packageControllerMap is not null)
             {
@@ -76,14 +76,14 @@ namespace Nexus.Services
 
                 try
                 {
-                    _logger.LogDebug("Load package.");
+                    _logger.LogDebug("Load package");
                     var assembly = await packageController.LoadAsync(_pathsOptions.Packages, cancellationToken);
                     var attributesAndTypes = this.ScanAssembly(assembly, assembly.ExportedTypes);
                     packageControllerMap[packageController] = attributesAndTypes;
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Loading package failed.");
+                    _logger.LogError(ex, "Loading package failed");
                 }
             }
 
@@ -114,7 +114,7 @@ namespace Nexus.Services
         {
             instance = default(T);
 
-            _logger.LogDebug("Instantiate extension {ExtensionIdentifier} of type {Type}.", identifier, typeof(T).FullName);
+            _logger.LogDebug("Instantiate extension {ExtensionIdentifier} of type {Type}", identifier, typeof(T).FullName);
 
             var actualMap = _packageControllerMap is null
                 ? _builtinExtensions
@@ -127,7 +127,7 @@ namespace Nexus.Services
 
             if (type is null)
             {
-                _logger.LogWarning("Could not find extension {ExtensionIdentifier} of type {Type}.", identifier, typeof(T).FullName);
+                _logger.LogWarning("Could not find extension {ExtensionIdentifier} of type {Type}", identifier, typeof(T).FullName);
                 return false;
             }
             else
@@ -152,12 +152,12 @@ namespace Nexus.Services
                         var hasAttribute = type.IsDefined(typeof(ExtensionIdentificationAttribute), inherit: false);
 
                         if (!hasAttribute)
-                            _logger.LogWarning("Type {TypeName} from assembly {AssemblyName}, has no extension identification attribute.", type.FullName, assembly.FullName);
+                            _logger.LogWarning("Type {TypeName} from assembly {AssemblyName} has no extension identification attribute", type.FullName, assembly.FullName);
 
                         var hasParameterlessConstructor = type.GetConstructor(Type.EmptyTypes) is not null;
 
                         if (!hasParameterlessConstructor)
-                            _logger.LogWarning("Type {TypeName} from assembly {AssemblyName}, has no parameterless constructor.", type.FullName, assembly.FullName);
+                            _logger.LogWarning("Type {TypeName} from assembly {AssemblyName} has no parameterless constructor", type.FullName, assembly.FullName);
 
                         return hasAttribute && hasParameterlessConstructor;
                     }

@@ -74,7 +74,7 @@ namespace Nexus.Extensibility
 
             /* periods */
             var totalPeriod = end - begin;
-            this.Logger.LogDebug("The total period is {TotalPeriod}.", totalPeriod);
+            this.Logger.LogDebug("The total period is {TotalPeriod}", totalPeriod);
 
             var consumedPeriod = TimeSpan.Zero;
             var currentPeriod = default(TimeSpan);
@@ -115,7 +115,7 @@ namespace Nexus.Extensibility
                 cancellationToken.ThrowIfCancellationRequested();
 
                 var currentBegin = fileBegin + fileOffset;
-                this.Logger.LogTrace("Process period {CurrentBegin} to {CurrentEnd}.", currentBegin, currentBegin + duration);
+                this.Logger.LogTrace("Process period {CurrentBegin} to {CurrentEnd}", currentBegin, currentBegin + duration);
 
                 /* close / open */
                 if (fileBegin != lastFileBegin)

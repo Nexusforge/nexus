@@ -4,7 +4,6 @@ using Nexus.Utilities;
 using Nexus.ViewModels;
 using Prism.Mvvm;
 using Serilog.Core;
-using Serilog.Events;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;

@@ -65,10 +65,10 @@ namespace Nexus.Services
                 try
                 {
                     /* await actual update tasks */
-                    _logger.LogInformation("Load packages.");
+                    _logger.LogInformation("Load packages");
                     await _extensionHive.LoadPackagesAsync(_appState.Project.PackageReferences, cancellationToken);
 
-                    _logger.LogInformation("Load catalogs.");
+                    _logger.LogInformation("Load catalogs");
                     _appState.CatalogState = await _catalogManager.LoadCatalogsAsync(cancellationToken);
                 }
                 finally
@@ -93,7 +93,7 @@ namespace Nexus.Services
                 }
                 catch
                 {
-                    _logger.LogWarning("Data writer {DataWriterId} has no format name attribute. Skipping.", extensionIdentification.Id);
+                    _logger.LogWarning("Data writer {DataWriterId} has no format name attribute, skipping", extensionIdentification.Id);
                     continue;
                 }
 

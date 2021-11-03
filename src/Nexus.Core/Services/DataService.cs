@@ -279,7 +279,7 @@ namespace Nexus.Services
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    _logger.LogTrace("Write content of {filePath} to the ZIP archive.");
+                    _logger.LogTrace("Write content of {filePath} to the ZIP archive");
 
                     var zipArchiveEntry = zipArchive.CreateEntry(Path.GetFileName(filePath), CompressionLevel.Optimal);
 

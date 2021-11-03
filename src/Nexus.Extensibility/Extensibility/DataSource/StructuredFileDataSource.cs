@@ -90,7 +90,7 @@ namespace Nexus.Extensibility
                         cancellationToken.ThrowIfCancellationRequested();
 
                         using var scope = this.Context.Logger.BeginScope(fileSource);
-                        this.Context.Logger.LogDebug("Analyzing file source.");
+                        this.Context.Logger.LogDebug("Analyzing file source");
 
                         // first
                         var firstDateTime = StructuredFileDataSource
@@ -123,12 +123,12 @@ namespace Nexus.Extensibility
                         if (lastDateTime > maxDateTime)
                             maxDateTime = lastDateTime;
 
-                        this.Context.Logger.LogDebug("Analyzing file source resulted in begin = {FirstDateTime} and end = {LastDateTime}.", firstDateTime, lastDateTime);
+                        this.Context.Logger.LogDebug("Analyzing file source resulted in begin = {FirstDateTime} and end = {LastDateTime}", firstDateTime, lastDateTime);
                     }
                 }
                 else
                 {
-                    this.Context.Logger.LogDebug("Folder {Root} does not exist. Return default time range.", this.Root);
+                    this.Context.Logger.LogDebug("Folder {Root} does not exist, return default time range", this.Root);
                 }
 
                 return (minDateTime, maxDateTime);
@@ -157,7 +157,7 @@ namespace Nexus.Extensibility
                     foreach (var fileSource in fileSources)
                     {
                         using var scope = this.Context.Logger.BeginScope(fileSource);
-                        this.Context.Logger.LogDebug("Analyzing file source.");
+                        this.Context.Logger.LogDebug("Analyzing file source");
 
                         cancellationToken.ThrowIfCancellationRequested();
 
@@ -176,7 +176,7 @@ namespace Nexus.Extensibility
                             var availabilityTask = this.GetFileAvailabilityAsync(file.FilePath, cancellationToken);
 
                             _ = availabilityTask.ContinueWith(
-                                x => this.Context.Logger.LogError(availabilityTask.Exception, "Could not process file {FilePath}.", file.FilePath),
+                                x => this.Context.Logger.LogDebug(availabilityTask.Exception, "Could not process file {FilePath}", file.FilePath),
                                 TaskContinuationOptions.OnlyOnFaulted
                             );
 
@@ -195,7 +195,7 @@ namespace Nexus.Extensibility
                 else
                 {
                     availability = 0.0;
-                    this.Context.Logger.LogDebug("Folder {Root} does not exist. Return default availability.", this.Root);
+                    this.Context.Logger.LogDebug("Folder {Root} does not exist, return default availabilit.", this.Root);
                 }
 
                 return availability;
@@ -258,7 +258,7 @@ namespace Nexus.Extensibility
                     var remainingFilePeriod = fileSource.FilePeriod - consumedFilePeriod;
 
                     currentPeriod = TimeSpan.FromTicks(Math.Min(remainingFilePeriod.Ticks, remainingPeriod.Ticks));
-                    this.Context.Logger.LogDebug("Process period {CurrentBegin} to {CurrentEnd}.", currentBegin, currentBegin + currentPeriod);
+                    this.Context.Logger.LogDebug("Process period {CurrentBegin} to {CurrentEnd}", currentBegin, currentBegin + currentPeriod);
 
                     fileBlock = (int)(currentPeriod.Ticks / samplePeriod.Ticks);
 
@@ -268,7 +268,7 @@ namespace Nexus.Extensibility
                     {
                         if (File.Exists(filePath))
                         {
-                            this.Context.Logger.LogTrace("Process file {FilePath}.", filePath);
+                            this.Context.Logger.LogTrace("Process file {FilePath}", filePath);
 
                             try
                             {
@@ -294,19 +294,19 @@ namespace Nexus.Extensibility
                             }
                             catch (Exception ex)
                             {
-                                this.Context.Logger.LogError(ex, "Could not process file {FilePath}.", filePath);
+                                this.Context.Logger.LogDebug(ex, "Could not process file {FilePath}", filePath);
                             }
                         }
                         else
                         {
-                            this.Context.Logger.LogDebug("File {FilePath} does not exist.", filePath);
+                            this.Context.Logger.LogDebug("File {FilePath} does not exist", filePath);
                         }
                     }
                 }
                 /* there was an incomplete file, skip the incomplete part */
                 else if (CB_PLUS_FP <= fileBegin && fileBegin < end)
                 {
-                    this.Context.Logger.LogDebug("Skipping period {FileBegin} to {CurrentBegin}.", fileBegin, currentBegin);
+                    this.Context.Logger.LogDebug("Skipping period {FileBegin} to {CurrentBegin}", fileBegin, currentBegin);
                     currentPeriod = fileBegin - currentBegin;
                     fileBlock = (int)(currentPeriod.Ticks / samplePeriod.Ticks);
                 }
@@ -404,7 +404,7 @@ namespace Nexus.Extensibility
         {
             if (this.Context.Catalogs is null)
             {
-                this.Context.Logger.LogDebug("No catalogs found in cache. Consult dervied class for catalogs.");
+                this.Context.Logger.LogDebug("No catalogs found in cache, consult dervied class for catalogs");
 
                 var catalogs = await this.GetCatalogsAsync(cancellationToken);
 
@@ -415,7 +415,7 @@ namespace Nexus.Extensibility
             }
             else
             {
-                this.Context.Logger.LogDebug("{Count} catalogs found in cache.", this.Context.Catalogs.Length);
+                this.Context.Logger.LogDebug("{Count} catalogs found in cache", this.Context.Catalogs.Length);
             }
 
             return this.Context.Catalogs;
@@ -451,7 +451,7 @@ namespace Nexus.Extensibility
                     ["ResourcePath"] = catalogItem.GetPath()
                 });
 
-                this.Context.Logger.LogDebug("Read catalog item.");
+                this.Context.Logger.LogDebug("Read catalog item");
 
                 try
                 {
@@ -459,7 +459,7 @@ namespace Nexus.Extensibility
                 }
                 catch (Exception ex)
                 {
-                    this.Context.Logger.LogError(ex, "Could not read catalog item.");
+                    this.Context.Logger.LogError(ex, "Could not read catalog item");
                 }
 
                 progress.Report(++counter / requests.Length);

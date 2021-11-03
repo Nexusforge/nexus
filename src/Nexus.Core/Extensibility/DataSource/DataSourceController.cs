@@ -254,7 +254,7 @@ namespace Nexus.Extensibility
                             .GetMemory(dataLength)
                             .Slice(0, dataLength);
 
-                        this.Logger.LogTrace("Merge status buffer and data buffer.");
+                        this.Logger.LogTrace("Merge status buffer and data buffer");
 
 #warning this is blocking
                         BufferUtilities.ApplyRepresentationStatusByDataType(
@@ -264,7 +264,7 @@ namespace Nexus.Extensibility
                             target: new CastMemoryManager<byte, double>(buffer).Memory);
 
                         /* update progress */
-                        this.Logger.LogTrace("Advance data pipe writer by {DataLength} bytes.", dataLength);
+                        this.Logger.LogTrace("Advance data pipe writer by {DataLength} bytes", dataLength);
                         dataWriter.Advance(dataLength);
                         dataTasks.Add(dataWriter.FlushAsync());
                     }
@@ -275,11 +275,11 @@ namespace Nexus.Extensibility
                         var dataLength = elementCount * elementSize;
 
                         /* update progress */
-                        this.Logger.LogTrace("Advance data pipe writer by {DataLength} bytes.", dataLength);
+                        this.Logger.LogTrace("Advance data pipe writer by {DataLength} bytes", dataLength);
                         dataWriter.Advance(dataLength);
                         dataTasks.Add(dataWriter.FlushAsync());
 
-                        this.Logger.LogTrace("Advance status pipe writer by {StatusLength} bytes.", elementCount);
+                        this.Logger.LogTrace("Advance status pipe writer by {StatusLength} bytes", elementCount);
                         statusWriter.Advance(elementCount);
                         statusTasks.Add(statusWriter.FlushAsync());
                     }
@@ -329,20 +329,20 @@ namespace Nexus.Extensibility
             var bytesPerRow = catalogItemPipeWriters
                 .Sum(catalogItemPipeWriter => catalogItemPipeWriter.CatalogItem.Representation.ElementSize);
 
-            logger.LogDebug("A single row has a size of {BytesPerRow} bytes.", bytesPerRow);
+            logger.LogDebug("A single row has a size of {BytesPerRow} bytes", bytesPerRow);
 
             var chunkSize = Math.Max(bytesPerRow, DataSourceController.ChunkSize);
-            logger.LogDebug("The chunk size is {ChunkSize} bytes.", chunkSize);
+            logger.LogDebug("The chunk size is {ChunkSize} bytes", chunkSize);
 
             var rows = chunkSize / bytesPerRow;
-            logger.LogDebug("{RowCount} rows will be processed per chunk.", rows);
+            logger.LogDebug("{RowCount} rows will be processed per chunk", rows);
 
             var maxPeriodPerRequest = TimeSpan.FromTicks(samplePeriod.Ticks * rows);
-            logger.LogDebug("The maximum period per request is {MaxPeriodPerRequest}.", maxPeriodPerRequest);
+            logger.LogDebug("The maximum period per request is {MaxPeriodPerRequest}", maxPeriodPerRequest);
 
             /* periods */
             var totalPeriod = end - begin;
-            logger.LogDebug("The total period is {TotalPeriod}.", totalPeriod);
+            logger.LogDebug("The total period is {TotalPeriod}", totalPeriod);
 
             var consumedPeriod = TimeSpan.Zero;
             var remainingPeriod = totalPeriod;
@@ -360,7 +360,7 @@ namespace Nexus.Extensibility
                 var currentBegin = begin + consumedPeriod;
                 var currentEnd = currentBegin + currentPeriod;
 
-                logger.LogDebug("Process period {CurrentBegin} to {CurrentEnd}.", currentBegin, currentEnd);
+                logger.LogDebug("Process period {CurrentBegin} to {CurrentEnd}", currentBegin, currentEnd);
 
                 var readingTasks = readingGroups.Select(async readingGroup =>
                 {
@@ -396,7 +396,7 @@ namespace Nexus.Extensibility
                     }
                     catch (Exception ex)
                     {
-                        logger.LogError(ex, "Process period {Begin} to {End} failed.", currentBegin, currentEnd);
+                        logger.LogError(ex, "Process period {Begin} to {End} failed", currentBegin, currentEnd);
                     }
                 });
 

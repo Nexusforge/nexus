@@ -34,7 +34,7 @@ namespace Nexus.Services
 
                 // database
                 if (userDB.Database.EnsureCreated())
-                    _logger.LogInformation("SQLite database initialized.");
+                    _logger.LogInformation("SQLite database initialized");
 
                 // ensure there is a root user
                 var rootUsername = _securityOptions.RootUser;

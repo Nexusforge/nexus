@@ -21,7 +21,7 @@ namespace Nexus.Services
 
         public async Task SendEmailAsync(string email, string subject, string message)
         {
-            _logger.LogInformation("Send mail to address {MailAddress}.", email);
+            _logger.LogDebug("Send mail to address {MailAddress}", email);
 
             try
             {
@@ -40,7 +40,7 @@ namespace Nexus.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Send mail to address {MailAddress} failed.", email);
+                _logger.LogError(ex, "Send mail to address {MailAddress} failed", email);
             }
         }
     }

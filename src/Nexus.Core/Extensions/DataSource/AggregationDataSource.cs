@@ -166,7 +166,7 @@ namespace Nexus.Extensions
                     var cacheFiles = Directory.EnumerateFiles(cacheFolderPath, "*-*.json");
                     catalogs = new List<ResourceCatalog>();
 
-                    this.Context.Logger.LogDebug("Merge cache files into main cache.");
+                    this.Context.Logger.LogDebug("Merge cache files into main cache");
 
                     foreach (var cacheFile in cacheFiles)
                     {
@@ -299,8 +299,12 @@ namespace Nexus.Extensions
                             }
                             catch (Exception ex)
                             {
-                                this.Context.Logger.LogError(ex, "Could not process file {FilePath}.", filePath);
+                                this.Context.Logger.LogError(ex, "Could not process file {FilePath}", filePath);
                             }
+                        }
+                        else
+                        {
+                            this.Context.Logger.LogDebug("File {FilePath} does not exist", filePath);
                         }
 
                         bufferOffset += elementCount;
@@ -338,7 +342,7 @@ namespace Nexus.Extensions
             if (Directory.Exists(currentMonthFolder))
             {
                 var monthFolder = Path.GetFileName(currentMonthFolder);
-                this.Context.Logger.LogInformation("Scan files for {MonthFolder)}.", monthFolder);
+                this.Context.Logger.LogDebug("Scan files for {MonthFolder)}", monthFolder);
 
                 var dayFolders = Directory.EnumerateDirectories(currentMonthFolder);
 
@@ -365,7 +369,7 @@ namespace Nexus.Extensions
                 }
                 catch (Exception ex)
                 {
-                    this.Context.Logger.LogError(ex, "Scan files for {MonthFolder)} failed.", monthFolder);
+                    this.Context.Logger.LogError(ex, "Scan files for {MonthFolder} failed", monthFolder);
                 }
             }
 

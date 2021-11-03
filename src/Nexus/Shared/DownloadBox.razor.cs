@@ -74,8 +74,8 @@ namespace Nexus.Shared
 			}
             catch (Exception ex)
             {
-				this.UserState.Logger.LogError(ex, "Download data failed.");
-				this.ToasterService.ShowError(message: "Unable to download data.", icon: MatIconNames.Error_outline);
+				this.UserState.Logger.LogError(ex, "Download data failed");
+				this.ToasterService.ShowError(message: "Unable to download data", icon: MatIconNames.Error_outline);
 			}
         }
 

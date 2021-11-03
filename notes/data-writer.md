@@ -1,6 +1,6 @@
 # Background
 
-To not only provide a streaming API for the data but also a possibility to store the data into files with a certain scientific format for further processing, Nexus provides an extensibility mechanism similar to the one for [[data sources|Data Source]]. For each export request, a `DataWriterController` is instantiated which wraps an instance of the `IDataWriter`. The `DataWriterController` is mainly responsible to ensure the correct file period. E.g. the user wants the time-series data to be written into files of 1 hour each, the `DataWriterController` takes care of it.
+To not only provide a streaming API for the data but also a possibility to store the data into files with a certain scientific format for further processing, Nexus provides an extensibility mechanism similar to the one for [Data Source](data-source.md). For each export request, a `DataWriterController` is instantiated which wraps an instance of the `IDataWriter`. The `DataWriterController` is mainly responsible to ensure the correct file period. E.g. the user wants the time-series data to be written into files of 1 hour each, the `DataWriterController` takes care of it.
 
 # IDataWriter
 

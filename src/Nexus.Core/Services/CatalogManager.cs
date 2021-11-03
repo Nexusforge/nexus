@@ -173,7 +173,7 @@ namespace Nexus.Services
                     entry => entry.Value.Select(current => current.Item1).ToArray())
             );
 
-            _logger.LogInformation("Loaded {CatalogCount} catalogs from {BackendSourceCount} backend sources.",
+            _logger.LogInformation("Loaded {CatalogCount} catalogs from {BackendSourceCount} backend sources",
                 catalogCollection.CatalogContainers.Count,
                 backendSourceToCatalogDataMap.Keys.Count);
 

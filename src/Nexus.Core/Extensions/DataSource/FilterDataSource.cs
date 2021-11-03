@@ -188,7 +188,7 @@ namespace Nexus.Extensions
                         }
                         catch (Exception ex)
                         {
-                            this.Context.Logger.LogError(ex, "Skip creation of resource {resourceId}.", localFilterChannel.ResourceId);
+                            this.Context.Logger.LogError(ex, "Skip creation of resource {resourceId}", localFilterChannel.ResourceId);
                         }
                     }
                 }
@@ -309,7 +309,7 @@ namespace Nexus.Extensions
                 .Where(filterSetting => filterSetting.CodeType == CodeType.Filter && filterSetting.IsEnabled)
                 .ToList();
 
-            this.Context.Logger.LogInformation("Compile {FilterCount} filter(s).", filterCodeDefinitions.Count);
+            this.Context.Logger.LogInformation("Compile {FilterCount} filters", filterCodeDefinitions.Count);
 
             var cacheEntries = new FilterDataSourceCacheEntry[filterCodeDefinitions.Count];
 
@@ -356,7 +356,7 @@ namespace Nexus.Extensions
                     }
                     catch (Exception ex)
                     {
-                        this.Context.Logger.LogError(ex, "Failed to instantiate the filter provider {FilterName} of user {FilterOwner}.", filterCodeDefinition.Name, filterCodeDefinition.Owner);
+                        this.Context.Logger.LogError(ex, "Failed to instantiate the filter provider {FilterName} of user {FilterOwner}", filterCodeDefinition.Name, filterCodeDefinition.Owner);
                     }
                 })
                 .ToArray();

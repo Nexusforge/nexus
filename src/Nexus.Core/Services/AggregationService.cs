@@ -214,7 +214,7 @@ namespace Nexus.Services
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Aggregating resource failed.");
+                        _logger.LogError(ex, "Aggregating resource failed");
                     }
                 }
             }
@@ -342,11 +342,11 @@ namespace Nexus.Services
                     }
 
                     if (lastException is not null)
-                        _logger.LogError(lastException, "Unable to rename temporary file.");
+                        _logger.LogError(lastException, "Unable to rename temporary file");
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "An error occured trying to create the aggregation file.");
+                    _logger.LogError(ex, "An error occured trying to create the aggregation file");
 
                     try
                     {
@@ -355,7 +355,7 @@ namespace Nexus.Services
                     }
                     catch (Exception ex2)
                     {
-                        _logger.LogError(ex2, "Unable to delete temporary file.");
+                        _logger.LogError(ex2, "Unable to delete temporary file");
                     }
 
                     try
@@ -365,7 +365,7 @@ namespace Nexus.Services
                     }
                     catch (Exception ex2)
                     {
-                        _logger.LogError(ex2, "Unable to delete aggregation file.");
+                        _logger.LogError(ex2, "Unable to delete aggregation file");
                     }
                 }
             }
@@ -458,7 +458,7 @@ namespace Nexus.Services
 
                     default:
 
-                        _logger.LogWarning("The aggregation method {Method} is not known. Skipping period {Period}.", unit.Method, period);
+                        _logger.LogWarning("The aggregation method {Method} is not known, skipping period {Period}", unit.Method, period);
 
                         continue;
                 }
@@ -630,7 +630,7 @@ namespace Nexus.Services
 
                 default:
 
-                    logger.LogWarning("The aggregation method {Method} is not known. Skipping period.", method);
+                    logger.LogWarning("The aggregation method {Method} is not known, skipping period", method);
 
                     break;
 
@@ -710,7 +710,7 @@ namespace Nexus.Services
                     break;
 
                 default:
-                    logger.LogWarning("The aggregation method {Method} is not known. Skipping period.", method);
+                    logger.LogWarning("The aggregation method {Method} is not known, skipping period", method);
                     break;
 
             }

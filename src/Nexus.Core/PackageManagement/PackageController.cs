@@ -52,7 +52,7 @@ namespace Nexus.PackageManagement
             if (!_packageReference.TryGetValue("Provider", out var provider))
                 throw new ArgumentException("The 'Provider' parameter is missing in the extension reference.");
 
-            _logger.LogDebug("Discover package versions using provider {Provider}.", provider);
+            _logger.LogDebug("Discover package versions using provider {Provider}", provider);
 
             switch (provider)
             {
@@ -129,7 +129,7 @@ namespace Nexus.PackageManagement
             string restoreFolderPath;
             var actualRestoreRoot = Path.Combine(restoreRoot, provider);
 
-            _logger.LogDebug("Restore package using provider {Provider}.", provider);
+            _logger.LogDebug("Restore package using provider {Provider}", provider);
 
             switch (provider)
             {
@@ -155,7 +155,7 @@ namespace Nexus.PackageManagement
                     throw new ArgumentException($"The provider '{provider}' is not supported.");
             }
 
-            _logger.LogDebug("Restored package to path {RestoreFolderPath}.", restoreFolderPath);
+            _logger.LogDebug("Restored package to path {RestoreFolderPath}", restoreFolderPath);
 
             return restoreFolderPath;
         }
@@ -250,7 +250,7 @@ namespace Nexus.PackageManagement
 
                 var folderName = Path.GetFileName(folderPath);
                 result.Add(folderName);
-                _logger.LogDebug("Discovered package version {PackageVersion}.", folderName);
+                _logger.LogDebug("Discovered package version {PackageVersion}", folderName);
             }
 
             result.Reverse();
@@ -278,12 +278,12 @@ namespace Nexus.PackageManagement
 
                 if (!Directory.Exists(targetPath) || !Directory.EnumerateFileSystemEntries(targetPath).Any())
                 {
-                    _logger.LogDebug("Restore package from source {Source}.", sourcePath);
+                    _logger.LogDebug("Restore package from source {Source}", sourcePath);
                     PackageController.CloneFolder(sourcePath, targetPath);
                 }
                 else
                 {
-                    _logger.LogDebug("Package is already restored.");
+                    _logger.LogDebug("Package is already restored");
                 }
 
                 return targetPath;
@@ -324,7 +324,7 @@ namespace Nexus.PackageManagement
                 {
                     var releaseTagName = githubRelease.GetProperty("tag_name").GetString();
                     result.Add(releaseTagName);
-                    _logger.LogDebug("Discovered package version {PackageVersion}.", releaseTagName);
+                    _logger.LogDebug("Discovered package version {PackageVersion}", releaseTagName);
                 }
 
                 // look for more pages
@@ -405,7 +405,7 @@ namespace Nexus.PackageManagement
                     headers["User-Agent"] = "Nexus";
                     headers["Accept"] = "application/octet-stream";
 
-                    _logger.LogDebug("Restore package from source {Source}.", assetBrowserUrl);
+                    _logger.LogDebug("Restore package from source {Source}", assetBrowserUrl);
                     await PackageController.DownloadAndExtractAsync(assetBrowserUrl, assetUrl, targetPath, headers, cancellationToken);
                 }
                 else
@@ -415,7 +415,7 @@ namespace Nexus.PackageManagement
             }
             else
             {
-                _logger.LogDebug("Package is already restored.");
+                _logger.LogDebug("Package is already restored");
             }
 
             return targetPath;
@@ -449,7 +449,7 @@ namespace Nexus.PackageManagement
             {
                 var packageVersion = gitlabPackage.GetProperty("version").GetString();
                 result.Add(packageVersion);
-                _logger.LogDebug("Discovered package version {PackageVersion}.", packageVersion);
+                _logger.LogDebug("Discovered package version {PackageVersion}", packageVersion);
             }
 
             result.Reverse();
@@ -530,7 +530,7 @@ namespace Nexus.PackageManagement
                 {
                     // download package file (https://docs.gitlab.com/ee/user/packages/generic_packages/index.html#download-package-file)
                     var assetUrl = $"{server}/api/v4/projects/{encodedProjectPath}/packages/generic/{package}/{version}/{fileName}";
-                    _logger.LogDebug("Restore package from source {Source}.", assetUrl);
+                    _logger.LogDebug("Restore package from source {Source}", assetUrl);
                     await PackageController.DownloadAndExtractAsync(fileName, assetUrl, targetPath, headers, cancellationToken);
                 }
                 else
@@ -540,7 +540,7 @@ namespace Nexus.PackageManagement
             }
             else
             {
-                _logger.LogDebug("Package is already restored.");
+                _logger.LogDebug("Package is already restored");
             }
 
             return targetPath;
@@ -640,7 +640,7 @@ namespace Nexus.PackageManagement
         //            if (isSemanticVersion)
         //                result[semanticVersion] = releaseTagName;
 
-        //            _logger.LogDebug("Discovered package version {PackageVersion}.", releaseTagName);
+        //            _logger.LogDebug("Discovered package version {PackageVersion}", releaseTagName);
         //        }
 
         //        // look for more pages
@@ -713,7 +713,7 @@ namespace Nexus.PackageManagement
         //        if (asset.ValueKind != JsonValueKind.Undefined)
         //        {
         //            var assetUrl = new Uri(asset.GetProperty("direct_asset_url").GetString());
-        //            _logger.LogDebug("Restore package from source {Source}.", assetUrl);
+        //            _logger.LogDebug("Restore package from source {Source}", assetUrl);
         //            await PackageController.DownloadAndExtractAsync(fileName, assetUrl, targetPath, headers, cancellationToken);
         //        }
         //        else
@@ -723,7 +723,7 @@ namespace Nexus.PackageManagement
         //    }
         //    else
         //    {
-        //        _logger.LogDebug("Package is already restored.");
+        //        _logger.LogDebug("Package is already restored");
         //    }
         //
         //    return targetPath;

@@ -4,7 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Nexus.Core;
 using Serilog;
-using Serilog.Core;
+using Serilog.Sinks.Grafana.Loki;
 using System;
 using System.Globalization;
 
@@ -36,11 +36,14 @@ namespace Nexus
             Program.Language = generalOptions.Language;
 
             // logging (https://nblumhardt.com/2019/10/serilog-in-aspnetcore-3/)
-            var instanceName = generalOptions.InstanceName;
+            var applicationName = generalOptions.ApplicationName;
 
             Log.Logger = new LoggerConfiguration()
                 .ReadFrom.Configuration(configuration)
-                .Enrich.WithProperty("Instance", instanceName)
+                .Enrich.WithProperty("ApplicationName", applicationName)
+                .WriteTo.GrafanaLoki(
+                    "https://awf.iwes.fraunhofer.de",
+                    outputTemplate: "{Message}{NewLine}{Exception}")
                 .CreateLogger();
 
             // run

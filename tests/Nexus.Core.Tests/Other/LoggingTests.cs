@@ -82,27 +82,27 @@ namespace Other
             var context1 = new { Amount = 108, Message = "Hello" };
             var context2 = new { Amount2 = 108, Message2 = "Hello" };
 
-            logger.LogInformation("Log with template with parameters {Text}, {Number} and {AnonymousType}.", "A", 2.59, context1);
+            logger.LogInformation("Log with template with parameters {Text}, {Number} and {AnonymousType}", "A", 2.59, context1);
 
             // 3.4 Log with scope with template
-            using (var scopeWithTemplate = logger.BeginScope("My templated scope message with parameters {ScopeText}, {ScopeNumber} and {ScopeAnonymousType}.", "A", 2.59, context1))
+            using (var scopeWithTemplate = logger.BeginScope("My templated scope message with parameters {ScopeText}, {ScopeNumber} and {ScopeAnonymousType}", "A", 2.59, context1))
             {
-                logger.LogInformation("Log with scope with template with parameters {Text}, {Number} and {AnonymousType}.", "A", 2.59, context1);
+                logger.LogInformation("Log with scope with template with parameters {Text}, {Number} and {AnonymousType}", "A", 2.59, context1);
             }
 
             // 3.5 Log with double scope with template
-            using (var scopeWithTemplate1 = logger.BeginScope("My templated scope message 1 with parameters {ScopeText1}, {ScopeNumber} and {ScopeAnonymousType}.", "A", 2.59, context1))
+            using (var scopeWithTemplate1 = logger.BeginScope("My templated scope message 1 with parameters {ScopeText1}, {ScopeNumber} and {ScopeAnonymousType}", "A", 2.59, context1))
             {
-                using (var scopeWithTemplate2 = logger.BeginScope("My templated scope message 2 with parameters {ScopeText2}, {ScopeNumber} and {ScopeAnonymousType}.", "A", 3.59, context2))
+                using (var scopeWithTemplate2 = logger.BeginScope("My templated scope message 2 with parameters {ScopeText2}, {ScopeNumber} and {ScopeAnonymousType}", "A", 3.59, context2))
                 {
-                    logger.LogInformation("Log with double scope with template with parameters {Text}, {Number} and {AnonymousType}.", "A", 2.59, context1);
+                    logger.LogInformation("Log with double scope with template with parameters {Text}, {Number} and {AnonymousType}", "A", 2.59, context1);
                 }
             }
 
             // 3.6 Log with scope with state
             using (var scopeWithState = logger.BeginScope(context1))
             {
-                logger.LogInformation("Log with scope with state with parameters {Text}, {Number} and {AnonymousType}.", "A", 2.59, context1);
+                logger.LogInformation("Log with scope with state with parameters {Text}, {Number} and {AnonymousType}", "A", 2.59, context1);
             }
 
             // 3.7 Log with double scope with state
@@ -110,7 +110,7 @@ namespace Other
             {
                 using (var scopeWithState2 = logger.BeginScope(context2))
                 {
-                    logger.LogInformation("Log with double scope with state with parameters {Text}, {Number} and {AnonymousType}.", "A", 2.59, context1);
+                    logger.LogInformation("Log with double scope with state with parameters {Text}, {Number} and {AnonymousType}", "A", 2.59, context1);
                 }
             }
 

@@ -6,7 +6,6 @@ using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Services;
 using Nexus.Utilities;
-using Serilog.Context;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -286,7 +285,7 @@ namespace Nexus.Controllers.V1
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogError(ex, "Aggregation failed.");
+                            _logger.LogError(ex, "Aggregation failed");
                             throw;
                         }
                     });
