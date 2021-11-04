@@ -40,8 +40,7 @@ namespace DataSource
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
             // act
-            var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
-            var actual = catalogs.First(catalog => catalog.Id == "/A/B/C");
+            var actual = await dataSource.GetCatalogAsync("/A/B/C", CancellationToken.None);
 
             // assert
             Assert.Single(actual.Resources);
@@ -108,8 +107,7 @@ namespace DataSource
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
             // act
-            var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
-            var catalog = catalogs.First();
+            var catalog = await dataSource.GetCatalogAsync("/A/B/C", CancellationToken.None);
             var resource = catalog.Resources.First();
             var representation = resource.Representations.First();
             var catalogItem = new CatalogItem(catalog, resource, representation);

@@ -148,9 +148,6 @@ class ResourceCatalogBuilder:
     def WithDescription(self, description: str) -> ResourceCatalogBuilder:
         return self.WithProperty("Description", description)
 
-    def WithContact(self, contact: str) -> ResourceCatalogBuilder:
-        return self.WithProperty("Contact", contact)
-
     def AddResource(self, resource: Resource) -> ResourceCatalogBuilder:
 
         if self._resources is None:

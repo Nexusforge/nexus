@@ -1,9 +1,11 @@
 ﻿using Microsoft.Extensions.Logging;
 using Nexus.Core;
+using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Extensions;
 using Nexus.Utilities;
 using System;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading;
@@ -43,12 +45,17 @@ namespace Nexus.Services
 
                 filterDataSource.DataSourceControllerLogger = _loggerFactory.CreateLogger<DataSourceController>();
 
-                filterDataSource.GetCatalogCollection = () => _appState.CatalogState.CatalogCollection;
+                filterDataSource.GetCatalogContainers = () => _appState.CatalogState.CatalogContainers;
 
-                filterDataSource.IsCatalogAccessible =
-                    catalogId => AuthorizationUtilities.IsCatalogAccessible(
-                        user,
-                        _appState.CatalogState.CatalogCollection.CatalogContainers.First(container => container.Id == catalogId));
+                filterDataSource.IsCatalogAccessible = catalogId =>
+                {
+                    var catalogContainer = _appState.CatalogState.CatalogContainers.First(container => container.Id == catalogId);
+
+                    return AuthorizationUtilities.IsCatalogAccessible(
+                        catalogContainer.Id,
+                        catalogContainer.CatalogMetadata,
+                        user);
+                };
 
                 filterDataSource.GetDataSourceControllerAsync =
                     backendSource => this.GetDataSourceControllerAsync(backendSource, cancellationToken);
@@ -63,11 +70,11 @@ namespace Nexus.Services
             var dataSource = _extensionHive.GetInstance<IDataSource>(backendSource.Type);
             var controller = new DataSourceController(dataSource, backendSource, logger);
 
-            if (_appState.CatalogState is not null && _appState.CatalogState.BackendSourceToCatalogsMap.TryGetValue(backendSource, out var catalogs))
-                await controller.InitializeAsync(catalogs, cancellationToken);
+            var backendSourceCache = _appState.CatalogState.BackendSourceCache.GetOrAdd(
+                backendSource, 
+                backendSource => new ConcurrentDictionary<string, ResourceCatalog>());
 
-            else
-                await controller.InitializeAsync(null, cancellationToken);
+            await controller.InitializeAsync(backendSourceCache, cancellationToken);
 
             return controller;
         }

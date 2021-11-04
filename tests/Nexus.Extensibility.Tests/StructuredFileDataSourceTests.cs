@@ -76,8 +76,7 @@ namespace Nexus.Extensibility.Tests
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
-            var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
-            var actual = await dataSource.GetTimeRangeAsync(catalogs.First().Id, CancellationToken.None);
+            var actual = await dataSource.GetTimeRangeAsync("/A/B/C", CancellationToken.None);
 
             Assert.Equal(expectedBegin, actual.Begin);
             Assert.Equal(expectedEnd, actual.End);
@@ -109,8 +108,7 @@ namespace Nexus.Extensibility.Tests
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
-            var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
-            var actual = await dataSource.GetAvailabilityAsync(catalogs.First().Id, begin, end, CancellationToken.None);
+            var actual = await dataSource.GetAvailabilityAsync("/A/B/C", begin, end, CancellationToken.None);
 
             Assert.Equal(expected, actual, precision);
         }
@@ -152,8 +150,7 @@ namespace Nexus.Extensibility.Tests
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
-            var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
-            var catalog = catalogs.First();
+            var catalog = await dataSource.GetCatalogAsync("/A/B/C", CancellationToken.None);
             var resource = catalog.Resources.First();
             var representation = resource.Representations.First();
             var catalogItem = new CatalogItem(catalog, resource, representation);
@@ -209,8 +206,7 @@ namespace Nexus.Extensibility.Tests
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
-            var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
-            var catalog = catalogs.First();
+            var catalog = await dataSource.GetCatalogAsync("/A/B/C", CancellationToken.None);
             var resource = catalog.Resources.First();
             var representation = resource.Representations.First();
             var catalogItem = new CatalogItem(catalog, resource, representation);

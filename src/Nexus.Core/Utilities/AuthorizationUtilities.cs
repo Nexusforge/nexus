@@ -9,7 +9,7 @@ namespace Nexus.Utilities
 {
     internal static class AuthorizationUtilities
     {
-        public static bool IsCatalogAccessible(ClaimsPrincipal principal, CatalogContainer catalogContainer)
+        public static bool IsCatalogAccessible(string catalogId, CatalogMetadata catalogMetadata, ClaimsPrincipal principal)
         {
             if (principal == null)
                 return false;
@@ -22,15 +22,15 @@ namespace Nexus.Utilities
 
                 var canAccessCatalog = principal.HasClaim(
                     claim => claim.Type == Claims.CAN_ACCESS_CATALOG &&
-                    claim.Value.Split(";").Any(current => current == catalogContainer.Id));
+                    claim.Value.Split(";").Any(current => current == catalogId));
 
                 var canAccessGroup = principal.HasClaim(
                     claim => claim.Type == Claims.CAN_ACCESS_GROUP &&
-                    claim.Value.Split(";").Any(group => catalogContainer.CatalogMetadata.GroupMemberships.Contains(group)));
+                    claim.Value.Split(";").Any(group => catalogMetadata.GroupMemberships.Contains(group)));
 
-                var implicitAccess = 
-                    catalogContainer.Id == FilterConstants.SharedCatalogID ||
-                    catalogContainer.Id == InMemoryDataSource.Id;
+                var implicitAccess =
+                    catalogId == FilterConstants.SharedCatalogID ||
+                    catalogId == InMemoryDataSource.Id;
 
                 return isAdmin || canAccessCatalog || canAccessGroup || implicitAccess;
             }
@@ -58,7 +58,7 @@ namespace Nexus.Utilities
             return false;
         }
 
-        public static bool IsCatalogVisible(ClaimsPrincipal principal, CatalogContainer catalogContainer)
+        public static bool IsCatalogVisible(ClaimsPrincipal principal, CatalogMetadata catalogMetadata)
         {
             var identity = principal.Identity;
 
@@ -72,7 +72,7 @@ namespace Nexus.Utilities
             }
 
             // 2. other catalogs
-            return !catalogContainer.CatalogMetadata.IsHidden;
+            return !catalogMetadata.IsHidden;
         }
     }
 }

@@ -53,7 +53,7 @@ class PythonDataSource(IDataSource):
                 .AddResources([resource1, resource2]) \
                 .Build()
 
-        else if (catalogId == "/D/E/F"):
+        elif (catalogId == "/D/E/F"):
 
             representation = Representation(NexusDataType.FLOAT32, timedelta(seconds=1), "mean")
 
@@ -115,11 +115,9 @@ class PythonDataSource(IDataSource):
         # The data itself is made up of progressing timestamps (unix time represented 
         # stored as 8 byte little-endian integers) with a sample rate of 1 Hz.
 
-        # ensure the catalogs have already been loaded
-        (catalog, resource, representation) = self._find(resourcePath)
-
         # representation ID = "1_Hz_mean" -> extract "1"
-        samplesPerSecond = int(representation.Id.split("_")[0])
+        representationId = resourcePath.split("/")[-1]
+        samplesPerSecond = int(representationId.split("_")[0])
         secondsPerFile = 600
         typeSize = 8
 
@@ -166,31 +164,6 @@ class PythonDataSource(IDataSource):
             currentBegin += timedelta(days = 1)
 
         return (data, status)
-
-    def _find(self, resourcePath):
-
-        pathParts = resourcePath.split("/")
-
-        representationId = pathParts[-1]
-        resourceId = pathParts[-2]
-        catalogId = "/" + "/".join(pathParts[1:-2])
-
-        catalog = next((catalog for catalog in self._context.catalogs if catalog.Id == catalogId), None)
-
-        if catalog is None:
-            raise Exception(f"ResourceCatalog '{catalogId}' not found.")
-        
-        resource = next((resource for resource in catalog.Resources if resource.Id == resourceId), None)
-
-        if resource is None:
-            raise Exception(f"Resource '{resourceId}' not found.")
-
-        representation = next((representation for representation in resource.Representations if representation.Id == representationId), None)
-
-        if representation is None:
-            raise Exception(f"Representation '{representationId}' not found.")
-
-        return (catalog, resource, representation)
 
 # get address
 address = "localhost"

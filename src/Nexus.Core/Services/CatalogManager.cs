@@ -4,12 +4,10 @@ using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Extensions;
-using Nexus.Filters;
-using Nexus.Utilities;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -68,8 +66,8 @@ namespace Nexus.Services
 
             var extendedBackendSources = builtinBackendSources.Concat(_appState.Project.BackendSources);
 
-            // load data sources and get catalog ids
-            var backendSourceToCatalogDataMap = (await Task.WhenAll(
+            /* load data sources and get catalog ids */
+            var backendSourceToCatalogIdsMap = (await Task.WhenAll(
                 extendedBackendSources.Select(async backendSource =>
                     {
                         using var controller = await _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken);
@@ -79,92 +77,35 @@ namespace Nexus.Services
                     })))
                 .ToDictionary(entry => entry.Key, entry => entry.Value);
 
-            // merge all catalogs
-            var idToCatalogContainerMap = new Dictionary<string, CatalogContainer>();
+            /* inverse the dictionary */
+            var flattenedDict = backendSourceToCatalogIdsMap
+                .SelectMany(entry => entry.Value.Select(value => new KeyValuePair<BackendSource, string>(entry.Key, value)))
+                .ToList();
 
-            foreach (var entry in backendSourceToCatalogDataMap)
-            {
-                foreach (var (catalog, timeRangeResult) in entry.Value)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
+            var catalogIdToBackendSourceMap = flattenedDict
+                .GroupBy(entry => entry.Value)
+                .ToDictionary(group => group.Key, group => group.Select(groupEntry => groupEntry.Key).ToArray());
 
-                    // find catalog container or create a new one
-                    if (idToCatalogContainerMap.TryGetValue(catalog.Id, out var container))
-                    {
-                        // merge time range
-                        var begin = container.CatalogBegin;
-                        var end = container.CatalogEnd;
-
-                        if (begin == DateTime.MinValue)
-                            begin = timeRangeResult.Begin;
-
-                        else
-                            begin = new DateTime(Math.Min(begin.Ticks, timeRangeResult.Begin.Ticks));
-
-                        if (end == DateTime.MinValue)
-                            end = timeRangeResult.End;
-
-                        else
-                            end = new DateTime(Math.Max(end.Ticks, timeRangeResult.End.Ticks));
-
-                        // merge catalog
-                        var mergedCatalog = container.Catalog.Merge(catalog, MergeMode.ExclusiveOr);
-
-                        // update catalog container
-                        idToCatalogContainerMap[catalog.Id] = container with
-                        {
-                            CatalogBegin = begin,
-                            CatalogEnd = end,
-                            Catalog = mergedCatalog
-                        };
-                    }
-                    else
-                    {
-                        var metadata = default(CatalogMetadata);
-
-                        if (_databaseManager.TryReadCatalogMetadata(catalog.Id, out var catalogMetadata))
-                            metadata = JsonSerializerHelper.Deserialize<CatalogMetadata>(catalogMetadata);
-
-                        else
-                            metadata = new CatalogMetadata();
-
-                        idToCatalogContainerMap[catalog.Id] = new CatalogContainer(timeRangeResult.Begin, timeRangeResult.End, catalog, metadata);
-                    }
-                }
-            }
-
-            // merge overrides
-            foreach (var entry in idToCatalogContainerMap)
-            {
-                var mergedCatalog = entry.Value.CatalogMetadata.Overrides is null
-                    ? entry.Value.Catalog
-                    : entry.Value.Catalog.Merge(entry.Value.CatalogMetadata.Overrides, MergeMode.NewWins);
-
-                idToCatalogContainerMap[entry.Key] = entry.Value with
-                {
-                    Catalog = mergedCatalog
-                };
-            }
-
-            // 
-            var catalogCollection = new CatalogCollection(idToCatalogContainerMap.Values.ToList());
+            /* build the catalog containers */
+            var catalogContainers = catalogIdToBackendSourceMap
+                .Select(entry => new CatalogContainer(entry.Key, aggregationBackendSource, entry.Value, _databaseManager, _dataControllerService, _userManagerWrapper))
+                .ToArray();
 
             var state = new CatalogState(
                 AggregationBackendSource: aggregationBackendSource,
-                CatalogCollection: catalogCollection,
-                BackendSourceToCatalogsMap: backendSourceToCatalogDataMap.ToDictionary(
-                    entry => entry.Key,
-                    entry => entry.Value.Select(current => current.Item1).ToArray())
+                CatalogContainers: catalogContainers,
+                BackendSourceToCatalogIdsMap: backendSourceToCatalogIdsMap,
+                BackendSourceCache: new ConcurrentDictionary<BackendSource, ConcurrentDictionary<string, ResourceCatalog>>(
+                    backendSourceToCatalogIdsMap
+                        .ToDictionary(entry => entry.Key, entry => new ConcurrentDictionary<string, ResourceCatalog>()))
             );
 
-            _logger.LogInformation("Loaded {CatalogCount} catalogs from {BackendSourceCount} backend sources",
-                catalogCollection.CatalogContainers.Count,
-                backendSourceToCatalogDataMap.Keys.Count);
+            _logger.LogInformation("Found {CatalogCount} catalogs from {BackendSourceCount} backend sources",
+                catalogContainers.Length,
+                backendSourceToCatalogIdsMap.Keys.Count);
 
             return state;
         }
-
-       
 
         #endregion
     }

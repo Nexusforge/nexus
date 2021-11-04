@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nexus.Controllers.V1
@@ -62,9 +63,12 @@ namespace Nexus.Controllers.V1
         /// Creates a new export job.
         /// </summary>
         /// <param name="parameters">Export parameters.</param>
+        /// <param name="cancellationToken">The token to cancel the current operation.</param>
         /// <returns></returns>
         [HttpPost("export")]
-        public ActionResult<ExportJob> CreateExportJob(ExportParameters parameters)
+        public async Task<ActionResult<ExportJob>> CreateExportJob(
+            ExportParameters parameters,
+            CancellationToken cancellationToken)
         {
             _diagnosticContext.Set("Body", JsonSerializerHelper.Serialize(parameters));
 
@@ -75,19 +79,21 @@ namespace Nexus.Controllers.V1
             parameters.End = parameters.End.ToUniversalTime();
 
             // translate resource paths to representations
-            List<CatalogItem> catalogItems;
+            CatalogItem[] catalogItems;
 
             var state = _appState.CatalogState;
 
             try
             {
-                catalogItems = parameters.ResourcePaths.Select(resourcePath =>
+                catalogItems = await Task.WhenAll(parameters.ResourcePaths.Select(async resourcePath =>
                 {
-                    if (!state.CatalogCollection.TryFind(resourcePath, out var catalogItem))
-                        throw new ValidationException($"Could not find the resource with path '{resourcePath}'.");
+                    CatalogItem catalogItem;
+
+                    if ((catalogItem = await state.CatalogContainers.TryFindAsync(resourcePath, cancellationToken)) == null)
+                        throw new ValidationException($"Could not find resource path {resourcePath}.");
 
                     return catalogItem;
-                }).ToList();
+                }));
             }
             catch (ValidationException ex)
             {
@@ -103,10 +109,10 @@ namespace Nexus.Controllers.V1
 
             foreach (var catalogId in catalogIds)
             {
-                var catalogContainer = state.CatalogCollection.CatalogContainers
+                var catalogContainer = state.CatalogContainers
                     .First(container => container.Id == catalogId);
 
-                if (!AuthorizationUtilities.IsCatalogAccessible(this.HttpContext.User, catalogContainer))
+                if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.CatalogMetadata, this.HttpContext.User))
                     return this.Unauthorized($"The current user is not authorized to access catalog '{catalogId}'.");
             }
 

@@ -2,11 +2,14 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Nexus;
+using Nexus.Core;
 using Nexus.Core.Tests;
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Extensions;
+using Nexus.Filters;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -42,10 +45,9 @@ namespace DataSource
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
             // act
-            var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
+            var actual = await dataSource.GetCatalogAsync(FilterConstants.SharedCatalogID, CancellationToken.None);
 
             // assert
-            var actual = catalogs.First(catalog => catalog.Id == "/IN_MEMORY/FILTERS/SHARED");
             var actualIds = actual.Resources.Select(resource => resource.Id).ToList();
             var actualUnits = actual.Resources.Select(resource => resource.Properties["Unit"]).ToList();
             var actualGroups = actual.Resources.SelectMany(
@@ -77,7 +79,7 @@ namespace DataSource
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
-            var actual = await dataSource.GetTimeRangeAsync("/IN_MEMORY/FILTERS/SHARED", CancellationToken.None);
+            var actual = await dataSource.GetTimeRangeAsync(FilterConstants.SharedCatalogID, CancellationToken.None);
 
             Assert.Equal(DateTime.MaxValue, actual.Begin);
             Assert.Equal(DateTime.MinValue, actual.End);
@@ -99,7 +101,7 @@ namespace DataSource
 
             var begin = new DateTime(2020, 01, 01, 00, 00, 00, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 02, 00, 00, 00, DateTimeKind.Utc);
-            var actual = await dataSource.GetAvailabilityAsync("/IN_MEMORY/FILTERS/SHARED", begin, end, CancellationToken.None);
+            var actual = await dataSource.GetAvailabilityAsync(FilterConstants.SharedCatalogID, begin, end, CancellationToken.None);
 
             Assert.Equal(1.0, actual);
         }
@@ -113,15 +115,15 @@ namespace DataSource
             var resourceBuilder = new ResourceBuilder("T1");
             resourceBuilder.AddRepresentation(representation);
 
-            var catalogBuilder = new ResourceCatalogBuilder(id: "/IN_MEMORY/TEST/ACCESSIBLE");
+            var catalogBuilder = new ResourceCatalogBuilder(id: InMemoryDataSource.AccessibleCatalogId);
             catalogBuilder.AddResource(resourceBuilder.Build());
 
             var catalog = catalogBuilder.Build();
 
-            var catalogCollection = new CatalogCollection(new List<CatalogContainer>()
+            var catalogContainers = new CatalogContainer[]
             {
                 new CatalogContainer(DateTime.MinValue, DateTime.MaxValue, catalog, null)
-            });
+            };
 
             // setup data source
             var subDataSource = Mock.Of<IDataSource>();
@@ -156,11 +158,11 @@ namespace DataSource
             {
                 DataSourceControllerLogger = NullLogger<DataSourceController>.Instance,
                 IsCatalogAccessible = _ => true,
-                GetCatalogCollection = () => catalogCollection,
+                GetCatalogContainers = () => catalogContainers,
                 GetDataSourceControllerAsync = async id =>
                 {
                     var controller = new DataSourceController(subDataSource, backendSource, NullLogger.Instance);
-                    await controller.InitializeAsync(new[] { catalog }, default);
+                    await controller.InitializeAsync(new ConcurrentDictionary<string, ResourceCatalog>() { [catalog.Id] = catalog }, default);
                     return controller;
                 }
             } as IDataSource;
@@ -174,8 +176,7 @@ namespace DataSource
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
-            var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
-            var catalog2 = catalogs.First();
+            var catalog2 = await dataSource.GetCatalogAsync("/A/B/C", CancellationToken.None);
             var resource2 = catalog2.Resources.First();
             var representation2 = resource2.Representations.First();
             var catalogItem = new CatalogItem(catalog2, resource2, representation2);

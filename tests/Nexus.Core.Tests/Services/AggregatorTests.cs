@@ -5,7 +5,7 @@ using Nexus.Core;
 using Nexus.Services;
 using Xunit;
 
-namespace Nexus.Tests
+namespace Services
 {
     public class AggregatorTests
     {

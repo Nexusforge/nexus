@@ -42,7 +42,7 @@ namespace Nexus.Extensions
 
         public Task<ResourceCatalog> GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
         {
-            return Task.FromResult(this.LoadCatalog(catalogId));
+            return Task.FromResult(InMemoryDataSource.LoadCatalog(catalogId));
         }
 
         public Task<(DateTime Begin, DateTime End)> GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
@@ -120,7 +120,7 @@ namespace Nexus.Extensions
             }
         }
 
-        private ResourceCatalog LoadCatalog(string catalogId)
+        internal static ResourceCatalog LoadCatalog(string catalogId)
         {
             var representation1 = new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromSeconds(1), detail: "mean");
             var representation2 = new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromSeconds(1), detail: "mean");

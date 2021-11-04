@@ -10,18 +10,12 @@ namespace Nexus.DataModel
 
         internal const string Description = "Description";
         internal const string Warning = "Warning";
-        internal const string Contact = "Contact";
         internal const string Unit = "Unit";
         internal const string Groups = "Groups";
 
         public static ResourceCatalogBuilder WithDescription(this ResourceCatalogBuilder catalogBuilder, string description)
         {
             return catalogBuilder.WithProperty(Description, description);
-        }
-
-        public static ResourceCatalogBuilder WithContact(this ResourceCatalogBuilder catalogBuilder, string contact)
-        {
-            return catalogBuilder.WithProperty(Contact, contact);
         }
 
         public static ResourceBuilder WithUnit(this ResourceBuilder resourceBuilder, string unit)
@@ -95,30 +89,6 @@ namespace Nexus.DataModel
             }
 
             return $"{(int)currentValue}_{_postFixes.Last()}";
-        }
-
-        internal static CatalogItem Find(this IEnumerable<ResourceCatalog> catalogs, string resourcePath)
-        {
-            if (!catalogs.TryFind(resourcePath, out var catalogItem))
-                throw new Exception($"The resource path '{resourcePath}' could not be found.");
-
-            return catalogItem;
-        }
-
-        internal static bool TryFind(this IEnumerable<ResourceCatalog> catalogs, string resourcePath, out CatalogItem catalogItem)
-        {
-            catalogItem = default(CatalogItem);
-
-            foreach (var catalog in catalogs)
-            {
-                if (catalog.TryFind(resourcePath, out catalogItem))
-                    break;
-            }
-
-            if (catalogItem is null)
-                return false;
-
-            return true;
         }
 
         #endregion

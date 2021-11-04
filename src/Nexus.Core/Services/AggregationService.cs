@@ -51,20 +51,26 @@ namespace Nexus.Services
 
         #region Methods
 
-        public static List<AggregationInstruction> ComputeInstructions(AggregationSetup setup, CatalogState state, ILogger logger)
+        public static async Task<List<AggregationInstruction>> ComputeInstructionsAsync(
+            AggregationSetup setup,
+            CatalogState state,
+            ILogger logger, 
+            CancellationToken cancellationToken)
         {
             var catalogIds = setup.Aggregations
                 .Select(aggregation => aggregation.CatalogId)
                 .Distinct().ToList();
 
-            return catalogIds.Select(catalogId =>
+            return (await Task.WhenAll(catalogIds.Select(async catalogId =>
             {
-                var container = state.CatalogCollection.CatalogContainers.FirstOrDefault(container => container.Id == catalogId);
+                var container = state.CatalogContainers.FirstOrDefault(container => container.Id == catalogId);
 
                 if (container is null)
                     return null;
 
-                var backendSources = container.Catalog.Resources
+                var catalog = await container.GetCatalogAsync(cancellationToken);
+
+                var backendSources = catalog.Resources
                     .SelectMany(resource => resource.Representations.Select(representation => representation.BackendSource))
                     .Distinct()
                     .Where(backendSource => backendSource != state.AggregationBackendSource)
@@ -74,11 +80,11 @@ namespace Nexus.Services
                 {
                     // find aggregations for catalog ID
                     var potentialAggregations = setup.Aggregations
-                        .Where(parameters => parameters.CatalogId == container.Catalog.Id)
+                        .Where(parameters => parameters.CatalogId == catalog.Id)
                         .ToList();
 
                     // create resource to aggregations map
-                    var aggregationResources = container.Catalog.Resources
+                    var aggregationResources = catalog.Resources
 
                         // find all resources for current reader backend source
                         .Where(resource => resource.Representations.Any(representation => representation.BackendSource == backendSource))
@@ -97,7 +103,7 @@ namespace Nexus.Services
 
                     return aggregationResources.ToList();
                 }));
-            }).Where(instruction => instruction != null).ToList();
+            }))).Where(instruction => instruction != null).ToList();
         }
 
         public Task<string> AggregateDataAsync(string databaseFolderPath,
@@ -115,7 +121,7 @@ namespace Nexus.Services
             return Task.Run(async () =>
             {
                 var progress = (IProgress<double>)this.Progress;
-                var instructions = AggregationService.ComputeInstructions(setup, state, _logger);
+                var instructions = await AggregationService.ComputeInstructionsAsync(setup, state, _logger, cancellationToken);
                 var days = (setup.End - setup.Begin).TotalDays;
                 var totalDays = instructions.Count() * days;
                 var i = 0;
@@ -169,10 +175,10 @@ namespace Nexus.Services
                     return;
 
                 // catalog
-                var container = state.CatalogCollection.CatalogContainers.FirstOrDefault(container => container.Id == catalogId);
+                var container = state.CatalogContainers.FirstOrDefault(container => container.Id == catalogId);
 
                 if (container == null)
-                    throw new Exception($"The requested catalog '{catalogId}' could not be found.");
+                    throw new Exception($"The requested catalog {catalogId} could not be found.");
 
                 var targetDirectoryPath = Path.Combine(databaseFolderPath, "DATA", WebUtility.UrlEncode(container.Id), date.ToString("yyyy-MM"), date.ToString("dd"));
 

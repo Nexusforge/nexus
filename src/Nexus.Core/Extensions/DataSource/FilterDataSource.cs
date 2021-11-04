@@ -45,7 +45,7 @@ namespace Nexus.Extensions
 
         public ILogger<DataSourceController> DataSourceControllerLogger { get; set; }
 
-        public Func<CatalogCollection> GetCatalogCollection { get; set; }
+        public Func<CatalogContainer[]> GetCatalogContainers { get; set; }
 
         public Func<string, bool> IsCatalogAccessible { get; set; }
 
@@ -238,7 +238,7 @@ namespace Nexus.Extensions
             return Task.Run(() =>
             {
                 var counter = 0.0;
-                var catalogCollection = this.GetCatalogCollection();
+                var catalogContainers = this.GetCatalogContainers();
 
                 foreach (var (catalogItem, data, status) in requests)
                 {
@@ -252,13 +252,14 @@ namespace Nexus.Extensions
                     GetFilterData getData = (string catalogId, string resourceId, string representationId, DateTime begin, DateTime end) =>
                     {
 #warning improve this (PhysicalName)
-                        var catalog = catalogCollection.CatalogContainers
+                        var catalog = catalogContainers
                             .FirstOrDefault(container => container.Id == catalogId || container.PhysicalName == catalogId);
 
                         if (catalog == null)
                             throw new Exception($"Unable to find catalog {catalogId}.");
 
-                        var subCatalogItem = catalogCollection.Find(catalog.Id, resourceId, representationId);
+                        var resourcePath = $"{catalog.Id}/{resourceId}/{representationId}";
+                        var subCatalogItem = catalogContainers.FindAsync(resourcePath, cancellationToken).Result;
 
                         if (!this.IsCatalogAccessible(catalog.Id))
                             throw new UnauthorizedAccessException("The current user is not allowed to access this filter.");

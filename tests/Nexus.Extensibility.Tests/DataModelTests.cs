@@ -299,5 +299,59 @@ namespace Nexus.Extensibility.Tests
             // Assert
             Assert.Throws<ArgumentException>(action);
         }
+
+           [Fact]
+        public void CanFindCatalogItem()
+        {
+            var representation = new Representation(
+                dataType: NexusDataType.FLOAT32,
+                samplePeriod: TimeSpan.FromSeconds(1),
+                detail: "mean");
+
+            var resource = new Resource(id: "Resource1", representations: new List<Representation>() { representation });
+            var catalog = new ResourceCatalog(id: "/A/B/C", resources: new List<Resource>() { resource });
+            var catalogItem = new CatalogItem(catalog, resource, representation);
+            var foundCatalogItem = catalog.Find(catalogItem.GetPath());
+            var foundCatalogItemByName = catalog.Find($"{catalogItem.Catalog.Id}/{catalogItem.Resource.Id}/{catalogItem.Representation.Id}");
+
+            Assert.Equal(catalogItem, foundCatalogItem);
+            Assert.Equal(catalogItem, foundCatalogItemByName);
+        }
+
+        [Fact]
+        public void CanTryFindCatalogItem()
+        {
+            var representation = new Representation(
+                dataType: NexusDataType.FLOAT32,
+                samplePeriod: TimeSpan.FromSeconds(1),
+                detail: "mean");
+
+            var resource = new Resource(id: "Resource1", representations: new List<Representation>() { representation });
+            var catalog = new ResourceCatalog(id: "/A/B/C", resources: new List<Resource>() { resource });
+            var catalogItem = new CatalogItem(catalog, resource, representation);
+            var success = catalog.TryFind(catalogItem.GetPath(), out var foundCatalogItem1);
+
+            Assert.Equal(catalogItem, foundCatalogItem1);
+            Assert.True(success);
+        }
+
+        [Theory]
+        [InlineData("/A/B/C", "Resource1", "1_s_max")]
+        [InlineData("/A/B/C", "Resource2", "1_s_mean")]
+        [InlineData("/A/B/D", "Resource1", "1_s_max")]
+        public void ThrowsForInvalidResourcePath(string catalogId, string resourceId, string datasetId)
+        {
+            var representation = new Representation(
+               dataType: NexusDataType.FLOAT32,
+               samplePeriod: TimeSpan.FromSeconds(1),
+               detail: "mean");
+
+            var resource = new Resource(id: "Resource1", representations: new List<Representation>() { representation });
+            var catalog = new ResourceCatalog(id: "/A/B/C", resources: new List<Resource>() { resource });
+            var catalogItem = new CatalogItem(catalog, resource, representation);
+
+            Action action = () => catalog.Find($"/{catalogId}/{resourceId}/{datasetId}");
+            Assert.Throws<Exception>(action);
+        }
     }
 }

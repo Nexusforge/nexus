@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Microsoft.JSInterop;
 using Nexus.DataModel;
 using Nexus.Roslyn;
@@ -40,7 +39,6 @@ namespace Nexus.Core
         private IJSRuntime _jsRuntime;
         private IUserIdService _userIdService;
         private IServiceProvider _serviceProvider;
-        private PathsOptions _pathsOptions;
 
         private AppState _appState;
         private AuthenticationStateProvider _authenticationStateProvider;
@@ -62,7 +60,6 @@ namespace Nexus.Core
                          IDatabaseManager databaseManager,
                          IUserIdService userIdService,
                          IServiceProvider serviceProvider,
-                         IOptions<PathsOptions> pathsOptions,
                          AppState appState,
                          AuthenticationStateProvider authenticationStateProvider,
                          DataService dataService)
@@ -73,7 +70,6 @@ namespace Nexus.Core
             _databaseManager = databaseManager;
             _userIdService = userIdService;
             _serviceProvider = serviceProvider;
-            _pathsOptions = pathsOptions.Value;
             _appState = appState;
             _authenticationStateProvider = authenticationStateProvider;
             _dataService = dataService;
@@ -85,7 +81,7 @@ namespace Nexus.Core
             _appState.PropertyChanged += this.OnAppStatePropertyChanged;
 
             if (_appState.CatalogState is not null)
-                this.Initialize(_appState.CatalogState.CatalogCollection);
+                this.InitializeAsync(_appState.CatalogState.CatalogContainers, CancellationToken.None).Wait();
         }
 
         #endregion
@@ -102,9 +98,9 @@ namespace Nexus.Core
 #warning Make this more efficient. Maybe by tracking changes.
                 if (_isEditEnabled && !value)
                 {
-                    foreach (var catalogContainer in _appState.CatalogState.CatalogCollection.CatalogContainers)
+                    foreach (var catalogContainer in _appState.CatalogState.CatalogContainers)
                     {
-                        //_databaseManager.SaveCatalogMeta(catalogContainer.CatalogSettings);
+                        //_databaseManager.SaveCatalogMeta(catalogContainer.CatalogMetadata);
                     }
                 }
 
@@ -270,8 +266,8 @@ namespace Nexus.Core
                 // When database is updated and then the selected catalog is changed,
                 // "value" refers to an old catalog container that does not exist in 
                 // the database anymore.
-                if (value != null && !_appState.CatalogState.CatalogCollection.CatalogContainers.Contains(value))
-                    value = _appState.CatalogState.CatalogCollection.CatalogContainers.FirstOrDefault(container => container.Id == value.Id);
+                if (value != null && !_appState.CatalogState.CatalogContainers.Contains(value))
+                    value = _appState.CatalogState.CatalogContainers.FirstOrDefault(container => container.Id == value.Id);
 
                 this.SetProperty(ref _catalogContainer, value);
 
@@ -279,7 +275,7 @@ namespace Nexus.Core
 
                 if (this.CatalogContainersInfo.Accessible.Contains(value))
                 {
-                    this.UpdateGroupedResources();
+                    _ = this.UpdateGroupedResourcesAsync(CancellationToken.None);
                     this.UpdateAttachments();
                 }
                 else
@@ -308,7 +304,7 @@ namespace Nexus.Core
             set
             {
                 base.SetProperty(ref _searchString, value);
-                this.UpdateGroupedResources();
+                _ = this.UpdateGroupedResourcesAsync(CancellationToken.None);
             }
         }
 
@@ -467,11 +463,11 @@ namespace Nexus.Core
 
                 foreach (var catalogId in catalogIds)
                 {
-                    var catalogContainer = _appState.CatalogState.CatalogCollection.CatalogContainers
+                    var catalogContainer = _appState.CatalogState.CatalogContainers
                         .First(container => container.Id == catalogId);
 
-                    if (!AuthorizationUtilities.IsCatalogAccessible(_userIdService.User, catalogContainer))
-                        throw new UnauthorizedAccessException($"The current user is not authorized to access catalog '{catalogId}'.");
+                    if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.CatalogMetadata, _userIdService.User))
+                        throw new UnauthorizedAccessException($"The current user is not authorized to access catalog {catalogId}.");
                 }
 
                 //
@@ -557,13 +553,13 @@ namespace Nexus.Core
         public async Task<AvailabilityResult[]> GetAvailabilityAsync(AvailabilityGranularity granularity, CancellationToken cancellationToken)
         {
             // security check
-            if (!AuthorizationUtilities.IsCatalogAccessible(_userIdService.User, this.CatalogContainer))
+            if (!AuthorizationUtilities.IsCatalogAccessible(this.CatalogContainer.Id, this.CatalogContainer.CatalogMetadata, _userIdService.User))
                 throw new UnauthorizedAccessException($"The current user is not authorized to access catalog '{this.CatalogContainer.Id}'.");
 
             return await _dataService.GetAvailabilityAsync(this.CatalogContainer.Id, this.DateTimeBegin, this.DateTimeEnd, granularity, cancellationToken);
         }
 
-        public void SetExportParameters(ExportParameters exportParameters)
+        public async Task SetExportParametersAsync(ExportParameters exportParameters, CancellationToken cancellationToken)
         {
             _samplePeriodToSelectedRepresentationsMap.Clear();
 
@@ -573,7 +569,9 @@ namespace Nexus.Core
             foreach (var resourcePath in exportParameters.ResourcePaths)
             {
                 // if resource path exists
-                if (_appState.CatalogState.CatalogCollection.TryFind(resourcePath, out var catalogItem))
+                var catalogItem = await _appState.CatalogState.CatalogContainers.TryFindAsync(resourcePath, cancellationToken);
+
+                if (catalogItem is not null)
                 {
                     // if catalog is accessible
                     var catalogContainer = this.CatalogContainersInfo.Accessible
@@ -581,11 +579,12 @@ namespace Nexus.Core
 
                     if (catalogContainer is not null)
                     {
-                        var resources = _appState.ResourceCache.GetOrAdd(catalogContainer, catalogContainer =>
+                        var resources = await _appState.ResourceCache.GetOrAdd(catalogContainer, async catalogContainer =>
                         {
-                            var catalogViewModel = new ResourceCatalogViewModel(catalogContainer.Catalog);
+                            var catalog = await catalogContainer.GetCatalogAsync(cancellationToken);
+                            var catalogViewModel = new ResourceCatalogViewModel(catalog);
 
-                            return catalogContainer.Catalog.Resources
+                            return catalog.Resources
                                .Select(resource => new ResourceViewModel(catalogViewModel, resource))
                                .ToArray();
                         });
@@ -654,18 +653,18 @@ namespace Nexus.Core
             });
         }
 
-        private void Initialize(CatalogCollection catalogCollection)
+        private async Task InitializeAsync(CatalogContainer[] catalogContainers, CancellationToken cancellationToken)
         {
-            this.CatalogContainersInfo = this.SplitCampaignContainersAsync(catalogCollection).Result;
+            this.CatalogContainersInfo = await this.SplitCampaignContainersAsync(catalogContainers);
 
             // this triggers a search to find the new container instance
             this.CatalogContainer = this.CatalogContainer;
 
             // to rebuilt list with new representation instances
-            this.SetExportParameters(this.ExportParameters);
+            await this.SetExportParametersAsync(this.ExportParameters, cancellationToken);
 
             // maybe there is a new resource available now: display it
-            this.UpdateGroupedResources();
+            await this.UpdateGroupedResourcesAsync(cancellationToken);
         }
 
         private void UpdateAttachments()
@@ -677,17 +676,18 @@ namespace Nexus.Core
                 this.Attachments = Enumerable.Empty<string>();
         }
 
-        private void UpdateGroupedResources()
+        private async Task UpdateGroupedResourcesAsync(CancellationToken cancellationToken)
         {
             if (this.CatalogContainer is not null)
             {
                 this.GroupedResources = new Dictionary<string, List<ResourceViewModel>>();
 
-                var resources = _appState.ResourceCache.GetOrAdd(this.CatalogContainer, catalogContainer =>
+                var resources = await _appState.ResourceCache.GetOrAdd(this.CatalogContainer, async catalogContainer =>
                 {
-                    var catalogViewModel = new ResourceCatalogViewModel(catalogContainer.Catalog);
+                    var catalog = await catalogContainer.GetCatalogAsync(cancellationToken);
+                    var catalogViewModel = new ResourceCatalogViewModel(catalog);
 
-                    return this.CatalogContainer.Catalog.Resources
+                    return catalog.Resources
                        .Select(resource => new ResourceViewModel(catalogViewModel, resource))
                        .ToArray();
                 });
@@ -774,20 +774,20 @@ namespace Nexus.Core
             return representations;
         }
 
-        private async Task<SplittedCatalogContainers> SplitCampaignContainersAsync(CatalogCollection catalogCollection)
+        private async Task<SplittedCatalogContainers> SplitCampaignContainersAsync(CatalogContainer[] catalogContainers)
         {
             var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
-            var principal = authState.User;
+            var user = authState.User;
 
             // all accessible catalogs are "accessible"
-            var accessible = catalogCollection.CatalogContainers
-                .Where(catalogContainer => AuthorizationUtilities.IsCatalogAccessible(principal, catalogContainer))
+            var accessible = catalogContainers
+                .Where(catalogContainer => AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.CatalogMetadata, user))
                 .OrderBy(catalogContainer => catalogContainer.Id).ToList();
 
             // all other catalogs except hidden ones are "restricted"
-            var restricted = catalogCollection.CatalogContainers.Where(catalogContainer =>
+            var restricted = catalogContainers.Where(catalogContainer =>
             {
-                var isCatalogVisible = AuthorizationUtilities.IsCatalogVisible(principal, catalogContainer);
+                var isCatalogVisible = AuthorizationUtilities.IsCatalogVisible(user, catalogContainer.CatalogMetadata);
 
                 return !accessible.Contains(catalogContainer) && isCatalogVisible;
             }).OrderBy(catalogContainer => catalogContainer.Id).ToList();
@@ -803,7 +803,7 @@ namespace Nexus.Core
         {
             if (e.PropertyName == nameof(AppState.CatalogState) ||
                (e.PropertyName == nameof(AppState.IsCatalogStateUpdating) && !_appState.IsCatalogStateUpdating))
-                this.Initialize(_appState.CatalogState.CatalogCollection);
+                _ = this.InitializeAsync(_appState.CatalogState.CatalogContainers, CancellationToken.None);
         }
 
         #endregion

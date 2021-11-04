@@ -39,10 +39,9 @@ namespace DataSource
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
             // act
-            var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
+            var actual = await dataSource.GetCatalogAsync(InMemoryDataSource.AccessibleCatalogId, CancellationToken.None);
 
             // assert
-            var actual = catalogs.First(catalog => catalog.Id == "/IN_MEMORY/TEST/ACCESSIBLE");
             var actualIds = actual.Resources.Select(resource => resource.Id).ToList();
             var actualUnits = actual.Resources.Select(resource => resource.Properties.GetValueOrDefault("Unit")).ToList();
             var actualGroups = actual.Resources.SelectMany(
@@ -116,8 +115,7 @@ namespace DataSource
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
-            var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
-            var catalog = catalogs.First();
+            var catalog = await dataSource.GetCatalogAsync(InMemoryDataSource.AccessibleCatalogId, CancellationToken.None);
             var resource = catalog.Resources.First();
             var representation = resource.Representations.First();
             var catalogItem = new CatalogItem(catalog, resource, representation);

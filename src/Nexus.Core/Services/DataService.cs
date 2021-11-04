@@ -68,9 +68,9 @@ namespace Nexus.Services
             AvailabilityGranularity granularity,
             CancellationToken cancellationToken)
         {
-            var backendSources = _appState.CatalogState.BackendSourceToCatalogsMap
+            var backendSources = _appState.CatalogState.BackendSourceToCatalogIdsMap
                 // where the catalog list contains the catalog ID
-                .Where(entry => entry.Value.Any(subEntry => subEntry.Value.Id == catalogId))
+                .Where(entry => entry.Value.Any(id => id == catalogId))
                 // select the backend source
                 .Select(entry => entry.Key);
 

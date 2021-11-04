@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Nexus.Core;
 using Nexus.DataModel;
@@ -7,8 +8,8 @@ using Nexus.Extensibility;
 using Nexus.Extensions;
 using Nexus.Services;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -28,30 +29,37 @@ namespace Services
               .Returns(new InMemoryDataSource());
 
             var backendSource = new BackendSource(Type: "Nexus.Builtin.InMemory", new Uri("A", UriKind.Relative));
-            var expectedCatalog = new ResourceCatalog(id: "/A/B/C");
+            var expectedCatalog = InMemoryDataSource.LoadCatalog("/A/B/C");
 
             var catalogState = new CatalogState(
-                default, 
                 default,
-                BackendSourceToCatalogsMap: new Dictionary<BackendSource, ResourceCatalog[]>()
+                default,
+                BackendSourceToCatalogIdsMap: new Dictionary<BackendSource, string[]>()
                 {
-                    [backendSource] = new[] { new ResourceCatalog(id: "/A/B/C") }
-                }
+                    [backendSource] = new[] { "/A/B/C" }
+                },
+                BackendSourceCache: new ConcurrentDictionary<BackendSource, ConcurrentDictionary<string, ResourceCatalog>>()
             );
 
             var appState = new AppState() { CatalogState = catalogState };
             var serviceCollection = new ServiceCollection();
             var serviceProvider = serviceCollection.BuildServiceProvider();
+
             var loggerFactory = Mock.Of<ILoggerFactory>();
+
+            Mock.Get(loggerFactory)
+              .Setup(loggerFactory => loggerFactory.CreateLogger(It.IsAny<string>()))
+              .Returns(NullLogger.Instance);
+
             var dataControllerService = new DataControllerService(appState, extensionHive, default, loggerFactory);
 
             // Act
             var actual = await dataControllerService.GetDataSourceControllerAsync(backendSource, CancellationToken.None);
 
             // Assert
-            var actualCatalogs = await actual.GetCatalogsAsync(CancellationToken.None);
+            var actualCatalog = await actual.GetCatalogAsync("/A/B/C", CancellationToken.None);
 
-            Assert.Equal(expectedCatalog, actualCatalogs.First());
+            Assert.Equal(expectedCatalog.Id, actualCatalog.Id);
         }
 
         [Fact]

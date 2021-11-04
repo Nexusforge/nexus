@@ -45,7 +45,7 @@ namespace Nexus.Shared
 
         public void UpdateJobEditor()
         {
-            this.JobEditor.Update();
+            this.JobEditor.UpdateAsync().Wait();
             this.InvokeAsync(() => this.StateHasChanged());
         }
 

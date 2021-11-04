@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Nexus.Services
 {
@@ -29,7 +31,7 @@ namespace Nexus.Services
         public JobEditor(AppState appState)
         {
             _state = appState.CatalogState;
-            this.Update();
+            this.UpdateAsync().Wait();
         }
 
         #endregion
@@ -54,7 +56,7 @@ namespace Nexus.Services
                 {
                     this.AggregationSetup = JsonSerializer.Deserialize<AggregationSetup>(_jsonString);
 
-                    this.Update(skipJson: true);
+                    this.UpdateAsync(skipJson: true).Wait();
                     this.OnChanged();
                 }
                 catch
@@ -68,10 +70,10 @@ namespace Nexus.Services
 
         #region Methods
 
-        public void Update(bool skipJson = false)
+        public async Task UpdateAsync(bool skipJson = false)
         {
             // analysis
-            var instructions = AggregationService.ComputeInstructions(this.AggregationSetup, _state, NullLogger.Instance);
+            var instructions = await AggregationService.ComputeInstructionsAsync(this.AggregationSetup, _state, NullLogger.Instance, CancellationToken.None);
             var sb = new StringBuilder();
 
             foreach (var instruction in instructions)

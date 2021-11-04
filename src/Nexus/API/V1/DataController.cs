@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Logging;
 using Nexus.Core;
+using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Services;
 using Nexus.Utilities;
@@ -83,22 +84,24 @@ namespace Nexus.Controllers.V1
 
             try
             {
-                var catalogCollection = _appState.CatalogState.CatalogCollection;
+                var catalogContainers = _appState.CatalogState.CatalogContainers;
 
                 // representation
-                var path = $"{catalogId}/{resourceId}/{representationId}";
+                var resourcePath = $"{catalogId}/{resourceId}/{representationId}";
 
-                if (!catalogCollection.TryFind(path, out var catalogItem))
-                    return this.NotFound($"Could not find representation on path '{path}'.");
+                CatalogItem catalogItem;
+
+                if ((catalogItem = await catalogContainers.TryFindAsync(resourcePath, cancellationToken)) == null)
+                    return this.NotFound($"Could not find resource path {resourcePath}.");
 
                 var catalog = catalogItem.Catalog;
 
 #warning better would be to get container directly
-                var container = catalogCollection.CatalogContainers.First(container => container.Id == catalog.Id);
+                var container = catalogContainers.First(container => container.Id == catalog.Id);
 
                 // security check
-                if (!AuthorizationUtilities.IsCatalogAccessible(this.User, container))
-                    return this.Unauthorized($"The current user is not authorized to access the catalog '{catalog.Id}'.");
+                if (!AuthorizationUtilities.IsCatalogAccessible(container.Id, container.CatalogMetadata, this.User))
+                    return this.Unauthorized($"The current user is not authorized to access the catalog {catalog.Id}.");
 
                 // controller
                 using var controller = await _dataControllerService.GetDataSourceControllerForDataAccessAsync(

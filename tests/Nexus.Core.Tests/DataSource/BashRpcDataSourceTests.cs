@@ -51,11 +51,10 @@ namespace DataSource
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
             // act
-            var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
+            var actual = await dataSource.GetCatalogAsync("/A/B/C", CancellationToken.None);
 
             // assert
-            var actualProperties1 = catalogs.First().Properties;
-            var actual = catalogs.First(catalog => catalog.Id == "/A/B/C");
+            var actualProperties1 = actual.Properties;
             var actualIds = actual.Resources.Select(resource => resource.Id).ToList();
             var actualUnits = actual.Resources.Select(resource => resource.Properties["Unit"]).ToList();
             var actualGroups = actual.Resources.SelectMany(
@@ -163,8 +162,7 @@ namespace DataSource
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
-            var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
-            var catalog = catalogs.First();
+            var catalog = await dataSource.GetCatalogAsync("/A/B/C", CancellationToken.None);
             var resource = catalog.Resources.First();
             var representation = resource.Representations.First();
             var catalogItem = new CatalogItem(catalog, resource, representation);

@@ -100,9 +100,9 @@ namespace Other
 
             // run
             var dataSource = (IDataSource)Activator.CreateInstance(dataSourceType);
-            var exception = await Assert.ThrowsAsync<NotImplementedException>(() => dataSource.GetCatalogsAsync(CancellationToken.None));
+            var exception = await Assert.ThrowsAsync<NotImplementedException>(() => dataSource.GetCatalogAsync(string.Empty, CancellationToken.None));
 
-            Assert.Equal(nameof(IDataSource.GetCatalogsAsync), exception.Message);
+            Assert.Equal(nameof(IDataSource.GetCatalogAsync), exception.Message);
 
             // delete should fail
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))

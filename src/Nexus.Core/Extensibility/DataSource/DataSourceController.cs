@@ -18,7 +18,7 @@ namespace Nexus.Extensibility
     {
         #region Fields
 
-        public ConcurrentDictionary<string, ResourceCatalog> _catalogMap;
+        public ConcurrentDictionary<string, ResourceCatalog> _catalogCache;
 
         #endregion
 
@@ -47,9 +47,9 @@ namespace Nexus.Extensibility
 
         #region Methods
 
-        public async Task InitializeAsync(ConcurrentDictionary<string, ResourceCatalog> catalogMap, CancellationToken cancellationToken)
+        public async Task InitializeAsync(ConcurrentDictionary<string, ResourceCatalog> catalogCache, CancellationToken cancellationToken)
         {
-            _catalogMap = catalogMap;
+            _catalogCache = catalogCache;
 
             var context = new DataSourceContext()
             {
@@ -70,7 +70,7 @@ namespace Nexus.Extensibility
         public async Task<ResourceCatalog>
            GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
         {
-            if (!_catalogMap.TryGetValue(catalogId, out var catalog))
+            if (!_catalogCache.TryGetValue(catalogId, out var catalog))
             {
                 this.Logger.LogDebug("Load catalog {CatalogId} from data source", catalogId);
 
@@ -85,7 +85,7 @@ namespace Nexus.Extensibility
                 }
 
                 /* GetOrAdd is not working because it requires a synchronous delegate */
-                _catalogMap.TryAdd(catalogId, catalog);
+                _catalogCache.TryAdd(catalogId, catalog);
             }
 
             else
@@ -226,8 +226,16 @@ namespace Nexus.Extensibility
 
                 /* _catalogMap is guaranteed to contain the current catalog 
                  * because GetCatalogAsync is called before ReadAsync */
-                var originalCatalogItem = _catalogMap.Values.Find(catalogItem.GetPath());
-                return new ReadRequest(originalCatalogItem, data, status);
+                if (_catalogCache.TryGetValue(catalogItem.Catalog.Id, out var catalog))
+                {
+                    var originalCatalogItem = catalog.Find(catalogItem.GetPath());
+                    return new ReadRequest(originalCatalogItem, data, status);
+                }
+                else
+                {
+                    throw new Exception($"Cannot find cataog {catalogItem.Catalog.Id}.");
+                }
+                
             }).ToArray();
 
             try

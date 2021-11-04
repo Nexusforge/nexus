@@ -3,13 +3,14 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Host.Mef;
 using Microsoft.CodeAnalysis.Text;
 using Nexus.Core;
-using Nexus.DataModel;
 using Nexus.Filters;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Nexus.Roslyn
 {
@@ -89,7 +90,9 @@ namespace Nexus.Roslyn
                 this.Workspace.AddDocument(project.Id, "FilterTypesShared.cs", SourceText.From(sharedCode));
 
                 // database code
-                var databaseCode = this.GenerateDatabaseCode(catalogContainers, filter.SamplePeriod, filter.RequestedCatalogIds);
+                var databaseCode = this.GenerateDatabaseCodeAsync(catalogContainers, filter.SamplePeriod, filter.RequestedCatalogIds, CancellationToken.None)
+                    .Result;
+
                 this.Workspace.AddDocument(project.Id, "DatabaseCode.cs", SourceText.From(databaseCode));
             }
         }
@@ -123,7 +126,11 @@ namespace Nexus.Roslyn
             } while (!this.Workspace.TryApplyChanges(updatedSolution));
         }
 
-        private string GenerateDatabaseCode(IEnumerable<CatalogContainer> catalogContainers, TimeSpan samplePeriod, List<string> requestedCatalogIds)
+        private async Task<string> GenerateDatabaseCodeAsync(
+            IEnumerable<CatalogContainer> catalogContainers,
+            TimeSpan samplePeriod, 
+            List<string> requestedCatalogIds,
+            CancellationToken cancellationToken)
         {
             // generate code
             var classStringBuilder = new StringBuilder();
@@ -158,7 +165,9 @@ namespace Nexus.Roslyn
                 catalogStringBuilder.AppendLine($"public class {catalogContainer.PhysicalName}_TYPE");
                 catalogStringBuilder.AppendLine($"{{");
 
-                foreach (var resource in catalogContainer.Catalog.Resources)
+                var catalog = await catalogContainer.GetCatalogAsync(cancellationToken);
+
+                foreach (var resource in catalog.Resources)
                 {
                     var addResource = false;
                     var resourceStringBuilder = new StringBuilder();

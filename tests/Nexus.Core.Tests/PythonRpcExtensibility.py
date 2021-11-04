@@ -218,9 +218,9 @@ class RpcCommunicator:
 
             catalogId = params[0]
             catalog = await self._dataSource.get_catalog_async(catalogId)
-
+            
             result = {
-                "Catalogs": catalog
+                "Catalog": catalog
             }
 
         elif methodName == "getTimeRangeAsync":

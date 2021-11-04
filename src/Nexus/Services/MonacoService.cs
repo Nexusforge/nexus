@@ -157,8 +157,8 @@ namespace Nexus.Services
         {
             await Task.Run(() =>
             {
-                _completionProject = new RoslynProject(filter, additionalCodeFiles, _appState.CatalogState.CatalogCollection.CatalogContainers);
-                _diagnosticProject = new RoslynProject(filter, additionalCodeFiles, _appState.CatalogState.CatalogCollection.CatalogContainers);
+                _completionProject = new RoslynProject(filter, additionalCodeFiles, _appState.CatalogState.CatalogContainers);
+                _diagnosticProject = new RoslynProject(filter, additionalCodeFiles, _appState.CatalogState.CatalogContainers);
 
                 _completionService = new OmniSharpCompletionService(_completionProject.Workspace, _formattingOptions, _loggerFactory);
                 _signatureService = new OmniSharpSignatureHelpService(_completionProject.Workspace);

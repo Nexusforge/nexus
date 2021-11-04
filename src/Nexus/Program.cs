@@ -4,7 +4,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Nexus.Core;
 using Serilog;
-using Serilog.Sinks.Grafana.Loki;
 using System;
 using System.Globalization;
 

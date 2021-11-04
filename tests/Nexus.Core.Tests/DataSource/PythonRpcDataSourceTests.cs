@@ -47,11 +47,10 @@ namespace DataSource
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
             // act
-            var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
+            var actual = await dataSource.GetCatalogAsync("/A/B/C", CancellationToken.None);
 
             // assert
-            var actualProperties1 = catalogs.First().Properties;
-            var actual = catalogs.First(catalog => catalog.Id == "/A/B/C");
+            var actualProperties1 = actual.Properties;
             var actualIds = actual.Resources.Select(resource => resource.Id).ToList();
             var actualUnits = actual.Resources.Select(resource => resource.Properties["Unit"]).ToList();
             var actualGroups = actual.Resources.SelectMany(
@@ -70,65 +69,7 @@ namespace DataSource
             Assert.True(expectedGroups.SequenceEqual(actualGroups));
             Assert.True(expectedDataTypes.SequenceEqual(actualDataTypes));
         }
-
-        [Fact]
-        public async Task ProvidesPreloadedCatalog()
-        {
-            // arrange
-
-            var representation = new Representation(dataType: NexusDataType.INT32, samplePeriod: TimeSpan.FromSeconds(1));
-
-            var resource = new ResourceBuilder(id: "resource1")
-                .WithUnit("unit 1")
-                .WithGroups("group 1")
-                .AddRepresentation(representation)
-                .Build();
-
-            var catalog = new ResourceCatalogBuilder(id: "/M/F/G")
-                .AddResources(resource)
-                .Build();
-
-            var dataSource = new RpcDataSource() as IDataSource;
-
-            var context = new DataSourceContext()
-            {
-                ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), "TESTDATA")),
-                Configuration = new Dictionary<string, string>()
-                {
-                    ["command"] = "python.exe",
-                    ["arguments"] = "PythonRpcDataSource.py 44444",
-                    ["listen-address"] = "127.0.0.1",
-                    ["listen-port"] = "44444",
-                },
-                Logger = _logger,
-                Catalogs = new [] { catalog }
-            };
-
-            await dataSource.SetContextAsync(context, CancellationToken.None);
-
-            // act
-            var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
-
-            // assert
-            var actualProperties1 = catalogs.First().Properties;
-            var actual = catalogs.First(catalog => catalog.Id == "/M/F/G");
-            var actualIds = actual.Resources.Select(resource => resource.Id).ToList();
-            var actualUnits = actual.Resources.Select(resource => resource.Properties["Unit"]).ToList();
-            var actualGroups = actual.Resources.SelectMany(
-                resource => resource.Properties.Where(current => current.Key.StartsWith("Groups"))).Select(current => current.Value).ToList();
-            var actualDataTypes = actual.Resources.SelectMany(resource => resource.Representations.Select(representation => representation.DataType)).ToList();
-
-            var expectedIds = new List<string>() { "resource1" };
-            var expectedUnits = new List<string>() { "unit 1" };
-            var expectedGroups = new List<string>() { "group 1" };
-            var expectedDataTypes = new List<NexusDataType>() { NexusDataType.INT32 };
-
-            Assert.True(expectedIds.SequenceEqual(actualIds));
-            Assert.True(expectedUnits.SequenceEqual(actualUnits));
-            Assert.True(expectedGroups.SequenceEqual(actualGroups));
-            Assert.True(expectedDataTypes.SequenceEqual(actualDataTypes));
-        }
-
+        
         [Fact]
         public async Task CanProvideTimeRange()
         {
@@ -205,8 +146,7 @@ namespace DataSource
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
-            var catalogs = await dataSource.GetCatalogsAsync(CancellationToken.None);
-            var catalog = catalogs.First();
+            var catalog = await dataSource.GetCatalogAsync("/A/B/C", CancellationToken.None);
             var resource = catalog.Resources.First();
             var representation = resource.Representations.First();
             var catalogItem = new CatalogItem(catalog, resource, representation);

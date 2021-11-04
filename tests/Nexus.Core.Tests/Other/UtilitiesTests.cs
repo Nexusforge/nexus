@@ -29,9 +29,8 @@ namespace Other
             bool expected)
         {
             // Arrange
-            var catalog = new ResourceCatalog(id: "/A/B/C");
+            var catalogId = "/A/B/C";
             var catalogMetadata = new CatalogMetadata() { GroupMemberships = new[] { "A" } };
-            var catalogContainer = new CatalogContainer(default, default, catalog, catalogMetadata);
 
             var principal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] 
             {
@@ -41,7 +40,7 @@ namespace Other
             }, authenticationType));
 
             // Act
-            var actual = AuthorizationUtilities.IsCatalogAccessible(principal, catalogContainer);
+            var actual = AuthorizationUtilities.IsCatalogAccessible(catalogId, catalogMetadata, principal);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -93,7 +92,6 @@ namespace Other
             // Arrange
             var catalog = new ResourceCatalog(id: catalogId);
             var catalogMetadata = new CatalogMetadata() { IsHidden = isHidden };
-            var catalogContainer = new CatalogContainer(default, default, catalog, catalogMetadata);
 
             var principal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]
             {
@@ -101,7 +99,7 @@ namespace Other
             }, authenticationType));
 
             // Act
-            var actual = AuthorizationUtilities.IsCatalogVisible(principal, catalogContainer);
+            var actual = AuthorizationUtilities.IsCatalogVisible(principal, catalogMetadata);
 
             // Assert
             Assert.Equal(expected, actual);

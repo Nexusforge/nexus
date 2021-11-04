@@ -51,6 +51,11 @@ namespace Services
                 };
 
                 var loggerFactory = Mock.Of<ILoggerFactory>();
+
+                Mock.Get(loggerFactory)
+                    .Setup(loggerFactory => loggerFactory.CreateLogger(It.IsAny<string>()))
+                    .Returns(NullLogger.Instance);
+
                 var hive = new ExtensionHive(Options.Create(pathsOptions), NullLogger<ExtensionHive>.Instance, loggerFactory);
 
                 var version = "v1.0.0-unit.test";

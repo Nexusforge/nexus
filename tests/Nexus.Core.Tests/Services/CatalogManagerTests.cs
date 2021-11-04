@@ -102,10 +102,17 @@ namespace Services
                     };
 
                     Mock.Get(dataSourceController)
-                      .Setup(s => s.GetCatalogsAsync(It.IsAny<CancellationToken>()))
-                      .Returns<CancellationToken>(cancellationToken =>
+                     .Setup(s => s.GetCatalogIdsAsync(It.IsAny<CancellationToken>()))
+                     .Returns<CancellationToken>((cancellationToken) =>
+                     {
+                         return Task.FromResult(catalogs.Select(catalog => catalog.Id).ToArray());
+                     });
+
+                    Mock.Get(dataSourceController)
+                      .Setup(s => s.GetCatalogAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                      .Returns<string, CancellationToken>((catalogId, cancellationToken) =>
                       {
-                          return Task.FromResult(catalogs);
+                          return Task.FromResult(catalogs.First(catalog => catalog.Id == catalogId));
                       });
 
                     Mock.Get(dataSourceController)
@@ -190,7 +197,8 @@ namespace Services
             var state = await catalogManager.LoadCatalogsAsync(CancellationToken.None);
 
             // Assert
-            var actualCatalogs = state.CatalogCollection.CatalogContainers.Select(catalogContainer => catalogContainer.Catalog).ToArray();
+            var actualCatalogs = (await Task.WhenAll(state.CatalogContainers.Select(catalogContainer
+                => catalogContainer.GetCatalogAsync(CancellationToken.None)))).ToArray();
 
             foreach (var (actual, expected) in actualCatalogs.Zip(expectedCatalogs))
             {
@@ -200,14 +208,14 @@ namespace Services
                 Assert.Equal(actualJsonString, expectedJsonString);
             }
 
-            Assert.Equal(new DateTime(2020, 01, 01), state.CatalogCollection.CatalogContainers[0].CatalogBegin);
-            Assert.Equal(new DateTime(2020, 01, 03), state.CatalogCollection.CatalogContainers[0].CatalogEnd);
+            Assert.Equal(new DateTime(2020, 01, 01), await state.CatalogContainers[0].GetCatalogBeginAsync(CancellationToken.None));
+            Assert.Equal(new DateTime(2020, 01, 03), await state.CatalogContainers[0].GetCatalogEndAsync(CancellationToken.None));
 
-            Assert.Equal(new DateTime(2020, 01, 01), state.CatalogCollection.CatalogContainers[1].CatalogBegin);
-            Assert.Equal(new DateTime(2020, 01, 02), state.CatalogCollection.CatalogContainers[1].CatalogEnd);
+            Assert.Equal(new DateTime(2020, 01, 01), await state.CatalogContainers[1].GetCatalogBeginAsync(CancellationToken.None));
+            Assert.Equal(new DateTime(2020, 01, 02), await state.CatalogContainers[1].GetCatalogEndAsync(CancellationToken.None));
 
-            Assert.Equal(new DateTime(2020, 01, 01), state.CatalogCollection.CatalogContainers[2].CatalogBegin);
-            Assert.Equal(new DateTime(2020, 01, 02), state.CatalogCollection.CatalogContainers[2].CatalogEnd);
+            Assert.Equal(new DateTime(2020, 01, 01), await state.CatalogContainers[2].GetCatalogBeginAsync(CancellationToken.None));
+            Assert.Equal(new DateTime(2020, 01, 02), await state.CatalogContainers[2].GetCatalogEndAsync(CancellationToken.None));
         }
     }
 }

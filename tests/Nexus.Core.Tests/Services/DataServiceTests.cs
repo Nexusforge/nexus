@@ -28,11 +28,11 @@ namespace Services
             var backendSource2 = new BackendSource(Type: "B", default);
             var backendSource3 = new BackendSource(Type: "C", default);
 
-            var backendSourceToCatalogsMap = new Dictionary<BackendSource, ResourceCatalog[]>()
+            var backendSourceToCatalogIdsMap = new Dictionary<BackendSource, string[]>()
             {
-                [backendSource1] = new[] { new ResourceCatalog(id: "/A/B/C"), new ResourceCatalog(id: "/D/E/F")},
-                [backendSource2] = new[] { new ResourceCatalog(id: "/G/H/I"), new ResourceCatalog(id: "/J/K/L")},
-                [backendSource3] = new[] { new ResourceCatalog(id: "/M/N/O"), new ResourceCatalog(id: "/A/B/C")}
+                [backendSource1] = new[] { "/A/B/C", "/D/E/F" },
+                [backendSource2] = new[] { "/G/H/I", "/J/K/L" },
+                [backendSource3] = new[] { "/M/N/O", "/A/B/C" }
             };
 
             var data1 = new Dictionary<DateTime, double> { [begin.AddDays(0)] = 0.5, [begin.AddDays(1)] = 0.9 };
@@ -69,7 +69,8 @@ namespace Services
             var catalogState = new CatalogState(
                 default,
                 default,
-                BackendSourceToCatalogsMap: backendSourceToCatalogsMap
+                BackendSourceToCatalogIdsMap: backendSourceToCatalogIdsMap,
+                default
             );
 
             var appState = new AppState()

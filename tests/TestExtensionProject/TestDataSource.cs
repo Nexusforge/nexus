@@ -14,9 +14,14 @@ namespace TestExtensionProject
             throw new NotImplementedException(nameof(SetContextAsync));
         }
 
-        public Task<ResourceCatalog[]> GetCatalogsAsync(CancellationToken cancellationToken)
+        public Task<string[]> GetCatalogIdsAsync(CancellationToken cancellationToken)
         {
-            throw new NotImplementedException(nameof(GetCatalogsAsync));
+            throw new NotImplementedException(nameof(GetCatalogAsync));
+        }
+
+        public Task<ResourceCatalog> GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException(nameof(GetCatalogAsync));
         }
 
         public Task<(DateTime Begin, DateTime End)> GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)

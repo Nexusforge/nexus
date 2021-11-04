@@ -71,25 +71,22 @@ namespace Nexus.Extensibility.Tests
             });
         }
 
-        protected override Task<ResourceCatalog[]> GetCatalogsAsync(CancellationToken cancellationToken)
+        protected override Task<string[]> GetCatalogIdsAsync(CancellationToken cancellationToken)
         {
-            if (this.Context.Catalogs is null)
-            {
-                var representation = new Representation(
+            return Task.FromResult(new[] { "/A/B/C" });
+        }
+
+        protected override Task<ResourceCatalog> GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
+        {
+            var representation = new Representation(
                     dataType: NexusDataType.INT64,
                     samplePeriod: TimeSpan.FromSeconds(1),
                     detail: "mean");
 
-                var resource = new Resource(id: "Resource1", representations: new List<Representation>() { representation });
-                var catalog = new ResourceCatalog(id: "/A/B/C", resources: new List<Resource>() { resource });
+            var resource = new Resource(id: "Resource1", representations: new List<Representation>() { representation });
+            var catalog = new ResourceCatalog(id: "/A/B/C", resources: new List<Resource>() { resource });
 
-                this.Context = this.Context with
-                {
-                    Catalogs = new[] { catalog }
-                };
-            }
-
-            return Task.FromResult(this.Context.Catalogs);
+            return Task.FromResult(catalog);
         }
 
         protected override async Task ReadSingleAsync(ReadInfo readInfo, CancellationToken cancellationToken)

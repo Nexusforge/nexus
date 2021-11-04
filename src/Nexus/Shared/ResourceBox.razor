@@ -63,10 +63,9 @@ else if (this.UserState.CatalogContainer != null) // user has no access to catal
         }
         else
         {
-            @if (this.UserState.CatalogContainer.Catalog.Properties is not null &&
-                   this.UserState.CatalogContainer.Catalog.Properties.TryGetValue(DataModelExtensions.Contact, out var contact))
+            @if (!string.IsNullOrWhiteSpace(this.UserState.CatalogContainer.CatalogMetadata.Contact))
             {
-                <span>You do not have access to this catalog. Please contact @contact to request permission.</span>
+                <span>You do not have access to this catalog. Please contact @(this.UserState.CatalogContainer.CatalogMetadata.Contact) to request permission.</span>
             }
             else
             {

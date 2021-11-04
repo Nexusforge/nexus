@@ -1,5 +1,6 @@
 using Nexus.DataModel;
 using Nexus.Extensibility;
+using Nexus.Services;
 using Nexus.Utilities;
 using Nexus.ViewModels;
 using Prism.Mvvm;
@@ -7,6 +8,7 @@ using Serilog.Core;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace Nexus.Core
 {
@@ -34,7 +36,7 @@ namespace Nexus.Core
 
         public LoggingLevelSwitch MinimumLoglevelSwitch { get; set; }
 
-        public ConcurrentDictionary<CatalogContainer, ResourceViewModel[]> ResourceCache { get; } = new ConcurrentDictionary<CatalogContainer, ResourceViewModel[]>();
+        public ConcurrentDictionary<CatalogContainer, Task<ResourceViewModel[]>> ResourceCache { get; } = new ConcurrentDictionary<CatalogContainer, Task<ResourceViewModel[]>>();
 
         public NexusProject Project { get; set; }
 

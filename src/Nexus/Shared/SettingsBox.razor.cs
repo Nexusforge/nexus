@@ -6,6 +6,7 @@ using Nexus.Services;
 using Nexus.Utilities;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nexus.Shared
@@ -76,7 +77,7 @@ namespace Nexus.Shared
                 var jsonString = await streamReader.ReadToEndAsync();
                 var exportParameters = JsonSerializerHelper.Deserialize<ExportParameters>(jsonString);
                 exportParameters = exportParameters.UpdateVersion();
-                this.UserState.SetExportParameters(exportParameters);
+                await this.UserState.SetExportParametersAsync(exportParameters, CancellationToken.None);
             }
         }
 

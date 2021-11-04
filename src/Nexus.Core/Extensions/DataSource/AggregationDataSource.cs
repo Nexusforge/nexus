@@ -56,150 +56,13 @@ namespace Nexus.Extensions
 
         public Task<string[]> GetCatalogIdsAsync(CancellationToken cancellationToken)
         {
-            return Task.Run(() =>
-            {
-                // (0) load versioning file
-                var versioningFilePath = Path.Combine(this.Root, "versioning.json");
-
-                var versioning = File.Exists(versioningFilePath)
-                    ? AggregationVersioning.Load(versioningFilePath)
-                    : new AggregationVersioning();
-
-                // (1) find beginning of database
-                var dataFolderPath = Path.Combine(this.Root);
-                Directory.CreateDirectory(dataFolderPath);
-
-                var firstMonth = DateTime.MaxValue;
-
-                foreach (var catalogDirectory in Directory.EnumerateDirectories(dataFolderPath))
-                {
-                    var catalogFirstMonth = this.GetCatalogFirstMonthWithData(catalogDirectory);
-
-                    if (catalogFirstMonth != DateTime.MinValue && catalogFirstMonth < firstMonth)
-                        firstMonth = catalogFirstMonth;
-                }
-
-                // (2) for each month
-                var now = DateTime.UtcNow;
-                var months = ((now.Year - firstMonth.Year) * 12) + now.Month - firstMonth.Month + 1;
-                var currentMonth = firstMonth;
-
-                var cacheFolderPath = this.Root;
-                var mainCacheFilePath = Path.Combine(cacheFolderPath, "main.json");
-                Directory.CreateDirectory(cacheFolderPath);
-
-                bool cacheChanged = false;
-
-                for (int i = 0; i < months; i++)
-                {
-                    // (3) find available catalog ids
-                    var catalogIds = Directory
-                        .EnumerateDirectories(dataFolderPath)
-                        .Select(current => WebUtility.UrlDecode(Path.GetFileName(current)))
-                        .ToList();
-
-                    // (4) find corresponding cache file
-                    var cacheFilePath = Path.Combine(cacheFolderPath, $"{currentMonth.ToString("yyyy-MM")}.json");
-
-                    List<ResourceCatalog> cache;
-
-                    // (5.a) cache file exists
-                    if (File.Exists(cacheFilePath))
-                    {
-                        var jsonString = File.ReadAllText(cacheFilePath);
-                        cache = JsonSerializerHelper.Deserialize<List<ResourceCatalog>>(jsonString);
-
-                        foreach (var catalogId in catalogIds)
-                        {
-                            var catalog = cache.FirstOrDefault(catalog => catalog.Id == catalogId);
-                            var currentMonthFolder = Path.Combine(dataFolderPath, WebUtility.UrlEncode(catalogId), currentMonth.ToString("yyyy-MM"));
-
-                            // catalog is in cache ...
-                            if (catalog != null && versioning.ScannedUntilMap.ContainsKey(catalogId))
-                            {
-                                // ... but cache is outdated
-                                if (this.IsCacheOutdated(catalogId, currentMonthFolder, versioning))
-                                {
-                                    catalog = this.ScanFiles(catalogId, currentMonthFolder, versioning);
-                                    cacheChanged = true;
-                                }
-                            }
-                            // catalog is not in cache
-                            else
-                            {
-                                catalog = this.ScanFiles(catalogId, currentMonthFolder, versioning);
-                                cache.Add(catalog);
-                                cacheChanged = true;
-                            }
-                        }
-                    }
-                    // (5.b) cache file does not exist
-                    else
-                    {
-                        cache = catalogIds.Select(catalogId =>
-                        {
-                            var currentMonthFolder = Path.Combine(dataFolderPath, WebUtility.UrlEncode(catalogId), currentMonth.ToString("yyyy-MM"));
-                            var catalog = this.ScanFiles(catalogId, currentMonthFolder, versioning);
-                            cacheChanged = true;
-                            return catalog;
-                        }).ToList();
-                    }
-
-                    // (6) save cache and versioning files
-                    if (cacheChanged)
-                    {
-                        var jsonString = JsonSerializerHelper.Serialize(cache);
-                        File.WriteAllText(cacheFilePath, jsonString);
-
-                        jsonString = JsonSerializerHelper.Serialize(versioning);
-                        File.WriteAllText(versioningFilePath, jsonString);
-                    }
-
-                    currentMonth = currentMonth.AddMonths(1);
-                }
-
-                // (7) update main cache
-                List<ResourceCatalog> catalogs;
-
-                if (cacheChanged || !File.Exists(mainCacheFilePath))
-                {
-                    var cacheFiles = Directory.EnumerateFiles(cacheFolderPath, "*-*.json");
-                    catalogs = new List<ResourceCatalog>();
-
-                    this.Context.Logger.LogDebug("Merge cache files into main cache");
-
-                    foreach (var cacheFile in cacheFiles)
-                    {
-                        var jsonString2 = File.ReadAllText(cacheFile);
-                        var cache = JsonSerializerHelper.Deserialize<List<ResourceCatalog>>(jsonString2);
-
-                        foreach (var catalog in cache)
-                        {
-                            var reference = catalogs.FirstOrDefault(current => current.Id == catalog.Id);
-
-                            if (reference != null)
-                                reference.Merge(catalog, MergeMode.NewWins);
-                            else
-                                catalogs.Add(catalog);
-                        }
-                    }
-
-                    var jsonString = JsonSerializerHelper.Serialize(catalogs);
-                    File.WriteAllText(mainCacheFilePath, jsonString);
-                }
-                else
-                {
-                    var jsonString = File.ReadAllText(mainCacheFilePath);
-                    catalogs = JsonSerializerHelper.Deserialize<List<ResourceCatalog>>(jsonString);
-                }
-
-                _catalogs = catalogs.ToArray();
-                return _catalogs.Select(catalog => catalog.Id).ToArray();
-            });
+            this.EnsureCatalogs();
+            return Task.FromResult(_catalogs.Select(catalog => catalog.Id).ToArray());
         }
 
         public Task<ResourceCatalog> GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
         {
+            this.EnsureCatalogs();
             return Task.FromResult(_catalogs.First(catalog => catalog.Id == catalogId));
         }
 
@@ -322,6 +185,149 @@ namespace Nexus.Extensions
 
                 return Task.CompletedTask;
             });
+        }
+
+        private void EnsureCatalogs()
+        {
+            if (_catalogs is not null)
+                return;
+
+            // (0) load versioning file
+            var versioningFilePath = Path.Combine(this.Root, "versioning.json");
+
+            var versioning = File.Exists(versioningFilePath)
+                ? AggregationVersioning.Load(versioningFilePath)
+                : new AggregationVersioning();
+
+            // (1) find beginning of database
+            var dataFolderPath = Path.Combine(this.Root);
+            Directory.CreateDirectory(dataFolderPath);
+
+            var firstMonth = DateTime.MaxValue;
+
+            foreach (var catalogDirectory in Directory.EnumerateDirectories(dataFolderPath))
+            {
+                var catalogFirstMonth = this.GetCatalogFirstMonthWithData(catalogDirectory);
+
+                if (catalogFirstMonth != DateTime.MinValue && catalogFirstMonth < firstMonth)
+                    firstMonth = catalogFirstMonth;
+            }
+
+            // (2) for each month
+            var now = DateTime.UtcNow;
+            var months = ((now.Year - firstMonth.Year) * 12) + now.Month - firstMonth.Month + 1;
+            var currentMonth = firstMonth;
+
+            var cacheFolderPath = this.Root;
+            var mainCacheFilePath = Path.Combine(cacheFolderPath, "main.json");
+            Directory.CreateDirectory(cacheFolderPath);
+
+            bool cacheChanged = false;
+
+            for (int i = 0; i < months; i++)
+            {
+                // (3) find available catalog ids
+                var catalogIds = Directory
+                    .EnumerateDirectories(dataFolderPath)
+                    .Select(current => WebUtility.UrlDecode(Path.GetFileName(current)))
+                    .ToList();
+
+                // (4) find corresponding cache file
+                var cacheFilePath = Path.Combine(cacheFolderPath, $"{currentMonth.ToString("yyyy-MM")}.json");
+
+                List<ResourceCatalog> cache;
+
+                // (5.a) cache file exists
+                if (File.Exists(cacheFilePath))
+                {
+                    var jsonString = File.ReadAllText(cacheFilePath);
+                    cache = JsonSerializerHelper.Deserialize<List<ResourceCatalog>>(jsonString);
+
+                    foreach (var catalogId in catalogIds)
+                    {
+                        var catalog = cache.FirstOrDefault(catalog => catalog.Id == catalogId);
+                        var currentMonthFolder = Path.Combine(dataFolderPath, WebUtility.UrlEncode(catalogId), currentMonth.ToString("yyyy-MM"));
+
+                        // catalog is in cache ...
+                        if (catalog != null && versioning.ScannedUntilMap.ContainsKey(catalogId))
+                        {
+                            // ... but cache is outdated
+                            if (this.IsCacheOutdated(catalogId, currentMonthFolder, versioning))
+                            {
+                                catalog = this.ScanFiles(catalogId, currentMonthFolder, versioning);
+                                cacheChanged = true;
+                            }
+                        }
+                        // catalog is not in cache
+                        else
+                        {
+                            catalog = this.ScanFiles(catalogId, currentMonthFolder, versioning);
+                            cache.Add(catalog);
+                            cacheChanged = true;
+                        }
+                    }
+                }
+                // (5.b) cache file does not exist
+                else
+                {
+                    cache = catalogIds.Select(catalogId =>
+                    {
+                        var currentMonthFolder = Path.Combine(dataFolderPath, WebUtility.UrlEncode(catalogId), currentMonth.ToString("yyyy-MM"));
+                        var catalog = this.ScanFiles(catalogId, currentMonthFolder, versioning);
+                        cacheChanged = true;
+                        return catalog;
+                    }).ToList();
+                }
+
+                // (6) save cache and versioning files
+                if (cacheChanged)
+                {
+                    var jsonString = JsonSerializerHelper.Serialize(cache);
+                    File.WriteAllText(cacheFilePath, jsonString);
+
+                    jsonString = JsonSerializerHelper.Serialize(versioning);
+                    File.WriteAllText(versioningFilePath, jsonString);
+                }
+
+                currentMonth = currentMonth.AddMonths(1);
+            }
+
+            // (7) update main cache
+            List<ResourceCatalog> catalogs;
+
+            if (cacheChanged || !File.Exists(mainCacheFilePath))
+            {
+                var cacheFiles = Directory.EnumerateFiles(cacheFolderPath, "*-*.json");
+                catalogs = new List<ResourceCatalog>();
+
+                this.Context.Logger.LogDebug("Merge cache files into main cache");
+
+                foreach (var cacheFile in cacheFiles)
+                {
+                    var jsonString2 = File.ReadAllText(cacheFile);
+                    var cache = JsonSerializerHelper.Deserialize<List<ResourceCatalog>>(jsonString2);
+
+                    foreach (var catalog in cache)
+                    {
+                        var reference = catalogs.FirstOrDefault(current => current.Id == catalog.Id);
+
+                        if (reference != null)
+                            reference.Merge(catalog, MergeMode.NewWins);
+                        else
+                            catalogs.Add(catalog);
+                    }
+                }
+
+                var jsonString = JsonSerializerHelper.Serialize(catalogs);
+                File.WriteAllText(mainCacheFilePath, jsonString);
+            }
+            else
+            {
+                var jsonString = File.ReadAllText(mainCacheFilePath);
+                catalogs = JsonSerializerHelper.Deserialize<List<ResourceCatalog>>(jsonString);
+            }
+
+            _catalogs = catalogs.ToArray();
         }
 
         private bool IsCacheOutdated(string catalogId, string monthFolder, AggregationVersioning versioning)
