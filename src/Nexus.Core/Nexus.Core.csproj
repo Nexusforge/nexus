@@ -5,19 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Resources\DefaultFilterCodeTemplate.cs" />
-    <Compile Remove="Resources\DefaultSharedCodeTemplate.cs" />
-    <Compile Remove="Resources\TestUserFilterCodeTemplateSimple.cs" />
-    <Compile Remove="Resources\TestUserSharedCodeTemplateSimple.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="appsettings.Development.json" />
-    <None Remove="appsettings.json" />
-    <None Remove="Resources\RandomWords.json" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Content Include="appsettings.Development.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
@@ -31,24 +18,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Resources\DefaultFilterCodeTemplate.cs" />
-    <EmbeddedResource Include="Resources\DefaultSharedCodeTemplate.cs" />
-    <EmbeddedResource Include="Resources\FilterTypesShared.cs" />
-    <EmbeddedResource Include="Resources\RandomWords.json" />
-    <EmbeddedResource Include="Resources\TestUserFilterCodeTemplateSimple.cs" />
-    <EmbeddedResource Include="Resources\TestUserSharedCodeTemplateSimple.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="MathNet.Numerics" Version="4.15.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="5.0.0" />
     <!-- needed for FxRefGenerator.ps1 script -->
-    <PackageReference Include="Microsoft.NETCore.App.Ref" Version="5.0.0" IncludeAssets="none" PrivateAssets="all" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="5.0.2" />
-    <PackageReference Include="OmniSharp.Roslyn.CSharp" Version="1.37.4" />
     <PackageReference Include="Prism.Core" Version="8.0.0.1909" />
     <PackageReference Include="Serilog.Enrichers.ClientInfo" Version="1.1.3" />
     <PackageReference Include="Serilog.Enrichers.CorrelationId" Version="3.0.1" />
@@ -65,21 +41,6 @@
   </ItemGroup>
   
   <ItemGroup>
-    <Compile Update="OmniSharp\OmniSharpCompletionService.cs">
-      <DependentUpon>OmniSharpCompletionService.tt</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
-    <Compile Update="OmniSharp\OmniSharpQuickInfoProvider.cs">
-      <DependentUpon>OmniSharpQuickInfoProvider.tt</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
-    <Compile Update="OmniSharp\OmniSharpSignatureHelpService.cs">
-      <DependentUpon>OmniSharpSignatureHelpService.tt</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
     <Compile Update="Resources\EnumerationDescription.Designer.cs">
       <DependentUpon>EnumerationDescription.resx</DependentUpon>
       <DesignTime>True</DesignTime>
@@ -87,11 +48,6 @@
     </Compile>
     <Compile Update="Resources\EnumerationIconName.Designer.cs">
       <DependentUpon>EnumerationIconName.resx</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
-    <Compile Update="Resources\ErrorMessage.Designer.cs">
-      <DependentUpon>ErrorMessage.resx</DependentUpon>
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
     </Compile>
@@ -108,11 +64,6 @@
       <LastGenOutput>EnumerationIconName.Designer.cs</LastGenOutput>
       <Generator>ResXFileCodeGenerator</Generator>
     </EmbeddedResource>
-    <EmbeddedResource Update="Resources\ErrorMessage.resx">
-      <CustomToolNamespace>Nexus</CustomToolNamespace>
-      <LastGenOutput>ErrorMessage.Designer.cs</LastGenOutput>
-      <Generator>ResXFileCodeGenerator</Generator>
-    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>
@@ -122,20 +73,6 @@
     <None Update="Connectors\NexusConnector.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="OmniSharp\OmniSharpCompletionService.tt">
-      <LastGenOutput>OmniSharpCompletionService.cs</LastGenOutput>
-      <Generator>TextTemplatingFileGenerator</Generator>
-    </None>
-    <None Update="OmniSharp\OmniSharpQuickInfoProvider.tt">
-      <LastGenOutput>OmniSharpQuickInfoProvider.cs</LastGenOutput>
-      <Generator>TextTemplatingFileGenerator</Generator>
-    </None>
-    <None Update="OmniSharp\OmniSharpSignatureHelpService.tt">
-      <LastGenOutput>OmniSharpSignatureHelpService.cs</LastGenOutput>
-      <Generator>TextTemplatingFileGenerator</Generator>
-    </None>
   </ItemGroup>
-
-  <Import Project="./Roslyn/Generated.targets" />
 
 </Project>

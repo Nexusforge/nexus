@@ -29,8 +29,4 @@
     <ProjectReference Include="..\Nexus.Core\Nexus.Core.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Resource Include="Templates\DefaultFilterCodeTemplate.cs" />
-  </ItemGroup>
-
 </Project>
