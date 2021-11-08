@@ -4,13 +4,11 @@ using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Extensions;
-using Nexus.Filters;
 using Nexus.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -58,14 +56,11 @@ namespace Nexus.Services
 
         public async Task<CatalogState> LoadCatalogsAsync(CancellationToken cancellationToken)
         {
-            FilterDataSource.ClearCache();
-
             // prepare built-in backend sources
             var builtinBackendSources = new BackendSource[]
             {
                 _aggregationBackendSource,
                 new BackendSource(Type: InMemoryDataSource.Id, ResourceLocator: default),
-                new BackendSource(Type: FilterDataSource.Id, ResourceLocator: new Uri(_options.Config))
             };
 
             var extendedBackendSources = builtinBackendSources.Concat(_appState.Project.BackendSources);
@@ -137,9 +132,8 @@ namespace Nexus.Services
                 using var controller = await _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken);
                 var newCatalog = await controller.GetCatalogAsync(catalogId, cancellationToken);
 
-                // ensure that the filter data reader plugin does not create catalogs and resources without permission
-                if (backendSource.Type == FilterDataSource.Id)
-                    newCatalog = await this.CleanUpFilterCatalogAsync(newCatalog, _userManagerWrapper);
+#warning activate this
+                //newCatalog = await this.CleanUpFilterCatalogAsync(newCatalog, _userManagerWrapper);
 
                 // get begin and end of project
                 TimeRangeResult timeRangeResult;
@@ -173,43 +167,43 @@ namespace Nexus.Services
             return new CatalogInfo(catalogBegin, catalogEnd, catalog);
         }
 
-        private async Task<ResourceCatalog> CleanUpFilterCatalogAsync(
-           ResourceCatalog catalog,
-           IUserManagerWrapper userManagerWrapper)
-        {
-            var usersMap = new Dictionary<string, ClaimsPrincipal>();
-            var filteredResources = new List<Resource>();
+        //private async Task<ResourceCatalog> CleanUpFilterCatalogAsync(
+        //   ResourceCatalog catalog,
+        //   IUserManagerWrapper userManagerWrapper)
+        //{
+        //    var usersMap = new Dictionary<string, ClaimsPrincipal>();
+        //    var filteredResources = new List<Resource>();
 
-            foreach (var resource in catalog.Resources)
-            {
-                var representations = new List<Representation>();
+        //    foreach (var resource in catalog.Resources)
+        //    {
+        //        var representations = new List<Representation>();
 
-                foreach (var representation in resource.Representations)
-                {
-                    if (FilterDataSource.TryGetFilterCodeDefinition(resource.Id, representation.BackendSource, out var codeDefinition))
-                    {
-                        // get user
-                        if (!usersMap.TryGetValue(codeDefinition.Owner, out var user))
-                        {
-                            user = await userManagerWrapper
-                                .GetClaimsPrincipalAsync(codeDefinition.Owner);
+        //        foreach (var representation in resource.Representations)
+        //        {
+        //            if (FilterDataSource.TryGetFilterCodeDefinition(resource.Id, representation.BackendSource, out var codeDefinition))
+        //            {
+        //                // get user
+        //                if (!usersMap.TryGetValue(codeDefinition.Owner, out var user))
+        //                {
+        //                    user = await userManagerWrapper
+        //                        .GetClaimsPrincipalAsync(codeDefinition.Owner);
 
-                            usersMap[codeDefinition.Owner] = user;
-                        }
+        //                    usersMap[codeDefinition.Owner] = user;
+        //                }
 
-                        var keep = catalog.Id == FilterConstants.SharedCatalogID || AuthorizationUtilities.IsCatalogEditable(user, catalog.Id);
+        //                var keep = catalog.Id == AuthorizationUtilities.IsCatalogEditable(user, catalog.Id);
 
-                        if (keep)
-                            representations.Add(representation);
-                    }
-                }
+        //                if (keep)
+        //                    representations.Add(representation);
+        //            }
+        //        }
 
-                if (representations.Any())
-                    filteredResources.Add(resource with { Representations = representations });
-            }
+        //        if (representations.Any())
+        //            filteredResources.Add(resource with { Representations = representations });
+        //    }
 
-            return catalog with { Resources = filteredResources };
-        }
+        //    return catalog with { Resources = filteredResources };
+        //}
 
         #endregion
     }

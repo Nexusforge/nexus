@@ -59,23 +59,5 @@ namespace Nexus {
                 resourceCulture = value;
             }
         }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die note_add ähnelt.
-        /// </summary>
-        internal static string CodeType_Filter {
-            get {
-                return ResourceManager.GetString("CodeType_Filter", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die share ähnelt.
-        /// </summary>
-        internal static string CodeType_Shared {
-            get {
-                return ResourceManager.GetString("CodeType_Shared", resourceCulture);
-            }
-        }
     }
 }

@@ -59,32 +59,5 @@ namespace Nexus {
                 resourceCulture = value;
             }
         }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die C# ähnelt.
-        /// </summary>
-        internal static string CodeLanguage_CSharp {
-            get {
-                return ResourceManager.GetString("CodeLanguage_CSharp", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Filter code ähnelt.
-        /// </summary>
-        internal static string CodeType_Filter {
-            get {
-                return ResourceManager.GetString("CodeType_Filter", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Shared code ähnelt.
-        /// </summary>
-        internal static string CodeType_Shared {
-            get {
-                return ResourceManager.GetString("CodeType_Shared", resourceCulture);
-            }
-        }
     }
 }

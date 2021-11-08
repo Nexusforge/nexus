@@ -11,6 +11,12 @@
   </PropertyGroup> 
 
   <ItemGroup>
+    <Compile Remove="FILTERDATA\**" />
+    <EmbeddedResource Remove="FILTERDATA\**" />
+    <None Remove="FILTERDATA\**" />
+  </ItemGroup> 
+
+  <ItemGroup>
     <PackageReference Include="Appveyor.TestLogger" Version="2.0.0" />
     <PackageReference Include="Microsoft.DotNet.PlatformAbstractions" Version="3.1.6" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="5.0.0" />
@@ -46,9 +52,6 @@
     <None Update="catalog.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="FILTERDATA\filters.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Update="PythonRpcDataModel.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -73,10 +76,6 @@
     <None Update="TESTDATA\DATA\test\2020-01\2020-01-02\2020-01-02_09-50-00.dat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="FILTERDATA\" />
   </ItemGroup>
 
 </Project>

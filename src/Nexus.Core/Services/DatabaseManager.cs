@@ -13,7 +13,6 @@ namespace Nexus.Services
         //
         // <application data>/config/project.json
         // <application data>/config/news.json
-        // <application data>/config/filters.json
         // <application data>/config/users.db
         // <application data>/config/catalogs/abc.json
         // <application data>/config/users/def.json

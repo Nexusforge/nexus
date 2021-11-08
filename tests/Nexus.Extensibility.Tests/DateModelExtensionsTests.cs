@@ -1,6 +1,5 @@
 using Nexus.DataModel;
 using System;
-using System.Collections.Generic;
 using Xunit;
 
 namespace Nexus.Extensibility.Tests

@@ -2,12 +2,8 @@
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
-using Nexus.Extensions;
-using Nexus.Utilities;
 using System;
 using System.Collections.Concurrent;
-using System.Linq;
-using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -30,38 +26,6 @@ namespace Nexus.Services
             _extensionHive = extensionHive;
             _logger = logger;
             _loggerFactory = loggerFactory;
-        }
-
-        public async Task<IDataSourceController> GetDataSourceControllerForDataAccessAsync(ClaimsPrincipal user, BackendSource backendSource, CancellationToken cancellationToken)
-        {
-            var controller = await this.GetDataSourceControllerAsync(backendSource, cancellationToken);
-
-            // special case checks
-            var dataSource = ((DataSourceController)controller).DataSource;
-
-            if (dataSource.GetType() == typeof(FilterDataSource))
-            {
-                var filterDataSource = (FilterDataSource)dataSource;
-
-                filterDataSource.DataSourceControllerLogger = _loggerFactory.CreateLogger<DataSourceController>();
-
-                filterDataSource.GetCatalogContainers = () => _appState.CatalogState.CatalogContainers;
-
-                filterDataSource.IsCatalogAccessible = catalogId =>
-                {
-                    var catalogContainer = _appState.CatalogState.CatalogContainers.First(container => container.Id == catalogId);
-
-                    return AuthorizationUtilities.IsCatalogAccessible(
-                        catalogContainer.Id,
-                        catalogContainer.CatalogMetadata,
-                        user);
-                };
-
-                filterDataSource.GetDataSourceControllerAsync =
-                    backendSource => this.GetDataSourceControllerAsync(backendSource, cancellationToken);
-            }
-
-            return controller;
         }
 
         public async Task<IDataSourceController> GetDataSourceControllerAsync(BackendSource backendSource, CancellationToken cancellationToken)

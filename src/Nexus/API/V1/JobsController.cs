@@ -270,7 +270,6 @@ namespace Nexus.Controllers.V1
 
             var aggregationService = _serviceProvider.GetRequiredService<AggregationService>();
             var databaseManager = _serviceProvider.GetRequiredService<IDatabaseManager>();
-            var user = this.User;
 
             try
             {
@@ -284,7 +283,7 @@ namespace Nexus.Controllers.V1
                                 _pathsOptions.Cache,
                                 setup,
                                 _appState.CatalogState,
-                                backendSource => _dataControllerService.GetDataSourceControllerForDataAccessAsync(user, backendSource, cts.Token),
+                                backendSource => _dataControllerService.GetDataSourceControllerAsync(backendSource, cts.Token),
                                 cts.Token);
 
                             return result;

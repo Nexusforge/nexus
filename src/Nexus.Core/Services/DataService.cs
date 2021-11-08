@@ -23,7 +23,6 @@ namespace Nexus.Services
         private ILogger _logger;
         private ILoggerFactory _loggerFactory;
         private IDatabaseManager _databaseManager;
-        private IUserIdService _userIdService;
         private IDataControllerService _dataControllerService;
 
         #endregion
@@ -34,13 +33,11 @@ namespace Nexus.Services
             AppState appState,
             IDataControllerService dataControllerService,
             IDatabaseManager databaseManager,
-            IUserIdService userIdService,
             ILogger<DataService> logger,
             ILoggerFactory loggerFactory)
         {
             _appState = appState;
             _dataControllerService = dataControllerService;
-            _userIdService = userIdService;
             _databaseManager = databaseManager;
             _logger = logger;
             _loggerFactory = loggerFactory;
@@ -203,7 +200,7 @@ namespace Nexus.Services
             foreach (var catalogItemGroup in groupedCatalogItems)
             {
                 var backendSource = catalogItemGroup.Key;
-                var dataSourceController = await _dataControllerService.GetDataSourceControllerForDataAccessAsync(_userIdService.User, backendSource, cancellationToken);
+                var dataSourceController = await _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken);
                 var catalogItemPipeWriters = new List<CatalogItemPipeWriter>();
 
                 foreach (var catalogItem in catalogItemGroup)

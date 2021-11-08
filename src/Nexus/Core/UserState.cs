@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 using Nexus.DataModel;
-using Nexus.Roslyn;
 using Nexus.Services;
 using Nexus.Utilities;
 using Nexus.ViewModels;
@@ -43,7 +42,6 @@ namespace Nexus.Core
         private AppState _appState;
         private AuthenticationStateProvider _authenticationStateProvider;
         private CatalogContainer _catalogContainer;
-        private CodeDefinitionViewModel _codeDefinition;
         private DataService _dataService;
         private ExportParameters _exportParameters;
         private JobControl<ExportJob> _exportJobControl;
@@ -73,7 +71,6 @@ namespace Nexus.Core
             _appState = appState;
             _authenticationStateProvider = authenticationStateProvider;
             _dataService = dataService;
-            _codeDefinition = this.CreateCodeDefinition(CodeType.Filter);
 
             this.VisualizeBeginAtZero = true;
             this.ExportParameters = new ExportParameters();
@@ -318,16 +315,6 @@ namespace Nexus.Core
 
         #region Properties - Visualization
 
-        #region Properties - FilterEditor
-
-        public CodeDefinitionViewModel CodeDefinition
-        {
-            get { return _codeDefinition; }
-            set { base.SetProperty(ref _codeDefinition, value); }
-        }
-
-        #endregion
-
         public double VisualizeProgress
         {
             get { return _visualizeProgress; }
@@ -389,40 +376,6 @@ namespace Nexus.Core
         #endregion
 
         #region Methods
-
-        public void SetCodeDefinitionSilently(CodeDefinitionViewModel codeDefinition)
-        {
-            _codeDefinition = codeDefinition;
-        }
-
-        public CodeDefinitionViewModel CreateCodeDefinition(CodeType codeType)
-        {
-            var baseName = VariableNameGenerator.Generate();
-
-            var name = baseName + codeType switch
-            {
-                CodeType.Filter => "Filter",
-                CodeType.Shared => "Shared",
-                _ => throw new Exception($"The code type '{codeType}' is not supported.")
-            };
-
-            var code = codeType switch
-            {
-                CodeType.Filter => RoslynProject.DefaultFilterCode,
-                CodeType.Shared => RoslynProject.DefaultSharedCode,
-                _ => throw new Exception($"The code type '{codeType}' is not supported.")
-            };
-
-            var owner = _userIdService.User.Identity.Name;
-
-            return new CodeDefinitionViewModel(new CodeDefinition(owner: owner))
-            {
-                CodeType = codeType,
-                Code = code,
-                Name = name,
-                SamplePeriod = TimeSpan.FromSeconds(1)
-            };
-        }
 
         public bool CanDownload()
         {

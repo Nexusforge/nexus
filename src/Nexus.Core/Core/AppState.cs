@@ -1,7 +1,6 @@
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Services;
-using Nexus.Utilities;
 using Nexus.ViewModels;
 using Prism.Mvvm;
 using Serilog.Core;
@@ -25,8 +24,6 @@ namespace Nexus.Core
 
         public AppState()
         {
-            this.CodeLanguageValues = NexusCoreUtilities.GetEnumValues<CodeLanguage>();
-            this.CodeTypeValues = NexusCoreUtilities.GetEnumValues<CodeType>();
             this.Version = Assembly.GetEntryAssembly().GetName().Version.ToString();
         }
 
@@ -55,16 +52,6 @@ namespace Nexus.Core
         public string Version { get; }
 
         public Dictionary<string, (string FormatName, OptionAttribute[] Options)> DataWriterInfoMap { get; set; }
-
-        #endregion
-
-        #region Properties - Filter
-
-        public List<CodeType> CodeTypeValues { get; }
-
-        public List<CodeLanguage> CodeLanguageValues { get; }
-
-        public FilterSettingsViewModel FilterSettings { get; set; }
 
         #endregion
 

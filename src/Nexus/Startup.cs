@@ -22,7 +22,6 @@ using Nexus.ViewModels;
 using Serilog;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -174,7 +173,6 @@ namespace Nexus
             services.AddScoped<IUserIdService, UserIdService>();
             services.AddScoped<JobEditor>();
             services.AddScoped<JwtService>();
-            services.AddScoped<MonacoService>();
             services.AddScoped<SettingsViewModel>();
             services.AddScoped<ToasterService>();
             services.AddScoped<UserState>();
@@ -345,66 +343,11 @@ namespace Nexus
                 appState.NewsPaper = new NewsPaper();
             }
 
-            // filters
-            var filterSettingsFilePath = Path.Combine(pathsOptions.Config, "filters.json");
-            appState.FilterSettings = new FilterSettingsViewModel(filterSettingsFilePath);
-            this.InitializeFilterSettings(appState.FilterSettings.Model, filterSettingsFilePath);
-
             // user manager
             await userManagerWrapper.InitializeAsync();
 
             // packages and catalogs
             _ = appStateController.ReloadCatalogsAsync(CancellationToken.None);
-        }
-
-        private void InitializeFilterSettings(FilterSettings filterSettings, string filePath)
-        {
-            // ensure that code samples of test user are present
-            var testCodes = filterSettings.CodeDefinitions.Where(code => code.Owner == "test@nexus.localhost");
-
-            if (!testCodes.Any(testCode => testCode.Name == "Simple filter (C#)"))
-            {
-                using var streamReader1 = new StreamReader(ResourceLoader.GetResourceStream("Resources.TestUserFilterCodeTemplateSimple.cs", addRootNamespace: true));
-
-                filterSettings.CodeDefinitions.Add(new CodeDefinition()
-                {
-                    Code = streamReader1.ReadToEnd(),
-                    CodeLanguage = CodeLanguage.CSharp,
-                    CodeType = CodeType.Filter,
-                    CreationDate = DateTime.UtcNow,
-                    IsEnabled = true,
-                    Name = "Simple filter (C#)",
-                    Owner = "test@nexus.localhost",
-                    RequestedCatalogIds = new List<string>() { "/IN_MEMORY/TEST/ACCESSIBLE" },
-                    SamplePeriod = TimeSpan.FromSeconds(1)
-                });
-
-                var jsonString = JsonSerializerHelper.Serialize(filterSettings);
-                Directory.CreateDirectory(Path.GetDirectoryName(filePath));
-                File.WriteAllText(filePath, jsonString);
-            }
-
-            if (!testCodes.Any(testCode => testCode.Name == "Simple shared (C#)"))
-            {
-                using var streamReader2 = new StreamReader(ResourceLoader.GetResourceStream("Resources.TestUserSharedCodeTemplateSimple.cs", addRootNamespace: true));
-
-                filterSettings.CodeDefinitions.Add(new CodeDefinition()
-                {
-                    Code = streamReader2.ReadToEnd(),
-                    CodeLanguage = CodeLanguage.CSharp,
-                    CodeType = CodeType.Shared,
-                    CreationDate = DateTime.UtcNow,
-                    IsEnabled = true,
-                    Name = "Simple shared (C#)",
-                    Owner = "test@nexus.localhost",
-                    RequestedCatalogIds = new List<string>(),
-                    SamplePeriod = default
-                });
-
-                var jsonString = JsonSerializerHelper.Serialize(filterSettings);
-                Directory.CreateDirectory(Path.GetDirectoryName(filePath));
-                File.WriteAllText(filePath, jsonString);
-            }
         }
 
         #endregion

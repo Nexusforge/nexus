@@ -117,13 +117,4 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="CodeLanguage_CSharp" xml:space="preserve">
-    <value>C#</value>
-  </data>
-  <data name="CodeType_Filter" xml:space="preserve">
-    <value>Filter code</value>
-  </data>
-  <data name="CodeType_Shared" xml:space="preserve">
-    <value>Shared code</value>
-  </data>
 </root>
