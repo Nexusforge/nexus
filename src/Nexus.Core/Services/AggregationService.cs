@@ -68,7 +68,7 @@ namespace Nexus.Services
                 if (container is null)
                     return null;
 
-                var catalog = await container.GetCatalogAsync(cancellationToken);
+                var catalog = (await container.GetCatalogInfoAsync(cancellationToken)).Catalog;
 
                 var backendSources = catalog.Resources
                     .SelectMany(resource => resource.Representations.Select(representation => representation.BackendSource))

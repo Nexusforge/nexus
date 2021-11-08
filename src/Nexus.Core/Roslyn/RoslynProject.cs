@@ -165,7 +165,7 @@ namespace Nexus.Roslyn
                 catalogStringBuilder.AppendLine($"public class {catalogContainer.PhysicalName}_TYPE");
                 catalogStringBuilder.AppendLine($"{{");
 
-                var catalog = await catalogContainer.GetCatalogAsync(cancellationToken);
+                var catalog = (await catalogContainer.GetCatalogInfoAsync(cancellationToken)).Catalog;
 
                 foreach (var resource in catalog.Resources)
                 {

@@ -581,10 +581,10 @@ namespace Nexus.Core
                     {
                         var resources = await _appState.ResourceCache.GetOrAdd(catalogContainer, async catalogContainer =>
                         {
-                            var catalog = await catalogContainer.GetCatalogAsync(cancellationToken);
-                            var catalogViewModel = new ResourceCatalogViewModel(catalog);
+                            var catalogInfo = await catalogContainer.GetCatalogInfoAsync(cancellationToken);
+                            var catalogViewModel = new ResourceCatalogViewModel(catalogInfo.Catalog);
 
-                            return catalog.Resources
+                            return catalogInfo.Catalog.Resources
                                .Select(resource => new ResourceViewModel(catalogViewModel, resource))
                                .ToArray();
                         });
@@ -684,10 +684,10 @@ namespace Nexus.Core
 
                 var resources = await _appState.ResourceCache.GetOrAdd(this.CatalogContainer, async catalogContainer =>
                 {
-                    var catalog = await catalogContainer.GetCatalogAsync(cancellationToken);
-                    var catalogViewModel = new ResourceCatalogViewModel(catalog);
+                    var catalogInfo = await catalogContainer.GetCatalogInfoAsync(cancellationToken);
+                    var catalogViewModel = new ResourceCatalogViewModel(catalogInfo.Catalog);
 
-                    return catalog.Resources
+                    return catalogInfo.Catalog.Resources
                        .Select(resource => new ResourceViewModel(catalogViewModel, resource))
                        .ToArray();
                 });

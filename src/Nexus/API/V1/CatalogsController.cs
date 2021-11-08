@@ -356,9 +356,9 @@ namespace Nexus.Controllers.V1
                 if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.CatalogMetadata, this.User))
                     return this.Unauthorized($"The current user is not authorized to access the catalog '{catalogId}'.");
 
-                var catalog = await catalogContainer.GetCatalogAsync(cancellationToken);
+                var catalogInfo = await catalogContainer.GetCatalogInfoAsync(cancellationToken);
 
-                return await action.Invoke(catalog);
+                return await action.Invoke(catalogInfo.Catalog);
             }
             else
             {

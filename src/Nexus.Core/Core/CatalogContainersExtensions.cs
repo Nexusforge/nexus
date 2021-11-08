@@ -34,11 +34,11 @@ namespace Nexus.Core
             if (catalogContainer == null)
                 return default;
 
-            var catalog = await catalogContainer.GetCatalogAsync(cancellationToken);
+            var catalogInfo = await catalogContainer.GetCatalogInfoAsync(cancellationToken);
 
-            if (catalog is not null)
+            if (catalogInfo is not null)
             {
-                _ = catalog.TryFind(resourcePath, out var catalogItem);
+                _ = catalogInfo.Catalog.TryFind(resourcePath, out var catalogItem);
                 return catalogItem;
             }
 

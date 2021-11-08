@@ -8,6 +8,7 @@ using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Extensions;
 using Nexus.Filters;
+using Nexus.Services;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -26,7 +27,7 @@ namespace DataSource
 
         public FilterDataSourceTests(ITestOutputHelper xunitLogger)
         {
-            _logger = new XunitLoggerProvider(xunitLogger).CreateLogger(nameof(InMemoryDataSourceTests));
+            _logger = new XunitLoggerProvider(xunitLogger).CreateLogger(nameof(FilterDataSourceTests));
         }
 
         [Fact]
@@ -109,7 +110,7 @@ namespace DataSource
         [Fact]
         public async Task CanReadFullDay()
         {
-            // setup catalog collection
+            // setup catalog containers
             var representation = new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromSeconds(1), detail: "mean" );
 
             var resourceBuilder = new ResourceBuilder("T1");
@@ -119,10 +120,20 @@ namespace DataSource
             catalogBuilder.AddResource(resourceBuilder.Build());
 
             var catalog = catalogBuilder.Build();
+            
+            var catalogManager = Mock.Of<ICatalogManager>();
+
+            Mock.Get(catalogManager)
+              .Setup(s => s.LoadCatalogInfoAsync(
+                  It.IsAny<string>(),
+                  It.IsAny<BackendSource[]>(),
+                  It.IsAny<ResourceCatalog>(),
+                  It.IsAny<CancellationToken>()))
+              .Returns(Task.FromResult(new CatalogInfo(DateTime.MinValue, DateTime.MaxValue, catalog)));
 
             var catalogContainers = new CatalogContainer[]
             {
-                new CatalogContainer(DateTime.MinValue, DateTime.MaxValue, catalog, null)
+                new CatalogContainer(catalog.Id, default, new CatalogMetadata(), catalogManager)
             };
 
             // setup data source

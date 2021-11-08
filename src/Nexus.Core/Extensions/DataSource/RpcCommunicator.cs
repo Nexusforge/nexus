@@ -18,8 +18,8 @@ namespace Nexus.Extensions
     {
         #region Fields
 
-        private static ConcurrentDictionary<Uri, (TcpListener, SemaphoreSlim)> _uriToTcpListenerMap
-            = new ConcurrentDictionary<Uri, (TcpListener, SemaphoreSlim)>();
+        private static ConcurrentDictionary<string, (TcpListener, SemaphoreSlim)> _uriToTcpListenerMap
+            = new ConcurrentDictionary<string, (TcpListener, SemaphoreSlim)>();
 
         private SemaphoreSlim _connectSemaphore;
         private TcpListener _tcpListener;
@@ -38,14 +38,16 @@ namespace Nexus.Extensions
 
         #region Constructors
 
-        public RpcCommunicator(Uri resourceLocator, string command, string arguments, IPAddress listenAddress, ushort listenPort, ILogger logger)
+        public RpcCommunicator(string command, string arguments, IPAddress listenAddress, ushort listenPort, ILogger logger)
         {
             _command = command;
             _arguments = arguments;
             _logger = logger;
 
+            var endpoint = $"{listenAddress}:{listenPort}";
+
             (_tcpListener, _connectSemaphore) = _uriToTcpListenerMap
-                .GetOrAdd(resourceLocator, uri => (new TcpListener(listenAddress, listenPort), new SemaphoreSlim(1, 1)));
+                .GetOrAdd(endpoint, uri => (new TcpListener(listenAddress, listenPort), new SemaphoreSlim(1, 1)));
         }
 
         #endregion
@@ -58,6 +60,14 @@ namespace Nexus.Extensions
 
             try
             {
+				// only a single process can connect the tcp listener 
+				await _connectSemaphore.WaitAsync(cancellationToken);
+                releaseSempahore = true;
+
+				// start tcp listener
+                _tcpListener.Start();
+                cancellationToken.Register(() => _tcpListener.Stop());
+				
                 // start process
                 var psi = new ProcessStartInfo(_command)
                 {
@@ -78,12 +88,6 @@ namespace Nexus.Extensions
                 _process.BeginErrorReadLine();
 
                 // wait for clients to connect
-                await _connectSemaphore.WaitAsync(cancellationToken);
-                releaseSempahore = true;
-
-                _tcpListener.Start();
-                cancellationToken.Register(() => _tcpListener.Stop());
-
                 var filters = new string[] { "comm", "data" };
 
                 Stream commStream = null;

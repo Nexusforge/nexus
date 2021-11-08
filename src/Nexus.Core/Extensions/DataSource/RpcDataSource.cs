@@ -74,7 +74,7 @@ namespace Nexus.Extensions
 
             var timeoutTokenSource = this.GetTimeoutTokenSource(TimeSpan.FromSeconds(10));
 
-            _communicator = new RpcCommunicator(context.ResourceLocator, command, arguments, listenAddress, listenPort, this.Context.Logger);
+            _communicator = new RpcCommunicator(command, arguments, listenAddress, listenPort, this.Context.Logger);
             _rpcServer = await _communicator.ConnectAsync(timeoutTokenSource.Token);
 
             var apiVersion = (await _rpcServer.GetApiVersionAsync(timeoutTokenSource.Token)).ApiVersion;

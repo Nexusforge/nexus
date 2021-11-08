@@ -197,8 +197,10 @@ namespace Services
             var state = await catalogManager.LoadCatalogsAsync(CancellationToken.None);
 
             // Assert
-            var actualCatalogs = (await Task.WhenAll(state.CatalogContainers.Select(catalogContainer
-                => catalogContainer.GetCatalogAsync(CancellationToken.None)))).ToArray();
+            var catalogInfos = (await Task.WhenAll(state.CatalogContainers.Select(catalogContainer
+                => catalogContainer.GetCatalogInfoAsync(CancellationToken.None)))).ToArray();
+
+            var actualCatalogs = catalogInfos.Select(catalogInfo => catalogInfo.Catalog);
 
             foreach (var (actual, expected) in actualCatalogs.Zip(expectedCatalogs))
             {
@@ -208,14 +210,14 @@ namespace Services
                 Assert.Equal(actualJsonString, expectedJsonString);
             }
 
-            Assert.Equal(new DateTime(2020, 01, 01), await state.CatalogContainers[0].GetCatalogBeginAsync(CancellationToken.None));
-            Assert.Equal(new DateTime(2020, 01, 03), await state.CatalogContainers[0].GetCatalogEndAsync(CancellationToken.None));
+            Assert.Equal(new DateTime(2020, 01, 01), catalogInfos[0].Begin);
+            Assert.Equal(new DateTime(2020, 01, 03), catalogInfos[0].End);
 
-            Assert.Equal(new DateTime(2020, 01, 01), await state.CatalogContainers[1].GetCatalogBeginAsync(CancellationToken.None));
-            Assert.Equal(new DateTime(2020, 01, 02), await state.CatalogContainers[1].GetCatalogEndAsync(CancellationToken.None));
+            Assert.Equal(new DateTime(2020, 01, 01), catalogInfos[1].Begin);
+            Assert.Equal(new DateTime(2020, 01, 02), catalogInfos[1].End);
 
-            Assert.Equal(new DateTime(2020, 01, 01), await state.CatalogContainers[2].GetCatalogBeginAsync(CancellationToken.None));
-            Assert.Equal(new DateTime(2020, 01, 02), await state.CatalogContainers[2].GetCatalogEndAsync(CancellationToken.None));
+            Assert.Equal(new DateTime(2020, 01, 01), catalogInfos[2].Begin);
+            Assert.Equal(new DateTime(2020, 01, 02), catalogInfos[2].End);
         }
     }
 }

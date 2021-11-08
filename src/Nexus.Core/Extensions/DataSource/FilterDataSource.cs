@@ -63,7 +63,7 @@ namespace Nexus.Extensions
 
         #region Methods
 
-        public Task SetContextAsync(DataSourceContext context, CancellationToken cancellationToken)
+        public async Task SetContextAsync(DataSourceContext context, CancellationToken cancellationToken)
         {
             this.Context = context;
 
@@ -82,7 +82,8 @@ namespace Nexus.Extensions
 
             _cacheEntries = FilterDataSource.FilterDataSourceCache.GetOrAdd(context.ResourceLocator, new List<FilterDataSourceCacheEntry>());
 
-            return Task.CompletedTask;
+            if (this.TryGetFilterSettings(out var filterSettings))
+                await this.CompileAsync(filterSettings, cancellationToken);
         }
 
         public static bool TryGetFilterCodeDefinition(string resourceId, BackendSource backendSource, out CodeDefinition codeDefinition)
@@ -121,13 +122,13 @@ namespace Nexus.Extensions
             }
         }
 
-        public async Task<string[]> GetCatalogIdsAsync(CancellationToken cancellationToken)
+        public Task<string[]> GetCatalogIdsAsync(CancellationToken cancellationToken)
         {
+            string[] result;
+
             if (this.TryGetFilterSettings(out var filterSettings))
             {
-                await this.CompileAsync(filterSettings, cancellationToken);
-
-                return filterSettings.CodeDefinitions
+                result = filterSettings.CodeDefinitions
                     .Where(filterCodeDefinition => filterCodeDefinition.CodeType == CodeType.Filter)
                     .SelectMany(filterCodeDefinition =>
                     {
@@ -138,8 +139,10 @@ namespace Nexus.Extensions
             }
             else
             {
-                return new string[0];
+                result = new string[0];
             }
+
+            return Task.FromResult(result);
         }
 
         public Task<ResourceCatalog> GetCatalogAsync(string catalogId, CancellationToken cancellationToken)

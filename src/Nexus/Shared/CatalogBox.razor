@@ -39,14 +39,14 @@
 </div>
 <div class="catalog-box-selected">
 
-    @if (this.Catalog != null)
+    @if (this.CatalogInfo != null)
                         {
         <MatHeadline5>@this.UserState.CatalogContainer.Id.TrimStart('/').Replace("/", " / ")</MatHeadline5>
         <p class="long-description small-text">
-            @if (this.Catalog.Properties is not null)
+            @if (this.CatalogInfo.Catalog.Properties is not null)
             {
                 <p class="long-description small-text">
-                    @this.Catalog.Properties.GetValueOrDefault("Description", "<no description available>")
+                    @this.CatalogInfo.Catalog.Properties.GetValueOrDefault("Description", "<no description available>")
                 </p>
             }
             else
@@ -58,7 +58,7 @@
         </p>
         <div class="catalog-box-selected-footer">
             <div class="catalog-box-selected-footer-date">
-                <b>Start:&nbsp;</b> @this.Begin.ToString("dd.MM.yyyy") &nbsp;&nbsp;&nbsp; <b>End:&nbsp;</b> @this.End.ToString("dd.MM.yyyy")
+                <b>Start:&nbsp;</b> @this.CatalogInfo.Begin.ToString("dd.MM.yyyy") &nbsp;&nbsp;&nbsp; <b>End:&nbsp;</b> @this.CatalogInfo.End.ToString("dd.MM.yyyy")
             </div>
 
             @if (this.UserState.CatalogContainersInfo.Accessible.Contains(this.UserState.CatalogContainer))

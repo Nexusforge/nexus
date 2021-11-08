@@ -1,11 +1,10 @@
-﻿using Nexus.DataModel;
-using System;
+﻿using Nexus.Services;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nexus.Shared
 {
-	public partial class CatalogBox
+    public partial class CatalogBox
 	{
 		#region Constructors
 
@@ -29,13 +28,9 @@ namespace Nexus.Shared
 
 		#region Properties
 
-		public DateTime Begin { get; private set; }
+		private CatalogInfo CatalogInfo { get; set; }
 
-		public DateTime End { get; private set; }
-
-		public ResourceCatalog Catalog { get; private set; }
-
-		public bool AttachmentsDialogIsOpen { get; set; }
+		private bool AttachmentsDialogIsOpen { get; set; }
 
         #endregion
 
@@ -43,9 +38,7 @@ namespace Nexus.Shared
 
         protected override async Task OnInitializedAsync()
         {
-			this.Begin = await this.UserState.CatalogContainer.GetCatalogBeginAsync(CancellationToken.None);
-			this.End = await this.UserState.CatalogContainer.GetCatalogEndAsync(CancellationToken.None);
-			this.Catalog = await this.UserState.CatalogContainer.GetCatalogAsync(CancellationToken.None);
+			this.CatalogInfo = await this.UserState.CatalogContainer.GetCatalogInfoAsync(CancellationToken.None);
 		}
 
         private void OpenAttachmentsDialog()
