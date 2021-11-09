@@ -4,8 +4,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 using Nexus.Core;
 using Nexus.Services;
+using Nexus.Utilities;
 using Nexus.ViewModels;
-using Nexus.Types;
 using System;
 using System.Threading.Tasks;
 
@@ -25,26 +25,21 @@ namespace Nexus.Shared
         {
 			this.PropertyChanged = (sender, e) =>
 			{
-				if (e.PropertyName == nameof(UserState.ExportParameters))
-				{
-					this.InvokeAsync(this.StateHasChanged);
-				}
-				else if (e.PropertyName == nameof(UserState.DateTimeBegin))
-				{
-					this.InvokeAsync(this.StateHasChanged);
-				}
-				else if (e.PropertyName == nameof(UserState.DateTimeEnd))
-				{
-					this.InvokeAsync(this.StateHasChanged);
-				}
-				else if (e.PropertyName == nameof(UserState.FileGranularity))
-				{
-					this.InvokeAsync(this.StateHasChanged);
-				}
-				else if (e.PropertyName == nameof(UserState.SelectedDatasets))
-				{
-					this.InvokeAsync(this.StateHasChanged);
-				}
+                switch (e.PropertyName)
+                {
+					case nameof(UserState.ExportParameters):
+					case nameof(UserState.DateTimeBegin):
+					case nameof(UserState.DateTimeEnd):
+					case nameof(UserState.FilePeriod):
+					case nameof(UserState.SamplePeriod):
+					case nameof(UserState.SelectedRepresentations):
+
+						this.InvokeAsync(this.StateHasChanged);
+						break;
+
+					default:
+                        break;
+                }
 			};
 		}
 
@@ -53,18 +48,18 @@ namespace Nexus.Shared
 		#region Properties - Injected
 
 		[Inject]
-		public IJSRuntime JsRuntime { get; set; }
+		private IJSRuntime JsRuntime { get; set; }
 
 		[Inject]
-		public ToasterService ToasterService { get; set; }
+		private ToasterService ToasterService { get; set; }
 
         #endregion
 
         #region Commands
 
-		private void CopyPath(DatasetInfoViewModel dataset)
+		private void CopyPath(RepresentationViewModel representation)
         {
-			this.JsRuntime.WriteToClipboard($"{dataset.Parent.Parent.Id}/{dataset.Parent.Name}/{dataset.Model.Id}");
+			this.JsRuntime.WriteToClipboard(representation.GetPath());
         }
 
         #endregion
@@ -79,8 +74,8 @@ namespace Nexus.Shared
 			}
             catch (Exception ex)
             {
-				this.UserState.Logger.LogError(ex.GetFullMessage());
-				this.ToasterService.ShowError(message: "Unable to download data.", icon: MatIconNames.Error_outline);
+				this.UserState.Logger.LogError(ex, "Download data failed");
+				this.ToasterService.ShowError(message: "Unable to download data", icon: MatIconNames.Error_outline);
 			}
         }
 
@@ -89,7 +84,7 @@ namespace Nexus.Shared
 			var byteCount = this.UserState.GetByteCount();
 
 			if (byteCount > 0)
-				return $"Download ({Utilities.FormatByteCount(byteCount)})";
+				return $"Download ({NexusUtilities.FormatByteCount(byteCount)})";
 			else
 				return $"Download";
 		}

@@ -1,8 +1,4 @@
 ﻿@page "/"
-
-@using Microsoft.Extensions.Options
-@using Nexus.Core
-
 @namespace Nexus.Pages
 
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
@@ -10,10 +6,8 @@
     Layout = null;
 }
 
-@inject IOptions<NexusOptions> options
-
 <!DOCTYPE html>
-<html lang="@options.Value.Language">
+<html lang="@Program.Language">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -22,6 +16,7 @@
     <link rel="stylesheet" href="Nexus.styles.css" />
     <link rel="stylesheet" href="_content/MatBlazor/dist/matBlazor.css" />
     <link rel="stylesheet" href="~/css/site.css" />
+    <link rel="stylesheet" href="~/css/MarkdownRenderer.css" />
     <link rel="stylesheet" href="~/lib/uplot/uPlot.css" />
     <link rel="stylesheet" href="~/lib/font-awesome/css/fontawesome.min.css" />
     <link rel="stylesheet" href="~/lib/font-awesome/css/all.min.css" />

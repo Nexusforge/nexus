@@ -3,11 +3,11 @@
 <div class="nav">
     <a class="nav-logo" href="/">
         <img src="images/network_icon.png" />
-        Nexus Explorer
+        @this.GeneralOptions.Value.ApplicationName
     </a>
-    @if (this.AppState.IsDatabaseUpdating)
+    @if (this.AppState.IsCatalogStateUpdating)
     {
-        <div class="flex-centered"><i class="pulsate-css"></i>&nbsp;&nbsp; Updating database ...</div>
+        <div class="flex-centered"><i class="pulsate-css"></i>&nbsp;&nbsp; Updating catalogs ...</div>
     }
     <LoginDisplay />
 </div>

@@ -1,4 +1,3 @@
-using GraphQL.Server;
 using MatBlazor;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -7,24 +6,33 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using Nexus.API;
 using Nexus.Core;
+using Nexus.DataModel;
 using Nexus.Services;
+using Nexus.Utilities;
 using Nexus.ViewModels;
+using Serilog;
+using Swashbuckle.AspNetCore.SwaggerGen;
 using System;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nexus
 {
-    public class Startup
+    internal class Startup
     {
         #region Properties
 
@@ -43,6 +51,9 @@ namespace Nexus
 
         public void ConfigureServices(IServiceCollection services)
         {
+            var usersOptions = new UsersOptions();
+            this.Configuration.GetSection(UsersOptions.Section).Bind(usersOptions);
+
             // database
             services.AddDbContext<ApplicationDbContext>();
 
@@ -57,7 +68,16 @@ namespace Nexus
 
             // identity (customize: https://docs.microsoft.com/en-us/aspnet/core/security/authentication/customize-identity-model?view=aspnetcore-3.1)
             services.AddDefaultIdentity<IdentityUser>()
-                .AddEntityFrameworkStores<ApplicationDbContext>();            
+                .AddEntityFrameworkStores<ApplicationDbContext>();
+
+            services.Configure<IdentityOptions>(options =>
+            {
+                // Instead of RequireConfirmedEmail, this one has the desired effect!
+                options.SignIn.RequireConfirmedAccount = usersOptions.VerifyEmail;
+            });
+
+            if (usersOptions.VerifyEmail)
+                services.AddTransient<IEmailSender, EmailSender>();
 
             // blazor
             services.AddRazorPages();
@@ -112,70 +132,74 @@ namespace Nexus
                 options.AddPolicy("RequireAdmin", policy => policy.RequireClaim(Claims.IS_ADMIN, "true"));
             });
 
-            // swagger
+            // swagger (https://github.com/dotnet/aspnet-api-versioning/tree/master/samples/aspnetcore/SwaggerSample)
             services.AddControllers()
-                .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+                .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()))
+                .ConfigureApplicationPartManager(
+                    manager =>
+                    {
+                        manager.FeatureProviders.Add(new InternalControllerFeatureProvider());
+                    });
 
-            services.AddSwaggerDocument(config =>
-            {
-                config.Title = "Nexus Explorer REST API";
-                config.Version = "v1";
-                config.Description = "Explore resources and get their data.";
-                //config.OperationProcessors.Add(new OperationSecurityScopeProcessor("JWT Token"));
-                //config.AddSecurity("JWT Token", Enumerable.Empty<string>(),
-                //    new OpenApiSecurityScheme()
-                //    {
-                //        Type = OpenApiSecuritySchemeType.ApiKey,
-                //        Name = "Authorization",
-                //        In = OpenApiSecurityApiKeyLocation.Header,
-                //        Description = "Copy this into the value field: Bearer {token}"
-                //    }
-                //);
-            });
-
-            // graphql
-            services
-                .AddSingleton<ProjectSchema>()
-                .AddGraphQL((options, provider) =>
+            services.AddApiVersioning(
+                options =>
                 {
-                    options.EnableMetrics = false;
+                    options.ReportApiVersions = true;
+                });
 
-                    var logger = provider.GetRequiredService<ILogger<Startup>>();
-                    options.UnhandledExceptionDelegate = ctx
-                        => logger.LogError($"{ctx.OriginalException.Message} occured");
-                })
-                .AddErrorInfoProvider(opt => opt.ExposeExceptionStackTrace = true)
-                .AddSystemTextJson(deserializerSettings => { }, serializerSettings => { })
-                .AddGraphTypes(typeof(ProjectSchema));
+            services.AddVersionedApiExplorer(
+                options =>
+                {
+                    options.GroupNameFormat = "'v'VVV";
+                    options.SubstituteApiVersionInUrl = true;
+                });
+
+            services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
+
+            services.AddSwaggerGen(
+                options =>
+                {
+                    //options.OperationFilter<SwaggerDefaultValues>();
+                    options.IncludeXmlComments(Path.ChangeExtension(typeof(Startup).Assembly.Location, "xml"));
+                });
 
             // custom
 #warning replace httpcontextaccessor by async authenticationStateProvider (https://github.com/dotnet/aspnetcore/issues/17585)
             services.AddHttpContextAccessor();
 
-            services.AddScoped<MonacoService>();
-            services.AddScoped<UserIdService>();
-            services.AddScoped<UserState>();
+            services.AddTransient<AggregationService>();
+            services.AddTransient<DataService>();
+
+            services.AddScoped<IUserIdService, UserIdService>();
+            services.AddScoped<JobEditor>();
+            services.AddScoped<JwtService>();
             services.AddScoped<SettingsViewModel>();
             services.AddScoped<ToasterService>();
-            services.AddScoped<JwtService<IdentityUser>>();
-            services.AddScoped<JobEditor>();
+            services.AddScoped<UserState>();
 
-            services.AddTransient<DataService>();
-            services.AddTransient<AggregationService>();
-
-            services.AddSingleton(Program.Options);
             services.AddSingleton<AppState>();
-            services.AddSingleton<FileAccessManager>();
-            services.AddSingleton<JobService<ExportJob>>();
+            services.AddSingleton<AppStateController>();
+            services.AddSingleton<IDataControllerService, DataControllerService>();
+            services.AddSingleton<ICatalogManager, CatalogManager>();
+            services.AddSingleton<IDatabaseManager, DatabaseManager>();
+            services.AddSingleton<IExtensionHive, ExtensionHive>();
+            services.AddSingleton<IUserManagerWrapper, UserManagerWrapper>();
             services.AddSingleton<JobService<AggregationJob>>();
-            services.AddSingleton<DatabaseManager>();
-            services.AddSingleton<UserManager>();
+            services.AddSingleton<JobService<ExportJob>>();
+
+            services.Configure<GeneralOptions>(Configuration.GetSection(GeneralOptions.Section));
+            services.Configure<PathsOptions>(Configuration.GetSection(PathsOptions.Section));
+            services.Configure<SecurityOptions>(Configuration.GetSection(SecurityOptions.Section));
+            services.Configure<ServerOptions>(Configuration.GetSection(ServerOptions.Section));
+            services.Configure<SmtpOptions>(Configuration.GetSection(SmtpOptions.Section));
+            services.Configure<UsersOptions>(Configuration.GetSection(UsersOptions.Section));
         }
 
         public void Configure(IApplicationBuilder app,
                               IWebHostEnvironment env,
-                              AppState appState, // needs to be called to initialize the database
-                              NexusOptions options)
+                              IServiceProvider serviceProvider,
+                              IApiVersionDescriptionProvider provider,
+                              IOptions<PathsOptions> pathsOptions)
         {
             // https://docs.microsoft.com/en-us/aspnet/core/fundamentals/middleware/?view=aspnetcore-5.0
 
@@ -192,34 +216,47 @@ namespace Nexus
 
             // static files
             app.UseStaticFiles();
+
             app.UseStaticFiles(new StaticFileOptions
             {
-                FileProvider = new LazyPhysicalFileProvider(options, "ATTACHMENTS"),
+                FileProvider = new LazyPhysicalFileProvider(pathsOptions.Value.Catalogs),
                 RequestPath = "/attachments",
                 ServeUnknownFileTypes = true
             });
+
             app.UseStaticFiles(new StaticFileOptions
             {
-                FileProvider = new LazyPhysicalFileProvider(options, "PRESETS"),
-                RequestPath = "/presets"
+                FileProvider = new PhysicalFileProvider(Path.Combine(Assembly.GetExecutingAssembly().Location, "..", "Connectors")),
+                RequestPath = "/connectors",
+                ServeUnknownFileTypes = true
             });
+
             app.UseStaticFiles(new StaticFileOptions
             {
-                FileProvider = new LazyPhysicalFileProvider(options, "EXPORT"),
+                FileProvider = new LazyPhysicalFileProvider(pathsOptions.Value.Export),
                 RequestPath = "/export"
             });
 
             // swagger
-            app.UseOpenApi();
-            app.UseSwaggerUi3();
+            app.UseSwagger();
+            app.UseSwaggerUI(
+                options =>
+                {
+                    options.RoutePrefix = "api";
 
-            // graphql
-            app.UseGraphQL<ProjectSchema>("/graphql");
-            app.UseGraphQLPlayground();
+                    foreach (var description in provider.ApiVersionDescriptions)
+                    {
+                        options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", description.GroupName.ToUpperInvariant());
+                    }
+                });
+
+            // Serilog Request Logging (https://andrewlock.net/using-serilog-aspnetcore-in-asp-net-core-3-reducing-log-verbosity/)
+            // LogContext properties are not included by default in request logging, workaround: https://nblumhardt.com/2019/10/serilog-mvc-logging/
+            app.UseSerilogRequestLogging();
 
             // routing (for REST API)
             app.UseRouting();
-
+            
             // default authentication
             app.UseAuthentication();
 
@@ -274,6 +311,43 @@ namespace Nexus
                 endpoints.MapBlazorHub();
                 endpoints.MapFallbackToPage("/_Host");
             });
+
+            // initialize app state
+            this.InitializeAppAsync(serviceProvider, pathsOptions.Value).Wait();
+        }
+
+        private async Task InitializeAppAsync(IServiceProvider serviceProvier, PathsOptions pathsOptions)
+        {
+            var appState = serviceProvier.GetRequiredService<AppState>();
+            var appStateController = serviceProvier.GetRequiredService<AppStateController>();
+            var userManagerWrapper = serviceProvier.GetRequiredService<IUserManagerWrapper>();
+            var databaseManager = serviceProvier.GetRequiredService<IDatabaseManager>();
+
+            // project
+            if (databaseManager.TryReadProject(out var project))
+            {
+                appState.Project = JsonSerializerHelper.Deserialize<NexusProject>(project);
+            }
+            else
+            {
+                appState.Project = new NexusProject(default, default);
+            }
+
+            // news
+            if (databaseManager.TryReadNews(out var news))
+            {
+                appState.NewsPaper = JsonSerializerHelper.Deserialize<NewsPaper>(news);
+            }
+            else
+            {
+                appState.NewsPaper = new NewsPaper();
+            }
+
+            // user manager
+            await userManagerWrapper.InitializeAsync();
+
+            // packages and catalogs
+            _ = appStateController.ReloadCatalogsAsync(CancellationToken.None);
         }
 
         #endregion

@@ -1,14 +1,17 @@
 ﻿using Microsoft.Extensions.Logging.Abstractions;
 using Nexus.Core;
+using Nexus.DataModel;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
-using static Nexus.Services.DatabaseManager;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Nexus.Services
 {
-    public class JobEditor
+    internal class JobEditor
     {
         #region Events
 
@@ -19,16 +22,16 @@ namespace Nexus.Services
         #region Fields
 
         private string _jsonString;
-        private DatabaseManagerState _state;
+        private CatalogState _state;
 
         #endregion
 
         #region Constructors
 
-        public JobEditor(DatabaseManager databaseManager)
+        public JobEditor(AppState appState)
         {
-            _state = databaseManager.State;
-            this.Update();
+            _state = appState.CatalogState;
+            this.UpdateAsync().Wait();
         }
 
         #endregion
@@ -53,7 +56,7 @@ namespace Nexus.Services
                 {
                     this.AggregationSetup = JsonSerializer.Deserialize<AggregationSetup>(_jsonString);
 
-                    this.Update(skipJson: true);
+                    this.UpdateAsync(skipJson: true).Wait();
                     this.OnChanged();
                 }
                 catch
@@ -67,29 +70,29 @@ namespace Nexus.Services
 
         #region Methods
 
-        public void Update(bool skipJson = false)
+        public async Task UpdateAsync(bool skipJson = false)
         {
             // analysis
-            var instructions = AggregationService.ComputeInstructions(this.AggregationSetup, _state, NullLogger.Instance);
+            var instructions = await AggregationService.ComputeInstructionsAsync(this.AggregationSetup, _state, NullLogger.Instance, CancellationToken.None);
             var sb = new StringBuilder();
 
             foreach (var instruction in instructions)
             {
-                sb.AppendLine($"Project '{instruction.Container.Id}'");
+                sb.AppendLine($"Catalog '{instruction.Container.Id}'");
 
-                foreach (var (registration, aggregationChannels) in instruction.DataReaderToAggregationsMap)
+                foreach (var (backendSource, aggregationResources) in instruction.DataReaderToAggregationsMap)
                 {
-                    if (aggregationChannels.Any())
+                    if (aggregationResources.Any())
                     {
                         sb.AppendLine();
-                        sb.AppendLine($"\tData Reader '{registration.DataReaderId}' ({registration.RootPath})");
+                        sb.AppendLine($"\tData Reader '{backendSource.Type}' ({backendSource.ResourceLocator})");
 
-                        foreach (var aggregationChannel in aggregationChannels)
+                        foreach (var aggregationResource in aggregationResources)
                         {
                             sb.AppendLine();
-                            sb.AppendLine($"\t\t{aggregationChannel.Channel.Name} / {aggregationChannel.Channel.Group} / {aggregationChannel.Channel.Unit}");
+                            sb.AppendLine($"\t\t{aggregationResource.Resource.Id} / {aggregationResource.Resource.Properties.GetValueOrDefault(DataModelExtensions.Unit, string.Empty)}");
 
-                            foreach (var aggregation in aggregationChannel.Aggregations)
+                            foreach (var aggregation in aggregationResource.Aggregations)
                             {
                                 foreach (var period in aggregation.Periods)
                                 {

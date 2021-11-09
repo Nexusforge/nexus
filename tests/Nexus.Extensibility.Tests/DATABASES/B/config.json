@@ -1,0 +1,17 @@
+{
+  "/A/B/C": {
+    "Config": {
+      "calibrated": {
+        "PathSegments": [
+          "'DATA'",
+          "yyyy-MM",
+          "'calibrated'",
+          "yyyy-MM-dd"
+        ],
+        "FileTemplate": "yyyy-MM-dd_HH-mm-ss'.dat'",
+        "FilePeriod": "00:10:00",
+        "UtcOffset": "00:00:00"
+      }
+    }
+  }
+}

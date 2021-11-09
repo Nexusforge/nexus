@@ -5,15 +5,15 @@ using System.Threading.Tasks;
 
 namespace Nexus.Core
 {
-    public abstract class StateComponentBase : ComponentBase, IDisposable
+	public abstract class StateComponentBase : ComponentBase, IDisposable
 	{
 		#region Properties
 
 		[Inject]
-		public AppState AppState { get; set; }
+		internal AppState AppState { get; set; }
 
 		[Inject]
-		public UserState UserState { get; set; }
+		internal UserState UserState { get; set; }
 
 		protected PropertyChangedEventHandler PropertyChanged { get; set; }
 

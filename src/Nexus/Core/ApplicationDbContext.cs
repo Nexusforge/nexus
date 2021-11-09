@@ -1,21 +1,22 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using System.IO;
 
 namespace Nexus.Core
 {
-    public class ApplicationDbContext : IdentityDbContext
+    internal class ApplicationDbContext : IdentityDbContext
     {
-        private NexusOptions _options;
+        private PathsOptions _pathsOptions;
 
-        public ApplicationDbContext(NexusOptions options)
+        public ApplicationDbContext(IOptions<PathsOptions> pathsOptions)
         {
-            _options = options;
+            _pathsOptions = pathsOptions.Value;
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            var filePath = Path.Combine(_options.DataBaseFolderPath, "users.db");
+            var filePath = Path.Combine(_pathsOptions.Config, "users.db");
             optionsBuilder.UseSqlite($"Data Source={filePath}");
             base.OnConfiguring(optionsBuilder);
         }

@@ -2,8 +2,11 @@
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
 using Nexus.Core;
+using Nexus.Services;
+using Nexus.Utilities;
+using System.IO;
 using System.Text;
-using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nexus.Shared
@@ -30,16 +33,16 @@ namespace Nexus.Shared
                 {
                     this.InvokeAsync(this.StateHasChanged);
                 }
-                else if (e.PropertyName == nameof(UserState.SampleRate))
+                else if (e.PropertyName == nameof(UserState.SamplePeriod))
                 {
                     this.InvokeAsync(this.StateHasChanged);
                 }
-                else if (e.PropertyName == nameof(UserState.SelectedDatasets))
+                else if (e.PropertyName == nameof(UserState.SelectedRepresentations))
                 {
                     this.InvokeAsync(this.StateHasChanged);
                 }
-                else if (e.PropertyName == nameof(AppState.IsDatabaseInitialized) ||
-                        (e.PropertyName == nameof(AppState.IsDatabaseUpdating) && !this.AppState.IsDatabaseUpdating))
+                else if (e.PropertyName == nameof(AppState.CatalogState) ||
+                        (e.PropertyName == nameof(AppState.IsCatalogStateUpdating) && !this.AppState.IsCatalogStateUpdating))
                 {
                     this.InvokeAsync(this.StateHasChanged);
                 }
@@ -51,23 +54,16 @@ namespace Nexus.Shared
         #region Properties
 
         [Inject]
-        public IJSRuntime JsRuntime { get; set; }
-
-        public bool PresetsDialogIsOpen { get; set; }
+        private IJSRuntime JsRuntime { get; set; }
 
         #endregion
 
         #region Methods
 
-        private void OpenPresetsDialog()
-        {
-            this.PresetsDialogIsOpen = true;
-        }
-
         private async Task OnSaveExportSettingsAsync()
         {
 			var configuration = this.UserState.ExportParameters;
-			var jsonString = JsonSerializer.Serialize(configuration, new JsonSerializerOptions() { WriteIndented = true });
+			var jsonString = JsonSerializerHelper.Serialize(configuration);
 			await this.JsRuntime.BlobSaveAs("export.json", Encoding.UTF8.GetBytes(jsonString));
 		}
 
@@ -77,10 +73,11 @@ namespace Nexus.Shared
 
             if (file != null)
             {
-                using var utf8json = file.OpenReadStream();
-                var exportParameters = await JsonSerializer.DeserializeAsync<ExportParameters>(utf8json);
+                using var streamReader = new StreamReader(file.OpenReadStream());
+                var jsonString = await streamReader.ReadToEndAsync();
+                var exportParameters = JsonSerializerHelper.Deserialize<ExportParameters>(jsonString);
                 exportParameters = exportParameters.UpdateVersion();
-                this.UserState.SetExportParameters(exportParameters);
+                await this.UserState.SetExportParametersAsync(exportParameters, CancellationToken.None);
             }
         }
 

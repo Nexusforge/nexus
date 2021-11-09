@@ -1,0 +1,1 @@
+- ConfigureAwait(false) is not necessary on ASP.NET Core: https://blog.stephencleary.com/2017/03/aspnetcore-synchronization-context.html

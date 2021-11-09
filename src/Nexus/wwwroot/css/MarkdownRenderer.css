@@ -1,0 +1,171 @@
+﻿:root {
+    /* --color-text-link: rgb(87, 165, 254);
+	--pre-code-foreground: white;
+	--code-foreground: rgb(215, 186, 125);
+	--code-background: rgba(10, 10, 10, 0.4);
+	--text-foreground: rgb(212, 212, 212);
+	--background: rgb(30, 30, 30);
+	--table-header: rgba(255, 255, 255, 0.69);
+	--border: rgba(255, 255, 255, 0.18); */
+
+    --color-text-link: rgb(8, 91, 187);
+    --pre-code-foreground: rgb(43, 43, 43);
+    --code-foreground: rgb(215, 186, 125);
+    --code-background: rgba(153, 153, 153, 0.2);
+    --text-foreground: rgb(53, 53, 53);
+    --background: rgb(235, 235, 235);
+    --table-header: rgba(0, 0, 0, 0.69);
+    --border: rgba(0, 0, 0, 0.18);
+}
+
+.markdown {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 22px;
+    word-wrap: break-word;
+    color: var(--text-foreground);
+}
+
+/* css below taken from https://github.com/microsoft/vscode/blob/main/extensions/markdown-language-features/media/markdown.css
+ * em values modified, mostly by factor 2
+ */
+
+/* Reset margin top for elements */
+.markdown h1, .markdown h2, .markdown h3, .markdown h4, .markdown h5, .markdown h6,
+.markdown p, .markdown ol, .markdown ul, .markdown pre {
+    margin-top: 0;
+}
+
+.markdown h1 {
+    margin-top: 1em;
+}
+
+.markdown h2, .markdown h3,.markdown h4, .markdown h5, .markdown h6 {
+    font-weight: normal;
+    margin-bottom: 0.6em;
+}
+
+.markdown ul .markdown ul,
+.markdown ul .markdown ol,
+.markdown ol .markdown ul,
+.markdown ol .markdown ol {
+    margin-bottom: 0;
+}
+
+.markdown img {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.markdown a {
+    color: var(--color-text-link);
+    text-decoration: none;
+}
+
+    .markdown a:hover {
+        text-decoration: underline;
+    }
+
+    .markdown a:focus,
+    .markdown input:focus,
+    .markdown select:focus,
+    .markdown textarea:focus {
+        outline: 1px solid -webkit-focus-ring-color;
+        outline-offset: -1px;
+    }
+
+.markdown p {
+    margin-bottom: 1.4em;
+}
+
+.markdown ul,
+.markdown ol {
+    margin-bottom: 1.4em;
+}
+
+.markdown li {
+    margin-bottom: 0.4em;
+}
+
+
+.markdown hr {
+    border: 0;
+    height: 2px;
+    border-bottom: 2px solid;
+}
+
+.markdown h1 {
+    padding-bottom: 0.3em;
+    line-height: 1.2;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+    font-weight: normal;
+}
+
+.markdown table {
+    border-collapse: collapse;
+    margin-bottom: 1.4em;
+}
+
+.markdown th {
+    text-align: left;
+    border-bottom: 1px solid;
+}
+
+.markdown th,
+.markdown td {
+    padding: 5px 10px;
+}
+
+.markdown table > tbody > tr + tr > td {
+    border-top: 1px solid;
+}
+
+.markdown blockquote {
+    margin: 0 7px 0 5px;
+    padding: 0 16px 0 10px;
+    border-left-width: 5px;
+    border-left-style: solid;
+}
+
+.markdown code {
+    font-family: var(--vscode-editor-font-family, "SF Mono", Monaco, Menlo, Consolas, "Ubuntu Mono", "Liberation Mono", "DejaVu Sans Mono", "Courier New", monospace);
+    font-size: 1em;
+    line-height: 1.357em;
+}
+
+.markdown code {
+    color: var(--code-foreground);
+}
+
+.markdown body.wordWrap pre {
+    white-space: pre-wrap;
+}
+
+.markdown pre:not(.hljs),
+.markdown pre.hljs code > div {
+    padding: 16px;
+    border-radius: 3px;
+    overflow: auto;
+}
+
+.markdown pre code {
+    color: var(--pre-code-foreground);
+    tab-size: 4;
+}
+
+/** Theming */
+
+.markdown pre {
+    background-color: var(--code-background);
+}
+
+.markdown th {
+    border-color: var(--table-header);
+}
+
+.markdown h1,
+.markdown hr,
+.markdown td {
+    border-color: var(--border);
+}

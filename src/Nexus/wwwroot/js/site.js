@@ -45,17 +45,17 @@ async function UpdateChart(userState, chartEntries, start, end, count, dt, begin
         for (var i = 0; i < chartEntries.length; i++) {
 
             var chartEntry = chartEntries[i];
-            var channelData = Array(count);
+            var resourceData = Array(count);
 
-            var channelPathParts = chartEntry.path.split("/");
-            var projectId = encodeURIComponent('/' + channelPathParts[1] + '/' + channelPathParts[2] + '/' + channelPathParts[3]);
-            var channelId = encodeURIComponent(channelPathParts[4]);
-            var datasetId = encodeURIComponent(channelPathParts[5]);
+            var resourcePathSegments = chartEntry.path.split("/");
+            var catalogId = encodeURIComponent('/' + resourcePathSegments[1] + '/' + resourcePathSegments[2] + '/' + resourcePathSegments[3]);
+            var resourceId = encodeURIComponent(resourcePathSegments[4]);
+            var representationId = encodeURIComponent(resourcePathSegments[5]);
 
             url = "/api/v1/data" +
-                  "?projectId=" + projectId +
-                  "&channelId=" + channelId +
-                  "&datasetId=" + datasetId +
+                  "?catalogId=" + catalogId +
+                  "&resourceId=" + resourceId +
+                  "&representationId=" + representationId +
                   "&begin=" + start +
                   "&end=" + end;
 
@@ -89,15 +89,15 @@ async function UpdateChart(userState, chartEntries, start, end, count, dt, begin
                 await userState.invokeMethodAsync('SetVisualizeProgress', progress);
             }
 
-            var channelData = new Float64Array(buffer);
+            var resourceData = new Float64Array(buffer);
 
             // replace NaN by null
-            for (var j = 0; j < channelData.length; j++) {
-                if (isNaN(channelData[j]))
-                    channelData[j] = null;
+            for (var j = 0; j < resourceData.length; j++) {
+                if (isNaN(resourceData[j]))
+                    resourceData[j] = null;
             }
 
-            chartEntry.data = channelData;
+            chartEntry.data = resourceData;
         }        
     }
     finally {

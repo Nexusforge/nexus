@@ -1,10 +1,7 @@
 ﻿using Microsoft.JSInterop;
-using Nexus.Pages;
-using Nexus.Services;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using static Nexus.Services.MonacoService;
 
 namespace Nexus.Core
 {
@@ -36,31 +33,6 @@ namespace Nexus.Core
         {
             var userStateRef = DotNetObjectReference.Create(userState);
             return jsRuntime.InvokeVoidAsync("UpdateChart", userStateRef, chartEntries, begin, end, count, dt, beginAtZero);
-        }
-
-        public static ValueTask CreateMonacoEditorAsync(this IJSRuntime jsRuntime, string editorId, Dictionary<string, object> options)
-        {
-            return jsRuntime.InvokeVoidAsync("CreateMonacoEditor", editorId, options);
-        }
-
-        public static ValueTask RegisterMonacoProvidersAsync(this IJSRuntime jsRuntime, string editorId, DotNetObjectReference<FilterEditor> filterEditor, DotNetObjectReference<MonacoService> monacoService)
-        {
-            return jsRuntime.InvokeVoidAsync("RegisterMonacoProviders", editorId, filterEditor, monacoService);
-        }
-
-        public static ValueTask SetMonacoValueAsync(this IJSRuntime jsRuntime, string editorId, string value)
-        {
-            return jsRuntime.InvokeVoidAsync("SetMonacoValue", editorId, value);
-        }
-
-        public static ValueTask<string> GetMonacoValueAsync(this IJSRuntime jsRuntime, string editorId)
-        {
-            return jsRuntime.InvokeAsync<string>("GetMonacoValue", editorId);
-        }
-
-        public static ValueTask SetMonacoDiagnosticsAsync(this IJSRuntime jsRuntime, string editorId, List<Diagnostic> diagnostics)
-        {
-            return jsRuntime.InvokeVoidAsync("SetMonacoDiagnostics", editorId, diagnostics);
         }
 
         #endregion

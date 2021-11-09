@@ -7,7 +7,6 @@
 {
     <p>@jobControl.Job.Id: @jobControl.Task.Status</p>
     <MatProgressBar Progress="jobControl.Progress"></MatProgressBar>
-    <p>@jobControl.ProgressMessage</p>
 }
 
 @foreach (var jobControl in this.AggregationJobsService
@@ -16,7 +15,6 @@
 {
     <p>@jobControl.Job.Id: @jobControl.Task.Status</p>
     <MatProgressBar Progress="jobControl.Progress"></MatProgressBar>
-    <p>@jobControl.ProgressMessage</p>
 }
 
 <MatHeadline4>Completed jobs</MatHeadline4>
@@ -25,7 +23,6 @@
    .Where(jobControl => jobControl.Task.IsCompleted))
 {
     <p>@jobControl.Job.Id: @jobControl.Task.Status</p>
-    <p>@jobControl.ProgressMessage</p>
 }
 
 @foreach (var jobControl in this.AggregationJobsService
@@ -33,5 +30,4 @@
    .Where(jobControl => jobControl.Task.IsCompleted))
 {
     <p>@jobControl.Job.Id: @jobControl.Task.Status</p>
-    <p>@jobControl.ProgressMessage</p>
 }
