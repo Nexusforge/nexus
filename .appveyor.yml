@@ -19,15 +19,11 @@ configuration:
 init:
   - git config --global core.autocrlf true
 
-before_build:
-  - ps: dotnet --info
-  - ps: "Get-ChildItem Env:"
-
 build_script:
  - ps: sudo docker build -t apollo3zehn/nexus:1.0.0.alpha.1.$Env:APPVEYOR_BUILD_NUMBER .
 
 test_script:
- - ps: dotnet test -c $Env:CONFIGURATION
+ - ps: dotnet test -c $Env:CONFIGURATION /p:Build=$Env:APPVEYOR_BUILD_NUMBER /p:IsFinalBuild=$Env:APPVEYOR_REPO_TAG
 
 artifacts:
   - path: ./artifacts/packages/**/*.nupkg
@@ -49,7 +45,6 @@ deploy:
     artifact: /.*\.nupkg/
     on:
       branch: dev
-      CI_LINUX: true
 
 # NuGet (master)
   - provider: NuGet
@@ -60,15 +55,4 @@ deploy:
     artifact: /.*\.nupkg/ 
     on:
       branch: master
-      CI_WINDOWS: true
-      APPVEYOR_REPO_TAG: true
-
-# GitHub (master)
-  - provider: GitHub
-    force_update: true
-    auth_token:
-      secure: Ssl8rHF6345+qU9lhUQlHRx0Ta4e6UXIQM3SEpDpjR4+WcpMJM3TvQ5gUWjwf6jQ
-    artifact: /.*\.msi/
-    on:
-      CI_WINDOWS: true
       APPVEYOR_REPO_TAG: true
