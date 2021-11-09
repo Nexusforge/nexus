@@ -83,7 +83,10 @@ namespace DataWriter
             await dataWriter.WriteAsync(TimeSpan.FromSeconds(length), requests, new Progress<double>(), CancellationToken.None);
             await dataWriter.CloseAsync(CancellationToken.None);
 
-            var actualFilePaths = Directory.GetFiles(targetFolder).ToArray();
+            var actualFilePaths = Directory
+                .GetFiles(targetFolder)
+                .OrderBy(value => value)
+                .ToArray();
 
             var nfi = new NumberFormatInfo()
             {
@@ -117,7 +120,7 @@ namespace DataWriter
                 "# my-custom-parameter2=my-custom-value2;",
                 $"{expected[0].Item1};resource1;resource1;",
                 "-;1_s_mean;1_s_max;",
-                "-;°C;°C;",
+                "-;Â°C;Â°C;",
                 $"{expected[0].Item3};2486.686;-0.7557958;",
                 $"{expected[1].Item3};1107.44;-0.4584072;",
                 $"{expected[2].Item3};4670.107;-0.001267695;",

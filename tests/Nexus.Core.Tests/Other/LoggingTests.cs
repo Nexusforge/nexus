@@ -5,6 +5,7 @@ using Serilog.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -137,8 +138,8 @@ namespace Other
             serilogger.Dispose();
 
             // assert
-            var expected = File.ReadAllText("expected-log.txt");
-            var actual = File.ReadAllText(Path.Combine(root, "log.txt"));
+            var expected = Regex.Replace(Regex.Replace(File.ReadAllText("expected-log.txt"), "\r\n", "\n"), @"in .*?tests.*?LoggingTests.cs", "");
+            var actual = Regex.Replace(Regex.Replace(File.ReadAllText(Path.Combine(root, "log.txt")), "\r\n", "\n"), @"in .*?tests.*?LoggingTests.cs", "");
 
             Assert.Equal(expected, actual);
 

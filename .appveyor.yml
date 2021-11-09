@@ -17,20 +17,24 @@ configuration:
   - Release
 
 init:
-  - git config --global core.autocrlf true
+  - ps: git config --global core.autocrlf true
 
 build_script:
- - ps: sudo docker build -t apollo3zehn/nexus:1.0.0.alpha.1.$Env:APPVEYOR_BUILD_NUMBER .
+  - ps: echo "Skip build_script."
 
 test_script:
- - ps: dotnet test -c $Env:CONFIGURATION /p:Build=$Env:APPVEYOR_BUILD_NUMBER /p:IsFinalBuild=$Env:APPVEYOR_REPO_TAG
+  - ps: dotnet test -c $Env:CONFIGURATION /p:Build=$Env:APPVEYOR_BUILD_NUMBER /p:IsFinalBuild=$Env:APPVEYOR_REPO_TAG
 
 artifacts:
-  - path: ./artifacts/packages/**/*.nupkg
+  - path: artifacts/packages/**/*.nupkg
 
 after_test:
 
+# publish
+  - ps: dotnet publish -c Release -o app -r linux-x64 --no-self-contained src/Nexus/Nexus.csproj
+
 # Docker
+  - ps: docker build -t apollo3zehn/nexus:1.0.0.alpha.1.$Env:APPVEYOR_BUILD_NUMBER .
   - ps: docker login -u="apollo3zehn" -p="$env:DOCKER_PASSWORD"
   - ps: docker push apollo3zehn/nexus:1.0.0.alpha.1.$Env:APPVEYOR_BUILD_NUMBER
 

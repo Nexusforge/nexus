@@ -143,7 +143,7 @@ namespace Nexus.Services
             }
 
             // get data writer controller
-            var resourceLocator = new Uri(tmpFolderPath, UriKind.RelativeOrAbsolute);
+            var resourceLocator = new Uri(tmpFolderPath, UriKind.Absolute);
             var controller = await _dataControllerService.GetDataWriterControllerAsync(resourceLocator, exportParameters, cancellationToken);
 
             // write data files

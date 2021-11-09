@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
@@ -9,6 +9,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -309,12 +310,13 @@ namespace Nexus.Extensions
 
                     foreach (var catalog in cache)
                     {
-                        var reference = catalogs.FirstOrDefault(current => current.Id == catalog.Id);
+                        var referenceIndex = catalogs.FindIndex(current => current.Id == catalog.Id);
 
-                        if (reference != null)
-                            reference.Merge(catalog, MergeMode.NewWins);
-                        else
+                        if (referenceIndex == -1)
                             catalogs.Add(catalog);
+
+                        else
+                            catalogs[referenceIndex] = catalogs[referenceIndex].Merge(catalog, MergeMode.NewWins);
                     }
                 }
 

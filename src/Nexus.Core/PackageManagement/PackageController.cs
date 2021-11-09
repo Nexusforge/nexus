@@ -236,7 +236,7 @@ namespace Nexus.PackageManagement
 
         private Task<IEnumerable<string>> DiscoverLocalAsync(CancellationToken cancellationToken)
         {
-            var result = new List<string>();
+            var rawResult = new List<string>();
 
             if (!_packageReference.TryGetValue("Path", out var path))
                 throw new ArgumentException("The 'Path' parameter is missing in the extension reference.");
@@ -249,13 +249,13 @@ namespace Nexus.PackageManagement
                 cancellationToken.ThrowIfCancellationRequested();
 
                 var folderName = Path.GetFileName(folderPath);
-                result.Add(folderName);
+                rawResult.Add(folderName);
                 _logger.LogDebug("Discovered package version {PackageVersion}", folderName);
             }
 
-            result.Reverse();
+            var result = rawResult.OrderBy(value => value).Reverse();
 
-            return Task.FromResult((IEnumerable<string>)result);
+            return Task.FromResult(result);
         }
 
         private Task<string> RestoreLocalAsync(string restoreRoot, CancellationToken cancellationToken)

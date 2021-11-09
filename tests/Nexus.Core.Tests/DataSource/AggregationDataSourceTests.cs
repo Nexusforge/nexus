@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Nexus;
 using Nexus.Core.Tests;
 using Nexus.DataModel;
@@ -16,13 +17,11 @@ namespace DataSource
 {
     public class AggregationDataSourceTests : IClassFixture<AggregationDataSourceFixture>
     {
-        private ILogger _logger;
         private AggregationDataSourceFixture _fixture;
 
-        public AggregationDataSourceTests(AggregationDataSourceFixture fixture, ITestOutputHelper xunitLogger)
+        public AggregationDataSourceTests(AggregationDataSourceFixture fixture)
         {
             _fixture = fixture;
-            _logger = new XunitLoggerProvider(xunitLogger).CreateLogger(nameof(AggregationDataSourceTests));
         }
 
         [Fact]
@@ -34,7 +33,7 @@ namespace DataSource
             {
                 ResourceLocator = _fixture.ResourceLocator,
                 Configuration = new Dictionary<string, string>(),
-                Logger = _logger
+                Logger = NullLogger.Instance
             };
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
@@ -59,7 +58,7 @@ namespace DataSource
             {
                 ResourceLocator = _fixture.ResourceLocator,
                 Configuration = new Dictionary<string, string>(),
-                Logger = _logger
+                Logger = NullLogger.Instance
             };
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
@@ -79,7 +78,7 @@ namespace DataSource
             {
                 ResourceLocator = _fixture.ResourceLocator,
                 Configuration = new Dictionary<string, string>(),
-                Logger = _logger
+                Logger = NullLogger.Instance
             };
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
@@ -101,7 +100,7 @@ namespace DataSource
             {
                 ResourceLocator = _fixture.ResourceLocator,
                 Configuration = new Dictionary<string, string>(),
-                Logger = _logger
+                Logger = NullLogger.Instance
             };
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
