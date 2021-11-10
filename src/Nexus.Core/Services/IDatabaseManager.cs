@@ -1,19 +1,20 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
 namespace Nexus.Services
 {
     internal interface IDatabaseManager
     {
-        bool TryReadProject(out string? project);
+        bool TryReadProject([NotNullWhen(true)] out string? project);
 
-        bool TryReadNews(out string? news);
+        bool TryReadNews([NotNullWhen(true)] out string? news);
 
-        bool TryReadCatalogMetadata(string catalogId, out string? catalogMetadata);
+        bool TryReadCatalogMetadata(string catalogId, [NotNullWhen(true)] out string? catalogMetadata);
 
         IEnumerable<string> EnumerateAttachements(string catalogId);
 
-        bool TryReadFirstAttachment(string catalogId, string searchPattern, EnumerationOptions enumerationOptions, out Stream? attachment);
+        bool TryReadFirstAttachment(string catalogId, string searchPattern, EnumerationOptions enumerationOptions, [NotNullWhen(true)] out Stream? attachment);
 
         Stream WriteCatalogMetadata(string catalogId);
 

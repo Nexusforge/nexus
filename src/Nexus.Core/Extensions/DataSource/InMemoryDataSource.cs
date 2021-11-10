@@ -23,7 +23,7 @@ namespace Nexus.Extensions
 
         #region Properties
 
-        private DataSourceContext Context { get; set; }
+        private DataSourceContext Context { get; set; } = null!;
 
         #endregion
 
@@ -111,7 +111,7 @@ namespace Nexus.Extensions
                 var task = await Task.WhenAny(tasks);
                 cancellationToken.ThrowIfCancellationRequested();
 
-                if (task.Exception != null)
+                if (task.Exception is not null && task.Exception.InnerException is not null)
                     throw task.Exception.InnerException;
 
                 finishedTasks++;

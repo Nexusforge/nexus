@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Options;
 using Nexus.Core;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -32,7 +33,7 @@ namespace Nexus.Services
             _pathsOptions = pathsOptions.Value;
         }
 
-        public bool TryReadProject(out string? project)
+        public bool TryReadProject([NotNullWhen(true)] out string? project)
         {
             var filePath = Path.Combine(_pathsOptions.Config, "project.json");
             project = null;
@@ -46,7 +47,7 @@ namespace Nexus.Services
             return false;
         }
 
-        public bool TryReadNews(out string? news)
+        public bool TryReadNews([NotNullWhen(true)] out string? news)
         {
             var filePath = Path.Combine(_pathsOptions.Config, "news.json");
             news = null;
@@ -60,7 +61,7 @@ namespace Nexus.Services
             return false;
         }
 
-        public bool TryReadCatalogMetadata(string catalogId, out string? catalogMetadata)
+        public bool TryReadCatalogMetadata(string catalogId, [NotNullWhen(true)] out string? catalogMetadata)
         {
             var catalogMetadataFileName = $"{WebUtility.UrlEncode(catalogId)}.json";
             var filePath = Path.Combine(_pathsOptions.Config, "catalogs", catalogMetadataFileName);
@@ -100,7 +101,7 @@ namespace Nexus.Services
                 return Enumerable.Empty<string>();
         }
 
-        public bool TryReadFirstAttachment(string catalogId, string searchPattern, EnumerationOptions enumerationOptions, out Stream attachment)
+        public bool TryReadFirstAttachment(string catalogId, string searchPattern, EnumerationOptions enumerationOptions, [NotNullWhen(true)] out Stream? attachment)
         {
             attachment = null;
 

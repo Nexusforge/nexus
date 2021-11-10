@@ -1,7 +1,5 @@
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nexus;
-using Nexus.Core.Tests;
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Extensions;
@@ -11,7 +9,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace DataSource
 {
@@ -29,12 +26,10 @@ namespace DataSource
         {
             var dataSource = new AggregationDataSource() as IDataSource;
 
-            var context = new DataSourceContext()
-            {
-                ResourceLocator = _fixture.ResourceLocator,
-                Configuration = new Dictionary<string, string>(),
-                Logger = NullLogger.Instance
-            };
+            var context = new DataSourceContext(
+                ResourceLocator: _fixture.ResourceLocator,
+                Configuration: new Dictionary<string, string>(),
+                Logger: NullLogger.Instance);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
@@ -54,12 +49,10 @@ namespace DataSource
 
             var dataSource = new AggregationDataSource() as IDataSource;
 
-            var context = new DataSourceContext()
-            {
-                ResourceLocator = _fixture.ResourceLocator,
-                Configuration = new Dictionary<string, string>(),
-                Logger = NullLogger.Instance
-            };
+            var context = new DataSourceContext(
+                ResourceLocator: _fixture.ResourceLocator,
+                Configuration: new Dictionary<string, string>(),
+                Logger: NullLogger.Instance);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
@@ -74,12 +67,10 @@ namespace DataSource
         {
             var dataSource = new AggregationDataSource() as IDataSource;
 
-            var context = new DataSourceContext()
-            {
-                ResourceLocator = _fixture.ResourceLocator,
-                Configuration = new Dictionary<string, string>(),
-                Logger = NullLogger.Instance
-            };
+            var context = new DataSourceContext(
+                ResourceLocator: _fixture.ResourceLocator,
+                Configuration: new Dictionary<string, string>(),
+                Logger: NullLogger.Instance);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
@@ -96,12 +87,10 @@ namespace DataSource
             // arrange
             var dataSource = new AggregationDataSource() as IDataSource;
 
-            var context = new DataSourceContext()
-            {
-                ResourceLocator = _fixture.ResourceLocator,
-                Configuration = new Dictionary<string, string>(),
-                Logger = NullLogger.Instance
-            };
+            var context = new DataSourceContext(
+                ResourceLocator: _fixture.ResourceLocator,
+                Configuration: new Dictionary<string, string>(),
+                Logger: NullLogger.Instance);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 

@@ -4,6 +4,7 @@ using Nexus.Services;
 using Nexus.ViewModels;
 using Prism.Mvvm;
 using Serilog.Core;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
@@ -24,20 +25,21 @@ namespace Nexus.Core
 
         public AppState()
         {
-            this.Version = Assembly.GetEntryAssembly().GetName().Version.ToString();
+            var entryAssembly = Assembly.GetEntryAssembly() ?? throw new Exception("entry assembly is null");
+            var version = entryAssembly.GetName().Version ?? throw new Exception("version is null");
+
+            this.Version = version.ToString();
         }
 
         #endregion
 
         #region Properties - General
 
-        public LoggingLevelSwitch MinimumLoglevelSwitch { get; set; }
-
         public ConcurrentDictionary<CatalogContainer, Task<ResourceViewModel[]>> ResourceCache { get; } = new ConcurrentDictionary<CatalogContainer, Task<ResourceViewModel[]>>();
 
-        public NexusProject Project { get; set; }
+        public NexusProject Project { get; set; } = null!;
 
-        public CatalogState? CatalogState
+        public CatalogState CatalogState
         {
             get { return _catalogState; }
             set { this.SetProperty(ref _catalogState, value); }
@@ -55,9 +57,9 @@ namespace Nexus.Core
 
         #endregion
 
-        #region Properties - News
+        #region NewsPaper
 
-        public NewsPaper NewsPaper { get; set; }
+        public NewsPaper NewsPaper { get; set; } = null!;
 
         #endregion
     }

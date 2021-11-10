@@ -15,7 +15,7 @@ namespace Nexus.Utilities
 
             var identity = principal.Identity;
 
-            if (identity.IsAuthenticated)
+            if (identity is not null && identity.IsAuthenticated)
             {
                 var isAdmin = principal.HasClaim(claim => claim.Type == Claims.IS_ADMIN && claim.Value == "true");
 
@@ -25,7 +25,9 @@ namespace Nexus.Utilities
 
                 var canAccessGroup = principal.HasClaim(
                     claim => claim.Type == Claims.CAN_ACCESS_GROUP &&
-                    claim.Value.Split(";").Any(group => catalogMetadata.GroupMemberships.Contains(group)));
+                    claim.Value.Split(";").Any(group 
+                        => catalogMetadata.GroupMemberships is not null && 
+                           catalogMetadata.GroupMemberships.Contains(group)));
 
                 var implicitAccess = catalogId == InMemoryDataSource.Id;
 
@@ -42,7 +44,7 @@ namespace Nexus.Utilities
 
             var identity = principal.Identity;
 
-            if (identity.IsAuthenticated)
+            if (identity is not null && identity.IsAuthenticated)
             {
                 var isAdmin = principal.HasClaim(claim => claim.Type == Claims.IS_ADMIN && claim.Value == "true");
 
@@ -60,7 +62,7 @@ namespace Nexus.Utilities
             var identity = principal.Identity;
 
             // 1. catalog is visible if user is admin
-            if (identity.IsAuthenticated)
+            if (identity is not null && identity.IsAuthenticated)
             {
                 var isAdmin = principal.HasClaim(claim => claim.Type == Claims.IS_ADMIN && claim.Value == "true");
 

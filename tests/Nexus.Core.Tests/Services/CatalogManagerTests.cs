@@ -28,10 +28,10 @@ namespace Services
             /* app state */
             var backendSources = new List<BackendSource>()
             {
-                new BackendSource(Type: "A", ResourceLocator: new Uri("A", UriKind.Relative)), // source A, path A, catalog A and C
-                new BackendSource(Type: "A", ResourceLocator: new Uri("B", UriKind.Relative)), // source A, path B, catalog A
-                new BackendSource(Type: "B", ResourceLocator: new Uri("C", UriKind.Relative)), // source B, path C, catalog A
-                new BackendSource(Type: "C", ResourceLocator: new Uri("D", UriKind.Relative)), // source C, path D, catalog B
+                new BackendSource(Type: "A", ResourceLocator: new Uri("A", UriKind.Relative), Configuration: default), // source A, path A, catalog A and C
+                new BackendSource(Type: "A", ResourceLocator: new Uri("B", UriKind.Relative), Configuration: default), // source A, path B, catalog A
+                new BackendSource(Type: "B", ResourceLocator: new Uri("C", UriKind.Relative), Configuration: default), // source B, path C, catalog A
+                new BackendSource(Type: "C", ResourceLocator: new Uri("D", UriKind.Relative), Configuration: default), // source C, path D, catalog B
             };
 
             var appState = new AppState()
@@ -94,10 +94,10 @@ namespace Services
 
                     var (catalogs, timeRangeResult) = backendSource switch
                     {
-                        ("A", _, _) a when a.ResourceLocator.OriginalString == "A" => (catalogsA1_C1, timeRangeResultA1_C1),
-                        ("A", _, _) b when b.ResourceLocator.OriginalString == "B" => (catalogsA2, timeRangeResultA2),
-                        ("B", _, _) c when c.ResourceLocator.OriginalString == "C" => (catalogsA3, timeRangeResultA3),
-                        ("C", _, _) d when d.ResourceLocator.OriginalString == "D" => (catalogsB1, timeRangeResultB1),
+                        ("A", _, _, _) a when a.ResourceLocator.OriginalString == "A" => (catalogsA1_C1, timeRangeResultA1_C1),
+                        ("A", _, _, _) b when b.ResourceLocator.OriginalString == "B" => (catalogsA2, timeRangeResultA2),
+                        ("B", _, _, _) c when c.ResourceLocator.OriginalString == "C" => (catalogsA3, timeRangeResultA3),
+                        ("C", _, _, _) d when d.ResourceLocator.OriginalString == "D" => (catalogsB1, timeRangeResultB1),
                         _                                                          => (catalogsAggregation, timeRangeResultAggregation)
                     };
 

@@ -26,7 +26,9 @@ namespace Nexus.ViewModels
 
         public string Id => _model.Id;
 
-        public string Description => _model.Properties.GetValueOrDefault(DataModelExtensions.Description, string.Empty);
+        public string? Description => _model.Properties is null
+            ? null
+            : _model.Properties.GetValueOrDefault(DataModelExtensions.Description, string.Empty);
 
         #endregion
     }

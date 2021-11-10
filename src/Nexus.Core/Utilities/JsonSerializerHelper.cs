@@ -13,7 +13,7 @@ namespace Nexus.Utilities
             return JsonSerializer.Serialize(value, options);
         }
 
-        public static T Deserialize<T>(string jsonString)
+        public static T? Deserialize<T>(string jsonString)
         {
             var options = new JsonSerializerOptions();
             options.Converters.Add(new TimeSpanConverter());

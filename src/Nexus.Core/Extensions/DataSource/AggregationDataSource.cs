@@ -9,7 +9,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -21,15 +20,15 @@ namespace Nexus.Extensions
         #region Fields
 
         public const string Id = "Nexus.Builtin.Aggregation";
-        private ResourceCatalog[] _catalogs;
+        private ResourceCatalog[] _catalogs = null!;
 
         #endregion
 
         #region Properties
 
-        private DataSourceContext Context { get; set; }
+        private DataSourceContext Context { get; set; } = null!;
 
-        private string Root { get; set; }
+        private string Root { get; set; } = null!;
 
         #endregion
 
@@ -242,7 +241,7 @@ namespace Nexus.Extensions
                 if (File.Exists(cacheFilePath))
                 {
                     var jsonString = File.ReadAllText(cacheFilePath);
-                    cache = JsonSerializerHelper.Deserialize<List<ResourceCatalog>>(jsonString);
+                    cache = JsonSerializerHelper.Deserialize<List<ResourceCatalog>>(jsonString) ?? throw new Exception("cache is null");
 
                     foreach (var catalogId in catalogIds)
                     {
@@ -250,7 +249,7 @@ namespace Nexus.Extensions
                         var currentMonthFolder = Path.Combine(dataFolderPath, WebUtility.UrlEncode(catalogId), currentMonth.ToString("yyyy-MM"));
 
                         // catalog is in cache ...
-                        if (catalog != null && versioning.ScannedUntilMap.ContainsKey(catalogId))
+                        if (catalog is not null && versioning.ScannedUntilMap.ContainsKey(catalogId))
                         {
                             // ... but cache is outdated
                             if (this.IsCacheOutdated(catalogId, currentMonthFolder, versioning))
@@ -306,7 +305,7 @@ namespace Nexus.Extensions
                 foreach (var cacheFile in cacheFiles)
                 {
                     var jsonString2 = File.ReadAllText(cacheFile);
-                    var cache = JsonSerializerHelper.Deserialize<List<ResourceCatalog>>(jsonString2);
+                    var cache = JsonSerializerHelper.Deserialize<List<ResourceCatalog>>(jsonString2) ?? throw new Exception("cache is null");
 
                     foreach (var catalog in cache)
                     {
@@ -326,7 +325,7 @@ namespace Nexus.Extensions
             else
             {
                 var jsonString = File.ReadAllText(mainCacheFilePath);
-                catalogs = JsonSerializerHelper.Deserialize<List<ResourceCatalog>>(jsonString);
+                catalogs = JsonSerializerHelper.Deserialize<List<ResourceCatalog>>(jsonString) ?? throw new Exception("catalogs is null");
             }
 
             _catalogs = catalogs.ToArray();

@@ -8,7 +8,7 @@ namespace Nexus.Core
     {
         public override TimeSpan Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            return TimeSpan.Parse(reader.GetString());
+            return TimeSpan.Parse(reader.GetString() ?? throw new Exception("timespan is null"));
         }
 
         public override void Write(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options)

@@ -3,6 +3,7 @@ using Prism.Mvvm;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,7 +16,8 @@ namespace Nexus.Services
         #region Fields
 
         private Timer _timer;
-        private ConcurrentDictionary<Guid, JobControl<T>> _jobs;
+
+        private ConcurrentDictionary<Guid, JobControl<T>> _jobs = new ConcurrentDictionary<Guid,JobControl<T>>();
 
         #endregion
 
@@ -48,8 +50,6 @@ namespace Nexus.Services
 
                 this.RaisePropertyChanged("Jobs");
             };
-
-            _jobs = new ConcurrentDictionary<Guid, JobControl<T>>();
         }
 
         #endregion
@@ -60,12 +60,10 @@ namespace Nexus.Services
         {
             var cancellationTokenSource = new CancellationTokenSource();
 
-            var jobControl = new JobControl<T>()
-            {
-                Start = DateTime.UtcNow,
-                Job = job,
-                CancellationTokenSource = cancellationTokenSource,
-            };
+            var jobControl = new JobControl<T>(
+                Start: DateTime.UtcNow,
+                Job: job,
+                CancellationTokenSource: cancellationTokenSource);
 
             var progressHandler = (EventHandler<double>)((sender, e) =>
             {
@@ -76,7 +74,7 @@ namespace Nexus.Services
             progress.ProgressChanged += progressHandler;
             jobControl.Task = createTask(jobControl, cancellationTokenSource);
 
-            Task.Run(async () =>
+            _ = Task.Run(async () =>
             {
                 try
                 {
@@ -104,7 +102,7 @@ namespace Nexus.Services
             return result;
         }
 
-        public bool TryGetJob(Guid key, out JobControl<T> jobControl)
+        public bool TryGetJob(Guid key, [NotNullWhen(true)] out JobControl<T>? jobControl)
         {
             return _jobs.TryGetValue(key, out jobControl);
         }

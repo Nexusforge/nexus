@@ -1,29 +1,28 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29318.209
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6AC5F24C-EF86-424F-AC3E-79FF0E343684}"
 	ProjectSection(SolutionItems) = preProject
 		.appveyor.yml = .appveyor.yml
-		.editorconfig = .editorconfig
 		.gitignore = .gitignore
 		Directory.Build.props = Directory.Build.props
-		Directory.Build.targets = Directory.Build.targets
 		Dockerfile = Dockerfile
 		LICENSE.md = LICENSE.md
 		README.md = README.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{3DBD52E4-26F8-413F-A954-2BE86E572F3E}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{1C185F4C-C7D7-4A2A-9305-506ADA053E12}"
 	ProjectSection(SolutionItems) = preProject
-		build\build.props = build\build.props
-		build\build.targets = build\build.targets
+		tests\Directory.Build.props = tests\Directory.Build.props
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{D4BFDD2B-4F50-4AF3-8906-6C003E70BA56}"
+	ProjectSection(SolutionItems) = preProject
+		src\Directory.Build.props = src\Directory.Build.props
+		src\Directory.Build.targets = src\Directory.Build.targets
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nexus.Core", "src\Nexus.Core\Nexus.Core.csproj", "{7F63F0AA-5146-4A61-BB22-AAB76FAB1D4B}"
 EndProject

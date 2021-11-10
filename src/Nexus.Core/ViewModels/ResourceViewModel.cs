@@ -8,9 +8,9 @@ namespace Nexus.ViewModels
     {
         #region Fields
 
-        private List<RepresentationViewModel> _representations;
-        private ResourceCatalogViewModel _catalog;
         private Resource _model;
+        private ResourceCatalogViewModel _catalog;
+        private List<RepresentationViewModel>? _representations;
 
         #endregion
 
@@ -30,11 +30,17 @@ namespace Nexus.ViewModels
 
         public string Id => _model.Id;
 
-        public string Description => _model.Properties.GetValueOrDefault(DataModelExtensions.Description, string.Empty);
+        public string? Description => _model.Properties is null
+            ? null
+            : _model.Properties.GetValueOrDefault(DataModelExtensions.Description, string.Empty);
 
-        public string Warning => _model.Properties.GetValueOrDefault(DataModelExtensions.Warning, string.Empty);
+        public string? Warning => _model.Properties is null
+            ? null
+            : _model.Properties.GetValueOrDefault(DataModelExtensions.Warning, string.Empty);
 
-        public string Unit => _model.Properties.GetValueOrDefault(DataModelExtensions.Unit, string.Empty);
+        public string? Unit => _model.Properties is null
+            ? null
+            : _model.Properties.GetValueOrDefault(DataModelExtensions.Unit, string.Empty);
 
         public IEnumerable<RepresentationViewModel> Representations
         {
@@ -53,9 +59,11 @@ namespace Nexus.ViewModels
         {
             get
             {
-                return _model.Properties
-                    .Where(entry => entry.Key.StartsWith(DataModelExtensions.Groups))
-                    .Select(entry => entry.Value.Split(':').Last());
+                return _model.Properties is null
+                    ? Enumerable.Empty<string>()
+                    : _model.Properties
+                        .Where(entry => entry.Key.StartsWith(DataModelExtensions.Groups))
+                        .Select(entry => entry.Value.Split(':').Last());
             }
         }
 

@@ -10,7 +10,7 @@ namespace Nexus.Core
     internal abstract record NexusOptionsBase()
     {
         // for testing only
-        public string BlindSample { get; set; }
+        public string? BlindSample { get; set; }
 
         internal static IConfiguration BuildConfiguration(string[] args)
         {
@@ -36,15 +36,15 @@ namespace Nexus.Core
     internal record GeneralOptions() : NexusOptionsBase
     {
         public const string Section = "General";
-        public string ApplicationName { get; set; }
-        public string Language { get; set; }
+        public string? ApplicationName { get; set; }
+        public string? Language { get; set; }
     }
 
     internal record ServerOptions() : NexusOptionsBase
     {
         public const string Section = "Server";
-        public string HttpScheme { get; set; }
-        public string HttpAddress { get; set; }
+        public string? HttpScheme { get; set; }
+        public string? HttpAddress { get; set; }
         public int HttpPort { get; set; }
     }
 
@@ -92,9 +92,9 @@ namespace Nexus.Core
     internal record SmtpOptions : NexusOptionsBase
     {
         public const string Section = "Smtp";
-        public string Host { get; set; }
+        public string? Host { get; set; }
         public ushort Port { get; set; }
-        public string FromAddress { get; set; }
-        public string FromName { get; set; }
+        public string? FromAddress { get; set; }
+        public string? FromName { get; set; }
     }
 }

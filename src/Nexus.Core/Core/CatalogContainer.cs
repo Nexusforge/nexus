@@ -10,7 +10,7 @@ namespace Nexus.Core
     [DebuggerDisplay("{Id,nq}")]
     internal class CatalogContainer
     {
-        private Task<CatalogInfo> _loadTask;
+        private Task<CatalogInfo>? _loadTask;
         private SemaphoreSlim _semaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
         private BackendSource[] _backendSources;
         private ICatalogManager _catalogManager;

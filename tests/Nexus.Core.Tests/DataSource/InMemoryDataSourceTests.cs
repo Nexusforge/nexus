@@ -29,12 +29,10 @@ namespace DataSource
             // arrange
             var dataSource = new InMemoryDataSource() as IDataSource;
 
-            var context = new DataSourceContext()
-            {
-                ResourceLocator = new Uri("memory://localhost"),
-                Configuration = new Dictionary<string, string>(),
-                Logger = _logger
-            };
+            var context = new DataSourceContext(
+                ResourceLocator: new Uri("memory://localhost"),
+                Configuration: new Dictionary<string, string>(),
+                Logger: _logger);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
@@ -64,12 +62,10 @@ namespace DataSource
         {
             var dataSource = new InMemoryDataSource() as IDataSource;
 
-            var context = new DataSourceContext()
-            {
-                ResourceLocator = new Uri("memory://localhost"),
-                Configuration = new Dictionary<string, string>(),
-                Logger = _logger
-            };
+            var context = new DataSourceContext(
+                ResourceLocator: new Uri("memory://localhost"),
+                Configuration: new Dictionary<string, string>(),
+                Logger: _logger);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
@@ -84,12 +80,10 @@ namespace DataSource
         {
             var dataSource = new InMemoryDataSource() as IDataSource;
 
-            var context = new DataSourceContext()
-            {
-                ResourceLocator = new Uri("memory://localhost"),
-                Configuration = new Dictionary<string, string>(),
-                Logger = _logger
-            };
+            var context = new DataSourceContext(
+                ResourceLocator: new Uri("memory://localhost"),
+                Configuration: new Dictionary<string, string>(),
+                Logger: _logger);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
@@ -106,12 +100,10 @@ namespace DataSource
         {
             var dataSource = new InMemoryDataSource() as IDataSource;
 
-            var context = new DataSourceContext()
-            {
-                ResourceLocator = new Uri("memory://localhost"),
-                Configuration = new Dictionary<string, string>(),
-                Logger = _logger
-            };
+            var context = new DataSourceContext(
+                ResourceLocator: new Uri("memory://localhost"),
+                Configuration: new Dictionary<string, string>(),
+                Logger: _logger);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 

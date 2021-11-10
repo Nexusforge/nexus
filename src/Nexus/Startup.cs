@@ -201,7 +201,7 @@ namespace Nexus
                               IApiVersionDescriptionProvider provider,
                               IOptions<PathsOptions> pathsOptions)
         {
-            // https://docs.microsoft.com/en-us/aspnet/core/fundamentals/middleware/?view=aspnetcore-5.0
+            // https://docs.microsoft.com/en-us/aspnet/core/fundamentals/middleware/?view=aspnetcore-6.0
 
             if (env.IsDevelopment())
             {

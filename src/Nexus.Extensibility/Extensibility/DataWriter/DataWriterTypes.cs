@@ -6,12 +6,10 @@ using System.Linq;
 
 namespace Nexus.Extensibility
 {
-    public record DataWriterContext()
-    {
-        public Uri ResourceLocator { get; init; }
-        public Dictionary<string, string> Configuration { get; init; }
-        public ILogger Logger { get; init; }
-    }
+    public record DataWriterContext(
+        Uri ResourceLocator,
+        Dictionary<string, string> Configuration,
+        ILogger Logger);
 
     public record WriteRequest(
         CatalogItem CatalogItem,

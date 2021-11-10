@@ -18,7 +18,7 @@ namespace Nexus.Extensibility
     {
         #region Fields
 
-        public ConcurrentDictionary<string, ResourceCatalog> _catalogCache;
+        public ConcurrentDictionary<string, ResourceCatalog> _catalogCache = null!;
 
         #endregion
 
@@ -51,12 +51,10 @@ namespace Nexus.Extensibility
         {
             _catalogCache = catalogCache;
 
-            var context = new DataSourceContext()
-            {
-                ResourceLocator = this.BackendSource.ResourceLocator,
-                Configuration = this.BackendSource.Configuration,
-                Logger = this.Logger
-            };
+            var context = new DataSourceContext(
+                ResourceLocator: this.BackendSource.ResourceLocator,
+                Configuration: this.BackendSource.Configuration,
+                Logger: this.Logger);
 
             await this.DataSource.SetContextAsync(context, cancellationToken);
         }
@@ -76,9 +74,9 @@ namespace Nexus.Extensibility
 
                 catalog = await this.DataSource.GetCatalogAsync(catalogId, cancellationToken);
 
-                foreach (var resource in catalog.Resources)
+                foreach (var resource in (catalog.Resources ?? Enumerable.Empty<Resource>()))
                 {
-                    foreach (var representation in resource.Representations)
+                    foreach (var representation in (resource.Representations ?? Enumerable.Empty<Representation>()))
                     {
                         representation.BackendSource = this.BackendSource;
                     }

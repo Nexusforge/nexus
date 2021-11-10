@@ -41,7 +41,7 @@ namespace Nexus.Core.Tests
         {
             _testOutputHelper.WriteLine($"{_categoryName} [{eventId}] {formatter(state, exception)}");
 
-            if (exception != null)
+            if (exception is not null)
                 _testOutputHelper.WriteLine(exception.ToString());
         }
 

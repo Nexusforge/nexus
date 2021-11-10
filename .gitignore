@@ -2,8 +2,6 @@
 .vscode/
 artifacts/
 
-__pycache__
-
 doc/_site
 /**/obj
 **/wwwroot/lib/

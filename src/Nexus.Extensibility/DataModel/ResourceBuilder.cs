@@ -9,8 +9,8 @@ namespace Nexus.DataModel
         #region Fields
 
         private string _id;
-        private Dictionary<string, string> _properties;
-        private List<Representation> _representations;
+        private Dictionary<string, string>? _properties;
+        private List<Representation>? _representations;
 
         #endregion
 

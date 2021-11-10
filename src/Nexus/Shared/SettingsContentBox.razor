@@ -15,7 +15,7 @@
                 }
             </MatList>
 
-            @if (this.Settings.Claims != null)
+            @if (this.Settings.Claims is not null)
             {
                 <div class="flex-column">
                     @foreach (var claim in this.Settings.Claims)

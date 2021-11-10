@@ -40,7 +40,7 @@ namespace Nexus.Services
             var success = false;
             var user = await _signInManager.UserManager.FindByNameAsync(credentials.Username);
 
-            if (user != null)
+            if (user is not null)
             {
                 var signInResult = await _signInManager.CheckPasswordSignInAsync(user, credentials.Password, false);
                 

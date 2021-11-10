@@ -10,7 +10,9 @@ namespace Nexus
 {
     internal static class CustomExtensions
     {
+#pragma warning disable VSTHRD200 // Verwenden Sie das Suffix "Async" für asynchrone Methoden
         public static async Task<(T[] Results, AggregateException Exception)> WhenAllEx<T>(this IEnumerable<Task<T>> tasks)
+#pragma warning restore VSTHRD200 // Verwenden Sie das Suffix "Async" für asynchrone Methoden
         {
             tasks = tasks.ToArray();
 
@@ -22,8 +24,8 @@ namespace Nexus
                 .ToArray();
 
             var aggregateExceptions = tasks
-                .Where(task => task.IsFaulted)
-                .Select(task => task.Exception)
+                .Where(task => task.IsFaulted && task.Exception is not null)
+                .Select(task => task.Exception ?? throw new Exception("exception is null"))
                 .ToArray();
 
             var flattenedAggregateException = new AggregateException(aggregateExceptions).Flatten();

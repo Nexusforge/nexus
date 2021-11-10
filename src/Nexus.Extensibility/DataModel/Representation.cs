@@ -31,7 +31,7 @@ namespace Nexus.DataModel
 
             this.SamplePeriod = samplePeriod;
 
-            if (detail != null && !_detailValidator.IsMatch(detail))
+            if (detail is not null && !_detailValidator.IsMatch(detail))
                 throw new ArgumentException($"The representation detail '{detail}' is not valid.");
 
             this.Detail = detail;
@@ -61,7 +61,7 @@ namespace Nexus.DataModel
         [JsonIgnore]
         public int ElementSize => ((int)this.DataType & 0xFF) >> 3;
 
-        internal BackendSource BackendSource { get; set; }
+        internal BackendSource BackendSource { get; set; } = null!;
 
         #endregion
 

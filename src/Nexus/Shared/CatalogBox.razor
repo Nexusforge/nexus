@@ -3,7 +3,7 @@
 <div class="catalog-box-available">
     <MatHeadline5>Available Catalogs</MatHeadline5>
 
-    @if (this.AppState.CatalogState != null)
+    @if (this.AppState.CatalogState is not null)
     {
         <ul>
             @foreach (var catalogContainer in this.UserState.CatalogContainersInfo.Accessible.Concat(this.UserState.CatalogContainersInfo.Restricted))
@@ -19,13 +19,6 @@
                                     <span>&nbsp; &nbsp;<i class="fas fa-lock"></i></span>
                                 </MatTooltip>
                             }
-                            else if (catalogContainer.CatalogMetadata.IsQualityControlled)
-                            {
-                                @* Wrap is required due to https://github.com/SamProf/MatBlazor/issues/464. *@
-                                <MatTooltip Tooltip="This catalog is quality controlled." Wrap="true" Position="MatTooltipPosition.Top">
-                                    <span>&nbsp; &nbsp;<i class="fas fa-check-circle quality-controlled"></i></span>
-                                </MatTooltip>
-                            }
                         </div>
                     </div>
                 </li>
@@ -39,7 +32,7 @@
 </div>
 <div class="catalog-box-selected">
 
-    @if (this.CatalogInfo != null)
+    @if (this.CatalogInfo is not null)
                         {
         <MatHeadline5>@this.UserState.CatalogContainer.Id.TrimStart('/').Replace("/", " / ")</MatHeadline5>
         <p class="long-description small-text">
@@ -70,7 +63,7 @@
                     </MatTooltip>
 
                     @* Wrap is required due to https://github.com/SamProf/MatBlazor/issues/464. *@
-                    @if (this.UserState.Attachments != null && this.UserState.Attachments.Any())
+                    @if (this.UserState.Attachments is not null && this.UserState.Attachments.Any())
                     {
                         <MatTooltip Tooltip="Attachments" Position="MatTooltipPosition.Top" Wrap="true">
                             <MatIconButton Icon="@MatIconNames.Attach_file" OnClick="this.OpenAttachmentsDialog" />

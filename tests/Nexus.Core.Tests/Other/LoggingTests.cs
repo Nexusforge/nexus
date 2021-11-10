@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Other
@@ -24,7 +23,7 @@ namespace Other
     public class LoggingTests
     {
         [Fact]
-        public async Task CanSerilogAsync()
+        public void CanSerilog()
         {
             // create dirs
             var root = Path.Combine(Path.GetTempPath(), $"Nexus.Tests.{Guid.NewGuid()}");

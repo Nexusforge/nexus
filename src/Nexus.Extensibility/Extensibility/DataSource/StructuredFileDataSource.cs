@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Nexus.DataModel;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -48,11 +49,11 @@ namespace Nexus.Extensibility
 
         #region Properties
 
-        protected string Root { get; private set; }
+        protected string Root { get; private set; } = null!;
 
-        private DataSourceContext Context { get; set; }
+        private DataSourceContext Context { get; set; } = null!;
 
-        private FileSourceProvider FileSourceProvider { get; set; }
+        private FileSourceProvider FileSourceProvider { get; set; } = null!;
 
         #endregion
 
@@ -234,7 +235,7 @@ namespace Nexus.Extensibility
                 (var filePaths, var fileBegin) = await this.FindFilePathsAsync(currentBegin, fileSource);
 
                 // determine file begin if not yet done using the first file name returned
-                if (filePaths is not null && fileBegin == default)
+                if (fileBegin == default)
                 {
                     if (!StructuredFileDataSource.TryGetFileBeginByPath(filePaths.First(), fileSource, out fileBegin, default))
                         throw new Exception($"Unable to determine date/time of file {filePaths.First()}.");
@@ -361,7 +362,8 @@ namespace Nexus.Extensibility
 
             var folderPath = Path.Combine(folderNameArray);
             var fileName = localBegin.ToString(fileSource.FileTemplate);
-            var filePaths = new string[] { Path.Combine(folderPath, fileName) };
+
+            string[] filePaths;
 
             if (fileName.Contains("?") || fileName.Contains("*") && Directory.Exists(folderPath))
             {
@@ -369,11 +371,15 @@ namespace Nexus.Extensibility
                    .EnumerateFiles(folderPath, fileName)
                    .ToArray();
             }
+            else
+            {
+                filePaths = new string[] { Path.Combine(folderPath, fileName) };
+            }
 
             return Task.FromResult((filePaths, fileBegin));
         }
 
-        protected bool TryGetFirstFile(FileSource fileSource, out string filePath)
+        protected bool TryGetFirstFile(FileSource fileSource, [NotNullWhen(true)] out string? filePath)
         {
             filePath = StructuredFileDataSource
                 .GetCandidateFiles(

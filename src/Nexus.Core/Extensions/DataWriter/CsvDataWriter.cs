@@ -46,7 +46,7 @@ namespace Nexus.Extensions
 
         #region Properties
 
-        private DataWriterContext Context { get; set; }
+        private DataWriterContext Context { get; set; } = null!;
 
         #endregion
 
@@ -85,7 +85,7 @@ namespace Nexus.Extensions
                         streamWriter.WriteLine($"# sample_period={samplePeriod.ToUnitString()};");
                         streamWriter.WriteLine($"# catalog_id={catalog.Id};");
 
-                        if (catalog.Properties != null)
+                        if (catalog.Properties is not null)
                         {
                             foreach (var entry in catalog.Properties)
                             {
@@ -136,7 +136,7 @@ namespace Nexus.Extensions
 
                         foreach (var catalogItem in catalogItemGroup)
                         {
-                            if (catalogItem.Resource.Properties != null && catalogItem.Resource.Properties.TryGetValue("Unit", out var unit))
+                            if (catalogItem.Resource.Properties is not null && catalogItem.Resource.Properties.TryGetValue("Unit", out var unit))
                                 streamWriter.Write($"{unit};");
 
                             else
@@ -160,6 +160,7 @@ namespace Nexus.Extensions
                     .ToList();
 
                 var groupIndex = 0;
+                var consumedLength = 0UL;
 
                 foreach (var requestGroup in requestGroups)
                 {
@@ -179,16 +180,10 @@ namespace Nexus.Extensions
                     var excelStart = _excelStart + fileOffset.TotalDays;
                     var excelScalingFactor = (double)_lastSamplePeriod.Ticks / TimeSpan.FromDays(1).Ticks;
 
-                    var length = requestGroupArray.First().Data.Length;
+                    var rowLength = requestGroupArray.First().Data.Length;
 
-                    for (int rowIndex = 0; rowIndex < length; rowIndex++)
+                    for (int rowIndex = 0; rowIndex < rowLength; rowIndex++)
                     {
-                        if (rowIndex % 10000 == 0)
-                        {
-                            cancellationToken.ThrowIfCancellationRequested();
-                            progress.Report((groupIndex + rowIndex / (double)length) / requestGroups.Count);
-                        }
-
                         switch (rowIndexFormat)
                         {
                             case "Index":
@@ -214,6 +209,15 @@ namespace Nexus.Extensions
                         }
 
                         streamWriter.WriteLine();
+
+                        consumedLength += (ulong)requestGroupArray.Length;
+
+                        if (consumedLength >= 10000)
+                        {
+                            cancellationToken.ThrowIfCancellationRequested();
+                            progress.Report((groupIndex + rowIndex / (double)rowLength) / requestGroups.Count);
+                            consumedLength = 0;
+                        }
                     }
 
                     groupIndex++;

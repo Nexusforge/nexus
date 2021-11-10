@@ -28,7 +28,11 @@ namespace Services
               .Setup(extensionHive => extensionHive.GetInstance<IDataSource>(It.IsAny<string>()))
               .Returns(new InMemoryDataSource());
 
-            var backendSource = new BackendSource(Type: "Nexus.Builtin.InMemory", new Uri("A", UriKind.Relative));
+            var backendSource = new BackendSource(
+                Type: "Nexus.Builtin.InMemory", 
+                new Uri("A", UriKind.Relative), 
+                Configuration: default);
+
             var expectedCatalog = InMemoryDataSource.LoadCatalog("/A/B/C");
 
             var catalogState = new CatalogState(

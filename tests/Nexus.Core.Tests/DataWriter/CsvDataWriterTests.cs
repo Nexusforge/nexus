@@ -32,16 +32,14 @@ namespace DataWriter
             var targetFolder = _fixture.GetTargetFolder();
             var dataWriter = new CsvDataWriter() as IDataWriter;
 
-            var context = new DataWriterContext()
-            {
-                ResourceLocator = new Uri(targetFolder),
-                Logger = NullLogger.Instance,
-                Configuration = new Dictionary<string, string>()
+            var context = new DataWriterContext(
+                ResourceLocator: new Uri(targetFolder),
+                Logger: NullLogger.Instance,
+                Configuration: new Dictionary<string, string>()
                 {
                     ["RowIndexFormat"] = rowIndexFormat,
                     ["SignificantFigures"] = "7"
-                }
-            };
+                });
 
             await dataWriter.SetContextAsync(context, CancellationToken.None);
 
