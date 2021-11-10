@@ -40,7 +40,7 @@ namespace Nexus.Core
             if (File.Exists(filePath))
             {
                 var jsonString = File.ReadAllText(filePath);
-                var newsPaper = JsonSerializer.Deserialize<NewsPaper>(jsonString);
+                var newsPaper = JsonSerializer.Deserialize<NewsPaper>(jsonString) ?? throw new Exception("newsPaper is null");
 
                 return newsPaper;
             }

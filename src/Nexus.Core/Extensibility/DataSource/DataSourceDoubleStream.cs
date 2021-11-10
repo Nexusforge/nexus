@@ -67,7 +67,7 @@ namespace Nexus.Extensibility
             throw new NotImplementedException();
         }
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             return _reader.BeginRead(buffer, offset, count, callback, state);
         }

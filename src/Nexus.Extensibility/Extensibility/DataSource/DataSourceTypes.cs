@@ -5,19 +5,17 @@ using System.Collections.Generic;
 
 namespace Nexus.Extensibility
 {
-    public record DataSourceContext()
-    {
-        public Uri ResourceLocator { get; init; }
-        public Dictionary<string, string> Configuration { get; init; }
-        public ILogger Logger { get; init; }
-    }
+    public record DataSourceContext(
+        Uri ResourceLocator, 
+        Dictionary<string, string> Configuration,
+        ILogger Logger);
 
     public record ReadRequest(
         CatalogItem CatalogItem,
         Memory<byte> Data,
         Memory<byte> Status);
 
-    public sealed record BackendSource(string Type, Uri ResourceLocator, Dictionary<string, string>? Configuration = null)
+    public sealed record BackendSource(string Type, Uri ResourceLocator, Dictionary<string, string> Configuration, bool IsEnabled = true)
     {
         public override int GetHashCode()
         {

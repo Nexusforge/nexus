@@ -64,11 +64,9 @@ namespace Nexus.Extensibility.Tests
                 config => config.Key,
                 config => config.Value.Config.Values.Cast<FileSource>().ToArray());
 
-            return Task.FromResult(new FileSourceProvider
-            {
-                All = all,
-                Single = catalogItem => all[catalogItem.Catalog.Id].First(),
-            });
+            return Task.FromResult(new FileSourceProvider(
+                All: all,
+                Single: catalogItem => all[catalogItem.Catalog.Id].First()));
         }
 
         protected override Task<string[]> GetCatalogIdsAsync(CancellationToken cancellationToken)

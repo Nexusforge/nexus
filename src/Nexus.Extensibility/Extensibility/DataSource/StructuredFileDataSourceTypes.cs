@@ -4,11 +4,9 @@ using System.Collections.Generic;
 
 namespace Nexus.Extensibility
 {
-    public record FileSourceProvider()
-    {
-        public Func<CatalogItem, FileSource> Single { get; set; }
-        public Dictionary<string, FileSource[]> All { get; set; }
-    }
+    public record FileSourceProvider(
+        Func<CatalogItem, FileSource> Single, 
+        Dictionary<string, FileSource[]> All);
 
     public record ReadInfo(
         string FilePath,

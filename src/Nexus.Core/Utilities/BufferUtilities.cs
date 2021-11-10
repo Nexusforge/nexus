@@ -12,10 +12,11 @@ namespace Nexus.Utilities
             var targetType = NexusCoreUtilities.GetTypeFromNexusDataType(dataType);
 
             var method = typeof(BufferUtilities)
-                .GetMethod(nameof(BufferUtilities.InternalApplyRepresentationStatusByDataType), BindingFlags.NonPublic | BindingFlags.Static)
+                .GetMethod(nameof(BufferUtilities.InternalApplyRepresentationStatusByDataType), BindingFlags.NonPublic | BindingFlags.Static)?
                 .MakeGenericMethod(targetType);
 
-            method.Invoke(null, new object[] { data, status, target });
+            if (method is not null)
+                method.Invoke(null, new object[] { data, status, target });
         }
 
         private static void InternalApplyRepresentationStatusByDataType<T>(Memory<byte> data, Memory<byte> status, Memory<double> target)

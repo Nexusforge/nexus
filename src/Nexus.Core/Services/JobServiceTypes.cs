@@ -13,35 +13,28 @@ namespace Nexus.Core
         public string Owner { get; init; } = string.Empty;
     }
 
-    public record ExportJob : Job
-    {
-        public ExportParameters Parameters { get; init; }
-    }
+    public record ExportJob(ExportParameters Parameters) : Job;
 
-    public record AggregationJob : Job
-    {
-        public AggregationSetup Setup { get; init; }
-    }
+    public record AggregationJob(AggregationSetup Setup) : Job;
 
-    public record JobStatus
-    {
-        public DateTime Start { get; init; }
-        public TaskStatus Status { get; init; }
-        public double Progress { get; init; }
-        public string ExceptionMessage { get; init; }
-        public string Result { get; init; }
-    }
+    public record JobStatus(
+        DateTime Start,
+        TaskStatus Status,
+        double Progress,
+        string ExceptionMessage,
+        string Result);
 
-    internal record JobControl<T> where T : Job
+    internal record JobControl<T>(
+        DateTime Start,
+        T Job,
+        CancellationTokenSource CancellationTokenSource) where T : Job
     {
-        public event EventHandler<double> ProgressUpdated;
-        public event EventHandler Completed;
+        public event EventHandler<double>? ProgressUpdated;
+        public event EventHandler? Completed;
 
-        public DateTime Start { get; init; }
         public double Progress { get; private set; }
-        public T Job { get; init; }
-        public Task<string> Task { get; set; }
-        public CancellationTokenSource CancellationTokenSource { get; init; }
+
+        public Task<string> Task { get; set; } = null!;
 
         public void OnProgressUpdated(double e)
         {

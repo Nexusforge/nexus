@@ -6,6 +6,7 @@ using Nexus.PackageManagement;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -23,7 +24,7 @@ namespace Nexus.Services
 
         private Dictionary<
             PackageController,
-            ReadOnlyCollection<(ExtensionIdentificationAttribute Identification, Type Type)>> _packageControllerMap;
+            ReadOnlyCollection<(ExtensionIdentificationAttribute Identification, Type Type)>>? _packageControllerMap;
 
         private ReadOnlyCollection<(ExtensionIdentificationAttribute Identification, Type Type)> _builtinExtensions;
 
@@ -110,7 +111,7 @@ namespace Nexus.Services
             return instance;
         }
 
-        public bool TryGetInstance<T>(string identifier, out T instance) where T : IExtension
+        public bool TryGetInstance<T>(string identifier, [NotNullWhen(true)] out T? instance) where T : IExtension
         {
             instance = default(T);
 
@@ -132,7 +133,7 @@ namespace Nexus.Services
             }
             else
             {
-                instance = (T)Activator.CreateInstance(type);
+                instance = (T)(Activator.CreateInstance(type) ?? throw new Exception("instance is null"));
                 return true;
             }
         }
@@ -166,7 +167,7 @@ namespace Nexus.Services
                 })
                 .Select(type =>
                 {
-                    var attribute = type.GetCustomAttribute<ExtensionIdentificationAttribute>(inherit: false);
+                    var attribute = type.GetCustomAttribute<ExtensionIdentificationAttribute>(inherit: false) ?? throw new Exception("attribute is null");
                     return (attribute, type);
                 })
                 .ToList()

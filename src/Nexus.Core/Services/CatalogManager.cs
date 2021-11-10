@@ -47,7 +47,8 @@ namespace Nexus.Services
 
             _aggregationBackendSource = new BackendSource(
                 Type: AggregationDataSource.Id,
-                ResourceLocator: new Uri(_options.Cache, UriKind.RelativeOrAbsolute));
+                ResourceLocator: new Uri(_options.Cache, UriKind.RelativeOrAbsolute),
+                Configuration: new Dictionary<string, string>());
         }
 
         #endregion
@@ -60,7 +61,10 @@ namespace Nexus.Services
             var builtinBackendSources = new BackendSource[]
             {
                 _aggregationBackendSource,
-                new BackendSource(Type: InMemoryDataSource.Id, ResourceLocator: default),
+                new BackendSource(
+                    Type: InMemoryDataSource.Id,
+                    ResourceLocator: new Uri("memory://localhost"),
+                    Configuration: new Dictionary<string, string>()),
             };
 
             var extendedBackendSources = builtinBackendSources.Concat(_appState.Project.BackendSources);
@@ -92,7 +96,7 @@ namespace Nexus.Services
                     CatalogMetadata catalogMetadata;
 
                     if (_databaseManager.TryReadCatalogMetadata(entry.Key, out var jsonString))
-                        catalogMetadata = JsonSerializerHelper.Deserialize<CatalogMetadata>(jsonString);
+                        catalogMetadata = JsonSerializerHelper.Deserialize<CatalogMetadata>(jsonString) ?? throw new Exception("catalogMetadata is null");
 
                     else
                         catalogMetadata = new CatalogMetadata();
@@ -127,7 +131,7 @@ namespace Nexus.Services
             var catalogEnd = default(DateTime);
             var catalog = new ResourceCatalog(catalogId);
 
-            foreach (var backendSource in backendSources)
+            foreach (var backendSource in backendSources.Where(backendSource => backendSource.IsEnabled))
             {
                 using var controller = await _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken);
                 var newCatalog = await controller.GetCatalogAsync(catalogId, cancellationToken);

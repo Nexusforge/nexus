@@ -58,29 +58,22 @@ namespace Nexus.Core
         ExcludeUnit = 5
     }
 
-    internal record AggregationResource
+    internal record AggregationResource(
+        Resource Resource,
+        List<Aggregation> Aggregations);
+
+    internal record AggregationUnit(
+        Aggregation Aggregation,
+        TimeSpan Period,
+        AggregationMethod Method,
+        string Argument,
+        double[] Buffer,
+        string TargetFilePath)
     {
-        public Resource Resource { get; init; }
-
-        public List<Aggregation> Aggregations { get; init; }
-    }
-
-    internal record AggregationUnit
-    {
-        public Aggregation Aggregation { get; init; }
-
-        public TimeSpan Period { get; init; }
-
-        public AggregationMethod Method { get; init; }
-
-        public string Argument { get; init; }
-
-        public double[] Buffer { get; init; }
-
         public int BufferPosition { get; set; }
-
-        public string TargetFilePath { get; init; }
     }
 
-    internal record AggregationInstruction(CatalogContainer Container, Dictionary<BackendSource, List<AggregationResource>> DataReaderToAggregationsMap);
+    internal record AggregationInstruction(
+        CatalogContainer Container, 
+        Dictionary<BackendSource, List<AggregationResource>> DataReaderToAggregationsMap);
 }

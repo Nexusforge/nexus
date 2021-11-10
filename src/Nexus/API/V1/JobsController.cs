@@ -66,7 +66,7 @@ namespace Nexus.Controllers.V1
         /// <param name="cancellationToken">The token to cancel the current operation.</param>
         /// <returns></returns>
         [HttpPost("export")]
-        public async Task<ActionResult<ExportJob>> CreateExportJob(
+        public async Task<ActionResult<ExportJob>> CreateExportJobAsync(
             ExportParameters parameters,
             CancellationToken cancellationToken)
         {
@@ -117,10 +117,10 @@ namespace Nexus.Controllers.V1
             }
 
             //
-            var job = new ExportJob()
+            var job = new ExportJob(
+                Parameters: parameters)
             {
-                Owner = this.User.Identity.Name,
-                Parameters = parameters
+                Owner = this.User.Identity.Name
             };
 
             var dataService = _serviceProvider.GetRequiredService<DataService>();
@@ -185,18 +185,16 @@ namespace Nexus.Controllers.V1
                     jobControl.Job.Owner == null ||
                     this.User.HasClaim(Claims.IS_ADMIN, "true"))
                 {
-                    return new JobStatus()
-                    {
-                        Start = jobControl.Start,
-                        Progress = jobControl.Progress,
-                        Status = jobControl.Task.Status,
-                        ExceptionMessage = jobControl.Task.Exception != null
+                    return new JobStatus(
+                        Start: jobControl.Start,
+                        Progress: jobControl.Progress,
+                        Status: jobControl.Task.Status,
+                        ExceptionMessage: jobControl.Task.Exception is not null
                             ? jobControl.Task.Exception.GetFullMessage(includeStackTrace: false)
                             : string.Empty,
-                        Result = jobControl.Task.Status == TaskStatus.RanToCompletion 
+                        Result: jobControl.Task.Status == TaskStatus.RanToCompletion
                             ? $"{this.GetBasePath()}/{jobControl.Task.Result}"
-                            : null
-                    };
+                            : null);
                 }
                 else
                 {
@@ -262,10 +260,10 @@ namespace Nexus.Controllers.V1
                 return this.Unauthorized($"The current user is not authorized to create an aggregation job.");
 
             //
-            var job = new AggregationJob()
+            var job = new AggregationJob(
+                Setup: setup)
             {
-                Owner = this.User.Identity.Name,
-                Setup = setup
+                Owner = this.User.Identity.Name
             };
 
             var aggregationService = _serviceProvider.GetRequiredService<AggregationService>();
@@ -347,18 +345,16 @@ namespace Nexus.Controllers.V1
                     jobControl.Job.Owner == null ||
                     this.User.HasClaim(Claims.IS_ADMIN, "true"))
                 {
-                    return new JobStatus()
-                    {
-                        Start = jobControl.Start,
-                        Progress = jobControl.Progress,
-                        Status = jobControl.Task.Status,
-                        ExceptionMessage = jobControl.Task.Exception != null
+                    return new JobStatus(
+                        Start: jobControl.Start,
+                        Progress: jobControl.Progress,
+                        Status: jobControl.Task.Status,
+                        ExceptionMessage: jobControl.Task.Exception is not null
                             ? jobControl.Task.Exception.GetFullMessage(includeStackTrace: false)
                             : string.Empty,
-                        Result = jobControl.Task.Status == TaskStatus.RanToCompletion
+                        Result: jobControl.Task.Status == TaskStatus.RanToCompletion
                             ? jobControl.Task.Result
-                            : null
-                    };
+                            : null);
                 }
                 else
                 {

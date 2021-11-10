@@ -28,12 +28,10 @@ namespace Nexus.Extensibility.Tests
             var tester = new StructuredFileDataSourceTester();
             var dataSource = tester as IDataSource;
 
-            var context = new DataSourceContext()
-            {
-                ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), "DATABASES/F")),
-                Logger = _logger,
-                Configuration = null,
-            };
+            var context = new DataSourceContext(
+                ResourceLocator: new Uri(Path.Combine(Directory.GetCurrentDirectory(), "DATABASES/F")),
+                Configuration: null,
+                Logger: _logger);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
@@ -67,12 +65,10 @@ namespace Nexus.Extensibility.Tests
 
             var dataSource = new StructuredFileDataSourceTester() as IDataSource;
 
-            var context = new DataSourceContext()
-            {
-                ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), root)),
-                Logger = _logger,
-                Configuration = null,
-            };
+            var context = new DataSourceContext(
+                ResourceLocator: new Uri(Path.Combine(Directory.GetCurrentDirectory(), root)),
+                Configuration: null,
+                Logger: _logger);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
@@ -99,12 +95,10 @@ namespace Nexus.Extensibility.Tests
 
             var dataSource = new StructuredFileDataSourceTester() as IDataSource;
 
-            var context = new DataSourceContext()
-            {
-                ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), root)),
-                Logger = _logger,
-                Configuration = null,
-            };
+            var context = new DataSourceContext(
+                ResourceLocator: new Uri(Path.Combine(Directory.GetCurrentDirectory(), root)),
+                Configuration: null,
+                Logger: _logger);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
@@ -123,12 +117,10 @@ namespace Nexus.Extensibility.Tests
 
             var dataSource = new StructuredFileDataSourceTester() as IDataSource;
 
-            var context = new DataSourceContext()
-            {
-                ResourceLocator = new Uri(string.Empty, UriKind.Relative),
-                Logger = _logger,
-                Configuration = null,
-            };
+            var context = new DataSourceContext(
+                ResourceLocator: new Uri(string.Empty, UriKind.Relative),
+                Configuration: null,
+                Logger: _logger);
 
             await Assert.ThrowsAsync<ArgumentException>(() => 
                 dataSource.GetAvailabilityAsync("/A/B/C", begin, end, CancellationToken.None));
@@ -141,12 +133,10 @@ namespace Nexus.Extensibility.Tests
         {
             var dataSource = new StructuredFileDataSourceTester(overrideFindFilePathsWithNoDateTime) as IDataSource;
 
-            var context = new DataSourceContext()
-            {
-                ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), "DATABASES/TESTDATA")),
-                Logger = _logger,
-                Configuration = null,
-            };
+            var context = new DataSourceContext(
+                ResourceLocator: new Uri(Path.Combine(Directory.GetCurrentDirectory(), "DATABASES/TESTDATA")),
+                Configuration: null,
+                Logger: _logger);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
@@ -197,12 +187,10 @@ namespace Nexus.Extensibility.Tests
 
             var dataSource = new StructuredFileDataSourceTester() as IDataSource;
 
-            var context = new DataSourceContext()
-            {
-                ResourceLocator = new Uri(Path.Combine(Directory.GetCurrentDirectory(), "DATABASES/TESTDATA")),
-                Logger = _logger,
-                Configuration = null,
-            };
+            var context = new DataSourceContext(
+                ResourceLocator: new Uri(Path.Combine(Directory.GetCurrentDirectory(), "DATABASES/TESTDATA")),
+                Configuration: null,
+                Logger: _logger);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 

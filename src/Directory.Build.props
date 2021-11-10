@@ -1,0 +1,35 @@
+<Project>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+  
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>embedded</DebugType>
+    <EmbedAllSources>true</EmbedAllSources>
+  </PropertyGroup>
+    
+  <PropertyGroup>
+    <Authors>https://github.com/Nexusforge</Authors>
+    <Company>https://github.com/Nexusforge</Company>
+    <Copyright>Nexusforge</Copyright>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Major>1</Major>
+    <Minor>0</Minor>
+    <Revision>0</Revision>
+    <VersionSuffix>beta.1</VersionSuffix>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://nexusforge.github.io/Nexus/</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Nexusforge/Nexus</RepositoryUrl>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <GetPackageVersionDependsOn>$(GetPackageVersionDependsOn);CreateMetadata</GetPackageVersionDependsOn>
+  </PropertyGroup>
+
+</Project>

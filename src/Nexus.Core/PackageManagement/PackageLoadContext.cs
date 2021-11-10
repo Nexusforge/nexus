@@ -23,11 +23,11 @@ namespace Nexus.PackageManagement
 
         #region Methods
 
-        protected override Assembly Load(AssemblyName assemblyName)
+        protected override Assembly? Load(AssemblyName assemblyName)
         {
             var assemblyPath = _resolver.ResolveAssemblyToPath(assemblyName);
 
-            if (assemblyPath != null)
+            if (assemblyPath is not null)
                 return LoadFromAssemblyPath(assemblyPath);
 
             return null;
@@ -37,7 +37,7 @@ namespace Nexus.PackageManagement
         {
             var libraryPath = _resolver.ResolveUnmanagedDllToPath(unmanagedDllName);
 
-            if (libraryPath != null)
+            if (libraryPath is not null)
                 return LoadUnmanagedDllFromPath(libraryPath);
 
             return IntPtr.Zero;

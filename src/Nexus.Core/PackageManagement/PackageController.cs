@@ -28,7 +28,7 @@ namespace Nexus.PackageManagement
         private static HttpClient _httpClient = new HttpClient();
 
         private ILogger _logger;
-        private PackageLoadContext _loadContext;
+        private PackageLoadContext? _loadContext;
         private PackageReference _packageReference;
 
         #endregion
@@ -322,7 +322,7 @@ namespace Nexus.PackageManagement
 
                 foreach (var githubRelease in jsonDocument.RootElement.EnumerateArray())
                 {
-                    var releaseTagName = githubRelease.GetProperty("tag_name").GetString();
+                    var releaseTagName = githubRelease.GetProperty("tag_name").GetString() ?? throw new Exception("tag_name is null");
                     result.Add(releaseTagName);
                     _logger.LogDebug("Discovered package version {PackageVersion}", releaseTagName);
                 }
@@ -388,13 +388,13 @@ namespace Nexus.PackageManagement
                 var asset = gitHubRelease
                     .GetProperty("assets")
                     .EnumerateArray()
-                    .FirstOrDefault(current => Regex.IsMatch(current.GetProperty("name").GetString(), assetSelector));
+                    .FirstOrDefault(current => Regex.IsMatch(current.GetProperty("name").GetString() ?? throw new Exception("assets is null"), assetSelector));
 
                 if (asset.ValueKind != JsonValueKind.Undefined)
                 {
                     // get asset download URL
-                    var assetUrl = asset.GetProperty("url").GetString();
-                    var assetBrowserUrl = asset.GetProperty("browser_download_url").GetString();
+                    var assetUrl = asset.GetProperty("url").GetString() ?? throw new Exception("url is null");
+                    var assetBrowserUrl = asset.GetProperty("browser_download_url").GetString() ?? throw new Exception("browser_download_url is null");
 
                     // get download stream
                     var headers = new PackageReference();
@@ -447,7 +447,7 @@ namespace Nexus.PackageManagement
 
             await foreach (var gitlabPackage in PackageController.GetGitLabPackagesGenericAsync(server, projectPath, package, headers, cancellationToken))
             {
-                var packageVersion = gitlabPackage.GetProperty("version").GetString();
+                var packageVersion = gitlabPackage.GetProperty("version").GetString() ?? throw new Exception("version is null");
                 result.Add(packageVersion);
                 _logger.LogDebug("Discovered package version {PackageVersion}", packageVersion);
             }
@@ -522,9 +522,9 @@ namespace Nexus.PackageManagement
 
                 // find asset
                 var asset = jsonDocument.RootElement.EnumerateArray()
-                    .FirstOrDefault(current => Regex.IsMatch(current.GetProperty("file_name").GetString(), assetSelector));
+                    .FirstOrDefault(current => Regex.IsMatch(current.GetProperty("file_name").GetString() ?? throw new Exception("file_name is null"), assetSelector));
 
-                var fileName = asset.GetProperty("file_name").GetString();
+                var fileName = asset.GetProperty("file_name").GetString() ?? throw new Exception("file_name is null");
 
                 if (asset.ValueKind != JsonValueKind.Undefined)
                 {
@@ -577,6 +577,9 @@ namespace Nexus.PackageManagement
 
                 // look for more pages
                 response.Headers.TryGetValues("Link", out var links);
+
+                if (links is null)
+                    throw new Exception("link is null");
 
                 if (!links.Any())
                     break;

@@ -54,7 +54,11 @@ namespace Nexus.Core
         public static void Create<T>(string filePath, ReadOnlySpan<T> buffer) where T : unmanaged
         {
             // target stream
-            Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+            var directoryName = Path.GetDirectoryName(filePath);
+
+            if (directoryName is not null)
+                Directory.CreateDirectory(directoryName);
+
             var targetStream = File.Open(filePath, FileMode.Create, FileAccess.Write);
 
             // format signature

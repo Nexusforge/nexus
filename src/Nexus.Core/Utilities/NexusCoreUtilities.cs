@@ -68,7 +68,9 @@ namespace Nexus.Utilities
             }
         }
 
+#pragma warning disable VSTHRD200 // Verwenden Sie das Suffix "Async" für asynchrone Methoden
         public static async ValueTask<T[]> WhenAll<T>(params ValueTask<T>[] tasks)
+#pragma warning restore VSTHRD200 // Verwenden Sie das Suffix "Async" für asynchrone Methoden
         {
             List<Exception>? exceptions = null;
 
@@ -122,7 +124,7 @@ namespace Nexus.Utilities
 
         public static T GetFirstAttribute<T>(this Type type) where T : Attribute
         {
-            return type.GetCustomAttributes(false).OfType<T>().FirstOrDefault();
+            return type.GetCustomAttributes(false).OfType<T>().First();
         }
 
         public static IEnumerable<T> GetCustomAttributes<T>(this Type type) where T : Attribute
@@ -130,12 +132,12 @@ namespace Nexus.Utilities
             return type.GetCustomAttributes(false).OfType<T>();
         }
 
-        public static object InvokeGenericMethod<T>(T instance, string methodName, BindingFlags bindingFlags, Type genericType, object[] parameters)
+        public static object? InvokeGenericMethod<T>(T instance, string methodName, BindingFlags bindingFlags, Type genericType, object[] parameters)
         {
             return NexusCoreUtilities.InvokeGenericMethod(typeof(T), instance, methodName, bindingFlags, genericType, parameters);
         }
 
-        public static object InvokeGenericMethod(Type methodParent, object instance, string methodName, BindingFlags bindingFlags, Type genericType, object[] parameters)
+        public static object? InvokeGenericMethod(Type methodParent, object instance, string methodName, BindingFlags bindingFlags, Type genericType, object[] parameters)
         {
             var methodInfo = methodParent
                 .GetMethods(bindingFlags)

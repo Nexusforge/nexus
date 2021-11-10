@@ -69,9 +69,10 @@ namespace Nexus.Services
                     return null;
 
                 var catalog = (await container.GetCatalogInfoAsync(cancellationToken)).Catalog;
+                var resources = catalog.Resources ?? Enumerable.Empty<Resource>();
 
-                var backendSources = catalog.Resources
-                    .SelectMany(resource => resource.Representations.Select(representation => representation.BackendSource))
+                var backendSources = resources
+                    .SelectMany(resource => (resource.Representations ?? Enumerable.Empty<Representation>()).Select(representation => representation.BackendSource))
                     .Distinct()
                     .Where(backendSource => backendSource != state.AggregationBackendSource)
                     .ToList();
@@ -84,26 +85,30 @@ namespace Nexus.Services
                         .ToList();
 
                     // create resource to aggregations map
-                    var aggregationResources = catalog.Resources
+                    var aggregationResources = resources
 
                         // find all resources for current reader backend source
-                        .Where(resource => resource.Representations.Any(representation => representation.BackendSource == backendSource))
+                        .Where(resource => resource.Representations is not null && 
+                                           resource.Representations.Any(representation => representation.BackendSource == backendSource))
 
                         // find all aggregations for current resource
                         .Select(resource =>
                         {
-                            return new AggregationResource()
-                            {
-                                Resource = resource,
-                                Aggregations = potentialAggregations.Where(current => AggregationService.ApplyAggregationFilter(resource, current.Filters, logger)).ToList()
-                            };
+                            return new AggregationResource(
+                                Resource: resource,
+                                Aggregations: potentialAggregations
+                                    .Where(current => AggregationService.ApplyAggregationFilter(resource, current.Filters, logger))
+                                    .ToList());
                         })
                         // take all resources with aggregations
                         .Where(aggregationResource => aggregationResource.Aggregations.Any());
 
                     return aggregationResources.ToList();
                 }));
-            }))).Where(instruction => instruction != null).ToList();
+            })))
+            .Where(instruction => instruction is not null)
+            .Select(instruction => instruction ?? throw new Exception("instruction is null"))
+            .ToList();
         }
 
         public Task<string> AggregateDataAsync(string databaseFolderPath,
@@ -207,12 +212,12 @@ namespace Nexus.Services
                             cancellationToken
                         };
 
-                        await (Task)NexusCoreUtilities.InvokeGenericMethod(
+                        await (Task)(NexusCoreUtilities.InvokeGenericMethod(
                             this, 
                             nameof(this.OrchestrateAggregationAsync),
                             BindingFlags.Instance | BindingFlags.NonPublic,
                             NexusCoreUtilities.GetTypeFromNexusDataType(representation.DataType),
-                            parameters);
+                            parameters) ?? throw new Exception("task is null"));
                     }
                     catch (TaskCanceledException)
                     {
@@ -273,15 +278,13 @@ namespace Nexus.Services
                         {
                             var buffer = new double[TimeSpan.FromDays(1).Ticks / period.Ticks];
 
-                            var unit = new AggregationUnit()
-                            {
-                                Aggregation = aggregation,
-                                Period = period,
-                                Method = method,
-                                Argument = arguments,
-                                Buffer = buffer,
-                                TargetFilePath = targetFilePath
-                            };
+                            var unit = new AggregationUnit(
+                                Aggregation: aggregation,
+                                Period: period,
+                                Method: method,
+                                Argument: arguments,
+                                Buffer: buffer,
+                                TargetFilePath: targetFilePath);
 
                             units.Add(unit);
                         }
@@ -762,9 +765,10 @@ namespace Nexus.Services
                 result &= !Regex.IsMatch(resource.Id, filters[AggregationFilter.ExcludeResource]);
 
             // group
-            var groupNames = resource.Properties
-                .Where(entry => entry.Key.StartsWith(DataModelExtensions.Groups))
-                .Select(entry => entry.Value.Split(':').Last());
+            var groupNames = resource.Properties is null
+                ? Enumerable.Empty<string>()
+                : resource.Properties.Where(entry => entry.Key.StartsWith(DataModelExtensions.Groups))
+                                     .Select(entry => entry.Value.Split(':').Last());
 
             if (filters.ContainsKey(AggregationFilter.IncludeGroup))
                 result &= groupNames
@@ -777,13 +781,19 @@ namespace Nexus.Services
             // unit
             if (filters.ContainsKey(AggregationFilter.IncludeUnit))
             {
-                var unit = resource.Properties.GetValueOrDefault(DataModel.DataModelExtensions.Unit, string.Empty);
+                var unit = resource.Properties is null
+                    ? string.Empty
+                    : resource.Properties.GetValueOrDefault(DataModelExtensions.Unit, string.Empty);
+
                 result &= Regex.IsMatch(unit, filters[AggregationFilter.IncludeUnit]);
             }
 
             if (filters.ContainsKey(AggregationFilter.ExcludeUnit))
             {
-                var unit = resource.Properties.GetValueOrDefault(DataModel.DataModelExtensions.Unit, string.Empty);
+                var unit = resource.Properties is null
+                    ? string.Empty
+                    : resource.Properties.GetValueOrDefault(DataModelExtensions.Unit, string.Empty);
+
                 result &= !Regex.IsMatch(unit, filters[AggregationFilter.ExcludeUnit]);
             }
 

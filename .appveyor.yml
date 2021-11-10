@@ -18,13 +18,14 @@ configuration:
 
 init:
   - ps: git config --global core.autocrlf true
+  - ps: sudo apt-get update; sudo apt-get install -y apt-transport-https; sudo apt-get install -y dotnet-sdk-6.0
 
 build_script:
   - ps: echo "Skip build_script."
 
 test_script:
   - ps: dotnet publish -c $Env:CONFIGURATION -o app --no-self-contained /p:Build=$Env:APPVEYOR_BUILD_NUMBER /p:IsFinalBuild=$Env:APPVEYOR_REPO_TAG src/Nexus/Nexus.csproj
-  - ps: dotnet test -c $Env:CONFIGURATION /p:BuildProjectReferences=false
+  - ps: dotnet test -c $Env:CONFIGURATION /p:BuildProjectReferences=false /p:GeneratePackageOnBuild=false
 
 artifacts:
   - path: artifacts/packages/**/*.nupkg

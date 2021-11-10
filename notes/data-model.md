@@ -102,7 +102,7 @@ var resource = new ResourceBuilder(id: "resource1")
     .Build();
 ```
 
-_This convention is borrowed from [IConfiguration](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-5.0&tabs=linux#hierarchical-configuration-data-1) to represent hierarchical metadata._
+_This convention is borrowed from [IConfiguration](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-6.0&tabs=linux#hierarchical-configuration-data-1) to represent hierarchical metadata._
 
 # Special Properties
 

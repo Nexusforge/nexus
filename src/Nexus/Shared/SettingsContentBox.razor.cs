@@ -35,7 +35,7 @@ namespace Nexus.Shared
 
         public void Dipose()
         {
-            if (_handler != null)
+            if (_handler is not null)
                 this.JobEditor.Changed -= _handler;
         }
 

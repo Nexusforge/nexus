@@ -2,7 +2,7 @@
 @inject IHttpContextAccessor ContextAccessor
 @using System.IO
 
-@if (this.UserState.GroupedResources != null) // user has access to catalog
+@if (this.UserState.GroupedResources is not null) // user has access to catalog
 {
     <div class="available-groups">
 
@@ -29,7 +29,7 @@
     </div>
 
     <div class="available-resources">
-        @if (this.UserState.GroupedResourcesEntry.Value != null)
+        @if (this.UserState.GroupedResourcesEntry.Value is not null)
         {
             <div>
                 @foreach (var resource in this.UserState.GroupedResourcesEntry.Value.Skip(this.ResourcePage * this.ResourcePageSize).Take(this.ResourcePageSize))
@@ -42,7 +42,7 @@
         }
     </div>
 }
-else if (this.UserState.CatalogContainer != null) // user has no access to catalog
+else if (this.UserState.CatalogContainer is not null) // user has no access to catalog
 {
 <div class="catalog-no-access">
     @if (this.ContextAccessor.HttpContext.User.Identity.IsAuthenticated)

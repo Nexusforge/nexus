@@ -255,7 +255,7 @@ namespace Nexus.Services
                 var task = await Task.WhenAny(tasks);
                 cts.Token.ThrowIfCancellationRequested();
 
-                if (task.Exception != null)
+                if (task.Exception is not null && task.Exception.InnerException is not null)
                 {
                     cts.Cancel();
                     throw task.Exception.InnerException;
@@ -277,7 +277,7 @@ namespace Nexus.Services
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    _logger.LogTrace("Write content of {filePath} to the ZIP archive");
+                    _logger.LogTrace("Write content of {FilePath} to the ZIP archive", filePath);
 
                     var zipArchiveEntry = zipArchive.CreateEntry(Path.GetFileName(filePath), CompressionLevel.Optimal);
 

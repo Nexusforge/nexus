@@ -155,7 +155,7 @@ namespace Nexus.Core
             }
             set
             {
-                Task.Run(async () =>
+                _ = Task.Run(async () =>
                 {
                     // Browser thinks it is local, but it is UTC.
                     if (value.Kind == DateTimeKind.Local)
@@ -196,7 +196,7 @@ namespace Nexus.Core
             }
             set
             {
-                Task.Run(async () =>
+                _ = Task.Run(async () =>
                 {
                     // Browser thinks it is local, but it is UTC.
                     if (value.Kind == DateTimeKind.Local)
@@ -263,7 +263,7 @@ namespace Nexus.Core
                 // When database is updated and then the selected catalog is changed,
                 // "value" refers to an old catalog container that does not exist in 
                 // the database anymore.
-                if (value != null && !_appState.CatalogState.CatalogContainers.Contains(value))
+                if (value is not null && !_appState.CatalogState.CatalogContainers.Contains(value))
                     value = _appState.CatalogState.CatalogContainers.FirstOrDefault(container => container.Id == value.Id);
 
                 this.SetProperty(ref _catalogContainer, value);
@@ -424,10 +424,10 @@ namespace Nexus.Core
                 }
 
                 //
-                var job = new ExportJob()
+                var job = new ExportJob(
+                    Parameters: this.ExportParameters)
                 {
-                    Owner = _userIdService.User.Identity.Name,
-                    Parameters = this.ExportParameters
+                    Owner = _userIdService.User.Identity.Name
                 };
 
                 var exportJobService = _serviceProvider.GetRequiredService<JobService<ExportJob>>();
@@ -622,7 +622,7 @@ namespace Nexus.Core
 
         private void UpdateAttachments()
         {
-            if (this.CatalogContainer != null)
+            if (this.CatalogContainer is not null)
                 this.Attachments = _databaseManager.EnumerateAttachements(this.CatalogContainer.Id).ToArray();
 
             else

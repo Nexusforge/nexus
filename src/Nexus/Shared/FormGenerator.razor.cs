@@ -23,7 +23,7 @@ namespace Nexus.Shared
         {
             var properties = this.DataContext.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
-            var sequence = 0; // Autoincrement is not recommended for performance reasons (https://docs.microsoft.com/en-us/aspnet/core/blazor/advanced-scenarios?view=aspnetcore-5.0#the-problem-with-generating-sequence-numbers-programmatically)
+            var sequence = 0; // Autoincrement is not recommended for performance reasons (https://docs.microsoft.com/en-us/aspnet/core/blazor/advanced-scenarios?view=aspnetcore-6.0#the-problem-with-generating-sequence-numbers-programmatically)
 
             builder.OpenElement(sequence++, "div");
             builder.AddAttribute(sequence++, "class", "form-generator");

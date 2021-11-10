@@ -2,6 +2,7 @@
 using Nexus.Extensibility;
 using Nexus.Extensions;
 using System;
+using System.Collections.Generic;
 
 namespace DataSource
 {
@@ -11,7 +12,11 @@ namespace DataSource
         {
             var dataSource = new InMemoryDataSource();
 
-            this.BackendSource = new BackendSource(Type: "Nexus.Builtin.InMemory", ResourceLocator: new Uri("memory://localhost"));
+            this.BackendSource = new BackendSource(
+                Type: InMemoryDataSource.Id, 
+                ResourceLocator: new Uri("memory://localhost"),
+                Configuration: default);
+
             this.Controller = new DataSourceController(dataSource, this.BackendSource, NullLogger.Instance);
         }
 

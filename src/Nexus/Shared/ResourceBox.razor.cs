@@ -26,7 +26,7 @@ namespace Nexus.Shared
 			{
 				if (e.PropertyName == nameof(UserState.SearchString))
 				{
-					this.InvokeAsync(() =>
+					_ = this.InvokeAsync(() =>
 					{
                         _searchIcon = string.IsNullOrWhiteSpace(this.UserState.SearchString) ? MatIconNames.Search : MatIconNames.Close;
 						this.StateHasChanged();
@@ -34,7 +34,7 @@ namespace Nexus.Shared
 				}
 				else if (e.PropertyName == nameof(UserState.CatalogContainer))
 				{
-					this.InvokeAsync(() =>
+					_ = this.InvokeAsync(() =>
 					{
 						this.GroupPage = 0;
 						this.StateHasChanged();
@@ -47,7 +47,7 @@ namespace Nexus.Shared
 				else if (e.PropertyName == nameof(AppState.CatalogState) ||
 						(e.PropertyName == nameof(AppState.IsCatalogStateUpdating) && !this.AppState.IsCatalogStateUpdating))
 				{
-					this.InvokeAsync(this.StateHasChanged);
+					_ = this.InvokeAsync(this.StateHasChanged);
 				}
 			};
 		}
@@ -101,7 +101,7 @@ namespace Nexus.Shared
 				}
 				else if (!claim.Value.Split(';').Contains(projectId))
 				{
-					var newValue = claim != null
+					var newValue = claim is not null
 						? string.Join(';', claim.Value, projectId)
 						: projectId;
 					var newClaim = new Claim(claimType, newValue);

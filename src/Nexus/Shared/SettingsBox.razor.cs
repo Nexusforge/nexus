@@ -71,7 +71,7 @@ namespace Nexus.Shared
         {
             var file = e.File;
 
-            if (file != null)
+            if (file is not null)
             {
                 using var streamReader = new StreamReader(file.OpenReadStream());
                 var jsonString = await streamReader.ReadToEndAsync();

@@ -7,8 +7,8 @@ namespace Nexus.DataModel
         #region Fields
 
         private string _id;
-        private Dictionary<string, string> _properties;
-        private List<Resource> _resources;
+        private Dictionary<string, string>? _properties;
+        private List<Resource>? _resources;
 
         #endregion
 

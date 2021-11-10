@@ -61,7 +61,7 @@ namespace Nexus.Services
                         {
                             var userToDelete = await userManager.FindByNameAsync(SecurityOptions.DefaultRootUser);
 
-                            if (userToDelete != null)
+                            if (userToDelete is not null)
                                 await userManager.DeleteAsync(userToDelete);
                         }
                     }

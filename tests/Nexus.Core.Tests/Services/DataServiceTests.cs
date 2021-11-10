@@ -23,9 +23,9 @@ namespace Services
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 03, 0, 0, 0, DateTimeKind.Utc);
 
-            var backendSource1 = new BackendSource(Type: "A", default);
-            var backendSource2 = new BackendSource(Type: "B", default);
-            var backendSource3 = new BackendSource(Type: "C", default);
+            var backendSource1 = new BackendSource(Type: "A", default, default);
+            var backendSource2 = new BackendSource(Type: "B", default, default);
+            var backendSource3 = new BackendSource(Type: "C", default, default);
 
             var backendSourceToCatalogIdsMap = new Dictionary<BackendSource, string[]>()
             {
@@ -111,8 +111,8 @@ namespace Services
             var samplePeriod = TimeSpan.FromSeconds(1);
             var exportId = Guid.NewGuid();
 
-            var backendSource1 = new BackendSource(Type: "A", default);
-            var backendSource2 = new BackendSource(Type: "B", default);
+            var backendSource1 = new BackendSource(Type: "A", default, default);
+            var backendSource2 = new BackendSource(Type: "B", default, default);
 
             // DI services
             var dataSourceController1 = Mock.Of<IDataSourceController>();

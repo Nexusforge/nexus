@@ -65,8 +65,8 @@ namespace Nexus.Controllers.V1
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpGet("{catalogId}")]
-        public async Task<ActionResult<ResourceCatalog>> 
-            GetCatalog(
+        public async Task<ActionResult<ResourceCatalog>>
+            GetCatalogAsync(
                 string catalogId,
                 CancellationToken cancellationToken)
         {
@@ -88,7 +88,7 @@ namespace Nexus.Controllers.V1
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpGet("{catalogId}/timerange")]
         public async Task<ActionResult<TimeRangeResult[]>> 
-            GetTimeRange(
+            GetTimeRangeAsync(
                 string catalogId, 
                 CancellationToken cancellationToken)
         {
@@ -113,7 +113,7 @@ namespace Nexus.Controllers.V1
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpGet("{catalogId}/availability")]
         public async Task<ActionResult<AvailabilityResult[]>>
-            GetCatalogAvailability(
+            GetCatalogAvailabilityAsync(
                 [BindRequired] string catalogId,
                 [BindRequired] DateTime begin,
                 [BindRequired] DateTime end,
@@ -138,7 +138,7 @@ namespace Nexus.Controllers.V1
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         /// <returns></returns>
         [HttpGet("{catalogId}/resources")]
-        public async Task<ActionResult<Resource[]>> GetResources(
+        public async Task<ActionResult<Resource[]>> GetResourcesAsync(
             [BindRequired] string catalogId,
             CancellationToken cancellationToken)
         {
@@ -167,7 +167,7 @@ namespace Nexus.Controllers.V1
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         /// <returns></returns>
         [HttpGet("{catalogId}/resources/{resourceId}")]
-        public async Task<ActionResult<Resource>> GetResource(
+        public async Task<ActionResult<Resource>> GetResourceAsync(
             string catalogId,
             string resourceId,
             CancellationToken cancellationToken)
@@ -202,7 +202,7 @@ namespace Nexus.Controllers.V1
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         /// <returns></returns>
         [HttpGet("{catalogId}/resources/{resourceId}/representations")]
-        public async Task<ActionResult<Representation[]>> GetRepresentations(
+        public async Task<ActionResult<Representation[]>> GetRepresentationsAsync(
             string catalogId,
             string resourceId,
             CancellationToken cancellationToken)
@@ -242,7 +242,7 @@ namespace Nexus.Controllers.V1
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         /// <returns></returns>
         [HttpGet("{catalogId}/resources/{resourceId}/representations/{representationId}")]
-        public async Task<ActionResult<Representation>> GetRepresentation(
+        public async Task<ActionResult<Representation>> GetRepresentationAsync(
             string catalogId,
             string resourceId,
             string representationId,
@@ -293,9 +293,7 @@ namespace Nexus.Controllers.V1
                     using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(entry.Key, cancellationToken);
                     var timeRange = await dataSource.GetTimeRangeAsync(catalog.Id, cancellationToken);
 
-                    var backendSource = new BackendSource(
-                        Type: timeRange.BackendSource.Type,
-                        ResourceLocator: timeRange.BackendSource.ResourceLocator);
+                    var backendSource = timeRange.BackendSource with { };
 
                     return new TimeRangeResult(
                         BackendSource: backendSource,
@@ -319,9 +317,7 @@ namespace Nexus.Controllers.V1
                     using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(entry.Key, cancellationToken);
                     var availability = await dataSource.GetAvailabilityAsync(catalog.Id, begin, end, granularity, cancellationToken);
 
-                    var backendSource = new BackendSource(
-                        Type: availability.BackendSource.Type, 
-                        ResourceLocator: availability.BackendSource.ResourceLocator);
+                    var backendSource = availability.BackendSource with { };
 
                     return new AvailabilityResult(
                         BackendSource: backendSource,
@@ -351,7 +347,7 @@ namespace Nexus.Controllers.V1
             var catalogContainer = _appState.CatalogState.CatalogContainers
                .FirstOrDefault(container => container.Id == catalogId);
 
-            if (catalogContainer != null)
+            if (catalogContainer is not null)
             {
                 if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.CatalogMetadata, this.User))
                     return this.Unauthorized($"The current user is not authorized to access the catalog '{catalogId}'.");

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -15,7 +16,7 @@ namespace Nexus.DataModel
         private static IReadOnlyDictionary<string, string> _emptyProperties = new Dictionary<string, string>();
         private static IReadOnlyList<Resource> _emptyResources = new List<Resource>();
 
-        private IReadOnlyDictionary<string, string> _properties;
+        private IReadOnlyDictionary<string, string>? _properties;
         private IReadOnlyList<Resource>? _resources;
 
         #endregion
@@ -153,7 +154,7 @@ namespace Nexus.DataModel
             return merged;
         }
 
-        internal bool TryFind(string resourcePath, out CatalogItem catalogItem)
+        internal bool TryFind(string resourcePath, [NotNullWhen(true)] out CatalogItem? catalogItem)
         {
             catalogItem = null;
 
@@ -165,12 +166,12 @@ namespace Nexus.DataModel
             if (catalogId != this.Id)
                 return false;
 
-            var resource = this.Resources.FirstOrDefault(resource => resource.Id == resourceId);
+            var resource = this.Resources?.FirstOrDefault(resource => resource.Id == resourceId);
 
             if (resource is null)
                 return false;
 
-            var representation = resource.Representations.FirstOrDefault(representation => representation.Id == representationId);
+            var representation = resource.Representations?.FirstOrDefault(representation => representation.Id == representationId);
 
             if (representation is null)
                 return false;
