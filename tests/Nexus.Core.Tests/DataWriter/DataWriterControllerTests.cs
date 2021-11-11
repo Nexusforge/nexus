@@ -34,7 +34,7 @@ namespace DataWriter
             var catalogItems = _fixture.Catalogs
                 .SelectMany(catalog => catalog.Resources
                 .SelectMany(resource => resource.Representations
-                .Select(representation => new CatalogItem(catalog, resource, representation with { SamplePeriod = TimeSpan.FromMinutes(10), Detail = "mean" }))))
+                .Select(representation => new CatalogItem(catalog, resource, new Representation(representation.DataType, samplePeriod: TimeSpan.FromMinutes(10), detail: "mean")))))
                 .ToArray();
 
             var pipes = catalogItems

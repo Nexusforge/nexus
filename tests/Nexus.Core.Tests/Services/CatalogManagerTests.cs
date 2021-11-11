@@ -143,7 +143,7 @@ namespace Services
                {
                    if (catalogId == "/A")
                    {
-                       catalogMetadataString = JsonSerializerHelper.Serialize(catalogMetadata);
+                       catalogMetadataString = JsonSerializerHelper.SerializeIntended(catalogMetadata);
                        return true;
                    }
 
@@ -204,8 +204,8 @@ namespace Services
 
             foreach (var (actual, expected) in actualCatalogs.Zip(expectedCatalogs))
             {
-                var actualJsonString = JsonSerializerHelper.Serialize(actual);
-                var expectedJsonString = JsonSerializerHelper.Serialize(expected);
+                var actualJsonString = JsonSerializerHelper.SerializeIntended(actual);
+                var expectedJsonString = JsonSerializerHelper.SerializeIntended(expected);
 
                 Assert.Equal(actualJsonString, expectedJsonString);
             }

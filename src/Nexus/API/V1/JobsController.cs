@@ -70,7 +70,7 @@ namespace Nexus.Controllers.V1
             ExportParameters parameters,
             CancellationToken cancellationToken)
         {
-            _diagnosticContext.Set("Body", JsonSerializerHelper.Serialize(parameters));
+            _diagnosticContext.Set("Body", JsonSerializerHelper.SerializeIntended(parameters));
 
             if (_appState.CatalogState == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");
@@ -247,7 +247,7 @@ namespace Nexus.Controllers.V1
         [HttpPost("aggregation")]
         public ActionResult<AggregationJob> CreateAggregationJob(AggregationSetup setup)
         {
-            _diagnosticContext.Set("Body", JsonSerializerHelper.Serialize(setup));
+            _diagnosticContext.Set("Body", JsonSerializerHelper.SerializeIntended(setup));
 
             if (_appState.CatalogState == null)
                 return this.StatusCode(503, "The database has not been loaded yet.");

@@ -3,7 +3,6 @@ using Nexus.Extensibility;
 using Nexus.Services;
 using Nexus.ViewModels;
 using Prism.Mvvm;
-using Serilog.Core;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

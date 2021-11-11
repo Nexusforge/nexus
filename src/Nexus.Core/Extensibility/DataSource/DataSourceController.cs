@@ -226,7 +226,7 @@ namespace Nexus.Extensibility
                  * because GetCatalogAsync is called before ReadAsync */
                 if (_catalogCache.TryGetValue(catalogItem.Catalog.Id, out var catalog))
                 {
-                    var originalCatalogItem = catalog.Find(catalogItem.GetPath());
+                    var originalCatalogItem = catalog.Find(catalogItem.ToPath());
                     return new ReadRequest(originalCatalogItem, data, status);
                 }
                 else
@@ -255,7 +255,7 @@ namespace Nexus.Extensibility
 
                     using var scope = this.Logger.BeginScope(new Dictionary<string, object>()
                     {
-                        ["ResourcePath"] = catalogItem.GetPath()
+                        ["ResourcePath"] = catalogItem.ToPath()
                     });
 
                     if (statusWriter is null)

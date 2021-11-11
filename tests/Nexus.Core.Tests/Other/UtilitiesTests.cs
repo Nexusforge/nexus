@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Text.Json;
 using Xunit;
 
 namespace Other
@@ -228,8 +229,8 @@ namespace Other
             var expected = new MyType(A: 1, B: "Zwei", C: TimeSpan.FromSeconds(1));
 
             // Act
-            var jsonString = JsonSerializerHelper.Serialize(expected);
-            var actual = JsonSerializerHelper.Deserialize<MyType>(jsonString);
+            var jsonString = JsonSerializerHelper.SerializeIntended(expected);
+            var actual = JsonSerializer.Deserialize<MyType>(jsonString);
 
             // Assert
             Assert.Equal(expected, actual);

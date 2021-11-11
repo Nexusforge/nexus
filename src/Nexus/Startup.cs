@@ -26,6 +26,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
@@ -326,7 +327,7 @@ namespace Nexus
             // project
             if (databaseManager.TryReadProject(out var project))
             {
-                appState.Project = JsonSerializerHelper.Deserialize<NexusProject>(project);
+                appState.Project = JsonSerializer.Deserialize<NexusProject>(project);
             }
             else
             {
@@ -336,7 +337,7 @@ namespace Nexus
             // news
             if (databaseManager.TryReadNews(out var news))
             {
-                appState.NewsPaper = JsonSerializerHelper.Deserialize<NewsPaper>(news);
+                appState.NewsPaper = JsonSerializer.Deserialize<NewsPaper>(news);
             }
             else
             {

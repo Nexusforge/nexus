@@ -27,7 +27,14 @@ namespace Nexus.Extensibility
         Memory<byte> Data,
         Memory<byte> Status);
 
-    internal sealed record BackendSource(string Type, Uri ResourceLocator, Dictionary<string, string> Configuration, bool IsEnabled = true)
+    /// <summary>
+    /// A structure to register a backend source.
+    /// </summary>
+    /// <param name="Type"></param>
+    /// <param name="ResourceLocator"></param>
+    /// <param name="Configuration"></param>
+    /// <param name="IsEnabled"></param>
+    public sealed record BackendSource(string Type, Uri ResourceLocator, Dictionary<string, string> Configuration, bool IsEnabled = true)
     {
         public override int GetHashCode()
         {

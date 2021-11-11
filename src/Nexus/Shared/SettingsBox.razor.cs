@@ -6,6 +6,7 @@ using Nexus.Services;
 using Nexus.Utilities;
 using System.IO;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -21,30 +22,30 @@ namespace Nexus.Shared
             {
                 if (e.PropertyName == nameof(UserState.ExportParameters))
                 {
-                    this.InvokeAsync(this.StateHasChanged);
+                    _ = this.InvokeAsync(this.StateHasChanged);
                 }
                 // for workaround
                 else if (e.PropertyName == nameof(UserState.DateTimeBegin))
                 {
-                    this.InvokeAsync(this.StateHasChanged);
+                    _ = this.InvokeAsync(this.StateHasChanged);
                 }
                 // for workaround
                 else if (e.PropertyName == nameof(UserState.DateTimeEnd))
                 {
-                    this.InvokeAsync(this.StateHasChanged);
+                    _ = this.InvokeAsync(this.StateHasChanged);
                 }
                 else if (e.PropertyName == nameof(UserState.SamplePeriod))
                 {
-                    this.InvokeAsync(this.StateHasChanged);
+                    _ = this.InvokeAsync(this.StateHasChanged);
                 }
                 else if (e.PropertyName == nameof(UserState.SelectedRepresentations))
                 {
-                    this.InvokeAsync(this.StateHasChanged);
+                    _ = this.InvokeAsync(this.StateHasChanged);
                 }
                 else if (e.PropertyName == nameof(AppState.CatalogState) ||
                         (e.PropertyName == nameof(AppState.IsCatalogStateUpdating) && !this.AppState.IsCatalogStateUpdating))
                 {
-                    this.InvokeAsync(this.StateHasChanged);
+                    _ = this.InvokeAsync(this.StateHasChanged);
                 }
             };
         }
@@ -63,7 +64,7 @@ namespace Nexus.Shared
         private async Task OnSaveExportSettingsAsync()
         {
 			var configuration = this.UserState.ExportParameters;
-			var jsonString = JsonSerializerHelper.Serialize(configuration);
+			var jsonString = JsonSerializerHelper.SerializeIntended(configuration);
 			await this.JsRuntime.BlobSaveAs("export.json", Encoding.UTF8.GetBytes(jsonString));
 		}
 
@@ -75,7 +76,7 @@ namespace Nexus.Shared
             {
                 using var streamReader = new StreamReader(file.OpenReadStream());
                 var jsonString = await streamReader.ReadToEndAsync();
-                var exportParameters = JsonSerializerHelper.Deserialize<ExportParameters>(jsonString);
+                var exportParameters = JsonSerializer.Deserialize<ExportParameters>(jsonString);
                 exportParameters = exportParameters.UpdateVersion();
                 await this.UserState.SetExportParametersAsync(exportParameters, CancellationToken.None);
             }

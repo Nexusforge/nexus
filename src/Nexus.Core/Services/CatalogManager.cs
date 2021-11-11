@@ -4,11 +4,11 @@ using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Extensions;
-using Nexus.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -96,7 +96,7 @@ namespace Nexus.Services
                     CatalogMetadata catalogMetadata;
 
                     if (_databaseManager.TryReadCatalogMetadata(entry.Key, out var jsonString))
-                        catalogMetadata = JsonSerializerHelper.Deserialize<CatalogMetadata>(jsonString) ?? throw new Exception("catalogMetadata is null");
+                        catalogMetadata = JsonSerializer.Deserialize<CatalogMetadata>(jsonString) ?? throw new Exception("catalogMetadata is null");
 
                     else
                         catalogMetadata = new CatalogMetadata();

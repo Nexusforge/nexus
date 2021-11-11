@@ -55,7 +55,8 @@ namespace Nexus.Extensibility.Tests
             if (!File.Exists(configFilePath))
                 throw new Exception($"The configuration file does not exist on path '{configFilePath}'.");
 
-            this.Config = await DeserializeAsync<Dictionary<string, CatalogDescription>>(configFilePath);
+            var jsonString = await File.ReadAllTextAsync(configFilePath);
+            this.Config = JsonSerializer.Deserialize<Dictionary<string, CatalogDescription>>(jsonString);
         }
 
         protected override Task<FileSourceProvider> GetFileSourceProviderAsync(CancellationToken cancellationToken)
@@ -112,23 +113,6 @@ namespace Nexus.Extensibility.Tests
             {
                 return await base.FindFilePathsAsync(begin, config);
             }
-        }
-
-        #endregion
-
-        #region Helpers
-
-        private static async Task<T> DeserializeAsync<T>(string filePath)
-        {
-            using var jsonStream = File.OpenRead(filePath);
-
-            var options = new JsonSerializerOptions();
-            options.Converters.Add(new TimeSpanConverter());
-
-            return await JsonSerializer
-                .DeserializeAsync<T>(jsonStream, options)
-                .AsTask()
-                ;
         }
 
         #endregion

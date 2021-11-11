@@ -2,7 +2,6 @@
 using Nexus.Extensibility;
 using Nexus.Extensions;
 using System;
-using System.Collections.Generic;
 
 namespace DataSource
 {
