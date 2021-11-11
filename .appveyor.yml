@@ -10,7 +10,7 @@ environment:
 
 branches:
   only:
-    - master
+    - main
     - dev
 
 configuration:
@@ -21,11 +21,10 @@ init:
   - ps: sudo apt-get update; sudo apt-get install -y apt-transport-https; sudo apt-get install -y dotnet-sdk-6.0
 
 build_script:
-  - ps: echo "Skip build_script."
+  - ps: dotnet publish -c $Env:CONFIGURATION -o app --no-self-contained /p:Build=$Env:APPVEYOR_BUILD_NUMBER /p:IsFinalBuild=$Env:APPVEYOR_REPO_TAG /p:GeneratePackage=true src/Nexus/Nexus.csproj
 
 test_script:
-  - ps: dotnet publish -c $Env:CONFIGURATION -o app --no-self-contained /p:Build=$Env:APPVEYOR_BUILD_NUMBER /p:IsFinalBuild=$Env:APPVEYOR_REPO_TAG src/Nexus/Nexus.csproj
-  - ps: dotnet test -c $Env:CONFIGURATION /p:BuildProjectReferences=false /p:GeneratePackageOnBuild=false
+  - ps: dotnet test -c $Env:CONFIGURATION /p:BuildProjectReferences=false
 
 artifacts:
   - path: artifacts/packages/**/*.nupkg
@@ -57,5 +56,5 @@ deploy:
     skip_symbols: true
     artifact: /.*\.nupkg/ 
     on:
-      branch: master
+      branch: main
       APPVEYOR_REPO_TAG: true
