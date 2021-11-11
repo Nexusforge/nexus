@@ -211,7 +211,7 @@ namespace Services
                 End = end,
                 FilePeriod = TimeSpan.FromSeconds(10),
                 Writer = "A",
-                ResourcePaths = new[] { catalogItem1.GetPath(), catalogItem2.GetPath() }
+                ResourcePaths = new[] { catalogItem1.ToPath(), catalogItem2.ToPath() }
             };
 
             // data service

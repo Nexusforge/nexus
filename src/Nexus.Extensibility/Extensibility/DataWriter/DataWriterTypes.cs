@@ -6,23 +6,44 @@ using System.Linq;
 
 namespace Nexus.Extensibility
 {
+    /// <summary>
+    /// The starter package for a data writer.
+    /// </summary>
+    /// <param name="ResourceLocator">The resource locator.</param>
+    /// <param name="Configuration">The configuration.</param>
+    /// <param name="Logger">The logger.</param>
     public record DataWriterContext(
         Uri ResourceLocator,
         Dictionary<string, string> Configuration,
         ILogger Logger);
 
+    /// <summary>
+    /// A write request.
+    /// </summary>
+    /// <param name="CatalogItem">The catalog item to be written.</param>
+    /// <param name="Data">The data to be written.</param>
     public record WriteRequest(
         CatalogItem CatalogItem,
         ReadOnlyMemory<double> Data);
 
+    /// <summary>
+    /// An attribute to provide the file format name to be display in the Nexus GUI.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Class)]
     public class DataWriterFormatNameAttribute : Attribute
     {
+        /// <summary>
+        /// Initializes a new instances of the <see cref="DataWriterFormatNameAttribute"/>.
+        /// </summary>
+        /// <param name="formatName">The file format name to be display in the Nexus GUI.</param>
         public DataWriterFormatNameAttribute(string formatName)
         {
             this.FormatName = formatName;
         }
 
+        /// <summary>
+        /// Gets the file format name.
+        /// </summary>
         public string FormatName { get; }
     }
 

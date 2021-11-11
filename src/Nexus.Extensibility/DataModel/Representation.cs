@@ -7,6 +7,9 @@ using System.Text.RegularExpressions;
 
 namespace Nexus.DataModel
 {
+    /// <summary>
+    /// A representation is part of a resource.
+    /// </summary>
     [DebuggerDisplay("{Id,nq}")]
     public record Representation
     {
@@ -19,6 +22,13 @@ namespace Nexus.DataModel
 
         #region Constructors
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Representation"/>.
+        /// </summary>
+        /// <param name="dataType">The <see cref="NexusDataType"/>.</param>
+        /// <param name="samplePeriod">The sample period.</param>
+        /// <param name="detail">A more detailed identifier like "min", "max", "mean" or "std".</param>
+        /// <exception cref="ArgumentException">Thrown when the resource identifier, the sample period or the detail values are not valid.</exception>
         public Representation(NexusDataType dataType, TimeSpan samplePeriod, string? detail = null)
         {
             if (!_nexusDataTypeValues.Contains(dataType))
@@ -41,6 +51,9 @@ namespace Nexus.DataModel
 
         #region Properties
 
+        /// <summary>
+        /// Gets the identifer of the representation. It is constructed using the sample period and the optional detail.
+        /// </summary>
         [JsonIgnore]
         public string Id
         {
@@ -52,12 +65,24 @@ namespace Nexus.DataModel
             }
         }
 
-        public NexusDataType DataType { get; init; }
+        /// <summary>
+        /// Gets the data type.
+        /// </summary>
+        public NexusDataType DataType { get; }
 
-        public TimeSpan SamplePeriod { get; init; }
+        /// <summary>
+        /// Gets the sample period.
+        /// </summary>
+        public TimeSpan SamplePeriod { get; }
 
-        public string? Detail { get; init; }
+        /// <summary>
+        /// Gets the detail.
+        /// </summary>
+        public string? Detail { get; }
 
+        /// <summary>
+        /// Gets the number of bits per element.
+        /// </summary>
         [JsonIgnore]
         public int ElementSize => ((int)this.DataType & 0xFF) >> 3;
 

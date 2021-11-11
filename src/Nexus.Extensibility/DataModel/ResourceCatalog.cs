@@ -7,6 +7,9 @@ using System.Text.RegularExpressions;
 
 namespace Nexus.DataModel
 {
+    /// <summary>
+    /// A catalog is a top level element and holds a list of resources.
+    /// </summary>
     [DebuggerDisplay("{Id,nq}")]
     public record ResourceCatalog
     {
@@ -23,6 +26,13 @@ namespace Nexus.DataModel
 
         #region Constructors
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ResourceCatalog"/>.
+        /// </summary>
+        /// <param name="id">The catalog identifier.</param>
+        /// <param name="properties">The map of properties.</param>
+        /// <param name="resources">The list of representations.</param>
+        /// <exception cref="ArgumentException">Thrown when the resource identifier is not valid.</exception>
         public ResourceCatalog(string id, IReadOnlyDictionary<string, string>? properties = null, IReadOnlyList<Resource>? resources = null)
         {
             if (!_idValidator.IsMatch(id))
@@ -41,14 +51,23 @@ namespace Nexus.DataModel
 
         #region Properties
 
+        /// <summary>
+        /// Gets the identifier.
+        /// </summary>
         public string Id { get; init;  }
 
+        /// <summary>
+        /// Gets the map of properties.
+        /// </summary>
         public IReadOnlyDictionary<string, string>? Properties
         {
             get => _properties;
             init => _properties = value;
         }
 
+        /// <summary>
+        /// Gets the list of representations.
+        /// </summary>
         public IReadOnlyList<Resource>? Resources
         {
             get
@@ -69,6 +88,12 @@ namespace Nexus.DataModel
 
         #region "Methods"
 
+        /// <summary>
+        /// Merges another catalog with this instance.
+        /// </summary>
+        /// <param name="catalog">The catalog to merge into this instance.</param>
+        /// <param name="mergeMode">The <paramref name="mergeMode"/>.</param>
+        /// <returns>The merged catalog.</returns>
         public ResourceCatalog Merge(ResourceCatalog catalog, MergeMode mergeMode)
         {
             if (this.Id != catalog.Id)

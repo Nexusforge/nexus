@@ -6,6 +6,9 @@ using System.Text.RegularExpressions;
 
 namespace Nexus.DataModel
 {
+    /// <summary>
+    /// A resource is part of a resource catalog and holds a list of representations.
+    /// </summary>
     [DebuggerDisplay("{Id,nq}")]
     public record Resource
     {
@@ -22,6 +25,13 @@ namespace Nexus.DataModel
 
         #region Constructors
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Resource"/>.
+        /// </summary>
+        /// <param name="id">The resource identifier.</param>
+        /// <param name="properties">The map of properties.</param>
+        /// <param name="representations">The list of representations.</param>
+        /// <exception cref="ArgumentException">Thrown when the resource identifier is not valid.</exception>
         public Resource(string id, IReadOnlyDictionary<string, string>? properties = null, IReadOnlyList<Representation>? representations = null)
         {
             if (!_idValidator.IsMatch(id))
@@ -41,14 +51,23 @@ namespace Nexus.DataModel
 
         #region Properties
 
+        /// <summary>
+        /// Gets the identifier.
+        /// </summary>
         public string Id { get; }
 
+        /// <summary>
+        /// Gets the map of properties.
+        /// </summary>
         public IReadOnlyDictionary<string, string>? Properties
         {
             get => _properties;
             init => _properties = value;
         }
 
+        /// <summary>
+        /// Gets the list of representations.
+        /// </summary>
         public IReadOnlyList<Representation>? Representations
         {
             get
@@ -66,7 +85,7 @@ namespace Nexus.DataModel
         }
 
         #endregion
-
+        
         #region "Methods"
 
         internal Resource Merge(Resource resource, MergeMode mergeMode)

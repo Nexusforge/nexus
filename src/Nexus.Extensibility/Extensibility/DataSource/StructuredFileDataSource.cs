@@ -12,6 +12,9 @@ using System.Threading.Tasks;
 
 namespace Nexus.Extensibility
 {
+    /// <summary>
+    /// A base class to simplify reading data from structured, file-based data sources.
+    /// </summary>
     public abstract class StructuredFileDataSource : IDataSource
     {
         // This implementation assumes the following:
@@ -49,6 +52,9 @@ namespace Nexus.Extensibility
 
         #region Properties
 
+        /// <summary>
+        /// Gets the root path of the database.
+        /// </summary>
         protected string Root { get; private set; } = null!;
 
         private DataSourceContext Context { get; set; } = null!;
@@ -59,12 +65,28 @@ namespace Nexus.Extensibility
 
         #region Protected API as seen by subclass
 
+        /// <summary>
+        /// Invoked by Nexus right after construction to provide the context.
+        /// </summary>
+        /// <param name="context">The <paramref name="context"/>.</param>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
+        /// <returns>The task.</returns>
         protected abstract Task
             SetContextAsync(DataSourceContext context, CancellationToken cancellationToken);
 
+        /// <summary>
+        /// Gets the file source provider that in turn provides information about the file structure within the database.
+        /// </summary>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
+        /// <returns>The task.</returns>
         protected abstract Task<FileSourceProvider>
             GetFileSourceProviderAsync(CancellationToken cancellationToken);
 
+        /// <summary>
+        /// Gets the catalog identifiers.
+        /// </summary>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
+        /// <returns>The catalog identifiers task.</returns>
         protected abstract Task<string[]>
            GetCatalogIdsAsync(CancellationToken cancellationToken);
 
@@ -76,9 +98,21 @@ namespace Nexus.Extensibility
         // file version, e.g. [".../fileV1.dat", ".../fileV2.dat" ] or
         // [".../2020-01-01.dat", ".../2020-06-01.dat" ].
 
+        /// <summary>
+        /// Gets the requested <see cref="ResourceCatalog"/>.
+        /// </summary>
+        /// <param name="catalogId">The catalog identifier.</param>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
+        /// <returns>The catalog request task.</returns>
         protected abstract Task<ResourceCatalog>
             GetCatalogAsync(string catalogId, CancellationToken cancellationToken);
 
+        /// <summary>
+        /// Gets the time range of the <see cref="ResourceCatalog"/>.
+        /// </summary>
+        /// <param name="catalogId">The catalog identifier.</param>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
+        /// <returns>The time range task.</returns>
         protected virtual Task<(DateTime Begin, DateTime End)> 
             GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
         {
@@ -139,6 +173,14 @@ namespace Nexus.Extensibility
             });
         }
 
+        /// <summary>
+        /// Gets the availability of the <see cref="ResourceCatalog"/>.
+        /// </summary>
+        /// <param name="catalogId">The catalog identifier</param>
+        /// <param name="begin">The begin of the availability period..</param>
+        /// <param name="end">The end of the availability period.</param>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
+        /// <returns>The availability task.</returns>
         protected virtual Task<double>
             GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
@@ -206,12 +248,28 @@ namespace Nexus.Extensibility
             });
         }
 
+        /// <summary>
+        /// Returns the availability within a file.
+        /// </summary>
+        /// <param name="filePath">The file path.</param>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
+        /// <returns>the availability within a file.</returns>
         protected virtual Task<double> 
             GetFileAvailabilityAsync(string filePath, CancellationToken cancellationToken)
         {
             return Task.FromResult(1.0);
         }
 
+        /// <summary>
+        /// Reads a dataset.
+        /// </summary>
+        /// <param name="catalogItem">The catalog item to read.</param>
+        /// <param name="begin">The beginning of the period to read.</param>
+        /// <param name="end">The end of the period to read.</param>
+        /// <param name="data">The data buffer.</param>
+        /// <param name="status">The status buffer.</param>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
+        /// <returns>The task.</returns>
         protected virtual async Task 
             ReadSingleAsync(CatalogItem catalogItem, DateTime begin, DateTime end, Memory<byte> data, Memory<byte> status, CancellationToken cancellationToken)
         {
@@ -327,9 +385,22 @@ namespace Nexus.Extensibility
             }
         }
 
+        /// <summary>
+        /// Reads a dataset from the provided file.
+        /// </summary>
+        /// <param name="info">The read information.</param>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
+        /// <returns>The task.</returns>
         protected abstract Task
             ReadSingleAsync(ReadInfo info, CancellationToken cancellationToken);
 
+        /// <summary>
+        /// Finds files given the date/time and the <see cref="FileSource"/>.
+        /// </summary>
+        /// <param name="begin">The file begin.</param>
+        /// <param name="fileSource">The file source.</param>
+        /// <returns>A tuple of file names and date/times.</returns>
+        /// <exception cref="ArgumentException">Thrown when the begin value does not have its kind property set.</exception>
         protected virtual Task<(string[], DateTime)> 
             FindFilePathsAsync(DateTime begin, FileSource fileSource)
         {
@@ -379,6 +450,12 @@ namespace Nexus.Extensibility
             return Task.FromResult((filePaths, fileBegin));
         }
 
+        /// <summary>
+        /// Tries to find the first file for a given <see cref="FileSource"/>. 
+        /// </summary>
+        /// <param name="fileSource">The file source for which to find the first file.</param>
+        /// <param name="filePath">The found file path.</param>
+        /// <returns>True when a file was found, false otherwise.</returns>
         protected bool TryGetFirstFile(FileSource fileSource, [NotNullWhen(true)] out string? filePath)
         {
             filePath = StructuredFileDataSource
@@ -447,7 +524,7 @@ namespace Nexus.Extensibility
             {
                 using var scope = this.Context.Logger.BeginScope(new Dictionary<string, object>()
                 {
-                    ["ResourcePath"] = catalogItem.GetPath()
+                    ["ResourcePath"] = catalogItem.ToPath()
                 });
 
                 this.Context.Logger.LogDebug("Read catalog item");
