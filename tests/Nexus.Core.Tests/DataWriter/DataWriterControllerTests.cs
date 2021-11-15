@@ -66,9 +66,10 @@ namespace DataWriter
                 .Setup(s => s.OpenAsync(
                     It.IsAny<DateTime>(),
                     It.IsAny<TimeSpan>(),
+                    It.IsAny<TimeSpan>(),
                     It.IsAny<CatalogItem[]>(),
                     It.IsAny<CancellationToken>()))
-                .Callback<DateTime, TimeSpan, CatalogItem[], CancellationToken>((_, _, _, _) =>
+                .Callback<DateTime, TimeSpan, TimeSpan, CatalogItem[], CancellationToken>((_, _, _, _, _) =>
                 {
                     fileNo++;
                 });
@@ -139,19 +140,19 @@ namespace DataWriter
 
             // assert
             var begin1 = new DateTime(2020, 01, 01, 1, 0, 0, DateTimeKind.Utc);
-            Mock.Get(dataWriter).Verify(dataWriter => dataWriter.OpenAsync(begin1, samplePeriod, catalogItems, default), Times.Once);
+            Mock.Get(dataWriter).Verify(dataWriter => dataWriter.OpenAsync(begin1, filePeriod, samplePeriod, catalogItems, default), Times.Once);
 
             var begin2 = new DateTime(2020, 01, 01, 1, 30, 0, DateTimeKind.Utc);
-            Mock.Get(dataWriter).Verify(dataWriter => dataWriter.OpenAsync(begin2, samplePeriod, catalogItems, default), Times.Once);
+            Mock.Get(dataWriter).Verify(dataWriter => dataWriter.OpenAsync(begin2, filePeriod, samplePeriod, catalogItems, default), Times.Once);
 
             var begin3 = new DateTime(2020, 01, 01, 2, 0, 0, DateTimeKind.Utc);
-            Mock.Get(dataWriter).Verify(dataWriter => dataWriter.OpenAsync(begin3, samplePeriod, catalogItems, default), Times.Once);
+            Mock.Get(dataWriter).Verify(dataWriter => dataWriter.OpenAsync(begin3, filePeriod, samplePeriod, catalogItems, default), Times.Once);
             
             var begin4 = new DateTime(2020, 01, 01, 2, 30, 0, DateTimeKind.Utc);
-            Mock.Get(dataWriter).Verify(dataWriter => dataWriter.OpenAsync(begin4, samplePeriod, catalogItems, default), Times.Once);
+            Mock.Get(dataWriter).Verify(dataWriter => dataWriter.OpenAsync(begin4, filePeriod, samplePeriod, catalogItems, default), Times.Once);
 
             var begin5 = new DateTime(2020, 01, 01, 3, 00, 0, DateTimeKind.Utc);
-            Mock.Get(dataWriter).Verify(dataWriter => dataWriter.OpenAsync(begin5, samplePeriod, catalogItems, default), Times.Never);
+            Mock.Get(dataWriter).Verify(dataWriter => dataWriter.OpenAsync(begin5, filePeriod, samplePeriod, catalogItems, default), Times.Never);
 
             Mock.Get(dataWriter).Verify(dataWriter => dataWriter.CloseAsync(default), Times.Exactly(4));
 

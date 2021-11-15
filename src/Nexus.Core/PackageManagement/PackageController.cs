@@ -200,8 +200,7 @@ namespace Nexus.PackageManagement
                 }
 
                 var assetResponse = await _httpClient
-                    .SendAsync(assetRequest, HttpCompletionOption.ResponseHeadersRead)
-                    ;
+                    .SendAsync(assetRequest, HttpCompletionOption.ResponseHeadersRead);
 
                 assetResponse.EnsureSuccessStatusCode();
 
@@ -362,7 +361,7 @@ namespace Nexus.PackageManagement
 
             var targetPath = Path.Combine(restoreRoot, projectPath.Replace('/', '_').ToLower(), tag);
 
-            if (!Directory.Exists(targetPath) || Directory.EnumerateFileSystemEntries(targetPath).Any())
+            if (!Directory.Exists(targetPath) || !Directory.EnumerateFileSystemEntries(targetPath).Any())
             {
                 var server = $"https://api.github.com";
                 var requestUrl = $"{server}/repos/{projectPath}/releases/tags/{tag}";

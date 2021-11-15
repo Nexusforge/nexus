@@ -76,7 +76,7 @@ namespace DataWriter
                 .Select((catalogItem, i) => new WriteRequest(catalogItem, data[i]))
                 .ToArray();
 
-            await dataWriter.OpenAsync(begin, samplePeriod, catalogItems, CancellationToken.None);
+            await dataWriter.OpenAsync(begin, default, samplePeriod, catalogItems, CancellationToken.None);
             await dataWriter.WriteAsync(TimeSpan.Zero, requests, new Progress<double>(), CancellationToken.None);
             await dataWriter.WriteAsync(TimeSpan.FromSeconds(length), requests, new Progress<double>(), CancellationToken.None);
             await dataWriter.CloseAsync(CancellationToken.None);

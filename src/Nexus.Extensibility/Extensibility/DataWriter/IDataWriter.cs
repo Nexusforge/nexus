@@ -24,12 +24,14 @@ namespace Nexus.Extensibility
         /// Opens or creates a file for the specified parameters.
         /// </summary>
         /// <param name="fileBegin">The beginning of the file.</param>
+        /// <param name="filePeriod">The period of the file.</param>
         /// <param name="samplePeriod">The sample period.</param>
         /// <param name="catalogItems">An array of catalog items to allow preparation of the file header.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         /// <returns>The task.</returns>
         Task OpenAsync(
             DateTime fileBegin, 
+            TimeSpan filePeriod,
             TimeSpan samplePeriod,
             CatalogItem[] catalogItems, 
             CancellationToken cancellationToken);

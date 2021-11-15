@@ -225,12 +225,12 @@ namespace Nexus
                 ServeUnknownFileTypes = true
             });
 
-            app.UseStaticFiles(new StaticFileOptions
-            {
-                FileProvider = new PhysicalFileProvider(Path.Combine(Assembly.GetExecutingAssembly().Location, "..", "Connectors")),
-                RequestPath = "/connectors",
-                ServeUnknownFileTypes = true
-            });
+            //app.UseStaticFiles(new StaticFileOptions
+            //{
+            //    FileProvider = new PhysicalFileProvider(Path.Combine(Assembly.GetExecutingAssembly().Location, "..", "Connectors")),
+            //    RequestPath = "/connectors",
+            //    ServeUnknownFileTypes = true
+            //});
 
             app.UseStaticFiles(new StaticFileOptions
             {

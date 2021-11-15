@@ -125,6 +125,7 @@ namespace Nexus.Extensibility
                     /* open */
                     await this.DataWriter.OpenAsync(
                         fileBegin,
+                        filePeriod,
                         samplePeriod,
                         catalogItems,
                         cancellationToken);

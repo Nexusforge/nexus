@@ -58,7 +58,12 @@ namespace Nexus.Extensions
             return Task.CompletedTask;
         }
 
-        public Task OpenAsync(DateTime fileBegin, TimeSpan samplePeriod, CatalogItem[] catalogItems, CancellationToken cancellationToken)
+        public Task OpenAsync(
+            DateTime fileBegin,
+            TimeSpan filePeriod,
+            TimeSpan samplePeriod, 
+            CatalogItem[] catalogItems, 
+            CancellationToken cancellationToken)
         {
             return Task.Run(() =>
             {

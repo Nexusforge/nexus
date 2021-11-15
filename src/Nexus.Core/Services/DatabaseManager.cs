@@ -18,7 +18,7 @@ namespace Nexus.Services
         // <application data>/config/catalogs/abc.json
         // <application data>/config/users/def.json
 
-        // use defined or potentially large files:
+        // user defined or potentially large files:
         //
         // <application data>/catalogs/abc
         // <application data>/users/def/code
