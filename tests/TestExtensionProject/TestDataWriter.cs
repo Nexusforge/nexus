@@ -14,7 +14,7 @@ namespace TestExtensionProject
             throw new NotImplementedException(nameof(CloseAsync));
         }
 
-        public Task OpenAsync(DateTime fileBegin, TimeSpan samplePeriod, CatalogItem[] catalogItems, CancellationToken cancellationToken)
+        public Task OpenAsync(DateTime fileBegin, TimeSpan filePeriod, TimeSpan samplePeriod, CatalogItem[] catalogItems, CancellationToken cancellationToken)
         {
             throw new NotImplementedException(nameof(OpenAsync));
         }
