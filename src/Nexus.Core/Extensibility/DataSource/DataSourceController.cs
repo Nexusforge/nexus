@@ -24,7 +24,7 @@ namespace Nexus.Extensibility
 
         #region Constructors
 
-        public DataSourceController(IDataSource dataSource, BackendSource backendSource, ILogger logger)
+        public DataSourceController(IDataSource dataSource, BackendSource backendSource, ILogger<DataSourceController> logger)
         {
             this.DataSource = dataSource;
             this.BackendSource = backendSource;
@@ -47,14 +47,14 @@ namespace Nexus.Extensibility
 
         #region Methods
 
-        public async Task InitializeAsync(ConcurrentDictionary<string, ResourceCatalog> catalogCache, CancellationToken cancellationToken)
+        public async Task InitializeAsync(ConcurrentDictionary<string, ResourceCatalog> catalogCache, ILogger logger, CancellationToken cancellationToken)
         {
             _catalogCache = catalogCache;
 
             var context = new DataSourceContext(
                 ResourceLocator: this.BackendSource.ResourceLocator,
                 Configuration: this.BackendSource.Configuration,
-                Logger: this.Logger);
+                Logger: logger);
 
             await this.DataSource.SetContextAsync(context, cancellationToken);
         }

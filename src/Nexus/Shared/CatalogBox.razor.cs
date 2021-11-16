@@ -36,11 +36,6 @@ namespace Nexus.Shared
 
         #region Methods
 
-        protected override async Task OnInitializedAsync()
-        {
-			this.CatalogInfo = await this.UserState.CatalogContainer.GetCatalogInfoAsync(CancellationToken.None);
-		}
-
         private void OpenAttachmentsDialog()
 		{
 			this.AttachmentsDialogIsOpen = true;

@@ -15,7 +15,11 @@ namespace Nexus.Extensibility
     {
         #region Constructors
 
-        public DataWriterController(IDataWriter dataWriter, Uri resourceLocator, Dictionary<string, string> configuration, ILogger logger)
+        public DataWriterController(
+            IDataWriter dataWriter, 
+            Uri resourceLocator, 
+            Dictionary<string, string> configuration, 
+            ILogger<DataWriterController> logger)
         {
             this.DataWriter = dataWriter;
             this.ResourceLocator = resourceLocator;
@@ -39,12 +43,12 @@ namespace Nexus.Extensibility
 
         #region Methods
 
-        public async Task InitializeAsync(CancellationToken cancellationToken)
+        public async Task InitializeAsync(ILogger logger, CancellationToken cancellationToken)
         {
             var context = new DataWriterContext(
                 ResourceLocator: this.ResourceLocator,
                 Configuration: this.Configuration,
-                Logger: this.Logger);
+                Logger: logger);
 
             await this.DataWriter.SetContextAsync(context, cancellationToken);
         }

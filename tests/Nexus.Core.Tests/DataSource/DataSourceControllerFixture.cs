@@ -16,7 +16,10 @@ namespace DataSource
                 ResourceLocator: new Uri("memory://localhost"),
                 Configuration: default);
 
-            this.Controller = new DataSourceController(dataSource, this.BackendSource, NullLogger.Instance);
+            this.Controller = new DataSourceController(
+                dataSource, 
+                this.BackendSource,
+                NullLogger<DataSourceController>.Instance);
         }
 
         internal DataSourceController Controller { get; }

@@ -70,7 +70,7 @@ namespace Nexus.Services
                     await _extensionHive.LoadPackagesAsync(_appState.Project.PackageReferences, cancellationToken);
 
                     _logger.LogInformation("Load catalogs");
-                    _appState.CatalogState = await _catalogManager.LoadCatalogsAsync(cancellationToken);
+                    _appState.CatalogState = await _catalogManager.CreateCatalogStateAsync(cancellationToken);
                 }
                 finally
                 {

@@ -96,9 +96,9 @@ namespace DataWriter
             // instantiate controller
             var resourceLocator = new Uri("file:///empty");
             var configuration = new Dictionary<string, string>();
-            var controller = new DataWriterController(dataWriter, resourceLocator, configuration, NullLogger.Instance);
+            var controller = new DataWriterController(dataWriter, resourceLocator, configuration, NullLogger<DataWriterController>.Instance);
 
-            await controller.InitializeAsync(CancellationToken.None);
+            await controller.InitializeAsync(default, CancellationToken.None);
 
             // read data
             var chunkSize = 2;

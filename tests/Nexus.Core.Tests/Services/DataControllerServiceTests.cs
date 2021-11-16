@@ -43,7 +43,7 @@ namespace Services
                 {
                     [backendSource] = new[] { "/A/B/C" }
                 },
-                BackendSourceCache: new ConcurrentDictionary<BackendSource, ConcurrentDictionary<string, ResourceCatalog>>()
+                BackendSourceCache: new BackendSourceCache()
             );
 
             var appState = new AppState() { CatalogState = catalogState };

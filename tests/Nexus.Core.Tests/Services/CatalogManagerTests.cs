@@ -87,8 +87,8 @@ namespace Services
             var dataControllerService = Mock.Of<IDataControllerService>();
 
             Mock.Get(dataControllerService)
-                .Setup(s => s.GetDataSourceControllerAsync(It.IsAny<BackendSource>(), It.IsAny<CancellationToken>()))
-                .Returns<BackendSource, CancellationToken>((backendSource, cancellationToken) =>
+                .Setup(s => s.GetDataSourceControllerAsync(It.IsAny<BackendSource>(), It.IsAny<CancellationToken>(), It.IsAny<BackendSourceCache>()))
+                .Returns<BackendSource, CancellationToken, BackendSourceCache>((backendSource, cancellationToken, backendSourceCache) =>
                 {
                     var dataSourceController = Mock.Of<IDataSourceController>();
 
@@ -194,7 +194,7 @@ namespace Services
             };
 
             // Act
-            var state = await catalogManager.LoadCatalogsAsync(CancellationToken.None);
+            var state = await catalogManager.CreateCatalogStateAsync(CancellationToken.None);
 
             // Assert
             var catalogInfos = (await Task.WhenAll(state.CatalogContainers.Select(catalogContainer

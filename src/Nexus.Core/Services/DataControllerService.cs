@@ -28,28 +28,36 @@ namespace Nexus.Services
             _loggerFactory = loggerFactory;
         }
 
-        public async Task<IDataSourceController> GetDataSourceControllerAsync(BackendSource backendSource, CancellationToken cancellationToken)
+        public async Task<IDataSourceController> GetDataSourceControllerAsync(
+            BackendSource backendSource,
+            CancellationToken cancellationToken, 
+            BackendSourceCache? backendSourceCache = default)
         {
-            var logger = _loggerFactory.CreateLogger($"{backendSource.Type} - {backendSource.ResourceLocator}");
+            var logger1 = _loggerFactory.CreateLogger<DataSourceController>();
+            var logger2 = _loggerFactory.CreateLogger($"{backendSource.Type} - {backendSource.ResourceLocator}");
             var dataSource = _extensionHive.GetInstance<IDataSource>(backendSource.Type);
-            var controller = new DataSourceController(dataSource, backendSource, logger);
+            var controller = new DataSourceController(dataSource, backendSource, logger1);
 
-            var backendSourceCache = _appState.CatalogState.BackendSourceCache.GetOrAdd(
-                backendSource, 
+            if (backendSourceCache is null)
+                backendSourceCache = _appState.CatalogState.BackendSourceCache;
+
+            var catalogCache = backendSourceCache.GetOrAdd(
+                backendSource,
                 backendSource => new ConcurrentDictionary<string, ResourceCatalog>());
 
-            await controller.InitializeAsync(backendSourceCache, cancellationToken);
+            await controller.InitializeAsync(catalogCache, logger2, cancellationToken);
 
             return controller;
         }
 
         public async Task<IDataWriterController> GetDataWriterControllerAsync(Uri resourceLocator, ExportParameters exportParameters, CancellationToken cancellationToken)
         {
-            var logger = _loggerFactory.CreateLogger($"{exportParameters.Type} - {resourceLocator}");
+            var logger1 = _loggerFactory.CreateLogger<DataWriterController>();
+            var logger2 = _loggerFactory.CreateLogger($"{exportParameters.Type} - {resourceLocator}");
             var dataWriter = _extensionHive.GetInstance<IDataWriter>(exportParameters.Type);
-            var controller = new DataWriterController(dataWriter, resourceLocator, exportParameters.Configuration, logger);
+            var controller = new DataWriterController(dataWriter, resourceLocator, exportParameters.Configuration, logger1);
 
-            await controller.InitializeAsync(cancellationToken);
+            await controller.InitializeAsync(logger2, cancellationToken);
 
             return controller;
         }

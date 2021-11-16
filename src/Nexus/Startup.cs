@@ -82,7 +82,7 @@ namespace Nexus
 
             // blazor
             services.AddRazorPages();
-            services.AddServerSideBlazor();
+            services.AddServerSideBlazor(options => options.DetailedErrors = true);
 
             // matblazor
             services.AddMatToaster(config =>
@@ -348,7 +348,7 @@ namespace Nexus
             await userManagerWrapper.InitializeAsync();
 
             // packages and catalogs
-            _ = appStateController.ReloadCatalogsAsync(CancellationToken.None);
+            await appStateController.ReloadCatalogsAsync(CancellationToken.None);
         }
 
         #endregion

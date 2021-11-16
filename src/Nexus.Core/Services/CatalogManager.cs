@@ -55,7 +55,7 @@ namespace Nexus.Services
 
         #region Methods
 
-        public async Task<CatalogState> LoadCatalogsAsync(CancellationToken cancellationToken)
+        public async Task<CatalogState> CreateCatalogStateAsync(CancellationToken cancellationToken)
         {
             // prepare built-in backend sources
             var builtinBackendSources = new BackendSource[]
@@ -70,10 +70,12 @@ namespace Nexus.Services
             var extendedBackendSources = builtinBackendSources.Concat(_appState.Project.BackendSources);
 
             /* load data sources and get catalog ids */
+            var backendSourceCache = new BackendSourceCache();
+
             var backendSourceToCatalogIdsMap = (await Task.WhenAll(
                 extendedBackendSources.Select(async backendSource =>
                     {
-                        using var controller = await _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken);
+                        using var controller = await _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken, backendSourceCache);
                         var catalogIds = await controller.GetCatalogIdsAsync(cancellationToken);
 
                         return new KeyValuePair<BackendSource, string[]>(backendSource, catalogIds);
@@ -109,9 +111,7 @@ namespace Nexus.Services
                 AggregationBackendSource: _aggregationBackendSource,
                 CatalogContainers: catalogContainers,
                 BackendSourceToCatalogIdsMap: backendSourceToCatalogIdsMap,
-                BackendSourceCache: new ConcurrentDictionary<BackendSource, ConcurrentDictionary<string, ResourceCatalog>>(
-                    backendSourceToCatalogIdsMap
-                        .ToDictionary(entry => entry.Key, entry => new ConcurrentDictionary<string, ResourceCatalog>()))
+                BackendSourceCache: backendSourceCache
             );
 
             _logger.LogInformation("Found {CatalogCount} catalogs from {BackendSourceCount} backend sources",

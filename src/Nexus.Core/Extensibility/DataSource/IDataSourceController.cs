@@ -1,4 +1,5 @@
-﻿using Nexus.DataModel;
+﻿using Microsoft.Extensions.Logging;
+using Nexus.DataModel;
 using System;
 using System.Collections.Concurrent;
 using System.Threading;
@@ -8,7 +9,7 @@ namespace Nexus.Extensibility
 {
     internal interface IDataSourceController : IDisposable
     {
-        Task InitializeAsync(ConcurrentDictionary<string, ResourceCatalog> catalogs, CancellationToken cancellationToken);
+        Task InitializeAsync(ConcurrentDictionary<string, ResourceCatalog> catalogs, ILogger logger, CancellationToken cancellationToken);
         Task<string[]> GetCatalogIdsAsync(CancellationToken cancellationToken);
         Task<ResourceCatalog> GetCatalogAsync(string catalogId, CancellationToken cancellationToken);
         Task<AvailabilityResult> GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, AvailabilityGranularity granularity, CancellationToken cancellationToken);

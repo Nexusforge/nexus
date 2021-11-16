@@ -2,7 +2,6 @@
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace Nexus.Services
@@ -11,7 +10,7 @@ namespace Nexus.Services
         BackendSource AggregationBackendSource,
         CatalogContainer[] CatalogContainers,
         Dictionary<BackendSource, string[]> BackendSourceToCatalogIdsMap,
-        ConcurrentDictionary<BackendSource, ConcurrentDictionary<string, ResourceCatalog>> BackendSourceCache);
+        BackendSourceCache BackendSourceCache);
 
     internal record CatalogInfo(DateTime Begin, DateTime End, ResourceCatalog Catalog);
 }

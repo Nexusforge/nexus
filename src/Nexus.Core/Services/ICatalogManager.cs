@@ -7,7 +7,7 @@ namespace Nexus.Services
 {
     internal interface ICatalogManager
     {
-        Task<CatalogState> LoadCatalogsAsync(
+        Task<CatalogState> CreateCatalogStateAsync(
             CancellationToken cancellationToken);
 
         Task<CatalogInfo> LoadCatalogInfoAsync(

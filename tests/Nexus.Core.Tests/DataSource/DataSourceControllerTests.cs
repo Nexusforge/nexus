@@ -30,7 +30,7 @@ namespace DataSource
         internal async Task CanGetAvailability(AvailabilityGranularity granularity, string beginString, string endString)
         {
             var controller = _fixture.Controller;
-            await controller.InitializeAsync(default, CancellationToken.None);
+            await controller.InitializeAsync(default, default, CancellationToken.None);
 
             var catalogId = InMemory.AccessibleCatalogId;
 
@@ -83,7 +83,7 @@ namespace DataSource
         public async Task CanGetTimeRange()
         {
             var controller = _fixture.Controller;
-            await controller.InitializeAsync(default, CancellationToken.None);
+            await controller.InitializeAsync(default, default, CancellationToken.None);
 
             var catalogId = InMemory.AccessibleCatalogId;
             var actual = await controller.GetTimeRangeAsync(catalogId, CancellationToken.None);
@@ -97,7 +97,7 @@ namespace DataSource
         public async Task CanCheckIsDataOfDayAvailable()
         {
             var controller = _fixture.Controller;
-            await controller.InitializeAsync(default, CancellationToken.None);
+            await controller.InitializeAsync(default, default, CancellationToken.None);
 
             var day = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
             var catalogId = InMemory.AccessibleCatalogId;
@@ -110,7 +110,7 @@ namespace DataSource
         public async Task CanRead()
         {
             var controller = _fixture.Controller;
-            await controller.InitializeAsync(new ConcurrentDictionary<string, ResourceCatalog>(), CancellationToken.None);
+            await controller.InitializeAsync(new ConcurrentDictionary<string, ResourceCatalog>(), default, CancellationToken.None);
             
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 02, 0, 0, 1, DateTimeKind.Utc);
@@ -205,7 +205,7 @@ namespace DataSource
         public async Task CanReadAsStream()
         {
             var controller = _fixture.Controller;
-            await controller.InitializeAsync(new ConcurrentDictionary<string, ResourceCatalog>(), CancellationToken.None);
+            await controller.InitializeAsync(new ConcurrentDictionary<string, ResourceCatalog>(), default, CancellationToken.None);
 
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 02, 0, 0, 1, DateTimeKind.Utc);

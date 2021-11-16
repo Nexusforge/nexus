@@ -129,7 +129,7 @@ namespace Nexus.PackageManagement
             string restoreFolderPath;
             var actualRestoreRoot = Path.Combine(restoreRoot, provider);
 
-            _logger.LogDebug("Restore package using provider {Provider}", provider);
+            _logger.LogDebug("Restore package to {RestoreRoot} using provider {Provider}", actualRestoreRoot, provider);
 
             switch (provider)
             {
@@ -154,8 +154,6 @@ namespace Nexus.PackageManagement
                 default:
                     throw new ArgumentException($"The provider '{provider}' is not supported.");
             }
-
-            _logger.LogDebug("Restored package to path {RestoreFolderPath}", restoreFolderPath);
 
             return restoreFolderPath;
         }
@@ -277,7 +275,7 @@ namespace Nexus.PackageManagement
 
                 if (!Directory.Exists(targetPath) || !Directory.EnumerateFileSystemEntries(targetPath).Any())
                 {
-                    _logger.LogDebug("Restore package from source {Source}", sourcePath);
+                    _logger.LogDebug("Restore package from source {Source} to {Target}", sourcePath, targetPath);
                     PackageController.CloneFolder(sourcePath, targetPath);
                 }
                 else
@@ -404,7 +402,7 @@ namespace Nexus.PackageManagement
                     headers["User-Agent"] = "Nexus";
                     headers["Accept"] = "application/octet-stream";
 
-                    _logger.LogDebug("Restore package from source {Source}", assetBrowserUrl);
+                    _logger.LogDebug("Restore package from source {Source} to {Target}", assetBrowserUrl, targetPath);
                     await PackageController.DownloadAndExtractAsync(assetBrowserUrl, assetUrl, targetPath, headers, cancellationToken);
                 }
                 else
@@ -529,7 +527,7 @@ namespace Nexus.PackageManagement
                 {
                     // download package file (https://docs.gitlab.com/ee/user/packages/generic_packages/index.html#download-package-file)
                     var assetUrl = $"{server}/api/v4/projects/{encodedProjectPath}/packages/generic/{package}/{version}/{fileName}";
-                    _logger.LogDebug("Restore package from source {Source}", assetUrl);
+                    _logger.LogDebug("Restore package from source {Source} to {Target}", assetUrl, targetPath);
                     await PackageController.DownloadAndExtractAsync(fileName, assetUrl, targetPath, headers, cancellationToken);
                 }
                 else
