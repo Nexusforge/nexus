@@ -5,7 +5,6 @@ using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Sources;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -72,14 +71,23 @@ namespace Nexus.Services
             /* load data sources and get catalog ids */
             var backendSourceCache = new BackendSourceCache();
 
-            var backendSourceToCatalogIdsMap = (await Task.WhenAll(
-                extendedBackendSources.Select(async backendSource =>
+            var tmp = await extendedBackendSources.Select(async backendSource =>
+                {
+                    try
                     {
                         using var controller = await _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken, backendSourceCache);
                         var catalogIds = await controller.GetCatalogIdsAsync(cancellationToken);
 
                         return new KeyValuePair<BackendSource, string[]>(backendSource, catalogIds);
-                    })))
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Unable to load catalog identifiers from source {Type} and URL {Url}", backendSource.Type, backendSource.ResourceLocator);
+                        throw;
+                    }
+                }).WhenAllEx();
+
+            var backendSourceToCatalogIdsMap = tmp.Results
                 .ToDictionary(entry => entry.Key, entry => entry.Value);
 
             /* inverse the dictionary */
@@ -114,7 +122,7 @@ namespace Nexus.Services
                 BackendSourceCache: backendSourceCache
             );
 
-            _logger.LogInformation("Found {CatalogCount} catalogs from {BackendSourceCount} backend sources",
+            _logger.LogInformation("Found {CatalogCount} catalogs in {BackendSourceCount} backend sources",
                 catalogContainers.Length,
                 backendSourceToCatalogIdsMap.Keys.Count);
 

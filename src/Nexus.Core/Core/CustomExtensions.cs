@@ -11,26 +11,27 @@ namespace Nexus
     internal static class CustomExtensions
     {
 #pragma warning disable VSTHRD200 // Verwenden Sie das Suffix "Async" für asynchrone Methoden
-        public static async Task<(T[] Results, AggregateException Exception)> WhenAllEx<T>(this IEnumerable<Task<T>> tasks)
+        public static Task<(T[] Results, AggregateException Exception)> WhenAllEx<T>(this IEnumerable<Task<T>> tasks)
 #pragma warning restore VSTHRD200 // Verwenden Sie das Suffix "Async" für asynchrone Methoden
         {
             tasks = tasks.ToArray();
 
-            await Task.WhenAll(tasks);
-
-            var results = tasks
+            return Task.WhenAll(tasks).ContinueWith(t =>
+            {
+                var results = tasks
                 .Where(task => task.Status == TaskStatus.RanToCompletion)
                 .Select(task => task.Result)
                 .ToArray();
 
-            var aggregateExceptions = tasks
-                .Where(task => task.IsFaulted && task.Exception is not null)
-                .Select(task => task.Exception ?? throw new Exception("exception is null"))
-                .ToArray();
+                var aggregateExceptions = tasks
+                    .Where(task => task.IsFaulted && task.Exception is not null)
+                    .Select(task => task.Exception ?? throw new Exception("exception is null"))
+                    .ToArray();
 
-            var flattenedAggregateException = new AggregateException(aggregateExceptions).Flatten();
+                var flattenedAggregateException = new AggregateException(aggregateExceptions).Flatten();
 
-            return (results, flattenedAggregateException);
+                return (results, flattenedAggregateException);
+            }, default, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
         }
 
         public static byte[] Hash(this string value)

@@ -320,7 +320,7 @@ namespace Nexus.Extensibility
                     var remainingFilePeriod = fileSource.FilePeriod - consumedFilePeriod;
 
                     currentPeriod = TimeSpan.FromTicks(Math.Min(remainingFilePeriod.Ticks, remainingPeriod.Ticks));
-                    this.Context.Logger.LogDebug("Process period {CurrentBegin} to {CurrentEnd}", currentBegin, currentBegin + currentPeriod);
+                    this.Context.Logger.LogTrace("Process period {CurrentBegin} to {CurrentEnd}", currentBegin, currentBegin + currentPeriod);
 
                     fileBlock = (int)(currentPeriod.Ticks / samplePeriod.Ticks);
 

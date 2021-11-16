@@ -68,28 +68,20 @@ namespace Nexus.Extensibility
         public async Task<ResourceCatalog>
            GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
         {
-            if (!_catalogCache.TryGetValue(catalogId, out var catalog))
+            this.Logger.LogDebug("Load catalog {CatalogId}", catalogId);
+
+            var catalog = await this.DataSource.GetCatalogAsync(catalogId, cancellationToken);
+
+            foreach (var resource in (catalog.Resources ?? Enumerable.Empty<Resource>()))
             {
-                this.Logger.LogDebug("Load catalog {CatalogId} from data source", catalogId);
-
-                catalog = await this.DataSource.GetCatalogAsync(catalogId, cancellationToken);
-
-                foreach (var resource in (catalog.Resources ?? Enumerable.Empty<Resource>()))
+                foreach (var representation in (resource.Representations ?? Enumerable.Empty<Representation>()))
                 {
-                    foreach (var representation in (resource.Representations ?? Enumerable.Empty<Representation>()))
-                    {
-                        representation.BackendSource = this.BackendSource;
-                    }
+                    representation.BackendSource = this.BackendSource;
                 }
-
-                /* GetOrAdd is not working because it requires a synchronous delegate */
-                _catalogCache.TryAdd(catalogId, catalog);
             }
 
-            else
-            {
-                this.Logger.LogDebug("Catalog {CatalogId} found in cache.", catalogId);
-            }
+            /* GetOrAdd is not working because it requires a synchronous delegate */
+            _catalogCache.TryAdd(catalogId, catalog);
 
             return catalog;
         }
@@ -346,20 +338,20 @@ namespace Nexus.Extensibility
             var bytesPerRow = catalogItemPipeWriters
                 .Sum(catalogItemPipeWriter => catalogItemPipeWriter.CatalogItem.Representation.ElementSize);
 
-            logger.LogDebug("A single row has a size of {BytesPerRow} bytes", bytesPerRow);
+            logger.LogTrace("A single row has a size of {BytesPerRow} bytes", bytesPerRow);
 
             var chunkSize = Math.Max(bytesPerRow, DataSourceController.ChunkSize);
-            logger.LogDebug("The chunk size is {ChunkSize} bytes", chunkSize);
+            logger.LogTrace("The chunk size is {ChunkSize} bytes", chunkSize);
 
             var rows = chunkSize / bytesPerRow;
-            logger.LogDebug("{RowCount} rows will be processed per chunk", rows);
+            logger.LogTrace("{RowCount} rows will be processed per chunk", rows);
 
             var maxPeriodPerRequest = TimeSpan.FromTicks(samplePeriod.Ticks * rows);
-            logger.LogDebug("The maximum period per request is {MaxPeriodPerRequest}", maxPeriodPerRequest);
+            logger.LogTrace("The maximum period per request is {MaxPeriodPerRequest}", maxPeriodPerRequest);
 
             /* periods */
             var totalPeriod = end - begin;
-            logger.LogDebug("The total period is {TotalPeriod}", totalPeriod);
+            logger.LogTrace("The total period is {TotalPeriod}", totalPeriod);
 
             var consumedPeriod = TimeSpan.Zero;
             var remainingPeriod = totalPeriod;
@@ -377,7 +369,7 @@ namespace Nexus.Extensibility
                 var currentBegin = begin + consumedPeriod;
                 var currentEnd = currentBegin + currentPeriod;
 
-                logger.LogDebug("Process period {CurrentBegin} to {CurrentEnd}", currentBegin, currentEnd);
+                logger.LogTrace("Process period {CurrentBegin} to {CurrentEnd}", currentBegin, currentEnd);
 
                 var readingTasks = readingGroups.Select(async readingGroup =>
                 {

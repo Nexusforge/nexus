@@ -42,7 +42,11 @@ namespace Nexus.Shared
 				}
 				else if (e.PropertyName == nameof(UserState.GroupedResourcesEntry))
 				{
-					this.ResourcePage = 0;
+					_ = this.InvokeAsync(() =>
+					{
+						this.ResourcePage = 0;
+						this.StateHasChanged();
+					});
 				}
 				else if (e.PropertyName == nameof(AppState.CatalogState) ||
 						(e.PropertyName == nameof(AppState.IsCatalogStateUpdating) && !this.AppState.IsCatalogStateUpdating))
