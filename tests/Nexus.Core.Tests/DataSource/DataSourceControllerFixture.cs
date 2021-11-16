@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging.Abstractions;
 using Nexus.Extensibility;
-using Nexus.Extensions;
+using Nexus.Sources;
 using System;
 
 namespace DataSource
@@ -9,10 +9,10 @@ namespace DataSource
     {
         public DataSourceControllerFixture()
         {
-            var dataSource = new InMemoryDataSource();
+            var dataSource = new InMemory();
 
             this.BackendSource = new BackendSource(
-                Type: InMemoryDataSource.Id, 
+                Type: typeof(InMemory).FullName ?? throw new Exception("full name is null"), 
                 ResourceLocator: new Uri("memory://localhost"),
                 Configuration: default);
 

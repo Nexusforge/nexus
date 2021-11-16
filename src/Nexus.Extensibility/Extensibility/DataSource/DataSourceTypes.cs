@@ -36,11 +36,13 @@ namespace Nexus.Extensibility
     /// <param name="IsEnabled"></param>
     public sealed record BackendSource(string Type, Uri ResourceLocator, Dictionary<string, string> Configuration, bool IsEnabled = true)
     {
+        /// <inheritdoc/>
         public override int GetHashCode()
         {
             return HashCode.Combine(this.Type, this.ResourceLocator);
         }
 
+        /// <inheritdoc/>
         public bool Equals(BackendSource? other)
         {
             return other is not null &&

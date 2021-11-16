@@ -45,8 +45,8 @@ namespace Nexus.Services
 
         public async Task<IDataWriterController> GetDataWriterControllerAsync(Uri resourceLocator, ExportParameters exportParameters, CancellationToken cancellationToken)
         {
-            var logger = _loggerFactory.CreateLogger($"{exportParameters.Writer} - {resourceLocator}");
-            var dataWriter = _extensionHive.GetInstance<IDataWriter>(exportParameters.Writer);
+            var logger = _loggerFactory.CreateLogger($"{exportParameters.Type} - {resourceLocator}");
+            var dataWriter = _extensionHive.GetInstance<IDataWriter>(exportParameters.Type);
             var controller = new DataWriterController(dataWriter, resourceLocator, exportParameters.Configuration, logger);
 
             await controller.InitializeAsync(cancellationToken);

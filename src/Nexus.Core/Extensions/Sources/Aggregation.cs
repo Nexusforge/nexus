@@ -13,14 +13,13 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Nexus.Extensions
+namespace Nexus.Sources
 {
-    [ExtensionIdentification("Nexus.Builtin.Aggregation", "Nexus Aggregation", "Provides access to databases with Nexus aggregation files.")]
-    internal class AggregationDataSource : IDataSource
+    [ExtensionDescription("Provides access to databases with Nexus aggregation files.")]
+    internal class Aggregation : IDataSource
     {
         #region Fields
 
-        public const string Id = "Nexus.Builtin.Aggregation";
         private ResourceCatalog[] _catalogs = null!;
 
         #endregion

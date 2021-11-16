@@ -2,7 +2,7 @@
 using Nexus;
 using Nexus.DataModel;
 using Nexus.Extensibility;
-using Nexus.Extensions;
+using Nexus.Sources;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -32,7 +32,7 @@ namespace DataSource
             var controller = _fixture.Controller;
             await controller.InitializeAsync(default, CancellationToken.None);
 
-            var catalogId = InMemoryDataSource.AccessibleCatalogId;
+            var catalogId = InMemory.AccessibleCatalogId;
 
             var begin = DateTime.ParseExact(
                 beginString,
@@ -85,7 +85,7 @@ namespace DataSource
             var controller = _fixture.Controller;
             await controller.InitializeAsync(default, CancellationToken.None);
 
-            var catalogId = InMemoryDataSource.AccessibleCatalogId;
+            var catalogId = InMemory.AccessibleCatalogId;
             var actual = await controller.GetTimeRangeAsync(catalogId, CancellationToken.None);
 
             Assert.Equal(_fixture.BackendSource, actual.BackendSource);
@@ -100,7 +100,7 @@ namespace DataSource
             await controller.InitializeAsync(default, CancellationToken.None);
 
             var day = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
-            var catalogId = InMemoryDataSource.AccessibleCatalogId;
+            var catalogId = InMemory.AccessibleCatalogId;
             var actual = await controller.IsDataOfDayAvailableAsync(catalogId, day, CancellationToken.None);
 
             Assert.True(actual);
@@ -117,15 +117,15 @@ namespace DataSource
             var samplePeriod = TimeSpan.FromSeconds(1);
 
             // resource 1
-            var resourcePath1 = $"{InMemoryDataSource.AccessibleCatalogId}/V1/1_s_mean";
-            var catalogItem1 = (await controller.GetCatalogAsync(InMemoryDataSource.AccessibleCatalogId, CancellationToken.None)).Find(resourcePath1);
+            var resourcePath1 = $"{InMemory.AccessibleCatalogId}/V1/1_s_mean";
+            var catalogItem1 = (await controller.GetCatalogAsync(InMemory.AccessibleCatalogId, CancellationToken.None)).Find(resourcePath1);
 
             var pipe1 = new Pipe();
             var dataWriter1 = pipe1.Writer;
 
             // resource 2
-            var resourcePath2 = $"{InMemoryDataSource.AccessibleCatalogId}/T1/1_s_mean";
-            var catalogItem2 = (await controller.GetCatalogAsync(InMemoryDataSource.AccessibleCatalogId, CancellationToken.None)).Find(resourcePath2);
+            var resourcePath2 = $"{InMemory.AccessibleCatalogId}/T1/1_s_mean";
+            var catalogItem2 = (await controller.GetCatalogAsync(InMemory.AccessibleCatalogId, CancellationToken.None)).Find(resourcePath2);
 
             var pipe2 = new Pipe();
             var dataWriter2 = pipe2.Writer;
@@ -210,7 +210,7 @@ namespace DataSource
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 02, 0, 0, 1, DateTimeKind.Utc);
             var resourcePath = "/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean";
-            var catalogItem = (await controller.GetCatalogAsync(InMemoryDataSource.AccessibleCatalogId, CancellationToken.None)).Find(resourcePath);
+            var catalogItem = (await controller.GetCatalogAsync(InMemory.AccessibleCatalogId, CancellationToken.None)).Find(resourcePath);
 
             DataSourceController.ChunkSize = 10000;
             var stream = controller.ReadAsStream(begin, end, catalogItem, NullLogger<DataSourceController>.Instance);

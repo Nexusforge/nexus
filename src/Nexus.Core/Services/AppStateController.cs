@@ -2,6 +2,7 @@
 using Nexus.Core;
 using Nexus.Extensibility;
 using Nexus.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -83,7 +84,7 @@ namespace Nexus.Services
 
             foreach (var dataWriterType in _extensionHive.GetExtensions<IDataWriter>())
             {
-                var extensionIdentification = dataWriterType.GetFirstAttribute<ExtensionIdentificationAttribute>();
+                var fullName = dataWriterType.FullName ?? throw new Exception("full name is null");
 
                 string formatName;
 
@@ -93,7 +94,7 @@ namespace Nexus.Services
                 }
                 catch
                 {
-                    _logger.LogWarning("Data writer {DataWriterId} has no format name attribute, skipping", extensionIdentification.Id);
+                    _logger.LogWarning("Data writer {DataWriter} has no format name attribute", fullName);
                     continue;
                 }
 
@@ -101,7 +102,7 @@ namespace Nexus.Services
                     .GetCustomAttributes<OptionAttribute>()
                     .ToArray();
 
-                dataWriterInfoMap[extensionIdentification.Id] = (formatName, options);
+                dataWriterInfoMap[fullName] = (formatName, options);
             }
 
             _appState.DataWriterInfoMap = dataWriterInfoMap;

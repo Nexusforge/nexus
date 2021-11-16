@@ -5,8 +5,9 @@ using Moq;
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
-using Nexus.Extensions;
 using Nexus.Services;
+using Nexus.Sources;
+using Nexus.Writers;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -26,14 +27,14 @@ namespace Services
 
             Mock.Get(extensionHive)
               .Setup(extensionHive => extensionHive.GetInstance<IDataSource>(It.IsAny<string>()))
-              .Returns(new InMemoryDataSource());
+              .Returns(new InMemory());
 
             var backendSource = new BackendSource(
                 Type: "Nexus.Builtin.InMemory", 
                 new Uri("A", UriKind.Relative), 
                 Configuration: default);
 
-            var expectedCatalog = InMemoryDataSource.LoadCatalog("/A/B/C");
+            var expectedCatalog = InMemory.LoadCatalog("/A/B/C");
 
             var catalogState = new CatalogState(
                 default,
@@ -74,7 +75,7 @@ namespace Services
 
             Mock.Get(extensionHive)
               .Setup(extensionHive => extensionHive.GetInstance<IDataWriter>(It.IsAny<string>()))
-              .Returns(new CsvDataWriter());
+              .Returns(new Csv());
 
             var loggerFactory = Mock.Of<ILoggerFactory>();
             var resourceLocator = new Uri("A", UriKind.Relative);

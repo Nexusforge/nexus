@@ -16,10 +16,10 @@ namespace Nexus.Core
         /// <example>false</example>
         public bool Force { get; set; } = false;
 
-        public List<Aggregation> Aggregations { get; set; } = new List<Aggregation>();
+        public List<CatalogAggregation> Aggregations { get; set; } = new List<CatalogAggregation>();
     }
 
-    public record Aggregation
+    public record CatalogAggregation
     {
         /// <example>/IN_MEMORY/TEST/ACCESSIBLE</example>
         public string CatalogId { get; set; } = string.Empty;
@@ -60,10 +60,10 @@ namespace Nexus.Core
 
     internal record AggregationResource(
         Resource Resource,
-        List<Aggregation> Aggregations);
+        List<CatalogAggregation> Aggregations);
 
     internal record AggregationUnit(
-        Aggregation Aggregation,
+        CatalogAggregation Aggregation,
         TimeSpan Period,
         AggregationMethod Method,
         string Argument,

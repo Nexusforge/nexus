@@ -210,7 +210,7 @@ namespace Services
                 Begin = begin,
                 End = end,
                 FilePeriod = TimeSpan.FromSeconds(10),
-                Writer = "A",
+                Type = "A",
                 ResourcePaths = new[] { catalogItem1.ToPath(), catalogItem2.ToPath() }
             };
 

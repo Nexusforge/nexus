@@ -234,7 +234,7 @@ namespace Nexus.Services
         private async Task OrchestrateAggregationAsync<T>(string targetDirectoryPath,
                                                            DataSourceController dataSourceController,
                                                            CatalogItem catalogItem,
-                                                           List<Aggregation> aggregations,
+                                                           List<CatalogAggregation> aggregations,
                                                            DateTime date,
                                                            bool force,
                                                            CancellationToken cancellationToken) where T : unmanaged

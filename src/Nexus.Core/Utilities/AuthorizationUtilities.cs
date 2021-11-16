@@ -1,6 +1,7 @@
 ﻿using Nexus.Core;
 using Nexus.DataModel;
-using Nexus.Extensions;
+using Nexus.Sources;
+using System;
 using System.Linq;
 using System.Security.Claims;
 
@@ -29,7 +30,8 @@ namespace Nexus.Utilities
                         => catalogMetadata.GroupMemberships is not null && 
                            catalogMetadata.GroupMemberships.Contains(group)));
 
-                var implicitAccess = catalogId == InMemoryDataSource.Id;
+                var inMemoryDataSourceFullName = typeof(InMemory).FullName ?? throw new Exception("full name is null");
+                var implicitAccess = catalogId == inMemoryDataSourceFullName;
 
                 return isAdmin || canAccessCatalog || canAccessGroup || implicitAccess;
             }

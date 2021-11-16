@@ -76,13 +76,13 @@ namespace Services
                 await hive.LoadPackagesAsync(packageReferences, CancellationToken.None);
 
                 // instantiate
-                Assert.True(hive.TryGetInstance<IDataSource>("my-unique-data-source", out var dataSource));
+                Assert.True(hive.TryGetInstance<IDataSource>("TestExtensionProject.TestDataSource", out var dataSource));
                 Assert.NotNull(dataSource);
 
-                Assert.True(hive.TryGetInstance<IDataWriter>("my-unique-data-writer", out var dataWriter));
+                Assert.True(hive.TryGetInstance<IDataWriter>("TestExtensionProject.TestDataWriter", out var dataWriter));
                 Assert.NotNull(dataWriter);
 
-                Assert.False(hive.TryGetInstance<IDataSource>("my-unique-data-writer", out var _));
+                Assert.False(hive.TryGetInstance<IDataSource>("TestExtensionProject.TestDataWriter", out var _));
             }
             finally
             {

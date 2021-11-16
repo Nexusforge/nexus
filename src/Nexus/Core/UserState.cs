@@ -357,10 +357,10 @@ namespace Nexus.Core
 
         public string Writer
         {
-            get { return this.ExportParameters.Writer; }
+            get { return this.ExportParameters.Type; }
             set
             {
-                this.ExportParameters.Writer = value;
+                this.ExportParameters.Type = value;
                 this.RaisePropertyChanged();
             }
         }

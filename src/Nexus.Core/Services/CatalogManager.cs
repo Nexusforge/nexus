@@ -3,7 +3,7 @@ using Microsoft.Extensions.Options;
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
-using Nexus.Extensions;
+using Nexus.Sources;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -46,7 +46,7 @@ namespace Nexus.Services
             _options = options.Value;
 
             _aggregationBackendSource = new BackendSource(
-                Type: AggregationDataSource.Id,
+                Type: typeof(Aggregation).FullName ?? throw new Exception("full name is null"),
                 ResourceLocator: new Uri(_options.Cache, UriKind.RelativeOrAbsolute),
                 Configuration: new Dictionary<string, string>());
         }
@@ -62,7 +62,7 @@ namespace Nexus.Services
             {
                 _aggregationBackendSource,
                 new BackendSource(
-                    Type: InMemoryDataSource.Id,
+                    Type: typeof(InMemory).FullName ?? throw new Exception("full name is null"),
                     ResourceLocator: new Uri("memory://localhost"),
                     Configuration: new Dictionary<string, string>()),
             };

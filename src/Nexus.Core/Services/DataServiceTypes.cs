@@ -1,5 +1,5 @@
 ﻿using Nexus.DataModel;
-using Nexus.Extensions;
+using Nexus.Writers;
 using System;
 using System.Collections.Generic;
 
@@ -16,8 +16,8 @@ namespace Nexus.Services
         /// <example>00:00:00</example>
         public TimeSpan FilePeriod { get; set; }
 
-        /// <example>Nexus.Builtin.Csv</example>
-        public string Writer { get; set; } = CsvDataWriter.Id;
+        /// <example>Nexus.Writers.Csv</example>
+        public string Type { get; set; } = typeof(Csv).FullName ?? throw new Exception("full name is null");
 
         /// <example>["/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean", "/IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean"]</example>
         public string[] ResourcePaths { get; set; } = new string[0];

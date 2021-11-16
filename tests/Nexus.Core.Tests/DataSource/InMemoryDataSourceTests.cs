@@ -3,7 +3,7 @@ using Nexus;
 using Nexus.Core.Tests;
 using Nexus.DataModel;
 using Nexus.Extensibility;
-using Nexus.Extensions;
+using Nexus.Sources;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,7 +27,7 @@ namespace DataSource
         public async Task ProvidesCatalog()
         {
             // arrange
-            var dataSource = new InMemoryDataSource() as IDataSource;
+            var dataSource = new InMemory() as IDataSource;
 
             var context = new DataSourceContext(
                 ResourceLocator: new Uri("memory://localhost"),
@@ -37,7 +37,7 @@ namespace DataSource
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
             // act
-            var actual = await dataSource.GetCatalogAsync(InMemoryDataSource.AccessibleCatalogId, CancellationToken.None);
+            var actual = await dataSource.GetCatalogAsync(InMemory.AccessibleCatalogId, CancellationToken.None);
 
             // assert
             var actualIds = actual.Resources.Select(resource => resource.Id).ToList();
@@ -60,7 +60,7 @@ namespace DataSource
         [Fact]
         public async Task CanProvideTimeRange()
         {
-            var dataSource = new InMemoryDataSource() as IDataSource;
+            var dataSource = new InMemory() as IDataSource;
 
             var context = new DataSourceContext(
                 ResourceLocator: new Uri("memory://localhost"),
@@ -78,7 +78,7 @@ namespace DataSource
         [Fact]
         public async Task CanProvideAvailability()
         {
-            var dataSource = new InMemoryDataSource() as IDataSource;
+            var dataSource = new InMemory() as IDataSource;
 
             var context = new DataSourceContext(
                 ResourceLocator: new Uri("memory://localhost"),
@@ -98,7 +98,7 @@ namespace DataSource
         [Fact]
         public async Task CanReadFullDay()
         {
-            var dataSource = new InMemoryDataSource() as IDataSource;
+            var dataSource = new InMemory() as IDataSource;
 
             var context = new DataSourceContext(
                 ResourceLocator: new Uri("memory://localhost"),
@@ -107,7 +107,7 @@ namespace DataSource
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
-            var catalog = await dataSource.GetCatalogAsync(InMemoryDataSource.AccessibleCatalogId, CancellationToken.None);
+            var catalog = await dataSource.GetCatalogAsync(InMemory.AccessibleCatalogId, CancellationToken.None);
             var resource = catalog.Resources.First();
             var representation = resource.Representations.First();
             var catalogItem = new CatalogItem(catalog, resource, representation);

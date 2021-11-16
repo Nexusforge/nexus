@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace TestExtensionProject
 {
-    [ExtensionIdentification("my-unique-data-writer", "My unique data writer", "A data writer for unit tests.")]
+    [ExtensionDescription("A data writer for unit tests.")]
     public class TestDataWriter : IDataWriter
     {
         public Task CloseAsync(CancellationToken cancellationToken)

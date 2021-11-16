@@ -8,14 +8,13 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Nexus.Extensions
+namespace Nexus.Sources
 {
-    [ExtensionIdentification("Nexus.Builtin.InMemory", "Nexus in-memory", "Provides an in-memory database.")]
-    internal class InMemoryDataSource : IDataSource
+    [ExtensionDescription("Provides an in-memory database.")]
+    internal class InMemory : IDataSource
     {
         #region Fields
 
-        public const string Id = "Nexus.Builtin.InMemory";
         public const string AccessibleCatalogId = "/IN_MEMORY/TEST/ACCESSIBLE";
         public const string RestrictedCatalogId = "/IN_MEMORY/TEST/RESTRICTED";
 
@@ -42,7 +41,7 @@ namespace Nexus.Extensions
 
         public Task<ResourceCatalog> GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
         {
-            return Task.FromResult(InMemoryDataSource.LoadCatalog(catalogId));
+            return Task.FromResult(InMemory.LoadCatalog(catalogId));
         }
 
         public Task<(DateTime Begin, DateTime End)> GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)

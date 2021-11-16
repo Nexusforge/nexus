@@ -9,17 +9,16 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Nexus.Extensions
+namespace Nexus.Writers
 {
     [DataWriterFormatName("Comma-separated (*.csv)")]
     [DataWriterSelectOption("RowIndexFormat", "Row index format", "Excel", new string[] { "Excel", "Index", "Unix" }, new string[] { "Excel time", "Index-based", "Unix time" })]
     [DataWriterIntegerNumberInputOption("SignificantFigures", "Significant figures", 4, 0, int.MaxValue)]
-    [ExtensionIdentification("Nexus.Builtin.Csv", "Nexus CSV Writer", "Writes data into CSV files.")]
-    internal class CsvDataWriter : IDataWriter
+    [ExtensionDescription("Writes data into CSV files.")]
+    internal class Csv : IDataWriter
     {
         #region "Fields"
 
-        public const string Id = "Nexus.Builtin.Csv";
         private double _unixStart;
         private double _excelStart;
         private DateTime _unixEpoch;
@@ -31,7 +30,7 @@ namespace Nexus.Extensions
 
         #region "Constructors"
 
-        public CsvDataWriter()
+        public Csv()
         {
             _unixEpoch = new DateTime(1970, 01, 01);
 

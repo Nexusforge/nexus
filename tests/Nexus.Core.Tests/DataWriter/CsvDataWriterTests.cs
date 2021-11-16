@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Nexus.DataModel;
 using Nexus.Extensibility;
-using Nexus.Extensions;
+using Nexus.Writers;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -30,16 +30,16 @@ namespace DataWriter
         public async Task CanWriteFiles(string rowIndexFormat)
         {
             var targetFolder = _fixture.GetTargetFolder();
-            var dataWriter = new CsvDataWriter() as IDataWriter;
+            var dataWriter = new Csv() as IDataWriter;
 
             var context = new DataWriterContext(
                 ResourceLocator: new Uri(targetFolder),
-                Logger: NullLogger.Instance,
                 Configuration: new Dictionary<string, string>()
                 {
                     ["RowIndexFormat"] = rowIndexFormat,
                     ["SignificantFigures"] = "7"
-                });
+                },
+                Logger: NullLogger.Instance);
 
             await dataWriter.SetContextAsync(context, CancellationToken.None);
 

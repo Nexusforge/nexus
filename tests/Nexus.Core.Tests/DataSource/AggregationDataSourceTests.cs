@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Nexus;
 using Nexus.DataModel;
 using Nexus.Extensibility;
-using Nexus.Extensions;
+using Nexus.Sources;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,7 +24,7 @@ namespace DataSource
         [Fact]
         public async Task ProvidesCatalog()
         {
-            var dataSource = new AggregationDataSource() as IDataSource;
+            var dataSource = new Aggregation() as IDataSource;
 
             var context = new DataSourceContext(
                 ResourceLocator: _fixture.ResourceLocator,
@@ -47,7 +47,7 @@ namespace DataSource
             var expectedBegin = new DateTime(2020, 07, 08, 00, 00, 00, DateTimeKind.Utc);
             var expectedEnd = new DateTime(2020, 07, 09, 00, 00, 00, DateTimeKind.Utc);
 
-            var dataSource = new AggregationDataSource() as IDataSource;
+            var dataSource = new Aggregation() as IDataSource;
 
             var context = new DataSourceContext(
                 ResourceLocator: _fixture.ResourceLocator,
@@ -65,7 +65,7 @@ namespace DataSource
         [Fact]
         public async Task CanProvideAvailability()
         {
-            var dataSource = new AggregationDataSource() as IDataSource;
+            var dataSource = new Aggregation() as IDataSource;
 
             var context = new DataSourceContext(
                 ResourceLocator: _fixture.ResourceLocator,
@@ -85,7 +85,7 @@ namespace DataSource
         public async Task CanReadTwoDaysShifted()
         {
             // arrange
-            var dataSource = new AggregationDataSource() as IDataSource;
+            var dataSource = new Aggregation() as IDataSource;
 
             var context = new DataSourceContext(
                 ResourceLocator: _fixture.ResourceLocator,

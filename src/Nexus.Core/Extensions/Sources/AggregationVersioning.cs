@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 
-namespace Nexus.Extensions
+namespace Nexus.Sources
 {
     internal class AggregationVersioning
     {
