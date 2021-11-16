@@ -73,6 +73,8 @@ namespace Nexus.Writers
 
                 foreach (var catalogItemGroup in catalogItems.GroupBy(catalogItem => catalogItem.Catalog))
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     var catalog = catalogItemGroup.Key;
                     var physicalId = catalog.Id.TrimStart('/').Replace('/', '_');
                     var root = this.Context.ResourceLocator.ToPath();
@@ -168,13 +170,15 @@ namespace Nexus.Writers
 
                 foreach (var requestGroup in requestGroups)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     var catalog = requestGroup.Key;
-                    var requestGroupArray = requestGroup.ToArray();
+                    var writeRequests = requestGroup.ToArray();
                     var physicalId = catalog.Id.TrimStart('/').Replace('/', '_');
-                    var root = this.Context.ResourceLocator.ToPath();
+                    var root = Context.ResourceLocator.ToPath();
                     var filePath = Path.Combine(root, $"{physicalId}_{_lastFileBegin.ToISO8601()}_{_lastSamplePeriod.ToUnitString()}.csv");
-                    var rowIndexFormat = this.Context.Configuration.GetValueOrDefault("RowIndexFormat", "Index");
-                    var significantFigures = uint.Parse(this.Context.Configuration.GetValueOrDefault("SignificantFigures", "4"));
+                    var rowIndexFormat = Context.Configuration.GetValueOrDefault("RowIndexFormat", "Index");
+                    var significantFigures = uint.Parse(Context.Configuration.GetValueOrDefault("SignificantFigures", "4"));
 
                     using var streamWriter = new StreamWriter(File.Open(filePath, FileMode.Append, FileAccess.Write), Encoding.UTF8);
 
@@ -184,7 +188,7 @@ namespace Nexus.Writers
                     var excelStart = _excelStart + fileOffset.TotalDays;
                     var excelScalingFactor = (double)_lastSamplePeriod.Ticks / TimeSpan.FromDays(1).Ticks;
 
-                    var rowLength = requestGroupArray.First().Data.Length;
+                    var rowLength = writeRequests.First().Data.Length;
 
                     for (int rowIndex = 0; rowIndex < rowLength; rowIndex++)
                     {
@@ -206,15 +210,15 @@ namespace Nexus.Writers
                                 throw new NotSupportedException($"The row index format '{rowIndexFormat}' is not supported.");
                         }
 
-                        for (int i = 0; i < requestGroupArray.Length; i++)
+                        for (int i = 0; i < writeRequests.Length; i++)
                         {
-                            var value = requestGroupArray[i].Data.Span[rowIndex];
+                            var value = writeRequests[i].Data.Span[rowIndex];
                             streamWriter.Write($"{string.Format(_nfi, $"{{0:G{significantFigures}}}", value)};");
                         }
 
                         streamWriter.WriteLine();
 
-                        consumedLength += (ulong)requestGroupArray.Length;
+                        consumedLength += (ulong)writeRequests.Length;
 
                         if (consumedLength >= 10000)
                         {
