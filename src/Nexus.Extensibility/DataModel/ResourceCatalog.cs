@@ -219,6 +219,8 @@ namespace Nexus.DataModel
                 .Select(current => current.Id)
                 .Distinct();
 
+            var b = resources.GroupBy(x => x.Id).Where(g => g.Count() > 1).Select(y => y.Key).ToList();
+
             if (uniqueIds.Count() != resources.Count)
                 throw new ArgumentException("There are multiple resource with the same identifier.");
         }

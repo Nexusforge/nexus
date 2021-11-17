@@ -13,7 +13,6 @@ namespace Nexus.Services
         // generated, small files:
         //
         // <application data>/config/project.json
-        // <application data>/config/news.json
         // <application data>/config/users.db
         // <application data>/config/catalogs/abc.json
         // <application data>/config/users/def.json
@@ -41,20 +40,6 @@ namespace Nexus.Services
             if (File.Exists(filePath))
             {
                 project = File.ReadAllText(filePath);
-                return true;
-            }
-
-            return false;
-        }
-
-        public bool TryReadNews([NotNullWhen(true)] out string? news)
-        {
-            var filePath = Path.Combine(_pathsOptions.Config, "news.json");
-            news = null;
-
-            if (File.Exists(filePath))
-            {
-                news = File.ReadAllText(filePath);
                 return true;
             }
 

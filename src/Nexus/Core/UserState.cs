@@ -272,7 +272,18 @@ namespace Nexus.Core
 
                 if (this.CatalogContainersInfo.Accessible.Contains(value))
                 {
-                    _ = this.UpdateGroupedResourcesAsync(CancellationToken.None);
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await this.UpdateGroupedResourcesAsync(CancellationToken.None);
+                        }
+                        catch (Exception ex)
+                        {
+                            this.Logger.LogWarning(ex, "Unable to update grouped resources");
+                        }
+                    });
+                    
                     this.UpdateAttachments();
                 }
                 else

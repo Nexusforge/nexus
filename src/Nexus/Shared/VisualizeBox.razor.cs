@@ -105,8 +105,8 @@ namespace Nexus.Shared
 				var name = representation.Resource.Id;
 				var representationNameParts = representation.Id.Split('_');
 
-				if (representationNameParts.Count() == 2)
-					name += $" ({representationNameParts[1]})";
+				if (representationNameParts.Count() == 3)
+					name += $" ({representationNameParts[2]})";
 
 				var path = representation.GetPath();
 

@@ -331,16 +331,6 @@ namespace Nexus
                 appState.Project = new NexusProject(default, default);
             }
 
-            // news
-            if (databaseManager.TryReadNews(out var news))
-            {
-                appState.NewsPaper = JsonSerializer.Deserialize<NewsPaper>(news);
-            }
-            else
-            {
-                appState.NewsPaper = new NewsPaper();
-            }
-
             // user manager
             await userManagerWrapper.InitializeAsync();
 

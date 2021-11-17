@@ -55,11 +55,5 @@ namespace Nexus.Core
         public Dictionary<string, (string FormatName, OptionAttribute[] Options)> DataWriterInfoMap { get; set; }
 
         #endregion
-
-        #region NewsPaper
-
-        public NewsPaper NewsPaper { get; set; } = null!;
-
-        #endregion
     }
 }

@@ -8,8 +8,6 @@ namespace Nexus.Services
     {
         bool TryReadProject([NotNullWhen(true)] out string? project);
 
-        bool TryReadNews([NotNullWhen(true)] out string? news);
-
         bool TryReadCatalogMetadata(string catalogId, [NotNullWhen(true)] out string? catalogMetadata);
 
         IEnumerable<string> EnumerateAttachements(string catalogId);
