@@ -475,7 +475,7 @@ namespace Nexus.PackageManagement
 
             var targetPath = Path.Combine(restoreRoot, projectPath.Replace('/', '_').ToLower(), version);
 
-            if (!Directory.Exists(targetPath) || Directory.EnumerateFileSystemEntries(targetPath).Any())
+            if (!Directory.Exists(targetPath) || !Directory.EnumerateFileSystemEntries(targetPath).Any())
             {
                 var headers = new PackageReference();
 
