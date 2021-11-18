@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nexus.Core;
 using System;
+using System.IO;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -14,15 +15,18 @@ namespace Nexus.Services
         private ILogger _logger;
         private IServiceProvider _serviceProvider;
         private SecurityOptions _securityOptions;
+        private PathsOptions _pathsOptions;
 
         public UserManagerWrapper(
             IServiceProvider serviceProvider,
             ILogger<UserManagerWrapper> logger, 
-            IOptions<SecurityOptions> securityOptions)
+            IOptions<SecurityOptions> securityOptions,
+            IOptions<PathsOptions> pathsOptions)
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
             _securityOptions = securityOptions.Value;
+            _pathsOptions = pathsOptions.Value;
         }
 
         public async Task InitializeAsync()
@@ -33,6 +37,8 @@ namespace Nexus.Services
                 var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
 
                 // database
+                Directory.CreateDirectory(_pathsOptions.Config);
+
                 if (userDB.Database.EnsureCreated())
                     _logger.LogInformation("SQLite database initialized");
 

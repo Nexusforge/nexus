@@ -48,7 +48,8 @@ namespace Nexus.Services
 
         public bool TryReadCatalogMetadata(string catalogId, [NotNullWhen(true)] out string? catalogMetadata)
         {
-            var catalogMetadataFileName = $"{WebUtility.UrlEncode(catalogId)}.json";
+            var physicalId = catalogId.TrimStart('/').Replace("/", "_");
+            var catalogMetadataFileName = $"{physicalId}.json";
             var filePath = Path.Combine(_pathsOptions.Config, "catalogs", catalogMetadataFileName);
 
             catalogMetadata = null;
@@ -64,7 +65,8 @@ namespace Nexus.Services
 
         public Stream WriteCatalogMetadata(string catalogId)
         {
-            var catalogMetadataFileName = $"{WebUtility.UrlEncode(catalogId)}.json";
+            var physicalId = catalogId.TrimStart('/').Replace("/", "_");
+            var catalogMetadataFileName = $"{physicalId}.json";
             var folderPath = Path.Combine(_pathsOptions.Config, "catalogs");
 
             Directory.CreateDirectory(folderPath);
@@ -76,8 +78,8 @@ namespace Nexus.Services
 
         public IEnumerable<string> EnumerateAttachements(string catalogId)
         {
-            var catalogFolderName = WebUtility.UrlEncode(catalogId);
-            var attachementFolder = Path.Combine(_pathsOptions.Catalogs, catalogFolderName);
+            var physicalId = catalogId.TrimStart('/').Replace("/", "_");
+            var attachementFolder = Path.Combine(_pathsOptions.Catalogs, physicalId);
 
             if (Directory.Exists(attachementFolder))
                 return Directory.GetFiles(attachementFolder);
@@ -90,8 +92,8 @@ namespace Nexus.Services
         {
             attachment = null;
 
-            var catalogFolderName = WebUtility.UrlEncode(catalogId);
-            var attachementFolder = Path.Combine(_pathsOptions.Catalogs, catalogFolderName);
+            var physicalId = catalogId.TrimStart('/').Replace("/", "_");
+            var attachementFolder = Path.Combine(_pathsOptions.Catalogs, physicalId);
 
             if (Directory.Exists(attachementFolder))
             {

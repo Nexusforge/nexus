@@ -1,4 +1,5 @@
 ﻿using Nexus.Services;
+using System.Threading;
 
 namespace Nexus.Shared
 {
@@ -13,6 +14,14 @@ namespace Nexus.Shared
 				if (e.PropertyName == nameof(UserState.ClientState))
 				{
 					this.InvokeAsync(this.StateHasChanged);
+				}
+				else if (e.PropertyName == nameof(UserState.CatalogContainer))
+				{
+					this.InvokeAsync(async () =>
+					{
+						this.CatalogInfo = await this.UserState.CatalogContainer.GetCatalogInfoAsync(CancellationToken.None);
+						this.StateHasChanged();
+					});
 				}
 				else if (e.PropertyName == nameof(AppState.CatalogState) ||
 						(e.PropertyName == nameof(AppState.IsCatalogStateUpdating) && !this.AppState.IsCatalogStateUpdating))
