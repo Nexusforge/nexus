@@ -85,6 +85,8 @@ namespace Nexus.Core
 
         #region Properties - General
 
+        public bool HasAccess { get; private set; }
+
         public ILogger<UserState> Logger { get; }
 
         public bool IsEditEnabled
@@ -269,9 +271,12 @@ namespace Nexus.Core
                 this.SetProperty(ref _catalogContainer, value);
 
                 _searchString = string.Empty;
+                this.GroupedResources = null;
 
                 if (this.CatalogContainersInfo.Accessible.Contains(value))
                 {
+                    this.HasAccess = true;
+
                     _ = Task.Run(async () =>
                     {
                         try
@@ -288,7 +293,7 @@ namespace Nexus.Core
                 }
                 else
                 {
-                    this.GroupedResources = null;
+                    this.HasAccess = false;
                     this.Attachments = null;
                 }
             }
@@ -644,7 +649,7 @@ namespace Nexus.Core
         {
             if (this.CatalogContainer is not null)
             {
-                this.GroupedResources = new Dictionary<string, List<ResourceViewModel>>();
+                var groupedResources = new Dictionary<string, List<ResourceViewModel>>();
 
                 var resources = await _appState.ResourceCache.GetOrAdd(this.CatalogContainer, async catalogContainer =>
                 {
@@ -664,12 +669,12 @@ namespace Nexus.Core
 
                         foreach (string groupName in groupNames)
                         {
-                            var success = this.GroupedResources.TryGetValue(groupName, out var group);
+                            var success = groupedResources.TryGetValue(groupName, out var group);
 
                             if (!success)
                             {
                                 group = new List<ResourceViewModel>();
-                                this.GroupedResources[groupName] = group;
+                                groupedResources[groupName] = group;
                             }
 
                             group.Add(resource);
@@ -677,21 +682,23 @@ namespace Nexus.Core
                     }
                 }
 
-                foreach (var entry in this.GroupedResources)
+                foreach (var entry in groupedResources)
                 {
                     entry.Value.Sort((x, y) => x.Id.CompareTo(y.Id));
                 }
 
-                if (this.GroupedResources.Any())
+                this.GroupedResources = groupedResources;
+
+                if (groupedResources.Any())
                 {
                     // try find previously selected group
                     if (this.GroupedResourcesEntry.Value is not null)
-                        this.GroupedResourcesEntry = this.GroupedResources
+                        this.GroupedResourcesEntry = groupedResources
                             .FirstOrDefault(entry => entry.Key == this.GroupedResourcesEntry.Key);
 
                     // otherwise select first group
                     if (this.GroupedResourcesEntry.Value is null)
-                        this.GroupedResourcesEntry = this.GroupedResources
+                        this.GroupedResourcesEntry = groupedResources
                             .OrderBy(entry => entry.Key)
                             .First();
                 }
