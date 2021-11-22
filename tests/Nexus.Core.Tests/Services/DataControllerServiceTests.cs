@@ -35,13 +35,8 @@ namespace Services
             var expectedCatalog = InMemory.LoadCatalog("/A/B/C");
 
             var catalogState = new CatalogState(
-                default,
-                default,
-                BackendSourceToCatalogIdsMap: new Dictionary<BackendSource, string[]>()
-                {
-                    [backendSource] = new[] { "/A/B/C" }
-                },
-                BackendSourceCache: new BackendSourceCache()
+                new CatalogContainer[] { new CatalogContainer("/A/B/C", backendSource, default, default) },
+                CatalogCache: new CatalogCache()
             );
 
             var appState = new AppState() { CatalogState = catalogState };

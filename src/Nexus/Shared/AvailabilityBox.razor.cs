@@ -108,9 +108,6 @@ namespace Nexus.Shared
         #region Properties
 
         [Inject]
-        private AppState AppState { get; set; }
-
-        [Inject]
         private ToasterService ToasterService { get; set; }
 
         private BarConfig Config { get; set; }
@@ -178,70 +175,48 @@ namespace Nexus.Shared
                     : AvailabilityGranularity.Month;
 
                 var availability = await this.UserState.GetAvailabilityAsync(granularity, CancellationToken.None);
-                var hasCleared = false;
 
-                if (availability.Length != this.Config.Data.Datasets.Count)
+                this.Config.Data.Datasets.Clear();
+
+                var dataset = new BarDataset<TimePoint>
                 {
-                    this.Config.Data.Datasets.Clear();
-                    hasCleared = true;
-                }
+                    BackgroundColor = _backgroundColors[0],
+                    BorderColor = _borderColors[0],
+                    BorderWidth = 2
+                };
 
-                for (int i = 0; i < availability.Length; i++)
+                this.Config.Data.Datasets.Add(dataset);
+
+                switch (granularity)
                 {
-                    BarDataset<TimePoint> representation;
+                    case AvailabilityGranularity.Day:
 
-                    if (hasCleared)
-                    {
-                        var backendSource = availability[i].BackendSource;
-                        var isAggregation = backendSource.Equals(this.AppState.CatalogState.AggregationBackendSource);
+                        axis.Time.Unit = TimeMeasurement.Day;
 
-                        representation = new BarDataset<TimePoint>
-                        {
-                            Label = isAggregation ? "Aggregations" : $"Raw ({backendSource.ResourceLocator} - {backendSource.Type})",
-                            BackgroundColor = _backgroundColors[i % _backgroundColors.Count()],
-                            BorderColor = _borderColors[i % _borderColors.Count()],
-                            BorderWidth = 2
-                        };
+                        dataset.AddRange(availability.Data
+                            .Select((entry, i) =>
+                            {
+                                return new TimePoint(entry.Key, entry.Value * 100);
+                            })
+                        );
 
-                        this.Config.Data.Datasets.Add(representation);
-                    }
-                    else
-                    {
-                        representation = (BarDataset<TimePoint>)this.Config.Data.Datasets[i];
-                        representation.Clear();
-                    }
+                        break;
 
-                    switch (granularity)
-                    {
-                        case AvailabilityGranularity.Day:
+                    case AvailabilityGranularity.Month:
 
-                            axis.Time.Unit = TimeMeasurement.Day;
+                        axis.Time.Unit = TimeMeasurement.Month;
 
-                            representation.AddRange(availability[i].Data
-                                .Select((entry, i) =>
-                                {
-                                    return new TimePoint(entry.Key, entry.Value * 100);
-                                })
-                            );
+                        dataset.AddRange(availability.Data
+                            .Select((entry, i) =>
+                            {
+                                return new TimePoint(entry.Key, entry.Value * 100);
+                            })
+                        );
 
-                            break;
+                        break;
 
-                        case AvailabilityGranularity.Month:
-
-                            axis.Time.Unit = TimeMeasurement.Month;
-
-                            representation.AddRange(availability[i].Data
-                                .Select((entry, i) =>
-                                {
-                                    return new TimePoint(entry.Key, entry.Value * 100);
-                                })
-                            );
-
-                            break;
-
-                        default:
-                            break;
-                    }
+                    default:
+                        break;
                 }
 
                 await _barChart.Update();

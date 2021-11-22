@@ -62,6 +62,23 @@ namespace Nexus.Extensibility.Tests
                 Assert.Throws<ArgumentException>(() => new Resource(id: id));
         }
 
+        [Fact]
+        public void CanValidateResourceHaveSinglePrimaryRepresentation()
+        {
+            Action action = () => new Resource("a", representations: new[]
+            {
+                 new Representation(
+                    dataType: NexusDataType.FLOAT64,
+                    samplePeriod: TimeSpan.FromSeconds(1)),
+
+                 new Representation(
+                    dataType: NexusDataType.FLOAT32,
+                    samplePeriod: TimeSpan.FromSeconds(2))
+            });
+
+            Assert.Throws<ArgumentException>(action);
+        }
+
         [Theory]
         [InlineData("00:01:00", true)]
         [InlineData("00:00:00", false)]
@@ -261,17 +278,17 @@ namespace Nexus.Extensibility.Tests
         {
             // Arrange
             var resource1 = new Resource(
-                id: "R1",
+                id: "myresource",
                 representations: new List<Representation>() 
                 { 
                     new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(1), detail: "RP1") 
                 });
 
             var resource2 = new Resource(
-                id: "R2",
+                id: "myresource",
                 representations: new List<Representation>()
                 {
-                    new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(1), detail: "RP1"),
+                    new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(1), detail: "RP1", isPrimary: true),
                     new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(1), detail: "RP2"),
                     new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(1), detail: "RP3")
                 });
@@ -280,7 +297,7 @@ namespace Nexus.Extensibility.Tests
             Action action = () => resource1.Merge(resource2, MergeMode.ExclusiveOr);
 
             // Assert
-            Assert.Throws<ArgumentException>(action);
+            Assert.Throws<Exception>(action);
         }
 
         [Fact]

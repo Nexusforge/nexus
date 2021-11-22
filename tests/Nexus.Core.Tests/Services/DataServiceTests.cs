@@ -23,54 +23,34 @@ namespace Services
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 03, 0, 0, 0, DateTimeKind.Utc);
 
-            var backendSource1 = new BackendSource(Type: "A", default, default);
-            var backendSource2 = new BackendSource(Type: "B", default, default);
-            var backendSource3 = new BackendSource(Type: "C", default, default);
+            var backendSource = new BackendSource(Type: "A", default, default);
 
-            var backendSourceToCatalogIdsMap = new Dictionary<BackendSource, string[]>()
+            var catalogContainers = new CatalogContainer[]
             {
-                [backendSource1] = new[] { "/A/B/C", "/D/E/F" },
-                [backendSource2] = new[] { "/G/H/I", "/J/K/L" },
-                [backendSource3] = new[] { "/M/N/O", "/A/B/C" }
+                new CatalogContainer("/A/B/C", backendSource, default, default)
             };
 
-            var data1 = new Dictionary<DateTime, double> { [begin.AddDays(0)] = 0.5, [begin.AddDays(1)] = 0.9 };
-            var data2 = new Dictionary<DateTime, double> { [begin.AddDays(0)] = 0.6, [begin.AddDays(1)] = 0.8 };
+            var data = new Dictionary<DateTime, double> { [begin.AddDays(0)] = 0.5, [begin.AddDays(1)] = 0.9 };
 
             // DI services
-            var dataSourceController1 = Mock.Of<IDataSourceController>();
-            var dataSourceController2 = Mock.Of<IDataSourceController>();
+            var dataSourceController = Mock.Of<IDataSourceController>();
 
-            Mock.Get(dataSourceController1)
+            Mock.Get(dataSourceController)
                 .Setup(s => s.GetAvailabilityAsync(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<AvailabilityGranularity>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(new AvailabilityResult(BackendSource: backendSource1, Data: data1)));
-
-            Mock.Get(dataSourceController2)
-                .Setup(s => s.GetAvailabilityAsync(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<AvailabilityGranularity>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(new AvailabilityResult(BackendSource: backendSource3, Data: data2 )));
+                .Returns(Task.FromResult(new AvailabilityResult(Data: data)));
 
             var dataControllerService = Mock.Of<IDataControllerService>();
 
             Mock.Get(dataControllerService)
-                .Setup(s => s.GetDataSourceControllerAsync(It.IsAny<BackendSource>(), It.IsAny<CancellationToken>(), It.IsAny<BackendSourceCache>()))
-                .Returns<BackendSource, CancellationToken, BackendSourceCache>((backendSource, cancellationToken, backendSourceCache) =>
+                .Setup(s => s.GetDataSourceControllerAsync(It.IsAny<BackendSource>(), It.IsAny<CancellationToken>(), It.IsAny<CatalogCache>()))
+                .Returns<BackendSource, CancellationToken, CatalogCache>((backendSource, cancellationToken, catalogCache) =>
                 {
-                    if (backendSource.Equals(backendSource1))
-                        return Task.FromResult(dataSourceController1);
-
-                    else if (backendSource.Equals(backendSource3))
-                        return Task.FromResult(dataSourceController2);
-
-                    else
-                        throw new Exception("Invalid backend source.");
+                    return Task.FromResult(dataSourceController);
                 });
 
             var catalogState = new CatalogState(
-                default,
-                default,
-                BackendSourceToCatalogIdsMap: backendSourceToCatalogIdsMap,
-                default
-            );
+                CatalogContainers: catalogContainers,
+                default);
 
             var appState = new AppState()
             {
@@ -87,13 +67,7 @@ namespace Services
             var availability = await dataService.GetAvailabilityAsync("/A/B/C", begin, end, AvailabilityGranularity.Day, CancellationToken.None);
 
             // assert
-            Assert.Equal(2, availability.Length);
-
-            Assert.Equal(backendSource1, availability[0].BackendSource);
-            Assert.Equal(data1, availability[0].Data);
-
-            Assert.Equal(backendSource3, availability[1].BackendSource);
-            Assert.Equal(data2, availability[1].Data);
+            Assert.Equal(data, availability.Data);
         }
 
         delegate void GobbleReturns(string catalogId, string searchPattern, EnumerationOptions enumerationOptions, out Stream attachment);
@@ -111,8 +85,8 @@ namespace Services
             var samplePeriod = TimeSpan.FromSeconds(1);
             var exportId = Guid.NewGuid();
 
-            var backendSource1 = new BackendSource(Type: "A", default, default);
-            var backendSource2 = new BackendSource(Type: "B", default, default);
+            var backendSource1 = new BackendSource(Type: "A", default, new Dictionary<string, string>(), default);
+            var backendSource2 = new BackendSource(Type: "B", default, new Dictionary<string, string>(), default);
 
             // DI services
             var dataSourceController1 = Mock.Of<IDataSourceController>();
@@ -137,8 +111,8 @@ namespace Services
             var dataControllerService = Mock.Of<IDataControllerService>();
 
             Mock.Get(dataControllerService)
-                .Setup(s => s.GetDataSourceControllerAsync(It.IsAny<BackendSource>(), It.IsAny<CancellationToken>(), It.IsAny<BackendSourceCache>()))
-                .Returns<BackendSource, CancellationToken, BackendSourceCache>((backendSource, cancellationToken, backendSourceCache) =>
+                .Setup(s => s.GetDataSourceControllerAsync(It.IsAny<BackendSource>(), It.IsAny<CancellationToken>(), It.IsAny<CatalogCache>()))
+                .Returns<BackendSource, CancellationToken, CatalogCache>((backendSource, cancellationToken, catalogCache) =>
                 {
                     if (backendSource.Equals(backendSource1))
                         return Task.FromResult(dataSourceController1);
@@ -186,22 +160,23 @@ namespace Services
                 .Returns(logger2);
 
             // catalog items
-            var representation1 = new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: samplePeriod, detail: "E") 
-            { 
+            var representation1 = new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: samplePeriod, detail: "E");
+            var resource1 = new Resource(id: "Resource1");
+
+            var catalog1 = new ResourceCatalog(id: "/A/B/C")
+            {
                 BackendSource = backendSource1
             };
 
-            var resource1 = new Resource(id: "Resource1");
-            var catalog1 = new ResourceCatalog(id: "/A/B/C");
             var catalogItem1 = new CatalogItem(catalog1, resource1, representation1);
 
-            var representation2 = new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: samplePeriod, detail: "J") 
-            { 
+            var representation2 = new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: samplePeriod, detail: "J");
+            var resource2 = new Resource(id: "Resource2");
+            var catalog2 = new ResourceCatalog(id: "/F/G/H")
+            {
                 BackendSource = backendSource2
             };
 
-            var resource2 = new Resource(id: "Resource2");
-            var catalog2 = new ResourceCatalog(id: "/F/G/H");
             var catalogItem2 = new CatalogItem(catalog2, resource2, representation2);
 
             // export parameters

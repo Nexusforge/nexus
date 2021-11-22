@@ -11,20 +11,18 @@ namespace DataSource
         {
             var dataSource = new InMemory();
 
-            this.BackendSource = new BackendSource(
+            var backendSource = new BackendSource(
                 Type: typeof(InMemory).FullName ?? throw new Exception("full name is null"), 
                 ResourceLocator: new Uri("memory://localhost"),
                 Configuration: default);
 
             this.Controller = new DataSourceController(
-                dataSource, 
-                this.BackendSource,
+                dataSource,
+                backendSource,
                 NullLogger<DataSourceController>.Instance);
         }
 
         internal DataSourceController Controller { get; }
-
-        public BackendSource BackendSource { get; }
 
         public void Dispose()
         {

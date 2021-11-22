@@ -28,8 +28,9 @@ namespace Nexus.DataModel
         /// <param name="dataType">The <see cref="NexusDataType"/>.</param>
         /// <param name="samplePeriod">The sample period.</param>
         /// <param name="detail">A more detailed identifier like "min", "max", "mean" or "std".</param>
+        /// <param name="isPrimary">Indicates the primary representation to be used for aggregations, which is only relevant for resources with multiple representations.</param>
         /// <exception cref="ArgumentException">Thrown when the resource identifier, the sample period or the detail values are not valid.</exception>
-        public Representation(NexusDataType dataType, TimeSpan samplePeriod, string? detail = null)
+        public Representation(NexusDataType dataType, TimeSpan samplePeriod, string? detail = null, bool isPrimary = false)
         {
             if (!_nexusDataTypeValues.Contains(dataType))
                 throw new ArgumentException($"The identifier '{dataType}' is not valid.");
@@ -45,6 +46,7 @@ namespace Nexus.DataModel
                 throw new ArgumentException($"The representation detail '{detail}' is not valid.");
 
             this.Detail = detail;
+            this.IsPrimary = isPrimary;
         }
 
         #endregion
@@ -81,12 +83,15 @@ namespace Nexus.DataModel
         public string? Detail { get; }
 
         /// <summary>
+        /// Gets a value which indicates the primary representation to be used for aggregations. The value of this property is only relevant for resources with multiple representations.
+        /// </summary>
+        public bool IsPrimary { get; }
+
+        /// <summary>
         /// Gets the number of bits per element.
         /// </summary>
         [JsonIgnore]
         public int ElementSize => ((int)this.DataType & 0xFF) >> 3;
-
-        internal BackendSource BackendSource { get; set; } = null!;
 
         #endregion
 

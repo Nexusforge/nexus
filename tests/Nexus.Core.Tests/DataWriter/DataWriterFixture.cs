@@ -14,7 +14,7 @@ namespace DataWriter
             // catalog 1
             var representations1 = new List<Representation>()
             {
-                new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(1), detail: "mean"),
+                new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(1), detail: "mean", isPrimary: true),
                 new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromSeconds(1), detail: "max"),
             };
 

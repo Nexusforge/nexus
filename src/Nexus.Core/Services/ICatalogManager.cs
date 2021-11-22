@@ -12,7 +12,7 @@ namespace Nexus.Services
 
         Task<CatalogInfo> LoadCatalogInfoAsync(
             string catalogId,
-            BackendSource[] backendSources,
+            BackendSource backendSource,
             ResourceCatalog? catalogOverrides,
             CancellationToken cancellationToken);
     }

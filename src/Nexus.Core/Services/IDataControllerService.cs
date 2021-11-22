@@ -11,7 +11,7 @@ namespace Nexus.Services
         Task<IDataSourceController> GetDataSourceControllerAsync(
             BackendSource backendSource,
             CancellationToken cancellationToken,
-            BackendSourceCache? backendSourceCache = default);
+            CatalogCache? catalogCache = default);
 
         Task<IDataWriterController> GetDataWriterControllerAsync(
             Uri resourceLocator, 

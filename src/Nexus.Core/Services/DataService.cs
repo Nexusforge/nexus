@@ -58,45 +58,21 @@ namespace Nexus.Services
 
         #region Methods
 
-        public async Task<AvailabilityResult[]> GetAvailabilityAsync(
+        public async Task<AvailabilityResult> GetAvailabilityAsync(
             string catalogId, 
             DateTime begin, 
             DateTime end, 
             AvailabilityGranularity granularity,
             CancellationToken cancellationToken)
         {
-            var backendSources = _appState.CatalogState.BackendSourceToCatalogIdsMap
-                // where the catalog list contains the catalog ID
-                .Where(entry => entry.Value.Any(id => id == catalogId))
-                // select the backend source
-                .Select(entry => entry.Key);
+            var backendSource = _appState.CatalogState.CatalogContainers
+                .Single(container => container.Id == catalogId)
+                .BackendSource;
 
-            var dataSourceControllerTasks = backendSources
-                .Select(backendSource => _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken));
+            using var controller = await _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken);
+            var availabilityResult = await controller.GetAvailabilityAsync(catalogId, begin, end, granularity, cancellationToken);
 
-            var (controllers, exception) = await dataSourceControllerTasks.WhenAllEx();
-
-            try
-            {
-                if (!exception.InnerExceptions.Any())
-                {
-                    var availabilityTasks = controllers.Select(controller => controller.GetAvailabilityAsync(catalogId, begin, end, granularity, cancellationToken));
-                    var availabilityResults = await Task.WhenAll(availabilityTasks);
-
-                    return availabilityResults;
-                }
-                else
-                {
-                    throw exception;
-                }
-            }
-            finally
-            {
-                foreach (var controller in controllers)
-                {
-                    controller.Dispose();
-                }
-            }
+            return availabilityResult;
         }
 
         public async Task<string> ExportAsync(
@@ -194,7 +170,7 @@ namespace Nexus.Services
         {
             /* reading groups */
             var catalogItemPipeReaders = new List<CatalogItemPipeReader>();
-            var groupedCatalogItems = exportContext.CatalogItems.GroupBy(catalogItem => catalogItem.Representation.BackendSource);
+            var groupedCatalogItems = exportContext.CatalogItems.GroupBy(catalogItem => catalogItem.Catalog.BackendSource);
             var readingGroups = new List<DataReadingGroup>();
 
             foreach (var catalogItemGroup in groupedCatalogItems)

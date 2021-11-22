@@ -75,7 +75,6 @@ namespace DataSource
             _ => throw new Exception("Unsupported granularity value."),
             };
 
-            Assert.Equal(_fixture.BackendSource, actual.BackendSource);
             Assert.True(expectedData.SequenceEqual(new SortedDictionary<DateTime, double>(actual.Data)));
         }
 
@@ -88,7 +87,6 @@ namespace DataSource
             var catalogId = InMemory.AccessibleCatalogId;
             var actual = await controller.GetTimeRangeAsync(catalogId, CancellationToken.None);
 
-            Assert.Equal(_fixture.BackendSource, actual.BackendSource);
             Assert.Equal(DateTime.MinValue, actual.Begin);
             Assert.Equal(DateTime.MaxValue, actual.End);
         }

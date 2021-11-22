@@ -2,6 +2,8 @@
 using Nexus.DataModel;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Linq;
 
 namespace Nexus.Extensibility
 {
@@ -27,27 +29,25 @@ namespace Nexus.Extensibility
         Memory<byte> Data,
         Memory<byte> Status);
 
-    /// <summary>
-    /// A structure to register a backend source.
-    /// </summary>
-    /// <param name="Type"></param>
-    /// <param name="ResourceLocator"></param>
-    /// <param name="Configuration"></param>
-    /// <param name="IsEnabled"></param>
-    public sealed record BackendSource(string Type, Uri ResourceLocator, Dictionary<string, string> Configuration, bool IsEnabled = true)
+    internal sealed record BackendSource(string Type, Uri ResourceLocator, Dictionary<string, string> Configuration, bool IsEnabled = true)
     {
-        /// <inheritdoc/>
         public override int GetHashCode()
         {
             return HashCode.Combine(this.Type, this.ResourceLocator);
         }
 
-        /// <inheritdoc/>
         public bool Equals(BackendSource? other)
         {
-            return other is not null &&
-                this.Type == other.Type &&
-                this.ResourceLocator == other.ResourceLocator;
+            if (other is null)
+                return false;
+
+            var typeEquals = this.Type == other.Type;
+            var resourceLocatorEquals = this.ResourceLocator == other.ResourceLocator;
+            var configurationEquals = this.Configuration
+                                          .OrderBy(entry => entry.Key)
+                                          .SequenceEqual(other.Configuration.OrderBy(entry => entry.Key));
+
+            return typeEquals && resourceLocatorEquals && configurationEquals;
         }
     }
 }

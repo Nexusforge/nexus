@@ -31,21 +31,21 @@ namespace Nexus.Services
         public async Task<IDataSourceController> GetDataSourceControllerAsync(
             BackendSource backendSource,
             CancellationToken cancellationToken, 
-            BackendSourceCache? backendSourceCache = default)
+            CatalogCache? catalogCache = default)
         {
             var logger1 = _loggerFactory.CreateLogger<DataSourceController>();
             var logger2 = _loggerFactory.CreateLogger($"{backendSource.Type} - {backendSource.ResourceLocator}");
             var dataSource = _extensionHive.GetInstance<IDataSource>(backendSource.Type);
             var controller = new DataSourceController(dataSource, backendSource, logger1);
 
-            if (backendSourceCache is null)
-                backendSourceCache = _appState.CatalogState.BackendSourceCache;
+            if (catalogCache is null)
+                catalogCache = _appState.CatalogState.CatalogCache;
 
-            var catalogCache = backendSourceCache.GetOrAdd(
+            var actualCatalogCache = catalogCache.GetOrAdd(
                 backendSource,
                 backendSource => new ConcurrentDictionary<string, ResourceCatalog>());
 
-            await controller.InitializeAsync(catalogCache, logger2, cancellationToken);
+            await controller.InitializeAsync(actualCatalogCache, logger2, cancellationToken);
 
             return controller;
         }

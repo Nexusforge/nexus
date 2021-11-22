@@ -58,7 +58,7 @@ namespace Nexus.Core
         ExcludeUnit = 5
     }
 
-    internal record AggregationResource(
+    internal record ResourceAggregations(
         Resource Resource,
         List<CatalogAggregation> Aggregations);
 
@@ -74,6 +74,6 @@ namespace Nexus.Core
     }
 
     internal record AggregationInstruction(
-        CatalogContainer Container, 
-        Dictionary<BackendSource, List<AggregationResource>> DataReaderToAggregationsMap);
+        CatalogContainer Container,
+        ResourceAggregations[] ResourceAggregations);
 }

@@ -205,6 +205,12 @@ namespace Nexus.DataModel
 
             if (uniqueIds.Count() != representations.Count)
                 throw new ArgumentException("There are multiple representations with the same identifier.");
+
+            if (representations.Count > 1)
+            {
+                if (representations.Where(representation => representation.IsPrimary).Count() != 1)
+                    throw new ArgumentException("When there is more than one representation part of the resource, one of these representations must be the primary one.");
+            }
         }
 
         #endregion

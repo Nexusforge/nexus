@@ -36,11 +36,9 @@ namespace Nexus.DataModel
     }
 
     public record AvailabilityResult(
-        BackendSource BackendSource,
         Dictionary<DateTime, double> Data);
 
     public record TimeRangeResult(
-        BackendSource BackendSource, 
         DateTime Begin, 
         DateTime End);
 }

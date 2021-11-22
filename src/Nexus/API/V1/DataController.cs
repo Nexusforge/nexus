@@ -105,7 +105,7 @@ namespace Nexus.Controllers.V1
 
                 // controller
                 using var controller = await _dataControllerService.GetDataSourceControllerAsync(
-                    catalogItem.Representation.BackendSource,
+                    catalogItem.Catalog.BackendSource,
                     cancellationToken);
 
                 // read data

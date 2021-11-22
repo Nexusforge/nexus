@@ -86,7 +86,7 @@ namespace Nexus.Controllers.V1
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpGet("{catalogId}/timerange")]
-        public async Task<ActionResult<TimeRangeResult[]>> 
+        public async Task<ActionResult<TimeRangeResult>> 
             GetTimeRangeAsync(
                 string catalogId, 
                 CancellationToken cancellationToken)
@@ -96,7 +96,7 @@ namespace Nexus.Controllers.V1
 
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            return await this.ProcessCatalogIdAsync<TimeRangeResult[]>(catalogId, async catalog =>
+            return await this.ProcessCatalogIdAsync<TimeRangeResult>(catalogId, async catalog =>
             {
                 return await this.CreateTimeRangeResponseAsync(catalog, cancellationToken);
             }, cancellationToken);
@@ -111,7 +111,7 @@ namespace Nexus.Controllers.V1
         /// <param name="granularity">Granularity of the resulting array.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpGet("{catalogId}/availability")]
-        public async Task<ActionResult<AvailabilityResult[]>>
+        public async Task<ActionResult<AvailabilityResult>>
             GetCatalogAvailabilityAsync(
                 [BindRequired] string catalogId,
                 [BindRequired] DateTime begin,
@@ -124,7 +124,7 @@ namespace Nexus.Controllers.V1
 
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            return await this.ProcessCatalogIdAsync<AvailabilityResult[]>(catalogId, async catalog =>
+            return await this.ProcessCatalogIdAsync<AvailabilityResult>(catalogId, async catalog =>
             {
                 return await this.CreateAvailabilityResponseAsync(catalog, begin, end, granularity, cancellationToken);
             }, cancellationToken);
@@ -282,48 +282,27 @@ namespace Nexus.Controllers.V1
             return catalog;
         }
 
-        private async Task<TimeRangeResult[]> 
+        private async Task<TimeRangeResult> 
             CreateTimeRangeResponseAsync(ResourceCatalog catalog, CancellationToken cancellationToken)
         {
-            var tasks = _appState.CatalogState.BackendSourceToCatalogIdsMap
-                .Where(entry => entry.Value.Any(id => id == catalog.Id))
-                .Select(async entry =>
-                {
-                    using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(entry.Key, cancellationToken);
-                    var timeRange = await dataSource.GetTimeRangeAsync(catalog.Id, cancellationToken);
+            using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(catalog.BackendSource, cancellationToken);
+            var timeRange = await dataSource.GetTimeRangeAsync(catalog.Id, cancellationToken);
 
-                    var backendSource = timeRange.BackendSource with { };
+            var timeRangeResult = new TimeRangeResult(
+                Begin: timeRange.Begin,
+                End: timeRange.End);
 
-                    return new TimeRangeResult(
-                        BackendSource: backendSource,
-                        Begin: timeRange.Begin,
-                        End: timeRange.End);
-                }).ToList();
-
-            var timeRangeResults = await Task
-                 .WhenAll(tasks);
-
-            return timeRangeResults;
+            return timeRangeResult;
         }
 
-        private async Task<AvailabilityResult[]> 
+        private async Task<AvailabilityResult> 
             CreateAvailabilityResponseAsync(ResourceCatalog catalog, DateTime begin, DateTime end, AvailabilityGranularity granularity, CancellationToken cancellationToken)
         {
-            var tasks = _appState.CatalogState.BackendSourceToCatalogIdsMap
-               .Where(entry => entry.Value.Any(id => id == catalog.Id))
-               .Select(async entry =>
-               {
-                    using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(entry.Key, cancellationToken);
-                    var availability = await dataSource.GetAvailabilityAsync(catalog.Id, begin, end, granularity, cancellationToken);
+            using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(catalog.BackendSource, cancellationToken);
+            var availability = await dataSource.GetAvailabilityAsync(catalog.Id, begin, end, granularity, cancellationToken);
 
-                    var backendSource = availability.BackendSource with { };
-
-                    return new AvailabilityResult(
-                        BackendSource: backendSource,
-                        Data: availability.Data);
-                }).ToList();
-
-            var availabilityResults = await Task.WhenAll(tasks);
+            var availabilityResults = new AvailabilityResult(
+                Data: availability.Data);
 
             return availabilityResults;
         }

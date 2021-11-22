@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Nexus.Extensibility;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -83,6 +84,8 @@ namespace Nexus.DataModel
                 _resources = value;
             }
         }
+
+        internal BackendSource BackendSource { get; set; } = null!;
 
         #endregion
 

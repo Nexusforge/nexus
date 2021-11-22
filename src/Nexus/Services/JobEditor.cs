@@ -80,31 +80,30 @@ namespace Nexus.Services
             {
                 sb.AppendLine($"Catalog '{instruction.Container.Id}'");
 
-                foreach (var (backendSource, aggregationResources) in instruction.DataReaderToAggregationsMap)
+                var backendSource = instruction.Container.BackendSource;
+
+                if (instruction.ResourceAggregations.Any())
                 {
-                    if (aggregationResources.Any())
+                    sb.AppendLine();
+                    sb.AppendLine($"\tData Reader '{backendSource.Type}' ({backendSource.ResourceLocator})");
+
+                    foreach (var aggregationResource in instruction.ResourceAggregations)
                     {
                         sb.AppendLine();
-                        sb.AppendLine($"\tData Reader '{backendSource.Type}' ({backendSource.ResourceLocator})");
+                        sb.AppendLine($"\t\t{aggregationResource.Resource.Id} / {aggregationResource.Resource.Properties.GetValueOrDefault(DataModelExtensions.Unit, string.Empty)}");
 
-                        foreach (var aggregationResource in aggregationResources)
+                        foreach (var aggregation in aggregationResource.Aggregations)
                         {
-                            sb.AppendLine();
-                            sb.AppendLine($"\t\t{aggregationResource.Resource.Id} / {aggregationResource.Resource.Properties.GetValueOrDefault(DataModelExtensions.Unit, string.Empty)}");
-
-                            foreach (var aggregation in aggregationResource.Aggregations)
+                            foreach (var period in aggregation.Periods)
                             {
-                                foreach (var period in aggregation.Periods)
+                                sb.Append($"\t\t\tPeriod: {period} s, ");
+
+                                foreach (var method in aggregation.Methods)
                                 {
-                                    sb.Append($"\t\t\tPeriod: {period} s, ");
-
-                                    foreach (var method in aggregation.Methods)
-                                    {
-                                        sb.Append($" {method.Key}");
-                                    }
-
-                                    sb.AppendLine();
+                                    sb.Append($" {method.Key}");
                                 }
+
+                                sb.AppendLine();
                             }
                         }
                     }

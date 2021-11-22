@@ -12,17 +12,16 @@ namespace Nexus.Core
     {
         private Task<CatalogInfo>? _loadTask;
         private SemaphoreSlim _semaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
-        private BackendSource[] _backendSources;
         private ICatalogManager _catalogManager;
         private CatalogInfo _catalogInfo;
 
         public CatalogContainer(
             string catalogId,
-            BackendSource[] backendSources,
+            BackendSource backendSource,
             CatalogMetadata catalogMetadata,
             ICatalogManager catalogManager)
         {
-            _backendSources = backendSources;
+            this.BackendSource = backendSource;
             this.CatalogMetadata = catalogMetadata;
             _catalogManager = catalogManager;
 
@@ -32,6 +31,8 @@ namespace Nexus.Core
         public string Id { get; }
 
         public string PhysicalName => this.Id.TrimStart('/').Replace('/', '_');
+
+        public BackendSource BackendSource { get; }
 
         public CatalogMetadata CatalogMetadata { get; }
 
@@ -49,8 +50,8 @@ namespace Nexus.Core
             {
                 if (_loadTask is null)
                     _loadTask = _catalogManager.LoadCatalogInfoAsync(
-                        this.Id, 
-                        _backendSources,
+                        this.Id,
+                        this.BackendSource,
                         this.CatalogMetadata?.Overrides,
                         cancellationToken);
             }

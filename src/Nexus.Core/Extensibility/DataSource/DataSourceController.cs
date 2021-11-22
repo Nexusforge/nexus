@@ -71,14 +71,7 @@ namespace Nexus.Extensibility
             this.Logger.LogDebug("Load catalog {CatalogId}", catalogId);
 
             var catalog = await this.DataSource.GetCatalogAsync(catalogId, cancellationToken);
-
-            foreach (var resource in (catalog.Resources ?? Enumerable.Empty<Resource>()))
-            {
-                foreach (var representation in (resource.Representations ?? Enumerable.Empty<Representation>()))
-                {
-                    representation.BackendSource = this.BackendSource;
-                }
-            }
+            catalog.BackendSource = this.BackendSource;
 
             /* GetOrAdd is not working because it requires a synchronous delegate */
             _catalogCache.TryAdd(catalogId, catalog);
@@ -128,7 +121,6 @@ namespace Nexus.Extensibility
             }
 
             return new AvailabilityResult(
-                BackendSource: this.BackendSource,
                 Data: aggregatedData.ToDictionary(entry => entry.Key, entry => entry.Value));
         }
 
@@ -138,7 +130,6 @@ namespace Nexus.Extensibility
             (var begin, var end) = await this.DataSource.GetTimeRangeAsync(catalogId, cancellationToken);
 
             return new TimeRangeResult(
-                BackendSource: this.BackendSource,
                 Begin: begin,
                 End: end);
         }

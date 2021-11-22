@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Nexus.Utilities
 {
@@ -6,7 +7,12 @@ namespace Nexus.Utilities
     {
         public static string SerializeIntended<T>(T value)
         {
-            var options = new JsonSerializerOptions() { WriteIndented = true };
+            var options = new JsonSerializerOptions() 
+            {
+                WriteIndented = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault
+            };
+
             return JsonSerializer.Serialize(value, options);
         }
     }

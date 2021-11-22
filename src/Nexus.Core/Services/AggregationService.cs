@@ -71,40 +71,31 @@ namespace Nexus.Services
                 var catalog = (await container.GetCatalogInfoAsync(cancellationToken)).Catalog;
                 var resources = catalog.Resources ?? Enumerable.Empty<Resource>();
 
-                var backendSources = resources
-                    .SelectMany(resource => (resource.Representations ?? Enumerable.Empty<Representation>()).Select(representation => representation.BackendSource))
-                    .Distinct()
-                    .Where(backendSource => backendSource != state.AggregationBackendSource)
+                // find aggregations for catalog ID
+                var potentialAggregations = setup.Aggregations
+                    .Where(parameters => parameters.CatalogId == catalog.Id)
                     .ToList();
 
-                return new AggregationInstruction(container, backendSources.ToDictionary(backendSource => backendSource, backendSource =>
-                {
-                    // find aggregations for catalog ID
-                    var potentialAggregations = setup.Aggregations
-                        .Where(parameters => parameters.CatalogId == catalog.Id)
-                        .ToList();
+                // create resource to aggregations map
+                var aggregationResources = resources
 
-                    // create resource to aggregations map
-                    var aggregationResources = resources
+                    // find all aggregations for current resource
+                    .Select(resource =>
+                    {
+                        return new ResourceAggregations(
+                            Resource: resource,
+                            Aggregations: potentialAggregations
+                                .Where(current => AggregationService.ApplyAggregationFilter(resource, current.Filters, logger))
+                                .ToList());
+                    })
 
-                        // find all resources for current reader backend source
-                        .Where(resource => resource.Representations is not null && 
-                                           resource.Representations.Any(representation => representation.BackendSource == backendSource))
+                    // take all resources with aggregations
+                    .Where(resourceAggregatons => resourceAggregatons.Aggregations.Any())
 
-                        // find all aggregations for current resource
-                        .Select(resource =>
-                        {
-                            return new AggregationResource(
-                                Resource: resource,
-                                Aggregations: potentialAggregations
-                                    .Where(current => AggregationService.ApplyAggregationFilter(resource, current.Filters, logger))
-                                    .ToList());
-                        })
-                        // take all resources with aggregations
-                        .Where(aggregationResource => aggregationResource.Aggregations.Any());
+                    // to array
+                    .ToArray();
 
-                    return aggregationResources.ToList();
-                }));
+                return new AggregationInstruction(container, aggregationResources);
             })))
             .Where(instruction => instruction is not null)
             .Select(instruction => instruction ?? throw new Exception("instruction is null"))
@@ -171,62 +162,66 @@ namespace Nexus.Services
                                                  Func<BackendSource, Task<IDataSourceController>> getControllerAsync,
                                                  CancellationToken cancellationToken)
         {
-            foreach (var (backendSource, aggregationResources) in instruction.DataReaderToAggregationsMap)
+            using var controller = await getControllerAsync(instruction.Container.BackendSource);
+
+            // get files
+            if (!await controller.IsDataOfDayAvailableAsync(catalogId, date, cancellationToken))
+                return;
+
+            // catalog
+            var container = state.CatalogContainers.FirstOrDefault(container => container.Id == catalogId);
+
+            if (container == null)
+                throw new Exception($"The requested catalog {catalogId} could not be found.");
+
+            var targetDirectoryPath = Path.Combine(databaseFolderPath, "DATA", WebUtility.UrlEncode(container.Id), date.ToString("yyyy-MM"), date.ToString("dd"));
+
+            // for each resource
+            foreach (var resourceAggregations in instruction.ResourceAggregations)
             {
-                using var controller = await getControllerAsync(backendSource);
+                cancellationToken.ThrowIfCancellationRequested();
 
-                // get files
-                if (!await controller.IsDataOfDayAvailableAsync(catalogId, date, cancellationToken))
-                    return;
-
-                // catalog
-                var container = state.CatalogContainers.FirstOrDefault(container => container.Id == catalogId);
-
-                if (container == null)
-                    throw new Exception($"The requested catalog {catalogId} could not be found.");
-
-                var targetDirectoryPath = Path.Combine(databaseFolderPath, "DATA", WebUtility.UrlEncode(container.Id), date.ToString("yyyy-MM"), date.ToString("dd"));
-
-                // for each resource
-                foreach (var aggregationResource in aggregationResources)
+                using var scope = _logger.BeginScope(new Dictionary<string, object>()
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
+                    ["ResourcePath"] = resourceAggregations.Resource.Id
+                });
 
-                    using var scope = _logger.BeginScope(new Dictionary<string, object>()
-                    {
-                        ["ResourcePath"] = aggregationResource.Resource.Id
-                    });
+                try
+                {
+                    var representations = resourceAggregations.Resource.Representations;
 
-                    try
+                    if (representations is not null && representations.Any())
                     {
-                        var representation = aggregationResource.Resource.Representations.First();
+                        var representation = representations.Count == 1
+                            ? representations[0]
+                            : representations.Single(representation => representation.IsPrimary);
 
                         var parameters = new object[]
                         {
                             targetDirectoryPath,
                             controller,
                             representation,
-                            aggregationResource.Aggregations,
+                            resourceAggregations.Aggregations,
                             date,
                             setup.Force,
                             cancellationToken
                         };
 
                         await (Task)(NexusCoreUtilities.InvokeGenericMethod(
-                            this, 
+                            this,
                             nameof(this.OrchestrateAggregationAsync),
                             BindingFlags.Instance | BindingFlags.NonPublic,
                             NexusCoreUtilities.GetTypeFromNexusDataType(representation.DataType),
                             parameters) ?? throw new Exception("task is null"));
                     }
-                    catch (TaskCanceledException)
-                    {
-                        throw;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Aggregating resource failed");
-                    }
+                }
+                catch (TaskCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Aggregating resource failed");
                 }
             }
         }
