@@ -33,7 +33,7 @@ namespace Nexus.Utilities
                 {
                     fixed (double* targetPtr = target.Span)
                     {
-                        BufferUtilities.InternalApplyRepresentationStatus(data.Length, dataPtr, statusPtr, targetPtr);
+                        BufferUtilities.InternalApplyRepresentationStatus(target.Length, dataPtr, statusPtr, targetPtr);
                     }
                 }
             }

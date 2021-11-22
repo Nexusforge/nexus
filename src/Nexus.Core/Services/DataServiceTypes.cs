@@ -1,4 +1,5 @@
-﻿using Nexus.DataModel;
+﻿using Nexus.Core;
+using Nexus.DataModel;
 using Nexus.Writers;
 using System;
 using System.Collections.Generic;
@@ -37,6 +38,6 @@ namespace Nexus.Services
 
     internal record ExportContext(
         TimeSpan SamplePeriod,
-        IEnumerable<CatalogItem> CatalogItems,
+        Dictionary<CatalogContainer, IEnumerable<CatalogItem>> CatalogItemsMap,
         ExportParameters ExportParameters);
 }

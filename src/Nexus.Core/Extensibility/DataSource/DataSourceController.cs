@@ -71,7 +71,6 @@ namespace Nexus.Extensibility
             this.Logger.LogDebug("Load catalog {CatalogId}", catalogId);
 
             var catalog = await this.DataSource.GetCatalogAsync(catalogId, cancellationToken);
-            catalog.BackendSource = this.BackendSource;
 
             /* GetOrAdd is not working because it requires a synchronous delegate */
             _catalogCache.TryAdd(catalogId, catalog);
@@ -158,12 +157,12 @@ namespace Nexus.Extensibility
                 Memory<byte> data;
                 Memory<byte> status;
 
+                /* sizes */
+                var elementSize = catalogItem.Representation.ElementSize;
+                var dataLength = elementCount * elementSize;
+
                 if (statusWriter is null)
                 {
-                    /* sizes */
-                    var elementSize = sizeof(double);
-                    var dataLength = elementCount * elementSize;
-
                     /* data memory */
                     var dataOwner = MemoryPool<byte>.Shared.Rent(dataLength);
                     var dataMemory = dataOwner.Memory.Slice(0, dataLength);
@@ -182,10 +181,6 @@ namespace Nexus.Extensibility
                 }
                 else
                 {
-                    /* sizes */
-                    var elementSize = catalogItem.Representation.ElementSize;
-                    var dataLength = elementCount * elementSize;
-
                     /* data memory */
                     var dataMemory = dataWriter
                         .GetMemory(dataLength)

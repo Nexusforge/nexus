@@ -104,18 +104,33 @@ namespace Nexus.Controllers.V1
             if (!catalogItems.Any())
                 return this.BadRequest("The list of resource paths is empty.");
 
-            // authorize
-            var catalogIds = catalogItems.Select(catalogItem => catalogItem.Catalog.Id).Distinct();
+            // build up catalog items map and authorize
+            var catalogContainers = _appState.CatalogState.CatalogContainers;
 
-            foreach (var catalogId in catalogIds)
+            Dictionary<CatalogContainer, IEnumerable<CatalogItem>> catalogItemsMap;
+
+            try
             {
-                var catalogContainer = state.CatalogContainers
-                    .First(container => container.Id == catalogId);
+                catalogItemsMap = catalogItems
+                    .GroupBy(catalogItem => catalogItem.Catalog.Id)
+                    .ToDictionary(
+                        group =>
+                        {
+                            var catalogContainer = catalogContainers.First(catalogContainer => catalogContainer.Id == group.Key);
 
-                if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.CatalogMetadata, this.HttpContext.User))
-                    return this.Unauthorized($"The current user is not authorized to access catalog '{catalogId}'.");
+                            if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.CatalogMetadata, this.HttpContext.User))
+                                throw new UnauthorizedAccessException($"The current user is not authorized to access catalog '{catalogContainer.Id}'.");
+
+                            return catalogContainer;
+                        },
+                        group => (IEnumerable<CatalogItem>)group);
+
             }
-
+            catch (UnauthorizedAccessException ex)
+            {
+                return this.Unauthorized(ex.Message);
+            }
+            
             //
             var job = new ExportJob(
                 Parameters: parameters)
@@ -133,7 +148,7 @@ namespace Nexus.Controllers.V1
 #warning ExportId should be ASP Request ID!
                     var exportId = Guid.NewGuid();
 
-                    return await dataService.ExportAsync(parameters, catalogItems, exportId, cts.Token);
+                    return await dataService.ExportAsync(parameters, catalogItemsMap, exportId, cts.Token);
                 });
 
                 return this.Accepted($"{this.GetBasePath()}{this.Request.Path}/{jobControl.Job.Id}/status", jobControl.Job);

@@ -77,15 +77,15 @@ namespace Nexus.Services
 
         public async Task<string> ExportAsync(
             ExportParameters exportParameters,
-            IEnumerable<CatalogItem> catalogItems,
+            Dictionary<CatalogContainer, IEnumerable<CatalogItem>> catalogItemsMap,
             Guid exportId,
             CancellationToken cancellationToken)
         {
-            if (!catalogItems.Any() || exportParameters.Begin == exportParameters.End)
+            if (!catalogItemsMap.Any() || exportParameters.Begin == exportParameters.End)
                 return string.Empty;
 
             // find sample period
-            var samplePeriods = catalogItems
+            var samplePeriods = catalogItemsMap.SelectMany(entry => entry.Value)
                 .Select(catalogItem => catalogItem.Representation.SamplePeriod)
                 .Distinct()
                 .ToList();
@@ -109,9 +109,7 @@ namespace Nexus.Services
             Directory.CreateDirectory(tmpFolderPath);
 
             // copy available licenses
-            var catalogIds = catalogItems
-                .Select(catalogItem => catalogItem.Catalog.Id)
-                .Distinct();
+            var catalogIds = catalogItemsMap.Keys.Select(catalogContainer => catalogContainer.Id);
 
             foreach (var catalogId in catalogIds)
             {
@@ -125,7 +123,7 @@ namespace Nexus.Services
             // write data files
             try
             {
-                var exportContext = new ExportContext(samplePeriod, catalogItems, exportParameters);
+                var exportContext = new ExportContext(samplePeriod, catalogItemsMap, exportParameters);
                 await this.CreateFilesAsync(exportContext, controller, cancellationToken);
             }
             finally
@@ -170,16 +168,15 @@ namespace Nexus.Services
         {
             /* reading groups */
             var catalogItemPipeReaders = new List<CatalogItemPipeReader>();
-            var groupedCatalogItems = exportContext.CatalogItems.GroupBy(catalogItem => catalogItem.Catalog.BackendSource);
             var readingGroups = new List<DataReadingGroup>();
 
-            foreach (var catalogItemGroup in groupedCatalogItems)
+            foreach (var entry in exportContext.CatalogItemsMap)
             {
-                var backendSource = catalogItemGroup.Key;
+                var backendSource = entry.Key.BackendSource;
                 var dataSourceController = await _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken);
                 var catalogItemPipeWriters = new List<CatalogItemPipeWriter>();
 
-                foreach (var catalogItem in catalogItemGroup)
+                foreach (var catalogItem in entry.Value)
                 {
                     var pipe = new Pipe();
                     catalogItemPipeWriters.Add(new CatalogItemPipeWriter(catalogItem, pipe.Writer, null));

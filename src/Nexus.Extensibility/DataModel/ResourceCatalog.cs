@@ -85,8 +85,6 @@ namespace Nexus.DataModel
             }
         }
 
-        internal BackendSource BackendSource { get; set; } = null!;
-
         #endregion
 
         #region "Methods"

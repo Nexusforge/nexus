@@ -74,9 +74,10 @@ namespace Nexus.Controllers.V1
 
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            return await this.ProcessCatalogIdAsync(catalogId, catalog =>
+            return await this.ProcessCatalogIdAsync<ResourceCatalog>(catalogId, async catalogContainer =>
             {
-                return Task.FromResult((ActionResult<ResourceCatalog>)this.CreateCatalogResponse(catalog));
+                var catalogInfo = await catalogContainer.GetCatalogInfoAsync(cancellationToken);
+                return this.CreateCatalogResponse(catalogInfo.Catalog);
             }, cancellationToken);
         }
 
@@ -96,9 +97,9 @@ namespace Nexus.Controllers.V1
 
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            return await this.ProcessCatalogIdAsync<TimeRangeResult>(catalogId, async catalog =>
+            return await this.ProcessCatalogIdAsync<TimeRangeResult>(catalogId, async catalogContainer =>
             {
-                return await this.CreateTimeRangeResponseAsync(catalog, cancellationToken);
+                return await this.CreateTimeRangeResponseAsync(catalogContainer, cancellationToken);
             }, cancellationToken);
         }
 
@@ -148,13 +149,15 @@ namespace Nexus.Controllers.V1
 
             var remoteIpAddress = this.HttpContext.Connection.RemoteIpAddress;
 
-            return await this.ProcessCatalogIdAsync(catalogId, catalog =>
+            return await this.ProcessCatalogIdAsync<Resource[]>(catalogId, async catalogContainer =>
             {
-                var resources = catalog.Resources
+                var catalogInfo = await catalogContainer.GetCatalogInfoAsync(cancellationToken);
+
+                var resources = catalogInfo.Catalog.Resources
                     .Select(resource => this.CreateResourceResponse(resource))
                     .ToArray();
 
-                return Task.FromResult((ActionResult<Resource[]>)resources);
+                return resources;
             }, cancellationToken);
         }
 
@@ -177,19 +180,21 @@ namespace Nexus.Controllers.V1
             catalogId = WebUtility.UrlDecode(catalogId);
             resourceId = WebUtility.UrlDecode(resourceId);
 
-            return await this.ProcessCatalogIdAsync(catalogId, catalog =>
+            return await this.ProcessCatalogIdAsync<Resource>(catalogId, async catalogContainer =>
             {
-                var resource = catalog.Resources.FirstOrDefault(
+                var catalogInfo = await catalogContainer.GetCatalogInfoAsync(cancellationToken);
+
+                var resource = catalogInfo.Catalog.Resources.FirstOrDefault(
                     current => current.Id.ToString() == resourceId);
 
                 if (resource == null)
-                    resource = catalog.Resources.FirstOrDefault(
+                    resource = catalogInfo.Catalog.Resources.FirstOrDefault(
                         current => current.Id == resourceId);
 
                 if (resource == null)
-                    return Task.FromResult((ActionResult<Resource>)this.NotFound($"{catalogId}/{resourceId}"));
+                    return this.NotFound($"{catalogId}/{resourceId}");
 
-                return Task.FromResult((ActionResult<Resource>)this.CreateResourceResponse(resource));
+                return this.CreateResourceResponse(resource);
             }, cancellationToken);
         }
 
@@ -212,23 +217,25 @@ namespace Nexus.Controllers.V1
             catalogId = WebUtility.UrlDecode(catalogId);
             resourceId = WebUtility.UrlDecode(resourceId);
 
-            return await this.ProcessCatalogIdAsync(catalogId, catalog =>
+            return await this.ProcessCatalogIdAsync<Representation[]>(catalogId, async catalogContainer =>
             {
-                var resource = catalog.Resources.FirstOrDefault(
+                var catalogInfo = await catalogContainer.GetCatalogInfoAsync(cancellationToken);
+
+                var resource = catalogInfo.Catalog.Resources.FirstOrDefault(
                     current => current.Id.ToString() == resourceId);
 
                 if (resource == null)
-                    resource = catalog.Resources.FirstOrDefault(
+                    resource = catalogInfo.Catalog.Resources.FirstOrDefault(
                         current => current.Id == resourceId);
 
                 if (resource == null)
-                    return Task.FromResult((ActionResult<Representation[]>)this.NotFound($"{catalogId}/{resourceId}"));
+                    return this.NotFound($"{catalogId}/{resourceId}");
 
                 var response = resource.Representations.Select(representation
                     => this.CreateRepresentationResponse(representation))
                     .ToArray();
 
-                return Task.FromResult((ActionResult<Representation[]>)response);
+                return response;
             }, cancellationToken);
         }
 
@@ -255,25 +262,27 @@ namespace Nexus.Controllers.V1
             representationId = WebUtility.UrlDecode(representationId);
 
             // log
-            return await this.ProcessCatalogIdAsync<Representation>(catalogId, catalog =>
+            return await this.ProcessCatalogIdAsync<Representation>(catalogId, async catalogContainer =>
             {
-                var resource = catalog.Resources.FirstOrDefault(
+                var catalogInfo = await catalogContainer.GetCatalogInfoAsync(cancellationToken);
+
+                var resource = catalogInfo.Catalog.Resources.FirstOrDefault(
                     current => current.Id.ToString() == resourceId);
 
                 if (resource == null)
-                    resource = catalog.Resources.FirstOrDefault(
+                    resource = catalogInfo.Catalog.Resources.FirstOrDefault(
                         current => current.Id == resourceId);
 
                 if (resource == null)
-                    return Task.FromResult((ActionResult<Representation>)this.NotFound($"{catalogId}/{resourceId}"));
+                    return this.NotFound($"{catalogId}/{resourceId}");
 
                 var representation = resource.Representations.FirstOrDefault(
                     current => current.Id == representationId);
 
                 if (representation == null)
-                    return Task.FromResult((ActionResult<Representation>)this.NotFound($"{catalogId}/{resourceId}/{representation}"));
+                    return this.NotFound($"{catalogId}/{resourceId}/{representation}");
 
-                return Task.FromResult((ActionResult<Representation>)this.CreateRepresentationResponse(representation));
+                return this.CreateRepresentationResponse(representation);
             }, cancellationToken);
         }
 
@@ -283,10 +292,10 @@ namespace Nexus.Controllers.V1
         }
 
         private async Task<TimeRangeResult> 
-            CreateTimeRangeResponseAsync(ResourceCatalog catalog, CancellationToken cancellationToken)
+            CreateTimeRangeResponseAsync(CatalogContainer catalogContainer, CancellationToken cancellationToken)
         {
-            using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(catalog.BackendSource, cancellationToken);
-            var timeRange = await dataSource.GetTimeRangeAsync(catalog.Id, cancellationToken);
+            using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(catalogContainer.BackendSource, cancellationToken);
+            var timeRange = await dataSource.GetTimeRangeAsync(catalogContainer.Id, cancellationToken);
 
             var timeRangeResult = new TimeRangeResult(
                 Begin: timeRange.Begin,
@@ -296,10 +305,10 @@ namespace Nexus.Controllers.V1
         }
 
         private async Task<AvailabilityResult> 
-            CreateAvailabilityResponseAsync(ResourceCatalog catalog, DateTime begin, DateTime end, AvailabilityGranularity granularity, CancellationToken cancellationToken)
+            CreateAvailabilityResponseAsync(CatalogContainer catalogContainer, DateTime begin, DateTime end, AvailabilityGranularity granularity, CancellationToken cancellationToken)
         {
-            using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(catalog.BackendSource, cancellationToken);
-            var availability = await dataSource.GetAvailabilityAsync(catalog.Id, begin, end, granularity, cancellationToken);
+            using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(catalogContainer.BackendSource, cancellationToken);
+            var availability = await dataSource.GetAvailabilityAsync(catalogContainer.Id, begin, end, granularity, cancellationToken);
 
             var availabilityResults = new AvailabilityResult(
                 Data: availability.Data);
@@ -319,7 +328,7 @@ namespace Nexus.Controllers.V1
 
         private async Task<ActionResult<T>> ProcessCatalogIdAsync<T>(
             string catalogId,
-            Func<ResourceCatalog, Task<ActionResult<T>>> action,
+            Func<CatalogContainer, Task<ActionResult<T>>> action,
             CancellationToken cancellationToken)
         {
             var catalogContainer = _appState.CatalogState.CatalogContainers
@@ -330,9 +339,7 @@ namespace Nexus.Controllers.V1
                 if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.CatalogMetadata, this.User))
                     return this.Unauthorized($"The current user is not authorized to access the catalog '{catalogId}'.");
 
-                var catalogInfo = await catalogContainer.GetCatalogInfoAsync(cancellationToken);
-
-                return await action.Invoke(catalogInfo.Catalog);
+                return await action.Invoke(catalogContainer);
             }
             else
             {

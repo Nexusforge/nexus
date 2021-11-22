@@ -427,19 +427,6 @@ namespace Nexus.Core
 
                 var selectedRepresentations = this.GetSelectedRepresentations();
 
-                // authorization
-                var catalogIds = selectedRepresentations.Select(representation => representation.Resource.Catalog.Id).Distinct();
-
-                foreach (var catalogId in catalogIds)
-                {
-                    var catalogContainer = _appState.CatalogState.CatalogContainers
-                        .First(container => container.Id == catalogId);
-
-                    if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.CatalogMetadata, _userIdService.User))
-                        throw new UnauthorizedAccessException($"The current user is not authorized to access catalog {catalogId}.");
-                }
-
-                //
                 var job = new ExportJob(
                     Parameters: this.ExportParameters)
                 {
@@ -450,9 +437,26 @@ namespace Nexus.Core
 
                 _exportJobControl = exportJobService.AddJob(job, _dataService.ReadProgress, (jobControl, cts) =>
                 {
+                    var catalogItemsMap = selectedRepresentations
+                        .Select(current => new CatalogItem(current.Resource.Catalog.Model, current.Resource.Model, current.Model))
+                        .GroupBy(catalogItem => catalogItem.Catalog.Id)
+                        .ToDictionary(
+                            group =>
+                            {
+                                var catalogContainer = _appState.CatalogState.CatalogContainers
+                                    .First(catalogContainer => catalogContainer.Id == group.Key);
+
+                                // authorize
+                                if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.CatalogMetadata, _userIdService.User))
+                                    throw new UnauthorizedAccessException($"The current user is not authorized to access catalog {catalogContainer.Id}.");
+
+                                return catalogContainer;
+                            },
+                            group => (IEnumerable<CatalogItem>)group);
+
                     var task = _dataService.ExportAsync(
                         this.ExportParameters,
-                        selectedRepresentations.Select(current => new CatalogItem(current.Resource.Catalog.Model, current.Resource.Model, current.Model)),
+                        catalogItemsMap,
                         Guid.NewGuid(),
                         cts.Token);
 
