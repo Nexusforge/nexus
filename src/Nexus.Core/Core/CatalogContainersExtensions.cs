@@ -28,7 +28,7 @@ namespace Nexus.Core
             CancellationToken cancellationToken)
         {
             var pathParts = resourcePath.Split('/');
-            var catalogId = $"/{pathParts[1]}/{pathParts[2]}/{pathParts[3]}";
+            var catalogId = string.Join('/', pathParts[..^2]);
             var catalogContainer = catalogContainers.FirstOrDefault(container => container.Id == catalogId);
 
             if (catalogContainer == null)

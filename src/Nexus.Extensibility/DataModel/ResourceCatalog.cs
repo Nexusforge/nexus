@@ -186,10 +186,10 @@ namespace Nexus.DataModel
         {
             catalogItem = null;
 
-            var pathParts = resourcePath.Split("/");
-            var catalogId = string.Join('/', pathParts.Take(pathParts.Length - 2));
-            var resourceId = pathParts[4];
-            var representationId = pathParts[5];
+            var pathParts = resourcePath.Split('/');
+            var catalogId = string.Join('/', pathParts[..^2]);
+            var resourceId = pathParts[^2];
+            var representationId = pathParts[^1];
 
             if (catalogId != this.Id)
                 return false;
