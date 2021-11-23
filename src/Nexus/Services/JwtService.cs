@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Nexus.Core;
-using Nexus.Models.V1;
+using Nexus.DataModel;
 using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -34,15 +34,15 @@ namespace Nexus.Services
 
         #region Methods
 
-        public async Task<(string, bool)> GenerateTokenAsync(UserCredentials credentials)
+        public async Task<(string, bool)> GenerateTokenAsync(AuthenticateRequest authenticateRequest)
         {
             string result;
             var success = false;
-            var user = await _signInManager.UserManager.FindByNameAsync(credentials.Username);
+            var user = await _signInManager.UserManager.FindByNameAsync(authenticateRequest.Username);
 
             if (user is not null)
             {
-                var signInResult = await _signInManager.CheckPasswordSignInAsync(user, credentials.Password, false);
+                var signInResult = await _signInManager.CheckPasswordSignInAsync(user, authenticateRequest.Password, false);
                 
                 var isConfirmed = 
                     !_usersOptions.VerifyEmail ||
@@ -53,15 +53,15 @@ namespace Nexus.Services
                     if (signInResult.Succeeded)
                     {
                         var claims = await _signInManager.UserManager.GetClaimsAsync(user);
-                        claims.Add(new Claim(ClaimTypes.Name, credentials.Username));
-                        claims.Add(new Claim(ClaimTypes.Email, credentials.Username));
+                        claims.Add(new Claim(ClaimTypes.Name, authenticateRequest.Username));
+                        claims.Add(new Claim(ClaimTypes.Email, authenticateRequest.Username));
 
                         var signingCredentials = new SigningCredentials(Startup.SecurityKey, SecurityAlgorithms.HmacSha256);
 
                         var token = new JwtSecurityToken(issuer: "Nexus",
                                                          audience: signingCredentials.Algorithm,
                                                          claims: claims,
-                                                         expires: DateTime.UtcNow.AddSeconds(30),
+                                                         expires: DateTime.UtcNow.AddMinutes(15),
                                                          signingCredentials: signingCredentials);
 
                         result = _tokenHandler.WriteToken(token);

@@ -87,7 +87,7 @@ namespace Nexus.Controllers.V1
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpGet("{catalogId}/timerange")]
-        public async Task<ActionResult<TimeRangeResult>> 
+        public async Task<ActionResult<TimeRangeResponse>> 
             GetTimeRangeAsync(
                 string catalogId, 
                 CancellationToken cancellationToken)
@@ -97,7 +97,7 @@ namespace Nexus.Controllers.V1
 
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            return await this.ProcessCatalogIdAsync<TimeRangeResult>(catalogId, async catalogContainer =>
+            return await this.ProcessCatalogIdAsync<TimeRangeResponse>(catalogId, async catalogContainer =>
             {
                 return await this.CreateTimeRangeResponseAsync(catalogContainer, cancellationToken);
             }, cancellationToken);
@@ -112,12 +112,11 @@ namespace Nexus.Controllers.V1
         /// <param name="granularity">Granularity of the resulting array.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpGet("{catalogId}/availability")]
-        public async Task<ActionResult<AvailabilityResult>>
+        public async Task<ActionResult<AvailabilityResponse>>
             GetCatalogAvailabilityAsync(
                 [BindRequired] string catalogId,
                 [BindRequired] DateTime begin,
                 [BindRequired] DateTime end,
-                [BindRequired] AvailabilityGranularity granularity,
                 CancellationToken cancellationToken)
         {
             if (_appState.CatalogState == null)
@@ -125,9 +124,9 @@ namespace Nexus.Controllers.V1
 
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            return await this.ProcessCatalogIdAsync<AvailabilityResult>(catalogId, async catalog =>
+            return await this.ProcessCatalogIdAsync<AvailabilityResponse>(catalogId, async catalog =>
             {
-                return await this.CreateAvailabilityResponseAsync(catalog, begin, end, granularity, cancellationToken);
+                return await this.CreateAvailabilityResponseAsync(catalog, begin, end, cancellationToken);
             }, cancellationToken);
         }
 
@@ -291,26 +290,26 @@ namespace Nexus.Controllers.V1
             return catalog;
         }
 
-        private async Task<TimeRangeResult> 
+        private async Task<TimeRangeResponse> 
             CreateTimeRangeResponseAsync(CatalogContainer catalogContainer, CancellationToken cancellationToken)
         {
             using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(catalogContainer.BackendSource, cancellationToken);
             var timeRange = await dataSource.GetTimeRangeAsync(catalogContainer.Id, cancellationToken);
 
-            var timeRangeResult = new TimeRangeResult(
+            var timeRangeResult = new TimeRangeResponse(
                 Begin: timeRange.Begin,
                 End: timeRange.End);
 
             return timeRangeResult;
         }
 
-        private async Task<AvailabilityResult> 
-            CreateAvailabilityResponseAsync(CatalogContainer catalogContainer, DateTime begin, DateTime end, AvailabilityGranularity granularity, CancellationToken cancellationToken)
+        private async Task<AvailabilityResponse> 
+            CreateAvailabilityResponseAsync(CatalogContainer catalogContainer, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
             using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(catalogContainer.BackendSource, cancellationToken);
-            var availability = await dataSource.GetAvailabilityAsync(catalogContainer.Id, begin, end, granularity, cancellationToken);
+            var availability = await dataSource.GetAvailabilityAsync(catalogContainer.Id, begin, end, cancellationToken);
 
-            var availabilityResults = new AvailabilityResult(
+            var availabilityResults = new AvailabilityResponse(
                 Data: availability.Data);
 
             return availabilityResults;

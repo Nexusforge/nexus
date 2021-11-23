@@ -78,57 +78,33 @@ namespace Nexus.Extensibility
             return catalog;
         }
 
-        public async Task<AvailabilityResult>
-            GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, AvailabilityGranularity granularity, CancellationToken cancellationToken)
+        public async Task<AvailabilityResponse>
+            GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
             var dateBegin = begin.Date;
             var dateEnd = end.Date;
             var aggregatedData = new ConcurrentDictionary<DateTime, double>();
+            var totalDays = (int)(dateEnd - dateBegin).TotalDays;
 
-            switch (granularity)
+            var tasks = Enumerable.Range(0, totalDays).Select(async day =>
             {
-                case AvailabilityGranularity.Day:
+                var date = dateBegin.AddDays(day);
+                var availability = await this.DataSource.GetAvailabilityAsync(catalogId, date, date.AddDays(1), cancellationToken);
+                aggregatedData.TryAdd(date, availability);
+            });
 
-                    var totalDays = (int)(dateEnd - dateBegin).TotalDays;
+            await Task.WhenAll(tasks);
 
-                    var tasks = Enumerable.Range(0, totalDays).Select(async day =>
-                    {
-                        var date = dateBegin.AddDays(day);
-                        var availability = await this.DataSource.GetAvailabilityAsync(catalogId, date, date.AddDays(1), cancellationToken);
-                        aggregatedData.TryAdd(date, availability);
-                    });
-
-                    await Task.WhenAll(tasks);
-
-                    break;
-
-                case AvailabilityGranularity.Month:
-
-                    var currentBegin = new DateTime(begin.Year, begin.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-
-                    while (currentBegin < end)
-                    {
-                        var availability = await this.DataSource.GetAvailabilityAsync(catalogId, currentBegin, currentBegin.AddMonths(1), cancellationToken);
-                        aggregatedData.TryAdd(currentBegin, availability);
-                        currentBegin = currentBegin.AddMonths(1);
-                    }
-
-                    break;
-
-                default:
-                    throw new NotSupportedException($"Availability granularity value '{granularity}' is not supported.");
-            }
-
-            return new AvailabilityResult(
+            return new AvailabilityResponse(
                 Data: aggregatedData.ToDictionary(entry => entry.Key, entry => entry.Value));
         }
 
-        public async Task<TimeRangeResult>
+        public async Task<TimeRangeResponse>
             GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
         {
             (var begin, var end) = await this.DataSource.GetTimeRangeAsync(catalogId, cancellationToken);
 
-            return new TimeRangeResult(
+            return new TimeRangeResponse(
                 Begin: begin,
                 End: end);
         }

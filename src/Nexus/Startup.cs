@@ -17,10 +17,9 @@ using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Services;
 using Nexus.ViewModels;
+using NSwag.AspNetCore;
 using Serilog;
-using Swashbuckle.AspNetCore.SwaggerGen;
 using System;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
@@ -152,24 +151,32 @@ namespace Nexus
                     options.SubstituteApiVersionInUrl = true;
                 });
 
-            services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
+            /* not optimal */
+#pragma warning disable ASP0000 // Do not call 'IServiceCollection.BuildServiceProvider' in 'ConfigureServices'
+            var provider = services.BuildServiceProvider().GetRequiredService<IApiVersionDescriptionProvider>();
+#pragma warning restore ASP0000 // Do not call 'IServiceCollection.BuildServiceProvider' in 'ConfigureServices'
 
-            services.AddSwaggerGen(
-                options =>
+            foreach (var description in provider.ApiVersionDescriptions)
+            {
+                services.AddOpenApiDocument(config =>
                 {
-                    //options.OperationFilter<SwaggerDefaultValues>();
-                    options.IncludeXmlComments(Path.ChangeExtension(typeof(Startup).Assembly.Location, "xml"));
+                    config.Title = "Nexus REST API";
+                    config.Version = description.GroupName;
+                    config.Description = "Explore resources and get their data." 
+                        + (description.IsDeprecated ? " This API version is deprecated." : "");
+
+                    config.ApiGroupNames = new[] { description.GroupName };
+                    config.DocumentName = description.GroupName;
                 });
+            }
 
             // custom
 #warning replace httpcontextaccessor by async authenticationStateProvider (https://github.com/dotnet/aspnetcore/issues/17585)
             services.AddHttpContextAccessor();
 
-            services.AddTransient<AggregationService>();
             services.AddTransient<DataService>();
 
             services.AddScoped<IUserIdService, UserIdService>();
-            services.AddScoped<JobEditor>();
             services.AddScoped<JwtService>();
             services.AddScoped<SettingsViewModel>();
             services.AddScoped<ToasterService>();
@@ -182,7 +189,6 @@ namespace Nexus
             services.AddSingleton<IDatabaseManager, DatabaseManager>();
             services.AddSingleton<IExtensionHive, ExtensionHive>();
             services.AddSingleton<IUserManagerWrapper, UserManagerWrapper>();
-            services.AddSingleton<JobService<AggregationJob>>();
             services.AddSingleton<JobService<ExportJob>>();
 
             services.Configure<GeneralOptions>(Configuration.GetSection(GeneralOptions.Section));
@@ -236,17 +242,16 @@ namespace Nexus
             });
 
             // swagger
-            app.UseSwagger();
-            app.UseSwaggerUI(
-                options =>
-                {
-                    options.RoutePrefix = "api";
+            app.UseOpenApi();
+            app.UseSwaggerUi3(settings =>
+            {
+                settings.Path = "/api";
 
-                    foreach (var description in provider.ApiVersionDescriptions)
-                    {
-                        options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", description.GroupName.ToUpperInvariant());
-                    }
-                });
+                foreach (var description in provider.ApiVersionDescriptions)
+                {
+                    settings.SwaggerRoutes.Add(new SwaggerUi3Route(description.GroupName.ToUpperInvariant(), $"/swagger/{description.GroupName}/swagger.json"));
+                }
+            });
 
             // Serilog Request Logging (https://andrewlock.net/using-serilog-aspnetcore-in-asp-net-core-3-reducing-log-verbosity/)
             // LogContext properties are not included by default in request logging, workaround: https://nblumhardt.com/2019/10/serilog-mvc-logging/

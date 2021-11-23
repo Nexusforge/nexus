@@ -170,11 +170,7 @@ namespace Nexus.Shared
 
             try
             {
-                var granularity = totalDays <= 365
-                    ? AvailabilityGranularity.Day
-                    : AvailabilityGranularity.Month;
-
-                var availability = await this.UserState.GetAvailabilityAsync(granularity, CancellationToken.None);
+                var availability = await this.UserState.GetAvailabilityAsync(CancellationToken.None);
 
                 this.Config.Data.Datasets.Clear();
 
@@ -187,37 +183,14 @@ namespace Nexus.Shared
 
                 this.Config.Data.Datasets.Add(dataset);
 
-                switch (granularity)
-                {
-                    case AvailabilityGranularity.Day:
+                axis.Time.Unit = TimeMeasurement.Day;
 
-                        axis.Time.Unit = TimeMeasurement.Day;
-
-                        dataset.AddRange(availability.Data
-                            .Select((entry, i) =>
-                            {
-                                return new TimePoint(entry.Key, entry.Value * 100);
-                            })
-                        );
-
-                        break;
-
-                    case AvailabilityGranularity.Month:
-
-                        axis.Time.Unit = TimeMeasurement.Month;
-
-                        dataset.AddRange(availability.Data
-                            .Select((entry, i) =>
-                            {
-                                return new TimePoint(entry.Key, entry.Value * 100);
-                            })
-                        );
-
-                        break;
-
-                    default:
-                        break;
-                }
+                dataset.AddRange(availability.Data
+                    .Select((entry, i) =>
+                    {
+                        return new TimePoint(entry.Key, entry.Value * 100);
+                    })
+                );
 
                 await _barChart.Update();
             }

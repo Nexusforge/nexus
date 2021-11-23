@@ -37,7 +37,7 @@ namespace Services
 
             Mock.Get(dataSourceController)
                 .Setup(s => s.GetAvailabilityAsync(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<AvailabilityGranularity>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(new AvailabilityResult(Data: data)));
+                .Returns(Task.FromResult(new AvailabilityResponse(Data: data)));
 
             var dataControllerService = Mock.Of<IDataControllerService>();
 

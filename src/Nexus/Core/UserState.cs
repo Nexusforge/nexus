@@ -523,13 +523,13 @@ namespace Nexus.Core
             this.VisualizeProgress = progress;
         }
 
-        public async Task<AvailabilityResult> GetAvailabilityAsync(AvailabilityGranularity granularity, CancellationToken cancellationToken)
+        public async Task<AvailabilityResponse> GetAvailabilityAsync(CancellationToken cancellationToken)
         {
             // security check
             if (!AuthorizationUtilities.IsCatalogAccessible(this.CatalogContainer.Id, this.CatalogContainer.CatalogMetadata, _userIdService.User))
                 throw new UnauthorizedAccessException($"The current user is not authorized to access catalog '{this.CatalogContainer.Id}'.");
 
-            return await _dataService.GetAvailabilityAsync(this.CatalogContainer.Id, this.DateTimeBegin, this.DateTimeEnd, granularity, cancellationToken);
+            return await _dataService.GetAvailabilityAsync(this.CatalogContainer.Id, this.DateTimeBegin, this.DateTimeEnd, cancellationToken);
         }
 
         public async Task SetExportParametersAsync(ExportParameters exportParameters, CancellationToken cancellationToken)

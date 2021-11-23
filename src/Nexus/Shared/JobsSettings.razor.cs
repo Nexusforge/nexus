@@ -30,9 +30,6 @@ namespace Nexus.Shared
         [Inject]
 		private JobService<ExportJob> ExportJobsService { get; set; }
 
-		[Inject]
-		private JobService<AggregationJob> AggregationJobsService { get; set; }
-
 		#endregion
 
 		#region Methods
@@ -40,7 +37,6 @@ namespace Nexus.Shared
 		protected override Task OnParametersSetAsync()
 		{
 			this.ExportJobsService.PropertyChanged += this.PropertyChanged;
-			this.AggregationJobsService.PropertyChanged += this.PropertyChanged;
 			return base.OnParametersSetAsync();
 		}
 
@@ -53,7 +49,6 @@ namespace Nexus.Shared
 			if (disposing)
 			{
 				this.ExportJobsService.PropertyChanged -= this.PropertyChanged;
-				this.AggregationJobsService.PropertyChanged -= this.PropertyChanged;
 				base.Dispose(disposing);
 			}
 		}

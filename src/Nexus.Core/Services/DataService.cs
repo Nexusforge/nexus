@@ -58,11 +58,10 @@ namespace Nexus.Services
 
         #region Methods
 
-        public async Task<AvailabilityResult> GetAvailabilityAsync(
+        public async Task<AvailabilityResponse> GetAvailabilityAsync(
             string catalogId, 
             DateTime begin, 
             DateTime end, 
-            AvailabilityGranularity granularity,
             CancellationToken cancellationToken)
         {
             var backendSource = _appState.CatalogState.CatalogContainers
@@ -70,7 +69,7 @@ namespace Nexus.Services
                 .BackendSource;
 
             using var controller = await _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken);
-            var availabilityResult = await controller.GetAvailabilityAsync(catalogId, begin, end, granularity, cancellationToken);
+            var availabilityResult = await controller.GetAvailabilityAsync(catalogId, begin, end, cancellationToken);
 
             return availabilityResult;
         }

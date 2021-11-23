@@ -1,0 +1,1 @@
+dotnet nswag run src/nexus/nswag.json

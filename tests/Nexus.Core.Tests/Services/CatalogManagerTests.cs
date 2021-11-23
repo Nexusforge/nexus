@@ -66,9 +66,9 @@ namespace Services
                     .Build()
             };
 
-            var timeRangeResultA_B = new TimeRangeResult(new DateTime(2020, 01, 01), new DateTime(2020, 01, 02));
-            var timeRangeResultC = new TimeRangeResult(DateTime.MaxValue, DateTime.MinValue);
-            var timeRangeResultD = new TimeRangeResult(new DateTime(2020, 01, 01), new DateTime(2020, 01, 02));
+            var timeRangeResultA_B = new TimeRangeResponse(new DateTime(2020, 01, 01), new DateTime(2020, 01, 02));
+            var timeRangeResultC = new TimeRangeResponse(DateTime.MaxValue, DateTime.MinValue);
+            var timeRangeResultD = new TimeRangeResponse(new DateTime(2020, 01, 01), new DateTime(2020, 01, 02));
 
             var dataControllerService = Mock.Of<IDataControllerService>();
 

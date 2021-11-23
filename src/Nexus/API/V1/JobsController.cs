@@ -24,12 +24,9 @@ namespace Nexus.Controllers.V1
 
         private ILogger _logger;
         private IServiceProvider _serviceProvider;
-        private IDataControllerService _dataControllerService;
         private Serilog.IDiagnosticContext _diagnosticContext;
         private AppState _appState;
         private JobService<ExportJob> _exportJobService;
-        private JobService<AggregationJob> _aggregationJobService;
-        private PathsOptions _pathsOptions;
 
         #endregion
 
@@ -38,21 +35,15 @@ namespace Nexus.Controllers.V1
         public JobsController(
             AppState appState,
             JobService<ExportJob> exportJobService,
-            JobService<AggregationJob> aggregationJobService,
-            IDataControllerService dataControllerService,
             Serilog.IDiagnosticContext diagnosticContext,
             IServiceProvider serviceProvider,
-            ILogger<JobsController> logger,
-            IOptions<PathsOptions> pathOptions)
+            ILogger<JobsController> logger)
         {
             _appState = appState;
             _serviceProvider = serviceProvider;
             _exportJobService = exportJobService;
-            _dataControllerService = dataControllerService;
             _diagnosticContext = diagnosticContext;
-            _aggregationJobService = aggregationJobService;
             _logger = logger;
-            _pathsOptions = pathOptions.Value;
         }
 
         #endregion
@@ -233,170 +224,6 @@ namespace Nexus.Controllers.V1
             if (_exportJobService.TryGetJob(jobId, out var jobControl))
             {
                 if (this.User.Identity.Name == jobControl.Job.Owner || 
-                    jobControl.Job.Owner == null ||
-                    this.User.HasClaim(Claims.IS_ADMIN, "true"))
-                {
-                    jobControl.CancellationTokenSource.Cancel();
-                    return this.Accepted();
-                }
-                else
-                {
-                    return this.Unauthorized($"The current user is not authorized to cancel the job '{jobControl.Job.Id}'.");
-                }
-            }
-            else
-            {
-                return this.NotFound(jobId);
-            }
-        }
-
-        #endregion
-
-        #region Aggregation Jobs
-
-        /// <summary>
-        /// Creates a new aggregation job.
-        /// </summary>
-        /// <param name="setup">Aggregation setup.</param>
-        /// <returns></returns>
-        [HttpPost("aggregation")]
-        public ActionResult<AggregationJob> CreateAggregationJob(AggregationSetup setup)
-        {
-            _diagnosticContext.Set("Body", JsonSerializerHelper.SerializeIntended(setup));
-
-            if (_appState.CatalogState == null)
-                return this.StatusCode(503, "The database has not been loaded yet.");
-
-            setup.Begin = setup.Begin.ToUniversalTime();
-            setup.End = setup.End.ToUniversalTime();
-
-            // authorize
-            if (!this.User.HasClaim(Claims.IS_ADMIN, "true"))
-                return this.Unauthorized($"The current user is not authorized to create an aggregation job.");
-
-            //
-            var job = new AggregationJob(
-                Setup: setup)
-            {
-                Owner = this.User.Identity.Name
-            };
-
-            var aggregationService = _serviceProvider.GetRequiredService<AggregationService>();
-            var databaseManager = _serviceProvider.GetRequiredService<IDatabaseManager>();
-
-            try
-            {
-                var jobControl = _aggregationJobService.AddJob(job, aggregationService.Progress, (jobControl, cts) =>
-                {
-                    var task = Task.Run(async () =>
-                    {
-                        try
-                        {
-                            var result = await aggregationService.AggregateDataAsync(
-                                _pathsOptions.Cache,
-                                setup,
-                                _appState.CatalogState,
-                                backendSource => _dataControllerService.GetDataSourceControllerAsync(backendSource, cts.Token),
-                                cts.Token);
-
-                            return result;
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "Aggregation failed");
-                            throw;
-                        }
-                    });
-
-                    return task;
-                });
-
-                return this.Accepted($"{this.GetBasePath()}{this.Request.Path}/{jobControl.Job.Id}/status", jobControl.Job);
-            }
-            catch (ValidationException ex)
-            {
-                return this.UnprocessableEntity(ex.GetFullMessage(includeStackTrace: false));
-            }
-        }
-
-        /// <summary>
-        /// Gets a list of all aggregation jobs.
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet("aggregation")]
-        public ActionResult<List<AggregationJob>> GetAggregationJobs()
-        {
-            return _aggregationJobService
-                .GetJobs()
-                .Select(jobControl => jobControl.Job)
-                .ToList();
-        }
-
-        /// <summary>
-        /// Gets the specified aggregation job.
-        /// </summary>
-        /// <param name="jobId"></param>
-        /// <returns></returns>
-        [HttpGet("aggregation/{jobId}")]
-        public ActionResult<AggregationJob> GetAggregationJob(Guid jobId)
-        {
-            if (_aggregationJobService.TryGetJob(jobId, out var jobControl))
-                return jobControl.Job;
-            else
-                return this.NotFound(jobId);
-        }
-
-        /// <summary>
-        /// Gets the status of the specified export job.
-        /// </summary>
-        /// <param name="jobId"></param>
-        /// <returns></returns>
-        [HttpGet("aggregation/{jobId}/status")]
-        public ActionResult<JobStatus> GetAggregationJobStatus(Guid jobId)
-        {
-            if (_aggregationJobService.TryGetJob(jobId, out var jobControl))
-            {
-                if (this.User.Identity.Name == jobControl.Job.Owner ||
-                    jobControl.Job.Owner == null ||
-                    this.User.HasClaim(Claims.IS_ADMIN, "true"))
-                {
-                    return new JobStatus(
-                        Start: jobControl.Start,
-                        Progress: jobControl.Progress,
-                        Status: jobControl.Task.Status,
-                        ExceptionMessage: jobControl.Task.Exception is not null
-                            ? jobControl.Task.Exception.GetFullMessage(includeStackTrace: false)
-                            : string.Empty,
-                        Result: jobControl.Task.Status == TaskStatus.RanToCompletion
-                            ? jobControl.Task.Result
-                            : null);
-                }
-                else
-                {
-                    return this.Unauthorized($"The current user is not authorized to access the status of job '{jobControl.Job.Id}'.");
-                }
-            }
-            else
-            {
-                return this.NotFound(jobId);
-            }
-        }
-
-        /// <summary>
-        /// Cancels the specified job.
-        /// </summary>
-        /// <param name="jobId"></param>
-        /// <returns></returns>
-        [HttpDelete("aggregation/{jobId}")]
-        public ActionResult DeleteAggregationJob(Guid jobId)
-        {
-            // security check
-            if (!this.User.HasClaim(Claims.IS_ADMIN, "true"))
-                return this.Unauthorized($"The current user is not authorized to cancel aggregation jobs.");
-
-            if (_exportJobService.TryGetJob(jobId, out var jobControl))
-            {
-                if (this.User.Identity.Name == jobControl.Job.Owner ||
                     jobControl.Job.Owner == null ||
                     this.User.HasClaim(Claims.IS_ADMIN, "true"))
                 {

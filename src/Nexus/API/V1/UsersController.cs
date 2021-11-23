@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Nexus.Models.V1;
+using Nexus.DataModel;
 using Nexus.Services;
 using System.Threading.Tasks;
 
@@ -8,7 +8,7 @@ namespace Nexus.Controllers.V1
     [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
-    internal class AccountController : ControllerBase
+    internal class UsersController : ControllerBase
     {
         #region Fields
 
@@ -18,7 +18,7 @@ namespace Nexus.Controllers.V1
 
         #region Constructors
 
-        public AccountController(JwtService jwtService)
+        public UsersController(JwtService jwtService)
         {
             _jwtService = jwtService;
         }
@@ -29,10 +29,12 @@ namespace Nexus.Controllers.V1
         /// Creates a bearer token.
         /// </summary>
         /// <returns></returns>
-        [HttpPost("token")]
-        public async Task<ActionResult<string>> GetToken(UserCredentials credentials)
+        [HttpPost("authenticate")]
+        public async Task<ActionResult<string>> AuthenticateAsync(AuthenticateRequest authenticateRequest)
         {
-            (var result, var success) = await _jwtService.GenerateTokenAsync(credentials);
+#warning Should be extended to be like https://jasonwatmore.com/post/2020/05/25/aspnet-core-3-api-jwt-authentication-with-refresh-tokens
+
+            (var result, var success) = await _jwtService.GenerateTokenAsync(authenticateRequest);
 
             if (success)
                 return this.Ok(result);

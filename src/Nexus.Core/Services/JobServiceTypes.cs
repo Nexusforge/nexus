@@ -15,8 +15,6 @@ namespace Nexus.Core
 
     public record ExportJob(ExportParameters Parameters) : Job;
 
-    public record AggregationJob(AggregationSetup Setup) : Job;
-
     public record JobStatus(
         DateTime Start,
         TaskStatus Status,

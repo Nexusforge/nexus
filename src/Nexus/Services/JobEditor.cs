@@ -38,7 +38,7 @@ namespace Nexus.Services
 
         #region Properties
 
-        public AggregationSetup AggregationSetup { get; private set; } = new AggregationSetup();
+        //public AggregationSetup AggregationSetup { get; private set; } = new AggregationSetup();
 
         public string Analysis { get; private set; }
 
@@ -54,7 +54,7 @@ namespace Nexus.Services
 
                 try
                 {
-                    this.AggregationSetup = JsonSerializer.Deserialize<AggregationSetup>(_jsonString);
+                    //this.AggregationSetup = JsonSerializer.Deserialize<AggregationSetup>(_jsonString);
 
                     this.UpdateAsync(skipJson: true).Wait();
                     this.OnChanged();
@@ -72,54 +72,54 @@ namespace Nexus.Services
 
         public async Task UpdateAsync(bool skipJson = false)
         {
-            // analysis
-            var instructions = await AggregationService.ComputeInstructionsAsync(this.AggregationSetup, _state, NullLogger.Instance, CancellationToken.None);
-            var sb = new StringBuilder();
+            //// analysis
+            //var instructions = await AggregationService.ComputeInstructionsAsync(this.AggregationSetup, _state, NullLogger.Instance, CancellationToken.None);
+            //var sb = new StringBuilder();
 
-            foreach (var instruction in instructions)
-            {
-                sb.AppendLine($"Catalog '{instruction.Container.Id}'");
+            //foreach (var instruction in instructions)
+            //{
+            //    sb.AppendLine($"Catalog '{instruction.Container.Id}'");
 
-                var backendSource = instruction.Container.BackendSource;
+            //    var backendSource = instruction.Container.BackendSource;
 
-                if (instruction.ResourceAggregations.Any())
-                {
-                    sb.AppendLine();
-                    sb.AppendLine($"\tData Reader '{backendSource.Type}' ({backendSource.ResourceLocator})");
+            //    if (instruction.ResourceAggregations.Any())
+            //    {
+            //        sb.AppendLine();
+            //        sb.AppendLine($"\tData Reader '{backendSource.Type}' ({backendSource.ResourceLocator})");
 
-                    foreach (var aggregationResource in instruction.ResourceAggregations)
-                    {
-                        sb.AppendLine();
-                        sb.AppendLine($"\t\t{aggregationResource.Resource.Id} / {aggregationResource.Resource.Properties.GetValueOrDefault(DataModelExtensions.Unit, string.Empty)}");
+            //        foreach (var aggregationResource in instruction.ResourceAggregations)
+            //        {
+            //            sb.AppendLine();
+            //            sb.AppendLine($"\t\t{aggregationResource.Resource.Id} / {aggregationResource.Resource.Properties.GetValueOrDefault(DataModelExtensions.Unit, string.Empty)}");
 
-                        foreach (var aggregation in aggregationResource.Aggregations)
-                        {
-                            foreach (var period in aggregation.Periods)
-                            {
-                                sb.Append($"\t\t\tPeriod: {period} s, ");
+            //            foreach (var aggregation in aggregationResource.Aggregations)
+            //            {
+            //                foreach (var period in aggregation.Periods)
+            //                {
+            //                    sb.Append($"\t\t\tPeriod: {period} s, ");
 
-                                foreach (var method in aggregation.Methods)
-                                {
-                                    sb.Append($" {method.Key}");
-                                }
+            //                    foreach (var method in aggregation.Methods)
+            //                    {
+            //                        sb.Append($" {method.Key}");
+            //                    }
 
-                                sb.AppendLine();
-                            }
-                        }
-                    }
-                }
+            //                    sb.AppendLine();
+            //                }
+            //            }
+            //        }
+            //    }
 
-                sb.AppendLine();
-            }
+            //    sb.AppendLine();
+            //}
 
-            this.Analysis = sb.ToString();
+            //this.Analysis = sb.ToString();
 
-            // json
-            if (!skipJson)
-            {
-                var options = new JsonSerializerOptions() { WriteIndented = true };
-                _jsonString = JsonSerializer.Serialize(this.AggregationSetup, options);
-            }
+            //// json
+            //if (!skipJson)
+            //{
+            //    var options = new JsonSerializerOptions() { WriteIndented = true };
+            //    _jsonString = JsonSerializer.Serialize(this.AggregationSetup, options);
+            //}
         }
 
         private void OnChanged()

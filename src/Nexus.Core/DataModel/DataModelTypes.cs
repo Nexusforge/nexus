@@ -21,12 +21,6 @@ namespace Nexus.DataModel
         public List<BackendSource> BackendSources { get; init; }
     }
 
-    internal enum AvailabilityGranularity
-    {
-        Day,
-        Month
-    }
-
     internal record CatalogMetadata()
     {
         public string? Contact { get; init; }
@@ -35,10 +29,14 @@ namespace Nexus.DataModel
         public ResourceCatalog? Overrides { get; init; }
     }
 
-    public record AvailabilityResult(
+    public record AuthenticateRequest(
+        string Username,
+        string Password);
+
+    public record AvailabilityResponse(
         Dictionary<DateTime, double> Data);
 
-    public record TimeRangeResult(
+    public record TimeRangeResponse(
         DateTime Begin, 
         DateTime End);
 }
