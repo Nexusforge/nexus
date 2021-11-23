@@ -44,20 +44,20 @@ namespace Nexus.Client
         /// <summary>Gets the specified catalog time range.</summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<TimeRangeResult> GetTimeRangeAsync(string? catalogId);
+        System.Threading.Tasks.Task<TimeRangeResponse> GetTimeRangeAsync(string? catalogId);
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Gets the specified catalog time range.</summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<TimeRangeResult> GetTimeRangeAsync(string? catalogId, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<TimeRangeResponse> GetTimeRangeAsync(string? catalogId, System.Threading.CancellationToken cancellationToken);
     
         /// <summary>Gets the specified catalog availability.</summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="begin">Start date.</param>
         /// <param name="end">End date.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<AvailabilityResult> GetCatalogAvailabilityAsync(string? catalogId, System.DateTimeOffset begin, System.DateTimeOffset end);
+        System.Threading.Tasks.Task<AvailabilityResponse> GetCatalogAvailabilityAsync(string? catalogId, System.DateTimeOffset begin, System.DateTimeOffset end);
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Gets the specified catalog availability.</summary>
@@ -65,7 +65,7 @@ namespace Nexus.Client
         /// <param name="begin">Start date.</param>
         /// <param name="end">End date.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<AvailabilityResult> GetCatalogAvailabilityAsync(string? catalogId, System.DateTimeOffset begin, System.DateTimeOffset end, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<AvailabilityResponse> GetCatalogAvailabilityAsync(string? catalogId, System.DateTimeOffset begin, System.DateTimeOffset end, System.Threading.CancellationToken cancellationToken);
     
         /// <summary>Gets a list of all resources in the specified catalog.</summary>
         /// <param name="catalogId">The catalog identifier.</param>
@@ -310,7 +310,7 @@ namespace Nexus.Client
         /// <summary>Gets the specified catalog time range.</summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task<TimeRangeResult> GetTimeRangeAsync(string? catalogId)
+        public System.Threading.Tasks.Task<TimeRangeResponse> GetTimeRangeAsync(string? catalogId)
         {
             return GetTimeRangeAsync(catalogId, System.Threading.CancellationToken.None);
         }
@@ -319,7 +319,7 @@ namespace Nexus.Client
         /// <summary>Gets the specified catalog time range.</summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public async System.Threading.Tasks.Task<TimeRangeResult> GetTimeRangeAsync(string? catalogId, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task<TimeRangeResponse> GetTimeRangeAsync(string? catalogId, System.Threading.CancellationToken cancellationToken)
         {
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/Catalogs/{catalogId}/timerange");
@@ -357,7 +357,7 @@ namespace Nexus.Client
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            var objectResponse_ = await ReadObjectResponseAsync<TimeRangeResult>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            var objectResponse_ = await ReadObjectResponseAsync<TimeRangeResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
                                 throw new NexusApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
@@ -389,7 +389,7 @@ namespace Nexus.Client
         /// <param name="begin">Start date.</param>
         /// <param name="end">End date.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task<AvailabilityResult> GetCatalogAvailabilityAsync(string? catalogId, System.DateTimeOffset begin, System.DateTimeOffset end)
+        public System.Threading.Tasks.Task<AvailabilityResponse> GetCatalogAvailabilityAsync(string? catalogId, System.DateTimeOffset begin, System.DateTimeOffset end)
         {
             return GetCatalogAvailabilityAsync(catalogId, begin, end, System.Threading.CancellationToken.None);
         }
@@ -400,7 +400,7 @@ namespace Nexus.Client
         /// <param name="begin">Start date.</param>
         /// <param name="end">End date.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public async System.Threading.Tasks.Task<AvailabilityResult> GetCatalogAvailabilityAsync(string? catalogId, System.DateTimeOffset begin, System.DateTimeOffset end, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task<AvailabilityResponse> GetCatalogAvailabilityAsync(string? catalogId, System.DateTimeOffset begin, System.DateTimeOffset end, System.Threading.CancellationToken cancellationToken)
         {
             if (begin == null)
                 throw new System.ArgumentNullException("begin");
@@ -447,7 +447,7 @@ namespace Nexus.Client
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            var objectResponse_ = await ReadObjectResponseAsync<AvailabilityResult>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            var objectResponse_ = await ReadObjectResponseAsync<AvailabilityResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
                                 throw new NexusApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
@@ -904,7 +904,7 @@ namespace Nexus.Client
         /// <param name="begin">Start date/time.</param>
         /// <param name="end">End date/time.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<FileResponse> GetStreamAsync(string? catalogId, string? resourceId, string? representationId, System.DateTimeOffset begin, System.DateTimeOffset end);
+        System.Threading.Tasks.Task<FileResponse> GetStreamAsync(string? catalogId, string? resourceId, string? representationId, System.DateTimeOffset begin, System.DateTimeOffset end, System.Collections.Generic.IDictionary<string, string> configuration);
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Gets the requested data.</summary>
@@ -914,7 +914,7 @@ namespace Nexus.Client
         /// <param name="begin">Start date/time.</param>
         /// <param name="end">End date/time.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<FileResponse> GetStreamAsync(string? catalogId, string? resourceId, string? representationId, System.DateTimeOffset begin, System.DateTimeOffset end, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<FileResponse> GetStreamAsync(string? catalogId, string? resourceId, string? representationId, System.DateTimeOffset begin, System.DateTimeOffset end, System.Collections.Generic.IDictionary<string, string> configuration, System.Threading.CancellationToken cancellationToken);
     
     }
     
@@ -960,9 +960,9 @@ namespace Nexus.Client
         /// <param name="begin">Start date/time.</param>
         /// <param name="end">End date/time.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task<FileResponse> GetStreamAsync(string? catalogId, string? resourceId, string? representationId, System.DateTimeOffset begin, System.DateTimeOffset end)
+        public System.Threading.Tasks.Task<FileResponse> GetStreamAsync(string? catalogId, string? resourceId, string? representationId, System.DateTimeOffset begin, System.DateTimeOffset end, System.Collections.Generic.IDictionary<string, string> configuration)
         {
-            return GetStreamAsync(catalogId, resourceId, representationId, begin, end, System.Threading.CancellationToken.None);
+            return GetStreamAsync(catalogId, resourceId, representationId, begin, end, configuration, System.Threading.CancellationToken.None);
         }
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
@@ -973,13 +973,16 @@ namespace Nexus.Client
         /// <param name="begin">Start date/time.</param>
         /// <param name="end">End date/time.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public async System.Threading.Tasks.Task<FileResponse> GetStreamAsync(string? catalogId, string? resourceId, string? representationId, System.DateTimeOffset begin, System.DateTimeOffset end, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task<FileResponse> GetStreamAsync(string? catalogId, string? resourceId, string? representationId, System.DateTimeOffset begin, System.DateTimeOffset end, System.Collections.Generic.IDictionary<string, string> configuration, System.Threading.CancellationToken cancellationToken)
         {
             if (begin == null)
                 throw new System.ArgumentNullException("begin");
     
             if (end == null)
                 throw new System.ArgumentNullException("end");
+    
+            if (configuration == null)
+                throw new System.ArgumentNullException("configuration");
     
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/Data?");
@@ -996,6 +999,9 @@ namespace Nexus.Client
             {
                 using (var request_ = await CreateHttpRequestMessageAsync(cancellationToken).ConfigureAwait(false))
                 {
+                    var content_ = new System.Net.Http.StringContent(System.Text.Json.JsonSerializer.Serialize(configuration, _settings.Value));
+                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
+                    request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("GET");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/octet-stream"));
     
@@ -2050,7 +2056,7 @@ namespace Nexus.Client
     }
     
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-    public partial class TimeRangeResult 
+    public partial class TimeRangeResponse 
     {
         [System.Text.Json.Serialization.JsonPropertyName("begin")]
         public System.DateTimeOffset Begin { get; set; }= default!;
@@ -2062,7 +2068,7 @@ namespace Nexus.Client
     }
     
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
-    public partial class AvailabilityResult 
+    public partial class AvailabilityResponse 
     {
         [System.Text.Json.Serialization.JsonPropertyName("data")]
         public System.Collections.Generic.IDictionary<string, double> Data { get; set; }= default!;
@@ -2170,10 +2176,10 @@ namespace Nexus.Client
     public partial class AuthenticateRequest 
     {
         [System.Text.Json.Serialization.JsonPropertyName("username")]
-        public string? Username { get; set; }= default!;
+        public string Username { get; set; }= default!;
     
         [System.Text.Json.Serialization.JsonPropertyName("password")]
-        public string? Password { get; set; }= default!;
+        public string Password { get; set; }= default!;
     
     
     }

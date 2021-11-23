@@ -143,7 +143,7 @@
       "checksumCacheEnabled": false,
       "serviceHost": null,
       "serviceSchemes": null,
-      "output": "../Nexus.Client/NexusOpenApi.g.cs",
+      "output": "../Nexus.OpenApiClient/NexusOpenApi.g.cs",
       "newLineBehavior": "LF"
     }
   }

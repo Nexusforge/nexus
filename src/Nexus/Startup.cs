@@ -211,12 +211,16 @@ namespace Nexus
             {
                 app.UseDeveloperExceptionPage();
                 app.UseForwardedHeaders();
+                app.UseWebAssemblyDebugging();
             }
             else
             {
                 app.UseExceptionHandler("/Error");
                 app.UseForwardedHeaders();
             }
+
+            // blazor wasm
+            app.UseBlazorFrameworkFiles("/vnext");
 
             // static files
             app.UseStaticFiles();

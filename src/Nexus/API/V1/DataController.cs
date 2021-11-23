@@ -7,6 +7,7 @@ using Nexus.Extensibility;
 using Nexus.Services;
 using Nexus.Utilities;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Net;
@@ -60,6 +61,7 @@ namespace Nexus.Controllers.V1
             [BindRequired] string representationId,
             [BindRequired] DateTime begin,
             [BindRequired] DateTime end,
+            Dictionary<string, string> configuration,
             CancellationToken cancellationToken)
         {
             if (_appState.CatalogState is null)
