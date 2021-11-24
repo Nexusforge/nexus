@@ -20,7 +20,7 @@ namespace Nexus.Controllers.V1
     {
         #region Fields
 
-        private AppState _appState;
+        private UserState _userState;
         private IDataControllerService _dataControllerService;
 
         #endregion
@@ -28,10 +28,10 @@ namespace Nexus.Controllers.V1
         #region Constructors
 
         public CatalogsController(
-            AppState appState,
+            UserState userState,
             IDataControllerService dataControllerService)
         {
-            _appState = appState;
+            _userState = userState;
             _dataControllerService = dataControllerService;
         }
 
@@ -45,10 +45,7 @@ namespace Nexus.Controllers.V1
         [HttpGet]
         public ActionResult<string[]> GetCatalogIds()
         {
-            if (_appState.CatalogState == null)
-                return this.StatusCode(503, "The database has not been loaded yet.");
-
-            var catalogContainers = _appState.CatalogState.CatalogContainers;
+            var catalogContainers = _userState.CatalogContainers.ToList();
 
             var response = catalogContainers
                 .Where(catalogContainer => AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.CatalogMetadata, this.User))
@@ -69,16 +66,13 @@ namespace Nexus.Controllers.V1
                 string catalogId,
                 CancellationToken cancellationToken)
         {
-            if (_appState.CatalogState == null)
-                return this.StatusCode(503, "The database has not been loaded yet.");
-
             catalogId = WebUtility.UrlDecode(catalogId);
 
             return await this.ProcessCatalogIdAsync<ResourceCatalog>(catalogId, async catalogContainer =>
             {
                 var catalogInfo = await catalogContainer.GetCatalogInfoAsync(cancellationToken);
                 return this.CreateCatalogResponse(catalogInfo.Catalog);
-            }, cancellationToken);
+            });
         }
 
         /// <summary>
@@ -92,15 +86,12 @@ namespace Nexus.Controllers.V1
                 string catalogId, 
                 CancellationToken cancellationToken)
         {
-            if (_appState.CatalogState == null)
-                return this.StatusCode(503, "The database has not been loaded yet.");
-
             catalogId = WebUtility.UrlDecode(catalogId);
 
             return await this.ProcessCatalogIdAsync<TimeRangeResponse>(catalogId, async catalogContainer =>
             {
                 return await this.CreateTimeRangeResponseAsync(catalogContainer, cancellationToken);
-            }, cancellationToken);
+            });
         }
 
         /// <summary>
@@ -119,15 +110,12 @@ namespace Nexus.Controllers.V1
                 [BindRequired] DateTime end,
                 CancellationToken cancellationToken)
         {
-            if (_appState.CatalogState == null)
-                return this.StatusCode(503, "The database has not been loaded yet.");
-
             catalogId = WebUtility.UrlDecode(catalogId);
 
             return await this.ProcessCatalogIdAsync<AvailabilityResponse>(catalogId, async catalog =>
             {
                 return await this.CreateAvailabilityResponseAsync(catalog, begin, end, cancellationToken);
-            }, cancellationToken);
+            });
         }
 
         /// <summary>
@@ -141,9 +129,6 @@ namespace Nexus.Controllers.V1
             [BindRequired] string catalogId,
             CancellationToken cancellationToken)
         {
-            if (_appState.CatalogState == null)
-                return this.StatusCode(503, "The database has not been loaded yet.");
-
             catalogId = WebUtility.UrlDecode(catalogId);
 
             var remoteIpAddress = this.HttpContext.Connection.RemoteIpAddress;
@@ -157,7 +142,7 @@ namespace Nexus.Controllers.V1
                     .ToArray();
 
                 return resources;
-            }, cancellationToken);
+            });
         }
 
         /// <summary>
@@ -173,9 +158,6 @@ namespace Nexus.Controllers.V1
             string resourceId,
             CancellationToken cancellationToken)
         {
-            if (_appState.CatalogState == null)
-                return this.StatusCode(503, "The database has not been loaded yet.");
-
             catalogId = WebUtility.UrlDecode(catalogId);
             resourceId = WebUtility.UrlDecode(resourceId);
 
@@ -194,7 +176,7 @@ namespace Nexus.Controllers.V1
                     return this.NotFound($"{catalogId}/{resourceId}");
 
                 return this.CreateResourceResponse(resource);
-            }, cancellationToken);
+            });
         }
 
         /// <summary>
@@ -210,9 +192,6 @@ namespace Nexus.Controllers.V1
             string resourceId,
             CancellationToken cancellationToken)
         {
-            if (_appState.CatalogState == null)
-                return this.StatusCode(503, "The database has not been loaded yet.");
-
             catalogId = WebUtility.UrlDecode(catalogId);
             resourceId = WebUtility.UrlDecode(resourceId);
 
@@ -235,7 +214,7 @@ namespace Nexus.Controllers.V1
                     .ToArray();
 
                 return response;
-            }, cancellationToken);
+            });
         }
 
         /// <summary>
@@ -253,9 +232,6 @@ namespace Nexus.Controllers.V1
             string representationId,
             CancellationToken cancellationToken)
         {
-            if (_appState.CatalogState == null)
-                return this.StatusCode(503, "The database has not been loaded yet.");
-
             catalogId = WebUtility.UrlDecode(catalogId);
             resourceId = WebUtility.UrlDecode(resourceId);
             representationId = WebUtility.UrlDecode(representationId);
@@ -282,7 +258,7 @@ namespace Nexus.Controllers.V1
                     return this.NotFound($"{catalogId}/{resourceId}/{representation}");
 
                 return this.CreateRepresentationResponse(representation);
-            }, cancellationToken);
+            });
         }
 
         private ResourceCatalog CreateCatalogResponse(ResourceCatalog catalog)
@@ -327,10 +303,9 @@ namespace Nexus.Controllers.V1
 
         private async Task<ActionResult<T>> ProcessCatalogIdAsync<T>(
             string catalogId,
-            Func<CatalogContainer, Task<ActionResult<T>>> action,
-            CancellationToken cancellationToken)
+            Func<CatalogContainer, Task<ActionResult<T>>> action)
         {
-            var catalogContainer = _appState.CatalogState.CatalogContainers
+            var catalogContainer = _userState.CatalogContainers
                .FirstOrDefault(container => container.Id == catalogId);
 
             if (catalogContainer is not null)

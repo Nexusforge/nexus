@@ -9,15 +9,26 @@ namespace Nexus.DataModel
     {
         // There is only a single project file per Nexus instance so its okay to initialize arrays.
         public NexusProject(
-            List<PackageReference>? packageReferences, 
-            List<BackendSource>? backendSources)
+            List<PackageReference>? packageReferences)
         {
             this.PackageReferences = packageReferences ?? new List<PackageReference>();
-            this.BackendSources = backendSources ?? new List<BackendSource>();
         }
 
         public List<PackageReference> PackageReferences { get; init; }
+    }
 
+    internal class UserConfiguration
+    {
+        // There are only a few user config files per Nexus instance so its okay to initialize arrays.
+        public UserConfiguration(
+            string username,
+            List<BackendSource>? backendSources)
+        {
+            this.Username = username;
+            this.BackendSources = backendSources ?? new List<BackendSource>();
+        }
+
+        public string Username { get; init; }
         public List<BackendSource> BackendSources { get; init; }
     }
 

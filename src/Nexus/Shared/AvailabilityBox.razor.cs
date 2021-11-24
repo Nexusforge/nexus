@@ -8,7 +8,6 @@ using ChartJs.Blazor.Common.Time;
 using MatBlazor;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
-using Nexus.DataModel;
 using Nexus.Core;
 using Nexus.Services;
 using System;
@@ -16,6 +15,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Threading;
+using Nexus.Utilities;
 
 namespace Nexus.Shared
 {
@@ -108,6 +108,12 @@ namespace Nexus.Shared
         #region Properties
 
         [Inject]
+        private IUserIdService UserIdService { get; set; }
+
+        [Inject]
+        private IDataControllerService DataControllerService { get; set; }
+
+        [Inject]
         private ToasterService ToasterService { get; set; }
 
         private BarConfig Config { get; set; }
@@ -170,7 +176,19 @@ namespace Nexus.Shared
 
             try
             {
-                var availability = await this.UserState.GetAvailabilityAsync(CancellationToken.None);
+                // security check
+                var catalogContainer = this.UserState.CatalogContainer;
+
+                if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.CatalogMetadata, this.UserIdService.User))
+                    throw new UnauthorizedAccessException($"The current user is not authorized to access catalog '{catalogContainer.Id}'.");
+
+                var backendSource = this.UserState.CatalogContainers
+                    .Single(container => container.Id == catalogContainer.Id)
+                    .BackendSource;
+
+                using var controller = await this.DataControllerService.GetDataSourceControllerAsync(backendSource, CancellationToken.None);
+                var availability = await controller.GetAvailabilityAsync(
+                    catalogContainer.Id, this.UserState.DateTimeBegin, this.UserState.DateTimeEnd, CancellationToken.None);
 
                 this.Config.Data.Datasets.Clear();
 

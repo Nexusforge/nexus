@@ -4,6 +4,7 @@ using Nexus.Sources;
 using System;
 using System.Linq;
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 
 namespace Nexus.Utilities
 {
@@ -22,13 +23,11 @@ namespace Nexus.Utilities
 
                 var canAccessCatalog = principal.HasClaim(
                     claim => claim.Type == Claims.CAN_ACCESS_CATALOG &&
-                    claim.Value.Split(";").Any(current => current == catalogId));
+                    Regex.IsMatch(catalogId, claim.Value));
 
-                var canAccessGroup = principal.HasClaim(
+                var canAccessGroup = catalogMetadata.GroupMemberships is not null && principal.HasClaim(
                     claim => claim.Type == Claims.CAN_ACCESS_GROUP &&
-                    claim.Value.Split(";").Any(group 
-                        => catalogMetadata.GroupMemberships is not null && 
-                           catalogMetadata.GroupMemberships.Contains(group)));
+                    catalogMetadata.GroupMemberships.Any(group => Regex.IsMatch(group, claim.Value)));
 
                 var inMemoryDataSourceFullName = typeof(InMemory).FullName ?? throw new Exception("full name is null");
                 var implicitAccess = catalogId == inMemoryDataSourceFullName;
@@ -51,7 +50,7 @@ namespace Nexus.Utilities
                 var isAdmin = principal.HasClaim(claim => claim.Type == Claims.IS_ADMIN && claim.Value == "true");
 
                 var canEditCatalog = principal.HasClaim(claim => claim.Type == Claims.CAN_EDIT_CATALOG &&
-                                                        claim.Value.Split(";").Any(current => current == catalogId));
+                                                        Regex.IsMatch(catalogId, claim.Value));
 
                 return isAdmin || canEditCatalog;
             }

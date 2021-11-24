@@ -70,7 +70,7 @@ namespace Nexus.Extensibility.Tests
                 Single: catalogItem => all[catalogItem.Catalog.Id].First()));
         }
 
-        protected override Task<string[]> GetCatalogIdsAsync(CancellationToken cancellationToken)
+        protected override Task<string[]> GetCatalogIdsAsync(string path, CancellationToken cancellationToken)
         {
             return Task.FromResult(new[] { "/A/B/C" });
         }

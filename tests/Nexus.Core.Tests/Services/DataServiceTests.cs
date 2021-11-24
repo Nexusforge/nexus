@@ -17,59 +17,6 @@ namespace Services
 {
     public class DataServiceTests
     {
-        [Fact]
-        public async Task CanGetAvailabilityAsync()
-        {
-            var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
-            var end = new DateTime(2020, 01, 03, 0, 0, 0, DateTimeKind.Utc);
-
-            var backendSource = new BackendSource(Type: "A", default, default);
-
-            var catalogContainers = new CatalogContainer[]
-            {
-                new CatalogContainer("/A/B/C", backendSource, default, default)
-            };
-
-            var data = new Dictionary<DateTime, double> { [begin.AddDays(0)] = 0.5, [begin.AddDays(1)] = 0.9 };
-
-            // DI services
-            var dataSourceController = Mock.Of<IDataSourceController>();
-
-            Mock.Get(dataSourceController)
-                .Setup(s => s.GetAvailabilityAsync(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<AvailabilityGranularity>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(new AvailabilityResponse(Data: data)));
-
-            var dataControllerService = Mock.Of<IDataControllerService>();
-
-            Mock.Get(dataControllerService)
-                .Setup(s => s.GetDataSourceControllerAsync(It.IsAny<BackendSource>(), It.IsAny<CancellationToken>(), It.IsAny<CatalogCache>()))
-                .Returns<BackendSource, CancellationToken, CatalogCache>((backendSource, cancellationToken, catalogCache) =>
-                {
-                    return Task.FromResult(dataSourceController);
-                });
-
-            var catalogState = new CatalogState(
-                CatalogContainers: catalogContainers,
-                default);
-
-            var appState = new AppState()
-            {
-                CatalogState = catalogState
-            };
-
-            var logger = Mock.Of<ILogger<DataService>>();
-            var loggerFactory = Mock.Of<ILoggerFactory>();
-
-            // data service
-            var dataService = new DataService(appState, dataControllerService, default, logger, loggerFactory);
-
-            // act
-            var availability = await dataService.GetAvailabilityAsync("/A/B/C", begin, end, AvailabilityGranularity.Day, CancellationToken.None);
-
-            // assert
-            Assert.Equal(data, availability.Data);
-        }
-
         delegate void GobbleReturns(string catalogId, string searchPattern, EnumerationOptions enumerationOptions, out Stream attachment);
 
         [Fact]
@@ -162,21 +109,12 @@ namespace Services
             // catalog items
             var representation1 = new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: samplePeriod, detail: "E");
             var resource1 = new Resource(id: "Resource1");
-
-            var catalog1 = new ResourceCatalog(id: "/A/B/C")
-            {
-                BackendSource = backendSource1
-            };
-
+            var catalog1 = new ResourceCatalog(id: "/A/B/C");
             var catalogItem1 = new CatalogItem(catalog1, resource1, representation1);
 
             var representation2 = new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: samplePeriod, detail: "J");
             var resource2 = new Resource(id: "Resource2");
-            var catalog2 = new ResourceCatalog(id: "/F/G/H")
-            {
-                BackendSource = backendSource2
-            };
-
+            var catalog2 = new ResourceCatalog(id: "/F/G/H");
             var catalogItem2 = new CatalogItem(catalog2, resource2, representation2);
 
             // export parameters
@@ -195,8 +133,14 @@ namespace Services
             // act
             try
             {
+                var catalogItemsMap = new Dictionary<CatalogContainer, IEnumerable<CatalogItem>>()
+                {
+                    [new CatalogContainer(catalog1.Id, default, backendSource1, default, default)] = new[] { catalogItem1 },
+                    [new CatalogContainer(catalog2.Id, default, backendSource2, default, default)] = new[] { catalogItem2 }
+                };
+
                 var zipFileName = await dataService
-                    .ExportAsync(exportParameters, new[] { catalogItem1, catalogItem2 }, Guid.NewGuid(), CancellationToken.None);
+                    .ExportAsync(exportParameters, catalogItemsMap, Guid.NewGuid(), CancellationToken.None);
 
                 // assert
                 var zipFile = Path.Combine(root, zipFileName);

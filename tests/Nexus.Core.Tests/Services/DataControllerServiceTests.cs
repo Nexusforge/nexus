@@ -33,9 +33,15 @@ namespace Services
                 Configuration: default);
 
             var expectedCatalog = InMemory.LoadCatalog("/A/B/C");
+            var catalogContainer = new CatalogContainer("/A/B/C", default, backendSource, default, default);
+
+            var catalogContainersMap = new Dictionary<string, List<CatalogContainer>>()
+            {
+                [CatalogManager.CommonCatalogsKey] = new List<CatalogContainer>() { catalogContainer }
+            };
 
             var catalogState = new CatalogState(
-                new CatalogContainer[] { new CatalogContainer("/A/B/C", backendSource, default, default) },
+                catalogContainersMap,
                 CatalogCache: new CatalogCache()
             );
 

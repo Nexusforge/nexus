@@ -78,7 +78,7 @@ namespace Nexus.Core
             _appState.PropertyChanged += this.OnAppStatePropertyChanged;
 
             if (_appState.CatalogState is not null)
-                this.InitializeAsync(_appState.CatalogState.CatalogContainers, CancellationToken.None).Wait();
+                this.InitializeAsync(_appState.CatalogState.CatalogContainersMap, CancellationToken.None).Wait();
         }
 
         #endregion
@@ -97,7 +97,7 @@ namespace Nexus.Core
 #warning Make this more efficient. Maybe by tracking changes.
                 if (_isEditEnabled && !value)
                 {
-                    foreach (var catalogContainer in _appState.CatalogState.CatalogContainers)
+                    foreach (var catalogContainer in this.CatalogContainers)
                     {
                         //_databaseManager.SaveCatalogMeta(catalogContainer.CatalogMetadata);
                     }
@@ -254,6 +254,20 @@ namespace Nexus.Core
 
         #region Properties - Resource Selection
 
+        public IEnumerable<CatalogContainer> CatalogContainers
+        {
+            get
+            {
+                var commonCatalogContainers = _appState.CatalogState.CatalogContainersMap
+                .GetValueOrDefault(CatalogManager.CommonCatalogsKey, new List<CatalogContainer>());
+
+                var userCatalogContainers = _appState.CatalogState.CatalogContainersMap
+                    .GetValueOrDefault(_userIdService.User.Identity.Name, new List<CatalogContainer>());
+
+                return commonCatalogContainers.Concat(userCatalogContainers);
+            }
+        }
+
         public CatalogContainer CatalogContainer
         {
             get
@@ -265,8 +279,10 @@ namespace Nexus.Core
                 // When database is updated and then the selected catalog is changed,
                 // "value" refers to an old catalog container that does not exist in 
                 // the database anymore.
-                if (value is not null && !_appState.CatalogState.CatalogContainers.Contains(value))
-                    value = _appState.CatalogState.CatalogContainers.FirstOrDefault(container => container.Id == value.Id);
+                var catalogContainers = this.CatalogContainers;
+
+                if (value is not null && !catalogContainers.Contains(value))
+                    value = catalogContainers.FirstOrDefault(container => container.Id == value.Id);
 
                 this.SetProperty(ref _catalogContainer, value);
 
@@ -443,7 +459,7 @@ namespace Nexus.Core
                         .ToDictionary(
                             group =>
                             {
-                                var catalogContainer = _appState.CatalogState.CatalogContainers
+                                var catalogContainer = this.CatalogContainers
                                     .First(catalogContainer => catalogContainer.Id == group.Key);
 
                                 // authorize
@@ -523,15 +539,6 @@ namespace Nexus.Core
             this.VisualizeProgress = progress;
         }
 
-        public async Task<AvailabilityResponse> GetAvailabilityAsync(CancellationToken cancellationToken)
-        {
-            // security check
-            if (!AuthorizationUtilities.IsCatalogAccessible(this.CatalogContainer.Id, this.CatalogContainer.CatalogMetadata, _userIdService.User))
-                throw new UnauthorizedAccessException($"The current user is not authorized to access catalog '{this.CatalogContainer.Id}'.");
-
-            return await _dataService.GetAvailabilityAsync(this.CatalogContainer.Id, this.DateTimeBegin, this.DateTimeEnd, cancellationToken);
-        }
-
         public async Task SetExportParametersAsync(ExportParameters exportParameters, CancellationToken cancellationToken)
         {
             _samplePeriodToSelectedRepresentationsMap.Clear();
@@ -542,7 +549,7 @@ namespace Nexus.Core
             foreach (var resourcePath in exportParameters.ResourcePaths)
             {
                 // if resource path exists
-                var catalogItem = await _appState.CatalogState.CatalogContainers.TryFindAsync(resourcePath, cancellationToken);
+                var catalogItem = await this.CatalogContainers.TryFindAsync(resourcePath, cancellationToken);
 
                 if (catalogItem is not null)
                 {
@@ -626,9 +633,9 @@ namespace Nexus.Core
             });
         }
 
-        private async Task InitializeAsync(CatalogContainer[] catalogContainers, CancellationToken cancellationToken)
+        private async Task InitializeAsync(Dictionary<string, List<CatalogContainer>> catalogContainersMap, CancellationToken cancellationToken)
         {
-            this.CatalogContainersInfo = await this.SplitCampaignContainersAsync(catalogContainers);
+            this.CatalogContainersInfo = await this.SplitCampaignContainersAsync(this.CatalogContainers);
 
             // this triggers a search to find the new container instance
             this.CatalogContainer = this.CatalogContainer;
@@ -749,7 +756,7 @@ namespace Nexus.Core
             return representations;
         }
 
-        private async Task<SplittedCatalogContainers> SplitCampaignContainersAsync(CatalogContainer[] catalogContainers)
+        private async Task<SplittedCatalogContainers> SplitCampaignContainersAsync(IEnumerable<CatalogContainer> catalogContainers)
         {
             var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
             var user = authState.User;
@@ -778,7 +785,7 @@ namespace Nexus.Core
         {
             if (e.PropertyName == nameof(AppState.CatalogState) ||
                (e.PropertyName == nameof(AppState.IsCatalogStateUpdating) && !_appState.IsCatalogStateUpdating))
-                _ = this.InitializeAsync(_appState.CatalogState.CatalogContainers, CancellationToken.None);
+                _ = this.InitializeAsync(_appState.CatalogState.CatalogContainersMap, CancellationToken.None);
         }
 
         #endregion

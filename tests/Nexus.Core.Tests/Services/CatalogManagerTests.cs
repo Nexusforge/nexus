@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 using Nexus.Core;
@@ -10,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -21,7 +23,7 @@ namespace Services
         delegate bool GobbleReturns(string catalogId, out string catalogMetadata);
 
         [Fact]
-        public async Task LoadCatalogs()
+        public async Task CanLoadCatalogs()
         {
             // Arrange
 
@@ -33,10 +35,7 @@ namespace Services
                 new BackendSource(Type: "B", ResourceLocator: new Uri("C", UriKind.Relative), Configuration: default), // source B, path C, catalog D
             };
 
-            var appState = new AppState()
-            {
-                Project = new NexusProject(null, backendSources)
-            };
+            var userConfig = new UserConfiguration(SecurityOptions.DefaultRootUser, backendSources);
 
             /* dataControllerService */
             var catalogsA_B = new ResourceCatalog[]
@@ -87,8 +86,8 @@ namespace Services
                     };
 
                     Mock.Get(dataSourceController)
-                        .Setup(s => s.GetCatalogIdsAsync(It.IsAny<CancellationToken>()))
-                        .Returns<CancellationToken>((cancellationToken) =>
+                        .Setup(s => s.GetCatalogIdsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                        .Returns<string, CancellationToken>((path, cancellationToken) =>
                         {
                             return Task.FromResult(catalogs.Select(catalog => catalog.Id).ToArray());
                         });
@@ -121,6 +120,10 @@ namespace Services
             var databaseManager = Mock.Of<IDatabaseManager>();
 
             Mock.Get(databaseManager)
+              .Setup(databaseManager => databaseManager.EnumerateUserConfigs())
+              .Returns(new[] { JsonSerializer.Serialize(userConfig) });
+
+            Mock.Get(databaseManager)
                .Setup(databaseManager => databaseManager.TryReadCatalogMetadata(
                    It.IsAny<string>(),
                    out It.Ref<string>.IsAny))
@@ -141,10 +144,20 @@ namespace Services
 
             /* userManagerWrapper */
             var userManagerWrapper = Mock.Of<IUserManagerWrapper>();
+            var username = "test";
+
+            var claimsIdentity = new ClaimsIdentity(
+                new Claim[] {
+                    new Claim(ClaimTypes.Name, username),
+                    new Claim(Claims.CAN_EDIT_CATALOG, "^/[A|B]$") 
+                },
+                "Fake authentication type");
+
+            var principal = new ClaimsPrincipal(claimsIdentity);
 
             Mock.Get(userManagerWrapper)
                .Setup(userManagerWrapper => userManagerWrapper.GetClaimsPrincipalAsync(It.IsAny<string>()))
-               .Returns(Task.FromResult(new ClaimsPrincipal()));
+               .Returns(Task.FromResult(principal));
 
             /* logger */
             var logger = Mock.Of<ILogger<CatalogManager>>();
@@ -157,9 +170,16 @@ namespace Services
                 .SetupGet(s => s.Value)
                 .Returns(optionsValue);
 
-            var catalogManager = new CatalogManager(appState, dataControllerService, databaseManager, userManagerWrapper, logger, options);
+            var securityOptions = Options.Create(new SecurityOptions());
 
-            var expectedCatalogs = new[]
+            var catalogManager = new CatalogManager(
+                dataControllerService, 
+                databaseManager, 
+                userManagerWrapper,
+                securityOptions, 
+                logger);
+
+            var expectedCommonCatalogs = new[]
             {
                 new ResourceCatalogBuilder(id: "/A")
                     .AddResource(new ResourceBuilder(id: "A").AddRepresentation(new Representation(NexusDataType.INT16, TimeSpan.FromSeconds(1))).Build())
@@ -170,7 +190,10 @@ namespace Services
                     .AddResource(new ResourceBuilder(id: "A").AddRepresentation(new Representation(NexusDataType.INT16, TimeSpan.FromSeconds(1))).Build())
                     .WithDescription("v1")
                     .Build(),
+            };
 
+            var expectedUserCatalogs = new[]
+            {
                 new ResourceCatalogBuilder(id: "/C")
                     .AddResource(new ResourceBuilder(id: "A").AddRepresentation(new Representation(NexusDataType.INT16, TimeSpan.FromSeconds(60))).Build())
                     .Build(),
@@ -184,12 +207,14 @@ namespace Services
             var state = await catalogManager.CreateCatalogStateAsync(CancellationToken.None);
 
             // Assert
-            var catalogInfos = (await Task.WhenAll(state.CatalogContainers.Select(catalogContainer
+
+            // common catalogs
+            var commonCatalogInfos = (await Task.WhenAll(state.CatalogContainersMap[CatalogManager.CommonCatalogsKey].Select(catalogContainer
                 => catalogContainer.GetCatalogInfoAsync(CancellationToken.None)))).ToArray();
 
-            var actualCatalogs = catalogInfos.Select(catalogInfo => catalogInfo.Catalog);
+            var actualCommonCatalogs = commonCatalogInfos.Select(catalogInfo => catalogInfo.Catalog);
 
-            foreach (var (actual, expected) in actualCatalogs.Zip(expectedCatalogs))
+            foreach (var (actual, expected) in actualCommonCatalogs.Zip(expectedCommonCatalogs))
             {
                 var actualJsonString = JsonSerializerHelper.SerializeIntended(actual);
                 var expectedJsonString = JsonSerializerHelper.SerializeIntended(expected);
@@ -197,17 +222,164 @@ namespace Services
                 Assert.Equal(actualJsonString, expectedJsonString);
             }
 
-            Assert.Equal(new DateTime(2020, 01, 01), catalogInfos[0].Begin);
-            Assert.Equal(new DateTime(2020, 01, 02), catalogInfos[0].End);
+            Assert.Equal(new DateTime(2020, 01, 01), commonCatalogInfos[0].Begin);
+            Assert.Equal(new DateTime(2020, 01, 02), commonCatalogInfos[0].End);
 
-            Assert.Equal(new DateTime(2020, 01, 01), catalogInfos[1].Begin);
-            Assert.Equal(new DateTime(2020, 01, 02), catalogInfos[1].End);
+            Assert.Equal(new DateTime(2020, 01, 01), commonCatalogInfos[1].Begin);
+            Assert.Equal(new DateTime(2020, 01, 02), commonCatalogInfos[1].End);
 
-            Assert.Equal(DateTime.MaxValue, catalogInfos[2].Begin);
-            Assert.Equal(DateTime.MinValue, catalogInfos[2].End);
+            // user catalogs
+            var userCatalogInfos = (await Task.WhenAll(state.CatalogContainersMap[username].Select(catalogContainer
+                => catalogContainer.GetCatalogInfoAsync(CancellationToken.None)))).ToArray();
 
-            Assert.Equal(new DateTime(2020, 01, 01), catalogInfos[3].Begin);
-            Assert.Equal(new DateTime(2020, 01, 02), catalogInfos[3].End);
+            var actualUserCatalogs = userCatalogInfos.Select(catalogInfo => catalogInfo.Catalog);
+
+            foreach (var (actual, expected) in actualUserCatalogs.Zip(expectedUserCatalogs))
+            {
+                var actualJsonString = JsonSerializerHelper.SerializeIntended(actual);
+                var expectedJsonString = JsonSerializerHelper.SerializeIntended(expected);
+
+                Assert.Equal(actualJsonString, expectedJsonString);
+            }
+
+            Assert.Equal(DateTime.MaxValue, userCatalogInfos[0].Begin);
+            Assert.Equal(DateTime.MinValue, userCatalogInfos[0].End);
+
+            Assert.Equal(new DateTime(2020, 01, 01), userCatalogInfos[1].Begin);
+            Assert.Equal(new DateTime(2020, 01, 02), userCatalogInfos[1].End);
+        }
+
+        [Fact]
+        public async Task CanMergeFromDifferentUsers()
+        {
+            // Test case:
+            // User A, admin,
+            //      /  => /A, /A/B
+            //      /A => /A/C
+            //
+            // User B, no admin,
+            //      /  => /A (should be ignored), /B, /C
+            //
+            // Catalogs of User A should become part of the common catalog containers list
+            // Catalog "/B" of User B should become part of the common catalog containers list
+            // Catalog "/C" of User B should become part of the user catalog containers list
+
+            /* dataControllerService */
+            var dataControllerService = Mock.Of<IDataControllerService>();
+
+            Mock.Get(dataControllerService)
+                .Setup(s => s.GetDataSourceControllerAsync(It.IsAny<BackendSource>(), It.IsAny<CancellationToken>(), It.IsAny<CatalogCache>()))
+                .Returns<BackendSource, CancellationToken, CatalogCache>((backendSource, cancellationToken, catalogCache) =>
+                {
+                    var dataSourceController = Mock.Of<IDataSourceController>();
+
+                    Mock.Get(dataSourceController)
+                        .Setup(s => s.GetCatalogIdsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                        .Returns<string, CancellationToken>((path, cancellationToken) =>
+                        {
+                            var type = backendSource.Type;
+
+                            return (type, path) switch
+                            {
+                                ("A", "/") => Task.FromResult(new[] { "/A", "/A/B" }),
+                                ("A", "/A") => Task.FromResult(new[] { "/A/C" }),
+                                ("B", "/") => Task.FromResult(new[] { "/A", "/B", "/C" }),
+                                _ => throw new Exception("Unsupported combination.")
+                            };
+                        });
+
+                    return Task.FromResult(dataSourceController);
+                });
+
+            /* databaseManager */
+            var backendSourceA = new BackendSource(Type: "A", default, default, default);
+            var backendSourceB = new BackendSource(Type: "B", default, default, default);
+
+            var userAConfig = new UserConfiguration("UserA", new List<BackendSource>() { backendSourceA });
+            var userBConfig = new UserConfiguration("UserA", new List<BackendSource>() { backendSourceB });
+
+            var databaseManager = Mock.Of<IDatabaseManager>();
+
+            Mock.Get(databaseManager)
+              .Setup(databaseManager => databaseManager.EnumerateUserConfigs())
+              .Returns(new[] { JsonSerializer.Serialize(userAConfig), JsonSerializer.Serialize(userBConfig) });
+
+            Mock.Get(databaseManager)
+               .Setup(databaseManager => databaseManager.TryReadCatalogMetadata(
+                   It.IsAny<string>(),
+                   out It.Ref<string>.IsAny))
+               .Returns(new GobbleReturns((string catalogId, out string catalogMetadataString) =>
+               {
+                   catalogMetadataString = "{}";
+                   return true;
+               }));
+
+            /* security options */
+            var securityOptions = Options.Create(new SecurityOptions());
+
+            /* catalogManager */
+            var catalogManager = new CatalogManager(
+                dataControllerService,
+                databaseManager,
+                default,
+                securityOptions,
+                NullLogger<CatalogManager>.Instance);
+
+            /* user A */
+            var usernameA = "UserA";
+
+            var claimsIdentityA = new ClaimsIdentity(
+               new Claim[] {
+                    new Claim(ClaimTypes.Name, usernameA),
+                    new Claim(Claims.IS_ADMIN, "true")
+               },
+               "Fake authentication type");
+
+            var userA = new ClaimsPrincipal(claimsIdentityA);
+
+            /* user B */
+            var usernameB = "UserB";
+
+            var claimsIdentityB = new ClaimsIdentity(
+               new Claim[] {
+                    new Claim(ClaimTypes.Name, usernameB),
+                    new Claim(Claims.CAN_EDIT_CATALOG, "^/B$")
+               },
+               "Fake authentication type");
+
+            var userB = new ClaimsPrincipal(claimsIdentityB);
+
+            /* state */
+            var state = new CatalogState(new Dictionary<string, List<CatalogContainer>>(), default);
+
+            // act
+            await catalogManager.LoadCatalogIdsAsync("/", backendSourceA, userA, state, CancellationToken.None);
+            await catalogManager.LoadCatalogIdsAsync("/", backendSourceB, userB, state, CancellationToken.None);
+            await catalogManager.LoadCatalogIdsAsync("/A", backendSourceA, userA, state, CancellationToken.None);
+
+            // assert
+            Assert.Equal(4, state.CatalogContainersMap[CatalogManager.CommonCatalogsKey].Count);
+            Assert.Equal(2, state.CatalogContainersMap["UserB"].Count + 1);
+
+            Assert.Contains(
+                state.CatalogContainersMap[CatalogManager.CommonCatalogsKey], 
+                container => container.Id == "/A" && container.BackendSource == backendSourceA);
+
+            Assert.Contains(
+                state.CatalogContainersMap[CatalogManager.CommonCatalogsKey],
+                container => container.Id == "/A/B" && container.BackendSource == backendSourceA);
+
+            Assert.Contains(
+                state.CatalogContainersMap[CatalogManager.CommonCatalogsKey],
+                container => container.Id == "/A/C" && container.BackendSource == backendSourceA);
+
+            Assert.Contains(
+                state.CatalogContainersMap[CatalogManager.CommonCatalogsKey],
+                container => container.Id == "/B" && container.BackendSource == backendSourceB);
+
+            Assert.Contains(
+                state.CatalogContainersMap["UserB"],
+                container => container.Id == "/C" && container.BackendSource == backendSourceB);
         }
     }
 }

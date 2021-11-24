@@ -2,6 +2,7 @@
 using Nexus.Extensibility;
 using Nexus.Services;
 using System.Diagnostics;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -10,17 +11,18 @@ namespace Nexus.Core
     [DebuggerDisplay("{Id,nq}")]
     internal class CatalogContainer
     {
-        private Task<CatalogInfo>? _loadTask;
         private SemaphoreSlim _semaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
         private ICatalogManager _catalogManager;
         private CatalogInfo _catalogInfo;
 
         public CatalogContainer(
             string catalogId,
+            ClaimsPrincipal owner,
             BackendSource backendSource,
             CatalogMetadata catalogMetadata,
             ICatalogManager catalogManager)
         {
+            this.Owner = owner;
             this.BackendSource = backendSource;
             this.CatalogMetadata = catalogMetadata;
             _catalogManager = catalogManager;
@@ -29,6 +31,8 @@ namespace Nexus.Core
         }
 
         public string Id { get; }
+
+        public ClaimsPrincipal Owner { get; }
 
         public string PhysicalName => this.Id.TrimStart('/').Replace('/', '_');
 
@@ -48,19 +52,19 @@ namespace Nexus.Core
 
             try
             {
-                if (_loadTask is null)
-                    _loadTask = _catalogManager.LoadCatalogInfoAsync(
+                if (_catalogInfo is null)
+                {
+                    _catalogInfo = await _catalogManager.LoadCatalogInfoAsync(
                         this.Id,
                         this.BackendSource,
                         this.CatalogMetadata?.Overrides,
                         cancellationToken);
+                }
             }
             finally
             {
                 _semaphore.Release();
             }
-
-            _catalogInfo = await _loadTask;
         }
     }
 }

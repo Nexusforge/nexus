@@ -16,6 +16,7 @@ namespace Other
 
         [InlineData("Basic", "true", "", "", true)]
         [InlineData("Basic", "false", "/D/E/F;/A/B/C;/G/H/I", "", true)]
+        [InlineData("Basic", "false", "^/A/B/.*", "", true)]
         [InlineData("Basic", "false", "", "A", true)]
 
         [InlineData("Basic", "false", "", "", false)]
@@ -33,12 +34,10 @@ namespace Other
             var catalogId = "/A/B/C";
             var catalogMetadata = new CatalogMetadata() { GroupMemberships = new[] { "A" } };
 
-            var principal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] 
-            {
-                new Claim(Claims.IS_ADMIN, isAdmin),
-                new Claim(Claims.CAN_ACCESS_CATALOG, canAccessCatalog),
-                new Claim(Claims.CAN_ACCESS_GROUP, canAccessGroup)
-            }, authenticationType));
+            var principal = new ClaimsPrincipal(new ClaimsIdentity(
+                new Claim[] { new Claim(Claims.IS_ADMIN, isAdmin) }
+                .Concat(canAccessCatalog.Split(";").Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => new Claim(Claims.CAN_ACCESS_CATALOG, value)))
+                .Concat(canAccessGroup.Split(";").Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => new Claim(Claims.CAN_ACCESS_GROUP, value))), authenticationType));
 
             // Act
             var actual = AuthorizationUtilities.IsCatalogAccessible(catalogId, catalogMetadata, principal);
@@ -51,6 +50,7 @@ namespace Other
 
         [InlineData("Basic", "true", "", true)]
         [InlineData("Basic", "false", "/D/E/F;/A/B/C;/G/H/I", true)]
+        [InlineData("Basic", "false", "^/A/B/.*", true)]
 
         [InlineData("Basic", "false", "", false)]
         [InlineData(null, "true", "", false)]
@@ -63,11 +63,9 @@ namespace Other
             // Arrange
             var catalogId = "/A/B/C";
 
-            var principal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]
-            {
-                new Claim(Claims.IS_ADMIN, isAdmin),
-                new Claim(Claims.CAN_EDIT_CATALOG, canEditCatalog)
-            }, authenticationType));
+            var principal = new ClaimsPrincipal(new ClaimsIdentity(
+               new Claim[] { new Claim(Claims.IS_ADMIN, isAdmin) }
+               .Concat(canEditCatalog.Split(";").Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => new Claim(Claims.CAN_EDIT_CATALOG, value))), authenticationType));
 
             // Act
             var actual = AuthorizationUtilities.IsCatalogEditable(principal, catalogId);
@@ -78,20 +76,18 @@ namespace Other
 
         [Theory]
 
-        [InlineData("/A/B/C", "Basic", "true", true, true)]         //    admin,     hidden
-        [InlineData("/A/B/C", "Basic", "false", false, true)]       // no admin, not hidden
+        [InlineData("Basic", "true", true, true)]         //    admin,     hidden
+        [InlineData("Basic", "false", false, true)]       // no admin, not hidden
 
-        [InlineData("/A/B/C", "Basic", "false", true, false)]       // no admin,     hidden
-        [InlineData("/A/B/C", null, "true", true, false)]           // not authenticated
+        [InlineData("Basic", "false", true, false)]       // no admin,     hidden
+        [InlineData(null, "true", true, false)]           // not authenticated
         public void CanDetermineCatalogVisibility(
-            string catalogId,
             string authenticationType,
             string isAdmin,
             bool isHidden,
             bool expected)
         {
             // Arrange
-            var catalog = new ResourceCatalog(id: catalogId);
             var catalogMetadata = new CatalogMetadata() { IsHidden = isHidden };
 
             var principal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]

@@ -1,4 +1,4 @@
-﻿using Nexus.DataModel;
+using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Utilities;
 using System;
@@ -34,7 +34,7 @@ namespace Nexus.Sources
             return Task.CompletedTask;
         }
 
-        public Task<string[]> GetCatalogIdsAsync(CancellationToken cancellationToken)
+        public Task<string[]> GetCatalogIdsAsync(string path, CancellationToken cancellationToken)
         {
             return Task.FromResult(new string[] { AccessibleCatalogId, RestrictedCatalogId });
         }

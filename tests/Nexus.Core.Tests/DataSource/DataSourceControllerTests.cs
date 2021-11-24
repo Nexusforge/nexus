@@ -24,55 +24,21 @@ namespace DataSource
             _fixture = fixture;
         }
 
-        [Theory]
-        [InlineData(AvailabilityGranularity.Day,  "2020-01-01T00:00:00Z", "2020-01-03T00:00:00Z")]
-        [InlineData(AvailabilityGranularity.Month, "2020-01-01T00:00:00Z", "2021-01-01T00:00:00Z")]
-        internal async Task CanGetAvailability(AvailabilityGranularity granularity, string beginString, string endString)
+        [Fact]
+        internal async Task CanGetAvailability()
         {
             var controller = _fixture.Controller;
             await controller.InitializeAsync(default, default, CancellationToken.None);
 
             var catalogId = InMemory.AccessibleCatalogId;
+            var begin= new DateTime(2020, 01, 01, 00, 00, 00, DateTimeKind.Utc);
+            var end = new DateTime(2020, 01, 03, 00, 00, 00, DateTimeKind.Utc);
+            var actual = await controller.GetAvailabilityAsync(catalogId, begin, end, CancellationToken.None);
 
-            var begin = DateTime.ParseExact(
-                beginString,
-                "yyyy-MM-ddTHH:mm:ssZ",
-                CultureInfo.InvariantCulture,
-                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
-
-            var end = DateTime.ParseExact(
-                endString,
-                "yyyy-MM-ddTHH:mm:ssZ",
-                CultureInfo.InvariantCulture, 
-                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
-
-            var actual = await controller.GetAvailabilityAsync(catalogId, begin, end, granularity, CancellationToken.None);
-
-            var expectedData = granularity switch
+            var expectedData = new Dictionary<DateTime, double>()
             {
-                AvailabilityGranularity.Day => new Dictionary<DateTime, double>() 
-                { 
-                    [new DateTime(2020, 01, 01)] = 0.90000134808942744,
-                    [new DateTime(2020, 01, 02)] = 0.96041512538698282,
-                },
-
-                AvailabilityGranularity.Month => new Dictionary<DateTime, double>()
-                {
-                    [new DateTime(2020, 01, 01)] = 0.90000134808942744,
-                    [new DateTime(2020, 02, 01)] = 0.99525375850277664,
-                    [new DateTime(2020, 03, 01)] = 0.9800551025104034,
-                    [new DateTime(2020, 04, 01)] = 0.96493102473436443,
-                    [new DateTime(2020, 05, 01)] = 0.99976965785015826,
-                    [new DateTime(2020, 06, 01)] = 0.99502206826350748,
-                    [new DateTime(2020, 07, 01)] = 0.92986070137930132,
-                    [new DateTime(2020, 08, 01)] = 0.92511311179265066,
-                    [new DateTime(2020, 09, 01)] = 0.92036552220599988,
-                    [new DateTime(2020, 10, 01)] = 0.9552041553217937,
-                    [new DateTime(2020, 11, 01)] = 0.994792088258449,
-                    [new DateTime(2020, 12, 01)] = 0.95995345514265518,
-                },
-
-            _ => throw new Exception("Unsupported granularity value."),
+                [new DateTime(2020, 01, 01)] = 0.90000134808942744,
+                [new DateTime(2020, 01, 02)] = 0.96041512538698282,
             };
 
             Assert.True(expectedData.SequenceEqual(new SortedDictionary<DateTime, double>(actual.Data)));

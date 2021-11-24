@@ -6,6 +6,6 @@ namespace Nexus.Services
     internal interface IUserManagerWrapper
     {
         Task InitializeAsync();
-        Task<ClaimsPrincipal> GetClaimsPrincipalAsync(string username);
+        Task<ClaimsPrincipal?> GetClaimsPrincipalAsync(string username);
     }
 }

@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Net;
 
 namespace Nexus.Services
 {
@@ -12,15 +11,15 @@ namespace Nexus.Services
     {
         // generated, small files:
         //
+        // <application data>/config/catalogs/catalog_id.json
+        // <application data>/config/users/user_name.json
         // <application data>/config/project.json
         // <application data>/config/users.db
-        // <application data>/config/catalogs/abc.json
-        // <application data>/config/users/def.json
 
         // user defined or potentially large files:
         //
-        // <application data>/catalogs/abc
-        // <application data>/users/def/code
+        // <application data>/catalogs/catalog_id/...
+        // <application data>/users/user_name/...
         // <application data>/cache
         // <application data>/export
         // <user profile>/.nexus/packages
@@ -32,20 +31,7 @@ namespace Nexus.Services
             _pathsOptions = pathsOptions.Value;
         }
 
-        public bool TryReadProject([NotNullWhen(true)] out string? project)
-        {
-            var filePath = Path.Combine(_pathsOptions.Config, "project.json");
-            project = null;
-
-            if (File.Exists(filePath))
-            {
-                project = File.ReadAllText(filePath);
-                return true;
-            }
-
-            return false;
-        }
-
+        /* /config/catalogs/catalog_id.json */
         public bool TryReadCatalogMetadata(string catalogId, [NotNullWhen(true)] out string? catalogMetadata)
         {
             var physicalId = catalogId.TrimStart('/').Replace("/", "_");
@@ -76,13 +62,43 @@ namespace Nexus.Services
             return File.Open(filePath, FileMode.Truncate, FileAccess.Write);
         }
 
+        /* /users/user_id.json */
+        public IEnumerable<string> EnumerateUserConfigs()
+        {
+            var userFolder = Path.Combine(_pathsOptions.Config, "users");
+
+            if (Directory.Exists(userFolder))
+                return Directory
+                    .EnumerateFiles(userFolder)
+                    .Select(filePath => File.ReadAllText(filePath));
+
+            else
+                return Enumerable.Empty<string>();
+        }
+
+        /* /config/project.json */
+        public bool TryReadProject([NotNullWhen(true)] out string? project)
+        {
+            var filePath = Path.Combine(_pathsOptions.Config, "project.json");
+            project = null;
+
+            if (File.Exists(filePath))
+            {
+                project = File.ReadAllText(filePath);
+                return true;
+            }
+
+            return false;
+        }
+
+        /* /catalogs/catalog_id/... */
         public IEnumerable<string> EnumerateAttachements(string catalogId)
         {
             var physicalId = catalogId.TrimStart('/').Replace("/", "_");
             var attachementFolder = Path.Combine(_pathsOptions.Catalogs, physicalId);
 
             if (Directory.Exists(attachementFolder))
-                return Directory.GetFiles(attachementFolder);
+                return Directory.EnumerateFiles(attachementFolder);
 
             else
                 return Enumerable.Empty<string>();
@@ -111,6 +127,7 @@ namespace Nexus.Services
             return false;
         }
 
+        /* /export */
         public Stream WriteExportFile(string fileName)
         {
             Directory.CreateDirectory(_pathsOptions.Export);

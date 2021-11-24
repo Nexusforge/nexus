@@ -60,9 +60,17 @@ namespace Nexus.Extensibility
         }
 
         public async Task<string[]>
-           GetCatalogIdsAsync(CancellationToken cancellationToken)
+           GetCatalogIdsAsync(string path, CancellationToken cancellationToken)
         {
-            return await this.DataSource.GetCatalogIdsAsync(cancellationToken);
+            var catalogIds = await this.DataSource
+                .GetCatalogIdsAsync(path, cancellationToken);
+
+            if (catalogIds.Any(catalogId => !catalogId.StartsWith(path)))
+                throw new Exception($"The returned catalog identifier is not a child of {path}.");
+
+            return catalogIds
+                .Select(catalogId => path + catalogId)
+                .ToArray();
         }
 
         public async Task<ResourceCatalog>

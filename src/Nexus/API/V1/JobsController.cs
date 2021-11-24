@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Services;
@@ -25,7 +24,7 @@ namespace Nexus.Controllers.V1
         private ILogger _logger;
         private IServiceProvider _serviceProvider;
         private Serilog.IDiagnosticContext _diagnosticContext;
-        private AppState _appState;
+        private UserState _userState;
         private JobService<ExportJob> _exportJobService;
 
         #endregion
@@ -33,13 +32,13 @@ namespace Nexus.Controllers.V1
         #region Constructors
 
         public JobsController(
-            AppState appState,
+            UserState userState,
             JobService<ExportJob> exportJobService,
             Serilog.IDiagnosticContext diagnosticContext,
             IServiceProvider serviceProvider,
             ILogger<JobsController> logger)
         {
-            _appState = appState;
+            _userState = userState;
             _serviceProvider = serviceProvider;
             _exportJobService = exportJobService;
             _diagnosticContext = diagnosticContext;
@@ -63,16 +62,13 @@ namespace Nexus.Controllers.V1
         {
             _diagnosticContext.Set("Body", JsonSerializerHelper.SerializeIntended(parameters));
 
-            if (_appState.CatalogState == null)
-                return this.StatusCode(503, "The database has not been loaded yet.");
-
             parameters.Begin = parameters.Begin.ToUniversalTime();
             parameters.End = parameters.End.ToUniversalTime();
 
+            var catalogContainers = _userState.CatalogContainers.ToList();
+
             // translate resource paths to representations
             CatalogItem[] catalogItems;
-
-            var state = _appState.CatalogState;
 
             try
             {
@@ -80,7 +76,7 @@ namespace Nexus.Controllers.V1
                 {
                     CatalogItem catalogItem;
 
-                    if ((catalogItem = await state.CatalogContainers.TryFindAsync(resourcePath, cancellationToken)) == null)
+                    if ((catalogItem = await catalogContainers.TryFindAsync(resourcePath, cancellationToken)) == null)
                         throw new ValidationException($"Could not find resource path {resourcePath}.");
 
                     return catalogItem;
@@ -96,8 +92,6 @@ namespace Nexus.Controllers.V1
                 return this.BadRequest("The list of resource paths is empty.");
 
             // build up catalog items map and authorize
-            var catalogContainers = _appState.CatalogState.CatalogContainers;
-
             Dictionary<CatalogContainer, IEnumerable<CatalogItem>> catalogItemsMap;
 
             try

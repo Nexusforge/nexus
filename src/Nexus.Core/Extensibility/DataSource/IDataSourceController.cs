@@ -10,7 +10,7 @@ namespace Nexus.Extensibility
     internal interface IDataSourceController : IDisposable
     {
         Task InitializeAsync(ConcurrentDictionary<string, ResourceCatalog> catalogs, ILogger logger, CancellationToken cancellationToken);
-        Task<string[]> GetCatalogIdsAsync(CancellationToken cancellationToken);
+        Task<string[]> GetCatalogIdsAsync(string path, CancellationToken cancellationToken);
         Task<ResourceCatalog> GetCatalogAsync(string catalogId, CancellationToken cancellationToken);
         Task<AvailabilityResponse> GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken);
         Task<TimeRangeResponse> GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken);

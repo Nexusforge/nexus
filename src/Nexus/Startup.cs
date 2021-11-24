@@ -337,7 +337,7 @@ namespace Nexus
             }
             else
             {
-                appState.Project = new NexusProject(default, default);
+                appState.Project = new NexusProject(default);
             }
 
             // user manager

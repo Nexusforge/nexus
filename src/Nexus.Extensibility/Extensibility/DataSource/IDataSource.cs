@@ -21,11 +21,13 @@ namespace Nexus.Extensibility
             CancellationToken cancellationToken);
 
         /// <summary>
-        /// Gets the catalog identifiers.
+        /// Gets the catalog identifiers that are located below <paramref name="path"/>.
         /// </summary>
+        /// <param name="path">The parent path for which to return catalog identifiers.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         /// <returns>The catalog identifiers task.</returns>
         Task<string[]> GetCatalogIdsAsync(
+            string path,
             CancellationToken cancellationToken);
 
         /// <summary>

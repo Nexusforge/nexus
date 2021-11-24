@@ -101,7 +101,7 @@ namespace Nexus.Services
             }
         }
 
-        public async Task<ClaimsPrincipal> GetClaimsPrincipalAsync(string username)
+        public async Task<ClaimsPrincipal?> GetClaimsPrincipalAsync(string username)
         {
             using (var scope = _serviceProvider.CreateScope())
             {

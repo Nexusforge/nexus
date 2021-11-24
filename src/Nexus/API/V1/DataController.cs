@@ -23,7 +23,7 @@ namespace Nexus.Controllers.V1
     {
         #region Fields
 
-        private AppState _appState;
+        private UserState _userState;
         private IDataControllerService _dataControllerService;
         private ILoggerFactory _loggerFactory;
 
@@ -32,11 +32,11 @@ namespace Nexus.Controllers.V1
         #region Constructors
 
         public DataController(
-            AppState appState,
+            UserState userState,
             IDataControllerService dataControllerService,
             ILoggerFactory loggerFactory)
         {
-            _appState = appState;
+            _userState = userState;
             _dataControllerService = dataControllerService;
             _loggerFactory = loggerFactory;
         }
@@ -64,9 +64,6 @@ namespace Nexus.Controllers.V1
             Dictionary<string, string> configuration,
             CancellationToken cancellationToken)
         {
-            if (_appState.CatalogState is null)
-                return this.StatusCode(503, "The database has not been loaded yet.");
-
             catalogId = WebUtility.UrlDecode(catalogId);
             resourceId = WebUtility.UrlDecode(resourceId);
             representationId = WebUtility.UrlDecode(representationId);
@@ -86,7 +83,7 @@ namespace Nexus.Controllers.V1
 
             try
             {
-                var catalogContainers = _appState.CatalogState.CatalogContainers;
+                var catalogContainers = _userState.CatalogContainers.ToList();
 
                 // representation
                 var resourcePath = $"{catalogId}/{resourceId}/{representationId}";

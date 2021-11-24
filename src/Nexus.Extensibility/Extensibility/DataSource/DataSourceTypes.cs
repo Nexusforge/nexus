@@ -2,7 +2,6 @@
 using Nexus.DataModel;
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Linq;
 
 namespace Nexus.Extensibility
@@ -23,7 +22,7 @@ namespace Nexus.Extensibility
     /// </summary>
     /// <param name="CatalogItem">The <paramref name="CatalogItem"/> to be read.</param>
     /// <param name="Data">The data buffer.</param>
-    /// <param name="Status">The status buffer. A valie of 0x01 ('1') indicates that the corresponding value in the data buffer is valid, otherwise it is treated as <see cref="double.NaN"/>.</param>
+    /// <param name="Status">The status buffer. A value of 0x01 ('1') indicates that the corresponding value in the data buffer is valid, otherwise it is treated as <see cref="double.NaN"/>.</param>
     public record ReadRequest(
         CatalogItem CatalogItem,
         Memory<byte> Data,
