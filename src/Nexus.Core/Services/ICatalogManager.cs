@@ -1,6 +1,6 @@
-﻿using Nexus.DataModel;
+﻿using Nexus.Core;
+using Nexus.DataModel;
 using Nexus.Extensibility;
-using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,16 +11,15 @@ namespace Nexus.Services
         Task<CatalogState> CreateCatalogStateAsync(
             CancellationToken cancellationToken);
 
+        Task AttachChildCatalogIdsAsync(
+            CatalogContainer parent,
+            CatalogContainersMap catalogContainersMap,
+            CancellationToken cancellationToken);
+
         Task<CatalogInfo> LoadCatalogInfoAsync(
             string catalogId,
             BackendSource backendSource,
             ResourceCatalog? catalogOverrides,
-            CancellationToken cancellationToken);
-        Task LoadCatalogIdsAsync(
-            string relativeTo,
-            BackendSource backendSource,
-            ClaimsPrincipal user,
-            CatalogState state,
             CancellationToken cancellationToken);
     }
 }

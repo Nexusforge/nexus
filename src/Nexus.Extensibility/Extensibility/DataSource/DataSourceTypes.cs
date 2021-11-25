@@ -41,7 +41,7 @@ namespace Nexus.Extensibility
                 return false;
 
             var typeEquals = this.Type == other.Type;
-            var resourceLocatorEquals = this.ResourceLocator == other.ResourceLocator;
+            var resourceLocatorEquals = this.ResourceLocator.Equals(other.ResourceLocator);
             var configurationEquals = this.Configuration
                                           .OrderBy(entry => entry.Key)
                                           .SequenceEqual(other.Configuration.OrderBy(entry => entry.Key));

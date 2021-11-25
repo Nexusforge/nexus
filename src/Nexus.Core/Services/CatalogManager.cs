@@ -17,6 +17,12 @@ namespace Nexus.Services
 {
     internal class CatalogManager : ICatalogManager
     {
+        #region Types
+
+        record CatalogPrototype(string CatalogId, BackendSource BackendSource, ClaimsPrincipal User);
+
+        #endregion
+
         #region Fields
 
         public const string CommonCatalogsKey = "";
@@ -52,12 +58,9 @@ namespace Nexus.Services
         public async Task<CatalogState> CreateCatalogStateAsync(CancellationToken cancellationToken)
         {
             /* create catalog cache */
-            var catalogCache = new CatalogCache();
-            var catalogContainersMap = new Dictionary<string, List<CatalogContainer>>();
-
             var state = new CatalogState(
-                CatalogContainersMap: catalogContainersMap,
-                CatalogCache: catalogCache
+                CatalogContainersMap: new CatalogContainersMap(),
+                CatalogCache: new CatalogCache()
             );
 
             /* load builtin backend source */
@@ -69,15 +72,29 @@ namespace Nexus.Services
                     Configuration: new Dictionary<string, string>()),
             };
 
-            foreach (var builtinBackendSource in builtinBackendSources)
-            {
-                var user = await _userManagerWrapper.GetClaimsPrincipalAsync(_securityOptions.RootUser);
+            /* load all catalog identifiers */
+            var path = "/";
+            var catalogPrototypes = new List<CatalogPrototype>();
 
-                if (user is not null)
-                    await this.LoadCatalogIdsAsync("/", builtinBackendSource, user, state, cancellationToken);
+            /* => for the built-in backend sources */
+            var rootUser = await _userManagerWrapper.GetClaimsPrincipalAsync(_securityOptions.RootUser);
+
+            if (rootUser is not null)
+            {
+                /* for each backend source */
+                foreach (var backendSource in builtinBackendSources)
+                {
+                    using var controller = await _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken, state.CatalogCache);
+                    var catalogIds = await controller.GetCatalogIdsAsync(path, cancellationToken);
+
+                    foreach (var catalogId in catalogIds)
+                    {
+                        catalogPrototypes.Add(new CatalogPrototype(catalogId, backendSource, rootUser));
+                    }
+                }
             }
 
-            /* for each user with existing config file */
+            /* => for each user with existing config file */
             foreach (var jsonString in _databaseManager.EnumerateUserConfigs())
             {
                 var userConfig = JsonSerializer.Deserialize<UserConfiguration>(jsonString) 
@@ -89,16 +106,42 @@ namespace Nexus.Services
                     continue;
 
                 /* for each backend source */
-                foreach (var backendSource in userConfig.BackendSources.Where(backendSource => backendSource.IsEnabled))
+                foreach (var backendSource in userConfig.BackendSources)
                 {
-                    await this.LoadCatalogIdsAsync("/", backendSource, user, state, cancellationToken);
+                    using var controller = await _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken, state.CatalogCache);
+                    var catalogIds = await controller.GetCatalogIdsAsync(path, cancellationToken);
+
+                    foreach (var catalogId in catalogIds)
+                    {
+                        catalogPrototypes.Add(new CatalogPrototype(catalogId, backendSource, user));
+                    }
                 }
             }
 
+            this.ProcessCatalogPrototypes(catalogPrototypes, state.CatalogContainersMap);
+
+            /* done */
             _logger.LogInformation("Found {CatalogCount} catalogs.",
-                catalogContainersMap.SelectMany(entry => entry.Value).Count());
+                state.CatalogContainersMap.SelectMany(entry => entry.Value).Count());
 
             return state;
+        }
+
+        public async Task AttachChildCatalogIdsAsync(
+            CatalogContainer parent,
+            CatalogContainersMap catalogContainersMap,
+            CancellationToken cancellationToken)
+        {
+            using var controller = await _dataControllerService
+                .GetDataSourceControllerAsync(parent.BackendSource, cancellationToken);
+
+            var catalogIds = await controller
+                .GetCatalogIdsAsync(parent.Id + "/", cancellationToken);
+
+            var prototypes = catalogIds
+                .Select(catalogId => new CatalogPrototype(catalogId, parent.BackendSource, parent.Owner));
+
+            this.ProcessCatalogPrototypes(prototypes, catalogContainersMap);
         }
 
         public async Task<CatalogInfo> LoadCatalogInfoAsync(
@@ -136,92 +179,112 @@ namespace Nexus.Services
             return new CatalogInfo(catalogBegin, catalogEnd, catalog);
         }
 
-        public async Task LoadCatalogIdsAsync(
-            string relativeTo,
-            BackendSource backendSource,
-            ClaimsPrincipal user,
-            CatalogState state,
-            CancellationToken cancellationToken)
+        private void ProcessCatalogPrototypes(
+            IEnumerable<CatalogPrototype> catalogPrototypes,
+            CatalogContainersMap catalogContainersMap)
         {
-            try
+            /* clean up */
+            catalogPrototypes = this.EnsureNoHierarchy(catalogPrototypes);
+
+            /* get common catalog */
+            if (!catalogContainersMap.TryGetValue(CatalogManager.CommonCatalogsKey, out var commonCatalogContainers))
             {
-                using var controller = await _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken, state.CatalogCache);
-                var catalogIds = await controller.GetCatalogIdsAsync(relativeTo, cancellationToken);
-
-                /* for each catalog identifier */
-                foreach (var catalogId in catalogIds)
-                {
-                    CatalogMetadata catalogMetadata;
-
-                    if (_databaseManager.TryReadCatalogMetadata(catalogId, out var jsonString2))
-                        catalogMetadata = JsonSerializer.Deserialize<CatalogMetadata>(jsonString2) ?? throw new Exception("catalogMetadata is null");
-
-                    else
-                        catalogMetadata = new CatalogMetadata();
-
-                    var catalogContainer = new CatalogContainer(catalogId, user, backendSource, catalogMetadata, this);
-                    this.AddCatalogContainer(user, catalogContainer, state.CatalogContainersMap);
-                }
+                commonCatalogContainers = new List<CatalogContainer>();
+                catalogContainersMap[CatalogManager.CommonCatalogsKey] = commonCatalogContainers;
             }
-            catch (Exception ex)
+
+            /* for each catalog prototype */
+            foreach (var catalogPrototype in catalogPrototypes)
             {
-                _logger.LogWarning(ex, "Unable to add catalogs from source {Type} and URL {Url}", backendSource.Type, backendSource.ResourceLocator);
+                /* get user specific catalog */
+                var identity = catalogPrototype.User.Identity ?? throw new Exception("identity is null");
+                var username = identity.Name ?? throw new Exception("name is null");
+
+                if (!catalogContainersMap.TryGetValue(username, out var userCatalogContainers))
+                {
+                    userCatalogContainers = new List<CatalogContainer>();
+                    catalogContainersMap[username] = userCatalogContainers;
+                }
+
+                /* distribute to common and user specific catalog array, respectively */
+                var catalogContainers = AuthorizationUtilities.IsCatalogEditable(catalogPrototype.User, catalogPrototype.CatalogId)
+                    ? commonCatalogContainers
+                    : userCatalogContainers;
+
+                /* create catalog metadata */
+                CatalogMetadata catalogMetadata;
+
+                if (_databaseManager.TryReadCatalogMetadata(catalogPrototype.CatalogId, out var jsonString2))
+                    catalogMetadata = JsonSerializer.Deserialize<CatalogMetadata>(jsonString2) ?? throw new Exception("catalogMetadata is null");
+
+                else
+                    catalogMetadata = new CatalogMetadata();
+
+                /* create catalog container */
+                var catalogContainer = new CatalogContainer(
+                    catalogPrototype.CatalogId,
+                    catalogPrototype.User,
+                    catalogPrototype.BackendSource,
+                    catalogMetadata,
+                    this);
+
+                /* add to array */
+                catalogContainers.Add(catalogContainer);
             }
         }
 
-        private void AddCatalogContainer(
-            ClaimsPrincipal user,
-            CatalogContainer catalogContainer, 
-            Dictionary<string, List<CatalogContainer>> catalogContainersMap)
+        private List<CatalogPrototype> EnsureNoHierarchy(
+            IEnumerable<CatalogPrototype> catalogPrototypes)
         {
-            var identity = user.Identity ?? throw new Exception("identity is null");
-            var username = identity.Name ?? throw new Exception("name is null");
+            // Background:
+            //
+            // Nexus allows catalogs to have child catalogs like folders in a file system. To simplify things,
+            // it is required that a catalog that comes from a certain backend source can only have child
+            // catalogs of the very same backend source.
+            // 
+            // In general, child catalogs will be loaded lazily. Therefore, for any catalog of the provided array that
+            // appears to be a child catalog, it can be assumed it comes from a backend source other than the one
+            // from the parent catalog. Depending on the user's rights, this method decides which one will survive.
+            // 
+            //
+            // Example:
+            //
+            // The following combination of catalogs is allowed:
+            // Backend source 1: /a + /a/a + /a/b
+            // Backend source 2: /b/c
+            //
+            // The following combination of catalogs is forbidden:
+            // Backend source 1: /a + /a/a + /a/b
+            // Backend source 2: /a/c
 
-            /* get common catalog */
-            if (!catalogContainersMap.TryGetValue(CatalogManager.CommonCatalogsKey, out var commongCatalogContainers))
+            var catalogPrototypesToKeep = new List<CatalogPrototype>();
+
+            foreach (var catalogPrototype in catalogPrototypes)
             {
-                commongCatalogContainers = new List<CatalogContainer>();
-                catalogContainersMap[CatalogManager.CommonCatalogsKey] = commongCatalogContainers;
-            }
+                var referenceIndex = catalogPrototypesToKeep.FindIndex(
+                    current =>
+                        current.CatalogId.StartsWith(catalogPrototype.CatalogId) ||
+                        catalogPrototype.CatalogId.StartsWith(current.CatalogId));
 
-            /* get user specific catalog */
-            if (!catalogContainersMap.TryGetValue(username, out var userCatalogContainers))
-            {
-                userCatalogContainers = new List<CatalogContainer>();
-                catalogContainersMap[username] = userCatalogContainers;
-            }
-
-            /* common catalog */
-            if (AuthorizationUtilities.IsCatalogEditable(user, catalogContainer.Id))
-            {
-                var index = commongCatalogContainers.FindIndex(current => current.Id == catalogContainer.Id);
-
-                if (index < 0)
+                /* nothing found */
+                if (referenceIndex < 0)
                 {
-                    commongCatalogContainers.Add(catalogContainer);
+                    catalogPrototypesToKeep.Add(catalogPrototype);
                 }
+
+                /* reference found */
                 else
                 {
-                    var reference = commongCatalogContainers[index];
-                    var otherUser = reference.Owner;
+                    var user = catalogPrototype.User;
+                    var otherUser = catalogPrototypesToKeep[referenceIndex].User;
 
                     /* other user is no admin, but current user is */
                     if (!otherUser.HasClaim(Claims.IS_ADMIN, "true") && user.HasClaim(Claims.IS_ADMIN, "true"))
-                        commongCatalogContainers[index] = catalogContainer;
+                        catalogPrototypesToKeep[referenceIndex] = catalogPrototype;
                 }
             }
-            else
-            {
-                /* if catalog does not yet exist in common catalog */
-                if (!commongCatalogContainers.Any(current => current.Id == catalogContainer.Id))
-                {
-                    /* if catalog does not yet exist in user catalog */
-                    if (!userCatalogContainers.Any(current => current.Id == catalogContainer.Id))
-                    {
-                        userCatalogContainers.Add(catalogContainer);
-                    }
-                }
-            }
+
+            return catalogPrototypesToKeep;
         }
 
         #endregion

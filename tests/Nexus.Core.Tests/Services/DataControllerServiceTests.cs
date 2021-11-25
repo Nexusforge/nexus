@@ -35,7 +35,7 @@ namespace Services
             var expectedCatalog = InMemory.LoadCatalog("/A/B/C");
             var catalogContainer = new CatalogContainer("/A/B/C", default, backendSource, default, default);
 
-            var catalogContainersMap = new Dictionary<string, List<CatalogContainer>>()
+            var catalogContainersMap = new CatalogContainersMap()
             {
                 [CatalogManager.CommonCatalogsKey] = new List<CatalogContainer>() { catalogContainer }
             };

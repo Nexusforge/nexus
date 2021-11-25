@@ -36,7 +36,11 @@ namespace Nexus.Sources
 
         public Task<string[]> GetCatalogIdsAsync(string path, CancellationToken cancellationToken)
         {
-            return Task.FromResult(new string[] { AccessibleCatalogId, RestrictedCatalogId });
+            if (path == "/")
+                return Task.FromResult(new string[] { AccessibleCatalogId, RestrictedCatalogId });
+
+            else
+                return Task.FromResult(new string[0]);
         }
 
         public Task<ResourceCatalog> GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
