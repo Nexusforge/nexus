@@ -221,100 +221,93 @@ namespace Nexus
 
             // blazor wasm
             app.UseBlazorFrameworkFiles("/vnext");
+
+            // static files
             app.UseStaticFiles();
 
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new LazyPhysicalFileProvider(pathsOptions.Value.Export),
+                RequestPath = "/export"
+            });
+
+            // swagger
+            app.UseOpenApi();
+            app.UseSwaggerUi3(settings =>
+            {
+                settings.Path = "/api";
+
+                foreach (var description in provider.ApiVersionDescriptions)
+                {
+                    settings.SwaggerRoutes.Add(new SwaggerUi3Route(description.GroupName.ToUpperInvariant(), $"/swagger/{description.GroupName}/swagger.json"));
+                }
+            });
+
+            // Serilog Request Logging (https://andrewlock.net/using-serilog-aspnetcore-in-asp-net-core-3-reducing-log-verbosity/)
+            // LogContext properties are not included by default in request logging, workaround: https://nblumhardt.com/2019/10/serilog-mvc-logging/
+            app.UseSerilogRequestLogging();
+
+            // routing (for REST API)
             app.UseRouting();
+
+            // default authentication
+            app.UseAuthentication();
+
+            // custom authentication(to also authenticate via JWT bearer)
+            app.Use(async (context, next) =>
+            {
+                bool terminate = false;
+
+                if (!context.User.Identity.IsAuthenticated)
+                {
+                    var authorizationHeader = context.Request.Headers["Authorization"];
+
+                    if (authorizationHeader.Any(header => header.StartsWith("Bearer")))
+                    {
+                        var result = await context.AuthenticateAsync(JwtBearerDefaults.AuthenticationScheme);
+
+                        if (result.Succeeded)
+                        {
+                            context.User = result.Principal;
+                        }
+                        else
+                        {
+                            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+
+                            var errorCode = result.Failure.Message.Split(':', count: 2).FirstOrDefault();
+
+                            var message = errorCode switch
+                            {
+                                "IDX10230" => "Lifetime validation failed.",
+                                "IDX10503" => "Signature validation failed.",
+                                _ => "The bearer token could not be validated."
+                            };
+
+                            var bytes = Encoding.UTF8.GetBytes(message);
+                            await context.Response.Body.WriteAsync(bytes);
+                            terminate = true;
+                        }
+                    }
+                }
+
+                if (!terminate)
+                    await next();
+            });
+
+            // authorization
+            app.UseAuthorization();
+
+            // endpoints
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                endpoints.MapBlazorHub();
+                endpoints.MapFallbackToPage("/_Host");
                 endpoints.MapFallbackToFile("vnext/{*path:nonfile}", "vnext/index.html");
             });
 
-            //// static files
-            //app.UseStaticFiles();
-
-            //app.UseStaticFiles(new StaticFileOptions
-            //{
-            //    FileProvider = new LazyPhysicalFileProvider(pathsOptions.Value.Export),
-            //    RequestPath = "/export"
-            //});
-
-            //// swagger
-            //app.UseOpenApi();
-            //app.UseSwaggerUi3(settings =>
-            //{
-            //    settings.Path = "/api";
-
-            //    foreach (var description in provider.ApiVersionDescriptions)
-            //    {
-            //        settings.SwaggerRoutes.Add(new SwaggerUi3Route(description.GroupName.ToUpperInvariant(), $"/swagger/{description.GroupName}/swagger.json"));
-            //    }
-            //});
-
-            //// Serilog Request Logging (https://andrewlock.net/using-serilog-aspnetcore-in-asp-net-core-3-reducing-log-verbosity/)
-            //// LogContext properties are not included by default in request logging, workaround: https://nblumhardt.com/2019/10/serilog-mvc-logging/
-            //app.UseSerilogRequestLogging();
-
-            //// routing (for REST API)
-            //app.UseRouting();
-
-            //// default authentication
-            //app.UseAuthentication();
-
-            // custom authentication (to also authenticate via JWT bearer)
-            //app.Use(async (context, next) =>
-            //{
-            //    bool terminate = false;
-
-            //    if (!context.User.Identity.IsAuthenticated)
-            //    {
-            //        var authorizationHeader = context.Request.Headers["Authorization"];
-
-            //        if (authorizationHeader.Any(header => header.StartsWith("Bearer")))
-            //        {
-            //            var result = await context.AuthenticateAsync(JwtBearerDefaults.AuthenticationScheme);
-
-            //            if (result.Succeeded)
-            //            {
-            //                context.User = result.Principal;
-            //            }
-            //            else
-            //            {
-            //                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-
-            //                var errorCode = result.Failure.Message.Split(':', count: 2).FirstOrDefault();
-
-            //                var message = errorCode switch
-            //                {
-            //                    "IDX10230" => "Lifetime validation failed.",
-            //                    "IDX10503" => "Signature validation failed.",
-            //                    _ => "The bearer token could not be validated."
-            //                };
-
-            //                var bytes = Encoding.UTF8.GetBytes(message);
-            //                await context.Response.Body.WriteAsync(bytes);
-            //                terminate = true;
-            //            }
-            //        }
-            //    }
-
-            //    if (!terminate)
-            //        await next();
-            //});
-
-            //// authorization
-            //app.UseAuthorization();
-
-            //// endpoints
-            //app.UseEndpoints(endpoints =>
-            //{
-            //    endpoints.MapControllers();
-            //    endpoints.MapBlazorHub();
-            //    endpoints.MapFallbackToPage("/_Host");
-            //});
-
-            //// initialize app state
-            //this.InitializeAppAsync(serviceProvider, pathsOptions.Value).Wait();
+            // initialize app state
+            this.InitializeAppAsync(serviceProvider, pathsOptions.Value).Wait();
         }
 
         private async Task InitializeAppAsync(IServiceProvider serviceProvier, PathsOptions pathsOptions)

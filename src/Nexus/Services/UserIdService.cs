@@ -52,6 +52,7 @@ namespace Nexus.Services
 
             if (this.User.Identity.IsAuthenticated)
                 username = this.User.Identity.Name;
+
             else
                 username = "anonymous";
 

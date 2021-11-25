@@ -112,6 +112,8 @@ namespace Nexus.Services
                     return null;
 
                 var claims = await userManager.GetClaimsAsync(user);
+                claims.Add(new Claim(ClaimTypes.Name, username));
+
                 var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, "Fake authentication type"));
 
                 return principal;

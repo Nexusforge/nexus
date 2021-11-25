@@ -261,8 +261,10 @@ namespace Nexus.Core
                 var commonCatalogContainers = _appState.CatalogState.CatalogContainersMap
                 .GetValueOrDefault(CatalogManager.CommonCatalogsKey, new List<CatalogContainer>());
 
-                var userCatalogContainers = _appState.CatalogState.CatalogContainersMap
-                    .GetValueOrDefault(_userIdService.User.Identity.Name, new List<CatalogContainer>());
+                var userCatalogContainers = _userIdService.User.Identity.IsAuthenticated
+                    ? _appState.CatalogState.CatalogContainersMap
+                        .GetValueOrDefault(_userIdService.User.Identity.Name, new List<CatalogContainer>())
+                    : Enumerable.Empty<CatalogContainer>();
 
                 return commonCatalogContainers.Concat(userCatalogContainers);
             }
