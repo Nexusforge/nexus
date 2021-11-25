@@ -32,8 +32,8 @@ namespace Services
             var samplePeriod = TimeSpan.FromSeconds(1);
             var exportId = Guid.NewGuid();
 
-            var backendSource1 = new BackendSource(Type: "A", default, new Dictionary<string, string>(), default);
-            var backendSource2 = new BackendSource(Type: "B", default, new Dictionary<string, string>(), default);
+            var backendSource1 = new BackendSource(Type: "A", new Uri("a", UriKind.Relative), new Dictionary<string, string>(), default);
+            var backendSource2 = new BackendSource(Type: "B", new Uri("a", UriKind.Relative), new Dictionary<string, string>(), default);
 
             // DI services
             var dataSourceController1 = Mock.Of<IDataSourceController>();
