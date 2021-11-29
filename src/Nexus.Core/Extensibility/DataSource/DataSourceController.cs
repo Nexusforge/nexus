@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Nexus.Core;
 using Nexus.DataModel;
+using Nexus.Models;
 using Nexus.Utilities;
 using System;
 using System.Buffers;

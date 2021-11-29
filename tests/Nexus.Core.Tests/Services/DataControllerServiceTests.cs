@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Nexus.Core;
 using Nexus.Extensibility;
+using Nexus.Models;
 using Nexus.Services;
 using Nexus.Sources;
 using Nexus.Writers;
@@ -30,7 +31,8 @@ namespace Services
             var backendSource = new BackendSource(
                 Type: "Nexus.Builtin.InMemory", 
                 new Uri("A", UriKind.Relative), 
-                Configuration: default);
+                Configuration: default,
+                Publish: true);
 
             var expectedCatalog = InMemory.LoadCatalog("/A/B/C");
             var catalogContainer = new CatalogContainer("/A/B/C", default, backendSource, default, default);

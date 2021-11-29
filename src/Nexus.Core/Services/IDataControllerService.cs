@@ -1,5 +1,6 @@
 ﻿using Nexus.Core;
 using Nexus.Extensibility;
+using Nexus.Models;
 using System;
 using System.Threading;
 using System.Threading.Tasks;

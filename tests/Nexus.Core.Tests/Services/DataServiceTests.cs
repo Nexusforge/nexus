@@ -3,6 +3,7 @@ using Moq;
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
+using Nexus.Models;
 using Nexus.Services;
 using System;
 using System.Collections.Generic;

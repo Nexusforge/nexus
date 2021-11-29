@@ -1,10 +1,10 @@
-﻿using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
+﻿using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
+using Nexus.Models;
 using Nexus.Services;
 using Nexus.Utilities;
 using System;
@@ -36,6 +36,7 @@ namespace Services
             // Catalog "/A/B"   of User A should be ignored
             // Catalog "A"      of user B should be ignored
             // Catalog "/B"     of User B should become part of the common catalog containers list
+            // Catalog "/B2"    of User B should become part of the user catalog containers list
             // Catalog "/C/A"   of User B should become part of the user catalog containers list
 
             /* dataControllerService */
@@ -57,7 +58,8 @@ namespace Services
                             {
                                 ("A", "/") => Task.FromResult(new[] { "/A", "/A/B" }),
                                 ("A", "/A") => Task.FromResult(new[] { "/A/C" }),
-                                ("B", "/") => Task.FromResult(new[] { "/A", "/B", "/C/A" }),
+                                ("B", "/") => Task.FromResult(new[] { "/A", "/B", "/B2" }),
+                                ("C", "/") => Task.FromResult(new[] { "/C/A" }),
                                 _ => throw new Exception("Unsupported combination.")
                             };
                         });
@@ -66,11 +68,12 @@ namespace Services
                 });
 
             /* databaseManager */
-            var backendSourceA = new BackendSource(Type: "A", new Uri("", UriKind.Relative), new Dictionary<string, string>(), default);
-            var backendSourceB = new BackendSource(Type: "B", new Uri("", UriKind.Relative), new Dictionary<string, string>(), default);
+            var backendSourceA = new BackendSource(Type: "A", new Uri("", UriKind.Relative), new Dictionary<string, string>(), Publish: true);
+            var backendSourceB = new BackendSource(Type: "B", new Uri("", UriKind.Relative), new Dictionary<string, string>(), Publish: true);
+            var backendSourceC = new BackendSource(Type: "C", new Uri("", UriKind.Relative), new Dictionary<string, string>(), Publish: false);
 
             var userAConfig = new UserConfiguration("UserA", new List<BackendSource>() { backendSourceA });
-            var userBConfig = new UserConfiguration("UserB", new List<BackendSource>() { backendSourceB });
+            var userBConfig = new UserConfiguration("UserB", new List<BackendSource>() { backendSourceB, backendSourceC });
 
             var databaseManager = Mock.Of<IDatabaseManager>();
 
@@ -143,7 +146,7 @@ namespace Services
 
             // assert
             Assert.Equal(2, state.CatalogContainersMap[CatalogManager.CommonCatalogsKey].Count);
-            Assert.Single(state.CatalogContainersMap["UserB"]);
+            Assert.Equal(2, state.CatalogContainersMap["UserB"].Count);
 
             Assert.Contains(
                 state.CatalogContainersMap[CatalogManager.CommonCatalogsKey],
@@ -155,7 +158,11 @@ namespace Services
 
             Assert.Contains(
                 state.CatalogContainersMap["UserB"],
-                container => container.Id == "/C/A" && container.BackendSource == backendSourceB);
+                container => container.Id == "/B2" && container.BackendSource == backendSourceB);
+
+            Assert.Contains(
+                state.CatalogContainersMap["UserB"],
+                container => container.Id == "/C/A" && container.BackendSource == backendSourceC);
         }
 
         [Fact]
@@ -214,8 +221,11 @@ namespace Services
 
             var user = new ClaimsPrincipal(claimsIdentity);
 
+            /* backend source */
+            var backendSource = new BackendSource(default, default, default, default);
+
             /* catalog containers map */
-            var parent = new CatalogContainer("/A", user, default, default, catalogManager);
+            var parent = new CatalogContainer("/A", user, backendSource, default, catalogManager);
 
             var catalogContainersMap = new CatalogContainersMap()
             {
@@ -247,34 +257,13 @@ namespace Services
             // Arrange
 
             /* expected catalogs */
-            var expectedCommonCatalogs = new[]
-            {
-                new ResourceCatalogBuilder(id: "/A")
-                    .AddResource(new ResourceBuilder(id: "A").AddRepresentation(new Representation(NexusDataType.INT16, TimeSpan.FromSeconds(1))).Build())
-                    .WithDescription("v2")
-                    .Build(),
+            var expectedCatalog = new ResourceCatalogBuilder(id: "/A")
+                .AddResource(new ResourceBuilder(id: "A").AddRepresentation(new Representation(NexusDataType.INT16, TimeSpan.FromSeconds(1))).Build())
+                .WithDescription("v2")
+                .Build();
 
-                new ResourceCatalogBuilder(id: "/B")
-                    .AddResource(new ResourceBuilder(id: "A").AddRepresentation(new Representation(NexusDataType.INT16, TimeSpan.FromSeconds(1))).Build())
-                    .WithDescription("v1")
-                    .Build(),
-            };
-
-            var expectedUserCatalogs = new[]
-            {
-                new ResourceCatalogBuilder(id: "/C")
-                    .AddResource(new ResourceBuilder(id: "A").AddRepresentation(new Representation(NexusDataType.INT16, TimeSpan.FromSeconds(60))).Build())
-                    .Build(),
-
-                new ResourceCatalogBuilder(id: "/D")
-                    .AddResource(new ResourceBuilder(id: "A").AddRepresentation(new Representation(NexusDataType.INT16, TimeSpan.FromSeconds(1))).Build())
-                    .Build()
-            };
-
-            /* expected time range responses */
-            var timeRangeResponseA_B = new TimeRangeResponse(new DateTime(2020, 01, 01), new DateTime(2020, 01, 02));
-            var timeRangeResponseC = new TimeRangeResponse(DateTime.MaxValue, DateTime.MinValue);
-            var timeRangeResponseD = new TimeRangeResponse(new DateTime(2020, 01, 01), new DateTime(2020, 01, 02));
+            /* expected time range response */
+            var expectedTimeRange = new TimeRangeResponse(new DateTime(2020, 01, 01), new DateTime(2020, 01, 02));
 
             /* data controller service */
             var dataControllerService = Mock.Of<IDataControllerService>();
@@ -285,42 +274,22 @@ namespace Services
                 {
                     var dataSourceController = Mock.Of<IDataSourceController>();
 
-                    var (catalogs, timeRangeResult) = backendSource switch
-                    {
-                        ("A", _, _, _) a when a.ResourceLocator.OriginalString == "A" => (expectedCommonCatalogs, timeRangeResponseA_B),
-                        ("A", _, _, _) b when b.ResourceLocator.OriginalString == "B" => (new ResourceCatalog[] { expectedUserCatalogs[0] }, timeRangeResponseC),
-                        ("B", _, _, _) d when d.ResourceLocator.OriginalString == "C" => (new ResourceCatalog[] { expectedUserCatalogs[1] }, timeRangeResponseD),
-                        _                                                             => (new ResourceCatalog[0], default)
-                    };
-
                     Mock.Get(dataSourceController)
                         .Setup(s => s.GetCatalogAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                         .Returns<string, CancellationToken>((catalogId, cancellationToken) =>
                         {
-                            return Task.FromResult(catalogs.First(catalog => catalog.Id == catalogId));
+                            return Task.FromResult(expectedCatalog);
                         });
 
                     Mock.Get(dataSourceController)
                         .Setup(s => s.GetTimeRangeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                         .Returns<string, CancellationToken>((catalogId, cancellationToken) =>
                         {
-                            return Task.FromResult(timeRangeResult);
+                            return Task.FromResult(expectedTimeRange);
                         });
 
                     return Task.FromResult(dataSourceController);
                 });
-
-            /* user */
-            var username = "test";
-
-            var claimsIdentity = new ClaimsIdentity(
-                new Claim[] {
-                    new Claim(ClaimTypes.Name, username),
-                    new Claim(Claims.CAN_EDIT_CATALOG, "^/[A|B]$")
-                },
-                "Fake authentication type");
-
-            var user = new ClaimsPrincipal(claimsIdentity);
 
             /* catalog metadata */
             var catalogMetadata = new CatalogMetadata()
@@ -331,84 +300,28 @@ namespace Services
             };
 
             /* backend sources */
-            var backendSourceA_B = new BackendSource(Type: "A", ResourceLocator: new Uri("A", UriKind.Relative), Configuration: default); // source A, path A, catalog A and B
-            var backendSourceC = new BackendSource(Type: "A", ResourceLocator: new Uri("B", UriKind.Relative), Configuration: default); // source A, path B, catalog C
-            var backendSourceD = new BackendSource(Type: "B", ResourceLocator: new Uri("C", UriKind.Relative), Configuration: default); // source B, path C, catalog D
+            var backendSource = new BackendSource(
+                Type: "A", 
+                ResourceLocator: new Uri("A", UriKind.Relative),
+                Configuration: default,
+                Publish: true);
 
             /* catalog manager */
             var catalogManager = new CatalogManager(dataControllerService, default, default, Options.Create(new SecurityOptions()), default);
 
-            /* catalog containers */
-            var commonCatalogContainers = new List<CatalogContainer>()
-            {
-                new CatalogContainer("/A", user, backendSourceA_B, catalogMetadata, catalogManager),
-                new CatalogContainer("/B", user, backendSourceA_B, default, catalogManager)
-            };
-
-            var testCatalogContainers = new List<CatalogContainer>()
-            {
-                new CatalogContainer("/C", user, backendSourceC, default, catalogManager),
-                new CatalogContainer("/D", user, backendSourceD, default, catalogManager)
-            };
-
-            var catalogContainersMap = new CatalogContainersMap()
-            {
-                [""] = commonCatalogContainers,
-                ["test"] = testCatalogContainers
-            };
-
-            var state = new CatalogState(catalogContainersMap, default);
+            /* catalog container */
+            var catalogContainer = new CatalogContainer("/A", default, backendSource, catalogMetadata, catalogManager);
 
             // Act
-            var commonCatalogInfos = (await Task.WhenAll(state.CatalogContainersMap[CatalogManager.CommonCatalogsKey].Select(catalogContainer
-                => catalogContainer.GetCatalogInfoAsync(CancellationToken.None)))).ToArray();
-
-            var userCatalogInfos = (await Task.WhenAll(state.CatalogContainersMap[username].Select(catalogContainer
-                => catalogContainer.GetCatalogInfoAsync(CancellationToken.None)))).ToArray();
+            var catalogInfo = await catalogContainer.GetCatalogInfoAsync(CancellationToken.None);
 
             // Assert
+            var actualJsonString = JsonSerializerHelper.SerializeIntended(catalogInfo.Catalog);
+            var expectedJsonString = JsonSerializerHelper.SerializeIntended(expectedCatalog);
 
-            // common catalogs
-            var actualCommonCatalogs = commonCatalogInfos
-                .Select(catalogInfo => catalogInfo.Catalog)
-                .ToList();
-
-            Assert.Equal(2, actualCommonCatalogs.Count);
-
-            foreach (var (actual, expected) in actualCommonCatalogs.Zip(expectedCommonCatalogs))
-            {
-                var actualJsonString = JsonSerializerHelper.SerializeIntended(actual);
-                var expectedJsonString = JsonSerializerHelper.SerializeIntended(expected);
-
-                Assert.Equal(actualJsonString, expectedJsonString);
-            }
-
-            Assert.Equal(new DateTime(2020, 01, 01), commonCatalogInfos[0].Begin);
-            Assert.Equal(new DateTime(2020, 01, 02), commonCatalogInfos[0].End);
-
-            Assert.Equal(new DateTime(2020, 01, 01), commonCatalogInfos[1].Begin);
-            Assert.Equal(new DateTime(2020, 01, 02), commonCatalogInfos[1].End);
-
-            // user catalogs
-            var actualUserCatalogs = userCatalogInfos
-                .Select(catalogInfo => catalogInfo.Catalog)
-                .ToList();
-
-            Assert.Equal(2, actualUserCatalogs.Count);
-
-            foreach (var (actual, expected) in actualUserCatalogs.Zip(expectedUserCatalogs))
-            {
-                var actualJsonString = JsonSerializerHelper.SerializeIntended(actual);
-                var expectedJsonString = JsonSerializerHelper.SerializeIntended(expected);
-
-                Assert.Equal(actualJsonString, expectedJsonString);
-            }
-
-            Assert.Equal(DateTime.MaxValue, userCatalogInfos[0].Begin);
-            Assert.Equal(DateTime.MinValue, userCatalogInfos[0].End);
-
-            Assert.Equal(new DateTime(2020, 01, 01), userCatalogInfos[1].Begin);
-            Assert.Equal(new DateTime(2020, 01, 02), userCatalogInfos[1].End);
+            Assert.Equal(actualJsonString, expectedJsonString);
+            Assert.Equal(new DateTime(2020, 01, 01), catalogInfo.Begin);
+            Assert.Equal(new DateTime(2020, 01, 02), catalogInfo.End);
         }
     }
 }

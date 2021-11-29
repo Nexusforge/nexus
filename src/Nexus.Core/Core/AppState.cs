@@ -1,5 +1,5 @@
-using Nexus.DataModel;
 using Nexus.Extensibility;
+using Nexus.Models;
 using Nexus.Services;
 using Nexus.ViewModels;
 using Prism.Mvvm;

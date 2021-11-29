@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Nexus.Core;
-using Nexus.DataModel;
+using Nexus.Models;
 using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;

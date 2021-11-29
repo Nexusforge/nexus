@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Nexus.DataModel;
+using Nexus.Models;
 using Nexus.Services;
 using System.Threading.Tasks;
 

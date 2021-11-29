@@ -1,5 +1,5 @@
 ﻿using Nexus.DataModel;
-using Nexus.Extensibility;
+using Nexus.Models;
 using System.Collections.Concurrent;
 
 namespace Nexus.Core

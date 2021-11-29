@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Nexus.DataModel;
+using Nexus.Models;
 using System;
 using System.Collections.Concurrent;
 using System.Threading;

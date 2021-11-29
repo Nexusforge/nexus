@@ -14,7 +14,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Nexus.Core;
-using Nexus.DataModel;
 using Nexus.Services;
 using Nexus.ViewModels;
 using NSwag.AspNetCore;

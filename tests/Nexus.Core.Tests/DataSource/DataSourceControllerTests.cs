@@ -6,7 +6,6 @@ using Nexus.Sources;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO.Pipelines;
 using System.Linq;
 using System.Threading;

@@ -2,6 +2,7 @@
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
+using Nexus.Models;
 using System;
 using System.Collections.Concurrent;
 using System.Threading;

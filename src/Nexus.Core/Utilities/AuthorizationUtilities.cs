@@ -1,5 +1,5 @@
 ﻿using Nexus.Core;
-using Nexus.DataModel;
+using Nexus.Models;
 using Nexus.Sources;
 using System;
 using System.Linq;

@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nexus.Core;
 using Nexus.DataModel;
-using Nexus.Extensibility;
+using Nexus.Models;
 using Nexus.Sources;
 using Nexus.Utilities;
 using System;
@@ -69,7 +69,8 @@ namespace Nexus.Services
                 new BackendSource(
                     Type: typeof(InMemory).FullName ?? throw new Exception("full name is null"),
                     ResourceLocator: new Uri("memory://localhost"),
-                    Configuration: new Dictionary<string, string>()),
+                    Configuration: new Dictionary<string, string>(),
+                    Publish: true),
             };
 
             /* load all catalog identifiers */
@@ -207,7 +208,7 @@ namespace Nexus.Services
                 }
 
                 /* distribute to common and user specific catalog array, respectively */
-                var catalogContainers = AuthorizationUtilities.IsCatalogEditable(catalogPrototype.User, catalogPrototype.CatalogId)
+                var catalogContainers = catalogPrototype.BackendSource.Publish && AuthorizationUtilities.IsCatalogEditable(catalogPrototype.User, catalogPrototype.CatalogId)
                     ? commonCatalogContainers
                     : userCatalogContainers;
 
@@ -251,7 +252,7 @@ namespace Nexus.Services
             //
             // The following combination of catalogs is allowed:
             // Backend source 1: /a + /a/a + /a/b
-            // Backend source 2: /b/c
+            // Backend source 2: /a2/c
             //
             // The following combination of catalogs is forbidden:
             // Backend source 1: /a + /a/a + /a/b
@@ -263,8 +264,13 @@ namespace Nexus.Services
             {
                 var referenceIndex = catalogPrototypesToKeep.FindIndex(
                     current =>
-                        current.CatalogId.StartsWith(catalogPrototype.CatalogId) ||
-                        catalogPrototype.CatalogId.StartsWith(current.CatalogId));
+                        {
+                            var currentCatalogId = current.CatalogId + '/';
+                            var prototypeCatalogId = catalogPrototype.CatalogId + '/';
+
+                            return currentCatalogId.StartsWith(prototypeCatalogId) ||
+                                   prototypeCatalogId.StartsWith(currentCatalogId);
+                        });
 
                 /* nothing found */
                 if (referenceIndex < 0)
