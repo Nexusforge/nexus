@@ -50,7 +50,7 @@ namespace Nexus.Shared
 
         public string GetHref(string filePath)
         {
-            return $"/attachments/{WebUtility.UrlEncode(this.UserState.CatalogContainer.Id)}/{this.GetFileName(filePath)}";
+            return $"api/v1/catalogs/{WebUtility.UrlEncode(this.UserState.CatalogContainer.Id)}/attachments/{WebUtility.UrlEncode(Path.GetFileName(filePath))}/content";
         }
 
         private void OnIsOpenChanged(bool value)

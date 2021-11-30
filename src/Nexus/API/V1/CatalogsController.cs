@@ -1,11 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Models;
 using Nexus.Services;
 using Nexus.Utilities;
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Net;
@@ -14,6 +14,9 @@ using System.Threading.Tasks;
 
 namespace Nexus.Controllers.V1
 {
+    // Fill dictionary with query parameters:
+    // https://.../api/v1/catalogs/xxx ? configuration[myKey1]=myValue1 & configuration[myKey2]=myValue2
+
     [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
@@ -22,6 +25,7 @@ namespace Nexus.Controllers.V1
         #region Fields
 
         private UserState _userState;
+        private IDatabaseManager _databaseManager;
         private IDataControllerService _dataControllerService;
 
         #endregion
@@ -30,9 +34,11 @@ namespace Nexus.Controllers.V1
 
         public CatalogsController(
             UserState userState,
+            IDatabaseManager databaseManager,
             IDataControllerService dataControllerService)
         {
             _userState = userState;
+            _databaseManager = databaseManager;
             _dataControllerService = dataControllerService;
         }
 
@@ -44,7 +50,8 @@ namespace Nexus.Controllers.V1
         /// Gets a list of all accessible catalog identifiers.
         /// </summary>
         [HttpGet]
-        public ActionResult<string[]> GetCatalogIds()
+        public ActionResult<string[]>
+            GetCatalogIds()
         {
             var catalogContainers = _userState.CatalogContainers.ToList();
 
@@ -65,6 +72,7 @@ namespace Nexus.Controllers.V1
         public async Task<ActionResult<ResourceCatalog>>
             GetCatalogAsync(
                 string catalogId,
+                [FromQuery] Dictionary<string, string> configuration,
                 CancellationToken cancellationToken)
         {
             catalogId = WebUtility.UrlDecode(catalogId);
@@ -77,14 +85,14 @@ namespace Nexus.Controllers.V1
         }
 
         /// <summary>
-        /// Gets the specified catalog time range.
+        /// Gets the specified catalog's time range.
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpGet("{catalogId}/timerange")]
-        public async Task<ActionResult<TimeRangeResponse>> 
+        public async Task<ActionResult<TimeRangeResponse>>
             GetTimeRangeAsync(
-                string catalogId, 
+                string catalogId,
                 CancellationToken cancellationToken)
         {
             catalogId = WebUtility.UrlDecode(catalogId);
@@ -101,14 +109,13 @@ namespace Nexus.Controllers.V1
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="begin">Start date.</param>
         /// <param name="end">End date.</param>
-        /// <param name="granularity">Granularity of the resulting array.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpGet("{catalogId}/availability")]
         public async Task<ActionResult<AvailabilityResponse>>
             GetCatalogAvailabilityAsync(
-                [BindRequired] string catalogId,
-                [BindRequired] DateTime begin,
-                [BindRequired] DateTime end,
+                string catalogId,
+                DateTime begin,
+                DateTime end,
                 CancellationToken cancellationToken)
         {
             catalogId = WebUtility.UrlDecode(catalogId);
@@ -120,6 +127,38 @@ namespace Nexus.Controllers.V1
         }
 
         /// <summary>
+        /// Gets the specified attachment.
+        /// </summary>
+        /// <param name="catalogId">The catalog identifier.</param>
+        /// <param name="attachmentId">The attachment identifier.</param>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
+        [HttpGet("{catalogId}/attachments/{attachmentId}/content")]
+        public async Task<ActionResult>
+            GetCatalogAvailabilityAsync(
+                string catalogId,
+                string attachmentId,
+                CancellationToken cancellationToken)
+        {
+            catalogId = WebUtility.UrlDecode(catalogId);
+            attachmentId = WebUtility.UrlDecode(attachmentId);
+
+            return await this.ProcessCatalogIdAsync(catalogId, catalog =>
+            {
+                if (_databaseManager.TryReadAttachment(catalogId, attachmentId, out var attachementStream))
+                {
+                    this.Response.Headers.ContentLength = attachementStream.Length;
+                    return Task.FromResult((ActionResult)
+                        this.File(attachementStream, "application/octet-stream", attachmentId));
+                }
+                else
+                {
+                    return Task.FromResult((ActionResult)
+                        this.NotFound($"Could not find attachment {attachmentId} for catalog {catalogId}."));
+                }
+            });
+        }
+
+        /// <summary>
         /// Gets a list of all resources in the specified catalog.
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
@@ -127,7 +166,7 @@ namespace Nexus.Controllers.V1
         /// <returns></returns>
         [HttpGet("{catalogId}/resources")]
         public async Task<ActionResult<Resource[]>> GetResourcesAsync(
-            [BindRequired] string catalogId,
+            string catalogId,
             CancellationToken cancellationToken)
         {
             catalogId = WebUtility.UrlDecode(catalogId);
@@ -264,10 +303,10 @@ namespace Nexus.Controllers.V1
 
         private ResourceCatalog CreateCatalogResponse(ResourceCatalog catalog)
         {
-            return catalog;
+            return catalog with { Resources = null };
         }
 
-        private async Task<TimeRangeResponse> 
+        private async Task<TimeRangeResponse>
             CreateTimeRangeResponseAsync(CatalogContainer catalogContainer, CancellationToken cancellationToken)
         {
             using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(catalogContainer.BackendSource, cancellationToken);
@@ -280,7 +319,7 @@ namespace Nexus.Controllers.V1
             return timeRangeResult;
         }
 
-        private async Task<AvailabilityResponse> 
+        private async Task<AvailabilityResponse>
             CreateAvailabilityResponseAsync(CatalogContainer catalogContainer, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
             using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(catalogContainer.BackendSource, cancellationToken);
@@ -294,7 +333,7 @@ namespace Nexus.Controllers.V1
 
         private Resource CreateResourceResponse(Resource resource)
         {
-            return resource;
+            return resource with { Representations = null };
         }
 
         private Representation CreateRepresentationResponse(Representation representation)
@@ -302,9 +341,16 @@ namespace Nexus.Controllers.V1
             return representation;
         }
 
-        private async Task<ActionResult<T>> ProcessCatalogIdAsync<T>(
+        private Task<ActionResult<T>> ProcessCatalogIdAsync<T>(
             string catalogId,
             Func<CatalogContainer, Task<ActionResult<T>>> action)
+        {
+            return this.ProcessCatalogIdAsync(catalogId, action);
+        }
+
+        private async Task<ActionResult> ProcessCatalogIdAsync(
+            string catalogId,
+            Func<CatalogContainer, Task<ActionResult>> action)
         {
             var catalogContainer = _userState.CatalogContainers
                .FirstOrDefault(container => container.Id == catalogId);

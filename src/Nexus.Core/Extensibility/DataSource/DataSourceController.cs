@@ -69,9 +69,7 @@ namespace Nexus.Extensibility
             if (catalogIds.Any(catalogId => !catalogId.StartsWith(path)))
                 throw new Exception($"The returned catalog identifier is not a child of {path}.");
 
-            return catalogIds
-                .Select(catalogId => path + catalogId)
-                .ToArray();
+            return catalogIds;
         }
 
         public async Task<ResourceCatalog>

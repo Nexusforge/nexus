@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Net;
 
 namespace Nexus.Services
 {
@@ -102,6 +103,27 @@ namespace Nexus.Services
 
             else
                 return Enumerable.Empty<string>();
+        }
+
+        public bool TryReadAttachment(string catalogId, string attachmentId, [NotNullWhen(true)] out Stream? attachment)
+        {
+            attachment = null;
+
+            var physicalId = catalogId.TrimStart('/').Replace("/", "_");
+            var attachementFolder = Path.Combine(_pathsOptions.Catalogs, physicalId);
+
+            if (Directory.Exists(attachementFolder))
+            {
+                var attachmentFile = Path.Combine(attachementFolder, attachmentId);
+
+                if (File.Exists(attachmentFile))
+                {
+                    attachment = File.OpenRead(attachmentFile);
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public bool TryReadFirstAttachment(string catalogId, string searchPattern, EnumerationOptions enumerationOptions, [NotNullWhen(true)] out Stream? attachment)

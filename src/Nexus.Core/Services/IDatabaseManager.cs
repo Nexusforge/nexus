@@ -18,6 +18,7 @@ namespace Nexus.Services
 
         /* /catalogs/catalog_id/... */
         IEnumerable<string> EnumerateAttachements(string catalogId);
+        bool TryReadAttachment(string catalogId, string attachmentId, [NotNullWhen(true)] out Stream? attachment);
         bool TryReadFirstAttachment(string catalogId, string searchPattern, EnumerationOptions enumerationOptions, [NotNullWhen(true)] out Stream? attachment);
 
         /* /export */

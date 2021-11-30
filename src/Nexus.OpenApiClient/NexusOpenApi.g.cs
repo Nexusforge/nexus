@@ -21,43 +21,22 @@ namespace Nexus.Client
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "13.14.4.0 (NJsonSchema v10.5.2.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial interface ICatalogsClient
     {
-        /// <summary>Gets a list of all accessible catalog identifiers.</summary>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<System.Collections.Generic.ICollection<string>> GetCatalogIdsAsync();
-    
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Gets a list of all accessible catalog identifiers.</summary>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<System.Collections.Generic.ICollection<string>> GetCatalogIdsAsync(System.Threading.CancellationToken cancellationToken);
-    
-        /// <summary>Gets the specified catalog.</summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<ResourceCatalog> GetCatalogAsync(string? catalogId);
+        System.Threading.Tasks.Task<System.Collections.Generic.ICollection<string>> GetCatalogIdsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Gets the specified catalog.</summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<ResourceCatalog> GetCatalogAsync(string? catalogId, System.Threading.CancellationToken cancellationToken);
-    
-        /// <summary>Gets the specified catalog time range.</summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<TimeRangeResponse> GetTimeRangeAsync(string? catalogId);
+        System.Threading.Tasks.Task<ResourceCatalog> GetCatalogAsync(string catalogId, System.Collections.Generic.IDictionary<string, string>? configuration = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Gets the specified catalog time range.</summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<TimeRangeResponse> GetTimeRangeAsync(string? catalogId, System.Threading.CancellationToken cancellationToken);
-    
-        /// <summary>Gets the specified catalog availability.</summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="begin">Start date.</param>
-        /// <param name="end">End date.</param>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<AvailabilityResponse> GetCatalogAvailabilityAsync(string? catalogId, System.DateTimeOffset begin, System.DateTimeOffset end);
+        System.Threading.Tasks.Task<TimeRangeResponse> GetTimeRangeAsync(string catalogId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Gets the specified catalog availability.</summary>
@@ -65,51 +44,27 @@ namespace Nexus.Client
         /// <param name="begin">Start date.</param>
         /// <param name="end">End date.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<AvailabilityResponse> GetCatalogAvailabilityAsync(string? catalogId, System.DateTimeOffset begin, System.DateTimeOffset end, System.Threading.CancellationToken cancellationToken);
-    
-        /// <summary>Gets a list of all resources in the specified catalog.</summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<System.Collections.Generic.ICollection<Resource>> GetResourcesAsync(string? catalogId);
+        System.Threading.Tasks.Task<AvailabilityResponse> GetCatalogAvailabilityAsync(string catalogId, System.DateTimeOffset begin, System.DateTimeOffset end, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Gets a list of all resources in the specified catalog.</summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<System.Collections.Generic.ICollection<Resource>> GetResourcesAsync(string? catalogId, System.Threading.CancellationToken cancellationToken);
-    
-        /// <summary>Gets the specified resource.</summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="resourceId">The resource identifier.</param>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<Resource> GetResourceAsync(string? catalogId, string? resourceId);
+        System.Threading.Tasks.Task<System.Collections.Generic.ICollection<Resource>> GetResourcesAsync(string catalogId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Gets the specified resource.</summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="resourceId">The resource identifier.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<Resource> GetResourceAsync(string? catalogId, string? resourceId, System.Threading.CancellationToken cancellationToken);
-    
-        /// <summary>Gets a list of all representations in the specified catalog and resource.</summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="resourceId">The resource identifier.</param>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<System.Collections.Generic.ICollection<Representation>> GetRepresentationsAsync(string? catalogId, string? resourceId);
+        System.Threading.Tasks.Task<Resource> GetResourceAsync(string catalogId, string resourceId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Gets a list of all representations in the specified catalog and resource.</summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="resourceId">The resource identifier.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<System.Collections.Generic.ICollection<Representation>> GetRepresentationsAsync(string? catalogId, string? resourceId, System.Threading.CancellationToken cancellationToken);
-    
-        /// <summary>Gets the specified representation.</summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="resourceId">The resource identifier.</param>
-        /// <param name="representationId">The representation identifier.</param>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<Representation> GetRepresentationAsync(string? catalogId, string? resourceId, string? representationId);
+        System.Threading.Tasks.Task<System.Collections.Generic.ICollection<Representation>> GetRepresentationsAsync(string catalogId, string resourceId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Gets the specified representation.</summary>
@@ -117,7 +72,7 @@ namespace Nexus.Client
         /// <param name="resourceId">The resource identifier.</param>
         /// <param name="representationId">The representation identifier.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<Representation> GetRepresentationAsync(string? catalogId, string? resourceId, string? representationId, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<Representation> GetRepresentationAsync(string catalogId, string resourceId, string representationId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
     
     }
     
@@ -156,20 +111,13 @@ namespace Nexus.Client
         partial void PrepareRequest(System.Net.Http.HttpClient client, System.Net.Http.HttpRequestMessage request, string url);
         partial void PrepareRequest(System.Net.Http.HttpClient client, System.Net.Http.HttpRequestMessage request, System.Text.StringBuilder urlBuilder);
         partial void ProcessResponse(System.Net.Http.HttpClient client, System.Net.Http.HttpResponseMessage response);
-        /// <summary>Gets a list of all accessible catalog identifiers.</summary>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task<System.Collections.Generic.ICollection<string>> GetCatalogIdsAsync()
-        {
-            return GetCatalogIdsAsync(System.Threading.CancellationToken.None);
-        }
-    
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Gets a list of all accessible catalog identifiers.</summary>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<string>> GetCatalogIdsAsync(System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<string>> GetCatalogIdsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/Catalogs");
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/catalogs");
     
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -230,23 +178,23 @@ namespace Nexus.Client
             }
         }
     
-        /// <summary>Gets the specified catalog.</summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task<ResourceCatalog> GetCatalogAsync(string? catalogId)
-        {
-            return GetCatalogAsync(catalogId, System.Threading.CancellationToken.None);
-        }
-    
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Gets the specified catalog.</summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public async System.Threading.Tasks.Task<ResourceCatalog> GetCatalogAsync(string? catalogId, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task<ResourceCatalog> GetCatalogAsync(string catalogId, System.Collections.Generic.IDictionary<string, string>? configuration = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
+            if (catalogId == null)
+                throw new System.ArgumentNullException("catalogId");
+    
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/Catalogs/{catalogId}");
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/catalogs/{catalogId}?");
             urlBuilder_.Replace("{catalogId}", System.Uri.EscapeDataString(ConvertToString(catalogId, System.Globalization.CultureInfo.InvariantCulture)));
+            if (configuration != null)
+            {
+                foreach (var item_ in configuration) { urlBuilder_.Append(System.Uri.EscapeDataString(item_.Key) + "=").Append(System.Uri.EscapeDataString(ConvertToString(item_.Value, System.Globalization.CultureInfo.InvariantCulture))).Append("&"); }
+            }
+            urlBuilder_.Length--;
     
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -307,22 +255,17 @@ namespace Nexus.Client
             }
         }
     
-        /// <summary>Gets the specified catalog time range.</summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task<TimeRangeResponse> GetTimeRangeAsync(string? catalogId)
-        {
-            return GetTimeRangeAsync(catalogId, System.Threading.CancellationToken.None);
-        }
-    
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Gets the specified catalog time range.</summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public async System.Threading.Tasks.Task<TimeRangeResponse> GetTimeRangeAsync(string? catalogId, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task<TimeRangeResponse> GetTimeRangeAsync(string catalogId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
+            if (catalogId == null)
+                throw new System.ArgumentNullException("catalogId");
+    
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/Catalogs/{catalogId}/timerange");
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/catalogs/{catalogId}/timerange");
             urlBuilder_.Replace("{catalogId}", System.Uri.EscapeDataString(ConvertToString(catalogId, System.Globalization.CultureInfo.InvariantCulture)));
     
             var client_ = _httpClient;
@@ -384,24 +327,17 @@ namespace Nexus.Client
             }
         }
     
-        /// <summary>Gets the specified catalog availability.</summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="begin">Start date.</param>
-        /// <param name="end">End date.</param>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task<AvailabilityResponse> GetCatalogAvailabilityAsync(string? catalogId, System.DateTimeOffset begin, System.DateTimeOffset end)
-        {
-            return GetCatalogAvailabilityAsync(catalogId, begin, end, System.Threading.CancellationToken.None);
-        }
-    
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Gets the specified catalog availability.</summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="begin">Start date.</param>
         /// <param name="end">End date.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public async System.Threading.Tasks.Task<AvailabilityResponse> GetCatalogAvailabilityAsync(string? catalogId, System.DateTimeOffset begin, System.DateTimeOffset end, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task<AvailabilityResponse> GetCatalogAvailabilityAsync(string catalogId, System.DateTimeOffset begin, System.DateTimeOffset end, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
+            if (catalogId == null)
+                throw new System.ArgumentNullException("catalogId");
+    
             if (begin == null)
                 throw new System.ArgumentNullException("begin");
     
@@ -409,7 +345,7 @@ namespace Nexus.Client
                 throw new System.ArgumentNullException("end");
     
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/Catalogs/{catalogId}/availability?");
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/catalogs/{catalogId}/availability?");
             urlBuilder_.Replace("{catalogId}", System.Uri.EscapeDataString(ConvertToString(catalogId, System.Globalization.CultureInfo.InvariantCulture)));
             urlBuilder_.Append(System.Uri.EscapeDataString("begin") + "=").Append(System.Uri.EscapeDataString(begin.ToString("s", System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             urlBuilder_.Append(System.Uri.EscapeDataString("end") + "=").Append(System.Uri.EscapeDataString(end.ToString("s", System.Globalization.CultureInfo.InvariantCulture))).Append("&");
@@ -474,22 +410,17 @@ namespace Nexus.Client
             }
         }
     
-        /// <summary>Gets a list of all resources in the specified catalog.</summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task<System.Collections.Generic.ICollection<Resource>> GetResourcesAsync(string? catalogId)
-        {
-            return GetResourcesAsync(catalogId, System.Threading.CancellationToken.None);
-        }
-    
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Gets a list of all resources in the specified catalog.</summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<Resource>> GetResourcesAsync(string? catalogId, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<Resource>> GetResourcesAsync(string catalogId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
+            if (catalogId == null)
+                throw new System.ArgumentNullException("catalogId");
+    
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/Catalogs/{catalogId}/resources");
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/catalogs/{catalogId}/resources");
             urlBuilder_.Replace("{catalogId}", System.Uri.EscapeDataString(ConvertToString(catalogId, System.Globalization.CultureInfo.InvariantCulture)));
     
             var client_ = _httpClient;
@@ -551,24 +482,21 @@ namespace Nexus.Client
             }
         }
     
-        /// <summary>Gets the specified resource.</summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="resourceId">The resource identifier.</param>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task<Resource> GetResourceAsync(string? catalogId, string? resourceId)
-        {
-            return GetResourceAsync(catalogId, resourceId, System.Threading.CancellationToken.None);
-        }
-    
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Gets the specified resource.</summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="resourceId">The resource identifier.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public async System.Threading.Tasks.Task<Resource> GetResourceAsync(string? catalogId, string? resourceId, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task<Resource> GetResourceAsync(string catalogId, string resourceId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
+            if (catalogId == null)
+                throw new System.ArgumentNullException("catalogId");
+    
+            if (resourceId == null)
+                throw new System.ArgumentNullException("resourceId");
+    
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/Catalogs/{catalogId}/resources/{resourceId}");
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/catalogs/{catalogId}/resources/{resourceId}");
             urlBuilder_.Replace("{catalogId}", System.Uri.EscapeDataString(ConvertToString(catalogId, System.Globalization.CultureInfo.InvariantCulture)));
             urlBuilder_.Replace("{resourceId}", System.Uri.EscapeDataString(ConvertToString(resourceId, System.Globalization.CultureInfo.InvariantCulture)));
     
@@ -631,24 +559,21 @@ namespace Nexus.Client
             }
         }
     
-        /// <summary>Gets a list of all representations in the specified catalog and resource.</summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="resourceId">The resource identifier.</param>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task<System.Collections.Generic.ICollection<Representation>> GetRepresentationsAsync(string? catalogId, string? resourceId)
-        {
-            return GetRepresentationsAsync(catalogId, resourceId, System.Threading.CancellationToken.None);
-        }
-    
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Gets a list of all representations in the specified catalog and resource.</summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="resourceId">The resource identifier.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<Representation>> GetRepresentationsAsync(string? catalogId, string? resourceId, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<Representation>> GetRepresentationsAsync(string catalogId, string resourceId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
+            if (catalogId == null)
+                throw new System.ArgumentNullException("catalogId");
+    
+            if (resourceId == null)
+                throw new System.ArgumentNullException("resourceId");
+    
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/Catalogs/{catalogId}/resources/{resourceId}/representations");
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/catalogs/{catalogId}/resources/{resourceId}/representations");
             urlBuilder_.Replace("{catalogId}", System.Uri.EscapeDataString(ConvertToString(catalogId, System.Globalization.CultureInfo.InvariantCulture)));
             urlBuilder_.Replace("{resourceId}", System.Uri.EscapeDataString(ConvertToString(resourceId, System.Globalization.CultureInfo.InvariantCulture)));
     
@@ -711,26 +636,25 @@ namespace Nexus.Client
             }
         }
     
-        /// <summary>Gets the specified representation.</summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="resourceId">The resource identifier.</param>
-        /// <param name="representationId">The representation identifier.</param>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task<Representation> GetRepresentationAsync(string? catalogId, string? resourceId, string? representationId)
-        {
-            return GetRepresentationAsync(catalogId, resourceId, representationId, System.Threading.CancellationToken.None);
-        }
-    
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Gets the specified representation.</summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="resourceId">The resource identifier.</param>
         /// <param name="representationId">The representation identifier.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public async System.Threading.Tasks.Task<Representation> GetRepresentationAsync(string? catalogId, string? resourceId, string? representationId, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task<Representation> GetRepresentationAsync(string catalogId, string resourceId, string representationId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
+            if (catalogId == null)
+                throw new System.ArgumentNullException("catalogId");
+    
+            if (resourceId == null)
+                throw new System.ArgumentNullException("resourceId");
+    
+            if (representationId == null)
+                throw new System.ArgumentNullException("representationId");
+    
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/Catalogs/{catalogId}/resources/{resourceId}/representations/{representationId}");
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/catalogs/{catalogId}/resources/{resourceId}/representations/{representationId}");
             urlBuilder_.Replace("{catalogId}", System.Uri.EscapeDataString(ConvertToString(catalogId, System.Globalization.CultureInfo.InvariantCulture)));
             urlBuilder_.Replace("{resourceId}", System.Uri.EscapeDataString(ConvertToString(resourceId, System.Globalization.CultureInfo.InvariantCulture)));
             urlBuilder_.Replace("{representationId}", System.Uri.EscapeDataString(ConvertToString(representationId, System.Globalization.CultureInfo.InvariantCulture)));
@@ -897,15 +821,6 @@ namespace Nexus.Client
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "13.14.4.0 (NJsonSchema v10.5.2.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial interface IDataClient
     {
-        /// <summary>Gets the requested data.</summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="resourceId">The resource identifier.</param>
-        /// <param name="representationId">The representation identifier.</param>
-        /// <param name="begin">Start date/time.</param>
-        /// <param name="end">End date/time.</param>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<FileResponse> GetStreamAsync(string? catalogId, string? resourceId, string? representationId, System.DateTimeOffset begin, System.DateTimeOffset end, System.Collections.Generic.IDictionary<string, string> configuration);
-    
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Gets the requested data.</summary>
         /// <param name="catalogId">The catalog identifier.</param>
@@ -914,7 +829,7 @@ namespace Nexus.Client
         /// <param name="begin">Start date/time.</param>
         /// <param name="end">End date/time.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<FileResponse> GetStreamAsync(string? catalogId, string? resourceId, string? representationId, System.DateTimeOffset begin, System.DateTimeOffset end, System.Collections.Generic.IDictionary<string, string> configuration, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<FileResponse> GetStreamAsync(string catalogId, string resourceId, string representationId, System.DateTimeOffset begin, System.DateTimeOffset end, System.Collections.Generic.IDictionary<string, string> configuration, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
     
     }
     
@@ -953,18 +868,6 @@ namespace Nexus.Client
         partial void PrepareRequest(System.Net.Http.HttpClient client, System.Net.Http.HttpRequestMessage request, string url);
         partial void PrepareRequest(System.Net.Http.HttpClient client, System.Net.Http.HttpRequestMessage request, System.Text.StringBuilder urlBuilder);
         partial void ProcessResponse(System.Net.Http.HttpClient client, System.Net.Http.HttpResponseMessage response);
-        /// <summary>Gets the requested data.</summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="resourceId">The resource identifier.</param>
-        /// <param name="representationId">The representation identifier.</param>
-        /// <param name="begin">Start date/time.</param>
-        /// <param name="end">End date/time.</param>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task<FileResponse> GetStreamAsync(string? catalogId, string? resourceId, string? representationId, System.DateTimeOffset begin, System.DateTimeOffset end, System.Collections.Generic.IDictionary<string, string> configuration)
-        {
-            return GetStreamAsync(catalogId, resourceId, representationId, begin, end, configuration, System.Threading.CancellationToken.None);
-        }
-    
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Gets the requested data.</summary>
         /// <param name="catalogId">The catalog identifier.</param>
@@ -973,8 +876,17 @@ namespace Nexus.Client
         /// <param name="begin">Start date/time.</param>
         /// <param name="end">End date/time.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public async System.Threading.Tasks.Task<FileResponse> GetStreamAsync(string? catalogId, string? resourceId, string? representationId, System.DateTimeOffset begin, System.DateTimeOffset end, System.Collections.Generic.IDictionary<string, string> configuration, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task<FileResponse> GetStreamAsync(string catalogId, string resourceId, string representationId, System.DateTimeOffset begin, System.DateTimeOffset end, System.Collections.Generic.IDictionary<string, string> configuration, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
+            if (catalogId == null)
+                throw new System.ArgumentNullException("catalogId");
+    
+            if (resourceId == null)
+                throw new System.ArgumentNullException("resourceId");
+    
+            if (representationId == null)
+                throw new System.ArgumentNullException("representationId");
+    
             if (begin == null)
                 throw new System.ArgumentNullException("begin");
     
@@ -985,10 +897,10 @@ namespace Nexus.Client
                 throw new System.ArgumentNullException("configuration");
     
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/Data?");
-            urlBuilder_.Append(System.Uri.EscapeDataString("catalogId") + "=").Append(System.Uri.EscapeDataString(catalogId != null ? ConvertToString(catalogId, System.Globalization.CultureInfo.InvariantCulture) : "")).Append("&");
-            urlBuilder_.Append(System.Uri.EscapeDataString("resourceId") + "=").Append(System.Uri.EscapeDataString(resourceId != null ? ConvertToString(resourceId, System.Globalization.CultureInfo.InvariantCulture) : "")).Append("&");
-            urlBuilder_.Append(System.Uri.EscapeDataString("representationId") + "=").Append(System.Uri.EscapeDataString(representationId != null ? ConvertToString(representationId, System.Globalization.CultureInfo.InvariantCulture) : "")).Append("&");
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/data?");
+            urlBuilder_.Append(System.Uri.EscapeDataString("catalogId") + "=").Append(System.Uri.EscapeDataString(ConvertToString(catalogId, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
+            urlBuilder_.Append(System.Uri.EscapeDataString("resourceId") + "=").Append(System.Uri.EscapeDataString(ConvertToString(resourceId, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
+            urlBuilder_.Append(System.Uri.EscapeDataString("representationId") + "=").Append(System.Uri.EscapeDataString(ConvertToString(representationId, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             urlBuilder_.Append(System.Uri.EscapeDataString("begin") + "=").Append(System.Uri.EscapeDataString(begin.ToString("s", System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             urlBuilder_.Append(System.Uri.EscapeDataString("end") + "=").Append(System.Uri.EscapeDataString(end.ToString("s", System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             urlBuilder_.Length--;
@@ -1156,52 +1068,31 @@ namespace Nexus.Client
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "13.14.4.0 (NJsonSchema v10.5.2.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial interface IJobsClient
     {
-        /// <summary>Creates a new export job.</summary>
-        /// <param name="parameters">Export parameters.</param>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<ExportJob> CreateExportJobAsync(ExportParameters parameters);
-    
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Creates a new export job.</summary>
         /// <param name="parameters">Export parameters.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<ExportJob> CreateExportJobAsync(ExportParameters parameters, System.Threading.CancellationToken cancellationToken);
-    
-        /// <summary>Gets a list of all export jobs.</summary>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<System.Collections.Generic.ICollection<ExportJob>> GetExportJobsAsync();
+        System.Threading.Tasks.Task<ExportJob> CreateExportJobAsync(ExportParameters parameters, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Gets a list of all export jobs.</summary>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<System.Collections.Generic.ICollection<ExportJob>> GetExportJobsAsync(System.Threading.CancellationToken cancellationToken);
-    
-        /// <summary>Gets the specified export job.</summary>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<ExportJob> GetExportJobAsync(System.Guid jobId);
+        System.Threading.Tasks.Task<System.Collections.Generic.ICollection<ExportJob>> GetExportJobsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Gets the specified export job.</summary>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<ExportJob> GetExportJobAsync(System.Guid jobId, System.Threading.CancellationToken cancellationToken);
-    
-        /// <summary>Cancels the specified job.</summary>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<FileResponse> DeleteExportJobAsync(System.Guid jobId);
+        System.Threading.Tasks.Task<ExportJob> GetExportJobAsync(System.Guid jobId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Cancels the specified job.</summary>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<FileResponse> DeleteExportJobAsync(System.Guid jobId, System.Threading.CancellationToken cancellationToken);
-    
-        /// <summary>Gets the status of the specified export job.</summary>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<JobStatus> GetExportJobStatusAsync(System.Guid jobId);
+        System.Threading.Tasks.Task<FileResponse> DeleteExportJobAsync(System.Guid jobId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Gets the status of the specified export job.</summary>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<JobStatus> GetExportJobStatusAsync(System.Guid jobId, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<JobStatus> GetExportJobStatusAsync(System.Guid jobId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
     
     }
     
@@ -1240,25 +1131,17 @@ namespace Nexus.Client
         partial void PrepareRequest(System.Net.Http.HttpClient client, System.Net.Http.HttpRequestMessage request, string url);
         partial void PrepareRequest(System.Net.Http.HttpClient client, System.Net.Http.HttpRequestMessage request, System.Text.StringBuilder urlBuilder);
         partial void ProcessResponse(System.Net.Http.HttpClient client, System.Net.Http.HttpResponseMessage response);
-        /// <summary>Creates a new export job.</summary>
-        /// <param name="parameters">Export parameters.</param>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task<ExportJob> CreateExportJobAsync(ExportParameters parameters)
-        {
-            return CreateExportJobAsync(parameters, System.Threading.CancellationToken.None);
-        }
-    
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Creates a new export job.</summary>
         /// <param name="parameters">Export parameters.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public async System.Threading.Tasks.Task<ExportJob> CreateExportJobAsync(ExportParameters parameters, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task<ExportJob> CreateExportJobAsync(ExportParameters parameters, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (parameters == null)
                 throw new System.ArgumentNullException("parameters");
     
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/Jobs/export");
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/export");
     
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -1322,20 +1205,13 @@ namespace Nexus.Client
             }
         }
     
-        /// <summary>Gets a list of all export jobs.</summary>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task<System.Collections.Generic.ICollection<ExportJob>> GetExportJobsAsync()
-        {
-            return GetExportJobsAsync(System.Threading.CancellationToken.None);
-        }
-    
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Gets a list of all export jobs.</summary>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<ExportJob>> GetExportJobsAsync(System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<ExportJob>> GetExportJobsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/Jobs/export");
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/export");
     
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -1396,23 +1272,16 @@ namespace Nexus.Client
             }
         }
     
-        /// <summary>Gets the specified export job.</summary>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task<ExportJob> GetExportJobAsync(System.Guid jobId)
-        {
-            return GetExportJobAsync(jobId, System.Threading.CancellationToken.None);
-        }
-    
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Gets the specified export job.</summary>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public async System.Threading.Tasks.Task<ExportJob> GetExportJobAsync(System.Guid jobId, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task<ExportJob> GetExportJobAsync(System.Guid jobId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (jobId == null)
                 throw new System.ArgumentNullException("jobId");
     
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/Jobs/export/{jobId}");
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/export/{jobId}");
             urlBuilder_.Replace("{jobId}", System.Uri.EscapeDataString(ConvertToString(jobId, System.Globalization.CultureInfo.InvariantCulture)));
     
             var client_ = _httpClient;
@@ -1474,23 +1343,16 @@ namespace Nexus.Client
             }
         }
     
-        /// <summary>Cancels the specified job.</summary>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task<FileResponse> DeleteExportJobAsync(System.Guid jobId)
-        {
-            return DeleteExportJobAsync(jobId, System.Threading.CancellationToken.None);
-        }
-    
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Cancels the specified job.</summary>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public async System.Threading.Tasks.Task<FileResponse> DeleteExportJobAsync(System.Guid jobId, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task<FileResponse> DeleteExportJobAsync(System.Guid jobId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (jobId == null)
                 throw new System.ArgumentNullException("jobId");
     
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/Jobs/export/{jobId}");
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/export/{jobId}");
             urlBuilder_.Replace("{jobId}", System.Uri.EscapeDataString(ConvertToString(jobId, System.Globalization.CultureInfo.InvariantCulture)));
     
             var client_ = _httpClient;
@@ -1550,23 +1412,16 @@ namespace Nexus.Client
             }
         }
     
-        /// <summary>Gets the status of the specified export job.</summary>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task<JobStatus> GetExportJobStatusAsync(System.Guid jobId)
-        {
-            return GetExportJobStatusAsync(jobId, System.Threading.CancellationToken.None);
-        }
-    
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Gets the status of the specified export job.</summary>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public async System.Threading.Tasks.Task<JobStatus> GetExportJobStatusAsync(System.Guid jobId, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task<JobStatus> GetExportJobStatusAsync(System.Guid jobId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (jobId == null)
                 throw new System.ArgumentNullException("jobId");
     
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/Jobs/export/{jobId}/status");
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/export/{jobId}/status");
             urlBuilder_.Replace("{jobId}", System.Uri.EscapeDataString(ConvertToString(jobId, System.Globalization.CultureInfo.InvariantCulture)));
     
             var client_ = _httpClient;
@@ -1731,14 +1586,10 @@ namespace Nexus.Client
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "13.14.4.0 (NJsonSchema v10.5.2.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial interface IUsersClient
     {
-        /// <summary>Creates a bearer token.</summary>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<string> AuthenticateAsync(AuthenticateRequest authenticateRequest);
-    
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Creates a bearer token.</summary>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<string> AuthenticateAsync(AuthenticateRequest authenticateRequest, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<string> AuthenticateAsync(AuthenticateRequest authenticateRequest, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
     
     }
     
@@ -1777,23 +1628,16 @@ namespace Nexus.Client
         partial void PrepareRequest(System.Net.Http.HttpClient client, System.Net.Http.HttpRequestMessage request, string url);
         partial void PrepareRequest(System.Net.Http.HttpClient client, System.Net.Http.HttpRequestMessage request, System.Text.StringBuilder urlBuilder);
         partial void ProcessResponse(System.Net.Http.HttpClient client, System.Net.Http.HttpResponseMessage response);
-        /// <summary>Creates a bearer token.</summary>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task<string> AuthenticateAsync(AuthenticateRequest authenticateRequest)
-        {
-            return AuthenticateAsync(authenticateRequest, System.Threading.CancellationToken.None);
-        }
-    
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Creates a bearer token.</summary>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public async System.Threading.Tasks.Task<string> AuthenticateAsync(AuthenticateRequest authenticateRequest, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task<string> AuthenticateAsync(AuthenticateRequest authenticateRequest, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (authenticateRequest == null)
                 throw new System.ArgumentNullException("authenticateRequest");
     
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/Users/authenticate");
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/users/authenticate");
     
             var client_ = _httpClient;
             var disposeClient_ = false;

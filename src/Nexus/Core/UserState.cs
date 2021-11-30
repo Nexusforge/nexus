@@ -59,7 +59,6 @@ namespace Nexus.Core
                          IUserIdService userIdService,
                          IServiceProvider serviceProvider,
                          AppState appState,
-                         AuthenticationStateProvider authenticationStateProvider,
                          DataService dataService)
         {
             this.Logger = logger;
@@ -69,7 +68,6 @@ namespace Nexus.Core
             _userIdService = userIdService;
             _serviceProvider = serviceProvider;
             _appState = appState;
-            _authenticationStateProvider = authenticationStateProvider;
             _dataService = dataService;
 
             this.VisualizeBeginAtZero = true;
@@ -637,7 +635,7 @@ namespace Nexus.Core
 
         private async Task InitializeAsync(Dictionary<string, List<CatalogContainer>> catalogContainersMap, CancellationToken cancellationToken)
         {
-            this.CatalogContainersInfo = await this.SplitCampaignContainersAsync(this.CatalogContainers);
+            this.CatalogContainersInfo = this.SplitCampaignContainers(this.CatalogContainers);
 
             // this triggers a search to find the new container instance
             this.CatalogContainer = this.CatalogContainer;
@@ -758,10 +756,9 @@ namespace Nexus.Core
             return representations;
         }
 
-        private async Task<SplittedCatalogContainers> SplitCampaignContainersAsync(IEnumerable<CatalogContainer> catalogContainers)
+        private SplittedCatalogContainers SplitCampaignContainers(IEnumerable<CatalogContainer> catalogContainers)
         {
-            var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
-            var user = authState.User;
+            var user = _userIdService.User;
 
             // all accessible catalogs are "accessible"
             var accessible = catalogContainers

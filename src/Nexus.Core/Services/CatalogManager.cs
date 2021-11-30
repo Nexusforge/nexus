@@ -80,6 +80,7 @@ namespace Nexus.Services
             /* => for the built-in backend sources */
             var rootUser = await _userManagerWrapper.GetClaimsPrincipalAsync(_securityOptions.RootUser);
 
+#warning Load Parallel?
             if (rootUser is not null)
             {
                 /* for each backend source */

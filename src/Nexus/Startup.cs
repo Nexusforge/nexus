@@ -14,8 +14,10 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Nexus.Core;
+using Nexus.Models;
 using Nexus.Services;
 using Nexus.ViewModels;
+using NJsonSchema.Generation;
 using NSwag.AspNetCore;
 using Serilog;
 using System;
@@ -150,6 +152,9 @@ namespace Nexus
                     options.SubstituteApiVersionInUrl = true;
                 });
 
+            // routing
+            services.AddRouting(options => options.LowercaseUrls = true);
+
             /* not optimal */
 #pragma warning disable ASP0000 // Do not call 'IServiceCollection.BuildServiceProvider' in 'ConfigureServices'
             var provider = services.BuildServiceProvider().GetRequiredService<IApiVersionDescriptionProvider>();
@@ -159,6 +164,8 @@ namespace Nexus
             {
                 services.AddOpenApiDocument(config =>
                 {
+                    config.DefaultReferenceTypeNullHandling = ReferenceTypeNullHandling.NotNull;
+
                     config.Title = "Nexus REST API";
                     config.Version = description.GroupName;
                     config.Description = "Explore resources and get their data." 
