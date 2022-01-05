@@ -34,13 +34,17 @@ namespace Nexus.Sources
             return Task.CompletedTask;
         }
 
-        public Task<string[]> GetCatalogIdsAsync(string path, CancellationToken cancellationToken)
+        public Task<CatalogRegistration[]> GetCatalogRegistrationsAsync(string path, CancellationToken cancellationToken)
         {
             if (path == "/")
-                return Task.FromResult(new string[] { AccessibleCatalogId, RestrictedCatalogId });
+                return Task.FromResult(new CatalogRegistration[] 
+                    {
+                        new CatalogRegistration(AccessibleCatalogId),
+                        new CatalogRegistration(RestrictedCatalogId)
+                    });
 
             else
-                return Task.FromResult(new string[0]);
+                return Task.FromResult(new CatalogRegistration[0]);
         }
 
         public Task<ResourceCatalog> GetCatalogAsync(string catalogId, CancellationToken cancellationToken)

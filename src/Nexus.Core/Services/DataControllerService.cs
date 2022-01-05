@@ -40,7 +40,7 @@ namespace Nexus.Services
             var controller = new DataSourceController(dataSource, backendSource, logger1);
 
             if (catalogCache is null)
-                catalogCache = _appState.CatalogState.CatalogCache;
+                catalogCache = _appState.CatalogState.Cache;
 
             var actualCatalogCache = catalogCache.GetOrAdd(
                 backendSource,

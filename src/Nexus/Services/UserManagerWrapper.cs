@@ -47,7 +47,7 @@ namespace Nexus.Services
                 var rootPassword = _securityOptions.RootPassword;
 
                 // ensure there is a root user
-                if ((await userManager.FindByNameAsync(rootUsername)) == null)
+                if ((await userManager.FindByNameAsync(rootUsername)) is null)
                 {
                     var user = new IdentityUser(rootUsername);
                     var result = await userManager.CreateAsync(user, rootPassword);
@@ -82,7 +82,7 @@ namespace Nexus.Services
                 var defaultTestUsername = "test@nexus.localhost";
                 var defaultTestPassword = "#test0/User1";
 
-                if ((await userManager.FindByNameAsync(defaultTestUsername)) == null)
+                if ((await userManager.FindByNameAsync(defaultTestUsername)) is null)
                 {
                     var user = new IdentityUser(defaultTestUsername);
                     var result = await userManager.CreateAsync(user, defaultTestPassword);
@@ -108,7 +108,7 @@ namespace Nexus.Services
                 var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
                 var user = await userManager.FindByNameAsync(username);
 
-                if (user == null)
+                if (user is null)
                     return null;
 
                 var claims = await userManager.GetClaimsAsync(user);

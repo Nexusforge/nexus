@@ -70,9 +70,9 @@ else if (this.UserState.CatalogContainer is not null) // user has no access to c
         }
         else
         {
-            @if (!string.IsNullOrWhiteSpace(this.UserState.CatalogContainer.CatalogMetadata.Contact))
+            @if (!string.IsNullOrWhiteSpace(this.UserState.CatalogContainer.Metadata.Contact))
             {
-                <span>You do not have access to this catalog. Please contact @(this.UserState.CatalogContainer.CatalogMetadata.Contact) to request permission.</span>
+                <span>You do not have access to this catalog. Please contact @(this.UserState.CatalogContainer.Metadata.Contact) to request permission.</span>
             }
             else
             {

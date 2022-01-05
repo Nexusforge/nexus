@@ -12,17 +12,30 @@ To enable users to activate own `IDataSource` instances (e.g. in case of the `Rp
 
 Every `IDataSource` instance contributes zero or more resource catalogs. Catalogs can be visible for all users or for the registering user only, which depends on the value of the `CanEditCatalog` claim and if the user is an administrator.
 
-After Nexus has loaded the backend sources for each user, it starts asking all `IDataSource` instances for their list of top level catalogs. Every catalog is then converted into a `CatalogContainer` which defers loading the catalog content to when it is actually required. Depending on the visibility (for all users or for the registering user only), the catalogs are organized using a dictionary with one key per contributing user and a special key to hold a list of common catalogs.
+After Nexus has loaded the backend sources for each user, it starts asking all `IDataSource` instances for their list of top level catalogs. Every catalog is then converted into a `CatalogContainer` which defers loading the catalog content to when it is actually required. The top level catalogs are "mounted" in a "subdirectory" the root catalog. A mounted catalog can consists of more child catalogs. To keep things simple and efficient, these child catalogs can only be provided by backend source that provided the parent catalog.
 
-## Use Case: External Database with user specific catalogs
+## Use Case: External System with User Specific Catalogs
 
-It should be avoided that Nexus stores user credentials for external databases. The current solution approach is to let the `IDataSource` instance deliver catalogs which act as a normal catalogs and at the same time as a folder for child catalogs. When that catalog/folder is opened, the child catalogs are loaded asynchronously (optionally using credentials the user has provided temporarily in the GUI or in the REST request).
+There may be the requirement that a catalog should have one or more child catalogs. This might happen when an `IDataSource` wants to provide access to an external system or to another Nexus instance. In that case, it may also be necessary to provide user credentials for the external system. Additionally, the presented catalog hierarchy might be specific to the current user.
 
-To implement this, the `IDataSource` interface offers the method `GetCatalogIds(string path)`. This method should return the direct child catalogs. When, for instance, the path is `/`, the returned identifiers could be `/a/b` and `/c`. When a user then clicks on the catalog `/a/b` from within the GUI, `GetCatalogIds` is called again, now with the path `/a/b` and this time the `IDataSource` instance might return the catalog identifier `/a/b/c`.
+To enable this scenario, there is the need for Nexus to distinguish between `static` child catalogs which are loaded once and `dynamic` ones that should be looked up on each request. This option can be specified by the `IDataSource` individually for each catalog registration.
 
-When, alternatively, the REST API is used to access the not yet known catalog `/a/b/c`, the `IDataSource` of the next higher known catalog is consulted to provide child catalog identifiers. This process is repeated until the requested catalog is found and loaded.
+An `IDataSource` which provides user-specific catalogs would register these as dynamic and use the user credentials to retrieve them from the external system. To speed things up, the `IDataSource` may decide to cache the returned information on a per user level and delete that cache entry after a certain amount of time. 
 
-In the end, this leads to something similar to a virtual file system with the root folder `/`.
+The credentials should be available for the lifetime of the current user session. In a browser-only scenario this could be implemented using a session cookie. For other client types like the Open API client, a more natural approach would be to attach additional configuration values that should be passed to the `IDataSource` instance to the bearer token which is created when the user authenticates.
+
+Configuration values that are part of the bearer token need to have a selector prepended in front of the configuration key to define the target `IDataSource` instance. This is necessary to ensure that credentials do no leak to the wrong `IDataSource`. 
+
+Example: The user credentials for a catalog named `/A/B/C` could be written as:
+
+```c#
+"/A/B/C:Username" = "foo"
+"/A/B/C:Password" = "bar"
+```
+
+> 🛈 The exact configuration key names depend on the `IDataSource` implementation.
+
+> 🛈 Requests to other catalogs like `/A`, `/A/B`, `/A/B/D` or `/A/B/C/X` would also get these configuration values passed because they are provided by the same `IDataSource`. This is not considered a security problem.
 
 ## Considerations
 
@@ -46,5 +59,12 @@ Recreate `CatalogState` but reuse `CatalogInfo`.
 
 Update `CatalogState`.
 
+The `IDataSource` interface offers the method `GetCatalogRegistrations(string path)`. This method should return the direct child catalogs (if any). When, for instance, the path is `/`, the returned identifiers could be `/a/b` and `/c`. When a user then clicks on the catalog `/a/b` from within the GUI, `GetCatalogRegistrations` is called again, now with the path `/a/b` and this time the `IDataSource` instance might return the catalog identifier `/a/b/c`.
+
+When, alternatively, the REST API is used to access the not yet known catalog `/a/b/c`, the `IDataSource` of the next higher known catalog is consulted to provide child catalog identifiers. This process is repeated until the requested catalog is found and loaded.
+
+In the end, this leads to something similar to a virtual file system with the root folder `/`.
+
 **IDataWriter**
+
 Currently there are no plans to allow users to register their own `IDataWriter` implementations.

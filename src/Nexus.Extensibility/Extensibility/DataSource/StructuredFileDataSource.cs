@@ -83,13 +83,13 @@ namespace Nexus.Extensibility
             GetFileSourceProviderAsync(CancellationToken cancellationToken);
 
         /// <summary>
-        /// Gets the catalog identifiers that are located below <paramref name="path"/>.
+        /// Gets the catalog registrations that are located under <paramref name="path"/>.
         /// </summary>
-        /// <param name="path">The parent path for which to return catalog identifiers.</param>
+        /// <param name="path">The parent path for which to return catalog registrations.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         /// <returns>The catalog identifiers task.</returns>
-        protected abstract Task<string[]>
-           GetCatalogIdsAsync(string path, CancellationToken cancellationToken);
+        protected abstract Task<CatalogRegistration[]>
+           GetCatalogRegistrationsAsync(string path, CancellationToken cancellationToken);
 
         // GetCatalogAsync:
         // It is not uncommon to have measurement data files with varying channel list over
@@ -486,10 +486,10 @@ namespace Nexus.Extensibility
             this.FileSourceProvider = await this.GetFileSourceProviderAsync(cancellationToken);
         }
 
-        Task<string[]>
-           IDataSource.GetCatalogIdsAsync(string path, CancellationToken cancellationToken)
+        Task<CatalogRegistration[]>
+           IDataSource.GetCatalogRegistrationsAsync(string path, CancellationToken cancellationToken)
         {
-            return this.GetCatalogIdsAsync(path, cancellationToken);
+            return this.GetCatalogRegistrationsAsync(path, cancellationToken);
         }
 
         Task<ResourceCatalog> 

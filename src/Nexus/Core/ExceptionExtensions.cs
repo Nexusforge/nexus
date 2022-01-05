@@ -14,7 +14,7 @@ namespace Nexus.Core
 
         private static string InternalGetFullMessage(this Exception ex)
         {
-            return ex.InnerException == null
+            return ex.InnerException is null
                  ? ex.Message
                  : ex.Message + " --> " + ex.InnerException.GetFullMessage();
         }

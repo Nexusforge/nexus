@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Nexus.Core;
+using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Models;
 using Nexus.Services;
@@ -35,16 +36,10 @@ namespace Services
                 Publish: true);
 
             var expectedCatalog = InMemory.LoadCatalog("/A/B/C");
-            var catalogContainer = new CatalogContainer("/A/B/C", default, backendSource, default, default);
-
-            var catalogContainersMap = new CatalogContainersMap()
-            {
-                [CatalogManager.CommonCatalogsKey] = new List<CatalogContainer>() { catalogContainer }
-            };
 
             var catalogState = new CatalogState(
-                catalogContainersMap,
-                CatalogCache: new CatalogCache()
+                Root: null,
+                Cache: new CatalogCache()
             );
 
             var appState = new AppState() { CatalogState = catalogState };

@@ -24,7 +24,7 @@ namespace Nexus.Controllers.V1
         private ILogger _logger;
         private IServiceProvider _serviceProvider;
         private Serilog.IDiagnosticContext _diagnosticContext;
-        private UserState _userState;
+        private AppState _appState;
         private JobService<ExportJob> _exportJobService;
 
         #endregion
@@ -32,13 +32,13 @@ namespace Nexus.Controllers.V1
         #region Constructors
 
         public JobsController(
-            UserState userState,
+            AppState appState,
             JobService<ExportJob> exportJobService,
             Serilog.IDiagnosticContext diagnosticContext,
             IServiceProvider serviceProvider,
             ILogger<JobsController> logger)
         {
-            _userState = userState;
+            _appState = appState;
             _serviceProvider = serviceProvider;
             _exportJobService = exportJobService;
             _diagnosticContext = diagnosticContext;
@@ -65,7 +65,7 @@ namespace Nexus.Controllers.V1
             parameters.Begin = parameters.Begin.ToUniversalTime();
             parameters.End = parameters.End.ToUniversalTime();
 
-            var catalogContainers = _userState.CatalogContainers.ToList();
+            var root = _appState.CatalogState.Root;
 
             // translate resource paths to representations
             CatalogItem[] catalogItems;
@@ -74,9 +74,9 @@ namespace Nexus.Controllers.V1
             {
                 catalogItems = await Task.WhenAll(parameters.ResourcePaths.Select(async resourcePath =>
                 {
-                    CatalogItem catalogItem;
+                    var catalogItem = await root.TryFindAsync(resourcePath, cancellationToken);
 
-                    if ((catalogItem = await catalogContainers.TryFindAsync(resourcePath, cancellationToken)) == null)
+                    if (catalogItem is null)
                         throw new ValidationException($"Could not find resource path {resourcePath}.");
 
                     return catalogItem;
@@ -103,7 +103,7 @@ namespace Nexus.Controllers.V1
                         {
                             var catalogContainer = catalogContainers.First(catalogContainer => catalogContainer.Id == group.Key);
 
-                            if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.CatalogMetadata, this.HttpContext.User))
+                            if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, this.HttpContext.User))
                                 throw new UnauthorizedAccessException($"The current user is not authorized to access catalog '{catalogContainer.Id}'.");
 
                             return catalogContainer;
@@ -182,7 +182,7 @@ namespace Nexus.Controllers.V1
             if (_exportJobService.TryGetJob(jobId, out var jobControl))
             {
                 if (this.User.Identity.Name == jobControl.Job.Owner ||
-                    jobControl.Job.Owner == null ||
+                    jobControl.Job.Owner is null ||
                     this.User.HasClaim(Claims.IS_ADMIN, "true"))
                 {
                     return new JobStatus(
@@ -218,7 +218,7 @@ namespace Nexus.Controllers.V1
             if (_exportJobService.TryGetJob(jobId, out var jobControl))
             {
                 if (this.User.Identity.Name == jobControl.Job.Owner || 
-                    jobControl.Job.Owner == null ||
+                    jobControl.Job.Owner is null ||
                     this.User.HasClaim(Claims.IS_ADMIN, "true"))
                 {
                     jobControl.CancellationTokenSource.Cancel();

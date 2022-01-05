@@ -1,6 +1,5 @@
 ﻿using Nexus.DataModel;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,11 +9,11 @@ namespace Nexus.Core
     internal static class CatalogContainersExtensions
     {
         public static async Task<CatalogItem> FindAsync(
-            this IEnumerable<CatalogContainer> catalogContainers, 
+            this CatalogContainer parent, 
             string resourcePath,
             CancellationToken cancellationToken)
         {
-            var catalogItem = await catalogContainers.TryFindAsync(resourcePath, cancellationToken);
+            var catalogItem = await parent.TryFindAsync(resourcePath, cancellationToken);
 
             if (catalogItem is null)
                 throw new Exception($"The resource path {resourcePath} could not be found.");
@@ -23,15 +22,15 @@ namespace Nexus.Core
         }
 
         public static async Task<CatalogItem?> TryFindAsync(
-            this IEnumerable<CatalogContainer> catalogContainers,
+            this CatalogContainer parent,
             string resourcePath,
             CancellationToken cancellationToken)
         {
             var pathParts = resourcePath.Split('/');
             var catalogId = string.Join('/', pathParts[..^2]);
-            var catalogContainer = catalogContainers.FirstOrDefault(container => container.Id == catalogId);
+            var catalogContainer = await parent.TryFindCatalogContainerAsync(catalogId, cancellationToken);
 
-            if (catalogContainer == null)
+            if (catalogContainer is null)
                 return default;
 
             var catalogInfo = await catalogContainer.GetCatalogInfoAsync(cancellationToken);
@@ -46,6 +45,26 @@ namespace Nexus.Core
             {
                 return default;
             }
+        }
+
+        public static async Task<CatalogContainer?> TryFindCatalogContainerAsync(
+            this CatalogContainer parent,
+            string catalogId,
+            CancellationToken cancellationToken)
+        {
+            var childCatalogContainers = await parent.GetChildCatalogContainersAsync(cancellationToken);
+
+            var catalogContainer = childCatalogContainers
+                .FirstOrDefault(catalogContainer => catalogId.StartsWith(catalogContainer.Id));
+
+            if (catalogContainer is null)
+                return default;
+
+            else if (catalogContainer.Id == catalogId)
+                return catalogContainer;
+
+            else
+                return await catalogContainer.TryFindCatalogContainerAsync(catalogId, cancellationToken);
         }
     }
 }

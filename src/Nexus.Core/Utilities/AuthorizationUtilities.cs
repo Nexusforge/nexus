@@ -12,7 +12,7 @@ namespace Nexus.Utilities
     {
         public static bool IsCatalogAccessible(string catalogId, CatalogMetadata catalogMetadata, ClaimsPrincipal principal)
         {
-            if (principal == null)
+            if (principal is null)
                 return false;
 
             var identity = principal.Identity;
@@ -40,7 +40,7 @@ namespace Nexus.Utilities
 
         public static bool IsCatalogEditable(ClaimsPrincipal principal, string catalogId)
         {
-            if (principal == null)
+            if (principal is null)
                 return false;
 
             var identity = principal.Identity;

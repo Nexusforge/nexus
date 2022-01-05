@@ -97,7 +97,7 @@ namespace Nexus.Shared
 				var claim = claims.FirstOrDefault(claim => claim.Type == claimType);
 				var projectId = this.UserState.CatalogContainer.Id;
 
-				if (claim == null)
+				if (claim is null)
 				{
 					var newValue = projectId;
 					claim = new Claim(claimType, newValue);

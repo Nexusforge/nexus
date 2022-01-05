@@ -14,7 +14,7 @@ namespace TestExtensionProject
             throw new NotImplementedException(nameof(SetContextAsync));
         }
 
-        public Task<string[]> GetCatalogIdsAsync(string path, CancellationToken cancellationToken)
+        public Task<CatalogRegistration[]> GetCatalogRegistrationsAsync(string path, CancellationToken cancellationToken)
         {
             throw new NotImplementedException(nameof(GetCatalogAsync));
         }

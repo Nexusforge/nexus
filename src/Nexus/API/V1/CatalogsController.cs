@@ -24,7 +24,7 @@ namespace Nexus.Controllers.V1
     {
         #region Fields
 
-        private UserState _userState;
+        private AppState _appState;
         private IDatabaseManager _databaseManager;
         private IDataControllerService _dataControllerService;
 
@@ -33,11 +33,11 @@ namespace Nexus.Controllers.V1
         #region Constructors
 
         public CatalogsController(
-            UserState userState,
+            AppState appState,
             IDatabaseManager databaseManager,
             IDataControllerService dataControllerService)
         {
-            _userState = userState;
+            _appState = appState;
             _databaseManager = databaseManager;
             _dataControllerService = dataControllerService;
         }
@@ -53,10 +53,10 @@ namespace Nexus.Controllers.V1
         public ActionResult<string[]>
             GetCatalogIds()
         {
-            var catalogContainers = _userState.CatalogContainers.ToList();
+            var root = _appState.CatalogState.Root;
 
             var response = catalogContainers
-                .Where(catalogContainer => AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.CatalogMetadata, this.User))
+                .Where(catalogContainer => AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, this.User))
                 .Select(catalogContainer => catalogContainer.Id)
                 .ToArray();
 
@@ -72,7 +72,6 @@ namespace Nexus.Controllers.V1
         public async Task<ActionResult<ResourceCatalog>>
             GetCatalogAsync(
                 string catalogId,
-                [FromQuery] Dictionary<string, string> configuration,
                 CancellationToken cancellationToken)
         {
             catalogId = WebUtility.UrlDecode(catalogId);
@@ -81,7 +80,7 @@ namespace Nexus.Controllers.V1
             {
                 var catalogInfo = await catalogContainer.GetCatalogInfoAsync(cancellationToken);
                 return this.CreateCatalogResponse(catalogInfo.Catalog);
-            });
+            }, cancellationToken);
         }
 
         /// <summary>
@@ -100,7 +99,7 @@ namespace Nexus.Controllers.V1
             return await this.ProcessCatalogIdAsync<TimeRangeResponse>(catalogId, async catalogContainer =>
             {
                 return await this.CreateTimeRangeResponseAsync(catalogContainer, cancellationToken);
-            });
+            }, cancellationToken);
         }
 
         /// <summary>
@@ -123,7 +122,7 @@ namespace Nexus.Controllers.V1
             return await this.ProcessCatalogIdAsync<AvailabilityResponse>(catalogId, async catalog =>
             {
                 return await this.CreateAvailabilityResponseAsync(catalog, begin, end, cancellationToken);
-            });
+            }, cancellationToken);
         }
 
         /// <summary>
@@ -134,7 +133,7 @@ namespace Nexus.Controllers.V1
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpGet("{catalogId}/attachments/{attachmentId}/content")]
         public async Task<ActionResult>
-            GetCatalogAvailabilityAsync(
+            DownloadAttachementAsync(
                 string catalogId,
                 string attachmentId,
                 CancellationToken cancellationToken)
@@ -155,7 +154,7 @@ namespace Nexus.Controllers.V1
                     return Task.FromResult((ActionResult)
                         this.NotFound($"Could not find attachment {attachmentId} for catalog {catalogId}."));
                 }
-            });
+            }, cancellationToken);
         }
 
         /// <summary>
@@ -182,7 +181,7 @@ namespace Nexus.Controllers.V1
                     .ToArray();
 
                 return resources;
-            });
+            }, cancellationToken);
         }
 
         /// <summary>
@@ -208,15 +207,15 @@ namespace Nexus.Controllers.V1
                 var resource = catalogInfo.Catalog.Resources.FirstOrDefault(
                     current => current.Id.ToString() == resourceId);
 
-                if (resource == null)
+                if (resource is null)
                     resource = catalogInfo.Catalog.Resources.FirstOrDefault(
                         current => current.Id == resourceId);
 
-                if (resource == null)
+                if (resource is null)
                     return this.NotFound($"{catalogId}/{resourceId}");
 
                 return this.CreateResourceResponse(resource);
-            });
+            }, cancellationToken);
         }
 
         /// <summary>
@@ -242,11 +241,11 @@ namespace Nexus.Controllers.V1
                 var resource = catalogInfo.Catalog.Resources.FirstOrDefault(
                     current => current.Id.ToString() == resourceId);
 
-                if (resource == null)
+                if (resource is null)
                     resource = catalogInfo.Catalog.Resources.FirstOrDefault(
                         current => current.Id == resourceId);
 
-                if (resource == null)
+                if (resource is null)
                     return this.NotFound($"{catalogId}/{resourceId}");
 
                 var response = resource.Representations.Select(representation
@@ -254,7 +253,7 @@ namespace Nexus.Controllers.V1
                     .ToArray();
 
                 return response;
-            });
+            }, cancellationToken);
         }
 
         /// <summary>
@@ -284,21 +283,21 @@ namespace Nexus.Controllers.V1
                 var resource = catalogInfo.Catalog.Resources.FirstOrDefault(
                     current => current.Id.ToString() == resourceId);
 
-                if (resource == null)
+                if (resource is null)
                     resource = catalogInfo.Catalog.Resources.FirstOrDefault(
                         current => current.Id == resourceId);
 
-                if (resource == null)
+                if (resource is null)
                     return this.NotFound($"{catalogId}/{resourceId}");
 
                 var representation = resource.Representations.FirstOrDefault(
                     current => current.Id == representationId);
 
-                if (representation == null)
+                if (representation is null)
                     return this.NotFound($"{catalogId}/{resourceId}/{representation}");
 
                 return this.CreateRepresentationResponse(representation);
-            });
+            }, cancellationToken);
         }
 
         private ResourceCatalog CreateCatalogResponse(ResourceCatalog catalog)
@@ -343,21 +342,23 @@ namespace Nexus.Controllers.V1
 
         private Task<ActionResult<T>> ProcessCatalogIdAsync<T>(
             string catalogId,
-            Func<CatalogContainer, Task<ActionResult<T>>> action)
+            Func<CatalogContainer, Task<ActionResult<T>>> action,
+            CancellationToken cancellationToken)
         {
-            return this.ProcessCatalogIdAsync(catalogId, action);
+            return this.ProcessCatalogIdAsync(catalogId, action, cancellationToken);
         }
 
         private async Task<ActionResult> ProcessCatalogIdAsync(
             string catalogId,
-            Func<CatalogContainer, Task<ActionResult>> action)
+            Func<CatalogContainer, Task<ActionResult>> action,
+            CancellationToken cancellationToken)
         {
-            var catalogContainer = _userState.CatalogContainers
-               .FirstOrDefault(container => container.Id == catalogId);
+            var root = _appState.CatalogState.Root;
+            var catalogContainer = await root.TryFindCatalogContainerAsync(catalogId, cancellationToken);
 
             if (catalogContainer is not null)
             {
-                if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.CatalogMetadata, this.User))
+                if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, this.User))
                     return this.Unauthorized($"The current user is not authorized to access the catalog '{catalogId}'.");
 
                 return await action.Invoke(catalogContainer);

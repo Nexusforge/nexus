@@ -13,7 +13,7 @@ namespace Nexus.Core
             var fullQualitifedName = addRootNamespace ? $"{rootNamespace}.{resourceName}" : resourceName;
             var stream = assembly.GetManifestResourceStream(fullQualitifedName);
 
-            if (stream == null)
+            if (stream is null)
                 throw new InvalidOperationException($"Resource '{fullQualitifedName}' not found in {assembly.FullName}.");
 
             return stream;
@@ -36,7 +36,7 @@ namespace Nexus.Core
 
         public static byte[] GetOrCreateResource(ref byte[]? resource, string name)
         {
-            if (resource == null)
+            if (resource is null)
                 resource = GetResourceBlob(name);
 
             return resource;

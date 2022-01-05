@@ -7,9 +7,7 @@ using Nexus.Extensibility;
 using Nexus.Services;
 using Nexus.Utilities;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,7 +21,7 @@ namespace Nexus.Controllers.V1
     {
         #region Fields
 
-        private UserState _userState;
+        private AppState _appState;
         private IDataControllerService _dataControllerService;
         private ILoggerFactory _loggerFactory;
 
@@ -32,11 +30,11 @@ namespace Nexus.Controllers.V1
         #region Constructors
 
         public DataController(
-            UserState userState,
+            AppState appState,
             IDataControllerService dataControllerService,
             ILoggerFactory loggerFactory)
         {
-            _userState = userState;
+            _appState = appState;
             _dataControllerService = dataControllerService;
             _loggerFactory = loggerFactory;
         }
@@ -61,50 +59,42 @@ namespace Nexus.Controllers.V1
             [BindRequired] string representationId,
             [BindRequired] DateTime begin,
             [BindRequired] DateTime end,
-            Dictionary<string, string> configuration,
             CancellationToken cancellationToken)
         {
             catalogId = WebUtility.UrlDecode(catalogId);
             resourceId = WebUtility.UrlDecode(resourceId);
             representationId = WebUtility.UrlDecode(representationId);
 
-            var remoteIpAddress = this.HttpContext.Connection.RemoteIpAddress;
-
-            // log
-            string userName;
-
-            if (this.User.Identity.IsAuthenticated)
-                userName = this.User.Identity.Name;
-            else
-                userName = "anonymous";
-
             begin = DateTime.SpecifyKind(begin, DateTimeKind.Utc);
             end = DateTime.SpecifyKind(end, DateTimeKind.Utc);
 
             try
             {
-                var catalogContainers = _userState.CatalogContainers.ToList();
+                // catalog container
+                var root = _appState.CatalogState.Root;
+
+                var catalogContainer = await root.TryFindCatalogContainerAsync(catalogId, cancellationToken);
+
+                if (catalogContainer is null)
+                    return this.NotFound($"Could not find catalog {catalogId}.");
 
                 // representation
                 var resourcePath = $"{catalogId}/{resourceId}/{representationId}";
 
-                CatalogItem catalogItem;
+                var catalogItem = await catalogContainer.TryFindAsync(resourcePath, cancellationToken);
 
-                if ((catalogItem = await catalogContainers.TryFindAsync(resourcePath, cancellationToken)) == null)
+                if (catalogItem is null)
                     return this.NotFound($"Could not find resource path {resourcePath}.");
 
                 var catalog = catalogItem.Catalog;
 
-#warning better would be to get container directly
-                var container = catalogContainers.First(container => container.Id == catalog.Id);
-
                 // security check
-                if (!AuthorizationUtilities.IsCatalogAccessible(container.Id, container.CatalogMetadata, this.User))
+                if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, this.User))
                     return this.Unauthorized($"The current user is not authorized to access the catalog {catalog.Id}.");
 
                 // controller
                 using var controller = await _dataControllerService.GetDataSourceControllerAsync(
-                    container.BackendSource,
+                    catalogContainer.BackendSource,
                     cancellationToken);
 
                 // read data

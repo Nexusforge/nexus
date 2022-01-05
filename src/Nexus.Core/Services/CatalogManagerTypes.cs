@@ -5,8 +5,8 @@ using System;
 namespace Nexus.Services
 {
     internal record CatalogState(
-        CatalogContainersMap CatalogContainersMap,
-        CatalogCache CatalogCache);
+        CatalogContainer Root,
+        CatalogCache Cache);
 
     internal record CatalogInfo(DateTime Begin, DateTime End, ResourceCatalog Catalog);
 }

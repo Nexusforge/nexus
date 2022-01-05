@@ -60,16 +60,34 @@ namespace Nexus.Extensibility
             await this.DataSource.SetContextAsync(context, cancellationToken);
         }
 
-        public async Task<string[]>
-           GetCatalogIdsAsync(string path, CancellationToken cancellationToken)
+        public async Task<CatalogRegistration[]>
+           GetCatalogRegistrationsAsync(string path, CancellationToken cancellationToken)
         {
-            var catalogIds = await this.DataSource
-                .GetCatalogIdsAsync(path, cancellationToken);
+            var catalogRegistrations = await this.DataSource
+                .GetCatalogRegistrationsAsync(path, cancellationToken);
 
-            if (catalogIds.Any(catalogId => !catalogId.StartsWith(path)))
+            for (int i = 0; i < catalogRegistrations.Length; i++)
+            {
+                // absolute
+                if (catalogRegistrations[i].Path.StartsWith('/'))
+                {
+                    if (!catalogRegistrations[i].Path.StartsWith(path))
+                        throw new Exception($"The catalog path {catalogRegistrations[i].Path} is not a sub path of {path}.");
+                }
+                // relative
+                else
+                {
+                    catalogRegistrations[i] = catalogRegistrations[i] with
+                    { 
+                        Path = path + catalogRegistrations[i].Path 
+                    };
+                }
+            }
+
+            if (catalogRegistrations.Any(catalogRegistration => !catalogRegistration.Path.StartsWith(path)))
                 throw new Exception($"The returned catalog identifier is not a child of {path}.");
 
-            return catalogIds;
+            return catalogRegistrations;
         }
 
         public async Task<ResourceCatalog>

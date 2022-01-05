@@ -19,7 +19,7 @@ namespace Nexus.Core
             if (!Directory.Exists(_folderPath))
                 Directory.CreateDirectory(_folderPath);
 
-            if (_physicalFileProvider == null || _physicalFileProvider.Root != _folderPath)
+            if (_physicalFileProvider is null || _physicalFileProvider.Root != _folderPath)
                 _physicalFileProvider = new PhysicalFileProvider(_folderPath);
 
             return _physicalFileProvider;

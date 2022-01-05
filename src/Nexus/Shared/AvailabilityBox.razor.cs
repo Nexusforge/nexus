@@ -179,7 +179,7 @@ namespace Nexus.Shared
                 // security check
                 var catalogContainer = this.UserState.CatalogContainer;
 
-                if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.CatalogMetadata, this.UserIdService.User))
+                if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, this.UserIdService.User))
                     throw new UnauthorizedAccessException($"The current user is not authorized to access catalog '{catalogContainer.Id}'.");
 
                 var backendSource = this.UserState.CatalogContainers

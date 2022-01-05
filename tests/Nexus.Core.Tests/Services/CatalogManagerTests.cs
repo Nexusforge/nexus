@@ -23,21 +23,15 @@ namespace Services
         delegate bool GobbleReturns(string catalogId, out string catalogMetadata);
 
         [Fact]
-        public async Task CanCreateCatalogState()
+        public async Task CanCreateCatalogHierarchy()
         {
             // Test case:
             // User A, admin,
-            //      /  => /A, /A/B (should be ignored)
+            //      /   => /A, /B/A
+            //      /A/ => /A/B, /A/B/C (should be ignored), /A/C/A
             //
             // User B, no admin,
-            //      /  => /A (should be ignored), /B, /C/A
-            //
-            // Catalog "/A"     of User A should become part of the common catalog containers list
-            // Catalog "/A/B"   of User A should be ignored
-            // Catalog "A"      of user B should be ignored
-            // Catalog "/B"     of User B should become part of the common catalog containers list
-            // Catalog "/B2"    of User B should become part of the user catalog containers list
-            // Catalog "/C/A"   of User B should become part of the user catalog containers list
+            //      /  => /A (should be ignored), /B/B, /B/B2, /C/A
 
             /* dataControllerService */
             var dataControllerService = Mock.Of<IDataControllerService>();
@@ -49,17 +43,17 @@ namespace Services
                     var dataSourceController = Mock.Of<IDataSourceController>();
 
                     Mock.Get(dataSourceController)
-                        .Setup(s => s.GetCatalogIdsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                        .Setup(s => s.GetCatalogRegistrationsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                         .Returns<string, CancellationToken>((path, cancellationToken) =>
                         {
                             var type = backendSource.Type;
 
                             return (type, path) switch
                             {
-                                ("A", "/") => Task.FromResult(new[] { "/A", "/A/B" }),
-                                ("A", "/A") => Task.FromResult(new[] { "/A/C" }),
-                                ("B", "/") => Task.FromResult(new[] { "/A", "/B", "/B2" }),
-                                ("C", "/") => Task.FromResult(new[] { "/C/A" }),
+                                ("A", "/") => Task.FromResult(new CatalogRegistration[] { new CatalogRegistration("/A"), new CatalogRegistration("/B/A") }),
+                                ("A", "/A/") => Task.FromResult(new CatalogRegistration[] { new CatalogRegistration("/A/B"), new CatalogRegistration("/A/B/C"), new CatalogRegistration("/A/C/A") }),
+                                ("B", "/") => Task.FromResult(new CatalogRegistration[] { new CatalogRegistration("/A"), new CatalogRegistration("/B/B"), new CatalogRegistration("/B/B2") }),
+                                ("C", "/") => Task.FromResult(new CatalogRegistration[] { new CatalogRegistration("/C/A") }),
                                 _ => throw new Exception("Unsupported combination.")
                             };
                         });
@@ -112,7 +106,6 @@ namespace Services
             var claimsIdentityB = new ClaimsIdentity(
                new Claim[] {
                     new Claim(ClaimTypes.Name, usernameB),
-                    new Claim(Claims.CAN_EDIT_CATALOG, "^/B$")
                },
                "Fake authentication type");
 
@@ -142,113 +135,43 @@ namespace Services
                 NullLogger<CatalogManager>.Instance);
 
             // act
-            var state = await catalogManager.CreateCatalogStateAsync(CancellationToken.None);
+            var root = CatalogContainer.CreateRoot(catalogManager);
+            var rootCatalogContainers = (await root.GetChildCatalogContainersAsync(CancellationToken.None)).ToArray();
+            var ACatalogContainers = (await rootCatalogContainers[0].GetChildCatalogContainersAsync(CancellationToken.None)).ToArray();
 
-            // assert
-            Assert.Equal(2, state.CatalogContainersMap[CatalogManager.CommonCatalogsKey].Count);
-            Assert.Equal(2, state.CatalogContainersMap["UserB"].Count);
-
-            Assert.Contains(
-                state.CatalogContainersMap[CatalogManager.CommonCatalogsKey],
-                container => container.Id == "/A" && container.BackendSource == backendSourceA);
+            // assert '/'
+            Assert.Equal(5, rootCatalogContainers.Length);
 
             Assert.Contains(
-                state.CatalogContainersMap[CatalogManager.CommonCatalogsKey],
-                container => container.Id == "/B" && container.BackendSource == backendSourceB);
+                rootCatalogContainers,
+                container => container.Id == "/A" && container.BackendSource == backendSourceA && container.Owner == userA);
 
             Assert.Contains(
-                state.CatalogContainersMap["UserB"],
-                container => container.Id == "/B2" && container.BackendSource == backendSourceB);
+                rootCatalogContainers,
+                container => container.Id == "/B/A" && container.BackendSource == backendSourceA && container.Owner == userA);
 
             Assert.Contains(
-                state.CatalogContainersMap["UserB"],
-                container => container.Id == "/C/A" && container.BackendSource == backendSourceC);
-        }
-
-        [Fact]
-        public async Task CanAttachChildCatalogs()
-        {
-            // Arrange
-
-            /* data controller service */
-            var dataControllerService = Mock.Of<IDataControllerService>();
-
-            Mock.Get(dataControllerService)
-                .Setup(s => s.GetDataSourceControllerAsync(It.IsAny<BackendSource>(), It.IsAny<CancellationToken>(), It.IsAny<CatalogCache>()))
-                .Returns<BackendSource, CancellationToken, CatalogCache>((backendSource, cancellationToken, catalogCache) =>
-                {
-                    var dataSourceController = Mock.Of<IDataSourceController>();
-
-                    Mock.Get(dataSourceController)
-                        .Setup(s => s.GetCatalogIdsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                        .Returns<string, CancellationToken>((path, cancellationToken) =>
-                        {
-                            return Task.FromResult(new[] { "/A/B", "/A/C", "/A/B/C" });
-                        });
-
-                    return Task.FromResult(dataSourceController);
-                });
-
-            /* database manager */
-            var databaseManager = Mock.Of<IDatabaseManager>();
-
-            Mock.Get(databaseManager)
-               .Setup(databaseManager => databaseManager.TryReadCatalogMetadata(
-                   It.IsAny<string>(),
-                   out It.Ref<string>.IsAny))
-               .Returns(new GobbleReturns((string catalogId, out string catalogMetadataString) =>
-               {
-                   catalogMetadataString = "{}";
-                   return true;
-               }));
-
-            /* catalog manager */
-            var catalogManager = new CatalogManager(
-                dataControllerService,
-                databaseManager,
-                default,
-                Options.Create(new SecurityOptions()),
-                NullLogger<CatalogManager>.Instance);
-
-            /* user */
-            var username = "User";
-
-            var claimsIdentity = new ClaimsIdentity(
-               new Claim[] {
-                    new Claim(ClaimTypes.Name, username),
-               },
-               "Fake authentication type");
-
-            var user = new ClaimsPrincipal(claimsIdentity);
-
-            /* backend source */
-            var backendSource = new BackendSource(default, default, default, default);
-
-            /* catalog containers map */
-            var parent = new CatalogContainer("/A", user, backendSource, default, catalogManager);
-
-            var catalogContainersMap = new CatalogContainersMap()
-            {
-                ["User"] = new List<CatalogContainer>() { parent }
-            };
-
-            // Act
-            await catalogManager.AttachChildCatalogIdsAsync(parent, catalogContainersMap, CancellationToken.None);
-
-            // Assert
-            Assert.Equal(3, catalogContainersMap[username].Count);
+                rootCatalogContainers,
+                container => container.Id == "/B/B" && container.BackendSource == backendSourceB && container.Owner == userB);
 
             Assert.Contains(
-                catalogContainersMap[username],
-                container => container.Id == "/A");
+                rootCatalogContainers,
+                container => container.Id == "/B/B2" && container.BackendSource == backendSourceB && container.Owner == userB);
 
             Assert.Contains(
-                catalogContainersMap[username],
-                container => container.Id == "/A/B");
+                rootCatalogContainers,
+                container => container.Id == "/C/A" && container.BackendSource == backendSourceC && container.Owner == userB);
+
+            // assert 'A'
+            Assert.Equal(2, ACatalogContainers.Length);
 
             Assert.Contains(
-                catalogContainersMap[username],
-                container => container.Id == "/A/C");
+                ACatalogContainers,
+                container => container.Id == "/A/B" && container.BackendSource == backendSourceA && container.Owner == userA);
+
+            Assert.Contains(
+                ACatalogContainers,
+                container => container.Id == "/A/C/A" && container.BackendSource == backendSourceA && container.Owner == userA);
         }
 
         [Fact]
@@ -306,11 +229,8 @@ namespace Services
                 Configuration: default,
                 Publish: true);
 
-            /* catalog manager */
-            var catalogManager = new CatalogManager(dataControllerService, default, default, Options.Create(new SecurityOptions()), default);
-
             /* catalog container */
-            var catalogContainer = new CatalogContainer("/A", default, backendSource, catalogMetadata, catalogManager);
+            var catalogContainer = new CatalogContainer(new CatalogRegistration("/A"), default, backendSource, catalogMetadata, default, dataControllerService);
 
             // Act
             var catalogInfo = await catalogContainer.GetCatalogInfoAsync(CancellationToken.None);

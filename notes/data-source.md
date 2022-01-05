@@ -10,8 +10,8 @@ The interface is defined as follows:
 /* called right after instantiation to provide the source URL, parameters and a logger instance */
 Task SetContextAsync(...);
 
-/* called whenever Nexus needs the catalog identifiers */
-Task<string[]> GetCatalogIdsAsync(...);
+/* called whenever Nexus needs the catalog registrations */
+Task<string[]> GetCatalogRegistrationsAsync(...);
 
 /* called the first time the catalog is accessed */
 Task<ResourceCatalog> GetCatalogAsync(...);

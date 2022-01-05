@@ -76,7 +76,7 @@ namespace Nexus.Core
             _appState.PropertyChanged += this.OnAppStatePropertyChanged;
 
             if (_appState.CatalogState is not null)
-                this.InitializeAsync(_appState.CatalogState.CatalogContainersMap, CancellationToken.None).Wait();
+                this.InitializeAsync(CancellationToken.None).Wait();
         }
 
         #endregion
@@ -95,10 +95,10 @@ namespace Nexus.Core
 #warning Make this more efficient. Maybe by tracking changes.
                 if (_isEditEnabled && !value)
                 {
-                    foreach (var catalogContainer in this.CatalogContainers)
-                    {
-                        //_databaseManager.SaveCatalogMeta(catalogContainer.CatalogMetadata);
-                    }
+                    //foreach (var catalogContainer in this.CatalogContainers)
+                    //{
+                    //    //_databaseManager.SaveCatalogMeta(catalogContainer.CatalogMetadata);
+                    //}
                 }
 
                 this.SetProperty(ref _isEditEnabled, value);
@@ -251,22 +251,6 @@ namespace Nexus.Core
         #endregion
 
         #region Properties - Resource Selection
-
-        public IEnumerable<CatalogContainer> CatalogContainers
-        {
-            get
-            {
-                var commonCatalogContainers = _appState.CatalogState.CatalogContainersMap
-                .GetValueOrDefault(CatalogManager.CommonCatalogsKey, new List<CatalogContainer>());
-
-                var userCatalogContainers = _userIdService.User.Identity.IsAuthenticated
-                    ? _appState.CatalogState.CatalogContainersMap
-                        .GetValueOrDefault(_userIdService.User.Identity.Name, new List<CatalogContainer>())
-                    : Enumerable.Empty<CatalogContainer>();
-
-                return commonCatalogContainers.Concat(userCatalogContainers);
-            }
-        }
 
         public CatalogContainer CatalogContainer
         {
@@ -463,7 +447,7 @@ namespace Nexus.Core
                                     .First(catalogContainer => catalogContainer.Id == group.Key);
 
                                 // authorize
-                                if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.CatalogMetadata, _userIdService.User))
+                                if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, _userIdService.User))
                                     throw new UnauthorizedAccessException($"The current user is not authorized to access catalog {catalogContainer.Id}.");
 
                                 return catalogContainer;
@@ -633,7 +617,7 @@ namespace Nexus.Core
             });
         }
 
-        private async Task InitializeAsync(Dictionary<string, List<CatalogContainer>> catalogContainersMap, CancellationToken cancellationToken)
+        private async Task InitializeAsync(CancellationToken cancellationToken)
         {
             this.CatalogContainersInfo = this.SplitCampaignContainers(this.CatalogContainers);
 
@@ -762,13 +746,13 @@ namespace Nexus.Core
 
             // all accessible catalogs are "accessible"
             var accessible = catalogContainers
-                .Where(catalogContainer => AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.CatalogMetadata, user))
+                .Where(catalogContainer => AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, user))
                 .OrderBy(catalogContainer => catalogContainer.Id).ToList();
 
             // all other catalogs except hidden ones are "restricted"
             var restricted = catalogContainers.Where(catalogContainer =>
             {
-                var isCatalogVisible = AuthorizationUtilities.IsCatalogVisible(user, catalogContainer.CatalogMetadata);
+                var isCatalogVisible = AuthorizationUtilities.IsCatalogVisible(user, catalogContainer.Metadata);
 
                 return !accessible.Contains(catalogContainer) && isCatalogVisible;
             }).OrderBy(catalogContainer => catalogContainer.Id).ToList();

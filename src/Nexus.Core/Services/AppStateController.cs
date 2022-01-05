@@ -16,6 +16,7 @@ namespace Nexus.Services
 
         private IExtensionHive _extensionHive;
         private ICatalogManager _catalogManager;
+        private IDataControllerService _dataControllerService;
         private ILogger<AppStateController> _logger;
         private AppState _appState;
         private SemaphoreSlim _reloadCatalogsSemaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
@@ -65,12 +66,15 @@ namespace Nexus.Services
             {
                 try
                 {
-                    /* await actual update tasks */
+                    /* create fresh app state */
+                    _appState.CatalogState = new CatalogState(
+                        Root: CatalogContainer.CreateRoot(_catalogManager),
+                        Cache: new CatalogCache()
+                    );
+
+                    /* load packages */
                     _logger.LogInformation("Load packages");
                     await _extensionHive.LoadPackagesAsync(_appState.Project.PackageReferences, cancellationToken);
-
-                    _logger.LogInformation("Load catalogs");
-                    _appState.CatalogState = await _catalogManager.CreateCatalogStateAsync(cancellationToken);
                 }
                 finally
                 {
