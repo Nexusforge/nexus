@@ -167,64 +167,66 @@ namespace Nexus.Shared
 
         private async Task UpdateChartAsync()
         {
-            var totalDays = (int)(this.UserState.DateTimeEnd.Date - this.UserState.DateTimeBegin.Date).TotalDays;
+#warning Reenable
 
-            if (totalDays < 0)
-                return;
+            //var totalDays = (int)(this.UserState.DateTimeEnd.Date - this.UserState.DateTimeBegin.Date).TotalDays;
 
-            var axis = (BarTimeAxis)((BarConfig)_barChart.Config).Options.Scales.XAxes[0];
+            //if (totalDays < 0)
+            //    return;
 
-            try
-            {
-                // security check
-                var catalogContainer = this.UserState.CatalogContainer;
+            //var axis = (BarTimeAxis)((BarConfig)_barChart.Config).Options.Scales.XAxes[0];
 
-                if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, this.UserIdService.User))
-                    throw new UnauthorizedAccessException($"The current user is not authorized to access catalog '{catalogContainer.Id}'.");
+            //try
+            //{
+            //    // security check
+            //    var catalogContainer = this.UserState.CatalogContainer;
 
-                var backendSource = this.UserState.CatalogContainers
-                    .Single(container => container.Id == catalogContainer.Id)
-                    .BackendSource;
+            //    if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, this.UserIdService.User))
+            //        throw new UnauthorizedAccessException($"The current user is not authorized to access catalog '{catalogContainer.Id}'.");
 
-                using var controller = await this.DataControllerService.GetDataSourceControllerAsync(backendSource, CancellationToken.None);
-                var availability = await controller.GetAvailabilityAsync(
-                    catalogContainer.Id, this.UserState.DateTimeBegin, this.UserState.DateTimeEnd, CancellationToken.None);
+            //    var backendSource = this.UserState.CatalogContainers
+            //        .Single(container => container.Id == catalogContainer.Id)
+            //        .BackendSource;
 
-                this.Config.Data.Datasets.Clear();
+            //    using var controller = await this.DataControllerService.GetDataSourceControllerAsync(backendSource, CancellationToken.None);
+            //    var availability = await controller.GetAvailabilityAsync(
+            //        catalogContainer.Id, this.UserState.DateTimeBegin, this.UserState.DateTimeEnd, CancellationToken.None);
 
-                var dataset = new BarDataset<TimePoint>
-                {
-                    BackgroundColor = _backgroundColors[0],
-                    BorderColor = _borderColors[0],
-                    BorderWidth = 2
-                };
+            //    this.Config.Data.Datasets.Clear();
 
-                this.Config.Data.Datasets.Add(dataset);
+            //    var dataset = new BarDataset<TimePoint>
+            //    {
+            //        BackgroundColor = _backgroundColors[0],
+            //        BorderColor = _borderColors[0],
+            //        BorderWidth = 2
+            //    };
 
-                axis.Time.Unit = TimeMeasurement.Day;
+            //    this.Config.Data.Datasets.Add(dataset);
 
-                dataset.AddRange(availability.Data
-                    .Select((entry, i) =>
-                    {
-                        return new TimePoint(entry.Key, entry.Value * 100);
-                    })
-                );
+            //    axis.Time.Unit = TimeMeasurement.Day;
 
-                await _barChart.Update();
-            }
-            catch (TaskCanceledException)
-            {
-                // prevent that the whole app crashes in the followig case:
-                // - Nexus calculates aggregations and locks current file
-                // GUI wants to load data from that locked file and times out
-                // TaskCanceledException is thrown: app crashes.
-                this.UserState.ClientState = ClientState.Normal;
-            }
-            catch (Exception ex)
-            {
-                this.UserState.Logger.LogError(ex, "Load availability data failed");
-                this.ToasterService.ShowError(message: "Unable to load availability data", icon: MatIconNames.Error_outline);
-            }
+            //    dataset.AddRange(availability.Data
+            //        .Select((entry, i) =>
+            //        {
+            //            return new TimePoint(entry.Key, entry.Value * 100);
+            //        })
+            //    );
+
+            //    await _barChart.Update();
+            //}
+            //catch (TaskCanceledException)
+            //{
+            //    // prevent that the whole app crashes in the followig case:
+            //    // - Nexus calculates aggregations and locks current file
+            //    // GUI wants to load data from that locked file and times out
+            //    // TaskCanceledException is thrown: app crashes.
+            //    this.UserState.ClientState = ClientState.Normal;
+            //}
+            //catch (Exception ex)
+            //{
+            //    this.UserState.Logger.LogError(ex, "Load availability data failed");
+            //    this.ToasterService.ShowError(message: "Unable to load availability data", icon: MatIconNames.Error_outline);
+            //}
         }
 
         #endregion

@@ -53,14 +53,16 @@ namespace Nexus.Controllers.V1
         public ActionResult<string[]>
             GetCatalogIds()
         {
-            var root = _appState.CatalogState.Root;
+            throw new NotImplementedException();
 
-            var response = catalogContainers
-                .Where(catalogContainer => AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, this.User))
-                .Select(catalogContainer => catalogContainer.Id)
-                .ToArray();
+            //var root = _appState.CatalogState.Root;
 
-            return response;
+            //var response = catalogContainers
+            //    .Where(catalogContainer => AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, this.User))
+            //    .Select(catalogContainer => catalogContainer.Id)
+            //    .ToArray();
+
+            //return response;
         }
 
         /// <summary>

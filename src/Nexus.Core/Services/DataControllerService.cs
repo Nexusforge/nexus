@@ -10,6 +10,18 @@ using System.Threading.Tasks;
 
 namespace Nexus.Services
 {
+    internal interface IDataControllerService
+    {
+        Task<IDataSourceController> GetDataSourceControllerAsync(
+            BackendSource backendSource,
+            CancellationToken cancellationToken);
+
+        Task<IDataWriterController> GetDataWriterControllerAsync(
+            Uri resourceLocator,
+            ExportParameters exportParameters,
+            CancellationToken cancellationToken);
+    }
+
     internal class DataControllerService : IDataControllerService
     {
         private AppState _appState;
@@ -31,18 +43,14 @@ namespace Nexus.Services
 
         public async Task<IDataSourceController> GetDataSourceControllerAsync(
             BackendSource backendSource,
-            CancellationToken cancellationToken, 
-            CatalogCache? catalogCache = default)
+            CancellationToken cancellationToken)
         {
             var logger1 = _loggerFactory.CreateLogger<DataSourceController>();
             var logger2 = _loggerFactory.CreateLogger($"{backendSource.Type} - {backendSource.ResourceLocator}");
             var dataSource = _extensionHive.GetInstance<IDataSource>(backendSource.Type);
             var controller = new DataSourceController(dataSource, backendSource, logger1);
 
-            if (catalogCache is null)
-                catalogCache = _appState.CatalogState.Cache;
-
-            var actualCatalogCache = catalogCache.GetOrAdd(
+            var actualCatalogCache = _appState.CatalogState.Cache.GetOrAdd(
                 backendSource,
                 backendSource => new ConcurrentDictionary<string, ResourceCatalog>());
 

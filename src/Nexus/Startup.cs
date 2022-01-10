@@ -32,12 +32,6 @@ namespace Nexus
 {
     internal class Startup
     {
-        #region Properties
-
-        public static SymmetricSecurityKey SecurityKey { get; } = new SymmetricSecurityKey(Guid.NewGuid().ToByteArray());
-
-        #endregion
-
         #region Methods
 
         public Startup(IConfiguration configuration)

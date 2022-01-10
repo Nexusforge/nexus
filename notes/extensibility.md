@@ -18,9 +18,9 @@ After Nexus has loaded the backend sources for each user, it starts asking all `
 
 There may be the requirement that a catalog should have one or more child catalogs. This might happen when an `IDataSource` wants to provide access to an external system or to another Nexus instance. In that case, it may also be necessary to provide user credentials for the external system. Additionally, the presented catalog hierarchy might be specific to the current user.
 
-To enable this scenario, there is the need for Nexus to distinguish between `static` child catalogs which are loaded once and `dynamic` ones that should be looked up on each request. This option can be specified by the `IDataSource` individually for each catalog registration.
+To enable this scenario, there is the need for Nexus to distinguish between `static` child catalogs which are loaded once and `transient` ones that should be looked up on each request. This option can be specified by the `IDataSource` individually for each catalog registration.
 
-An `IDataSource` which provides user-specific catalogs would register these as dynamic and use the user credentials to retrieve them from the external system. To speed things up, the `IDataSource` may decide to cache the returned information on a per user level and delete that cache entry after a certain amount of time. 
+An `IDataSource` which provides user-specific catalogs would register these as `transient` and use the user credentials to retrieve them from the external system. To speed things up, the `IDataSource` may decide to cache the returned information on a per user level and delete that cache entry after a certain amount of time. 
 
 The credentials should be available for the lifetime of the current user session. In a browser-only scenario this could be implemented using a session cookie. For other client types like the Open API client, a more natural approach would be to attach additional configuration values that should be passed to the `IDataSource` instance to the bearer token which is created when the user authenticates.
 
@@ -35,7 +35,7 @@ Example: The user credentials for a catalog named `/A/B/C` could be written as:
 
 > 🛈 The exact configuration key names depend on the `IDataSource` implementation.
 
-> 🛈 Requests to other catalogs like `/A`, `/A/B`, `/A/B/D` or `/A/B/C/X` would also get these configuration values passed because they are provided by the same `IDataSource`. This is not considered a security problem.
+> 🛈 Requests to other catalogs like `/A`, `/A/B`, `/A/B/D` or `/A/B/C/X` would also get these configuration values passed because they are provided by the same `IDataSource`. This is not considered a security issue.
 
 ## Considerations
 

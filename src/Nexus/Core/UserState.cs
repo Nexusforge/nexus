@@ -95,6 +95,7 @@ namespace Nexus.Core
 #warning Make this more efficient. Maybe by tracking changes.
                 if (_isEditEnabled && !value)
                 {
+#warning Reenable
                     //foreach (var catalogContainer in this.CatalogContainers)
                     //{
                     //    //_databaseManager.SaveCatalogMeta(catalogContainer.CatalogMetadata);
@@ -260,42 +261,43 @@ namespace Nexus.Core
             }
             set
             {
-                // When database is updated and then the selected catalog is changed,
-                // "value" refers to an old catalog container that does not exist in 
-                // the database anymore.
-                var catalogContainers = this.CatalogContainers;
+#warning Reenable
+                //// When database is updated and then the selected catalog is changed,
+                //// "value" refers to an old catalog container that does not exist in 
+                //// the database anymore.
+                //var catalogContainers = this.CatalogContainers;
 
-                if (value is not null && !catalogContainers.Contains(value))
-                    value = catalogContainers.FirstOrDefault(container => container.Id == value.Id);
+                //if (value is not null && !catalogContainers.Contains(value))
+                //    value = catalogContainers.FirstOrDefault(container => container.Id == value.Id);
 
-                this.SetProperty(ref _catalogContainer, value);
+                //this.SetProperty(ref _catalogContainer, value);
 
-                _searchString = string.Empty;
-                this.GroupedResources = null;
+                //_searchString = string.Empty;
+                //this.GroupedResources = null;
 
-                if (this.CatalogContainersInfo.Accessible.Contains(value))
-                {
-                    this.HasAccess = true;
+                //if (this.CatalogContainersInfo.Accessible.Contains(value))
+                //{
+                //    this.HasAccess = true;
 
-                    _ = Task.Run(async () =>
-                    {
-                        try
-                        {
-                            await this.UpdateGroupedResourcesAsync(CancellationToken.None);
-                        }
-                        catch (Exception ex)
-                        {
-                            this.Logger.LogWarning(ex, "Unable to update grouped resources");
-                        }
-                    });
-                    
-                    this.UpdateAttachments();
-                }
-                else
-                {
-                    this.HasAccess = false;
-                    this.Attachments = null;
-                }
+                //    _ = Task.Run(async () =>
+                //    {
+                //        try
+                //        {
+                //            await this.UpdateGroupedResourcesAsync(CancellationToken.None);
+                //        }
+                //        catch (Exception ex)
+                //        {
+                //            this.Logger.LogWarning(ex, "Unable to update grouped resources");
+                //        }
+                //    });
+
+                //    this.UpdateAttachments();
+                //}
+                //else
+                //{
+                //    this.HasAccess = false;
+                //    this.Attachments = null;
+                //}
             }
         }
 
@@ -409,80 +411,81 @@ namespace Nexus.Core
 
         public async Task DownloadAsync()
         {
-            EventHandler<double> readProgressEventHandler = (sender, e) =>
-            {
-                this.ReadProgress = e;
-            };
+#warning Reenable
+            //EventHandler<double> readProgressEventHandler = (sender, e) =>
+            //{
+            //    this.ReadProgress = e;
+            //};
 
-            EventHandler<double> writeProgressEventHandler = (sender, e) =>
-            {
-                this.WriteProgress = e;
-            };
+            //EventHandler<double> writeProgressEventHandler = (sender, e) =>
+            //{
+            //    this.WriteProgress = e;
+            //};
 
-            try
-            {
-                this.ClientState = ClientState.PrepareDownload;
-                _dataService.ReadProgress.ProgressChanged += readProgressEventHandler;
-                _dataService.WriteProgress.ProgressChanged += writeProgressEventHandler;
+            //try
+            //{
+            //    this.ClientState = ClientState.PrepareDownload;
+            //    _dataService.ReadProgress.ProgressChanged += readProgressEventHandler;
+            //    _dataService.WriteProgress.ProgressChanged += writeProgressEventHandler;
 
-                var selectedRepresentations = this.GetSelectedRepresentations();
+            //    var selectedRepresentations = this.GetSelectedRepresentations();
 
-                var job = new ExportJob(
-                    Parameters: this.ExportParameters)
-                {
-                    Owner = _userIdService.User.Identity.Name
-                };
+            //    var job = new ExportJob(
+            //        Parameters: this.ExportParameters)
+            //    {
+            //        Owner = _userIdService.User.Identity.Name
+            //    };
 
-                var exportJobService = _serviceProvider.GetRequiredService<JobService<ExportJob>>();
+            //    var exportJobService = _serviceProvider.GetRequiredService<JobService<ExportJob>>();
 
-                _exportJobControl = exportJobService.AddJob(job, _dataService.ReadProgress, (jobControl, cts) =>
-                {
-                    var catalogItemsMap = selectedRepresentations
-                        .Select(current => new CatalogItem(current.Resource.Catalog.Model, current.Resource.Model, current.Model))
-                        .GroupBy(catalogItem => catalogItem.Catalog.Id)
-                        .ToDictionary(
-                            group =>
-                            {
-                                var catalogContainer = this.CatalogContainers
-                                    .First(catalogContainer => catalogContainer.Id == group.Key);
+            //    _exportJobControl = exportJobService.AddJob(job, _dataService.ReadProgress, (jobControl, cts) =>
+            //    {
+            //        var catalogItemsMap = selectedRepresentations
+            //            .Select(current => new CatalogItem(current.Resource.Catalog.Model, current.Resource.Model, current.Model))
+            //            .GroupBy(catalogItem => catalogItem.Catalog.Id)
+            //            .ToDictionary(
+            //                group =>
+            //                {
+            //                    var catalogContainer = this.CatalogContainers
+            //                        .First(catalogContainer => catalogContainer.Id == group.Key);
 
-                                // authorize
-                                if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, _userIdService.User))
-                                    throw new UnauthorizedAccessException($"The current user is not authorized to access catalog {catalogContainer.Id}.");
+            //                    // authorize
+            //                    if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, _userIdService.User))
+            //                        throw new UnauthorizedAccessException($"The current user is not authorized to access catalog {catalogContainer.Id}.");
 
-                                return catalogContainer;
-                            },
-                            group => (IEnumerable<CatalogItem>)group);
+            //                    return catalogContainer;
+            //                },
+            //                group => (IEnumerable<CatalogItem>)group);
 
-                    var task = _dataService.ExportAsync(
-                        this.ExportParameters,
-                        catalogItemsMap,
-                        Guid.NewGuid(),
-                        cts.Token);
+            //        var task = _dataService.ExportAsync(
+            //            this.ExportParameters,
+            //            catalogItemsMap,
+            //            Guid.NewGuid(),
+            //            cts.Token);
 
-                    return task;
-                });
+            //        return task;
+            //    });
 
-                try
-                {
-                    var fileName = await _exportJobControl.Task;
-                    await _jsRuntime.FileSaveAs(fileName, $"export/{fileName}");
-                }
-                catch (OperationCanceledException)
-                {
-                    //
-                }
-            }
-            finally
-            {
-                _dataService.ReadProgress.ProgressChanged -= readProgressEventHandler;
-                _dataService.WriteProgress.ProgressChanged -= writeProgressEventHandler;
+            //    try
+            //    {
+            //        var fileName = await _exportJobControl.Task;
+            //        await _jsRuntime.FileSaveAs(fileName, $"export/{fileName}");
+            //    }
+            //    catch (OperationCanceledException)
+            //    {
+            //        //
+            //    }
+            //}
+            //finally
+            //{
+            //    _dataService.ReadProgress.ProgressChanged -= readProgressEventHandler;
+            //    _dataService.WriteProgress.ProgressChanged -= writeProgressEventHandler;
 
-                this.ClientState = ClientState.Normal;
+            //    this.ClientState = ClientState.Normal;
 
-                this.ReadProgress = 0;
-                this.WriteProgress = 0;
-            }
+            //    this.ReadProgress = 0;
+            //    this.WriteProgress = 0;
+            //}
         }
 
         public void CancelDownload()
@@ -525,63 +528,64 @@ namespace Nexus.Core
 
         public async Task SetExportParametersAsync(ExportParameters exportParameters, CancellationToken cancellationToken)
         {
-            _samplePeriodToSelectedRepresentationsMap.Clear();
+#warning Reenable
+            //_samplePeriodToSelectedRepresentationsMap.Clear();
 
-            // find catalog items
-            var representations = new List<RepresentationViewModel>();
+            //// find catalog items
+            //var representations = new List<RepresentationViewModel>();
 
-            foreach (var resourcePath in exportParameters.ResourcePaths)
-            {
-                // if resource path exists
-                var catalogItem = await this.CatalogContainers.TryFindAsync(resourcePath, cancellationToken);
+            //foreach (var resourcePath in exportParameters.ResourcePaths)
+            //{
+            //    // if resource path exists
+            //    var catalogItem = await this.CatalogContainers.TryFindAsync(resourcePath, cancellationToken);
 
-                if (catalogItem is not null)
-                {
-                    // if catalog is accessible
-                    var catalogContainer = this.CatalogContainersInfo.Accessible
-                        .FirstOrDefault(catalogContainer => catalogContainer.Id == catalogItem.Catalog.Id);
+            //    if (catalogItem is not null)
+            //    {
+            //        // if catalog is accessible
+            //        var catalogContainer = this.CatalogContainersInfo.Accessible
+            //            .FirstOrDefault(catalogContainer => catalogContainer.Id == catalogItem.Catalog.Id);
 
-                    if (catalogContainer is not null)
-                    {
-                        var resources = await _appState.ResourceCache.GetOrAdd(catalogContainer, async catalogContainer =>
-                        {
-                            var catalogInfo = await catalogContainer.GetCatalogInfoAsync(cancellationToken);
-                            var catalogViewModel = new ResourceCatalogViewModel(catalogInfo.Catalog);
+            //        if (catalogContainer is not null)
+            //        {
+            //            var resources = await _appState.ResourceCache.GetOrAdd(catalogContainer, async catalogContainer =>
+            //            {
+            //                var catalogInfo = await catalogContainer.GetCatalogInfoAsync(cancellationToken);
+            //                var catalogViewModel = new ResourceCatalogViewModel(catalogInfo.Catalog);
 
-                            return catalogInfo.Catalog.Resources
-                               .Select(resource => new ResourceViewModel(catalogViewModel, resource))
-                               .ToArray();
-                        });
+            //                return catalogInfo.Catalog.Resources
+            //                   .Select(resource => new ResourceViewModel(catalogViewModel, resource))
+            //                   .ToArray();
+            //            });
 
-                        var resource = resources.FirstOrDefault(resource => resource.Id == catalogItem.Resource.Id);
+            //            var resource = resources.FirstOrDefault(resource => resource.Id == catalogItem.Resource.Id);
 
-                        if (resource is not null)
-                        {
-                            var representation = resource.Representations.FirstOrDefault(representation => representation.Id == catalogItem.Representation.Id);
+            //            if (resource is not null)
+            //            {
+            //                var representation = resource.Representations.FirstOrDefault(representation => representation.Id == catalogItem.Representation.Id);
 
-                            if (representation is not null)
-                                representations.Add(representation);
-                        }
-                    }
-                }
-            }
+            //                if (representation is not null)
+            //                    representations.Add(representation);
+            //            }
+            //        }
+            //    }
+            //}
 
-            // find and set sample period
-            var samplePeriods = representations.Select(representation => representation.SamplePeriod);
+            //// find and set sample period
+            //var samplePeriods = representations.Select(representation => representation.SamplePeriod);
 
-            if (samplePeriods.Any())
-                this.SamplePeriod = samplePeriods.First();
+            //if (samplePeriods.Any())
+            //    this.SamplePeriod = samplePeriods.First();
 
-            // set exportParameters
-            this.ExportParameters = exportParameters;
+            //// set exportParameters
+            //this.ExportParameters = exportParameters;
 
-            // fill selected representations list
-            var selectedRepresentations = this.GetSelectedRepresentations();
+            //// fill selected representations list
+            //var selectedRepresentations = this.GetSelectedRepresentations();
 
-            selectedRepresentations.AddRange(representations);
+            //selectedRepresentations.AddRange(representations);
 
-            // trigger re-render
-            this.RaisePropertyChanged(nameof(UserState.ExportParameters));
+            //// trigger re-render
+            //this.RaisePropertyChanged(nameof(UserState.ExportParameters));
         }
 
         public bool IsRepresentationSelected(RepresentationViewModel representation)
@@ -619,16 +623,19 @@ namespace Nexus.Core
 
         private async Task InitializeAsync(CancellationToken cancellationToken)
         {
-            this.CatalogContainersInfo = this.SplitCampaignContainers(this.CatalogContainers);
+#warning Reenable
+            throw new NotImplementedException();
 
-            // this triggers a search to find the new container instance
-            this.CatalogContainer = this.CatalogContainer;
+            //this.CatalogContainersInfo = this.SplitCampaignContainers(this.CatalogContainers);
 
-            // to rebuilt list with new representation instances
-            await this.SetExportParametersAsync(this.ExportParameters, cancellationToken);
+            //// this triggers a search to find the new container instance
+            //this.CatalogContainer = this.CatalogContainer;
 
-            // maybe there is a new resource available now: display it
-            await this.UpdateGroupedResourcesAsync(cancellationToken);
+            //// to rebuilt list with new representation instances
+            //await this.SetExportParametersAsync(this.ExportParameters, cancellationToken);
+
+            //// maybe there is a new resource available now: display it
+            //await this.UpdateGroupedResourcesAsync(cancellationToken);
         }
 
         private void UpdateAttachments()
@@ -766,9 +773,10 @@ namespace Nexus.Core
 
         public void OnAppStatePropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(AppState.CatalogState) ||
-               (e.PropertyName == nameof(AppState.IsCatalogStateUpdating) && !_appState.IsCatalogStateUpdating))
-                _ = this.InitializeAsync(_appState.CatalogState.CatalogContainersMap, CancellationToken.None);
+#warning Reenable
+            //if (e.PropertyName == nameof(AppState.CatalogState) ||
+            //   (e.PropertyName == nameof(AppState.IsCatalogStateUpdating) && !_appState.IsCatalogStateUpdating))
+            //    _ = this.InitializeAsync(_appState.CatalogState.CatalogContainersMap, CancellationToken.None);
         }
 
         #endregion

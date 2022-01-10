@@ -15,6 +15,13 @@ using System.Threading.Tasks;
 
 namespace Nexus.Services
 {
+    internal interface ICatalogManager
+    {
+        Task<CatalogContainer[]> GetCatalogContainersAsync(
+            CatalogContainer parent,
+            CancellationToken cancellationToken);
+    }
+
     internal class CatalogManager : ICatalogManager
     {
         #region Types

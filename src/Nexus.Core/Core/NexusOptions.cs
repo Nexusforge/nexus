@@ -2,6 +2,7 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 
 namespace Nexus.Core
 {
@@ -81,6 +82,7 @@ namespace Nexus.Core
         public static string DefaultRootPassword { get; } = "#root0/User1";
         public string RootUser { get; set; } = SecurityOptions.DefaultRootUser;
         public string RootPassword { get; set; } = SecurityOptions.DefaultRootPassword;
+        public string? Base64JwtSigningKey { get; set; } = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
     }
 
     internal record UsersOptions() : NexusOptionsBase
