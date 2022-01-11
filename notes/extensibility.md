@@ -22,15 +22,15 @@ To enable this scenario, there is the need for Nexus to distinguish between `sta
 
 An `IDataSource` which provides user-specific catalogs would register these as `transient` and use the user credentials to retrieve them from the external system. To speed things up, the `IDataSource` may decide to cache the returned information on a per user level and delete that cache entry after a certain amount of time. 
 
-The credentials should be available for the lifetime of the current user session. In a browser-only scenario this could be implemented using a session cookie. For other client types like the Open API client, a more natural approach would be to attach additional configuration values that should be passed to the `IDataSource` instance to the bearer token which is created when the user authenticates.
+The credentials should be available for the lifetime of the current user session. In a browser-only scenario this could be implemented using a session cookie. For other client types like the Open API client, a more natural approach would be to attach additional configuration values that should be passed to the `IDataSource` instance to the bearer token which is created when the user authenticates or, alternatively, to serialize it and attach it as a custom header. The header solution will be implemented first using the custom header 'Configuration' which should contain a JSON serialized dictionary. If there is the requirement, the bearer token solution could be added later on. The problem with the bearer token is that the configuration dictionary needs to be passed to the authentication endpoint AND to the refresh endpoint. Also, it does not make much sense to round trip all the configuration from client to server to client to server.
 
-Configuration values that are part of the bearer token need to have a selector prepended in front of the configuration key to define the target `IDataSource` instance. This is necessary to ensure that credentials do no leak to the wrong `IDataSource`. 
+Configuration values that are part of the bearer token need to have a selector prepended in front of the configuration key (regex pattern) to define the target `IDataSource` instance. This is necessary to ensure that credentials do no leak to the wrong `IDataSource`. 
 
-Example: The user credentials for a catalog named `/A/B/C` could be written as:
+Example: The user credentials for a catalogs named `/A/B` and `/A/B/C` could be written as:
 
 ```c#
-"/A/B/C:Username" = "foo"
-"/A/B/C:Password" = "bar"
+"/A/B/.*:Username" = "foo"
+"/A/B/.*:Password" = "bar"
 ```
 
 > 🛈 The exact configuration key names depend on the `IDataSource` implementation.

@@ -82,7 +82,9 @@ namespace Nexus.Core
         public static string DefaultRootPassword { get; } = "#root0/User1";
         public string RootUser { get; set; } = SecurityOptions.DefaultRootUser;
         public string RootPassword { get; set; } = SecurityOptions.DefaultRootPassword;
-        public string? Base64JwtSigningKey { get; set; } = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+        public string Base64JwtSigningKey { get; set; } = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+        public TimeSpan JwtTokenLifeTime { get; set; }
+        public TimeSpan RefreshTokenLifeTime { get; set; }
     }
 
     internal record UsersOptions() : NexusOptionsBase

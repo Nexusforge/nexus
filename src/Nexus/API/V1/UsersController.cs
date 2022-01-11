@@ -1,6 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Nexus.Models;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Nexus.API.V1;
+using Nexus.Core;
 using Nexus.Services;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Nexus.Controllers.V1
@@ -10,37 +16,122 @@ namespace Nexus.Controllers.V1
     [Route("api/v{version:apiVersion}/[controller]")]
     internal class UsersController : ControllerBase
     {
+        // /api/users
+        // /api/users/authenticate
+        // /api/users/refresh-token
+        // /api/users/revoke-token
+        // /api/users/{userId}/tokens
+
+        // The endpoints "authenticate", "refresh-token" and "revoke-token"
+        // contain sensitive information, therefore all parameters are passed
+        // as part of the encrypted body. This is why these paths are not
+        // beginning with /api/users/{userId}.
+
         #region Fields
 
-        private JwtService _jwtService;
+        private IDBService _dBService;
+        private INexusAuthenticationService _authService;
 
         #endregion
 
         #region Constructors
 
-        public UsersController(JwtService jwtService)
+        public UsersController(
+            IDBService dBService,
+            INexusAuthenticationService authService)
         {
-            _jwtService = jwtService;
+            _dBService = dBService;
+            _authService = authService;
         }
 
         #endregion
 
         /// <summary>
-        /// Creates a bearer token.
+        /// Gets a list of users.
         /// </summary>
         /// <returns></returns>
-        [HttpPost("authenticate")]
-        public async Task<ActionResult<string>> AuthenticateAsync(AuthenticateRequest authenticateRequest)
+        [Authorize(Policy = Policies.RequireAdmin)]
+        [HttpGet]
+        public async Task<ActionResult<List<string>>> GetUsersAsync()
         {
-#warning Should be extended to be like https://jasonwatmore.com/post/2020/05/25/aspnet-core-3-api-jwt-authentication-with-refresh-tokens
+            var users = await _dBService.GetUsers()
+                .Select(user => user.UserName)
+                .ToListAsync();
 
-            (var result, var success) = await _jwtService.GenerateTokenAsync(authenticateRequest);
+            return this.Ok(users);
+        }
 
-            if (success)
-                return this.Ok(result);
+        /// <summary>
+        /// Authenticates the user.
+        /// </summary>
+        /// <param name="request">The authentication request.</param>
+        /// <returns>A pair of JWT and refresh token.</returns>
+        [AllowAnonymous]
+        [HttpPost("authenticate")]
+        public async Task<ActionResult<AuthenticateResponse>> AuthenticateAsync(AuthenticateRequest request)
+        {
+            var (jwtToken, refreshToken, error) = await _authService
+                .AuthenticateAsync(request.UserId, request.Password);
 
-            else
-                return this.Unauthorized(result);
+            return this.Ok(new AuthenticateResponse(jwtToken, refreshToken, error));
+        }
+
+        /// <summary>
+        /// Refreshes the JWT token.
+        /// </summary>
+        /// <param name="request">The refresh token request.</param>
+        /// <returns>A new pair of JWT and refresh token.</returns>
+        [AllowAnonymous]
+        [HttpPost("refresh")]
+        public async Task<ActionResult<RefreshTokenResponse>> RefreshTokenAsync(RefreshTokenRequest request)
+        {
+            var (jwtToken, refreshToken, error) = await _authService
+                .RefreshTokenAsync(request.UserId, request.Token);
+
+            return this.Ok(new RefreshTokenResponse(jwtToken, refreshToken, error));
+        }
+
+        /// <summary>
+        /// Revokes a refresh token.
+        /// </summary>
+        /// <param name="request">The revoke token request.</param>
+        [HttpPost("revoke")]
+        public async Task<ActionResult> RevokeTokenAsync(RevokeTokenRequest request)
+        {
+            // authorize
+            var user = this.HttpContext.User;
+
+            if (!(user.Identity.Name == request.UserId || this.HttpContext.User.HasClaim("IsAdmin", "true")))
+                return this.Unauthorized();
+
+            // revoke token
+            var error = await _authService
+                .RevokeTokenAsync(request.UserId, request.Token);
+
+            return this.Ok(new RevokeTokenResponse(error));
+        }
+
+        /// <summary>
+        /// Get a list of refresh tokens for the specified user.
+        /// </summary>
+        /// <param name="userId">The user to get the tokens for.</param>
+        /// <returns>Returns the list of available refresh tokens.</returns>
+        [HttpGet("{userId}/tokens")]
+        public async Task<ActionResult<List<RefreshToken>>> GetRefreshTokensAsync(string userId)
+        {
+            // authorize
+            var user = this.HttpContext.User;
+
+            if (!(user.Identity.Name == userId || this.HttpContext.User.HasClaim("IsAdmin", "true")))
+                return this.Unauthorized();
+
+            // get database user
+            var dbUser = await _dBService.FindByIdAsync(userId);
+
+            if (dbUser is null)
+                return this.NotFound($"Could not find user {userId}.");
+
+            return this.Ok(dbUser.RefreshTokens);
         }
     }
 }

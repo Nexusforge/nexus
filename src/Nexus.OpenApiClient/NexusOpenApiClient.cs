@@ -41,7 +41,7 @@ namespace Nexus.Client
         public IJobsClient Jobs => _jobs;
 
         /// <summary>
-        /// Gets the account client.
+        /// Gets the users client.
         /// </summary>
         public IUsersClient Users => _users;
     }

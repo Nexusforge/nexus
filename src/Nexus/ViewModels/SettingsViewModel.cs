@@ -12,14 +12,14 @@ namespace Nexus.ViewModels
     {
         #region Fields
 
-        private IdentityUser _user;
-        private UserManager<IdentityUser> _userManager;
+        private NexusUser _user;
+        private UserManager<NexusUser> _userManager;
 
         #endregion
 
         #region Constructors
 
-        public SettingsViewModel(UserState userState, UserManager<IdentityUser> userManager)
+        public SettingsViewModel(UserState userState, UserManager<NexusUser> userManager)
         {
             this.UserState = userState;
             _userManager = userManager;
@@ -31,7 +31,7 @@ namespace Nexus.ViewModels
 
         public UserState UserState { get; }
 
-        public IdentityUser User
+        public NexusUser User
         {
             get 
             {
@@ -44,7 +44,7 @@ namespace Nexus.ViewModels
             }
         }
 
-        public List<IdentityUser> Users => _userManager.Users.ToList();
+        public List<NexusUser> Users => _userManager.Users.ToList();
 
         public List<ClaimViewModel> Claims { get; set; }
         
@@ -67,7 +67,7 @@ namespace Nexus.ViewModels
             await _userManager.AddClaimsAsync(this.User, claimsToAdd);
         }
 
-        private void UpdateClaims(IdentityUser user)
+        private void UpdateClaims(NexusUser user)
         {
             var claims = _userManager.GetClaimsAsync(user).Result.ToList();
             claims.Add(new Claim(string.Empty, string.Empty));

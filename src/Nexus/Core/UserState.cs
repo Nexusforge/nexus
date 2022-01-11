@@ -56,7 +56,6 @@ namespace Nexus.Core
         public UserState(ILogger<UserState> logger,
                          IJSRuntime jsRuntime,
                          IDatabaseManager databaseManager,
-                         IUserIdService userIdService,
                          IServiceProvider serviceProvider,
                          AppState appState,
                          DataService dataService)
@@ -65,7 +64,7 @@ namespace Nexus.Core
 
             _jsRuntime = jsRuntime;
             _databaseManager = databaseManager;
-            _userIdService = userIdService;
+            _userIdService = null;
             _serviceProvider = serviceProvider;
             _appState = appState;
             _dataService = dataService;

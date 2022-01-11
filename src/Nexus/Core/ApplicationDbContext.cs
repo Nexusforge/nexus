@@ -1,11 +1,12 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.IO;
 
 namespace Nexus.Core
 {
-    internal class ApplicationDbContext : IdentityDbContext
+    internal class ApplicationDbContext : IdentityDbContext<NexusUser, IdentityRole, string>
     {
         private PathsOptions _pathsOptions;
 

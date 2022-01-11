@@ -8,9 +8,11 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Nexus.Core;
@@ -21,7 +23,9 @@ using NJsonSchema.Generation;
 using NSwag.AspNetCore;
 using Serilog;
 using System;
+using System.IO;
 using System.Linq;
+using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -46,6 +50,9 @@ namespace Nexus
             var usersOptions = new UsersOptions();
             this.Configuration.GetSection(UsersOptions.Section).Bind(usersOptions);
 
+            var securityOptions = new SecurityOptions();
+            this.Configuration.GetSection(SecurityOptions.Section).Bind(securityOptions);
+
             // database
             services.AddDbContext<ApplicationDbContext>();
 
@@ -59,7 +66,8 @@ namespace Nexus
             });
 
             // identity (customize: https://docs.microsoft.com/en-us/aspnet/core/security/authentication/customize-identity-model?view=aspnetcore-3.1)
-            services.AddDefaultIdentity<IdentityUser>()
+            services
+                .AddDefaultIdentity<NexusUser>()
                 .AddEntityFrameworkStores<ApplicationDbContext>();
 
             services.Configure<IdentityOptions>(options =>
@@ -101,7 +109,7 @@ namespace Nexus
                         ValidateIssuer = false,
                         ValidateActor = false,
                         ValidateLifetime = true,
-                        IssuerSigningKey = Startup.SecurityKey
+                        IssuerSigningKey = new SymmetricSecurityKey(Convert.FromBase64String(securityOptions.Base64JwtSigningKey))
                     };
 
                     options.Events = new JwtBearerEvents()
@@ -121,7 +129,7 @@ namespace Nexus
             // authorization
             services.AddAuthorization(options =>
             {
-                options.AddPolicy("RequireAdmin", policy => policy.RequireClaim(Claims.IS_ADMIN, "true"));
+                options.AddPolicy(Policies.RequireAdmin, policy => policy.RequireClaim(Claims.IS_ADMIN, "true"));
             });
 
             // swagger (https://github.com/dotnet/aspnet-api-versioning/tree/master/samples/aspnetcore/SwaggerSample)
@@ -176,8 +184,8 @@ namespace Nexus
 
             services.AddTransient<DataService>();
 
-            services.AddScoped<IUserIdService, UserIdService>();
-            services.AddScoped<JwtService>();
+            services.AddScoped<IDBService, DbService>();
+            services.AddScoped<INexusAuthenticationService, NexusAuthenticationService>();
             services.AddScoped<SettingsViewModel>();
             services.AddScoped<ToasterService>();
             services.AddScoped<UserState>();
@@ -203,7 +211,9 @@ namespace Nexus
                               IWebHostEnvironment env,
                               IServiceProvider serviceProvider,
                               IApiVersionDescriptionProvider provider,
-                              IOptions<PathsOptions> pathsOptions)
+                              IOptions<PathsOptions> pathsOptions,
+                              IOptions<SecurityOptions> securityOptions,
+                              ILogger<Startup> logger)
         {
             // https://docs.microsoft.com/en-us/aspnet/core/fundamentals/middleware/?view=aspnetcore-6.0
 
@@ -307,14 +317,17 @@ namespace Nexus
             });
 
             // initialize app state
-            this.InitializeAppAsync(serviceProvider, pathsOptions.Value).Wait();
+            this.InitializeAppAsync(serviceProvider, pathsOptions.Value, securityOptions.Value, logger).Wait();
         }
 
-        private async Task InitializeAppAsync(IServiceProvider serviceProvier, PathsOptions pathsOptions)
+        private async Task InitializeAppAsync(
+            IServiceProvider serviceProvier,
+            PathsOptions pathsOptions, 
+            SecurityOptions securityOptions,
+            ILogger<Startup> logger)
         {
             var appState = serviceProvier.GetRequiredService<AppState>();
             var appStateController = serviceProvier.GetRequiredService<AppStateController>();
-            var userManagerWrapper = serviceProvier.GetRequiredService<IUserManagerWrapper>();
             var databaseManager = serviceProvier.GetRequiredService<IDatabaseManager>();
 
             // project
@@ -328,10 +341,86 @@ namespace Nexus
             }
 
             // user manager
-            await userManagerWrapper.InitializeAsync();
+            await this.InitializeDatabaseAsync(serviceProvier, pathsOptions, securityOptions, logger);
 
             // packages and catalogs
             await appStateController.ReloadCatalogsAsync(CancellationToken.None);
+        }
+
+        private async Task InitializeDatabaseAsync(
+            IServiceProvider serviceProvider, 
+            PathsOptions pathsOptions,
+            SecurityOptions securityOptions,
+            ILogger<Startup> logger)
+        {
+            using (var scope = serviceProvider.CreateScope())
+            {
+                var userDB = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<NexusUser>>();
+
+                // database
+                Directory.CreateDirectory(pathsOptions.Config);
+
+                if (userDB.Database.EnsureCreated())
+                    logger.LogInformation("SQLite database initialized");
+
+                // ensure there is a root user
+                var rootUsername = securityOptions.RootUser;
+                var rootPassword = securityOptions.RootPassword;
+
+                // ensure there is a root user
+                if ((await userManager.FindByNameAsync(rootUsername)) is null)
+                {
+                    var user = new NexusUser(rootUsername);
+                    var result = await userManager.CreateAsync(user, rootPassword);
+
+                    if (result.Succeeded)
+                    {
+                        // confirm account
+                        var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+                        await userManager.ConfirmEmailAsync(user, token);
+
+                        // add claim
+                        var claim = new Claim(Claims.IS_ADMIN, "true");
+                        await userManager.AddClaimAsync(user, claim);
+
+                        // remove default root user
+                        if (rootUsername != SecurityOptions.DefaultRootUser)
+                        {
+                            var userToDelete = await userManager.FindByNameAsync(SecurityOptions.DefaultRootUser);
+
+                            if (userToDelete is not null)
+                                await userManager.DeleteAsync(userToDelete);
+                        }
+                    }
+                    else
+                    {
+                        await userManager.CreateAsync(
+                            new NexusUser(SecurityOptions.DefaultRootUser), SecurityOptions.DefaultRootPassword);
+                    }
+                }
+
+                // ensure there is a test user
+                var defaultTestUsername = "test@nexus.localhost";
+                var defaultTestPassword = "#test0/User1";
+
+                if ((await userManager.FindByNameAsync(defaultTestUsername)) is null)
+                {
+                    var user = new NexusUser(defaultTestUsername);
+                    var result = await userManager.CreateAsync(user, defaultTestPassword);
+
+                    if (result.Succeeded)
+                    {
+                        // confirm account
+                        var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+                        await userManager.ConfirmEmailAsync(user, token);
+
+                        // add claim
+                        var claim = new Claim(Claims.CAN_ACCESS_CATALOG, "/IN_MEMORY/TEST/ACCESSIBLE");
+                        await userManager.AddClaimAsync(user, claim);
+                    }
+                }
+            }
         }
 
         #endregion

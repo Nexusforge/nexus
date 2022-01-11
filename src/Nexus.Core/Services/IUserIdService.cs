@@ -6,10 +6,8 @@ namespace Nexus.Services
 {
     internal interface IUserIdService
     {
-        IPAddress RemoteIpAddress { get; }
         ClaimsPrincipal User { get; }
 
         Task<ClaimsPrincipal> GetUserAsync();
-        string GetUserId();
     }
 }

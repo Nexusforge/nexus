@@ -69,8 +69,9 @@ namespace Nexus.Shared
 		[Inject]
 		public ToasterService ToasterService { get; set; }
 
-		[Inject]
-		public UserManager<IdentityUser> UserManager { get; set; }
+#warning Restore this
+		//[Inject]
+		//public UserManager<NexusUser> UserManager { get; set; }
 
 		public int GroupPageSize { get; set; } = 15;
 
@@ -84,36 +85,37 @@ namespace Nexus.Shared
 
 		#region Methods
 
+#warning Restore this
 		private async Task AcceptLicenseAsync()
 		{
-			var authenticationState = await this.AuthenticationStateProvider.GetAuthenticationStateAsync();
-			var principal = authenticationState.User;
-			var claimType = Claims.CAN_ACCESS_CATALOG;
+			//var authenticationState = await this.AuthenticationStateProvider.GetAuthenticationStateAsync();
+			//var principal = authenticationState.User;
+			//var claimType = Claims.CAN_ACCESS_CATALOG;
 
-			if (principal.Identity.IsAuthenticated)
-			{
-				var user = await this.UserManager.GetUserAsync(principal);
-				var claims = await this.UserManager.GetClaimsAsync(user);
-				var claim = claims.FirstOrDefault(claim => claim.Type == claimType);
-				var projectId = this.UserState.CatalogContainer.Id;
+			//if (principal.Identity.IsAuthenticated)
+			//{
+			//	var user = await this.UserManager.GetUserAsync(principal);
+			//	var claims = await this.UserManager.GetClaimsAsync(user);
+			//	var claim = claims.FirstOrDefault(claim => claim.Type == claimType);
+			//	var projectId = this.UserState.CatalogContainer.Id;
 
-				if (claim is null)
-				{
-					var newValue = projectId;
-					claim = new Claim(claimType, newValue);
-					await this.UserManager.AddClaimAsync(user, claim);
-				}
-				else if (!claim.Value.Split(';').Contains(projectId))
-				{
-					var newValue = claim is not null
-						? string.Join(';', claim.Value, projectId)
-						: projectId;
-					var newClaim = new Claim(claimType, newValue);
-					await this.UserManager.ReplaceClaimAsync(user, claim, newClaim);
-				}
-			}
+			//	if (claim is null)
+			//	{
+			//		var newValue = projectId;
+			//		claim = new Claim(claimType, newValue);
+			//		await this.UserManager.AddClaimAsync(user, claim);
+			//	}
+			//	else if (!claim.Value.Split(';').Contains(projectId))
+			//	{
+			//		var newValue = claim is not null
+			//			? string.Join(';', claim.Value, projectId)
+			//			: projectId;
+			//		var newClaim = new Claim(claimType, newValue);
+			//		await this.UserManager.ReplaceClaimAsync(user, claim, newClaim);
+			//	}
+			//}
 
-			this.ToasterService.ShowSuccess(message: "Please log out and log in again for the changes to take effect.", icon: MatIconNames.Lock_open);
+			//this.ToasterService.ShowSuccess(message: "Please log out and log in again for the changes to take effect.", icon: MatIconNames.Lock_open);
 		}
 
 		#endregion

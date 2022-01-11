@@ -41,10 +41,6 @@ namespace Nexus.Models
         public ResourceCatalog? Overrides { get; init; }
     }
 
-    public record AuthenticateRequest(
-        string Username,
-        string Password);
-
     public record AvailabilityResponse(
         Dictionary<DateTime, double> Data);
 

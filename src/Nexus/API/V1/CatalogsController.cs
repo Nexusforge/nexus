@@ -143,7 +143,7 @@ namespace Nexus.Controllers.V1
             catalogId = WebUtility.UrlDecode(catalogId);
             attachmentId = WebUtility.UrlDecode(attachmentId);
 
-            return await this.ProcessCatalogIdAsync(catalogId, catalog =>
+            return await this.ProcessCatalogIdNonGenericAsync(catalogId, catalog =>
             {
                 if (_databaseManager.TryReadAttachment(catalogId, attachmentId, out var attachementStream))
                 {
@@ -342,15 +342,28 @@ namespace Nexus.Controllers.V1
             return representation;
         }
 
-        private Task<ActionResult<T>> ProcessCatalogIdAsync<T>(
+        private async Task<ActionResult<T>> ProcessCatalogIdAsync<T>(
             string catalogId,
             Func<CatalogContainer, Task<ActionResult<T>>> action,
             CancellationToken cancellationToken)
         {
-            return this.ProcessCatalogIdAsync(catalogId, action, cancellationToken);
+            var root = _appState.CatalogState.Root;
+            var catalogContainer = await root.TryFindCatalogContainerAsync(catalogId, cancellationToken);
+
+            if (catalogContainer is not null)
+            {
+                if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, this.User))
+                    return this.Unauthorized($"The current user is not authorized to access the catalog '{catalogId}'.");
+
+                return await action.Invoke(catalogContainer);
+            }
+            else
+            {
+                return this.NotFound(catalogId);
+            }
         }
 
-        private async Task<ActionResult> ProcessCatalogIdAsync(
+        private async Task<ActionResult> ProcessCatalogIdNonGenericAsync(
             string catalogId,
             Func<CatalogContainer, Task<ActionResult>> action,
             CancellationToken cancellationToken)
