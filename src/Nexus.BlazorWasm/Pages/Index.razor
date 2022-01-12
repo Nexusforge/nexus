@@ -1,33 +1,6 @@
 ﻿@page "/"
-@using Nexus.Client
-@using System.Text.Json
-
 <PageTitle>Index</PageTitle>
-
-<h1>Hello, world!</h1>
-
-Welcome to your new app.
 
 @Catalog
 
 <SurveyPrompt Title="How is Blazor working for you?" />
-
-@code {
-    string Catalog { get; set; }
-
-    protected override async Task OnInitializedAsync()
-    {
-        var httpClient = new HttpClient();
-        var client = new NexusOpenApiClient("https://localhost:8443", httpClient);
-
-        var dictionary = new Dictionary<string, string>()
-        {
-            ["a"] = "oans",
-            ["b"] = "zwo",
-        };
-
-        var catalog = await client.Catalogs.GetCatalogAsync("/IN_MEMORY/TEST/ACCESSIBLE", dictionary);
-
-        this.Catalog = JsonSerializer.Serialize(catalog);
-    }
-}

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Moq;
 using Nexus.Core;
 using Nexus.Services;
@@ -15,7 +16,7 @@ namespace Services
 {
     public class NexusAuthenticationServiceTests
     {
-        const string Base64SigningKey = "/EaQ5vPn7YfXzA0Fz5PS3+mz11mYAbWeIWnETvobZHAqJQJDm3pKqxm/bVOJ1eOwcIK0w3+F6x6qZfI6rw6Lwg==";
+        const string Base64JwtSigningKey = "/EaQ5vPn7YfXzA0Fz5PS3+mz11mYAbWeIWnETvobZHAqJQJDm3pKqxm/bVOJ1eOwcIK0w3+F6x6qZfI6rw6Lwg==";
 
         [Fact]
         public async Task CanAuthenticate()
@@ -59,7 +60,7 @@ namespace Services
                 Options.Create(new UsersOptions()),
                 Options.Create(new SecurityOptions() 
                 {
-                    Base64JwtSigningKey = Base64SigningKey,
+                    Base64JwtSigningKey = Base64JwtSigningKey,
                     JwtTokenLifeTime = TimeSpan.FromHours(1),
                     RefreshTokenLifeTime = TimeSpan.FromHours(1)
                 }));
@@ -67,9 +68,20 @@ namespace Services
             // Act
             var (jwtToken, refreshToken, error) = await service.AuthenticateAsync("foo", "bar");
 
-            var handler = new JwtSecurityTokenHandler();
-            var token = handler.ReadJwtToken(jwtToken);
-            var actualNameClaim = token.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.Name);
+            var tokenHandler = new JwtSecurityTokenHandler();
+
+            var validationParameters = new TokenValidationParameters()
+            {
+                LifetimeValidator = (before, expires, token, parameters) => expires > DateTime.UtcNow,
+                ValidateAudience = false,
+                ValidateIssuer = false,
+                ValidateActor = false,
+                ValidateLifetime = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Convert.FromBase64String(Base64JwtSigningKey))
+            };
+
+            var principal = tokenHandler.ValidateToken(jwtToken, validationParameters, out var _);
+            var actualName = principal.Identity.Name;
 
             // Assert
             Assert.NotNull(jwtToken);
@@ -78,8 +90,7 @@ namespace Services
 
             Assert.Single(user.RefreshTokens);
             Assert.Equal(refreshToken, user.RefreshTokens.First().Token);
-
-            Assert.Equal(expectedName, actualNameClaim.Value);
+            Assert.Equal(expectedName, actualName);
         }
 
         [Fact]
@@ -225,7 +236,7 @@ namespace Services
                 Options.Create(new UsersOptions()),
                 Options.Create(new SecurityOptions()
                 {
-                    Base64JwtSigningKey = Base64SigningKey,
+                    Base64JwtSigningKey = Base64JwtSigningKey,
                     JwtTokenLifeTime = TimeSpan.FromHours(1),
                     RefreshTokenLifeTime = TimeSpan.FromHours(1)
                 }));
@@ -233,9 +244,20 @@ namespace Services
             // Act
             var (jwtToken, refreshToken, error) = await service.RefreshTokenAsync(expectedName, storedRefreshToken.Token);
 
-            var handler = new JwtSecurityTokenHandler();
-            var token = handler.ReadJwtToken(jwtToken);
-            var actualNameClaim = token.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.Name);
+            var tokenHandler = new JwtSecurityTokenHandler();
+
+            var validationParameters = new TokenValidationParameters()
+            {
+                LifetimeValidator = (before, expires, token, parameters) => expires > DateTime.UtcNow,
+                ValidateAudience = false,
+                ValidateIssuer = false,
+                ValidateActor = false,
+                ValidateLifetime = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Convert.FromBase64String(Base64JwtSigningKey))
+            };
+
+            var principal = tokenHandler.ValidateToken(jwtToken, validationParameters, out var _);
+            var actualName = principal.Identity.Name;
 
             // Assert
             Assert.NotNull(jwtToken);
@@ -245,7 +267,7 @@ namespace Services
             Assert.Single(user.RefreshTokens);
             Assert.Equal(refreshToken, user.RefreshTokens.First().Token);
 
-            Assert.Equal(expectedName, actualNameClaim.Value);
+            Assert.Equal(expectedName, actualName);
         }
 
         [Fact]

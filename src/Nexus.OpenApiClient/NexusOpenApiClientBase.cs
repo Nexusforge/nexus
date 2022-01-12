@@ -1,22 +1,34 @@
+using Nexus.Client;
 using System.Net.Http;
-using System.Net.Http.Headers;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 internal abstract class NexusOpenApiClientBase
 {
-    public string BearerToken { get; private set; }
+    public NexusOpenApiClient Client { get; init; } = null!;
 
-    public void SetBearerToken(string token)
+    protected Task PrepareRequestAsync(
+        HttpClient client,
+        HttpRequestMessage request,
+        string url)
     {
-        BearerToken = token;
+        return Task.CompletedTask;
     }
 
-    protected Task<HttpRequestMessage> CreateHttpRequestMessageAsync(CancellationToken cancellationToken)
+    protected Task PrepareRequestAsync(
+        HttpClient client, 
+        HttpRequestMessage request,
+        StringBuilder? urlBuilder)
     {
-        var msg = new HttpRequestMessage();
-        msg.Headers.Authorization = new AuthenticationHeaderValue("Bearer", BearerToken);
+        return Task.CompletedTask;
+    }
 
-        return Task.FromResult(msg);
+    protected Task ProcessResponseAsync(
+        HttpClient client,
+        HttpResponseMessage response,
+        CancellationToken cancellationToken)
+    {
+        return this.Client.ProcessResponseAsync(client, response, cancellationToken);
     }
 }

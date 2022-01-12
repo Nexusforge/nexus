@@ -77,12 +77,14 @@ namespace Nexus.Core
 
     internal record SecurityOptions() : NexusOptionsBase
     {
+        private static string _defaultKey = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+
         public const string Section = "Security";
         public static string DefaultRootUser { get; } = "root@nexus.localhost";
         public static string DefaultRootPassword { get; } = "#root0/User1";
         public string RootUser { get; set; } = SecurityOptions.DefaultRootUser;
         public string RootPassword { get; set; } = SecurityOptions.DefaultRootPassword;
-        public string Base64JwtSigningKey { get; set; } = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+        public string Base64JwtSigningKey { get; set; } = _defaultKey;
         public TimeSpan JwtTokenLifeTime { get; set; }
         public TimeSpan RefreshTokenLifeTime { get; set; }
     }
