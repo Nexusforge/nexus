@@ -114,7 +114,7 @@ namespace Nexus.Services
 
             // check token
             if (refreshToken.IsExpired)
-                return (null, null, "The refresh token is expired.");
+                return (null, null, "The refresh token has expired.");
 
             // generate new token pair
             var (newJwtToken, newRefreshToken) = await this.GenerateTokenPairAsync(user);
