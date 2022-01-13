@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Nexus.DataModel;
 using System;
 using System.Globalization;
@@ -9,19 +9,11 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Nexus.Extensibility.Tests
 {
     public class StructuredFileDataSourceTests
     {
-        private ILogger _logger;
-
-        public StructuredFileDataSourceTests(ITestOutputHelper xunitLogger)
-        {
-            _logger = new XunitLoggerProvider(xunitLogger).CreateLogger(nameof(StructuredFileDataSourceTests));
-        }
-
         [Fact]
         public async Task CanProvideFirstFile()
         {
@@ -31,7 +23,7 @@ namespace Nexus.Extensibility.Tests
             var context = new DataSourceContext(
                 ResourceLocator: new Uri(Path.Combine(Directory.GetCurrentDirectory(), "DATABASES/F")),
                 Configuration: null,
-                Logger: _logger);
+                Logger: NullLogger.Instance);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
@@ -68,7 +60,7 @@ namespace Nexus.Extensibility.Tests
             var context = new DataSourceContext(
                 ResourceLocator: new Uri(Path.Combine(Directory.GetCurrentDirectory(), root)),
                 Configuration: null,
-                Logger: _logger);
+                Logger: NullLogger.Instance);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
@@ -98,7 +90,7 @@ namespace Nexus.Extensibility.Tests
             var context = new DataSourceContext(
                 ResourceLocator: new Uri(Path.Combine(Directory.GetCurrentDirectory(), root)),
                 Configuration: null,
-                Logger: _logger);
+                Logger: NullLogger.Instance);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
@@ -120,7 +112,7 @@ namespace Nexus.Extensibility.Tests
             var context = new DataSourceContext(
                 ResourceLocator: new Uri(string.Empty, UriKind.Relative),
                 Configuration: null,
-                Logger: _logger);
+                Logger: NullLogger.Instance);
 
             await Assert.ThrowsAsync<ArgumentException>(() => 
                 dataSource.GetAvailabilityAsync("/A/B/C", begin, end, CancellationToken.None));
@@ -136,7 +128,7 @@ namespace Nexus.Extensibility.Tests
             var context = new DataSourceContext(
                 ResourceLocator: new Uri(Path.Combine(Directory.GetCurrentDirectory(), "DATABASES/TESTDATA")),
                 Configuration: null,
-                Logger: _logger);
+                Logger: NullLogger.Instance);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
@@ -190,7 +182,7 @@ namespace Nexus.Extensibility.Tests
             var context = new DataSourceContext(
                 ResourceLocator: new Uri(Path.Combine(Directory.GetCurrentDirectory(), "DATABASES/TESTDATA")),
                 Configuration: null,
-                Logger: _logger);
+                Logger: NullLogger.Instance);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 

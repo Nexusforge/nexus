@@ -11,7 +11,8 @@ namespace Nexus.Services
     internal interface IDBService
     {
         IQueryable<NexusUser> GetUsers();
-        Task<NexusUser> FindByIdAsync(string userId);
+        Task<NexusUser?> FindByIdAsync(string userId);
+        Task<NexusUser?> FindByTokenAsync(string token);
         Task<bool> IsEmailConfirmedAsync(NexusUser user);
         Task<SignInResult> CheckPasswordSignInAsync(NexusUser user, string password, bool lockoutOnFailure);
         Task<IdentityResult> UpdateAsync(NexusUser user);
@@ -36,11 +37,18 @@ namespace Nexus.Services
             return _signInManager.CheckPasswordSignInAsync(user, password, lockoutOnFailure);
         }
 
-        public Task<NexusUser> FindByIdAsync(string userId)
+        public Task<NexusUser?> FindByIdAsync(string userId)
         {
            return _context.Users
                 .Include(user => user.RefreshTokens)
                 .FirstOrDefaultAsync(user => user.UserName == userId);
+        }
+
+        public Task<NexusUser?> FindByTokenAsync(string token)
+        {
+            return _context.Users
+                 .Include(user => user.RefreshTokens)
+                 .FirstOrDefaultAsync(user => user.RefreshTokens.Any(current => current.Token == token));
         }
 
         public Task<IList<Claim>> GetClaimsAsync(NexusUser user)

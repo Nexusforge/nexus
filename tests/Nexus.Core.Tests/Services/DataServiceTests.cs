@@ -59,8 +59,8 @@ namespace Services
             var dataControllerService = Mock.Of<IDataControllerService>();
 
             Mock.Get(dataControllerService)
-                .Setup(s => s.GetDataSourceControllerAsync(It.IsAny<BackendSource>(), It.IsAny<CancellationToken>(), It.IsAny<CatalogCache>()))
-                .Returns<BackendSource, CancellationToken, CatalogCache>((backendSource, cancellationToken, catalogCache) =>
+                .Setup(s => s.GetDataSourceControllerAsync(It.IsAny<BackendSource>(), It.IsAny<CancellationToken>()))
+                .Returns<BackendSource, CancellationToken>((backendSource, cancellationToken) =>
                 {
                     if (backendSource.Equals(backendSource1))
                         return Task.FromResult(dataSourceController1);

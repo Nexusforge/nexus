@@ -21,11 +21,9 @@ namespace Nexus.Services
             string password);
 
         Task<(string?, string?, string?)> RefreshTokenAsync(
-            string userId, 
             string token);
 
         Task<string?> RevokeTokenAsync(
-            string userId,
             string token);
     }
 
@@ -89,7 +87,7 @@ namespace Nexus.Services
             // add refresh token
             user.RefreshTokens.Add(refreshToken);
 
-            // clean up expired tokens
+            // clear expired tokens
             this.ClearExpiredTokens(user.RefreshTokens);
 
             // save changes
@@ -98,19 +96,19 @@ namespace Nexus.Services
             return (jwtToken, refreshToken.Token, null);
         }
 
-        public async Task<(string?, string?, string?)> RefreshTokenAsync(string userId, string token)
+        public async Task<(string?, string?, string?)> RefreshTokenAsync(string token)
         {
             // get user
-            var user = await _dbService.FindByIdAsync(userId);
+            var user = await _dbService.FindByTokenAsync(token);
 
             if (user is null)
-                return (null, null, "The user does not exist.");
+                return (null, null, "Token not found.");
 
             // get token
             var refreshToken = user.RefreshTokens.FirstOrDefault(current => current.Token == token);
 
             if (refreshToken is null)
-                return (null, null, "The refresh token is invalid.");
+                return (null, null, "Token not found.");
 
             // check token
             if (refreshToken.IsExpired)
@@ -125,7 +123,7 @@ namespace Nexus.Services
             // add refresh token
             user.RefreshTokens.Add(newRefreshToken);
 
-            // clean up expired tokens
+            // clear expired tokens
             this.ClearExpiredTokens(user.RefreshTokens);
 
             // save changes
@@ -134,13 +132,13 @@ namespace Nexus.Services
             return (newJwtToken, newRefreshToken.Token, null);
         }
 
-        public async Task<string?> RevokeTokenAsync(string userId, string token)
+        public async Task<string?> RevokeTokenAsync(string token)
         {
             // get user
-            var user = await _dbService.FindByIdAsync(userId);
+            var user = await _dbService.FindByTokenAsync(token);
 
             if (user is null)
-                return "The user does not exist."; // This should never happen!
+                return "Token not found.";
 
             // remove token
             var count = user.RefreshTokens.Count;
@@ -150,7 +148,7 @@ namespace Nexus.Services
                 ? null
                 : "Token not found.";
 
-            // clean up expired tokens
+            // clear expired tokens
             this.ClearExpiredTokens(user.RefreshTokens);
 
             // save changes

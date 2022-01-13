@@ -8,20 +8,20 @@ namespace Nexus.Core
 {
     internal static class CatalogContainersExtensions
     {
-        public static async Task<CatalogItem> FindAsync(
+        public static async Task<(CatalogContainer, CatalogItem)> FindAsync(
             this CatalogContainer parent, 
             string resourcePath,
             CancellationToken cancellationToken)
         {
-            var catalogItem = await parent.TryFindAsync(resourcePath, cancellationToken);
+            var (catalogContainer, catalogItem) = await parent.TryFindAsync(resourcePath, cancellationToken);
 
-            if (catalogItem is null)
+            if (catalogContainer is null || catalogItem is null)
                 throw new Exception($"The resource path {resourcePath} could not be found.");
 
-            return catalogItem;
+            return (catalogContainer, catalogItem);
         }
 
-        public static async Task<CatalogItem?> TryFindAsync(
+        public static async Task<(CatalogContainer?, CatalogItem?)> TryFindAsync(
             this CatalogContainer parent,
             string resourcePath,
             CancellationToken cancellationToken)
@@ -38,7 +38,7 @@ namespace Nexus.Core
             if (catalogInfo is not null)
             {
                 _ = catalogInfo.Catalog.TryFind(resourcePath, out var catalogItem);
-                return catalogItem;
+                return (catalogContainer, catalogItem);
             }
 
             else

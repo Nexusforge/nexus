@@ -178,7 +178,6 @@ namespace Nexus
             }
 
             // custom
-#warning replace httpcontextaccessor by async authenticationStateProvider (https://github.com/dotnet/aspnetcore/issues/17585)
             services.AddHttpContextAccessor();
 
             services.AddTransient<DataService>();

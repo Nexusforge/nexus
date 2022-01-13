@@ -37,8 +37,8 @@ namespace Services
             var dataControllerService = Mock.Of<IDataControllerService>();
 
             Mock.Get(dataControllerService)
-                .Setup(s => s.GetDataSourceControllerAsync(It.IsAny<BackendSource>(), It.IsAny<CancellationToken>(), It.IsAny<CatalogCache>()))
-                .Returns<BackendSource, CancellationToken, CatalogCache>((backendSource, cancellationToken, catalogCache) =>
+                .Setup(s => s.GetDataSourceControllerAsync(It.IsAny<BackendSource>(), It.IsAny<CancellationToken>()))
+                .Returns<BackendSource, CancellationToken>((backendSource, cancellationToken) =>
                 {
                     var dataSourceController = Mock.Of<IDataSourceController>();
 
@@ -192,24 +192,18 @@ namespace Services
             var dataControllerService = Mock.Of<IDataControllerService>();
 
             Mock.Get(dataControllerService)
-                .Setup(s => s.GetDataSourceControllerAsync(It.IsAny<BackendSource>(), It.IsAny<CancellationToken>(), It.IsAny<CatalogCache>()))
-                .Returns<BackendSource, CancellationToken, CatalogCache>((backendSource, cancellationToken, catalogCache) =>
+                .Setup(s => s.GetDataSourceControllerAsync(It.IsAny<BackendSource>(), It.IsAny<CancellationToken>()))
+                .Returns<BackendSource, CancellationToken>((backendSource, cancellationToken) =>
                 {
                     var dataSourceController = Mock.Of<IDataSourceController>();
 
                     Mock.Get(dataSourceController)
                         .Setup(s => s.GetCatalogAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                        .Returns<string, CancellationToken>((catalogId, cancellationToken) =>
-                        {
-                            return Task.FromResult(expectedCatalog);
-                        });
+                        .ReturnsAsync(expectedCatalog);
 
                     Mock.Get(dataSourceController)
                         .Setup(s => s.GetTimeRangeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                        .Returns<string, CancellationToken>((catalogId, cancellationToken) =>
-                        {
-                            return Task.FromResult(expectedTimeRange);
-                        });
+                        .ReturnsAsync(expectedTimeRange);
 
                     return Task.FromResult(dataSourceController);
                 });

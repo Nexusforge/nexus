@@ -16,7 +16,7 @@ namespace Nexus.Core
     {
         private SemaphoreSlim _semaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
         private CatalogInfo? _catalogInfo;
-        private CatalogContainer[]? _lazyLoadedChildren;
+        private CatalogContainer[]? _childCatalogContainers;
         private ICatalogManager _catalogManager;
         private IDataControllerService _dataControllerService;
 
@@ -62,18 +62,10 @@ namespace Nexus.Core
 
             try
             {
-                if (this.IsTransient)
-                {
-                    return await _catalogManager.GetCatalogContainersAsync(this, cancellationToken);
-                }
+                if (this.IsTransient || _childCatalogContainers is null)
+                    _childCatalogContainers = await _catalogManager.GetCatalogContainersAsync(this, cancellationToken);
 
-                else
-                {
-                    if (_lazyLoadedChildren is null)
-                        _lazyLoadedChildren = await _catalogManager.GetCatalogContainersAsync(this, cancellationToken);
-
-                    return _lazyLoadedChildren;
-                }
+                return _childCatalogContainers;
             }
             finally
             {
@@ -93,7 +85,7 @@ namespace Nexus.Core
 
             try
             {
-                if (_catalogInfo is null)
+                if (this.IsTransient || _catalogInfo is null)
                 {
                     var catalogBegin = default(DateTime);
                     var catalogEnd = default(DateTime);

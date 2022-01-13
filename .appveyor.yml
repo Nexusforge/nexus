@@ -20,7 +20,7 @@ init:
   - ps: git config --global core.autocrlf true
 
 build_script:
-  - ps: dotnet publish -c $Env:CONFIGURATION -o app --no-self-contained /p:Build=$Env:APPVEYOR_BUILD_NUMBER /p:IsFinalBuild=$Env:APPVEYOR_REPO_TAG /p:GeneratePackage=true src/Nexus/Nexus.csproj
+  - ps: dotnet publish -c $Env:CONFIGURATION -o app --no-self-contained /p:Build=$Env:APPVEYOR_BUILD_NUMBER /p:IsFinalBuild=$Env:APPVEYOR_REPO_TAG src/Nexus/Nexus.csproj
 
 test_script:
   - ps: dotnet test -c $Env:CONFIGURATION /p:BuildProjectReferences=false

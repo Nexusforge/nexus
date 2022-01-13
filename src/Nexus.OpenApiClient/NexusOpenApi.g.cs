@@ -44,7 +44,7 @@ namespace Nexus.Client
         /// <param name="begin">Start date.</param>
         /// <param name="end">End date.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<AvailabilityResponse> GetCatalogAvailabilityAsync(string catalogId, System.DateTimeOffset? begin = null, System.DateTimeOffset? end = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<AvailabilityResponse> GetCatalogAvailabilityAsync(string catalogId, System.DateTime? begin = null, System.DateTime? end = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>Gets the specified attachment.</summary>
@@ -332,7 +332,7 @@ namespace Nexus.Client
         /// <param name="begin">Start date.</param>
         /// <param name="end">End date.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public async System.Threading.Tasks.Task<AvailabilityResponse> GetCatalogAvailabilityAsync(string catalogId, System.DateTimeOffset? begin = null, System.DateTimeOffset? end = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async System.Threading.Tasks.Task<AvailabilityResponse> GetCatalogAvailabilityAsync(string catalogId, System.DateTime? begin = null, System.DateTime? end = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (catalogId == null)
                 throw new System.ArgumentNullException("catalogId");
@@ -903,7 +903,7 @@ namespace Nexus.Client
         /// <param name="begin">Start date/time.</param>
         /// <param name="end">End date/time.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<FileResponse> GetStreamAsync(string catalogId, string resourceId, string representationId, System.DateTimeOffset begin, System.DateTimeOffset end, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<FileResponse> GetStreamAsync(string catalogId, string resourceId, string representationId, System.DateTime begin, System.DateTime end, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
     
     }
     
@@ -947,7 +947,7 @@ namespace Nexus.Client
         /// <param name="begin">Start date/time.</param>
         /// <param name="end">End date/time.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public async System.Threading.Tasks.Task<FileResponse> GetStreamAsync(string catalogId, string resourceId, string representationId, System.DateTimeOffset begin, System.DateTimeOffset end, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public async System.Threading.Tasks.Task<FileResponse> GetStreamAsync(string catalogId, string resourceId, string representationId, System.DateTime begin, System.DateTime end, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (catalogId == null)
                 throw new System.ArgumentNullException("catalogId");
@@ -1867,7 +1867,7 @@ namespace Nexus.Client
                 throw new System.ArgumentNullException("request");
     
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/users/refresh");
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/users/refresh-token");
     
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -1941,7 +1941,7 @@ namespace Nexus.Client
                 throw new System.ArgumentNullException("request");
     
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/users/revoke");
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/users/revoke-token");
     
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -2278,10 +2278,10 @@ namespace Nexus.Client
     public partial class TimeRangeResponse 
     {
         [System.Text.Json.Serialization.JsonPropertyName("begin")]
-        public System.DateTimeOffset Begin { get; set; }= default!;
+        public System.DateTime Begin { get; set; }= default!;
     
         [System.Text.Json.Serialization.JsonPropertyName("end")]
-        public System.DateTimeOffset End { get; set; }= default!;
+        public System.DateTime End { get; set; }= default!;
     
     
     }
@@ -2308,10 +2308,10 @@ namespace Nexus.Client
     public partial class ExportParameters 
     {
         [System.Text.Json.Serialization.JsonPropertyName("begin")]
-        public System.DateTimeOffset Begin { get; set; }= default!;
+        public System.DateTime Begin { get; set; }= default!;
     
         [System.Text.Json.Serialization.JsonPropertyName("end")]
-        public System.DateTimeOffset End { get; set; }= default!;
+        public System.DateTime End { get; set; }= default!;
     
         [System.Text.Json.Serialization.JsonPropertyName("filePeriod")]
         public System.TimeSpan FilePeriod { get; set; }= default!;
@@ -2344,7 +2344,7 @@ namespace Nexus.Client
     public partial class JobStatus 
     {
         [System.Text.Json.Serialization.JsonPropertyName("start")]
-        public System.DateTimeOffset Start { get; set; }= default!;
+        public System.DateTime Start { get; set; }= default!;
     
         [System.Text.Json.Serialization.JsonPropertyName("status")]
         [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
@@ -2448,13 +2448,9 @@ namespace Nexus.Client
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
     public partial class RefreshTokenRequest 
     {
-        /// <summary>The user ID.</summary>
-        [System.Text.Json.Serialization.JsonPropertyName("userId")]
-        public string UserId { get; set; }= default!;
-    
         /// <summary>The refresh token.</summary>
-        [System.Text.Json.Serialization.JsonPropertyName("token")]
-        public string Token { get; set; }= default!;
+        [System.Text.Json.Serialization.JsonPropertyName("refreshToken")]
+        public string RefreshToken { get; set; }= default!;
     
     
     }
@@ -2463,10 +2459,6 @@ namespace Nexus.Client
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.5.2.0 (Newtonsoft.Json v13.0.0.0)")]
     public partial class RevokeTokenRequest 
     {
-        /// <summary>The user ID.</summary>
-        [System.Text.Json.Serialization.JsonPropertyName("userId")]
-        public string UserId { get; set; }= default!;
-    
         /// <summary>The refresh token.</summary>
         [System.Text.Json.Serialization.JsonPropertyName("token")]
         public string Token { get; set; }= default!;
@@ -2484,11 +2476,11 @@ namespace Nexus.Client
     
         /// <summary>Gets or sets the date/time when the token was created.</summary>
         [System.Text.Json.Serialization.JsonPropertyName("created")]
-        public System.DateTimeOffset Created { get; set; }= default!;
+        public System.DateTime Created { get; set; }= default!;
     
         /// <summary>Gets or sets the date/time when the token expires.</summary>
         [System.Text.Json.Serialization.JsonPropertyName("expires")]
-        public System.DateTimeOffset Expires { get; set; }= default!;
+        public System.DateTime Expires { get; set; }= default!;
     
         /// <summary>Gets a value that indicates if the token has expired.</summary>
         [System.Text.Json.Serialization.JsonPropertyName("isExpired")]

@@ -25,11 +25,9 @@ namespace Nexus.API.V1
     /// <summary>
     /// A refresh token request.
     /// </summary>
-    /// <param name="UserId">The user ID.</param>
-    /// <param name="Token">The refresh token.</param>
+    /// <param name="RefreshToken">The refresh token.</param>
     public record RefreshTokenRequest(
-        [Required] string UserId,
-        [Required] string Token);
+        [Required] string RefreshToken);
 
     /// <summary>
     /// The refresh token request response.
@@ -45,10 +43,8 @@ namespace Nexus.API.V1
     /// <summary>
     /// A revoke token request.
     /// </summary>
-    /// <param name="UserId">The user ID.</param>
     /// <param name="Token">The refresh token.</param>
     public record RevokeTokenRequest(
-        [Required] string UserId,
         [Required] string Token);
 
     /// <summary>

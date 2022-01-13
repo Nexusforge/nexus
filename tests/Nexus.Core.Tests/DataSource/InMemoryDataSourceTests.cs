@@ -1,6 +1,5 @@
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Nexus;
-using Nexus.Core.Tests;
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Sources;
@@ -10,19 +9,11 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace DataSource
 {
     public class InMemoryDataSourceTests
     {
-        private ILogger _logger;
-
-        public InMemoryDataSourceTests(ITestOutputHelper xunitLogger)
-        {
-            _logger = new XunitLoggerProvider(xunitLogger).CreateLogger(nameof(InMemoryDataSourceTests));
-        }
-
         [Fact]
         public async Task ProvidesCatalog()
         {
@@ -32,7 +23,7 @@ namespace DataSource
             var context = new DataSourceContext(
                 ResourceLocator: new Uri("memory://localhost"),
                 Configuration: new Dictionary<string, string>(),
-                Logger: _logger);
+                Logger: NullLogger.Instance);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
@@ -65,7 +56,7 @@ namespace DataSource
             var context = new DataSourceContext(
                 ResourceLocator: new Uri("memory://localhost"),
                 Configuration: new Dictionary<string, string>(),
-                Logger: _logger);
+                Logger: NullLogger.Instance);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
@@ -83,7 +74,7 @@ namespace DataSource
             var context = new DataSourceContext(
                 ResourceLocator: new Uri("memory://localhost"),
                 Configuration: new Dictionary<string, string>(),
-                Logger: _logger);
+                Logger: NullLogger.Instance);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
@@ -103,7 +94,7 @@ namespace DataSource
             var context = new DataSourceContext(
                 ResourceLocator: new Uri("memory://localhost"),
                 Configuration: new Dictionary<string, string>(),
-                Logger: _logger);
+                Logger: NullLogger.Instance);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 

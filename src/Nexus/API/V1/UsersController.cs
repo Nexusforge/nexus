@@ -82,11 +82,11 @@ namespace Nexus.Controllers.V1
         /// <param name="request">The refresh token request.</param>
         /// <returns>A new pair of JWT and refresh token.</returns>
         [AllowAnonymous]
-        [HttpPost("refresh")]
+        [HttpPost("refresh-token")]
         public async Task<ActionResult<RefreshTokenResponse>> RefreshTokenAsync(RefreshTokenRequest request)
         {
             var (jwtToken, refreshToken, error) = await _authService
-                .RefreshTokenAsync(request.UserId, request.Token);
+                .RefreshTokenAsync(request.RefreshToken);
 
             return this.Ok(new RefreshTokenResponse(jwtToken, refreshToken, error));
         }
@@ -95,18 +95,12 @@ namespace Nexus.Controllers.V1
         /// Revokes a refresh token.
         /// </summary>
         /// <param name="request">The revoke token request.</param>
-        [HttpPost("revoke")]
+        [AllowAnonymous]
+        [HttpPost("revoke-token")]
         public async Task<ActionResult> RevokeTokenAsync(RevokeTokenRequest request)
         {
-            // authorize
-            var user = this.HttpContext.User;
-
-            if (!(user.Identity.Name == request.UserId || this.HttpContext.User.HasClaim("IsAdmin", "true")))
-                return this.Unauthorized();
-
-            // revoke token
             var error = await _authService
-                .RevokeTokenAsync(request.UserId, request.Token);
+                .RevokeTokenAsync(request.Token);
 
             return this.Ok(new RevokeTokenResponse(error));
         }

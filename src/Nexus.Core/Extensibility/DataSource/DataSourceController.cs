@@ -91,7 +91,7 @@ namespace Nexus.Extensibility
         }
 
         public async Task<ResourceCatalog>
-           GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
+            GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
         {
             this.Logger.LogDebug("Load catalog {CatalogId}", catalogId);
 

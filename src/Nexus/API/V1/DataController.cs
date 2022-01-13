@@ -69,18 +69,12 @@ namespace Nexus.Controllers.V1
 
             try
             {
-                // catalog container
+                // find representation
                 var root = _appState.CatalogState.Root;
 
-                var catalogContainer = await root.TryFindCatalogContainerAsync(catalogId, cancellationToken);
-
-                if (catalogContainer is null)
-                    return this.NotFound($"Could not find catalog {catalogId}.");
-
-                // representation
                 var resourcePath = $"{catalogId}/{resourceId}/{representationId}";
 
-                var catalogItem = await catalogContainer.TryFindAsync(resourcePath, cancellationToken);
+                var (catalogContainer, catalogItem) = await root.TryFindAsync(resourcePath, cancellationToken);
 
                 if (catalogItem is null)
                     return this.NotFound($"Could not find resource path {resourcePath}.");
