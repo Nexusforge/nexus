@@ -86,11 +86,17 @@ namespace Nexus.Sources
                     {
                         dataDouble = Enumerable.Range(0, elementCount).Select(i => i * dt + beginTime).ToArray();
                     }
+
                     else // temperature or wind speed
                     {
+                        int seedValue = (int)begin.Ticks;
+
+                        if (this.Context.Configuration.TryGetValue("seed", out var seed))
+                            int.TryParse(seed, out seedValue);
+
                         var kernelSize = 1000;
                         var movingAverage = new double[kernelSize];
-                        var random = new Random((int)begin.Ticks);
+                        var random = new Random(seedValue);
                         var mean = 15;
 
                         dataDouble = new double[elementCount];
@@ -99,6 +105,18 @@ namespace Nexus.Sources
                         {
                             movingAverage[i % kernelSize] = (random.NextDouble() - 0.5) * mean * 10 + mean;
                             dataDouble[i] = movingAverage.Sum() / kernelSize;
+                        }
+                    }
+
+                    // offset
+                    if (this.Context.Configuration.TryGetValue("offset", out var offsetString))
+                    {
+                        if (double.TryParse(offsetString, out var offset))
+                        {
+                            for (int i = 0; i < dataDouble.Length; i++)
+                            {
+                                dataDouble[i] += offset;
+                            }
                         }
                     }
 

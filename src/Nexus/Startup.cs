@@ -177,9 +177,10 @@ namespace Nexus
                 });
             }
 
-            // custom
+            // HTTP context
             services.AddHttpContextAccessor();
 
+            // custom
             services.AddTransient<DataService>();
 
             services.AddScoped<IDBService, DbService>();

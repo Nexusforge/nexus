@@ -12,26 +12,34 @@ To enable users to activate own `IDataSource` instances (e.g. in case of the `Rp
 
 Every `IDataSource` instance contributes zero or more resource catalogs. Catalogs can be visible for all users or for the registering user only, which depends on the value of the `CanEditCatalog` claim and if the user is an administrator.
 
-After Nexus has loaded the backend sources for each user, it starts asking all `IDataSource` instances for their list of top level catalogs. Every catalog is then converted into a `CatalogContainer` which defers loading the catalog content to when it is actually required. The top level catalogs are "mounted" in a "subdirectory" the root catalog. A mounted catalog can consists of more child catalogs. To keep things simple and efficient, these child catalogs can only be provided by backend source that provided the parent catalog.
+After Nexus has loaded the backend sources for each user, it starts asking all `IDataSource` instances for their list of top level catalogs. Every catalog is then converted into a `CatalogContainer` which defers loading the catalog content to when it is actually required. The top level catalogs are "mounted" in a "subdirectory" of the root catalog. A mounted catalog can consists of zero or more child catalogs. To keep things simple and efficient, these child catalogs can only be provided by the backend source that provided the parent catalog.
 
 ## Use Case: External System with User Specific Catalogs
 
-There may be the requirement that a catalog should have one or more child catalogs. This might happen when an `IDataSource` wants to provide access to an external system or to another Nexus instance. In that case, it may also be necessary to provide user credentials for the external system. Additionally, the presented catalog hierarchy might be specific to the current user.
+There may be the requirement that a catalog has some child catalogs. This might happen when an `IDataSource` wants to provide access to an external system or to another Nexus instance. In that case, it may also be necessary to provide user credentials for the external system. Additionally, the presented catalog hierarchy might be specific to the current user.
 
 To enable this scenario, there is the need for Nexus to distinguish between `static` child catalogs which are loaded once and `transient` ones that should be looked up on each request. This option can be specified by the `IDataSource` individually for each catalog registration.
 
 An `IDataSource` which provides user-specific catalogs would register these as `transient` and use the user credentials to retrieve them from the external system. To speed things up, the `IDataSource` may decide to cache the returned information on a per user level and delete that cache entry after a certain amount of time. 
 
-The credentials should be available for the lifetime of the current user session. In a browser-only scenario this could be implemented using a session cookie. For other client types like the Open API client, a more natural approach would be to attach additional configuration values that should be passed to the `IDataSource` instance to the bearer token which is created when the user authenticates or, alternatively, to serialize it and attach it as a custom header. The header solution will be implemented first using the custom header 'Configuration' which should contain a JSON serialized dictionary. If there is the requirement, the bearer token solution could be added later on. The problem with the bearer token is that the configuration dictionary needs to be passed to the authentication endpoint AND to the refresh endpoint. Also, it does not make much sense to round trip all the configuration from client to server to client to server.
+The credentials should not be stored by the Nexus instance and instead be provided by the user. This can be accomplished by extending the client HTTP request with a custom header called `Nexus-Configuration`. The value of that header should be a base64 JSON string which represents a string-only dictionary.
 
-Configuration values that are part of the bearer token need to have a selector prepended in front of the configuration key (regex pattern) to define the target `IDataSource` instance. This is necessary to ensure that credentials do no leak to the wrong `IDataSource`. 
+For example, you have the following JSON dictionary with user credentials for the next Nexus OpenAPI request.
 
-Example: The user credentials for a catalogs named `/A/B` and `/A/B/C` could be written as:
-
-```c#
-"/A/B/.*:Username" = "foo"
-"/A/B/.*:Password" = "bar"
+```json
+{
+    "Username": "foo",
+    "Password": "bar"
+}
 ```
+
+The following HTTP header shows the representation of that JSON object as base64 string:
+
+```
+Nexus-Configuration: eyJVc2VybmFtZSI6ImZvbyIsIlBhc3N3b3JkIjoiYmFyIn0=
+```
+
+When this header is available, the instantiated `IDataSource` gets a merged configuration dictionary injected into its constructor. This merged configuration consists of the backend source configuration and the user provided configuration, with the latter taking precedence.
 
 > 🛈 The exact configuration key names depend on the `IDataSource` implementation.
 

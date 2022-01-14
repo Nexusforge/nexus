@@ -1,10 +1,15 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Models;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -25,17 +30,21 @@ namespace Nexus.Services
     internal class DataControllerService : IDataControllerService
     {
         private AppState _appState;
+        private IHttpContextAccessor _httpContextAccessor;
         private IExtensionHive _extensionHive;
         private ILogger _logger;
         private ILoggerFactory _loggerFactory;
+        private Dictionary<string, string> _defaultUserConfiguration = new Dictionary<string, string>();
 
         public DataControllerService(
             AppState appState,
+            IHttpContextAccessor httpContextAccessor,
             IExtensionHive extensionHive,
             ILogger<DataControllerService> logger,
             ILoggerFactory loggerFactory)
         {
             _appState = appState;
+            _httpContextAccessor = httpContextAccessor;
             _extensionHive = extensionHive;
             _logger = logger;
             _loggerFactory = loggerFactory;
@@ -48,7 +57,8 @@ namespace Nexus.Services
             var logger1 = _loggerFactory.CreateLogger<DataSourceController>();
             var logger2 = _loggerFactory.CreateLogger($"{backendSource.Type} - {backendSource.ResourceLocator}");
             var dataSource = _extensionHive.GetInstance<IDataSource>(backendSource.Type);
-            var controller = new DataSourceController(dataSource, backendSource, logger1);
+            var userConfiguration = this.GetUserConfiguration();
+            var controller = new DataSourceController(dataSource, backendSource, userConfiguration, logger1);
 
             var actualCatalogCache = _appState.CatalogState.Cache.GetOrAdd(
                 backendSource,
@@ -69,6 +79,31 @@ namespace Nexus.Services
             await controller.InitializeAsync(logger2, cancellationToken);
 
             return controller;
+        }
+
+        private Dictionary<string, string> GetUserConfiguration()
+        {
+            var httpContext = _httpContextAccessor.HttpContext;
+
+            if (httpContext is null)
+                return _defaultUserConfiguration;
+
+            if (!httpContext.Request.Headers.TryGetValue("Nexus-Configuration", out var encodedUserConfiguration))
+                return _defaultUserConfiguration;
+
+            try
+            {
+                var userConfiguration = JsonSerializer
+                    .Deserialize<Dictionary<string, string>>(Convert.FromBase64String(encodedUserConfiguration.First()));
+
+                return userConfiguration is null
+                    ? _defaultUserConfiguration
+                    : userConfiguration;
+            }
+            catch
+            {
+                return _defaultUserConfiguration;
+            }
         }
     }
 }

@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Security;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -84,6 +86,28 @@ namespace Nexus.Client
 
             _jwtToken = authenticateResponse.JwtToken;
             _refreshToken = authenticateResponse.RefreshToken;
+        }
+
+        /// <summary>
+        /// Attaches configuration data to subsequent Nexus OpenAPI requests.
+        /// </summary>
+        /// <param name="configuration">The configuration data.</param>
+        public IDisposable AttachConfiguration(IDictionary<string, string> configuration)
+        {
+            var encodedJson = Convert.ToBase64String(JsonSerializer.SerializeToUtf8Bytes(configuration));
+
+            _httpClient.DefaultRequestHeaders.Remove("Nexus-Configuration");
+            _httpClient.DefaultRequestHeaders.Add("Nexus-Configuration", encodedJson);
+
+            return new DisposableConfiguration(this);
+        }
+
+        /// <summary>
+        /// Clears configuration data for all subsequent Nexus OpenAPI requests.
+        /// </summary>
+        public void ClearConfiguration()
+        {
+            _httpClient.DefaultRequestHeaders.Remove("Nexus-Configuration");
         }
 
         internal async Task ProcessResponseAsync(HttpClient client, HttpResponseMessage response, CancellationToken cancellationToken)

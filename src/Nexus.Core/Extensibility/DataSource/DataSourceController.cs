@@ -7,6 +7,7 @@ using System;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.IO.Pipelines;
 using System.Linq;
@@ -25,10 +26,15 @@ namespace Nexus.Extensibility
 
         #region Constructors
 
-        public DataSourceController(IDataSource dataSource, BackendSource backendSource, ILogger<DataSourceController> logger)
+        public DataSourceController(
+            IDataSource dataSource, 
+            BackendSource backendSource,
+            IReadOnlyDictionary<string, string> userConfiguration,
+            ILogger<DataSourceController> logger)
         {
             this.DataSource = dataSource;
             this.BackendSource = backendSource;
+            this.UserConfiguration = userConfiguration;
             this.Logger = logger;
         }
 
@@ -42,6 +48,8 @@ namespace Nexus.Extensibility
 
         private BackendSource BackendSource { get; }
 
+        private IReadOnlyDictionary<string, string> UserConfiguration { get; }
+
         private ILogger Logger { get; }
 
         #endregion
@@ -52,9 +60,17 @@ namespace Nexus.Extensibility
         {
             _catalogCache = catalogCache;
 
+            var mergedConfiguration = this.BackendSource.Configuration
+                .ToDictionary(entry => entry.Key, entry => entry.Value);
+
+            foreach (var entry in this.UserConfiguration)
+            {
+                mergedConfiguration[entry.Key] = entry.Value;
+            }
+
             var context = new DataSourceContext(
                 ResourceLocator: this.BackendSource.ResourceLocator,
-                Configuration: this.BackendSource.Configuration,
+                Configuration: mergedConfiguration,
                 Logger: logger);
 
             await this.DataSource.SetContextAsync(context, cancellationToken);
