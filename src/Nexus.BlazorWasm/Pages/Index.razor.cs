@@ -13,12 +13,6 @@ namespace Nexus.BlazorWasm.Pages
             var httpClient = new HttpClient();
             var client = new NexusOpenApiClient("https://localhost:8443", httpClient);
 
-            var dictionary = new Dictionary<string, string>()
-            {
-                ["a"] = "oans",
-                ["b"] = "zwoa",
-            };
-
             try
             {
                 await client.PasswordSignInAsync("root@nexus.localhost", "#root0/User1");

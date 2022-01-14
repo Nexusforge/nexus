@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
@@ -24,8 +25,13 @@ CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 // configuration
 var configuration = NexusOptionsBase.BuildConfiguration(args);
 
-var generalOptions = new GeneralOptions();
-configuration.GetSection(GeneralOptions.Section).Bind(generalOptions);
+var generalOptions = configuration
+    .GetSection(GeneralOptions.Section)
+    .Get<GeneralOptions>();
+
+var serverOptions = configuration
+    .GetSection(ServerOptions.Section)
+    .Get<ServerOptions>();
 
 // logging (https://nblumhardt.com/2019/10/serilog-in-aspnetcore-3/)
 var applicationName = generalOptions.ApplicationName;
@@ -41,6 +47,7 @@ try
     Log.Information("Start host.");
 
     var builder = WebApplication.CreateBuilder(args);
+
     builder.Configuration.AddConfiguration(configuration);
     builder.Host.UseSerilog();
 
@@ -54,7 +61,8 @@ try
     await ConfigurePipelineAsync(app);
 
     // Run
-    app.Run();
+    var baseUrl = $"{serverOptions.HttpScheme}://{serverOptions.HttpAddress}:{serverOptions.HttpPort}";
+    app.Run(baseUrl);
 }
 catch (Exception ex)
 {
@@ -86,13 +94,11 @@ void AddServices(IServiceCollection services, IConfiguration configuration)
         options.KnownProxies.Clear();
     });
 
+#error JWT token is not being validated
+
     // authentication
     services
-        .AddAuthentication(options =>
-        {
-            options.DefaultScheme = IdentityConstants.ApplicationScheme;
-            options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
-        })
+        .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
             options.TokenValidationParameters = new TokenValidationParameters()
@@ -115,7 +121,7 @@ void AddServices(IServiceCollection services, IConfiguration configuration)
             // Instead of RequireConfirmedEmail, this one has the desired effect!
             options.SignIn.RequireConfirmedAccount = usersOptions.VerifyEmail;
         })
-        .AddDefaultUI()
+        .AddSignInManager()
         .AddEntityFrameworkStores<ApplicationDbContext>();
 
     if (usersOptions.VerifyEmail)

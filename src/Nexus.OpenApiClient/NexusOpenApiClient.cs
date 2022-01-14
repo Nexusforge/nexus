@@ -124,6 +124,14 @@ namespace Nexus.Client
             {
                 var reason = await response.Content.ReadAsStringAsync();
 
+#error  var message = errorCode switch
+#error                {
+#error                "IDX10230" => "Lifetime validation failed.",
+#error                "IDX10503" => "Signature validation failed.",
+#error                _ => "The bearer token could not be validated."
+#error            };
+
+
                 // possible responses:
                 // ___________________
                 // not logged in:                       The current user is not authorized to access the catalog '/IN_MEMORY/TEST/RESTRICTED'.
