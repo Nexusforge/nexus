@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Primitives;
-using System.IO;
 
 namespace Nexus.Core
 {

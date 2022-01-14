@@ -38,7 +38,6 @@ namespace Nexus.Core
     {
         public const string Section = "General";
         public string? ApplicationName { get; set; }
-        public string? Language { get; set; }
     }
 
     internal record ServerOptions() : NexusOptionsBase

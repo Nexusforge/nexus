@@ -127,9 +127,9 @@ namespace Nexus.Client
                 // possible responses:
                 // ___________________
                 // not logged in:                       The current user is not authorized to access the catalog '/IN_MEMORY/TEST/RESTRICTED'.
-                // invalid token:                       The bearer token could not be validated.
-                // valid token but wrong signature:     Signature validation failed.
                 // expired token:                       Lifetime validation failed.
+                // valid token but wrong signature:     Signature validation failed.
+                // other reasons token:                 The bearer token could not be validated.
 
                 // new password login required, maybe the server has restarted
                 if (reason == "Signature validation failed.")

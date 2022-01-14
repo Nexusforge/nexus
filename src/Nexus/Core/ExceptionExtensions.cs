@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Nexus.Core
+﻿namespace Nexus.Core
 {
     internal static class ExceptionExtensions
     {

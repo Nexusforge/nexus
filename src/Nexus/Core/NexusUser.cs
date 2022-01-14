@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Nexus.Services;
-using System.Collections.Generic;
 
 namespace Nexus.Core
 {

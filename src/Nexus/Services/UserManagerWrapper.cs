@@ -1,10 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Nexus.Core;
-using System;
 using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace Nexus.Services
 {
