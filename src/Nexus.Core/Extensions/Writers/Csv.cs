@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 namespace Nexus.Writers
 {
     [DataWriterFormatName("Comma-separated (*.csv)")]
-    [DataWriterSelectOption("RowIndexFormat", "Row index format", "Excel", new string[] { "Excel", "Index", "Unix" }, new string[] { "Excel time", "Index-based", "Unix time" })]
+    [DataWriterSelectOption("RowIndexFormat", "Row index format", "Excel", new string[] { "Excel", "Index", "Unix", "ISO 8601" }, new string[] { "Excel time", "Index-based", "Unix time" })]
     [DataWriterIntegerNumberInputOption("SignificantFigures", "Significant figures", 4, 0, int.MaxValue)]
     [ExtensionDescription("Writes data into CSV files.")]
     internal class Csv : IDataWriter
@@ -87,6 +87,7 @@ namespace Nexus.Writers
                         // comment
                         streamWriter.WriteLine($"# format_version=1;");
                         streamWriter.WriteLine($"# system_name=Nexus;");
+#warning use .ToString("o") instead?
                         streamWriter.WriteLine($"# date_time={fileBegin.ToISO8601()};");
                         streamWriter.WriteLine($"# sample_period={samplePeriod.ToUnitString()};");
                         streamWriter.WriteLine($"# catalog_id={catalog.Id};");
@@ -114,6 +115,10 @@ namespace Nexus.Writers
 
                             case "Excel":
                                 streamWriter.Write("Excel time;");
+                                break;
+
+                            case "ISO 8601":
+                                streamWriter.Write("ISO 8601 time;");
                                 break;
 
                             default:
@@ -182,6 +187,8 @@ namespace Nexus.Writers
 
                     using var streamWriter = new StreamWriter(File.Open(filePath, FileMode.Append, FileAccess.Write), Encoding.UTF8);
 
+                    var dateTimeStart = _lastFileBegin + fileOffset;
+
                     var unixStart = _unixStart + fileOffset.TotalSeconds;
                     var unixScalingFactor = (double)_lastSamplePeriod.Ticks / TimeSpan.FromSeconds(1).Ticks;
 
@@ -204,6 +211,10 @@ namespace Nexus.Writers
 
                             case "Excel":
                                 streamWriter.Write($"{string.Format(_nfi, "{0:N9}", excelStart + rowIndex * excelScalingFactor)};");
+                                break;
+
+                            case "ISO 8601":
+                                streamWriter.Write($"{(dateTimeStart + (rowIndex * _lastSamplePeriod)).ToString("o")};");
                                 break;
 
                             default:
