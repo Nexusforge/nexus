@@ -1,9 +1,8 @@
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Nexus.Core;
-using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Models;
 using Nexus.Services;
@@ -11,6 +10,8 @@ using Nexus.Sources;
 using Nexus.Writers;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -30,9 +31,9 @@ namespace Services
               .Returns(new InMemory());
 
             var backendSource = new BackendSource(
-                Type: "Nexus.Builtin.InMemory", 
+                Type: default, 
                 new Uri("A", UriKind.Relative), 
-                Configuration: default,
+                Configuration: new Dictionary<string, string>(),
                 Publish: true);
 
             var expectedCatalog = InMemory.LoadCatalog("/A/B/C");
@@ -43,16 +44,31 @@ namespace Services
             );
 
             var appState = new AppState() { CatalogState = catalogState };
-            var serviceCollection = new ServiceCollection();
-            var serviceProvider = serviceCollection.BuildServiceProvider();
+
+            var userConfiguration = new Dictionary<string, string>()
+            {
+                ["foo"] = "bar",
+                ["foo2"] = "baz",
+            };
+
+            var encodedUserConfiguration = Convert.ToBase64String(JsonSerializer.SerializeToUtf8Bytes(userConfiguration));
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Headers.Add(DataControllerService.NexusConfigurationHeaderKey, encodedUserConfiguration);
+
+            var httpContextAccessor = Mock.Of<IHttpContextAccessor>();
+
+            Mock.Get(httpContextAccessor)
+                .SetupGet(httpContextAccessor => httpContextAccessor.HttpContext)
+                .Returns(httpContext);
 
             var loggerFactory = Mock.Of<ILoggerFactory>();
 
             Mock.Get(loggerFactory)
-              .Setup(loggerFactory => loggerFactory.CreateLogger(It.IsAny<string>()))
-              .Returns(NullLogger.Instance);
+                .Setup(loggerFactory => loggerFactory.CreateLogger(It.IsAny<string>()))
+                .Returns(NullLogger.Instance);
 
-            var dataControllerService = new DataControllerService(appState, extensionHive, default, loggerFactory);
+            var dataControllerService = new DataControllerService(appState, httpContextAccessor, extensionHive, default, loggerFactory);
 
             // Act
             var actual = await dataControllerService.GetDataSourceControllerAsync(backendSource, CancellationToken.None);
@@ -61,6 +77,12 @@ namespace Services
             var actualCatalog = await actual.GetCatalogAsync("/A/B/C", CancellationToken.None);
 
             Assert.Equal(expectedCatalog.Id, actualCatalog.Id);
+
+            var sortedExpected = new SortedDictionary<string, string>(userConfiguration);
+            var sortedActual = new SortedDictionary<string, string>(
+                ((DataSourceController)actual).UserConfiguration.ToDictionary(entry => entry.Key, entry => entry.Value));
+
+            Assert.True(sortedExpected.SequenceEqual(sortedActual));
         }
 
         [Fact]
@@ -78,7 +100,7 @@ namespace Services
             var exportParameters = new ExportParameters();
 
             // Act
-            var dataControllerService = new DataControllerService(new AppState(), extensionHive, default, loggerFactory);
+            var dataControllerService = new DataControllerService(new AppState(), default, extensionHive, default, loggerFactory);
             var actual = await dataControllerService.GetDataWriterControllerAsync(resourceLocator, exportParameters, CancellationToken.None);
 
             // Assert

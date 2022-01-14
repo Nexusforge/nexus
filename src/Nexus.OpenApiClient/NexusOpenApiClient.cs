@@ -15,6 +15,8 @@ namespace Nexus.Client
     /// </summary>
     public class NexusOpenApiClient
     {
+        private const string NexusConfigurationHeaderKey = "Nexus-Configuration";
+
         private bool _isRefreshRequest;
 
         private string? _jwtToken;
@@ -96,8 +98,8 @@ namespace Nexus.Client
         {
             var encodedJson = Convert.ToBase64String(JsonSerializer.SerializeToUtf8Bytes(configuration));
 
-            _httpClient.DefaultRequestHeaders.Remove("Nexus-Configuration");
-            _httpClient.DefaultRequestHeaders.Add("Nexus-Configuration", encodedJson);
+            _httpClient.DefaultRequestHeaders.Remove(NexusConfigurationHeaderKey);
+            _httpClient.DefaultRequestHeaders.Add(NexusConfigurationHeaderKey, encodedJson);
 
             return new DisposableConfiguration(this);
         }
@@ -107,7 +109,7 @@ namespace Nexus.Client
         /// </summary>
         public void ClearConfiguration()
         {
-            _httpClient.DefaultRequestHeaders.Remove("Nexus-Configuration");
+            _httpClient.DefaultRequestHeaders.Remove(NexusConfigurationHeaderKey);
         }
 
         internal async Task ProcessResponseAsync(HttpClient client, HttpResponseMessage response, CancellationToken cancellationToken)

@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using Nexus;
 using Nexus.DataModel;
 using Nexus.Extensibility;
+using Nexus.Models;
 using Nexus.Sources;
 using System;
 using System.Collections.Concurrent;
@@ -21,6 +23,59 @@ namespace DataSource
         public DataSourceControllerTests(DataSourceControllerFixture fixture)
         {
             _fixture = fixture;
+        }
+
+        [Fact]
+        internal async Task CanMergeConfiguration()
+        {
+            // Arrange
+            DataSourceContext dataSourceContext = null!;
+
+            var dataSource = Mock.Of<IDataSource>();
+
+            Mock.Get(dataSource)
+              .Setup(dataSource => dataSource.SetContextAsync(It.IsAny<DataSourceContext>(), It.IsAny<CancellationToken>()))
+              .Callback<DataSourceContext, CancellationToken>((context, cancellationToken) => dataSourceContext = context);
+
+            var backendSourceConfiguration = new Dictionary<string, string>()
+            {
+                ["foo"] = "to_be_overriden",
+                ["foo3"] = "bat",
+            };
+
+            var backendSource = new BackendSource(
+                Type: default,
+                ResourceLocator: default,
+                Configuration: backendSourceConfiguration,
+                Publish: true);
+
+            var userConfiguration = new Dictionary<string, string>()
+            {
+                ["foo"] = "bar",
+                ["foo2"] = "baz",
+            };
+
+            var controller = new DataSourceController(
+                dataSource,
+                backendSource,
+                userConfiguration,
+                NullLogger<DataSourceController>.Instance);
+
+            var expectedConfiguration = new Dictionary<string, string>()
+            {
+                ["foo"] = "bar",
+                ["foo2"] = "baz",
+                ["foo3"] = "bat",
+            };
+
+            // Act
+            await controller.InitializeAsync(default, default, default);
+            var actualConfiguration = dataSourceContext.Configuration;
+
+            // Assert
+            Assert.True(
+                new SortedDictionary<string, string>(expectedConfiguration)
+                .SequenceEqual(new SortedDictionary<string, string>(actualConfiguration)));
         }
 
         [Fact]

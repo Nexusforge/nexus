@@ -44,11 +44,11 @@ namespace Nexus.Extensibility
 
         internal static uint ChunkSize { get; set; } = NexusConstants.DefaultChunkSize;
 
-        internal IDataSource DataSource { get; }
+        private IDataSource DataSource { get; }
 
         private BackendSource BackendSource { get; }
 
-        private IReadOnlyDictionary<string, string> UserConfiguration { get; }
+        internal IReadOnlyDictionary<string, string> UserConfiguration { get; }
 
         private ILogger Logger { get; }
 

@@ -29,6 +29,8 @@ namespace Nexus.Services
 
     internal class DataControllerService : IDataControllerService
     {
+        public const string NexusConfigurationHeaderKey = "Nexus-Configuration";
+
         private AppState _appState;
         private IHttpContextAccessor _httpContextAccessor;
         private IExtensionHive _extensionHive;
@@ -88,7 +90,7 @@ namespace Nexus.Services
             if (httpContext is null)
                 return _defaultUserConfiguration;
 
-            if (!httpContext.Request.Headers.TryGetValue("Nexus-Configuration", out var encodedUserConfiguration))
+            if (!httpContext.Request.Headers.TryGetValue(NexusConfigurationHeaderKey, out var encodedUserConfiguration))
                 return _defaultUserConfiguration;
 
             try

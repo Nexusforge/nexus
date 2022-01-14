@@ -3,6 +3,7 @@ using Nexus.Extensibility;
 using Nexus.Models;
 using Nexus.Sources;
 using System;
+using System.Collections.Generic;
 
 namespace DataSource
 {
@@ -15,12 +16,15 @@ namespace DataSource
             var backendSource = new BackendSource(
                 Type: typeof(InMemory).FullName ?? throw new Exception("full name is null"), 
                 ResourceLocator: new Uri("memory://localhost"),
-                Configuration: default,
+                Configuration: new Dictionary<string, string>(),
                 Publish: true);
+
+            var userConfiguration = new Dictionary<string, string>();
 
             this.Controller = new DataSourceController(
                 dataSource,
                 backendSource,
+                userConfiguration,
                 NullLogger<DataSourceController>.Instance);
         }
 
