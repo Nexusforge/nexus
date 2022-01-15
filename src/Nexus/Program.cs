@@ -13,6 +13,7 @@ using NSwag.AspNetCore;
 using Serilog;
 using System.Globalization;
 using System.Security.Claims;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using ILogger = Microsoft.Extensions.Logging.ILogger;

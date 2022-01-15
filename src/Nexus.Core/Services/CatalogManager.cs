@@ -25,7 +25,7 @@ namespace Nexus.Services
     {
         #region Types
 
-        record CatalogPrototype(CatalogRegistration Registration, BackendSource BackendSource, ClaimsPrincipal User);
+        record CatalogPrototype(CatalogRegistration Registration, BackendSource BackendSource, ClaimsPrincipal Owner);
 
         #endregion
 
@@ -168,7 +168,7 @@ namespace Nexus.Services
                 /* create catalog container */
                 var catalogContainer = new CatalogContainer(
                     prototype.Registration,
-                    prototype.User,
+                    prototype.Owner,
                     prototype.BackendSource,
                     catalogMetadata,
                     this,
@@ -227,11 +227,11 @@ namespace Nexus.Services
                 /* reference found */
                 else
                 {
-                    var user = catalogPrototype.User;
-                    var otherUser = catalogPrototypesToKeep[referenceIndex].User;
+                    var owner = catalogPrototype.Owner;
+                    var otherOwner = catalogPrototypesToKeep[referenceIndex].Owner;
 
                     /* other user is no admin, but current user is */
-                    if (!otherUser.HasClaim(Claims.IS_ADMIN, "true") && user.HasClaim(Claims.IS_ADMIN, "true"))
+                    if (!otherOwner.HasClaim(Claims.IS_ADMIN, "true") && owner.HasClaim(Claims.IS_ADMIN, "true"))
                     {
                         _logger.LogWarning("Duplicate catalog {CatalogId}", catalogPrototypesToKeep[referenceIndex]);
                         catalogPrototypesToKeep[referenceIndex] = catalogPrototype;

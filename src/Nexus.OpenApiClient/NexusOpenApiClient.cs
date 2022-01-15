@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Security;
@@ -120,34 +121,14 @@ namespace Nexus.Client
             if (_isRefreshRequest)
                 return;
 
-            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            if (response.Headers.TryGetValues("WWW-Authenticate", out var values))
             {
-                var reason = await response.Content.ReadAsStringAsync();
+                var reason = values.First();
 
-//#error  var message = errorCode switch
-//#error                {
-//#error                "IDX10230" => "Lifetime validation failed.",
-//#error                "IDX10503" => "Signature validation failed.",
-//#error                _ => "The bearer token could not be validated."
-//#error            };
+#error not yet working
 
-
-                // possible responses:
-                // ___________________
-                // not logged in:                       The current user is not authorized to access the catalog '/IN_MEMORY/TEST/RESTRICTED'.
-                // expired token:                       Lifetime validation failed.
-                // valid token but wrong signature:     Signature validation failed.
-                // other reasons token:                 The bearer token could not be validated.
-
-                // new password login required, maybe the server has restarted
-                if (reason == "Signature validation failed.")
-                {
-                    this.SignOut();
-                    return;
-                }
-
-                // token has expired, try to refresh
-                if (reason == "Lifetime validation failed.")
+                // try to refresh token if it has expired
+                if (reason.StartsWith("IDX10230")) // => IDX10230: Lifetime validation failed. Delegate returned false, securitytoken: 'System.IdentityModel.Tokens.Jwt.JwtSecurityToken'.
                 {
                     try
                     {
@@ -185,6 +166,11 @@ namespace Nexus.Client
                     {
                         _isRefreshRequest = false;
                     }
+                }
+
+                else
+                {
+                    this.SignOut();
                 }
             }
         }

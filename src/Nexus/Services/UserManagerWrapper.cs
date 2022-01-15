@@ -4,6 +4,7 @@ using System.Security.Claims;
 
 namespace Nexus.Services
 {
+#warning The type is only required for the CatalogManager ("EnsureNoHierarchy") and hard to remove. But I would like to remove it.
     internal class UserManagerWrapper : IUserManagerWrapper
     {
         private ILogger _logger;
@@ -17,18 +18,18 @@ namespace Nexus.Services
             _logger = logger;
         }
 
-        public async Task<ClaimsPrincipal?> GetClaimsPrincipalAsync(string username)
+        public async Task<ClaimsPrincipal?> GetClaimsPrincipalAsync(string userId)
         {
             using (var scope = _serviceProvider.CreateScope())
             {
                 var userManager = scope.ServiceProvider.GetRequiredService<UserManager<NexusUser>>();
-                var user = await userManager.FindByNameAsync(username);
+                var user = await userManager.FindByNameAsync(userId);
 
                 if (user is null)
                     return null;
 
                 var claims = await userManager.GetClaimsAsync(user);
-                claims.Add(new Claim(ClaimTypes.Name, username));
+                claims.Add(new Claim(ClaimTypes.Name, userId));
 
                 var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, "Fake authentication type"));
 
