@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using Nexus.Core;
@@ -28,7 +29,7 @@ namespace Nexus.Services
         #region Fields
 
         private IDBService _dbService;
-        private UsersOptions _usersOptions;
+        private IdentityOptions _identityOptions;
         private SecurityOptions _securityOptions;
         private SigningCredentials _signingCredentials;
 
@@ -38,11 +39,11 @@ namespace Nexus.Services
 
         public NexusAuthenticationService(
             IDBService dbService,
-            IOptions<UsersOptions> usersOptions,
+            IOptions<IdentityOptions> identityOptions,
             IOptions<SecurityOptions> securityOptions)
         {
             _dbService = dbService;
-            _usersOptions = usersOptions.Value;
+            _identityOptions = identityOptions.Value;
             _securityOptions = securityOptions.Value;
 
             var key = Convert.FromBase64String(_securityOptions.Base64JwtSigningKey);
@@ -65,7 +66,7 @@ namespace Nexus.Services
 
             // check if user e-mail address is confirmed
             var isConfirmed =
-                !_usersOptions.VerifyEmail ||
+                !_identityOptions.SignIn.RequireConfirmedAccount ||
                 await _dbService.IsEmailConfirmedAsync(user);
 
             if (!isConfirmed)

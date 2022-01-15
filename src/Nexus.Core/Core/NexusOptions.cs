@@ -10,6 +10,8 @@ namespace Nexus.Core
 
     internal abstract record NexusOptionsBase()
     {
+        public const string IdentitySection = "Identity";
+
         // for testing only
         public string? BlindSample { get; set; }
 
@@ -86,12 +88,6 @@ namespace Nexus.Core
         public string Base64JwtSigningKey { get; set; } = _defaultKey;
         public TimeSpan JwtTokenLifeTime { get; set; }
         public TimeSpan RefreshTokenLifeTime { get; set; }
-    }
-
-    internal record UsersOptions() : NexusOptionsBase
-    {
-        public const string Section = "Users";
-        public bool VerifyEmail { get; set; }
     }
 
     internal record SmtpOptions : NexusOptionsBase

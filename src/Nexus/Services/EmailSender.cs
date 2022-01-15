@@ -18,6 +18,15 @@ namespace Nexus.Services
 
         public async Task SendEmailAsync(string email, string subject, string message)
         {
+            if (_smtpOptions.Host is null || 
+                _smtpOptions.Port == 0 ||
+                _smtpOptions.FromAddress is null || 
+                _smtpOptions.FromName is null)
+            {
+                _logger.LogTrace("Unable to send mail because SMPT options are not configured properly.");
+                return;
+            }
+
             _logger.LogDebug("Send mail to address {MailAddress}", email);
 
             try

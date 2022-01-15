@@ -76,11 +76,9 @@ finally
 
 void AddServices(IServiceCollection services, IConfiguration configuration)
 {
-    var usersOptions = new UsersOptions();
-    configuration.GetSection(UsersOptions.Section).Bind(usersOptions);
-
-    var securityOptions = new SecurityOptions();
-    configuration.GetSection(SecurityOptions.Section).Bind(securityOptions);
+    var securityOptions = configuration
+        .GetSection(SecurityOptions.Section)
+        .Get<SecurityOptions>();
 
     // database
     services.AddDbContext<ApplicationDbContext>();
@@ -94,11 +92,22 @@ void AddServices(IServiceCollection services, IConfiguration configuration)
         options.KnownProxies.Clear();
     });
 
-#error JWT token is not being validated
+    // identity
+    services
+        .Configure<IdentityOptions>(configuration.GetSection(NexusOptionsBase.IdentitySection));
+
+    services
+        .AddIdentityCore<NexusUser>()
+        .AddSignInManager<SignInManager<NexusUser>>()
+        .AddEntityFrameworkStores<ApplicationDbContext>();
 
     // authentication
     services
-        .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddAuthentication(options =>
+        {
+            // Very important, because AddIdentity made Cookie Authentication the default.
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
         .AddJwtBearer(options =>
         {
             options.TokenValidationParameters = new TokenValidationParameters()
@@ -112,20 +121,8 @@ void AddServices(IServiceCollection services, IConfiguration configuration)
             };
         });
 
-    // identity (customize: https://docs.microsoft.com/en-us/aspnet/core/security/authentication/customize-identity-model?view=aspnetcore-3.1)
-    // what does "AddDefaultIdentity" do: https://github.com/aspnet/Identity/blob/master/src/UI/IdentityServiceCollectionUIExtensions.cs
-    services
-        .AddIdentityCore<NexusUser>(options =>
-        {
-            options.Stores.MaxLengthForKeys = 128;
-            // Instead of RequireConfirmedEmail, this one has the desired effect!
-            options.SignIn.RequireConfirmedAccount = usersOptions.VerifyEmail;
-        })
-        .AddSignInManager()
-        .AddEntityFrameworkStores<ApplicationDbContext>();
-
-    if (usersOptions.VerifyEmail)
-        services.AddTransient<IEmailSender, EmailSender>();
+    // email sender
+    services.AddTransient<IEmailSender, EmailSender>();
 
     // blazor
     services.AddRazorPages();
@@ -205,7 +202,6 @@ void AddServices(IServiceCollection services, IConfiguration configuration)
     services.Configure<SecurityOptions>(configuration.GetSection(SecurityOptions.Section));
     services.Configure<ServerOptions>(configuration.GetSection(ServerOptions.Section));
     services.Configure<SmtpOptions>(configuration.GetSection(SmtpOptions.Section));
-    services.Configure<UsersOptions>(configuration.GetSection(UsersOptions.Section));
 }
 
 Task ConfigurePipelineAsync(WebApplication app)

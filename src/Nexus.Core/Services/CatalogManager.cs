@@ -156,10 +156,6 @@ namespace Nexus.Services
             /* convert to catalog containers */
             var catalogContainers = catalogPrototypes.Select(prototype =>
             {
-                /* get user specific catalog */
-                var identity = prototype.User.Identity ?? throw new Exception("identity is null");
-                var username = identity.Name ?? throw new Exception("name is null");
-
                 /* create catalog metadata */
                 CatalogMetadata catalogMetadata;
 

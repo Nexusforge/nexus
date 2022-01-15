@@ -13,7 +13,6 @@ namespace Other
         [InlineData(ServerOptions.Section, typeof(ServerOptions))]
         [InlineData(PathsOptions.Section, typeof(PathsOptions))]
         [InlineData(SecurityOptions.Section, typeof(SecurityOptions))]
-        [InlineData(UsersOptions.Section, typeof(UsersOptions))]
         [InlineData(SmtpOptions.Section, typeof(SmtpOptions))]
         [Theory]
         public void CanBindOptions<T>(string section, Type optionsType)
