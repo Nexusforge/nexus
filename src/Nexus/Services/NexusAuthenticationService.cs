@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
@@ -184,6 +184,7 @@ namespace Nexus.Services
                 {
                     new Claim(ClaimTypes.Name, userId)
                 }.Concat(claims)),
+                NotBefore = DateTime.UtcNow,
                 Expires = DateTime.UtcNow.Add(_securityOptions.JwtTokenLifeTime),
                 SigningCredentials = _signingCredentials
             };

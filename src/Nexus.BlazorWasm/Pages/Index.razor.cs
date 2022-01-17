@@ -13,25 +13,9 @@ namespace Nexus.BlazorWasm.Pages
             var httpClient = new HttpClient();
             var client = new NexusOpenApiClient("https://localhost:8443", httpClient);
 
-            try
-            {
-                await client.PasswordSignInAsync("root@nexus.localhost", "#root0/User1");
-            }
-            catch (SecurityException)
-            {
-                // handle it
-                throw;
-            }
-
-            try
-            {
-                var catalog = await client.Catalogs.GetCatalogAsync("/IN_MEMORY/TEST/RESTRICTED");
-                this.Catalog = JsonSerializer.Serialize(catalog);
-            }
-            catch (Exception ex)
-            {
-                this.Catalog = "Dat ging schief2." + ex.Message + ex.StackTrace;
-            }
+            await client.PasswordSignInAsync("root@nexus.localhost", "#root0/User1");
+            var catalog = await client.Catalogs.GetCatalogAsync("/IN_MEMORY/TEST/RESTRICTED");
+            this.Catalog = JsonSerializer.Serialize(catalog);
         }
     }
 }

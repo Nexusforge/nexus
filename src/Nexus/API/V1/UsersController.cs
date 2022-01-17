@@ -7,6 +7,7 @@ using Nexus.Services;
 
 namespace Nexus.Controllers.V1
 {
+    [Authorize]
     [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
@@ -113,7 +114,7 @@ namespace Nexus.Controllers.V1
             var user = this.HttpContext.User;
 
             if (!(user.Identity.Name == userId || this.HttpContext.User.HasClaim("IsAdmin", "true")))
-                return this.Unauthorized();
+                return this.Unauthorized("Only the user owning the refresh tokens and administrators can use this endpoint.");
 
             // get database user
             var dbUser = await _dBService.FindByIdAsync(userId);

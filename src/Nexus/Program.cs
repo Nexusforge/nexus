@@ -13,7 +13,6 @@ using NSwag.AspNetCore;
 using Serilog;
 using System.Globalization;
 using System.Security.Claims;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
@@ -107,13 +106,13 @@ void AddServices(IServiceCollection services, IConfiguration configuration)
         .AddAuthentication(options =>
         {
             // Very important, because AddIdentity made Cookie Authentication the default.
-            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
         })
         .AddJwtBearer(options =>
         {
             options.TokenValidationParameters = new TokenValidationParameters()
             {
-                LifetimeValidator = (before, expires, token, parameters) => expires > DateTime.UtcNow,
+                ClockSkew = TimeSpan.Zero,
                 ValidateAudience = false,
                 ValidateIssuer = false,
                 ValidateActor = false,

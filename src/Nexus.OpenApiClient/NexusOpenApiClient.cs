@@ -17,6 +17,7 @@ namespace Nexus.Client
     public class NexusOpenApiClient
     {
         private const string NexusConfigurationHeaderKey = "Nexus-Configuration";
+        private const string AuthorizationHeaderKey = "Authorization";
 
         private bool _isRefreshRequest;
 
@@ -85,7 +86,7 @@ namespace Nexus.Client
             if (authenticateResponse.Error is not null)
                 throw new SecurityException($"Unable to authenticate. Reason: {authenticateResponse.Error}");
 
-            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {authenticateResponse.JwtToken}");
+            _httpClient.DefaultRequestHeaders.Add(AuthorizationHeaderKey, $"Bearer {authenticateResponse.JwtToken}");
 
             _jwtToken = authenticateResponse.JwtToken;
             _refreshToken = authenticateResponse.RefreshToken;
@@ -121,14 +122,21 @@ namespace Nexus.Client
             if (_isRefreshRequest)
                 return;
 
-            if (response.Headers.TryGetValues("WWW-Authenticate", out var values))
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
-                var reason = values.First();
+                var wwwAuthenticateHeader = response.Headers.WwwAuthenticate.FirstOrDefault();
 
-#error not yet working
+                if (wwwAuthenticateHeader is null)
+                    return;
+
+                var parameter = wwwAuthenticateHeader.Parameter;
+
+                if (parameter is null)
+                    return;
 
                 // try to refresh token if it has expired
-                if (reason.StartsWith("IDX10230")) // => IDX10230: Lifetime validation failed. Delegate returned false, securitytoken: 'System.IdentityModel.Tokens.Jwt.JwtSecurityToken'.
+                // see https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/dev/src/Microsoft.IdentityModel.Tokens/Validators.cs#L390
+                if (parameter.Contains("The token expired at"))
                 {
                     try
                     {
@@ -136,8 +144,6 @@ namespace Nexus.Client
 
                         if (_refreshToken is null || response.RequestMessage is null)
                             throw new Exception("Refresh token or request message is null. This should never happen.");
-
-                        _httpClient.DefaultRequestHeaders.Remove("Authorization");
 
                         var refreshRequest = new RefreshTokenRequest() { RefreshToken = _refreshToken };
                         var refreshResponse = await this.Users.RefreshTokenAsync(refreshRequest);
@@ -148,12 +154,17 @@ namespace Nexus.Client
                             return;
                         }
 
-                        _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {refreshResponse.JwtToken}");
+                        var authorizationHeaderValue = $"Bearer {refreshResponse.JwtToken}";
+                        _httpClient.DefaultRequestHeaders.Remove(AuthorizationHeaderKey);
+                        _httpClient.DefaultRequestHeaders.Add(AuthorizationHeaderKey, authorizationHeaderValue);
 
                         _jwtToken = refreshResponse.JwtToken;
                         _refreshToken = refreshResponse.RefreshToken;
 
                         var clonedMessage = await CloneHttpMessageAsync(response.RequestMessage);
+                        clonedMessage.Headers.Remove(AuthorizationHeaderKey);
+                        clonedMessage.Headers.Add(AuthorizationHeaderKey, authorizationHeaderValue);
+
                         var newResponse = await client.SendAsync(clonedMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
                         response.Content = newResponse.Content;
@@ -177,7 +188,7 @@ namespace Nexus.Client
 
         private void SignOut()
         {
-            _httpClient.DefaultRequestHeaders.Remove("Authorization");
+            _httpClient.DefaultRequestHeaders.Remove(AuthorizationHeaderKey);
             _refreshToken = null;
             _jwtToken = null;
         }

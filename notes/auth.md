@@ -1,0 +1,5 @@
+Authentication works by calling the endpoint `api/users/authenticate` which returns a JWT token and a refresh token. When a client invokes a protected API, the bearer token is validated. In case of an expired token or other validation errors, Nexus returns `401 Unauthorized` with the `WWW-Authenticate` header set to an appropriate error message.
+
+Clients may either decode the token to extract the `exp` claim or wait until the call fails with `401` and extract the error message. When message starts with "The token expired at 'xxx'" it should be refreshed first and then the original HTTP request can be sent again.
+
+In future, it may be required to allow anonymous access, e.g. to public catalogs. In that case it would be required to add special APIs for anonymous access. The reason is that the token is only validated by the framework when the `[Authorize]` attribute is present on the API.

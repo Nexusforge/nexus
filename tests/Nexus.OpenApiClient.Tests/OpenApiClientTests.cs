@@ -48,9 +48,10 @@ namespace Nexus.OpenApiClient.Tests
 
             var catalogsResponseMessage1 = new HttpResponseMessage()
             {
-                StatusCode = HttpStatusCode.Unauthorized,
-                Content = new StringContent("Lifetime validation failed.", Encoding.UTF8, "text/plain"),
+                StatusCode = HttpStatusCode.Unauthorized
             };
+
+            catalogsResponseMessage1.Headers.Add("WWW-Authenticate", "Bearer The token expired at ...");
 
             messageHandlerMock
                 .Protected()

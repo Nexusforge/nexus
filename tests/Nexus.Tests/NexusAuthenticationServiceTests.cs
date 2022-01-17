@@ -51,7 +51,7 @@ namespace Services
 
             var service = new NexusAuthenticationService(
                 dbService,
-                Options.Create(new UsersOptions()),
+                Options.Create(new IdentityOptions()),
                 Options.Create(new SecurityOptions() 
                 {
                     Base64JwtSigningKey = Base64JwtSigningKey,
@@ -108,7 +108,7 @@ namespace Services
 
             var service = new NexusAuthenticationService(
                 dbService,
-                Options.Create(new UsersOptions()),
+                Options.Create(new IdentityOptions()),
                 Options.Create(new SecurityOptions()));
 
             // Act
@@ -147,7 +147,7 @@ namespace Services
 
             var service = new NexusAuthenticationService(
                 dbService,
-                Options.Create(new UsersOptions() { VerifyEmail = true }),
+                Options.Create(new IdentityOptions() { SignIn = new SignInOptions() { RequireConfirmedAccount = true } }),
                 Options.Create(new SecurityOptions()));
 
             // Act
@@ -188,7 +188,7 @@ namespace Services
 
             var service = new NexusAuthenticationService(
                 dbService, 
-                Options.Create(new UsersOptions()),
+                Options.Create(new IdentityOptions()),
                 Options.Create(new SecurityOptions()));
 
             // Act
@@ -228,7 +228,7 @@ namespace Services
 
             var service = new NexusAuthenticationService(
                 dbService,
-                Options.Create(new UsersOptions()),
+                Options.Create(new IdentityOptions()),
                 Options.Create(new SecurityOptions()
                 {
                     Base64JwtSigningKey = Base64JwtSigningKey,
@@ -286,7 +286,7 @@ namespace Services
 
             var service = new NexusAuthenticationService(
                 dbService,
-                Options.Create(new UsersOptions() { VerifyEmail = true }),
+                Options.Create(new IdentityOptions()),
                 Options.Create(new SecurityOptions()));
 
             // Act
@@ -320,7 +320,7 @@ namespace Services
 
             var service = new NexusAuthenticationService(
                 dbService,
-                Options.Create(new UsersOptions() { VerifyEmail = true }),
+                Options.Create(new IdentityOptions()),
                 Options.Create(new SecurityOptions()));
 
             // Act
@@ -354,7 +354,7 @@ namespace Services
 
             var service = new NexusAuthenticationService(
                 dbService,
-                Options.Create(new UsersOptions()),
+                Options.Create(new IdentityOptions()),
                 Options.Create(new SecurityOptions()));
 
             // Act
@@ -386,7 +386,7 @@ namespace Services
 
             var service = new NexusAuthenticationService(
                 dbService,
-                Options.Create(new UsersOptions()),
+                Options.Create(new IdentityOptions()),
                 Options.Create(new SecurityOptions()));
 
             // Act
@@ -430,7 +430,7 @@ namespace Services
 
             var service = new NexusAuthenticationService(
                 dbService,
-                Options.Create(new UsersOptions()),
+                Options.Create(new IdentityOptions()),
                 Options.Create(new SecurityOptions()
                 {
                     RefreshTokenLifeTime = TimeSpan.FromHours(1)

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Models;
@@ -9,9 +10,7 @@ using System.Net;
 
 namespace Nexus.Controllers.V1
 {
-    // Fill dictionary with query parameters:
-    // https://.../api/v1/catalogs/xxx ? configuration[myKey1]=myValue1 & configuration[myKey2]=myValue2
-
+    [Authorize]
     [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
