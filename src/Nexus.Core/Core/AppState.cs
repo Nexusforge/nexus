@@ -1,8 +1,7 @@
+using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Models;
 using Nexus.Services;
-using Nexus.ViewModels;
-using Prism.Mvvm;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -11,15 +10,8 @@ using System.Threading.Tasks;
 
 namespace Nexus.Core
 {
-    internal class AppState : BindableBase
+    internal class AppState
     {
-        #region Fields
-
-        private CatalogState _catalogState;
-        private bool _isCatalogStateUpdating;
-
-        #endregion
-
         #region Constructors
 
         public AppState()
@@ -34,21 +26,13 @@ namespace Nexus.Core
 
         #region Properties - General
 
-        public ConcurrentDictionary<CatalogContainer, Task<ResourceViewModel[]>> ResourceCache { get; } = new ConcurrentDictionary<CatalogContainer, Task<ResourceViewModel[]>>();
+        public ConcurrentDictionary<CatalogContainer, Task<Resource[]>> ResourceCache { get; } = new ConcurrentDictionary<CatalogContainer, Task<Resource[]>>();
 
         public NexusProject Project { get; set; } = null!;
 
-        public CatalogState CatalogState
-        {
-            get { return _catalogState; }
-            set { this.SetProperty(ref _catalogState, value); }
-        }
+        public CatalogState CatalogState { get; set; }
 
-        public bool IsCatalogStateUpdating
-        {
-            get { return _isCatalogStateUpdating; }
-            set { this.SetProperty(ref _isCatalogStateUpdating, value); }
-        }
+        public bool IsCatalogStateUpdating { get; set; }
 
         public string Version { get; }
 

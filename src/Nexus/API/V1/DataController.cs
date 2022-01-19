@@ -96,7 +96,7 @@ namespace Nexus.Controllers.V1
             }
             catch (ValidationException ex)
             {
-                return this.UnprocessableEntity(ex.GetFullMessage(includeStackTrace: false));
+                return this.UnprocessableEntity(ex.Message);
             }
         }
     }

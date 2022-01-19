@@ -79,7 +79,7 @@ namespace Nexus.Controllers.V1
             //            }
             //            catch (ValidationException ex)
             //            {
-            //                return this.UnprocessableEntity(ex.GetFullMessage(includeStackTrace: false));
+            //                return this.UnprocessableEntity(ex.Message);
             //            }
 
             //            // check that there is anything to export
@@ -185,7 +185,7 @@ namespace Nexus.Controllers.V1
                         Progress: jobControl.Progress,
                         Status: jobControl.Task.Status,
                         ExceptionMessage: jobControl.Task.Exception is not null
-                            ? jobControl.Task.Exception.GetFullMessage(includeStackTrace: false)
+                            ? jobControl.Task.Exception.Message
                             : string.Empty,
                         Result: jobControl.Task.Status == TaskStatus.RanToCompletion
                             ? $"{this.GetBasePath()}/{jobControl.Task.Result}"

@@ -1,5 +1,4 @@
 ﻿using Nexus.Core;
-using Prism.Mvvm;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -11,7 +10,7 @@ using Timer = System.Timers.Timer;
 
 namespace Nexus.Services
 {
-    internal class JobService<T> : BindableBase where T : Job
+    internal class JobService<T> where T : Job
     {
         #region Fields
 
@@ -47,8 +46,6 @@ namespace Nexus.Services
                             _jobs.TryRemove(jobControl.Job.Id, out _);
                     }
                 }
-
-                this.RaisePropertyChanged("Jobs");
             };
         }
 
@@ -68,7 +65,6 @@ namespace Nexus.Services
             var progressHandler = (EventHandler<double>)((sender, e) =>
             {
                 jobControl.OnProgressUpdated(e);
-                this.RaisePropertyChanged("Jobs");
             });
 
             progress.ProgressChanged += progressHandler;
@@ -84,7 +80,6 @@ namespace Nexus.Services
                 {
                     jobControl.OnCompleted();
                     jobControl.ProgressUpdated -= progressHandler;
-                    this.RaisePropertyChanged("Jobs");
                 }
             });
 
@@ -95,10 +90,6 @@ namespace Nexus.Services
         private bool TryAddJob(JobControl<T> jobControl)
         {
             var result = _jobs.TryAdd(jobControl.Job.Id, jobControl);
-
-            if (result)
-                this.RaisePropertyChanged("Jobs");
-
             return result;
         }
 

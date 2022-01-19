@@ -1,34 +1,36 @@
-using Nexus.Client;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-internal abstract class NexusOpenApiClientBase
+namespace Nexus.Client
 {
-    public NexusOpenApiClient Client { get; init; } = null!;
-
-    protected Task PrepareRequestAsync(
-        HttpClient client,
-        HttpRequestMessage request,
-        string url)
+    internal abstract class NexusOpenApiClientBase
     {
-        return Task.CompletedTask;
-    }
+        public NexusOpenApiClient Client { get; init; } = null!;
 
-    protected Task PrepareRequestAsync(
-        HttpClient client, 
-        HttpRequestMessage request,
-        StringBuilder? urlBuilder)
-    {
-        return Task.CompletedTask;
-    }
+        protected Task PrepareRequestAsync(
+            HttpClient client,
+            HttpRequestMessage request,
+            string url)
+        {
+            return Task.CompletedTask;
+        }
 
-    protected Task ProcessResponseAsync(
-        HttpClient client,
-        HttpResponseMessage response,
-        CancellationToken cancellationToken)
-    {
-        return this.Client.ProcessResponseAsync(client, response, cancellationToken);
+        protected Task PrepareRequestAsync(
+            HttpClient client, 
+            HttpRequestMessage request,
+            StringBuilder? urlBuilder)
+        {
+            return Task.CompletedTask;
+        }
+
+        protected Task ProcessResponseAsync(
+            HttpClient client,
+            HttpResponseMessage response,
+            CancellationToken cancellationToken)
+        {
+            return this.Client.ProcessResponseAsync(client, response, cancellationToken);
+        }
     }
 }

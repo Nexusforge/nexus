@@ -99,6 +99,7 @@ void AddServices(IServiceCollection services, IConfiguration configuration)
     services
         .AddIdentityCore<NexusUser>()
         .AddSignInManager<SignInManager<NexusUser>>()
+        .AddDefaultTokenProviders()
         .AddEntityFrameworkStores<ApplicationDbContext>();
 
     // authentication
@@ -233,11 +234,9 @@ Task ConfigurePipelineAsync(WebApplication app)
     // static files
     app.UseStaticFiles();
 
-    app.UseStaticFiles(new StaticFileOptions
-    {
-        FileProvider = new LazyPhysicalFileProvider(pathsOptions.Value.Export),
-        RequestPath = "/export"
-    });
+    Directory.CreateDirectory(pathsOptions.Value.Export);
+
+    app.UseStaticFiles("/export");
 
     // swagger
     app.UseOpenApi();
