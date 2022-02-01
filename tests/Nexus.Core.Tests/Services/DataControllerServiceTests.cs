@@ -93,7 +93,7 @@ namespace Services
 
             Mock.Get(extensionHive)
               .Setup(extensionHive => extensionHive.GetInstance<IDataWriter>(It.IsAny<string>()))
-              .Returns(new Csv());
+              .Returns(new Csvw());
 
             var loggerFactory = Mock.Of<ILoggerFactory>();
             var resourceLocator = new Uri("A", UriKind.Relative);

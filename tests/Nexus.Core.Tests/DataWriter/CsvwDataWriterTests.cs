@@ -14,11 +14,11 @@ using Xunit;
 
 namespace DataWriter
 {
-    public class CsvDataWriterTests : IClassFixture<DataWriterFixture>
+    public class CsvwDataWriterTests : IClassFixture<DataWriterFixture>
     {
         private DataWriterFixture _fixture;
 
-        public CsvDataWriterTests(DataWriterFixture fixture)
+        public CsvwDataWriterTests(DataWriterFixture fixture)
         {
             _fixture = fixture;
         }
@@ -31,7 +31,7 @@ namespace DataWriter
         public async Task CanWriteFiles(string rowIndexFormat)
         {
             var targetFolder = _fixture.GetTargetFolder();
-            var dataWriter = new Csv() as IDataWriter;
+            var dataWriter = new Csvw() as IDataWriter;
 
             var context = new DataWriterContext(
                 ResourceLocator: new Uri(targetFolder),
