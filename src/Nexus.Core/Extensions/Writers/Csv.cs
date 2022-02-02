@@ -5,23 +5,26 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
-// https://www.w3.org/TR/tabular-data-primer/
-// https://www.w3.org/ns/csvw
-// https://www.w3.org/TR/2015/REC-tabular-data-model-20151217
+// Schema: https://frictionlessdata.io
+// Comparíson: https://discuss.okfn.org/t/w3c-csv-for-the-web-how-does-it-relate-to-data-packages/1715/2
+// Why not CSV on the web? https://twitter.com/readdavid/status/1195315653449793536
+// Linting: https://csvlint.io/ and https://ruby-rdf.github.io/rdf-tabular/
 
 namespace Nexus.Writers
 {
-    [DataWriterFormatName("CSV on the Web (*.csv)")]
+    [DataWriterFormatName("CSV with Table Schema (*.csv)")]
     [DataWriterSelectOption("RowIndexFormat", "Row index format", "Excel", new string[] { "Excel", "Index", "Unix", "ISO 8601" }, new string[] { "Excel time", "Index-based", "Unix time" })]
     [DataWriterIntegerNumberInputOption("SignificantFigures", "Significant figures", 4, 0, int.MaxValue)]
-    [ExtensionDescription("Writes data into CSV on the Web files.")]
-    internal class Csvw : IDataWriter
+    [ExtensionDescription("Writes data into CSV files.")]
+    internal class Csv : IDataWriter, IDisposable
     {
         #region "Fields"
 
@@ -32,12 +35,13 @@ namespace Nexus.Writers
         private TimeSpan _lastSamplePeriod;
         private NumberFormatInfo _nfi;
         private JsonSerializerOptions _options; 
+        private Dictionary<string, CsvResource> _resourceMap = new();
 
         #endregion
 
         #region "Constructors"
 
-        public Csvw()
+        public Csv()
         {
             _unixEpoch = new DateTime(1970, 01, 01);
 
@@ -51,7 +55,8 @@ namespace Nexus.Writers
             {
                 WriteIndented = true,
                 Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
             };
         }
 
@@ -90,54 +95,66 @@ namespace Nexus.Writers
                 var catalog = catalogItemGroup.Key;
                 var physicalId = catalog.Id.TrimStart('/').Replace('/', '_');
                 var root = this.Context.ResourceLocator.ToPath();
-                var fileName = $"{physicalId}_{fileBegin.ToISO8601()}_{samplePeriod.ToUnitString()}";
-                var filePath = Path.Combine(root, fileName);
-
-                /* resource name */
-                var rowIndexFormat = this.Context.Configuration.GetValueOrDefault("RowIndexFormat", "Index");
-
-                var timestampColumnTitle = rowIndexFormat switch
-                {
-                    "Index" => "index",
-                    "Unix" => "Unix time",
-                    "Excel" => "Excel time",
-                    "ISO 8601" => "ISO 8601 time",
-                    _ => throw new NotSupportedException($"The row index format '{rowIndexFormat}' is not supported.")
-                };
 
                 /* metadata */
-                var metaDataFilePath = $"{filePath}.csv-metadata.json";
+                var resourceFileNameWithoutExtension = $"{physicalId}_{samplePeriod.ToUnitString()}";
+                var resourceFileName = $"{resourceFileNameWithoutExtension}.resource.json";
+                var resourceFilePath = Path.Combine(root, resourceFileName);
 
-                if (!File.Exists(metaDataFilePath))
+                if (!_resourceMap.TryGetValue(resourceFilePath, out var resource))
                 {
-                    var timestampColumn = new Column(
-                        Titles: timestampColumnTitle,
-                        DataType: "dateTime",
-                        Properties: default);
+                    var rowIndexFormat = this.Context.Configuration.GetValueOrDefault("RowIndexFormat", "Index");
+                    var constraints = new Constraints(Required: true);
 
-                    var columns = new[] { timestampColumn }.Concat(catalogItemGroup.Select(catalogItem =>
+                    var timestampField = rowIndexFormat switch
                     {
-                        string? unit = default;
+                        "Index" => new Field("index", "integer", default, constraints, default),
+                        "Unix" => new Field("Unix time", "datetime", "any", constraints, default),
+                        "Excel" => new Field("Excel time", "number", default, constraints, default),
+                        "ISO 8601" => new Field("ISO 8601 time", "datetime", default, constraints, default),
+                        _ => throw new NotSupportedException($"The row index format '{rowIndexFormat}' is not supported.")
+                    };
 
-                        catalogItem.Resource.Properties?
-                            .TryGetValue(DataModelExtensions.Unit, out unit);
-                        
-                        return new Column(
-                            Titles: $"{catalogItem.Resource.Id} ({catalogItem.Representation.Id})", 
-                            DataType: "number",
+                    var layout = new Layout()
+                    {
+                        HeaderRows = new[] { 4 }
+                    };
+
+                    var fields = new[] { timestampField }.Concat(catalogItemGroup.Select(catalogItem =>
+                    {
+                        var fieldName = GetFieldName(catalogItem);
+
+                        return new Field(
+                            Name: fieldName,
+                            Type: "number",
+                            Format: null,
+                            Constraints: constraints,
                             Properties: catalogItem.Resource.Properties);
                     })).ToArray();
 
-                    var dialect = new Dialect("#", SkipRows: 3, Header: true, HeaderRowCount: 3);
-                    var tableSchema = new TableSchema(columns, catalog.Properties);
-                    var metadata = new CsvMetadata("http://www.w3.org/ns/csvw", $"{fileName}.csv", dialect, tableSchema);
+                    var schema = new Schema(
+                        PrimaryKey: timestampField.Name,
+                        Fields: fields,
+                        Properties: catalog.Properties
+                    );
 
-                    var jsonString = JsonSerializer.Serialize(metadata, _options);
-                    File.WriteAllText(metaDataFilePath, jsonString);
+                    resource = new CsvResource(
+                        Encoding: "utf-8-sig",
+                        Format: "csv",
+                        Hashing: "md5",
+                        Name: resourceFileNameWithoutExtension.ToLower(),
+                        Profile: "tabular-data-resource",
+                        Scheme: "file",
+                        Path: new List<string>(),
+                        Layout: layout,
+                        Schema: schema);
+
+                    _resourceMap[resourceFilePath] = resource;
                 }
 
                 /* data */
-                var dataFilePath = $"{filePath}.csv";
+                var dataFileName = $"{physicalId}_{fileBegin.ToISO8601()}_{samplePeriod.ToUnitString()}.csv";
+                var dataFilePath = Path.Combine(root, dataFileName);
 
                 if (!File.Exists(dataFilePath))
                 {
@@ -147,48 +164,31 @@ namespace Nexus.Writers
 
                     /* header values */
 #warning use .ToString("o") instead?
-                    await streamWriter.WriteLineAsync($"# date_time={fileBegin.ToISO8601()}");
-                    await streamWriter.WriteLineAsync($"# sample_period={samplePeriod.ToUnitString()}");
-                    await streamWriter.WriteLineAsync($"# catalog_id={catalog.Id}");
+                    stringBuilder.Append($"# date_time: {fileBegin.ToISO8601()}");
+                    AppendWindowsNewLine(stringBuilder);
 
-                    /* resource id */
-                    stringBuilder.Append($"{timestampColumnTitle},");
+                    stringBuilder.Append($"# sample_period: {samplePeriod.ToUnitString()}");
+                    AppendWindowsNewLine(stringBuilder);
 
-                    foreach (var catalogItem in catalogItemGroup)
-                    {
-                        stringBuilder.Append($"{catalogItem.Resource.Id},");
-                    }
+                    stringBuilder.Append($"# catalog_id: {catalog.Id}");
+                    AppendWindowsNewLine(stringBuilder);
 
-                    stringBuilder.Remove(stringBuilder.Length - 1, 1);
-                    stringBuilder.AppendLine();
-
-                    /* representation id */
-                    stringBuilder.Append("-;");
+                    /* field name */
+                    var timestampField = resource.Schema.Fields.First();
+                    stringBuilder.Append($"{timestampField.Name},");
 
                     foreach (var catalogItem in catalogItemGroup)
                     {
-                        stringBuilder.Append($"{catalogItem.Representation.Id},");
+                        var fieldName = GetFieldName(catalogItem);
+                        stringBuilder.Append($"{fieldName},");
                     }
 
                     stringBuilder.Remove(stringBuilder.Length - 1, 1);
-                    stringBuilder.AppendLine();
-
-                    /* unit */
-                    stringBuilder.Append("-,");
-
-                    foreach (var catalogItem in catalogItemGroup)
-                    {
-                        if (catalogItem.Resource.Properties is not null && catalogItem.Resource.Properties.TryGetValue("Unit", out var unit))
-                            stringBuilder.Append($"{unit},");
-
-                        else
-                            stringBuilder.Append(",");
-                    }
-
-                    stringBuilder.Remove(stringBuilder.Length - 1, 1);
-                    stringBuilder.AppendLine();
+                    AppendWindowsNewLine(stringBuilder);
 
                     await streamWriter.WriteAsync(stringBuilder);
+
+                    resource.Path.Add(dataFileName);
                 }
             }
         }
@@ -262,7 +262,7 @@ namespace Nexus.Writers
                     }
 
                     stringBuilder.Remove(stringBuilder.Length - 1, 1);
-                    stringBuilder.AppendLine();
+                    AppendWindowsNewLine(stringBuilder);
 
                     await streamWriter.WriteAsync(stringBuilder);
 
@@ -283,6 +283,57 @@ namespace Nexus.Writers
         public Task CloseAsync(CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void AppendWindowsNewLine(StringBuilder stringBuilder)
+        {
+            stringBuilder.Append("\r\n");
+        }
+
+        private string GetFieldName(CatalogItem catalogItem)
+        {
+            string? unit = default;
+
+            catalogItem.Resource.Properties?
+                .TryGetValue(DataModelExtensions.Unit, out unit);
+
+            var fieldName = $"{catalogItem.Resource.Id}_{catalogItem.Representation.Id}";
+
+            fieldName += unit is null
+                ? ""
+                : $" ({unit})";
+
+            return fieldName;
+        }
+
+        #endregion
+
+        #region IDisposable
+
+        private bool disposedValue;
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    foreach (var (path, resource) in _resourceMap)
+                    {
+                        var jsonString = JsonSerializer.Serialize(resource, _options);
+                        File.WriteAllText(path, jsonString);
+                    }
+                }
+
+                disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
 
         #endregion

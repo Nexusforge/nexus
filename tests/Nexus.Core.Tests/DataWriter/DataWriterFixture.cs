@@ -43,7 +43,6 @@ namespace DataWriter
             this.Catalogs = new[] { catalogBuilder1.Build(), catalogBuilder2.Build() };
         }
 
-
         public ResourceCatalog[] Catalogs { get; }
 
         public string GetTargetFolder()

@@ -18,7 +18,7 @@ namespace Nexus.Services
         public TimeSpan FilePeriod { get; set; }
 
         /// <example>Nexus.Writers.Csv</example>
-        public string Type { get; set; } = typeof(Csvw).FullName ?? throw new Exception("full name is null");
+        public string Type { get; set; } = typeof(Csv).FullName ?? throw new Exception("full name is null");
 
         /// <example>["/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean", "/IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean"]</example>
         public string[] ResourcePaths { get; set; } = new string[0];

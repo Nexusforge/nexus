@@ -1,0 +1,33 @@
+﻿using System.Collections.Generic;
+
+namespace Nexus.Writers
+{
+    internal record struct Layout(
+        int[] HeaderRows);
+
+    internal record struct Constraints(
+        bool Required);
+
+    internal record struct Field(
+        string Name,
+        string Type,
+        string? Format,
+        Constraints Constraints,
+        IReadOnlyDictionary<string, string>? Properties);
+
+    internal record struct Schema(
+        string PrimaryKey,
+        Field[] Fields,
+        IReadOnlyDictionary<string, string>? Properties);
+
+    internal record struct CsvResource(
+        string Encoding,
+        string Format,
+        string Hashing,
+        string Name,
+        string Profile,
+        string Scheme,
+        List<string> Path,
+        Layout Layout,
+        Schema Schema);
+}
