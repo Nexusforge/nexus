@@ -3,6 +3,7 @@ using Nexus.PackageManagement;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 
 namespace Nexus.Models
 {
@@ -41,12 +42,15 @@ namespace Nexus.Models
         public ResourceCatalog? Overrides { get; init; }
     }
 
-    public record AvailabilityResponse(
-        Dictionary<DateTime, double> Data);
+    public record SetPropertiesRequest(
+        string Properties);
 
     public record TimeRangeResponse(
-        DateTime Begin, 
+        DateTime Begin,
         DateTime End);
+
+    public record AvailabilityResponse(
+        Dictionary<DateTime, double> Data);
 
     internal sealed record BackendSource(
         string Type,

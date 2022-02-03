@@ -172,6 +172,7 @@ namespace Nexus.Services
                     prototype.BackendSource,
                     catalogMetadata,
                     this,
+                    _databaseManager,
                     _dataControllerService);
 
                 return catalogContainer;

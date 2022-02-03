@@ -1,10 +1,13 @@
 ﻿using Nexus.DataModel;
 using Nexus.Models;
 using Nexus.Services;
+using Nexus.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Security.Claims;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -17,6 +20,7 @@ namespace Nexus.Core
         private CatalogInfo? _catalogInfo;
         private CatalogContainer[]? _childCatalogContainers;
         private ICatalogManager _catalogManager;
+        private IDatabaseManager _databaseManager;
         private IDataControllerService _dataControllerService;
 
         public CatalogContainer(
@@ -25,6 +29,7 @@ namespace Nexus.Core
             BackendSource backendSource,
             CatalogMetadata metadata,
             ICatalogManager catalogManager,
+            IDatabaseManager databaseManager,
             IDataControllerService dataControllerService)
         {
             this.Id = registration.Path;
@@ -34,6 +39,7 @@ namespace Nexus.Core
             this.Metadata = metadata;
 
             _catalogManager = catalogManager;
+            _databaseManager = databaseManager;
             _dataControllerService = dataControllerService;
         }
 
@@ -47,11 +53,11 @@ namespace Nexus.Core
 
         public BackendSource BackendSource { get; }
 
-        public CatalogMetadata Metadata { get; }
+        public CatalogMetadata Metadata { get; internal set; }
 
-        public static CatalogContainer CreateRoot(ICatalogManager catalogManager)
+        public static CatalogContainer CreateRoot(ICatalogManager catalogManager, IDatabaseManager databaseManager)
         {
-            return new CatalogContainer(new CatalogRegistration("/"), null!, null!, null!, catalogManager, null!);
+            return new CatalogContainer(new CatalogRegistration("/"), null!, null!, null!, catalogManager, databaseManager, null!);
         }
 
         public async Task<IEnumerable<CatalogContainer>> GetChildCatalogContainersAsync(
@@ -74,50 +80,78 @@ namespace Nexus.Core
 
         public async Task<CatalogInfo> GetCatalogInfoAsync(CancellationToken cancellationToken)
         {
-            await this.EnsureLoadedAsync(cancellationToken);
-            return _catalogInfo;
+            await _semaphore.WaitAsync();
+
+            try
+            {
+                await this.EnsureCatalogInfoAsync(cancellationToken);
+
+                var catalogInfo = _catalogInfo;
+
+                if (catalogInfo is null)
+                    throw new Exception("this should never happen");
+
+                return catalogInfo;
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
         }
 
-        private async Task EnsureLoadedAsync(CancellationToken cancellationToken)
+        public async Task UpdateMetadataAsync(CatalogMetadata metadata)
         {
             await _semaphore.WaitAsync();
 
             try
             {
-                if (this.IsTransient || _catalogInfo is null)
-                {
-                    var catalogBegin = default(DateTime);
-                    var catalogEnd = default(DateTime);
+                // persist
+                using var stream = _databaseManager.WriteCatalogMetadata(this.Id);
+                await JsonSerializerHelper.SerializeIntendedAsync(stream, metadata);
 
-                    using var controller = await _dataControllerService.GetDataSourceControllerAsync(this.BackendSource, cancellationToken);
-                    var catalog = await controller.GetCatalogAsync(this.Id, cancellationToken);
+                // assign
+                this.Metadata = metadata;
 
-                    // get begin and end of project
-                    var timeRangeResult = await controller.GetTimeRangeAsync(catalog.Id, cancellationToken);
-
-                    // merge time range
-                    if (catalogBegin == DateTime.MinValue)
-                        catalogBegin = timeRangeResult.Begin;
-
-                    else
-                        catalogBegin = new DateTime(Math.Min(catalogBegin.Ticks, timeRangeResult.Begin.Ticks));
-
-                    if (catalogEnd == DateTime.MinValue)
-                        catalogEnd = timeRangeResult.End;
-
-                    else
-                        catalogEnd = new DateTime(Math.Max(catalogEnd.Ticks, timeRangeResult.End.Ticks));
-
-                    // merge catalog
-                    if (this.Metadata?.Overrides is not null)
-                        catalog = catalog.Merge(this.Metadata?.Overrides, MergeMode.NewWins);
-
-                    _catalogInfo = new CatalogInfo(catalogBegin, catalogEnd, catalog);
-                }
+                // trigger merging of catalog and catalog overrides
+                _catalogInfo = null;
             }
             finally
             {
                 _semaphore.Release();
+            }
+        }
+
+        private async Task EnsureCatalogInfoAsync(CancellationToken cancellationToken)
+        {
+            if (this.IsTransient || _catalogInfo is null)
+            {
+                var catalogBegin = default(DateTime);
+                var catalogEnd = default(DateTime);
+
+                using var controller = await _dataControllerService.GetDataSourceControllerAsync(this.BackendSource, cancellationToken);
+                var catalog = await controller.GetCatalogAsync(this.Id, cancellationToken);
+
+                // get begin and end of project
+                var timeRangeResult = await controller.GetTimeRangeAsync(catalog.Id, cancellationToken);
+
+                // merge time range
+                if (catalogBegin == DateTime.MinValue)
+                    catalogBegin = timeRangeResult.Begin;
+
+                else
+                    catalogBegin = new DateTime(Math.Min(catalogBegin.Ticks, timeRangeResult.Begin.Ticks));
+
+                if (catalogEnd == DateTime.MinValue)
+                    catalogEnd = timeRangeResult.End;
+
+                else
+                    catalogEnd = new DateTime(Math.Max(catalogEnd.Ticks, timeRangeResult.End.Ticks));
+
+                // merge catalog
+                if (this.Metadata?.Overrides is not null)
+                    catalog = catalog.Merge(this.Metadata.Overrides, MergeMode.NewWins);
+
+                _catalogInfo = new CatalogInfo(catalogBegin, catalogEnd, catalog);
             }
         }
     }

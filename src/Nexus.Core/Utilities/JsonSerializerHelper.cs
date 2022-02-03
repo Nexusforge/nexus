@@ -1,19 +1,26 @@
-﻿using System.Text.Json;
+﻿using System.IO;
+using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 
 namespace Nexus.Utilities
 {
     internal static class JsonSerializerHelper
     {
+        private static JsonSerializerOptions _options = new JsonSerializerOptions()
+        {
+            WriteIndented = true,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault
+        };
+
         public static string SerializeIntended<T>(T value)
         {
-            var options = new JsonSerializerOptions() 
-            {
-                WriteIndented = true,
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault
-            };
+            return JsonSerializer.Serialize(value, _options);
+        }
 
-            return JsonSerializer.Serialize(value, options);
+        public static Task SerializeIntendedAsync<T>(Stream utf8Json, T value)
+        {
+            return JsonSerializer.SerializeAsync(utf8Json, value, _options);
         }
     }
 }

@@ -16,7 +16,7 @@ namespace Nexus.Services
 
         private IExtensionHive _extensionHive;
         private ICatalogManager _catalogManager;
-        private IDataControllerService _dataControllerService;
+        private IDatabaseManager _databaseManager;
         private ILogger<AppStateController> _logger;
         private AppState _appState;
         private SemaphoreSlim _reloadCatalogsSemaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
@@ -29,11 +29,13 @@ namespace Nexus.Services
             AppState appState,
             IExtensionHive extensionHive,
             ICatalogManager catalogManager,
+            IDatabaseManager databaseManager,
             ILogger<AppStateController> logger)
         {
             _appState = appState;
             _extensionHive = extensionHive;
             _catalogManager = catalogManager;
+            _databaseManager = databaseManager;
             _logger = logger;
         }
 
@@ -68,7 +70,7 @@ namespace Nexus.Services
                 {
                     /* create fresh app state */
                     _appState.CatalogState = new CatalogState(
-                        Root: CatalogContainer.CreateRoot(_catalogManager),
+                        Root: CatalogContainer.CreateRoot(_catalogManager, _databaseManager),
                         Cache: new CatalogCache()
                     );
 

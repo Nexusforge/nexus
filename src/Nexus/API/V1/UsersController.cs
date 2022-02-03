@@ -55,7 +55,7 @@ namespace Nexus.Controllers.V1
                 .Select(user => user.UserName)
                 .ToListAsync();
 
-            return this.Ok(users);
+            return users;
         }
 
         /// <summary>
@@ -70,7 +70,7 @@ namespace Nexus.Controllers.V1
             var (jwtToken, refreshToken, error) = await _authService
                 .AuthenticateAsync(request.UserId, request.Password);
 
-            return this.Ok(new AuthenticateResponse(jwtToken, refreshToken, error));
+            return new AuthenticateResponse(jwtToken, refreshToken, error);
         }
 
         /// <summary>
@@ -85,7 +85,7 @@ namespace Nexus.Controllers.V1
             var (jwtToken, refreshToken, error) = await _authService
                 .RefreshTokenAsync(request.RefreshToken);
 
-            return this.Ok(new RefreshTokenResponse(jwtToken, refreshToken, error));
+            return new RefreshTokenResponse(jwtToken, refreshToken, error);
         }
 
         /// <summary>
@@ -94,12 +94,12 @@ namespace Nexus.Controllers.V1
         /// <param name="request">The revoke token request.</param>
         [AllowAnonymous]
         [HttpPost("revoke-token")]
-        public async Task<ActionResult> RevokeTokenAsync(RevokeTokenRequest request)
+        public async Task<ActionResult<RevokeTokenResponse>> RevokeTokenAsync(RevokeTokenRequest request)
         {
             var error = await _authService
                 .RevokeTokenAsync(request.Token);
 
-            return this.Ok(new RevokeTokenResponse(error));
+            return new RevokeTokenResponse(error);
         }
 
         /// <summary>
@@ -122,7 +122,7 @@ namespace Nexus.Controllers.V1
             if (dbUser is null)
                 return this.NotFound($"Could not find user {userId}.");
 
-            return this.Ok(dbUser.RefreshTokens);
+            return dbUser.RefreshTokens;
         }
     }
 }

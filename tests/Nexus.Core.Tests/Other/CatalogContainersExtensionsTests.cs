@@ -27,33 +27,33 @@ namespace Other
                    {
                        "/" => new CatalogContainer[]
                        {
-                           new CatalogContainer(new CatalogRegistration("/A"), default, default, default, catalogManager, default),
+                           new CatalogContainer(new CatalogRegistration("/A"), default, default, default, catalogManager, default, default),
                        },
                        "/A" => new CatalogContainer[] 
                        { 
-                           new CatalogContainer(new CatalogRegistration("/A/C"), default, default, default, catalogManager, default),
-                           new CatalogContainer(new CatalogRegistration("/A/B"), default, default, default, catalogManager, default),
-                           new CatalogContainer(new CatalogRegistration("/A/D"), default, default, default, catalogManager, default)
+                           new CatalogContainer(new CatalogRegistration("/A/C"), default, default, default, catalogManager, default, default),
+                           new CatalogContainer(new CatalogRegistration("/A/B"), default, default, default, catalogManager, default, default),
+                           new CatalogContainer(new CatalogRegistration("/A/D"), default, default, default, catalogManager, default, default)
                        },
                        "/A/B" => new CatalogContainer[]
                        {
-                           new CatalogContainer(new CatalogRegistration("/A/B/D"), default, default, default, catalogManager, default),
-                           new CatalogContainer(new CatalogRegistration("/A/B/C"), default, default, default, catalogManager, default)
+                           new CatalogContainer(new CatalogRegistration("/A/B/D"), default, default, default, catalogManager, default, default),
+                           new CatalogContainer(new CatalogRegistration("/A/B/C"), default, default, default, catalogManager, default, default)
                        },
                        "/A/D" => new CatalogContainer[]
                        {
-                           new CatalogContainer(new CatalogRegistration("/A/D/F"), default, default, default, catalogManager, default),
-                           new CatalogContainer(new CatalogRegistration("/A/D/E"), default, default, default, catalogManager, default)
+                           new CatalogContainer(new CatalogRegistration("/A/D/F"), default, default, default, catalogManager, default, default),
+                           new CatalogContainer(new CatalogRegistration("/A/D/E"), default, default, default, catalogManager, default, default)
                        },
                        "/A/F" => new CatalogContainer[]
                        {
-                           new CatalogContainer(new CatalogRegistration("/A/F/H"), default, default, default, catalogManager, default)
+                           new CatalogContainer(new CatalogRegistration("/A/F/H"), default, default, default, catalogManager, default, default)
                        },
                        _ => throw new Exception("Unsupported combination.")
                    });
                });
 
-            var root = CatalogContainer.CreateRoot(catalogManager);
+            var root = CatalogContainer.CreateRoot(catalogManager, default);
 
             // act
             var catalogContainerA = await root.TryFindCatalogContainerAsync("/A/B/C", CancellationToken.None);

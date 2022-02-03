@@ -136,8 +136,8 @@ namespace Services
             {
                 var catalogItemsMap = new Dictionary<CatalogContainer, IEnumerable<CatalogItem>>()
                 {
-                    [new CatalogContainer(new CatalogRegistration(catalog1.Id), default, backendSource1, default, default, default)] = new[] { catalogItem1 },
-                    [new CatalogContainer(new CatalogRegistration(catalog2.Id), default, backendSource2, default, default, default)] = new[] { catalogItem2 }
+                    [new CatalogContainer(new CatalogRegistration(catalog1.Id), default, backendSource1, default, default, default, default)] = new[] { catalogItem1 },
+                    [new CatalogContainer(new CatalogRegistration(catalog2.Id), default, backendSource2, default, default, default, default)] = new[] { catalogItem2 }
                 };
 
                 var zipFileName = await dataService

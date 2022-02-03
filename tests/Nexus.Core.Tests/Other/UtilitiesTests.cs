@@ -223,7 +223,7 @@ namespace Other
         public void CanSerializeAndDeserializeTimeSpan()
         {
             // Arrange
-            var expected = new MyType(A: 1, B: "Zwei", C: TimeSpan.FromSeconds(1));
+            var expected = new MyType(A: 1, B: "Two", C: TimeSpan.FromSeconds(1));
 
             // Act
             var jsonString = JsonSerializerHelper.SerializeIntended(expected);

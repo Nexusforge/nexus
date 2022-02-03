@@ -7,6 +7,7 @@ using Nexus.Services;
 using Nexus.Utilities;
 using System.Data;
 using System.Net;
+using System.Text;
 
 namespace Nexus.Controllers.V1
 {
@@ -16,6 +17,20 @@ namespace Nexus.Controllers.V1
     [Route("api/v{version:apiVersion}/[controller]")]
     internal class CatalogsController : ControllerBase
     {
+        // GET      /api/catalogs/{catalogId}
+        // GET      /api/catalogs/{catalogId}/child-catalog-ids
+        // GET      /api/catalogs/{catalogId}/timerange
+        // GET      /api/catalogs/{catalogId}/availability
+        // GET      /api/catalogs/{catalogId}/attachments/{attachmentId}/content
+
+        // GET      /api/catalogs/{catalogId}/properties
+        // POST     /api/catalogs/{catalogId}/properties
+        // DELETE   /api/catalogs/{catalogId}/properties
+
+        // GET      /api/catalogs/{catalogId}/{resourceId}/properties
+        // POST     /api/catalogs/{catalogId}/{resourceId}/properties
+        // DELETE   /api/catalogs/{catalogId}/{resourceId}/properties
+
         #region Fields
 
         private AppState _appState;
@@ -41,42 +56,51 @@ namespace Nexus.Controllers.V1
         #region Methods
 
         /// <summary>
-        /// Gets a list of all accessible catalog identifiers.
-        /// </summary>
-        [HttpGet]
-        public ActionResult<string[]>
-            GetCatalogIds()
-        {
-            throw new NotImplementedException();
-
-            //var root = _appState.CatalogState.Root;
-
-            //var response = catalogContainers
-            //    .Where(catalogContainer => AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, this.User))
-            //    .Select(catalogContainer => catalogContainer.Id)
-            //    .ToArray();
-
-            //return response;
-        }
-
-        /// <summary>
         /// Gets the specified catalog.
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpGet("{catalogId}")]
-        public async Task<ActionResult<ResourceCatalog>>
+        public Task<ActionResult<ResourceCatalog>>
             GetCatalogAsync(
                 string catalogId,
                 CancellationToken cancellationToken)
         {
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            return await this.ProcessCatalogIdAsync<ResourceCatalog>(catalogId, async catalogContainer =>
+            var response = this.ProcessCatalogIdAsync<ResourceCatalog>(catalogId, async catalogContainer =>
             {
                 var catalogInfo = await catalogContainer.GetCatalogInfoAsync(cancellationToken);
-                return this.CreateCatalogResponse(catalogInfo.Catalog);
+                return catalogInfo.Catalog;
             }, cancellationToken);
+
+            return response;
+        }
+
+        /// <summary>
+        /// Gets a list of child catalog identifiers for the provided parent catalog identifier.
+        /// <param name="catalogId">The parent catalog identifier.</param>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
+        /// </summary>
+        [HttpGet("{catalogId}/child-catalog-ids")]
+        public async Task<ActionResult<string[]>>
+            GetChildCatalogIdsAsync(
+            string catalogId, 
+            CancellationToken cancellationToken)
+        {
+            catalogId = WebUtility.UrlDecode(catalogId);
+
+            var response = await this.ProcessCatalogIdAsync<string[]>(catalogId, async catalogContainer =>
+            {
+                var catalogContainers = await catalogContainer.GetChildCatalogContainersAsync(cancellationToken);
+
+                return catalogContainers
+                    .Where(catalogContainer => AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, this.User))
+                    .Select(catalogContainer => catalogContainer.Id)
+                    .ToArray();
+            }, cancellationToken);
+
+            return response;
         }
 
         /// <summary>
@@ -85,17 +109,20 @@ namespace Nexus.Controllers.V1
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpGet("{catalogId}/timerange")]
-        public async Task<ActionResult<TimeRangeResponse>>
+        public Task<ActionResult<TimeRangeResponse>>
             GetTimeRangeAsync(
                 string catalogId,
                 CancellationToken cancellationToken)
         {
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            return await this.ProcessCatalogIdAsync<TimeRangeResponse>(catalogId, async catalogContainer =>
+            var response = this.ProcessCatalogIdAsync<TimeRangeResponse>(catalogId, async catalogContainer =>
             {
-                return await this.CreateTimeRangeResponseAsync(catalogContainer, cancellationToken);
+                using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(catalogContainer.BackendSource, cancellationToken);
+                return await dataSource.GetTimeRangeAsync(catalogContainer.Id, cancellationToken);
             }, cancellationToken);
+
+            return response;
         }
 
         /// <summary>
@@ -106,7 +133,7 @@ namespace Nexus.Controllers.V1
         /// <param name="end">End date.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpGet("{catalogId}/availability")]
-        public async Task<ActionResult<AvailabilityResponse>>
+        public Task<ActionResult<AvailabilityResponse>>
             GetCatalogAvailabilityAsync(
                 string catalogId,
                 DateTime begin,
@@ -115,10 +142,13 @@ namespace Nexus.Controllers.V1
         {
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            return await this.ProcessCatalogIdAsync<AvailabilityResponse>(catalogId, async catalog =>
+            var response = this.ProcessCatalogIdAsync<AvailabilityResponse>(catalogId, async catalogContainer =>
             {
-                return await this.CreateAvailabilityResponseAsync(catalog, begin, end, cancellationToken);
+                using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(catalogContainer.BackendSource, cancellationToken);
+                return await dataSource.GetAvailabilityAsync(catalogContainer.Id, begin, end, cancellationToken);
             }, cancellationToken);
+
+            return response;
         }
 
         /// <summary>
@@ -128,7 +158,7 @@ namespace Nexus.Controllers.V1
         /// <param name="attachmentId">The attachment identifier.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpGet("{catalogId}/attachments/{attachmentId}/content")]
-        public async Task<ActionResult>
+        public Task<ActionResult>
             DownloadAttachementAsync(
                 string catalogId,
                 string attachmentId,
@@ -137,7 +167,7 @@ namespace Nexus.Controllers.V1
             catalogId = WebUtility.UrlDecode(catalogId);
             attachmentId = WebUtility.UrlDecode(attachmentId);
 
-            return await this.ProcessCatalogIdNonGenericAsync(catalogId, catalog =>
+            var response = this.ProcessCatalogIdNonGenericAsync(catalogId, catalog =>
             {
                 if (_databaseManager.TryReadAttachment(catalogId, attachmentId, out var attachementStream))
                 {
@@ -151,189 +181,231 @@ namespace Nexus.Controllers.V1
                         this.NotFound($"Could not find attachment {attachmentId} for catalog {catalogId}."));
                 }
             }, cancellationToken);
+
+            return response;
         }
 
         /// <summary>
-        /// Gets a list of all resources in the specified catalog.
+        /// Gets all catalog properties (i. e. properties from data source with merged overrides).
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
-        /// <returns></returns>
-        [HttpGet("{catalogId}/resources")]
-        public async Task<ActionResult<Resource[]>> GetResourcesAsync(
-            string catalogId,
-            CancellationToken cancellationToken)
+        [HttpGet("{catalogId}/properties")]
+        public Task<ActionResult<Dictionary<string, string>>>
+            GetCatalogPropertiesAsync(
+                string catalogId,
+                CancellationToken cancellationToken)
         {
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            var remoteIpAddress = this.HttpContext.Connection.RemoteIpAddress;
-
-            return await this.ProcessCatalogIdAsync<Resource[]>(catalogId, async catalogContainer =>
+            var response = this.ProcessCatalogIdAsync<Dictionary<string, string>>(catalogId, async catalogContainer =>
             {
                 var catalogInfo = await catalogContainer.GetCatalogInfoAsync(cancellationToken);
-
-                var resources = catalogInfo.Catalog.Resources
-                    .Select(resource => this.CreateResourceResponse(resource))
-                    .ToArray();
-
-                return resources;
+                return catalogInfo.Catalog.Properties.ToDictionary(entry => entry.Key, entry => entry.Value);
             }, cancellationToken);
+
+            return response;
         }
 
         /// <summary>
-        /// Gets the specified resource.
+        /// Sets all catalog override properties.
+        /// </summary>
+        /// <param name="catalogId">The catalog identifier.</param>
+        /// <param name="request">The set catalog properties request.</param>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
+        [HttpPost("{catalogId}/properties")]
+        public Task
+            SetCatalogPropertiesAsync(
+                string catalogId,
+                [FromBody] SetPropertiesRequest request,
+                CancellationToken cancellationToken)
+        {
+            catalogId = WebUtility.UrlDecode(catalogId);
+
+            var response = this.ProcessCatalogIdAsync<object>(catalogId, async catalogContainer =>
+            {
+                var jsonStream = new MemoryStream(Encoding.UTF8.GetBytes(request.Properties));
+
+                var properties = new ConfigurationBuilder()
+                    .AddJsonStream(jsonStream)
+                    .Build()
+                    .AsEnumerable()
+                    .ToDictionary(entry => entry.Key, entry => entry.Value);
+
+                var metadata = catalogContainer.Metadata with
+                {
+                    Overrides = catalogContainer.Metadata.Overrides with
+                    { 
+                        Properties = properties 
+                    }
+                };
+
+                await catalogContainer.UpdateMetadataAsync(metadata);
+
+                return new object();
+
+            }, cancellationToken);
+
+            return response;
+        }
+
+        /// <summary>
+        /// Deletes all catalog override properties.
+        /// </summary>
+        /// <param name="catalogId">The catalog identifier.</param>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
+        [HttpDelete("{catalogId}/properties")]
+        public Task
+            DeleteCatalogPropertiesAsync(
+                string catalogId,
+                CancellationToken cancellationToken)
+        {
+            catalogId = WebUtility.UrlDecode(catalogId);
+
+            var response = this.ProcessCatalogIdAsync<object>(catalogId, async catalogContainer =>
+            {
+                var metadata = catalogContainer.Metadata with
+                {
+                    Overrides = catalogContainer.Metadata.Overrides with
+                    {
+                        Properties = new Dictionary<string, string>()
+                    }
+                };
+
+                await catalogContainer.UpdateMetadataAsync(metadata);
+
+                return new object();
+
+            }, cancellationToken);
+
+            return response;
+        }
+
+        /// <summary>
+        /// Gets all catalog resource properties (i. e. properties from data source with merged overrides).
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="resourceId">The resource identifier.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
-        /// <returns></returns>
-        [HttpGet("{catalogId}/resources/{resourceId}")]
-        public async Task<ActionResult<Resource>> GetResourceAsync(
-            string catalogId,
-            string resourceId,
-            CancellationToken cancellationToken)
+        [HttpGet("{catalogId}/{resourceId}/properties")]
+        public Task<ActionResult<Dictionary<string, string>>>
+            GetCatalogPropertiesAsync(
+                string catalogId,
+                string resourceId,
+                CancellationToken cancellationToken)
         {
             catalogId = WebUtility.UrlDecode(catalogId);
-            resourceId = WebUtility.UrlDecode(resourceId);
 
-            return await this.ProcessCatalogIdAsync<Resource>(catalogId, async catalogContainer =>
+            var response = this.ProcessCatalogIdAsync<Dictionary<string, string>>(catalogId, async catalogContainer =>
             {
                 var catalogInfo = await catalogContainer.GetCatalogInfoAsync(cancellationToken);
 
                 var resource = catalogInfo.Catalog.Resources.FirstOrDefault(
-                    current => current.Id.ToString() == resourceId);
-
-                if (resource is null)
-                    resource = catalogInfo.Catalog.Resources.FirstOrDefault(
-                        current => current.Id == resourceId);
+                  current => current.Id == resourceId);
 
                 if (resource is null)
                     return this.NotFound($"{catalogId}/{resourceId}");
 
-                return this.CreateResourceResponse(resource);
+                return resource.Properties.ToDictionary(entry => entry.Key, entry => entry.Value);
             }, cancellationToken);
+
+            return response;
         }
 
         /// <summary>
-        /// Gets a list of all representations in the specified catalog and resource.
+        /// Sets all catalog override resource properties.
+        /// </summary>
+        /// <param name="catalogId">The catalog identifier.</param>
+        /// <param name="resourceId">The resource identifier.</param>
+        /// <param name="request">The set catalog properties request.</param>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
+        [HttpPost("{catalogId}/{resourceId}/properties")]
+        public Task
+            SetCatalogPropertiesAsync(
+                string catalogId,
+                string resourceId,
+                [FromBody] SetPropertiesRequest request,
+                CancellationToken cancellationToken)
+        {
+            catalogId = WebUtility.UrlDecode(catalogId);
+
+            var response = this.ProcessCatalogIdAsync<object>(catalogId, async catalogContainer =>
+            {
+                var jsonStream = new MemoryStream(Encoding.UTF8.GetBytes(request.Properties));
+
+                var properties = new ConfigurationBuilder()
+                    .AddJsonStream(jsonStream)
+                    .Build()
+                    .AsEnumerable()
+                    .ToDictionary(entry => entry.Key, entry => entry.Value);
+
+                var resources = catalogContainer.Metadata.Overrides.Resources.Select(resource =>
+                {
+                    if (resource.Id == resourceId)
+                        return resource with { Properties = properties };
+
+                    else
+                        return resource;
+                }).ToList();
+
+                var metadata = catalogContainer.Metadata with
+                {
+                    Overrides = catalogContainer.Metadata.Overrides with
+                    {
+                        Resources = resources
+                    }
+                };
+
+                await catalogContainer.UpdateMetadataAsync(metadata);
+
+                return new object();
+
+            }, cancellationToken);
+
+            return response;
+        }
+
+        /// <summary>
+        /// Deletes all catalog override resource properties.
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="resourceId">The resource identifier.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
-        /// <returns></returns>
-        [HttpGet("{catalogId}/resources/{resourceId}/representations")]
-        public async Task<ActionResult<Representation[]>> GetRepresentationsAsync(
-            string catalogId,
-            string resourceId,
-            CancellationToken cancellationToken)
+        [HttpDelete("{catalogId}/{resourceId}/properties")]
+        public Task
+            DeleteCatalogPropertiesAsync(
+                string catalogId,
+                string resourceId,
+                CancellationToken cancellationToken)
         {
             catalogId = WebUtility.UrlDecode(catalogId);
-            resourceId = WebUtility.UrlDecode(resourceId);
 
-            return await this.ProcessCatalogIdAsync<Representation[]>(catalogId, async catalogContainer =>
+            var response = this.ProcessCatalogIdAsync<object>(catalogId, async catalogContainer =>
             {
-                var catalogInfo = await catalogContainer.GetCatalogInfoAsync(cancellationToken);
+                var resources = catalogContainer.Metadata.Overrides.Resources.Select(resource =>
+                {
+                    if (resource.Id == resourceId)
+                        return resource with { Properties = new Dictionary<string, string>() };
 
-                var resource = catalogInfo.Catalog.Resources.FirstOrDefault(
-                    current => current.Id.ToString() == resourceId);
+                    else
+                        return resource;
+                }).ToList();
 
-                if (resource is null)
-                    resource = catalogInfo.Catalog.Resources.FirstOrDefault(
-                        current => current.Id == resourceId);
+                var metadata = catalogContainer.Metadata with
+                {
+                    Overrides = catalogContainer.Metadata.Overrides with
+                    {
+                        Resources = resources
+                    }
+                };
 
-                if (resource is null)
-                    return this.NotFound($"{catalogId}/{resourceId}");
+                await catalogContainer.UpdateMetadataAsync(metadata);
 
-                var response = resource.Representations.Select(representation
-                    => this.CreateRepresentationResponse(representation))
-                    .ToArray();
+                return new object();
 
-                return response;
             }, cancellationToken);
-        }
 
-        /// <summary>
-        /// Gets the specified representation.
-        /// </summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="resourceId">The resource identifier.</param>
-        /// <param name="representationId">The representation identifier.</param>
-        /// <param name="cancellationToken">A token to cancel the current operation.</param>
-        /// <returns></returns>
-        [HttpGet("{catalogId}/resources/{resourceId}/representations/{representationId}")]
-        public async Task<ActionResult<Representation>> GetRepresentationAsync(
-            string catalogId,
-            string resourceId,
-            string representationId,
-            CancellationToken cancellationToken)
-        {
-            catalogId = WebUtility.UrlDecode(catalogId);
-            resourceId = WebUtility.UrlDecode(resourceId);
-            representationId = WebUtility.UrlDecode(representationId);
-
-            // log
-            return await this.ProcessCatalogIdAsync<Representation>(catalogId, async catalogContainer =>
-            {
-                var catalogInfo = await catalogContainer.GetCatalogInfoAsync(cancellationToken);
-
-                var resource = catalogInfo.Catalog.Resources.FirstOrDefault(
-                    current => current.Id.ToString() == resourceId);
-
-                if (resource is null)
-                    resource = catalogInfo.Catalog.Resources.FirstOrDefault(
-                        current => current.Id == resourceId);
-
-                if (resource is null)
-                    return this.NotFound($"{catalogId}/{resourceId}");
-
-                var representation = resource.Representations.FirstOrDefault(
-                    current => current.Id == representationId);
-
-                if (representation is null)
-                    return this.NotFound($"{catalogId}/{resourceId}/{representation}");
-
-                return this.CreateRepresentationResponse(representation);
-            }, cancellationToken);
-        }
-
-        private ResourceCatalog CreateCatalogResponse(ResourceCatalog catalog)
-        {
-            return catalog with { Resources = null };
-        }
-
-        private async Task<TimeRangeResponse>
-            CreateTimeRangeResponseAsync(CatalogContainer catalogContainer, CancellationToken cancellationToken)
-        {
-            using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(catalogContainer.BackendSource, cancellationToken);
-            var timeRange = await dataSource.GetTimeRangeAsync(catalogContainer.Id, cancellationToken);
-
-            var timeRangeResult = new TimeRangeResponse(
-                Begin: timeRange.Begin,
-                End: timeRange.End);
-
-            return timeRangeResult;
-        }
-
-        private async Task<AvailabilityResponse>
-            CreateAvailabilityResponseAsync(CatalogContainer catalogContainer, DateTime begin, DateTime end, CancellationToken cancellationToken)
-        {
-            using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(catalogContainer.BackendSource, cancellationToken);
-            var availability = await dataSource.GetAvailabilityAsync(catalogContainer.Id, begin, end, cancellationToken);
-
-            var availabilityResults = new AvailabilityResponse(
-                Data: availability.Data);
-
-            return availabilityResults;
-        }
-
-        private Resource CreateResourceResponse(Resource resource)
-        {
-            return resource with { Representations = null };
-        }
-
-        private Representation CreateRepresentationResponse(Representation representation)
-        {
-            return representation;
+            return response;
         }
 
         private async Task<ActionResult<T>> ProcessCatalogIdAsync<T>(
@@ -342,7 +414,10 @@ namespace Nexus.Controllers.V1
             CancellationToken cancellationToken)
         {
             var root = _appState.CatalogState.Root;
-            var catalogContainer = await root.TryFindCatalogContainerAsync(catalogId, cancellationToken);
+
+            var catalogContainer = catalogId == root.Id
+                ? root
+                : await root.TryFindCatalogContainerAsync(catalogId, cancellationToken);
 
             if (catalogContainer is not null)
             {

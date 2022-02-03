@@ -135,7 +135,7 @@ namespace Services
                 NullLogger<CatalogManager>.Instance);
 
             // act
-            var root = CatalogContainer.CreateRoot(catalogManager);
+            var root = CatalogContainer.CreateRoot(catalogManager, default);
             var rootCatalogContainers = (await root.GetChildCatalogContainersAsync(CancellationToken.None)).ToArray();
             var ACatalogContainers = (await rootCatalogContainers[0].GetChildCatalogContainersAsync(CancellationToken.None)).ToArray();
 
@@ -224,7 +224,7 @@ namespace Services
                 Publish: true);
 
             /* catalog container */
-            var catalogContainer = new CatalogContainer(new CatalogRegistration("/A"), default, backendSource, catalogMetadata, default, dataControllerService);
+            var catalogContainer = new CatalogContainer(new CatalogRegistration("/A"), default, backendSource, catalogMetadata, default, default, dataControllerService);
 
             // Act
             var catalogInfo = await catalogContainer.GetCatalogInfoAsync(CancellationToken.None);
