@@ -224,6 +224,11 @@ namespace Nexus.Controllers.V1
 
             var response = this.ProcessCatalogIdAsync<object>(catalogId, async catalogContainer =>
             {
+                var canEdit = this.User.HasClaim(Claims.CAN_EDIT_CATALOG, "true");
+
+                if (!canEdit)
+                    return this.Unauthorized($"The current user is not authorized to modify the catalog '{catalogId}'.");
+
                 var jsonStream = new MemoryStream(Encoding.UTF8.GetBytes(request.Properties));
 
                 var properties = new ConfigurationBuilder()
@@ -264,11 +269,16 @@ namespace Nexus.Controllers.V1
 
             var response = this.ProcessCatalogIdAsync<object>(catalogId, async catalogContainer =>
             {
+                var canEdit = this.User.HasClaim(Claims.CAN_EDIT_CATALOG, "true");
+
+                if (!canEdit)
+                    return this.Unauthorized($"The current user is not authorized to modify the catalog '{catalogId}'.");
+
                 var metadata = catalogContainer.Metadata with
                 {
                     Overrides = catalogContainer.Metadata.Overrides with
                     {
-                        Properties = new Dictionary<string, string>()
+                        Properties = null
                     }
                 };
 
@@ -331,6 +341,11 @@ namespace Nexus.Controllers.V1
 
             var response = this.ProcessCatalogIdAsync<object>(catalogId, async catalogContainer =>
             {
+                var canEdit = this.User.HasClaim(Claims.CAN_EDIT_CATALOG, "true");
+
+                if (!canEdit)
+                    return this.Unauthorized($"The current user is not authorized to modify the catalog '{catalogId}'.");
+
                 var jsonStream = new MemoryStream(Encoding.UTF8.GetBytes(request.Properties));
 
                 var properties = new ConfigurationBuilder()
@@ -382,10 +397,15 @@ namespace Nexus.Controllers.V1
 
             var response = this.ProcessCatalogIdAsync<object>(catalogId, async catalogContainer =>
             {
+                var canEdit = this.User.HasClaim(Claims.CAN_EDIT_CATALOG, "true");
+
+                if (!canEdit)
+                    return this.Unauthorized($"The current user is not authorized to modify the catalog '{catalogId}'.");
+
                 var resources = catalogContainer.Metadata.Overrides.Resources.Select(resource =>
                 {
                     if (resource.Id == resourceId)
-                        return resource with { Properties = new Dictionary<string, string>() };
+                        return resource with { Properties = null };
 
                     else
                         return resource;
