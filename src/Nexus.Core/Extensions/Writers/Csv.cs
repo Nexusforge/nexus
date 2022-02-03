@@ -13,6 +13,7 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
+// Bug?: https://github.com/frictionlessdata/frictionless-py/issues/991
 // Schema: https://frictionlessdata.io
 // Comparíson: https://discuss.okfn.org/t/w3c-csv-for-the-web-how-does-it-relate-to-data-packages/1715/2
 // Why not CSV on the web? https://twitter.com/readdavid/status/1195315653449793536
@@ -108,10 +109,10 @@ namespace Nexus.Writers
 
                     var timestampField = rowIndexFormat switch
                     {
-                        "Index" => new Field("index", "integer", default, constraints, default),
-                        "Unix" => new Field("Unix time", "datetime", "any", constraints, default),
-                        "Excel" => new Field("Excel time", "number", default, constraints, default),
-                        "ISO 8601" => new Field("ISO 8601 time", "datetime", default, constraints, default),
+                        "Index" => new Field("index", "integer", constraints, default),
+                        "Unix" => new Field("Unix time", "number", constraints, default),
+                        "Excel" => new Field("Excel time", "number", constraints, default),
+                        "ISO 8601" => new Field("ISO 8601 time", "datetime", constraints, default),
                         _ => throw new NotSupportedException($"The row index format '{rowIndexFormat}' is not supported.")
                     };
 
@@ -127,7 +128,6 @@ namespace Nexus.Writers
                         return new Field(
                             Name: fieldName,
                             Type: "number",
-                            Format: null,
                             Constraints: constraints,
                             Properties: catalogItem.Resource.Properties);
                     })).ToArray();

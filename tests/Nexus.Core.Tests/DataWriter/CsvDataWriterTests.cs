@@ -4,6 +4,7 @@ using Nexus.Extensibility;
 using Nexus.Writers;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -84,7 +85,7 @@ namespace DataWriter
             dataWriter.Dispose();
 
             var actualFilePaths = Directory
-                .GetFiles(targetFolder)
+                .GetFiles(targetFolder, "*.csv")
                 .OrderBy(value => value)
                 .ToArray();
 
@@ -109,30 +110,47 @@ namespace DataWriter
                 })
                 .ToArray();
 
+            // assert
+            var startInfo = new ProcessStartInfo()
+            {
+                CreateNoWindow = true,
+                FileName = "frictionless"
+            };
+
+            startInfo.Arguments = $"validate {targetFolder}/A_B_C_1_s.resource.json";
+
+            using (var process = Process.Start(startInfo))
+            {
+                process.WaitForExit();
+                Assert.Equal(0, process.ExitCode);
+            }
+
+            startInfo.Arguments = $"validate {targetFolder}/D_E_F_1_s.resource.json";
+
+            using (var process = Process.Start(startInfo))
+            {
+                process.WaitForExit();
+                Assert.Equal(0, process.ExitCode);
+            }
+
             // assert /A/B/C
             var expectedLines1 = new[]
             {
-                "# format_version=1;",
-                "# system_name=Nexus;",
-                "# date_time=2020-01-01T00-00-00Z;",
-                "# sample_period=1_s;",
-                "# catalog_id=/A/B/C;",
-                "# my-custom-parameter1=my-custom-value1;",
-                "# my-custom-parameter2=my-custom-value2;",
-                $"{expected[0].Item1};resource1;resource1;",
-                "-;1_s_mean;1_s_max;",
-                "-;°C;°C;",
-                $"{expected[0].Item3};2486.686;-0.7557958;",
-                $"{expected[1].Item3};1107.44;-0.4584072;",
-                $"{expected[2].Item3};4670.107;-0.001267695;",
-                $"{expected[3].Item3};7716.041;-0.09289372;"
+                "# date_time: 2020-01-01T00-00-00Z",
+                "# sample_period: 1_s",
+                "# catalog_id: /A/B/C",
+                $"{expected[0].Item1},resource1_1_s_mean (°C),resource1_1_s_max (°C)",
+                $"{expected[0].Item3},2486.686,-0.7557958",
+                $"{expected[1].Item3},1107.44,-0.4584072",
+                $"{expected[2].Item3},4670.107,-0.001267695",
+                $"{expected[3].Item3},7716.041,-0.09289372"
             };
 
             var actualLines1 = File.ReadLines(actualFilePaths[0], Encoding.UTF8).ToList();
 
             Assert.Equal("A_B_C_2020-01-01T00-00-00Z_1_s.csv", Path.GetFileName(actualFilePaths[0]));
-            Assert.Equal($"{expected[0].Item2};412.6589;-0.7542502;", actualLines1.Last());
-            Assert.Equal(2010, actualLines1.Count);
+            Assert.Equal($"{expected[0].Item2},412.6589,-0.7542502", actualLines1.Last());
+            Assert.Equal(2004, actualLines1.Count);
 
             foreach (var (expectedLine, actualLine) in expectedLines1.Zip(actualLines1.Take(14)))
             {
@@ -142,26 +160,21 @@ namespace DataWriter
             // assert /D/E/F
             var expectedLines2 = new[]
             {
-                "# format_version=1;",
-                "# system_name=Nexus;",
-                "# date_time=2020-01-01T00-00-00Z;",
-                "# sample_period=1_s;",
-                "# catalog_id=/D/E/F;",
-                "# my-custom-parameter3=my-custom-value3;",
-                $"{expected[0].Item1};resource3;",
-                "-;1_s_std;",
-                "-;m/s;",
-                $"{expected[0].Item3};1.573993;",
-                $"{expected[1].Item3};0.4618637;",
-                $"{expected[2].Item3};1.094448;",
-                $"{expected[3].Item3};2.758635;"
+                "# date_time: 2020-01-01T00-00-00Z",
+                "# sample_period: 1_s",
+                "# catalog_id: /D/E/F",
+                $"{expected[0].Item1},resource3_1_s_std (m/s)",
+                $"{expected[0].Item3},1.573993",
+                $"{expected[1].Item3},0.4618637",
+                $"{expected[2].Item3},1.094448",
+                $"{expected[3].Item3},2.758635"
             };
 
             var actualLines2 = File.ReadLines(actualFilePaths[1], Encoding.UTF8).ToList();
 
             Assert.Equal("D_E_F_2020-01-01T00-00-00Z_1_s.csv", Path.GetFileName(actualFilePaths[1]));
-            Assert.Equal($"{expected[0].Item2};2.336974;", actualLines2.Last());
-            Assert.Equal(2009, actualLines2.Count);
+            Assert.Equal($"{expected[0].Item2},2.336974", actualLines2.Last());
+            Assert.Equal(2004, actualLines2.Count);
 
             foreach (var (expectedLine, actualLine) in expectedLines2.Zip(actualLines2.Take(13)))
             {

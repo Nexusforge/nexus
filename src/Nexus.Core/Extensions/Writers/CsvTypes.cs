@@ -11,7 +11,6 @@ namespace Nexus.Writers
     internal record struct Field(
         string Name,
         string Type,
-        string? Format,
         Constraints Constraints,
         IReadOnlyDictionary<string, string>? Properties);
 
