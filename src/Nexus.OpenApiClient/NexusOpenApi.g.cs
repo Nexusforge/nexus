@@ -69,56 +69,20 @@ namespace Nexus.Client
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Gets all catalog properties.
+        /// Gets the catalog metadata.
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<System.Collections.Generic.IDictionary<string, string>> GetCatalogPropertiesAsync(string catalogId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<CatalogMetadata> GetCatalogMetadataAsync(string catalogId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Sets all catalog properties.
+        /// Sets the catalog metadata.
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="request">The set catalog properties request.</param>
+        /// <param name="request">The set catalog metadata request.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task SetCatalogPropertiesAsync(string catalogId, SetPropertiesRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Deletes all catalog properties.
-        /// </summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task DeleteCatalogPropertiesAsync(string catalogId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Gets all catalog resource properties.
-        /// </summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="resourceId">The resource identifier.</param>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<System.Collections.Generic.IDictionary<string, string>> GetCatalogProperties2Async(string catalogId, string resourceId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Sets all catalog resource properties.
-        /// </summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="resourceId">The resource identifier.</param>
-        /// <param name="request">The set catalog properties request.</param>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task SetCatalogProperties2Async(string catalogId, string resourceId, SetPropertiesRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Deletes all catalog resource properties.
-        /// </summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="resourceId">The resource identifier.</param>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task DeleteCatalogProperties2Async(string catalogId, string resourceId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task SetCatalogMetadataAsync(string catalogId, SetMetadataRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
     }
 
@@ -540,17 +504,17 @@ namespace Nexus.Client
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Gets all catalog properties.
+        /// Gets the catalog metadata.
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<System.Collections.Generic.IDictionary<string, string>> GetCatalogPropertiesAsync(string catalogId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<CatalogMetadata> GetCatalogMetadataAsync(string catalogId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (catalogId == null)
                 throw new System.ArgumentNullException("catalogId");
 
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/catalogs/{catalogId}/properties");
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/catalogs/{catalogId}/metadata");
             urlBuilder_.Replace("{catalogId}", System.Uri.EscapeDataString(ConvertToString(catalogId, System.Globalization.CultureInfo.InvariantCulture)));
 
             var client_ = _httpClient;
@@ -585,7 +549,7 @@ namespace Nexus.Client
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            var objectResponse_ = await ReadObjectResponseAsync<System.Collections.Generic.IDictionary<string, string>>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            var objectResponse_ = await ReadObjectResponseAsync<CatalogMetadata>(response_, headers_, cancellationToken).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
                                 throw new NexusApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
@@ -614,12 +578,12 @@ namespace Nexus.Client
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Sets all catalog properties.
+        /// Sets the catalog metadata.
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="request">The set catalog properties request.</param>
+        /// <param name="request">The set catalog metadata request.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task SetCatalogPropertiesAsync(string catalogId, SetPropertiesRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task SetCatalogMetadataAsync(string catalogId, SetMetadataRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (catalogId == null)
                 throw new System.ArgumentNullException("catalogId");
@@ -628,7 +592,7 @@ namespace Nexus.Client
                 throw new System.ArgumentNullException("request");
 
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/catalogs/{catalogId}/properties");
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/catalogs/{catalogId}/metadata");
             urlBuilder_.Replace("{catalogId}", System.Uri.EscapeDataString(ConvertToString(catalogId, System.Globalization.CultureInfo.InvariantCulture)));
 
             var client_ = _httpClient;
@@ -641,306 +605,6 @@ namespace Nexus.Client
                     content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
                     request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("POST");
-
-                    await PrepareRequestAsync(client_, request_, urlBuilder_).ConfigureAwait(false);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    await PrepareRequestAsync(client_, request_, url_).ConfigureAwait(false);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        await ProcessResponseAsync(client_, response_, cancellationToken).ConfigureAwait(false);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            return;
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new NexusApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Deletes all catalog properties.
-        /// </summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task DeleteCatalogPropertiesAsync(string catalogId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            if (catalogId == null)
-                throw new System.ArgumentNullException("catalogId");
-
-            var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/catalogs/{catalogId}/properties");
-            urlBuilder_.Replace("{catalogId}", System.Uri.EscapeDataString(ConvertToString(catalogId, System.Globalization.CultureInfo.InvariantCulture)));
-
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    request_.Method = new System.Net.Http.HttpMethod("DELETE");
-
-                    await PrepareRequestAsync(client_, request_, urlBuilder_).ConfigureAwait(false);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    await PrepareRequestAsync(client_, request_, url_).ConfigureAwait(false);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        await ProcessResponseAsync(client_, response_, cancellationToken).ConfigureAwait(false);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            return;
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new NexusApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Gets all catalog resource properties.
-        /// </summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="resourceId">The resource identifier.</param>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<System.Collections.Generic.IDictionary<string, string>> GetCatalogProperties2Async(string catalogId, string resourceId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            if (catalogId == null)
-                throw new System.ArgumentNullException("catalogId");
-
-            if (resourceId == null)
-                throw new System.ArgumentNullException("resourceId");
-
-            var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/catalogs/{catalogId}/{resourceId}/properties");
-            urlBuilder_.Replace("{catalogId}", System.Uri.EscapeDataString(ConvertToString(catalogId, System.Globalization.CultureInfo.InvariantCulture)));
-            urlBuilder_.Replace("{resourceId}", System.Uri.EscapeDataString(ConvertToString(resourceId, System.Globalization.CultureInfo.InvariantCulture)));
-
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    request_.Method = new System.Net.Http.HttpMethod("GET");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    await PrepareRequestAsync(client_, request_, urlBuilder_).ConfigureAwait(false);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    await PrepareRequestAsync(client_, request_, url_).ConfigureAwait(false);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        await ProcessResponseAsync(client_, response_, cancellationToken).ConfigureAwait(false);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<System.Collections.Generic.IDictionary<string, string>>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new NexusApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new NexusApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Sets all catalog resource properties.
-        /// </summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="resourceId">The resource identifier.</param>
-        /// <param name="request">The set catalog properties request.</param>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task SetCatalogProperties2Async(string catalogId, string resourceId, SetPropertiesRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            if (catalogId == null)
-                throw new System.ArgumentNullException("catalogId");
-
-            if (resourceId == null)
-                throw new System.ArgumentNullException("resourceId");
-
-            if (request == null)
-                throw new System.ArgumentNullException("request");
-
-            var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/catalogs/{catalogId}/{resourceId}/properties");
-            urlBuilder_.Replace("{catalogId}", System.Uri.EscapeDataString(ConvertToString(catalogId, System.Globalization.CultureInfo.InvariantCulture)));
-            urlBuilder_.Replace("{resourceId}", System.Uri.EscapeDataString(ConvertToString(resourceId, System.Globalization.CultureInfo.InvariantCulture)));
-
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    var content_ = new System.Net.Http.StringContent(System.Text.Json.JsonSerializer.Serialize(request, _settings.Value));
-                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
-                    request_.Content = content_;
-                    request_.Method = new System.Net.Http.HttpMethod("POST");
-
-                    await PrepareRequestAsync(client_, request_, urlBuilder_).ConfigureAwait(false);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    await PrepareRequestAsync(client_, request_, url_).ConfigureAwait(false);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        await ProcessResponseAsync(client_, response_, cancellationToken).ConfigureAwait(false);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            return;
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new NexusApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Deletes all catalog resource properties.
-        /// </summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="resourceId">The resource identifier.</param>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task DeleteCatalogProperties2Async(string catalogId, string resourceId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            if (catalogId == null)
-                throw new System.ArgumentNullException("catalogId");
-
-            if (resourceId == null)
-                throw new System.ArgumentNullException("resourceId");
-
-            var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/catalogs/{catalogId}/{resourceId}/properties");
-            urlBuilder_.Replace("{catalogId}", System.Uri.EscapeDataString(ConvertToString(catalogId, System.Globalization.CultureInfo.InvariantCulture)));
-            urlBuilder_.Replace("{resourceId}", System.Uri.EscapeDataString(ConvertToString(resourceId, System.Globalization.CultureInfo.InvariantCulture)));
-
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    request_.Method = new System.Net.Http.HttpMethod("DELETE");
 
                     await PrepareRequestAsync(client_, request_, urlBuilder_).ConfigureAwait(false);
 
@@ -2573,11 +2237,29 @@ namespace Nexus.Client
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.15.7.0 (NJsonSchema v10.6.7.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class SetPropertiesRequest
+    public partial class CatalogMetadata
     {
 
-        [System.Text.Json.Serialization.JsonPropertyName("properties")]
-        public string Properties { get; set; } = default!;
+        [System.Text.Json.Serialization.JsonPropertyName("contact")]
+        public string? Contact { get; set; } = default!;
+
+        [System.Text.Json.Serialization.JsonPropertyName("isHidden")]
+        public bool IsHidden { get; set; } = default!;
+
+        [System.Text.Json.Serialization.JsonPropertyName("groupMemberships")]
+        public System.Collections.Generic.ICollection<string>? GroupMemberships { get; set; } = default!;
+
+        [System.Text.Json.Serialization.JsonPropertyName("overrides")]
+        public ResourceCatalog? Overrides { get; set; } = default!;
+
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.15.7.0 (NJsonSchema v10.6.7.0 (Newtonsoft.Json v13.0.0.0))")]
+    public partial class SetMetadataRequest
+    {
+
+        [System.Text.Json.Serialization.JsonPropertyName("metadata")]
+        public CatalogMetadata Metadata { get; set; } = default!;
 
     }
 

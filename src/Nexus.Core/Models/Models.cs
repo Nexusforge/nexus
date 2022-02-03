@@ -34,7 +34,7 @@ namespace Nexus.Models
         public List<BackendSource> BackendSources { get; init; }
     }
 
-    internal record CatalogMetadata()
+    public record CatalogMetadata()
     {
         public string? Contact { get; init; }
         public bool IsHidden { get; init; }
@@ -42,8 +42,8 @@ namespace Nexus.Models
         public ResourceCatalog? Overrides { get; init; }
     }
 
-    public record SetPropertiesRequest(
-        string Properties);
+    public record SetMetadataRequest(
+        CatalogMetadata Metadata);
 
     public record TimeRangeResponse(
         DateTime Begin,

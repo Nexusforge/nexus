@@ -23,13 +23,8 @@ namespace Nexus.Controllers.V1
         // GET      /api/catalogs/{catalogId}/availability
         // GET      /api/catalogs/{catalogId}/attachments/{attachmentId}/content
 
-        // GET      /api/catalogs/{catalogId}/properties
-        // POST     /api/catalogs/{catalogId}/properties
-        // DELETE   /api/catalogs/{catalogId}/properties
-
-        // GET      /api/catalogs/{catalogId}/{resourceId}/properties
-        // POST     /api/catalogs/{catalogId}/{resourceId}/properties
-        // DELETE   /api/catalogs/{catalogId}/{resourceId}/properties
+        // GET      /api/catalogs/{catalogId}/metadata
+        // POST     /api/catalogs/{catalogId}/metadata
 
         #region Fields
 
@@ -186,38 +181,37 @@ namespace Nexus.Controllers.V1
         }
 
         /// <summary>
-        /// Gets all catalog properties (i. e. properties from data source with merged overrides).
+        /// Gets the catalog metadata.
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
-        [HttpGet("{catalogId}/properties")]
-        public Task<ActionResult<Dictionary<string, string>>>
-            GetCatalogPropertiesAsync(
+        [HttpGet("{catalogId}/metadata")]
+        public Task<ActionResult<CatalogMetadata>>
+            GetCatalogMetadataAsync(
                 string catalogId,
                 CancellationToken cancellationToken)
         {
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            var response = this.ProcessCatalogIdAsync<Dictionary<string, string>>(catalogId, async catalogContainer =>
+            var response = this.ProcessCatalogIdAsync<CatalogMetadata>(catalogId, async catalogContainer =>
             {
-                var catalogInfo = await catalogContainer.GetCatalogInfoAsync(cancellationToken);
-                return catalogInfo.Catalog.Properties.ToDictionary(entry => entry.Key, entry => entry.Value);
+                return await Task.FromResult(catalogContainer.Metadata);
             }, cancellationToken);
 
             return response;
         }
 
         /// <summary>
-        /// Sets all catalog override properties.
+        /// Sets the catalog metadata.
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="request">The set catalog properties request.</param>
+        /// <param name="request">The set catalog metadata request.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
-        [HttpPost("{catalogId}/properties")]
+        [HttpPost("{catalogId}/metadata")]
         public Task
-            SetCatalogPropertiesAsync(
+            SetCatalogMetadataAsync(
                 string catalogId,
-                [FromBody] SetPropertiesRequest request,
+                [FromBody] SetMetadataRequest request,
                 CancellationToken cancellationToken)
         {
             catalogId = WebUtility.UrlDecode(catalogId);
@@ -228,198 +222,8 @@ namespace Nexus.Controllers.V1
 
                 if (!canEdit)
                     return this.Unauthorized($"The current user is not authorized to modify the catalog '{catalogId}'.");
-
-                var jsonStream = new MemoryStream(Encoding.UTF8.GetBytes(request.Properties));
-
-                var properties = new ConfigurationBuilder()
-                    .AddJsonStream(jsonStream)
-                    .Build()
-                    .AsEnumerable()
-                    .ToDictionary(entry => entry.Key, entry => entry.Value);
-
-                var metadata = catalogContainer.Metadata with
-                {
-                    Overrides = catalogContainer.Metadata.Overrides with
-                    { 
-                        Properties = properties 
-                    }
-                };
-
-                await catalogContainer.UpdateMetadataAsync(metadata);
-
-                return new object();
-
-            }, cancellationToken);
-
-            return response;
-        }
-
-        /// <summary>
-        /// Deletes all catalog override properties.
-        /// </summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="cancellationToken">A token to cancel the current operation.</param>
-        [HttpDelete("{catalogId}/properties")]
-        public Task
-            DeleteCatalogPropertiesAsync(
-                string catalogId,
-                CancellationToken cancellationToken)
-        {
-            catalogId = WebUtility.UrlDecode(catalogId);
-
-            var response = this.ProcessCatalogIdAsync<object>(catalogId, async catalogContainer =>
-            {
-                var canEdit = this.User.HasClaim(Claims.CAN_EDIT_CATALOG, "true");
-
-                if (!canEdit)
-                    return this.Unauthorized($"The current user is not authorized to modify the catalog '{catalogId}'.");
-
-                var metadata = catalogContainer.Metadata with
-                {
-                    Overrides = catalogContainer.Metadata.Overrides with
-                    {
-                        Properties = null
-                    }
-                };
-
-                await catalogContainer.UpdateMetadataAsync(metadata);
-
-                return new object();
-
-            }, cancellationToken);
-
-            return response;
-        }
-
-        /// <summary>
-        /// Gets all catalog resource properties (i. e. properties from data source with merged overrides).
-        /// </summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="resourceId">The resource identifier.</param>
-        /// <param name="cancellationToken">A token to cancel the current operation.</param>
-        [HttpGet("{catalogId}/{resourceId}/properties")]
-        public Task<ActionResult<Dictionary<string, string>>>
-            GetCatalogPropertiesAsync(
-                string catalogId,
-                string resourceId,
-                CancellationToken cancellationToken)
-        {
-            catalogId = WebUtility.UrlDecode(catalogId);
-
-            var response = this.ProcessCatalogIdAsync<Dictionary<string, string>>(catalogId, async catalogContainer =>
-            {
-                var catalogInfo = await catalogContainer.GetCatalogInfoAsync(cancellationToken);
-
-                var resource = catalogInfo.Catalog.Resources.FirstOrDefault(
-                  current => current.Id == resourceId);
-
-                if (resource is null)
-                    return this.NotFound($"{catalogId}/{resourceId}");
-
-                return resource.Properties.ToDictionary(entry => entry.Key, entry => entry.Value);
-            }, cancellationToken);
-
-            return response;
-        }
-
-        /// <summary>
-        /// Sets all catalog override resource properties.
-        /// </summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="resourceId">The resource identifier.</param>
-        /// <param name="request">The set catalog properties request.</param>
-        /// <param name="cancellationToken">A token to cancel the current operation.</param>
-        [HttpPost("{catalogId}/{resourceId}/properties")]
-        public Task
-            SetCatalogPropertiesAsync(
-                string catalogId,
-                string resourceId,
-                [FromBody] SetPropertiesRequest request,
-                CancellationToken cancellationToken)
-        {
-            catalogId = WebUtility.UrlDecode(catalogId);
-
-            var response = this.ProcessCatalogIdAsync<object>(catalogId, async catalogContainer =>
-            {
-                var canEdit = this.User.HasClaim(Claims.CAN_EDIT_CATALOG, "true");
-
-                if (!canEdit)
-                    return this.Unauthorized($"The current user is not authorized to modify the catalog '{catalogId}'.");
-
-                var jsonStream = new MemoryStream(Encoding.UTF8.GetBytes(request.Properties));
-
-                var properties = new ConfigurationBuilder()
-                    .AddJsonStream(jsonStream)
-                    .Build()
-                    .AsEnumerable()
-                    .ToDictionary(entry => entry.Key, entry => entry.Value);
-
-                var resources = catalogContainer.Metadata.Overrides.Resources.Select(resource =>
-                {
-                    if (resource.Id == resourceId)
-                        return resource with { Properties = properties };
-
-                    else
-                        return resource;
-                }).ToList();
-
-                var metadata = catalogContainer.Metadata with
-                {
-                    Overrides = catalogContainer.Metadata.Overrides with
-                    {
-                        Resources = resources
-                    }
-                };
-
-                await catalogContainer.UpdateMetadataAsync(metadata);
-
-                return new object();
-
-            }, cancellationToken);
-
-            return response;
-        }
-
-        /// <summary>
-        /// Deletes all catalog override resource properties.
-        /// </summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="resourceId">The resource identifier.</param>
-        /// <param name="cancellationToken">A token to cancel the current operation.</param>
-        [HttpDelete("{catalogId}/{resourceId}/properties")]
-        public Task
-            DeleteCatalogPropertiesAsync(
-                string catalogId,
-                string resourceId,
-                CancellationToken cancellationToken)
-        {
-            catalogId = WebUtility.UrlDecode(catalogId);
-
-            var response = this.ProcessCatalogIdAsync<object>(catalogId, async catalogContainer =>
-            {
-                var canEdit = this.User.HasClaim(Claims.CAN_EDIT_CATALOG, "true");
-
-                if (!canEdit)
-                    return this.Unauthorized($"The current user is not authorized to modify the catalog '{catalogId}'.");
-
-                var resources = catalogContainer.Metadata.Overrides.Resources.Select(resource =>
-                {
-                    if (resource.Id == resourceId)
-                        return resource with { Properties = null };
-
-                    else
-                        return resource;
-                }).ToList();
-
-                var metadata = catalogContainer.Metadata with
-                {
-                    Overrides = catalogContainer.Metadata.Overrides with
-                    {
-                        Resources = resources
-                    }
-                };
-
-                await catalogContainer.UpdateMetadataAsync(metadata);
+                
+                await catalogContainer.UpdateMetadataAsync(request.Metadata);
 
                 return new object();
 

@@ -62,7 +62,7 @@ try
 
     // Run
     var baseUrl = $"{serverOptions.HttpScheme}://{serverOptions.HttpAddress}:{serverOptions.HttpPort}";
-    app.Run(baseUrl);
+    app.Run();
 }
 catch (Exception ex)
 {
