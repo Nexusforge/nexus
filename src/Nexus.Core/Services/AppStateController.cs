@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Nexus.Core;
 using Nexus.Extensibility;
+using Nexus.Models;
 using Nexus.Utilities;
 using System;
 using System.Collections.Generic;
@@ -19,7 +20,7 @@ namespace Nexus.Services
         private IDatabaseManager _databaseManager;
         private ILogger<AppStateController> _logger;
         private AppState _appState;
-        private SemaphoreSlim _reloadCatalogsSemaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
+        private SemaphoreSlim _reloadPackagesSemaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
 
         #endregion
 
@@ -43,12 +44,12 @@ namespace Nexus.Services
 
         #region Methods
 
-        public async Task ReloadCatalogsAsync(CancellationToken cancellationToken)
+        public async Task ReloadPackagesAsync(CancellationToken cancellationToken)
         {
             /* check if any work is required */
             var executeReload = false;
 
-            await _reloadCatalogsSemaphore.WaitAsync();
+            await _reloadPackagesSemaphore.WaitAsync();
 
             try
             {
@@ -60,7 +61,7 @@ namespace Nexus.Services
             }
             finally
             {
-                _reloadCatalogsSemaphore.Release();
+                _reloadPackagesSemaphore.Release();
             }
 
             /* continue */
@@ -76,7 +77,7 @@ namespace Nexus.Services
 
                     /* load packages */
                     _logger.LogInformation("Load packages");
-                    await _extensionHive.LoadPackagesAsync(_appState.Project.PackageReferences, cancellationToken);
+                    await _extensionHive.LoadPackagesAsync(_appState.Project.PackageReferences.Values, cancellationToken);
                 }
                 finally
                 {
@@ -112,6 +113,48 @@ namespace Nexus.Services
             }
 
             _appState.DataWriterInfoMap = dataWriterInfoMap;
+        }
+
+        public async Task PutPackageReferenceAsync(
+            Guid packageReferenceId,
+            PackageReference packageReference)
+        {
+            var project = _appState.Project;
+
+            var packageReferences = project.PackageReferences
+                .ToDictionary(current => current.Key, current => current.Value);
+
+            packageReferences[packageReferenceId] = packageReference;
+
+            var newProject = project with 
+            { 
+                PackageReferences = packageReferences
+            };
+
+            using var stream = _databaseManager.WriteProject();
+            await JsonSerializerHelper.SerializeIntendedAsync(stream, _appState.Project);
+
+            _appState.Project = newProject;
+        }
+
+        public async Task DeletePackageReferenceAsync(Guid packageReferenceId)
+        {
+            var project = _appState.Project;
+
+            var packageReferences = project.PackageReferences
+                .ToDictionary(current => current.Key, current => current.Value);
+
+            packageReferences.Remove(packageReferenceId);
+
+            var newProject = project with
+            {
+                PackageReferences = packageReferences
+            };
+
+            using var stream = _databaseManager.WriteProject();
+            await JsonSerializerHelper.SerializeIntendedAsync(stream, _appState.Project);
+
+            _appState.Project = newProject;
         }
 
         #endregion

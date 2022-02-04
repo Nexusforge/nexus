@@ -26,17 +26,19 @@ namespace Nexus.Core
 
         #region Properties - General
 
-        public ConcurrentDictionary<CatalogContainer, Task<Resource[]>> ResourceCache { get; } = new ConcurrentDictionary<CatalogContainer, Task<Resource[]>>();
-
-        public NexusProject Project { get; set; } = null!;
-
-        public CatalogState CatalogState { get; set; }
-
-        public bool IsCatalogStateUpdating { get; set; }
+        public ConcurrentDictionary<CatalogContainer, Task<Resource[]>> ResourceCache { get; } 
+            = new ConcurrentDictionary<CatalogContainer, Task<Resource[]>>();
 
         public string Version { get; }
 
-        public Dictionary<string, (string FormatName, OptionAttribute[] Options)> DataWriterInfoMap { get; set; }
+        public bool IsCatalogStateUpdating { get; set; }
+
+        // these properties will be set during host startup
+        public NexusProject Project { get; set; } = null!;
+
+        public CatalogState CatalogState { get; set; } = null!;
+
+        public Dictionary<string, (string FormatName, OptionAttribute[] Options)> DataWriterInfoMap { get; set; } = null!;
 
         #endregion
     }

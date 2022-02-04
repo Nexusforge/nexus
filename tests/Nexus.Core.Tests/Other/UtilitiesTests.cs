@@ -33,7 +33,7 @@ namespace Other
         {
             // Arrange
             var catalogId = "/A/B/C";
-            var catalogMetadata = new CatalogMetadata() { GroupMemberships = new[] { "A" } };
+            var catalogMetadata = new CatalogMetadata(default, default, GroupMemberships: new[] { "A" }, default);
 
             var principal = new ClaimsPrincipal(new ClaimsIdentity(
                 new Claim[] { new Claim(Claims.IS_ADMIN, isAdmin) }
@@ -89,7 +89,7 @@ namespace Other
             bool expected)
         {
             // Arrange
-            var catalogMetadata = new CatalogMetadata() { IsHidden = isHidden };
+            var catalogMetadata = new CatalogMetadata(default, isHidden, default, default);
 
             var principal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]
             {

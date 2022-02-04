@@ -163,7 +163,7 @@ namespace Nexus.Services
                     catalogMetadata = JsonSerializer.Deserialize<CatalogMetadata>(jsonString2) ?? throw new Exception("catalogMetadata is null");
 
                 else
-                    catalogMetadata = new CatalogMetadata();
+                    catalogMetadata = new CatalogMetadata(default, default, default, default);
 
                 /* create catalog container */
                 var catalogContainer = new CatalogContainer(

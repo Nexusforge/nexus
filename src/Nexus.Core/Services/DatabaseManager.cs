@@ -18,6 +18,7 @@ namespace Nexus.Services
 
         /* /config/project.json */
         bool TryReadProject([NotNullWhen(true)] out string? project);
+        Stream WriteProject();
 
         /* /catalogs/catalog_id/... */
         IEnumerable<string> EnumerateAttachements(string catalogId);
@@ -112,6 +113,15 @@ namespace Nexus.Services
             return false;
         }
 
+        public Stream WriteProject()
+        {
+            Directory.CreateDirectory(_pathsOptions.Config);
+
+            var filePath = Path.Combine(_pathsOptions.Config, "project.json");
+
+            return File.OpenWrite(filePath);
+        }
+
         /* /catalogs/catalog_id/... */
         public IEnumerable<string> EnumerateAttachements(string catalogId)
         {
@@ -174,9 +184,9 @@ namespace Nexus.Services
         {
             Directory.CreateDirectory(_pathsOptions.Export);
 
-            var file = Path.Combine(_pathsOptions.Export, fileName);
+            var filePath = Path.Combine(_pathsOptions.Export, fileName);
 
-            return File.OpenWrite(file);
+            return File.OpenWrite(filePath);
         }
     }
 }

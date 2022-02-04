@@ -2,6 +2,8 @@
 
 namespace Nexus.API.V1
 {
+    #region Users
+
     /// <summary>
     /// An authentication request.
     /// </summary>
@@ -53,4 +55,6 @@ namespace Nexus.API.V1
     /// <param name="Error">An optional error message. Not <see langword="null"/> when an error occured.</param>
     public record RevokeTokenResponse(
         string? Error);
+
+    #endregion
 }

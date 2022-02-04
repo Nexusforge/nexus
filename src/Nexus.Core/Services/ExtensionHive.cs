@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Options;
 using Nexus.Core;
 using Nexus.Extensibility;
+using Nexus.Models;
 using Nexus.PackageManagement;
 using System;
 using System.Collections.Generic;
@@ -76,12 +77,12 @@ namespace Nexus.Services
             var packageControllerMap = new Dictionary<PackageController, ReadOnlyCollection<Type>>();
 
             var filteredPackageReferences = packageReferences
-                .Where(packageReference => packageReference.ContainsKey("Provider"));
+                .Where(packageReference => packageReference.Configuration.ContainsKey("Provider"));
 
             foreach (var packageReference in filteredPackageReferences)
             {
                 var packageController = new PackageController(packageReference, _loggerFactory.CreateLogger<PackageController>());
-                using var scope = _logger.BeginScope(packageReference.ToDictionary(entry => entry.Key, entry => (object)entry.Value));
+                using var scope = _logger.BeginScope(packageReference.Configuration.ToDictionary(entry => entry.Key, entry => (object)entry.Value));
 
                 try
                 {

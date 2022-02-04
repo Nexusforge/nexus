@@ -284,13 +284,10 @@ async Task InitializeAppAsync(
 
     // project
     if (databaseManager.TryReadProject(out var project))
-    {
         appState.Project = JsonSerializer.Deserialize<NexusProject>(project);
-    }
+    
     else
-    {
         appState.Project = new NexusProject(default);
-    }
 
     // user manager
     await InitializeDatabaseAsync(serviceProvier, pathsOptions, securityOptions, logger);

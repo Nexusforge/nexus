@@ -7,7 +7,6 @@ using Nexus.Services;
 using Nexus.Utilities;
 using System.Data;
 using System.Net;
-using System.Text;
 
 namespace Nexus.Controllers.V1
 {
@@ -24,7 +23,7 @@ namespace Nexus.Controllers.V1
         // GET      /api/catalogs/{catalogId}/attachments/{attachmentId}/content
 
         // GET      /api/catalogs/{catalogId}/metadata
-        // POST     /api/catalogs/{catalogId}/metadata
+        // PUT      /api/catalogs/{catalogId}/metadata
 
         #region Fields
 
@@ -202,14 +201,14 @@ namespace Nexus.Controllers.V1
         }
 
         /// <summary>
-        /// Sets the catalog metadata.
+        /// Puts the catalog metadata.
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="request">The set catalog metadata request.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
-        [HttpPost("{catalogId}/metadata")]
+        [HttpPut("{catalogId}/metadata")]
         public Task
-            SetCatalogMetadataAsync(
+            PutCatalogMetadataAsync(
                 string catalogId,
                 [FromBody] SetMetadataRequest request,
                 CancellationToken cancellationToken)

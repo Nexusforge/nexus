@@ -1,46 +1,29 @@
 using Nexus.DataModel;
-using Nexus.PackageManagement;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 
 namespace Nexus.Models
 {
-    internal class NexusProject
-    {
-        // There is only a single project file per Nexus instance so its okay to initialize arrays.
-        public NexusProject(
-            List<PackageReference>? packageReferences)
-        {
-            this.PackageReferences = packageReferences ?? new List<PackageReference>();
-        }
+    internal record NexusProject(
+        IReadOnlyDictionary<Guid, PackageReference> PackageReferences);
 
-        public List<PackageReference> PackageReferences { get; init; }
-    }
+    public record PackageReference(
+        string Provider,
+        Dictionary<string, string> Configuration);
 
-    internal class UserConfiguration
-    {
-        // There are only a few user config files per Nexus instance so its okay to initialize arrays.
-        public UserConfiguration(
-            string username,
-            List<BackendSource>? backendSources)
-        {
-            this.Username = username;
-            this.BackendSources = backendSources ?? new List<BackendSource>();
-        }
+    internal record UserConfiguration(
+        string Username,
+        List<BackendSource> BackendSources);
 
-        public string Username { get; init; }
-        public List<BackendSource> BackendSources { get; init; }
-    }
+    public record CatalogMetadata(
+        string? Contact, 
+        bool IsHidden, 
+        string[]? GroupMemberships,
+        ResourceCatalog? Overrides);
 
-    public record CatalogMetadata()
-    {
-        public string? Contact { get; init; }
-        public bool IsHidden { get; init; }
-        public string[]? GroupMemberships { get; init; }
-        public ResourceCatalog? Overrides { get; init; }
-    }
+    public record AddPackageReferenceRequest(
+        PackageReference PackageReference);
 
     public record SetMetadataRequest(
         CatalogMetadata Metadata);

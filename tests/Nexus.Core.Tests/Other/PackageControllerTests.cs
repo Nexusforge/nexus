@@ -1,8 +1,10 @@
 ﻿using Microsoft.Extensions.Logging.Abstractions;
 using Nexus;
 using Nexus.Extensibility;
+using Nexus.Models;
 using Nexus.PackageManagement;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -49,13 +51,15 @@ namespace Other
             {
                 var version = "v1.0.0-unit.test";
 
-                var packageReference = new PackageReference()
-                {
-                    // required
-                    ["Provider"] = "local",
-                    ["Path"] = extensionFolderPath,
-                    ["Version"] = version
-                };
+                var packageReference = new PackageReference(
+                    Provider: "local",
+                    Configuration: new Dictionary<string, string>()
+                    {
+                        // required
+                        ["Path"] = extensionFolderPath,
+                        ["Version"] = version
+                    }
+                );
 
                 var fileToDelete = Path.Combine(restoreRoot, "local", pathHash, version, "TestExtensionProject.dll");
                 var weakReference = await this.Load_Run_and_Unload_Async(restoreRoot, fileToDelete, packageReference);
@@ -146,12 +150,13 @@ namespace Other
 
             try
             {
-                var packageReference = new PackageReference()
-                {
-                    // required
-                    ["Provider"] = "local",
-                    ["Path"] = root,
-                };
+                var packageReference = new PackageReference(
+                    Provider: "local",
+                    Configuration: new Dictionary<string, string>()
+                    {
+                        ["Path"] = root,
+                    }
+                );
 
                 var packageController = new PackageController(packageReference, NullLogger<PackageController>.Instance);
 
@@ -194,13 +199,15 @@ namespace Other
 
             try
             {
-                var packageReference = new PackageReference()
-                {
-                    // required
-                    ["Provider"] = "local",
-                    ["Path"] = extensionRoot,
-                    ["Version"] = version
-                };
+                var packageReference = new PackageReference(
+                    Provider: "local",
+                    Configuration: new Dictionary<string, string>()
+                    {
+                        // required
+                        ["Path"] = extensionRoot,
+                        ["Version"] = version
+                    }
+                );
 
                 var packageController = new PackageController(packageReference, NullLogger<PackageController>.Instance);
                 await packageController.RestoreAsync(restoreRoot, CancellationToken.None);
@@ -247,15 +254,17 @@ namespace Other
                 0x42, 0x31, 0x58, 0x66, 0x32, 0x53, 0x36, 0x36, 0x44, 0x37
             };
 
-            var packageReference = new PackageReference()
-            {
-                // required
-                ["Provider"] = "github-releases",
-                ["ProjectPath"] = "nexusforge/github-releases-provider-test-project",
+            var packageReference = new PackageReference(
+                Provider: "github-releases",
+                Configuration: new Dictionary<string, string>()
+                {
+                    // required
+                    ["ProjectPath"] = "nexusforge/github-releases-provider-test-project",
 
-                // optional token with scope(s): repo
-                ["Token"] = Encoding.ASCII.GetString(token)
-            };
+                    // optional token with scope(s): repo
+                    ["Token"] = Encoding.ASCII.GetString(token)
+                }
+            );
 
             var packageController = new PackageController(packageReference, NullLogger<PackageController>.Instance);
 
@@ -297,17 +306,19 @@ namespace Other
                     0x42, 0x31, 0x58, 0x66, 0x32, 0x53, 0x36, 0x36, 0x44, 0x37
                 };
 
-                var packageReference = new PackageReference()
-                {
-                    // required
-                    ["Provider"] = "github-releases",
-                    ["ProjectPath"] = "nexusforge/github-releases-provider-test-project",
-                    ["Tag"] = "v1.0.1",
-                    ["AssetSelector"] = assetSelector,
+                var packageReference = new PackageReference(
+                    Provider: "github-releases",
+                    Configuration: new Dictionary<string, string>()
+                    {
+                        // required
+                        ["ProjectPath"] = "nexusforge/github-releases-provider-test-project",
+                        ["Tag"] = "v1.0.1",
+                        ["AssetSelector"] = assetSelector,
 
-                    // optional token with scope(s): repo
-                    ["Token"] = Encoding.ASCII.GetString(token)
-                };
+                        // optional token with scope(s): repo
+                        ["Token"] = Encoding.ASCII.GetString(token)
+                    }
+                );
 
                 var packageController = new PackageController(packageReference, NullLogger<PackageController>.Instance);
                 await packageController.RestoreAsync(restoreRoot, CancellationToken.None);
@@ -341,16 +352,18 @@ namespace Other
                 "v0.1.0"
             };
 
-            var packageReference = new PackageReference()
-            {
-                // required
-                ["Provider"] = "gitlab-releases-v4",
-                ["Server"] = "https://gitlab.com",
-                ["ProjectPath"] = "nexusforge/Test-Group/my-awesome-test-project",
+            var packageReference = new PackageReference(
+                Provider: "gitlab-releases-v4",
+                Configuration: new Dictionary<string, string>()
+                {
+                    // required
+                    ["Server"] = "https://gitlab.com",
+                    ["ProjectPath"] = "nexusforge/Test-Group/my-awesome-test-project",
 
-                // optional token with scope(s): read_api
-                ["Token"] = "doQyXYqgmFxS1LUsupue"
-            };
+                    // optional token with scope(s): read_api
+                    ["Token"] = "doQyXYqgmFxS1LUsupue"
+                }
+            );
 
             var packageController = new PackageController(packageReference, NullLogger<PackageController>.Instance);
 
@@ -380,18 +393,20 @@ namespace Other
 
             try
             {
-                var packageReference = new PackageReference()
-                {
-                    // required
-                    ["Provider"] = "gitlab-releases-v4",
-                    ["Server"] = "https://gitlab.com",
-                    ["ProjectPath"] = "nexusforge/Test-Group/my-awesome-test-project",
-                    ["Tag"] = "v1.0.1",
-                    ["AssetSelector"] = assetSelector,
+                var packageReference = new PackageReference(
+                    Provider: "gitlab-releases-v4",
+                    Configuration: new Dictionary<string, string>()
+                    {
+                        // required
+                        ["Server"] = "https://gitlab.com",
+                        ["ProjectPath"] = "nexusforge/Test-Group/my-awesome-test-project",
+                        ["Tag"] = "v1.0.1",
+                        ["AssetSelector"] = assetSelector,
 
-                    // optional token with scope(s): read_api
-                    ["Token"] = "doQyXYqgmFxS1LUsupue"
-                };
+                        // optional token with scope(s): read_api
+                        ["Token"] = "doQyXYqgmFxS1LUsupue"
+                    }
+                );
 
                 var packageController = new PackageController(packageReference, NullLogger<PackageController>.Instance);
                 await packageController.RestoreAsync(restoreRoot, CancellationToken.None);
@@ -425,17 +440,19 @@ namespace Other
                 "v0.1.0"
             };
 
-            var packageReference = new PackageReference()
-            {
-                // required
-                ["Provider"] = "gitlab-packages-generic-v4",
-                ["Server"] = "https://gitlab.com",
-                ["ProjectPath"] = "nexusforge/Test-Group/my-awesome-test-project",
-                ["Package"] = "test-package",
+            var packageReference = new PackageReference(
+                Provider: "gitlab-packages-generic-v4",
+                Configuration: new Dictionary<string, string>()
+                {
+                    // required
+                    ["Server"] = "https://gitlab.com",
+                    ["ProjectPath"] = "nexusforge/Test-Group/my-awesome-test-project",
+                    ["Package"] = "test-package",
 
-                // optional token with scope(s): read_api
-                ["Token"] = "zNSQJjP6eWpQ8k-zpvDs",
-            };
+                    // optional token with scope(s): read_api
+                    ["Token"] = "zNSQJjP6eWpQ8k-zpvDs",
+                }
+            );
 
             var packageController = new PackageController(packageReference, NullLogger<PackageController>.Instance);
 
@@ -465,19 +482,21 @@ namespace Other
 
             try
             {
-                var packageReference = new PackageReference()
-                {
-                    // required
-                    ["Provider"] = "gitlab-packages-generic-v4",
-                    ["Server"] = "https://gitlab.com",
-                    ["ProjectPath"] = "nexusforge/Test-Group/my-awesome-test-project",
-                    ["Package"] = "test-package",
-                    ["Version"] = "v1.0.1",
-                    ["AssetSelector"] = assetSelector,
+                var packageReference = new PackageReference(
+                    Provider: "gitlab-packages-generic-v4",
+                    Configuration: new Dictionary<string, string>()
+                    {
+                        // required
+                        ["Server"] = "https://gitlab.com",
+                        ["ProjectPath"] = "nexusforge/Test-Group/my-awesome-test-project",
+                        ["Package"] = "test-package",
+                        ["Version"] = "v1.0.1",
+                        ["AssetSelector"] = assetSelector,
 
-                    // optional token with scope(s): read_api
-                    ["Token"] = "zNSQJjP6eWpQ8k-zpvDs",
-                };
+                        // optional token with scope(s): read_api
+                        ["Token"] = "zNSQJjP6eWpQ8k-zpvDs",
+                    }
+                );
 
                 var packageController = new PackageController(packageReference, NullLogger<PackageController>.Instance);
                 await packageController.RestoreAsync(restoreRoot, CancellationToken.None);

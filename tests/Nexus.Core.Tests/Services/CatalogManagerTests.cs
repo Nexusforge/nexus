@@ -209,12 +209,13 @@ namespace Services
                 });
 
             /* catalog metadata */
-            var catalogMetadata = new CatalogMetadata()
-            {
-                Overrides = new ResourceCatalogBuilder(id: "/A")
+            var catalogMetadata = new CatalogMetadata(
+                default, 
+                default, 
+                default,
+                Overrides: new ResourceCatalogBuilder(id: "/A")
                     .WithDescription("v2")
-                    .Build()
-            };
+                    .Build());
 
             /* backend sources */
             var backendSource = new BackendSource(

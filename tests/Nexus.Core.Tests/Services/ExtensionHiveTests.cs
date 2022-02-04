@@ -4,9 +4,10 @@ using Microsoft.Extensions.Options;
 using Moq;
 using Nexus.Core;
 using Nexus.Extensibility;
-using Nexus.PackageManagement;
+using Nexus.Models;
 using Nexus.Services;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -60,13 +61,15 @@ namespace Services
 
                 var version = "v1.0.0-unit.test";
 
-                var packageReference = new PackageReference()
-                {
-                    // required
-                    ["Provider"] = "local",
-                    ["Path"] = extensionFolderPath,
-                    ["Version"] = version
-                };
+                var packageReference = new PackageReference(
+                    Provider: "local",
+                    Configuration: new Dictionary<string, string>()
+                    {
+                        // required
+                        ["Path"] = extensionFolderPath,
+                        ["Version"] = version
+                    }
+                );
 
                 var packageReferences = new[]
                 {
