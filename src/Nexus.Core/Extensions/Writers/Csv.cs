@@ -144,7 +144,7 @@ namespace Nexus.Writers
                         Hashing: "md5",
                         Name: resourceFileNameWithoutExtension.ToLower(),
                         Profile: "tabular-data-resource",
-                        Scheme: "file",
+                        Scheme: "multipart",
                         Path: new List<string>(),
                         Layout: layout,
                         Schema: schema);
