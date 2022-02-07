@@ -31,7 +31,7 @@ namespace Nexus.Core
 
         public string Version { get; }
 
-        public bool IsCatalogStateUpdating { get; set; }
+        public Task? ReloadPackagesTask { get; set; }
 
         // these properties will be set during host startup
         public NexusProject Project { get; set; } = null!;

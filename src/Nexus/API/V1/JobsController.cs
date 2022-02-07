@@ -1,7 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Nexus.Core;
+using Nexus.DataModel;
 using Nexus.Services;
+using Nexus.Utilities;
+using System.ComponentModel.DataAnnotations;
 
 namespace Nexus.Controllers.V1
 {
@@ -39,7 +42,7 @@ namespace Nexus.Controllers.V1
 
         #endregion
 
-        #region Export Jobs
+        #region Export
 
         /// <summary>
         /// Creates a new export job.
@@ -52,91 +55,87 @@ namespace Nexus.Controllers.V1
             ExportParameters parameters,
             CancellationToken cancellationToken)
         {
-#warning Reenable
-            throw new NotImplementedException();
+            _diagnosticContext.Set("Body", JsonSerializerHelper.SerializeIntended(parameters));
 
-            //            _diagnosticContext.Set("Body", JsonSerializerHelper.SerializeIntended(parameters));
+            parameters.Begin = parameters.Begin.ToUniversalTime();
+            parameters.End = parameters.End.ToUniversalTime();
 
-            //            parameters.Begin = parameters.Begin.ToUniversalTime();
-            //            parameters.End = parameters.End.ToUniversalTime();
+            var root = _appState.CatalogState.Root;
 
-            //            var root = _appState.CatalogState.Root;
+            // translate resource paths to representations
+            (CatalogContainer Container, CatalogItem Item)[] catalogContainsAndItems;
 
-            //            // translate resource paths to representations
-            //            CatalogItem[] catalogItems;
+            try
+            {
+                catalogContainsAndItems = await Task.WhenAll(parameters.ResourcePaths.Select(async resourcePath =>
+                {
+                    var (catalogContainer, catalogItem) = await root.TryFindAsync(resourcePath, cancellationToken);
 
-            //            try
-            //            {
-            //                catalogItems = await Task.WhenAll(parameters.ResourcePaths.Select(async resourcePath =>
-            //                {
-            //                    var catalogItem = await root.TryFindAsync(resourcePath, cancellationToken);
+                    if (catalogItem is null)
+                        throw new ValidationException($"Could not find resource path {resourcePath}.");
 
-            //                    if (catalogItem is null)
-            //                        throw new ValidationException($"Could not find resource path {resourcePath}.");
+                    return (catalogContainer, catalogItem);
+                }));
+            }
+            catch (ValidationException ex)
+            {
+                return this.UnprocessableEntity(ex.Message);
+            }
 
-            //                    return catalogItem;
-            //                }));
-            //            }
-            //            catch (ValidationException ex)
-            //            {
-            //                return this.UnprocessableEntity(ex.Message);
-            //            }
+            // check that there is anything to export
+            if (!catalogContainsAndItems.Any())
+                return this.BadRequest("The list of resource paths is empty.");
 
-            //            // check that there is anything to export
-            //            if (!catalogItems.Any())
-            //                return this.BadRequest("The list of resource paths is empty.");
+            // build up catalog items map and authorize
+            Dictionary<CatalogContainer, IEnumerable<CatalogItem>> catalogItemsMap;
 
-            //            // build up catalog items map and authorize
-            //            Dictionary<CatalogContainer, IEnumerable<CatalogItem>> catalogItemsMap;
+            try
+            {
+                catalogItemsMap = catalogContainsAndItems
+                    .GroupBy(current => current.Container.Id)
+                    .ToDictionary(
+                        group =>
+                        {
+                            var catalogContainer = group.First().Container;
 
-            //            try
-            //            {
-            //                catalogItemsMap = catalogItems
-            //                    .GroupBy(catalogItem => catalogItem.Catalog.Id)
-            //                    .ToDictionary(
-            //                        group =>
-            //                        {
-            //                            var catalogContainer = catalogContainers.First(catalogContainer => catalogContainer.Id == group.Key);
+                            if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, this.HttpContext.User))
+                                throw new UnauthorizedAccessException($"The current user is not authorized to access catalog '{catalogContainer.Id}'.");
 
-            //                            if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, this.HttpContext.User))
-            //                                throw new UnauthorizedAccessException($"The current user is not authorized to access catalog '{catalogContainer.Id}'.");
+                            return catalogContainer;
+                        },
+                        group => (IEnumerable<CatalogItem>)group);
 
-            //                            return catalogContainer;
-            //                        },
-            //                        group => (IEnumerable<CatalogItem>)group);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return this.Unauthorized(ex.Message);
+            }
 
-            //            }
-            //            catch (UnauthorizedAccessException ex)
-            //            {
-            //                return this.Unauthorized(ex.Message);
-            //            }
+            //
+            var job = new ExportJob(
+                Parameters: parameters)
+            {
+                Owner = this.User.Identity.Name
+            };
 
-            //            //
-            //            var job = new ExportJob(
-            //                Parameters: parameters)
-            //            {
-            //                Owner = this.User.Identity.Name
-            //            };
+            var dataService = _serviceProvider.GetRequiredService<DataService>();
 
-            //            var dataService = _serviceProvider.GetRequiredService<DataService>();
+            try
+            {
+                var jobControl = _exportJobService.AddJob(job, dataService.ReadProgress, async (jobControl, cts) =>
+                {
+#warning ExportId should be ASP Request ID!
+                    var exportId = Guid.NewGuid();
 
-            //            try
-            //            {
-            //                var jobControl = _exportJobService.AddJob(job, dataService.ReadProgress, async (jobControl, cts) =>
-            //                {
-            //                    var userIdService = _serviceProvider.GetRequiredService<UserIdService>();
-            //#warning ExportId should be ASP Request ID!
-            //                    var exportId = Guid.NewGuid();
+                    return await dataService.ExportAsync(parameters, catalogItemsMap, exportId, cts.Token);
+                });
 
-            //                    return await dataService.ExportAsync(parameters, catalogItemsMap, exportId, cts.Token);
-            //                });
-
-            //                return this.Accepted($"{this.GetBasePath()}{this.Request.Path}/{jobControl.Job.Id}/status", jobControl.Job);
-            //            }
-            //            catch (ValidationException ex)
-            //            {
-            //                return this.UnprocessableEntity(ex.GetFullMessage(includeStackTrace: false));
-            //            }
+                return this.Accepted($"{this.GetBasePath()}{this.Request.Path}/{jobControl.Job.Id}/status", jobControl.Job);
+            }
+            catch (ValidationException ex)
+            {
+                return this.UnprocessableEntity(ex.Message);
+            }
         }
 
         /// <summary>

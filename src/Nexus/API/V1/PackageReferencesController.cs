@@ -15,12 +15,11 @@ namespace Nexus.Controllers.V1
         // GET      /api/packagereferences
         // PUT      /api/packagereferences/{packageReferenceId}
         // DELETE   /api/packagereferences/{packageReferenceId}
-        // POST     /api/packagereferences/reload
 
         #region Fields
 
         private AppState _appState;
-        private AppStateController _appStateController;
+        private AppStateManager _appStateManager;
 
         #endregion
 
@@ -28,10 +27,10 @@ namespace Nexus.Controllers.V1
 
         public PackageReferencesController(
             AppState appState,
-            AppStateController appStateController)
+            AppStateManager appStateManager)
         {
             _appState = appState;
-            _appStateController = appStateController;
+            _appStateManager = appStateManager;
         }
 
         #endregion
@@ -60,7 +59,7 @@ namespace Nexus.Controllers.V1
             Guid packageReferenceId,
             [FromBody] AddPackageReferenceRequest request)
         {
-            return _appStateController.PutPackageReferenceAsync(packageReferenceId, request.PackageReference);
+            return _appStateManager.PutPackageReferenceAsync(packageReferenceId, request.PackageReference);
 
         }
 
@@ -73,25 +72,8 @@ namespace Nexus.Controllers.V1
             GetPackagesAsync(
             Guid packageReferenceId)
         {
-            return _appStateController.DeletePackageReferenceAsync(packageReferenceId);
+            return _appStateManager.DeletePackageReferenceAsync(packageReferenceId);
 
-        }
-
-#error Better "reload packages" instead of "reload packagereferences"?
-#error Is POST ok?
-#error Generate client
-#error Add controller for backend sources
-
-        /// <summary>
-        /// Reloads all packages.
-        /// </summary>
-        /// <param name="cancellationToken">A token to cancel the current operation.</param>
-        [HttpPost("{packageReferenceId}")]
-        public Task
-            ReloadPackagesAsync(
-            CancellationToken cancellationToken)
-        {
-            return _appStateController.ReloadPackagesAsync(cancellationToken);
         }
 
         #endregion

@@ -11,14 +11,14 @@ using System.Threading.Tasks;
 
 namespace Nexus.Services
 {
-    internal class AppStateController
+    internal class AppStateManager
     {
         #region Fields
 
         private IExtensionHive _extensionHive;
         private ICatalogManager _catalogManager;
         private IDatabaseManager _databaseManager;
-        private ILogger<AppStateController> _logger;
+        private ILogger<AppStateManager> _logger;
         private AppState _appState;
         private SemaphoreSlim _reloadPackagesSemaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
 
@@ -26,12 +26,12 @@ namespace Nexus.Services
 
         #region Constructors
 
-        public AppStateController(
+        public AppStateManager(
             AppState appState,
             IExtensionHive extensionHive,
             ICatalogManager catalogManager,
             IDatabaseManager databaseManager,
-            ILogger<AppStateController> logger)
+            ILogger<AppStateManager> logger)
         {
             _appState = appState;
             _extensionHive = extensionHive;
@@ -46,28 +46,13 @@ namespace Nexus.Services
 
         public async Task ReloadPackagesAsync(CancellationToken cancellationToken)
         {
-            /* check if any work is required */
-            var executeReload = false;
-
             await _reloadPackagesSemaphore.WaitAsync();
 
             try
             {
-                if (!_appState.IsCatalogStateUpdating)
-                {
-                    _appState.IsCatalogStateUpdating = true;
-                    executeReload = true;
-                }
-            }
-            finally
-            {
-                _reloadPackagesSemaphore.Release();
-            }
+                var reloadPackagesTask = _appState.ReloadPackagesTask;
 
-            /* continue */
-            if (executeReload)
-            {
-                try
+                if (reloadPackagesTask is null)
                 {
                     /* create fresh app state */
                     _appState.CatalogState = new CatalogState(
@@ -77,42 +62,21 @@ namespace Nexus.Services
 
                     /* load packages */
                     _logger.LogInformation("Load packages");
-                    await _extensionHive.LoadPackagesAsync(_appState.Project.PackageReferences.Values, cancellationToken);
-                }
-                finally
-                {
-                    /* re-enable other tasks to run an update */
-                    _appState.IsCatalogStateUpdating = false;
+
+                    reloadPackagesTask = _extensionHive
+                        .LoadPackagesAsync(_appState.Project.PackageReferences.Values, cancellationToken)
+                        .ContinueWith(task =>
+                        {
+                            this.LoadDataWriters();
+                            _appState.ReloadPackagesTask = null;
+                            return Task.CompletedTask;
+                        }, TaskScheduler.Default);
                 }
             }
-
-            /* update GUI with possible new data writers */
-            var dataWriterInfoMap = new Dictionary<string, (string FormatName, OptionAttribute[] Options)>();
-
-            foreach (var dataWriterType in _extensionHive.GetExtensions<IDataWriter>())
+            finally
             {
-                var fullName = dataWriterType.FullName ?? throw new Exception("full name is null");
-
-                string formatName;
-
-                try
-                {
-                    formatName = dataWriterType.GetFirstAttribute<DataWriterFormatNameAttribute>().FormatName;
-                }
-                catch
-                {
-                    _logger.LogWarning("Data writer {DataWriter} has no format name attribute", fullName);
-                    continue;
-                }
-
-                var options = dataWriterType
-                    .GetCustomAttributes<OptionAttribute>()
-                    .ToArray();
-
-                dataWriterInfoMap[fullName] = (formatName, options);
+                _reloadPackagesSemaphore.Release();
             }
-
-            _appState.DataWriterInfoMap = dataWriterInfoMap;
         }
 
         public async Task PutPackageReferenceAsync(
@@ -155,6 +119,36 @@ namespace Nexus.Services
             await JsonSerializerHelper.SerializeIntendedAsync(stream, _appState.Project);
 
             _appState.Project = newProject;
+        }
+
+        private void LoadDataWriters()
+        {
+            var dataWriterInfoMap = new Dictionary<string, (string FormatName, OptionAttribute[] Options)>();
+
+            foreach (var dataWriterType in _extensionHive.GetExtensions<IDataWriter>())
+            {
+                var fullName = dataWriterType.FullName ?? throw new Exception("full name is null");
+
+                string formatName;
+
+                try
+                {
+                    formatName = dataWriterType.GetFirstAttribute<DataWriterFormatNameAttribute>().FormatName;
+                }
+                catch
+                {
+                    _logger.LogWarning("Data writer {DataWriter} has no format name attribute", fullName);
+                    continue;
+                }
+
+                var options = dataWriterType
+                    .GetCustomAttributes<OptionAttribute>()
+                    .ToArray();
+
+                dataWriterInfoMap[fullName] = (formatName, options);
+            }
+
+            _appState.DataWriterInfoMap = dataWriterInfoMap;
         }
 
         #endregion

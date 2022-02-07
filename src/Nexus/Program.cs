@@ -190,7 +190,7 @@ void AddServices(IServiceCollection services, IConfiguration configuration)
     services.AddScoped<INexusAuthenticationService, NexusAuthenticationService>();
 
     services.AddSingleton<AppState>();
-    services.AddSingleton<AppStateController>();
+    services.AddSingleton<AppStateManager>();
     services.AddSingleton<IDataControllerService, DataControllerService>();
     services.AddSingleton<ICatalogManager, CatalogManager>();
     services.AddSingleton<IDatabaseManager, DatabaseManager>();
@@ -279,7 +279,7 @@ async Task InitializeAppAsync(
     ILogger logger)
 {
     var appState = serviceProvier.GetRequiredService<AppState>();
-    var appStateController = serviceProvier.GetRequiredService<AppStateController>();
+    var appStateManager = serviceProvier.GetRequiredService<AppStateManager>();
     var databaseManager = serviceProvier.GetRequiredService<IDatabaseManager>();
 
     // project
@@ -293,7 +293,7 @@ async Task InitializeAppAsync(
     await InitializeDatabaseAsync(serviceProvier, pathsOptions, securityOptions, logger);
 
     // packages and catalogs
-    await appStateController.ReloadCatalogsAsync(CancellationToken.None);
+    await appStateManager.ReloadPackagesAsync(CancellationToken.None);
 }
 
 async Task InitializeDatabaseAsync(
