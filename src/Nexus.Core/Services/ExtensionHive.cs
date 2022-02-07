@@ -17,10 +17,24 @@ namespace Nexus.Services
 {
     internal interface IExtensionHive
     {
-        IEnumerable<Type> GetExtensions<T>() where T : IExtension;
-        T GetInstance<T>(string fullName) where T : IExtension;
-        Task LoadPackagesAsync(IEnumerable<PackageReference> packageReferences, CancellationToken cancellationToken);
-        bool TryGetInstance<T>(string identifier, out T? instance) where T : IExtension;
+        IEnumerable<Type> GetExtensions<T>(
+            ) where T : IExtension;
+
+        T GetInstance<T>(
+            string fullName) where T : IExtension;
+
+        Task LoadPackagesAsync(
+            IEnumerable<PackageReference> packageReferences,
+            IProgress<double> progress,
+            CancellationToken cancellationToken);
+
+        Task<string[]> GetVersionsAsync(
+            PackageReference packageReference,
+            CancellationToken cancellationToken);
+
+        bool TryGetInstance<T>(
+            string identifier,
+            out T? instance) where T : IExtension;
     }
 
     internal class ExtensionHive : IExtensionHive
@@ -31,9 +45,7 @@ namespace Nexus.Services
         private ILoggerFactory _loggerFactory;
         private PathsOptions _pathsOptions;
 
-        private Dictionary<
-            PackageController,
-            ReadOnlyCollection<Type>>? _packageControllerMap;
+        private Dictionary<PackageController, ReadOnlyCollection<Type>>? _packageControllerMap = null!;
 
         private ReadOnlyCollection<Type> _builtinExtensions;
 
@@ -41,7 +53,10 @@ namespace Nexus.Services
 
         #region Constructors
 
-        public ExtensionHive(IOptions<PathsOptions> pathsOptions, ILogger<ExtensionHive> logger, ILoggerFactory loggerFactory)
+        public ExtensionHive(
+            IOptions<PathsOptions> pathsOptions,
+            ILogger<ExtensionHive> logger,
+            ILoggerFactory loggerFactory)
         {
             _logger = logger;
             _loggerFactory = loggerFactory;
@@ -58,7 +73,10 @@ namespace Nexus.Services
 
         #region Methods
 
-        public async Task LoadPackagesAsync(IEnumerable<PackageReference> packageReferences, CancellationToken cancellationToken)
+        public async Task LoadPackagesAsync(
+            IEnumerable<PackageReference> packageReferences,
+            IProgress<double> progress,
+            CancellationToken cancellationToken)
         {
             // clean up
             _logger.LogDebug("Unload previously loaded packages");
@@ -75,11 +93,10 @@ namespace Nexus.Services
 
             // build new
             var packageControllerMap = new Dictionary<PackageController, ReadOnlyCollection<Type>>();
+            var currentCount = 0;
+            var totalCount = packageReferences.Count();
 
-            var filteredPackageReferences = packageReferences
-                .Where(packageReference => packageReference.Configuration.ContainsKey("Provider"));
-
-            foreach (var packageReference in filteredPackageReferences)
+            foreach (var packageReference in packageReferences)
             {
                 var packageController = new PackageController(packageReference, _loggerFactory.CreateLogger<PackageController>());
                 using var scope = _logger.BeginScope(packageReference.Configuration.ToDictionary(entry => entry.Key, entry => (object)entry.Value));
@@ -95,9 +112,23 @@ namespace Nexus.Services
                 {
                     _logger.LogError(ex, "Loading package failed");
                 }
+
+                currentCount++;
+                progress.Report(currentCount / (double)totalCount);
             }
 
             _packageControllerMap = packageControllerMap;
+        }
+
+        public Task<string[]> GetVersionsAsync(
+            PackageReference packageReference,
+            CancellationToken cancellationToken)
+        {
+            var controller = new PackageController(
+                packageReference,
+                _loggerFactory.CreateLogger<PackageController>());
+
+            return controller.DiscoverAsync(cancellationToken);
         }
 
         public IEnumerable<Type> GetExtensions<T>() where T : IExtension

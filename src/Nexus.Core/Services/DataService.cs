@@ -84,7 +84,7 @@ namespace Nexus.Services
 
             // start
             var zipFileName = $"Nexus_{exportParameters.Begin.ToString("yyyy-MM-ddTHH-mm-ss")}_{samplePeriod.ToUnitString()}_{exportId.ToString().Substring(0, 8)}.zip";
-            var zipArchiveStream = _databaseManager.WriteExportFile(zipFileName);
+            var zipArchiveStream = _databaseManager.WriteArtifact(zipFileName);
             using var zipArchive = new ZipArchive(zipArchiveStream, ZipArchiveMode.Create);
 
             // create tmp/target directory
@@ -117,7 +117,7 @@ namespace Nexus.Services
             // write zip archive
             this.WriteZipArchiveEntries(zipArchive, tmpFolderPath, cancellationToken);
 
-            return zipFileName;
+            return $"api/artifacts/{zipFileName}";
         }
 
         private void CopyLicenseIfAvailable(string catalogId, string targetFolder)

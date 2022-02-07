@@ -20,6 +20,223 @@ namespace Nexus.Client
     using System = global::System;
 
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "13.15.7.0 (NJsonSchema v10.6.7.0 (Newtonsoft.Json v13.0.0.0))")]
+    public partial interface IArtifactsClient
+    {
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Gets the specified artifact.
+        /// </summary>
+        /// <param name="artifactId">The artifact identifier.</param>
+        /// <exception cref="NexusApiException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<FileResponse> DownloadArtifactAsync(string artifactId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NSwag", "13.15.7.0 (NJsonSchema v10.6.7.0 (Newtonsoft.Json v13.0.0.0))")]
+    internal partial class ArtifactsClient : NexusOpenApiClientBase, IArtifactsClient
+    {
+        private string _baseUrl = "";
+        private System.Net.Http.HttpClient _httpClient;
+        private System.Lazy<System.Text.Json.JsonSerializerOptions> _settings;
+
+        public ArtifactsClient(string baseUrl, System.Net.Http.HttpClient httpClient)
+        {
+            BaseUrl = baseUrl;
+            _httpClient = httpClient;
+            _settings = new System.Lazy<System.Text.Json.JsonSerializerOptions>(CreateSerializerSettings);
+        }
+
+        private System.Text.Json.JsonSerializerOptions CreateSerializerSettings()
+        {
+            var settings = new System.Text.Json.JsonSerializerOptions();
+            UpdateJsonSerializerSettings(settings);
+            return settings;
+        }
+
+        public string BaseUrl
+        {
+            get { return _baseUrl; }
+            set { _baseUrl = value; }
+        }
+
+        protected System.Text.Json.JsonSerializerOptions JsonSerializerSettings { get { return _settings.Value; } }
+
+        partial void UpdateJsonSerializerSettings(System.Text.Json.JsonSerializerOptions settings);
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Gets the specified artifact.
+        /// </summary>
+        /// <param name="artifactId">The artifact identifier.</param>
+        /// <exception cref="NexusApiException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task<FileResponse> DownloadArtifactAsync(string artifactId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        {
+            if (artifactId == null)
+                throw new System.ArgumentNullException("artifactId");
+
+            var urlBuilder_ = new System.Text.StringBuilder();
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/artifacts/{artifactId}");
+            urlBuilder_.Replace("{artifactId}", System.Uri.EscapeDataString(ConvertToString(artifactId, System.Globalization.CultureInfo.InvariantCulture)));
+
+            var client_ = _httpClient;
+            var disposeClient_ = false;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    request_.Method = new System.Net.Http.HttpMethod("GET");
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/octet-stream"));
+
+                    await PrepareRequestAsync(client_, request_, urlBuilder_).ConfigureAwait(false);
+
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+
+                    await PrepareRequestAsync(client_, request_, url_).ConfigureAwait(false);
+
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var disposeResponse_ = true;
+                    try
+                    {
+                        var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+
+                        await ProcessResponseAsync(client_, response_, cancellationToken).ConfigureAwait(false);
+
+                        var status_ = (int)response_.StatusCode;
+                        if (status_ == 200 || status_ == 206)
+                        {
+                            var responseStream_ = response_.Content == null ? System.IO.Stream.Null : await response_.Content.ReadAsStreamAsync().ConfigureAwait(false);
+                            var fileResponse_ = new FileResponse(status_, headers_, responseStream_, null, response_);
+                            disposeClient_ = false; disposeResponse_ = false; // response and client are disposed by FileResponse
+                            return fileResponse_;
+                        }
+                        else
+                        {
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new NexusApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (disposeResponse_)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeClient_)
+                    client_.Dispose();
+            }
+        }
+
+        protected struct ObjectResponseResult<T>
+        {
+            public ObjectResponseResult(T responseObject, string responseText)
+            {
+                this.Object = responseObject;
+                this.Text = responseText;
+            }
+
+            public T Object { get; }
+
+            public string Text { get; }
+        }
+
+        public bool ReadResponseAsString { get; set; }
+
+        protected virtual async System.Threading.Tasks.Task<ObjectResponseResult<T>> ReadObjectResponseAsync<T>(System.Net.Http.HttpResponseMessage response, System.Collections.Generic.IReadOnlyDictionary<string, System.Collections.Generic.IEnumerable<string>> headers, System.Threading.CancellationToken cancellationToken)
+        {
+            if (response == null || response.Content == null)
+            {
+                return new ObjectResponseResult<T>(default(T)!, string.Empty);
+            }
+
+            if (ReadResponseAsString)
+            {
+                var responseText = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                try
+                {
+                    var typedBody = System.Text.Json.JsonSerializer.Deserialize<T>(responseText, JsonSerializerSettings);
+                    return new ObjectResponseResult<T>(typedBody!, responseText);
+                }
+                catch (System.Text.Json.JsonException exception)
+                {
+                    var message = "Could not deserialize the response body string as " + typeof(T).FullName + ".";
+                    throw new NexusApiException(message, (int)response.StatusCode, responseText, headers, exception);
+                }
+            }
+            else
+            {
+                try
+                {
+                    using (var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                    {
+                        var typedBody = await System.Text.Json.JsonSerializer.DeserializeAsync<T>(responseStream, JsonSerializerSettings, cancellationToken).ConfigureAwait(false);
+                        return new ObjectResponseResult<T>(typedBody!, string.Empty);
+                    }
+                }
+                catch (System.Text.Json.JsonException exception)
+                {
+                    var message = "Could not deserialize the response body stream as " + typeof(T).FullName + ".";
+                    throw new NexusApiException(message, (int)response.StatusCode, string.Empty, headers, exception);
+                }
+            }
+        }
+
+        private string ConvertToString(object? value, System.Globalization.CultureInfo cultureInfo)
+        {
+            if (value == null)
+            {
+                return "";
+            }
+
+            if (value is System.Enum)
+            {
+                var name = System.Enum.GetName(value.GetType(), value);
+                if (name != null)
+                {
+                    var field = System.Reflection.IntrospectionExtensions.GetTypeInfo(value.GetType()).GetDeclaredField(name);
+                    if (field != null)
+                    {
+                        var attribute = System.Reflection.CustomAttributeExtensions.GetCustomAttribute(field, typeof(System.Runtime.Serialization.EnumMemberAttribute)) 
+                            as System.Runtime.Serialization.EnumMemberAttribute;
+                        if (attribute != null)
+                        {
+                            return attribute.Value != null ? attribute.Value : name;
+                        }
+                    }
+
+                    var converted = System.Convert.ToString(System.Convert.ChangeType(value, System.Enum.GetUnderlyingType(value.GetType()), cultureInfo));
+                    return converted == null ? string.Empty : converted;
+                }
+            }
+            else if (value is bool) 
+            {
+                return System.Convert.ToString((bool)value, cultureInfo).ToLowerInvariant();
+            }
+            else if (value is byte[])
+            {
+                return System.Convert.ToBase64String((byte[]) value);
+            }
+            else if (value.GetType().IsArray)
+            {
+                var array = System.Linq.Enumerable.OfType<object>((System.Array) value);
+                return string.Join(",", System.Linq.Enumerable.Select(array, o => ConvertToString(o, cultureInfo)));
+            }
+
+            var result = System.Convert.ToString(value, cultureInfo);
+            return result == null ? "" : result;
+        }
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NSwag", "13.15.7.0 (NJsonSchema v10.6.7.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial interface ICatalogsClient
     {
 
@@ -77,12 +294,12 @@ namespace Nexus.Client
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Sets the catalog metadata.
+        /// Puts the catalog metadata.
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="request">The set catalog metadata request.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task SetCatalogMetadataAsync(string catalogId, SetMetadataRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task PutCatalogMetadataAsync(string catalogId, SetMetadataRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
     }
 
@@ -578,12 +795,12 @@ namespace Nexus.Client
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Sets the catalog metadata.
+        /// Puts the catalog metadata.
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="request">The set catalog metadata request.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task SetCatalogMetadataAsync(string catalogId, SetMetadataRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task PutCatalogMetadataAsync(string catalogId, SetMetadataRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (catalogId == null)
                 throw new System.ArgumentNullException("catalogId");
@@ -604,7 +821,7 @@ namespace Nexus.Client
                     var content_ = new System.Net.Http.StringContent(System.Text.Json.JsonSerializer.Serialize(request, _settings.Value));
                     content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
                     request_.Content = content_;
-                    request_.Method = new System.Net.Http.HttpMethod("POST");
+                    request_.Method = new System.Net.Http.HttpMethod("PUT");
 
                     await PrepareRequestAsync(client_, request_, urlBuilder_).ConfigureAwait(false);
 
@@ -765,7 +982,7 @@ namespace Nexus.Client
         /// <param name="begin">Start date/time.</param>
         /// <param name="end">End date/time.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<FileResponse> GetStreamAsync(string catalogId, string resourceId, string representationId, System.DateTime begin, System.DateTime end, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<FileResponse> GetStreamAsync(string? catalogId = null, string? resourceId = null, string? representationId = null, System.DateTime? begin = null, System.DateTime? end = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
     }
 
@@ -810,30 +1027,30 @@ namespace Nexus.Client
         /// <param name="begin">Start date/time.</param>
         /// <param name="end">End date/time.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<FileResponse> GetStreamAsync(string catalogId, string resourceId, string representationId, System.DateTime begin, System.DateTime end, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<FileResponse> GetStreamAsync(string? catalogId = null, string? resourceId = null, string? representationId = null, System.DateTime? begin = null, System.DateTime? end = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
-            if (catalogId == null)
-                throw new System.ArgumentNullException("catalogId");
-
-            if (resourceId == null)
-                throw new System.ArgumentNullException("resourceId");
-
-            if (representationId == null)
-                throw new System.ArgumentNullException("representationId");
-
-            if (begin == null)
-                throw new System.ArgumentNullException("begin");
-
-            if (end == null)
-                throw new System.ArgumentNullException("end");
-
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/data?");
-            urlBuilder_.Append(System.Uri.EscapeDataString("catalogId") + "=").Append(System.Uri.EscapeDataString(ConvertToString(catalogId, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            urlBuilder_.Append(System.Uri.EscapeDataString("resourceId") + "=").Append(System.Uri.EscapeDataString(ConvertToString(resourceId, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            urlBuilder_.Append(System.Uri.EscapeDataString("representationId") + "=").Append(System.Uri.EscapeDataString(ConvertToString(representationId, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            urlBuilder_.Append(System.Uri.EscapeDataString("begin") + "=").Append(System.Uri.EscapeDataString(begin.ToString("s", System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            urlBuilder_.Append(System.Uri.EscapeDataString("end") + "=").Append(System.Uri.EscapeDataString(end.ToString("s", System.Globalization.CultureInfo.InvariantCulture))).Append("&");
+            if (catalogId != null)
+            {
+                urlBuilder_.Append(System.Uri.EscapeDataString("catalogId") + "=").Append(System.Uri.EscapeDataString(ConvertToString(catalogId, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
+            }
+            if (resourceId != null)
+            {
+                urlBuilder_.Append(System.Uri.EscapeDataString("resourceId") + "=").Append(System.Uri.EscapeDataString(ConvertToString(resourceId, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
+            }
+            if (representationId != null)
+            {
+                urlBuilder_.Append(System.Uri.EscapeDataString("representationId") + "=").Append(System.Uri.EscapeDataString(ConvertToString(representationId, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
+            }
+            if (begin != null)
+            {
+                urlBuilder_.Append(System.Uri.EscapeDataString("begin") + "=").Append(System.Uri.EscapeDataString(begin.Value.ToString("s", System.Globalization.CultureInfo.InvariantCulture))).Append("&");
+            }
+            if (end != null)
+            {
+                urlBuilder_.Append(System.Uri.EscapeDataString("end") + "=").Append(System.Uri.EscapeDataString(end.Value.ToString("s", System.Globalization.CultureInfo.InvariantCulture))).Append("&");
+            }
             urlBuilder_.Length--;
 
             var client_ = _httpClient;
@@ -994,6 +1211,295 @@ namespace Nexus.Client
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "13.15.7.0 (NJsonSchema v10.6.7.0 (Newtonsoft.Json v13.0.0.0))")]
+    public partial interface IExtensionsClient
+    {
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Gets the list of sources.
+        /// </summary>
+        /// <exception cref="NexusApiException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<System.Collections.Generic.ICollection<ExtensionDescription>> GetSourcesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Gets the list of writers.
+        /// </summary>
+        /// <exception cref="NexusApiException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<System.Collections.Generic.ICollection<ExtensionDescription>> GetWritersAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NSwag", "13.15.7.0 (NJsonSchema v10.6.7.0 (Newtonsoft.Json v13.0.0.0))")]
+    internal partial class ExtensionsClient : NexusOpenApiClientBase, IExtensionsClient
+    {
+        private string _baseUrl = "";
+        private System.Net.Http.HttpClient _httpClient;
+        private System.Lazy<System.Text.Json.JsonSerializerOptions> _settings;
+
+        public ExtensionsClient(string baseUrl, System.Net.Http.HttpClient httpClient)
+        {
+            BaseUrl = baseUrl;
+            _httpClient = httpClient;
+            _settings = new System.Lazy<System.Text.Json.JsonSerializerOptions>(CreateSerializerSettings);
+        }
+
+        private System.Text.Json.JsonSerializerOptions CreateSerializerSettings()
+        {
+            var settings = new System.Text.Json.JsonSerializerOptions();
+            UpdateJsonSerializerSettings(settings);
+            return settings;
+        }
+
+        public string BaseUrl
+        {
+            get { return _baseUrl; }
+            set { _baseUrl = value; }
+        }
+
+        protected System.Text.Json.JsonSerializerOptions JsonSerializerSettings { get { return _settings.Value; } }
+
+        partial void UpdateJsonSerializerSettings(System.Text.Json.JsonSerializerOptions settings);
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Gets the list of sources.
+        /// </summary>
+        /// <exception cref="NexusApiException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<ExtensionDescription>> GetSourcesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        {
+            var urlBuilder_ = new System.Text.StringBuilder();
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/extensions/sources");
+
+            var client_ = _httpClient;
+            var disposeClient_ = false;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    request_.Method = new System.Net.Http.HttpMethod("GET");
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+
+                    await PrepareRequestAsync(client_, request_, urlBuilder_).ConfigureAwait(false);
+
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+
+                    await PrepareRequestAsync(client_, request_, url_).ConfigureAwait(false);
+
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var disposeResponse_ = true;
+                    try
+                    {
+                        var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+
+                        await ProcessResponseAsync(client_, response_, cancellationToken).ConfigureAwait(false);
+
+                        var status_ = (int)response_.StatusCode;
+                        if (status_ == 200)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<System.Collections.Generic.ICollection<ExtensionDescription>>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new NexusApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            return objectResponse_.Object;
+                        }
+                        else
+                        {
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new NexusApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (disposeResponse_)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeClient_)
+                    client_.Dispose();
+            }
+        }
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Gets the list of writers.
+        /// </summary>
+        /// <exception cref="NexusApiException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<ExtensionDescription>> GetWritersAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        {
+            var urlBuilder_ = new System.Text.StringBuilder();
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/extensions/writers");
+
+            var client_ = _httpClient;
+            var disposeClient_ = false;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    request_.Method = new System.Net.Http.HttpMethod("GET");
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+
+                    await PrepareRequestAsync(client_, request_, urlBuilder_).ConfigureAwait(false);
+
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+
+                    await PrepareRequestAsync(client_, request_, url_).ConfigureAwait(false);
+
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var disposeResponse_ = true;
+                    try
+                    {
+                        var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+
+                        await ProcessResponseAsync(client_, response_, cancellationToken).ConfigureAwait(false);
+
+                        var status_ = (int)response_.StatusCode;
+                        if (status_ == 200)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<System.Collections.Generic.ICollection<ExtensionDescription>>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new NexusApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            return objectResponse_.Object;
+                        }
+                        else
+                        {
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new NexusApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (disposeResponse_)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeClient_)
+                    client_.Dispose();
+            }
+        }
+
+        protected struct ObjectResponseResult<T>
+        {
+            public ObjectResponseResult(T responseObject, string responseText)
+            {
+                this.Object = responseObject;
+                this.Text = responseText;
+            }
+
+            public T Object { get; }
+
+            public string Text { get; }
+        }
+
+        public bool ReadResponseAsString { get; set; }
+
+        protected virtual async System.Threading.Tasks.Task<ObjectResponseResult<T>> ReadObjectResponseAsync<T>(System.Net.Http.HttpResponseMessage response, System.Collections.Generic.IReadOnlyDictionary<string, System.Collections.Generic.IEnumerable<string>> headers, System.Threading.CancellationToken cancellationToken)
+        {
+            if (response == null || response.Content == null)
+            {
+                return new ObjectResponseResult<T>(default(T)!, string.Empty);
+            }
+
+            if (ReadResponseAsString)
+            {
+                var responseText = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                try
+                {
+                    var typedBody = System.Text.Json.JsonSerializer.Deserialize<T>(responseText, JsonSerializerSettings);
+                    return new ObjectResponseResult<T>(typedBody!, responseText);
+                }
+                catch (System.Text.Json.JsonException exception)
+                {
+                    var message = "Could not deserialize the response body string as " + typeof(T).FullName + ".";
+                    throw new NexusApiException(message, (int)response.StatusCode, responseText, headers, exception);
+                }
+            }
+            else
+            {
+                try
+                {
+                    using (var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                    {
+                        var typedBody = await System.Text.Json.JsonSerializer.DeserializeAsync<T>(responseStream, JsonSerializerSettings, cancellationToken).ConfigureAwait(false);
+                        return new ObjectResponseResult<T>(typedBody!, string.Empty);
+                    }
+                }
+                catch (System.Text.Json.JsonException exception)
+                {
+                    var message = "Could not deserialize the response body stream as " + typeof(T).FullName + ".";
+                    throw new NexusApiException(message, (int)response.StatusCode, string.Empty, headers, exception);
+                }
+            }
+        }
+
+        private string ConvertToString(object? value, System.Globalization.CultureInfo cultureInfo)
+        {
+            if (value == null)
+            {
+                return "";
+            }
+
+            if (value is System.Enum)
+            {
+                var name = System.Enum.GetName(value.GetType(), value);
+                if (name != null)
+                {
+                    var field = System.Reflection.IntrospectionExtensions.GetTypeInfo(value.GetType()).GetDeclaredField(name);
+                    if (field != null)
+                    {
+                        var attribute = System.Reflection.CustomAttributeExtensions.GetCustomAttribute(field, typeof(System.Runtime.Serialization.EnumMemberAttribute)) 
+                            as System.Runtime.Serialization.EnumMemberAttribute;
+                        if (attribute != null)
+                        {
+                            return attribute.Value != null ? attribute.Value : name;
+                        }
+                    }
+
+                    var converted = System.Convert.ToString(System.Convert.ChangeType(value, System.Enum.GetUnderlyingType(value.GetType()), cultureInfo));
+                    return converted == null ? string.Empty : converted;
+                }
+            }
+            else if (value is bool) 
+            {
+                return System.Convert.ToString((bool)value, cultureInfo).ToLowerInvariant();
+            }
+            else if (value is byte[])
+            {
+                return System.Convert.ToBase64String((byte[]) value);
+            }
+            else if (value.GetType().IsArray)
+            {
+                var array = System.Linq.Enumerable.OfType<object>((System.Array) value);
+                return string.Join(",", System.Linq.Enumerable.Select(array, o => ConvertToString(o, cultureInfo)));
+            }
+
+            var result = System.Convert.ToString(value, cultureInfo);
+            return result == null ? "" : result;
+        }
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NSwag", "13.15.7.0 (NJsonSchema v10.6.7.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial interface IJobsClient
     {
 
@@ -1003,35 +1509,35 @@ namespace Nexus.Client
         /// </summary>
         /// <param name="parameters">Export parameters.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<ExportJob> CreateExportJobAsync(ExportParameters parameters, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<Job> ExportAsync(ExportParameters parameters, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Gets a list of all export jobs.
+        /// Creates a new load packages job.
         /// </summary>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<System.Collections.Generic.ICollection<ExportJob>> GetExportJobsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<Job> LoadPackagesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Gets the specified export job.
+        /// Gets a list of jobs.
         /// </summary>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<ExportJob> GetExportJobAsync(System.Guid jobId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<System.Collections.Generic.ICollection<Job>> GetJobsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Gets the status of the specified job.
+        /// </summary>
+        /// <exception cref="NexusApiException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<JobStatus> GetJobStatusAsync(System.Guid jobId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Cancels the specified job.
         /// </summary>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<FileResponse> DeleteExportJobAsync(System.Guid jobId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Gets the status of the specified export job.
-        /// </summary>
-        /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<JobStatus> GetExportJobStatusAsync(System.Guid jobId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<FileResponse> DeleteJobAsync(System.Guid jobId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
     }
 
@@ -1072,7 +1578,7 @@ namespace Nexus.Client
         /// </summary>
         /// <param name="parameters">Export parameters.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<ExportJob> CreateExportJobAsync(ExportParameters parameters, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<Job> ExportAsync(ExportParameters parameters, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (parameters == null)
                 throw new System.ArgumentNullException("parameters");
@@ -1115,7 +1621,7 @@ namespace Nexus.Client
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            var objectResponse_ = await ReadObjectResponseAsync<ExportJob>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            var objectResponse_ = await ReadObjectResponseAsync<Job>(response_, headers_, cancellationToken).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
                                 throw new NexusApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
@@ -1144,13 +1650,83 @@ namespace Nexus.Client
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Gets a list of all export jobs.
+        /// Creates a new load packages job.
         /// </summary>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<ExportJob>> GetExportJobsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<Job> LoadPackagesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/export");
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/load-packages");
+
+            var client_ = _httpClient;
+            var disposeClient_ = false;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    request_.Content = new System.Net.Http.StringContent(string.Empty, System.Text.Encoding.UTF8, "application/json");
+                    request_.Method = new System.Net.Http.HttpMethod("POST");
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+
+                    await PrepareRequestAsync(client_, request_, urlBuilder_).ConfigureAwait(false);
+
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+
+                    await PrepareRequestAsync(client_, request_, url_).ConfigureAwait(false);
+
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var disposeResponse_ = true;
+                    try
+                    {
+                        var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+
+                        await ProcessResponseAsync(client_, response_, cancellationToken).ConfigureAwait(false);
+
+                        var status_ = (int)response_.StatusCode;
+                        if (status_ == 200)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<Job>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new NexusApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            return objectResponse_.Object;
+                        }
+                        else
+                        {
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new NexusApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (disposeResponse_)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeClient_)
+                    client_.Dispose();
+            }
+        }
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Gets a list of jobs.
+        /// </summary>
+        /// <exception cref="NexusApiException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<Job>> GetJobsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        {
+            var urlBuilder_ = new System.Text.StringBuilder();
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs");
 
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -1184,7 +1760,7 @@ namespace Nexus.Client
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            var objectResponse_ = await ReadObjectResponseAsync<System.Collections.Generic.ICollection<ExportJob>>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            var objectResponse_ = await ReadObjectResponseAsync<System.Collections.Generic.ICollection<Job>>(response_, headers_, cancellationToken).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
                                 throw new NexusApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
@@ -1213,16 +1789,16 @@ namespace Nexus.Client
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Gets the specified export job.
+        /// Gets the status of the specified job.
         /// </summary>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<ExportJob> GetExportJobAsync(System.Guid jobId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<JobStatus> GetJobStatusAsync(System.Guid jobId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (jobId == null)
                 throw new System.ArgumentNullException("jobId");
 
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/export/{jobId}");
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/{jobId}/status");
             urlBuilder_.Replace("{jobId}", System.Uri.EscapeDataString(ConvertToString(jobId, System.Globalization.CultureInfo.InvariantCulture)));
 
             var client_ = _httpClient;
@@ -1257,7 +1833,7 @@ namespace Nexus.Client
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            var objectResponse_ = await ReadObjectResponseAsync<ExportJob>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            var objectResponse_ = await ReadObjectResponseAsync<JobStatus>(response_, headers_, cancellationToken).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
                                 throw new NexusApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
@@ -1289,13 +1865,13 @@ namespace Nexus.Client
         /// Cancels the specified job.
         /// </summary>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<FileResponse> DeleteExportJobAsync(System.Guid jobId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<FileResponse> DeleteJobAsync(System.Guid jobId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (jobId == null)
                 throw new System.ArgumentNullException("jobId");
 
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/export/{jobId}");
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/{jobId}");
             urlBuilder_.Replace("{jobId}", System.Uri.EscapeDataString(ConvertToString(jobId, System.Globalization.CultureInfo.InvariantCulture)));
 
             var client_ = _httpClient;
@@ -1355,19 +1931,183 @@ namespace Nexus.Client
             }
         }
 
+        protected struct ObjectResponseResult<T>
+        {
+            public ObjectResponseResult(T responseObject, string responseText)
+            {
+                this.Object = responseObject;
+                this.Text = responseText;
+            }
+
+            public T Object { get; }
+
+            public string Text { get; }
+        }
+
+        public bool ReadResponseAsString { get; set; }
+
+        protected virtual async System.Threading.Tasks.Task<ObjectResponseResult<T>> ReadObjectResponseAsync<T>(System.Net.Http.HttpResponseMessage response, System.Collections.Generic.IReadOnlyDictionary<string, System.Collections.Generic.IEnumerable<string>> headers, System.Threading.CancellationToken cancellationToken)
+        {
+            if (response == null || response.Content == null)
+            {
+                return new ObjectResponseResult<T>(default(T)!, string.Empty);
+            }
+
+            if (ReadResponseAsString)
+            {
+                var responseText = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                try
+                {
+                    var typedBody = System.Text.Json.JsonSerializer.Deserialize<T>(responseText, JsonSerializerSettings);
+                    return new ObjectResponseResult<T>(typedBody!, responseText);
+                }
+                catch (System.Text.Json.JsonException exception)
+                {
+                    var message = "Could not deserialize the response body string as " + typeof(T).FullName + ".";
+                    throw new NexusApiException(message, (int)response.StatusCode, responseText, headers, exception);
+                }
+            }
+            else
+            {
+                try
+                {
+                    using (var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                    {
+                        var typedBody = await System.Text.Json.JsonSerializer.DeserializeAsync<T>(responseStream, JsonSerializerSettings, cancellationToken).ConfigureAwait(false);
+                        return new ObjectResponseResult<T>(typedBody!, string.Empty);
+                    }
+                }
+                catch (System.Text.Json.JsonException exception)
+                {
+                    var message = "Could not deserialize the response body stream as " + typeof(T).FullName + ".";
+                    throw new NexusApiException(message, (int)response.StatusCode, string.Empty, headers, exception);
+                }
+            }
+        }
+
+        private string ConvertToString(object? value, System.Globalization.CultureInfo cultureInfo)
+        {
+            if (value == null)
+            {
+                return "";
+            }
+
+            if (value is System.Enum)
+            {
+                var name = System.Enum.GetName(value.GetType(), value);
+                if (name != null)
+                {
+                    var field = System.Reflection.IntrospectionExtensions.GetTypeInfo(value.GetType()).GetDeclaredField(name);
+                    if (field != null)
+                    {
+                        var attribute = System.Reflection.CustomAttributeExtensions.GetCustomAttribute(field, typeof(System.Runtime.Serialization.EnumMemberAttribute)) 
+                            as System.Runtime.Serialization.EnumMemberAttribute;
+                        if (attribute != null)
+                        {
+                            return attribute.Value != null ? attribute.Value : name;
+                        }
+                    }
+
+                    var converted = System.Convert.ToString(System.Convert.ChangeType(value, System.Enum.GetUnderlyingType(value.GetType()), cultureInfo));
+                    return converted == null ? string.Empty : converted;
+                }
+            }
+            else if (value is bool) 
+            {
+                return System.Convert.ToString((bool)value, cultureInfo).ToLowerInvariant();
+            }
+            else if (value is byte[])
+            {
+                return System.Convert.ToBase64String((byte[]) value);
+            }
+            else if (value.GetType().IsArray)
+            {
+                var array = System.Linq.Enumerable.OfType<object>((System.Array) value);
+                return string.Join(",", System.Linq.Enumerable.Select(array, o => ConvertToString(o, cultureInfo)));
+            }
+
+            var result = System.Convert.ToString(value, cultureInfo);
+            return result == null ? "" : result;
+        }
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NSwag", "13.15.7.0 (NJsonSchema v10.6.7.0 (Newtonsoft.Json v13.0.0.0))")]
+    public partial interface IPackageReferencesClient
+    {
+
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Gets the status of the specified export job.
+        /// Gets the list of package references.
         /// </summary>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<JobStatus> GetExportJobStatusAsync(System.Guid jobId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            if (jobId == null)
-                throw new System.ArgumentNullException("jobId");
+        System.Threading.Tasks.Task<System.Collections.Generic.IDictionary<string, PackageReference>> GetPackagesGETAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Puts a package reference.
+        /// </summary>
+        /// <param name="packageReferenceId">The ID of the package reference.</param>
+        /// <exception cref="NexusApiException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task GetPackagesPUTAsync(System.Guid packageReferenceId, AddPackageReferenceRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Deletes a package reference.
+        /// </summary>
+        /// <param name="packageReferenceId">The ID of the package reference.</param>
+        /// <exception cref="NexusApiException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task GetPackagesDELETEAsync(System.Guid packageReferenceId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Gets package versions.
+        /// </summary>
+        /// <param name="packageReferenceId">The ID of the package reference.</param>
+        /// <exception cref="NexusApiException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<System.Collections.Generic.ICollection<string>> GetVersionsAsync(System.Guid packageReferenceId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NSwag", "13.15.7.0 (NJsonSchema v10.6.7.0 (Newtonsoft.Json v13.0.0.0))")]
+    internal partial class PackageReferencesClient : NexusOpenApiClientBase, IPackageReferencesClient
+    {
+        private string _baseUrl = "";
+        private System.Net.Http.HttpClient _httpClient;
+        private System.Lazy<System.Text.Json.JsonSerializerOptions> _settings;
+
+        public PackageReferencesClient(string baseUrl, System.Net.Http.HttpClient httpClient)
+        {
+            BaseUrl = baseUrl;
+            _httpClient = httpClient;
+            _settings = new System.Lazy<System.Text.Json.JsonSerializerOptions>(CreateSerializerSettings);
+        }
+
+        private System.Text.Json.JsonSerializerOptions CreateSerializerSettings()
+        {
+            var settings = new System.Text.Json.JsonSerializerOptions();
+            UpdateJsonSerializerSettings(settings);
+            return settings;
+        }
+
+        public string BaseUrl
+        {
+            get { return _baseUrl; }
+            set { _baseUrl = value; }
+        }
+
+        protected System.Text.Json.JsonSerializerOptions JsonSerializerSettings { get { return _settings.Value; } }
+
+        partial void UpdateJsonSerializerSettings(System.Text.Json.JsonSerializerOptions settings);
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Gets the list of package references.
+        /// </summary>
+        /// <exception cref="NexusApiException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task<System.Collections.Generic.IDictionary<string, PackageReference>> GetPackagesGETAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        {
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/export/{jobId}/status");
-            urlBuilder_.Replace("{jobId}", System.Uri.EscapeDataString(ConvertToString(jobId, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/packagereferences");
 
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -1401,7 +2141,223 @@ namespace Nexus.Client
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            var objectResponse_ = await ReadObjectResponseAsync<JobStatus>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            var objectResponse_ = await ReadObjectResponseAsync<System.Collections.Generic.IDictionary<string, PackageReference>>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new NexusApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            return objectResponse_.Object;
+                        }
+                        else
+                        {
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new NexusApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (disposeResponse_)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeClient_)
+                    client_.Dispose();
+            }
+        }
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Puts a package reference.
+        /// </summary>
+        /// <param name="packageReferenceId">The ID of the package reference.</param>
+        /// <exception cref="NexusApiException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task GetPackagesPUTAsync(System.Guid packageReferenceId, AddPackageReferenceRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        {
+            if (packageReferenceId == null)
+                throw new System.ArgumentNullException("packageReferenceId");
+
+            if (request == null)
+                throw new System.ArgumentNullException("request");
+
+            var urlBuilder_ = new System.Text.StringBuilder();
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/packagereferences/{packageReferenceId}");
+            urlBuilder_.Replace("{packageReferenceId}", System.Uri.EscapeDataString(ConvertToString(packageReferenceId, System.Globalization.CultureInfo.InvariantCulture)));
+
+            var client_ = _httpClient;
+            var disposeClient_ = false;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    var content_ = new System.Net.Http.StringContent(System.Text.Json.JsonSerializer.Serialize(request, _settings.Value));
+                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
+                    request_.Content = content_;
+                    request_.Method = new System.Net.Http.HttpMethod("PUT");
+
+                    await PrepareRequestAsync(client_, request_, urlBuilder_).ConfigureAwait(false);
+
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+
+                    await PrepareRequestAsync(client_, request_, url_).ConfigureAwait(false);
+
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var disposeResponse_ = true;
+                    try
+                    {
+                        var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+
+                        await ProcessResponseAsync(client_, response_, cancellationToken).ConfigureAwait(false);
+
+                        var status_ = (int)response_.StatusCode;
+                        if (status_ == 200)
+                        {
+                            return;
+                        }
+                        else
+                        {
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new NexusApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (disposeResponse_)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeClient_)
+                    client_.Dispose();
+            }
+        }
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Deletes a package reference.
+        /// </summary>
+        /// <param name="packageReferenceId">The ID of the package reference.</param>
+        /// <exception cref="NexusApiException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task GetPackagesDELETEAsync(System.Guid packageReferenceId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        {
+            if (packageReferenceId == null)
+                throw new System.ArgumentNullException("packageReferenceId");
+
+            var urlBuilder_ = new System.Text.StringBuilder();
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/packagereferences/{packageReferenceId}");
+            urlBuilder_.Replace("{packageReferenceId}", System.Uri.EscapeDataString(ConvertToString(packageReferenceId, System.Globalization.CultureInfo.InvariantCulture)));
+
+            var client_ = _httpClient;
+            var disposeClient_ = false;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    request_.Method = new System.Net.Http.HttpMethod("DELETE");
+
+                    await PrepareRequestAsync(client_, request_, urlBuilder_).ConfigureAwait(false);
+
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+
+                    await PrepareRequestAsync(client_, request_, url_).ConfigureAwait(false);
+
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var disposeResponse_ = true;
+                    try
+                    {
+                        var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+
+                        await ProcessResponseAsync(client_, response_, cancellationToken).ConfigureAwait(false);
+
+                        var status_ = (int)response_.StatusCode;
+                        if (status_ == 200)
+                        {
+                            return;
+                        }
+                        else
+                        {
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new NexusApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (disposeResponse_)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeClient_)
+                    client_.Dispose();
+            }
+        }
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Gets package versions.
+        /// </summary>
+        /// <param name="packageReferenceId">The ID of the package reference.</param>
+        /// <exception cref="NexusApiException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<string>> GetVersionsAsync(System.Guid packageReferenceId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        {
+            if (packageReferenceId == null)
+                throw new System.ArgumentNullException("packageReferenceId");
+
+            var urlBuilder_ = new System.Text.StringBuilder();
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/packagereferences/{packageReferenceId}/versions");
+            urlBuilder_.Replace("{packageReferenceId}", System.Uri.EscapeDataString(ConvertToString(packageReferenceId, System.Globalization.CultureInfo.InvariantCulture)));
+
+            var client_ = _httpClient;
+            var disposeClient_ = false;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    request_.Method = new System.Net.Http.HttpMethod("GET");
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+
+                    await PrepareRequestAsync(client_, request_, urlBuilder_).ConfigureAwait(false);
+
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+
+                    await PrepareRequestAsync(client_, request_, url_).ConfigureAwait(false);
+
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var disposeResponse_ = true;
+                    try
+                    {
+                        var headers_ = System.Linq.Enumerable.ToDictionary(response_.Headers, h_ => h_.Key, h_ => h_.Value);
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+
+                        await ProcessResponseAsync(client_, response_, cancellationToken).ConfigureAwait(false);
+
+                        var status_ = (int)response_.StatusCode;
+                        if (status_ == 200)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<System.Collections.Generic.ICollection<string>>(response_, headers_, cancellationToken).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
                                 throw new NexusApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
@@ -2263,12 +3219,61 @@ namespace Nexus.Client
 
     }
 
+    /// <summary>
+    /// An extension description.
+    /// </summary>
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.15.7.0 (NJsonSchema v10.6.7.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class ExportJob : Job
+    public partial class ExtensionDescription
     {
+        /// <summary>
+        /// The extension type.
+        /// </summary>
+
+        [System.Text.Json.Serialization.JsonPropertyName("type")]
+        public string Type { get; set; } = default!;
+
+        /// <summary>
+        /// An optional description.
+        /// </summary>
+
+        [System.Text.Json.Serialization.JsonPropertyName("description")]
+        public string? Description { get; set; } = default!;
+
+    }
+
+    /// <summary>
+    /// Description of a job.
+    /// </summary>
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.15.7.0 (NJsonSchema v10.6.7.0 (Newtonsoft.Json v13.0.0.0))")]
+    public partial class Job
+    {
+        /// <summary>
+        /// 06f8eb30-5924-4a71-bdff-322f92343f5b
+        /// </summary>
+
+        [System.Text.Json.Serialization.JsonPropertyName("id")]
+        public System.Guid Id { get; set; } = default!;
+
+        /// <summary>
+        /// export
+        /// </summary>
+
+        [System.Text.Json.Serialization.JsonPropertyName("type")]
+        public string Type { get; set; } = default!;
+
+        /// <summary>
+        /// test@nexus.localhost
+        /// </summary>
+
+        [System.Text.Json.Serialization.JsonPropertyName("owner")]
+        public string Owner { get; set; } = default!;
+
+        /// <summary>
+        /// Job parameters.
+        /// </summary>
 
         [System.Text.Json.Serialization.JsonPropertyName("parameters")]
-        public ExportParameters Parameters { get; set; } = default!;
+        public object Parameters { get; set; } = default!;
 
     }
 
@@ -2297,18 +3302,6 @@ namespace Nexus.Client
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.15.7.0 (NJsonSchema v10.6.7.0 (Newtonsoft.Json v13.0.0.0))")]
-    public abstract partial class Job
-    {
-
-        [System.Text.Json.Serialization.JsonPropertyName("id")]
-        public System.Guid Id { get; set; } = default!;
-
-        [System.Text.Json.Serialization.JsonPropertyName("owner")]
-        public string Owner { get; set; } = default!;
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.15.7.0 (NJsonSchema v10.6.7.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class JobStatus
     {
 
@@ -2326,7 +3319,7 @@ namespace Nexus.Client
         public string ExceptionMessage { get; set; } = default!;
 
         [System.Text.Json.Serialization.JsonPropertyName("result")]
-        public string Result { get; set; } = default!;
+        public object Result { get; set; } = default!;
 
     }
 
@@ -2357,6 +3350,27 @@ namespace Nexus.Client
 
         [System.Runtime.Serialization.EnumMember(Value = @"Faulted")]
         Faulted = 7,
+
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.15.7.0 (NJsonSchema v10.6.7.0 (Newtonsoft.Json v13.0.0.0))")]
+    public partial class PackageReference
+    {
+
+        [System.Text.Json.Serialization.JsonPropertyName("provider")]
+        public string Provider { get; set; } = default!;
+
+        [System.Text.Json.Serialization.JsonPropertyName("configuration")]
+        public System.Collections.Generic.IDictionary<string, string> Configuration { get; set; } = default!;
+
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.15.7.0 (NJsonSchema v10.6.7.0 (Newtonsoft.Json v13.0.0.0))")]
+    public partial class AddPackageReferenceRequest
+    {
+
+        [System.Text.Json.Serialization.JsonPropertyName("packageReference")]
+        public PackageReference PackageReference { get; set; } = default!;
 
     }
 

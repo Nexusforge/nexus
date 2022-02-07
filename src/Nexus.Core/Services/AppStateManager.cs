@@ -19,7 +19,6 @@ namespace Nexus.Services
         private ICatalogManager _catalogManager;
         private IDatabaseManager _databaseManager;
         private ILogger<AppStateManager> _logger;
-        private AppState _appState;
         private SemaphoreSlim _reloadPackagesSemaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
 
         #endregion
@@ -33,7 +32,7 @@ namespace Nexus.Services
             IDatabaseManager databaseManager,
             ILogger<AppStateManager> logger)
         {
-            _appState = appState;
+            AppState = appState;
             _extensionHive = extensionHive;
             _catalogManager = catalogManager;
             _databaseManager = databaseManager;
@@ -42,20 +41,26 @@ namespace Nexus.Services
 
         #endregion
 
+        #region Properties
+
+        public AppState AppState { get; }
+
+        #endregion
+
         #region Methods
 
-        public async Task ReloadPackagesAsync(CancellationToken cancellationToken)
+        public async Task LoadPackagesAsync(IProgress<double> progress, CancellationToken cancellationToken)
         {
             await _reloadPackagesSemaphore.WaitAsync();
 
             try
             {
-                var reloadPackagesTask = _appState.ReloadPackagesTask;
+                var reloadPackagesTask = AppState.ReloadPackagesTask;
 
                 if (reloadPackagesTask is null)
                 {
                     /* create fresh app state */
-                    _appState.CatalogState = new CatalogState(
+                    AppState.CatalogState = new CatalogState(
                         Root: CatalogContainer.CreateRoot(_catalogManager, _databaseManager),
                         Cache: new CatalogCache()
                     );
@@ -64,11 +69,11 @@ namespace Nexus.Services
                     _logger.LogInformation("Load packages");
 
                     reloadPackagesTask = _extensionHive
-                        .LoadPackagesAsync(_appState.Project.PackageReferences.Values, cancellationToken)
+                        .LoadPackagesAsync(AppState.Project.PackageReferences.Values, progress, cancellationToken)
                         .ContinueWith(task =>
                         {
                             this.LoadDataWriters();
-                            _appState.ReloadPackagesTask = null;
+                            AppState.ReloadPackagesTask = null;
                             return Task.CompletedTask;
                         }, TaskScheduler.Default);
                 }
@@ -83,7 +88,7 @@ namespace Nexus.Services
             Guid packageReferenceId,
             PackageReference packageReference)
         {
-            var project = _appState.Project;
+            var project = AppState.Project;
 
             var packageReferences = project.PackageReferences
                 .ToDictionary(current => current.Key, current => current.Value);
@@ -96,14 +101,14 @@ namespace Nexus.Services
             };
 
             using var stream = _databaseManager.WriteProject();
-            await JsonSerializerHelper.SerializeIntendedAsync(stream, _appState.Project);
+            await JsonSerializerHelper.SerializeIntendedAsync(stream, newProject);
 
-            _appState.Project = newProject;
+            AppState.Project = newProject;
         }
 
         public async Task DeletePackageReferenceAsync(Guid packageReferenceId)
         {
-            var project = _appState.Project;
+            var project = AppState.Project;
 
             var packageReferences = project.PackageReferences
                 .ToDictionary(current => current.Key, current => current.Value);
@@ -116,9 +121,9 @@ namespace Nexus.Services
             };
 
             using var stream = _databaseManager.WriteProject();
-            await JsonSerializerHelper.SerializeIntendedAsync(stream, _appState.Project);
+            await JsonSerializerHelper.SerializeIntendedAsync(stream, newProject);
 
-            _appState.Project = newProject;
+            AppState.Project = newProject;
         }
 
         private void LoadDataWriters()
@@ -148,7 +153,7 @@ namespace Nexus.Services
                 dataWriterInfoMap[fullName] = (formatName, options);
             }
 
-            _appState.DataWriterInfoMap = dataWriterInfoMap;
+            AppState.DataWriterInfoMap = dataWriterInfoMap;
         }
 
         #endregion

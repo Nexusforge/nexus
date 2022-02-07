@@ -95,7 +95,7 @@ namespace Services
                 .Returns(true);
 
             Mock.Get(databaseManager)
-                .Setup(databaseManager => databaseManager.WriteExportFile(It.IsAny<string>()))
+                .Setup(databaseManager => databaseManager.WriteArtifact(It.IsAny<string>()))
                 .Returns<string>((fileName) => File.OpenWrite(Path.Combine(root, fileName)));
 
             var logger = Mock.Of<ILogger<DataService>>();
@@ -140,11 +140,11 @@ namespace Services
                     [new CatalogContainer(new CatalogRegistration(catalog2.Id), default, backendSource2, default, default, default, default)] = new[] { catalogItem2 }
                 };
 
-                var zipFileName = await dataService
+                var relativeDownloadUrl = await dataService
                     .ExportAsync(exportParameters, catalogItemsMap, Guid.NewGuid(), CancellationToken.None);
 
                 // assert
-                var zipFile = Path.Combine(root, zipFileName);
+                var zipFile = Path.Combine(root, relativeDownloadUrl.Split('/').Last());
                 var unzipFolder = Path.GetDirectoryName(zipFile);
 
                 ZipFile.ExtractToDirectory(zipFile, unzipFolder);

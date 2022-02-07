@@ -10,13 +10,27 @@ using Timer = System.Timers.Timer;
 
 namespace Nexus.Services
 {
-    internal class JobService<T> where T : Job
+    internal interface IJobService
+    {
+        JobControl AddJob(
+            Job job, 
+            Progress<double> progress,
+            Func<JobControl, CancellationTokenSource, Task<object>> createTask);
+
+        List<JobControl> GetJobs();
+
+        bool TryGetJob(
+            Guid key, 
+            [NotNullWhen(true)] out JobControl? jobControl);
+    }
+
+    internal class JobService : IJobService
     {
         #region Fields
 
         private Timer _timer;
 
-        private ConcurrentDictionary<Guid, JobControl<T>> _jobs = new ConcurrentDictionary<Guid,JobControl<T>>();
+        private ConcurrentDictionary<Guid, JobControl> _jobs = new();
 
         #endregion
 
@@ -53,11 +67,14 @@ namespace Nexus.Services
 
         #region Methods
 
-        public JobControl<T> AddJob(T job, Progress<double> progress, Func<JobControl<T>, CancellationTokenSource, Task<string>> createTask)
+        public JobControl AddJob(
+            Job job,
+            Progress<double> progress,
+            Func<JobControl, CancellationTokenSource, Task<object>> createTask)
         {
             var cancellationTokenSource = new CancellationTokenSource();
 
-            var jobControl = new JobControl<T>(
+            var jobControl = new JobControl(
                 Start: DateTime.UtcNow,
                 Job: job,
                 CancellationTokenSource: cancellationTokenSource);
@@ -87,18 +104,18 @@ namespace Nexus.Services
             return jobControl;
         }
 
-        private bool TryAddJob(JobControl<T> jobControl)
+        private bool TryAddJob(JobControl jobControl)
         {
             var result = _jobs.TryAdd(jobControl.Job.Id, jobControl);
             return result;
         }
 
-        public bool TryGetJob(Guid key, [NotNullWhen(true)] out JobControl<T>? jobControl)
+        public bool TryGetJob(Guid key, [NotNullWhen(true)] out JobControl? jobControl)
         {
             return _jobs.TryGetValue(key, out jobControl);
         }
 
-        public List<JobControl<T>> GetJobs()
+        public List<JobControl> GetJobs()
         {
             // http://blog.i3arnon.com/2018/01/16/concurrent-dictionary-tolist/
             // https://stackoverflow.com/questions/41038514/calling-tolist-on-concurrentdictionarytkey-tvalue-while-adding-items

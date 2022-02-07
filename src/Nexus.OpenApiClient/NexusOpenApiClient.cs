@@ -26,9 +26,12 @@ namespace Nexus.Client
 
         private HttpClient _httpClient;
 
+        private ArtifactsClient _artifacts;
         private CatalogsClient _catalogs;
+        private ExtensionsClient _extensions;
         private DataClient _data;
         private JobsClient _jobs;
+        private PackageReferencesClient _packageReferences;
         private UsersClient _users;
 
         /// <summary>
@@ -40,9 +43,12 @@ namespace Nexus.Client
         {
             _httpClient = httpClient ?? new HttpClient();
 
+            _artifacts = new ArtifactsClient(baseUrl, _httpClient) { Client = this };
             _catalogs = new CatalogsClient(baseUrl, _httpClient) { Client = this };
+            _extensions = new ExtensionsClient(baseUrl, _httpClient) { Client = this };
             _data = new DataClient(baseUrl, _httpClient) { Client = this };
             _jobs = new JobsClient(baseUrl, _httpClient) { Client = this };
+            _packageReferences = new PackageReferencesClient(baseUrl, _httpClient) { Client = this };
             _users = new UsersClient(baseUrl, _httpClient) { Client = this };
         }
 
@@ -50,6 +56,11 @@ namespace Nexus.Client
         /// Gets a value which indicates if the user is authenticated.
         /// </summary>
         public bool IsAuthenticated => _jwtToken != null;
+
+        /// <summary>
+        /// Gets the artifacts client.
+        /// </summary>
+        public IArtifactsClient Artifacts => _artifacts;
 
         /// <summary>
         /// Gets the catalogs client.
@@ -62,9 +73,19 @@ namespace Nexus.Client
         public IDataClient Data => _data;
 
         /// <summary>
+        /// Gets the extensions client.
+        /// </summary>
+        public IExtensionsClient Extensions => _extensions;
+
+        /// <summary>
         /// Gets the jobs client.
         /// </summary>
         public IJobsClient Jobs => _jobs;
+
+        /// <summary>
+        /// Gets the package references client.
+        /// </summary>
+        public IPackageReferencesClient PackageReferences => _packageReferences;
 
         /// <summary>
         /// Gets the users client.
@@ -116,6 +137,10 @@ namespace Nexus.Client
 
         internal async Task ProcessResponseAsync(HttpClient client, HttpResponseMessage response, CancellationToken cancellationToken)
         {
+            // Workaround for https://github.com/RicoSuter/NSwag/issues/1259
+            if (response.IsSuccessStatusCode)
+                response.StatusCode = HttpStatusCode.OK;
+
             // Workaround for https://github.com/RicoSuter/NSwag/issues/1559
 
             // do not process the refresh request response

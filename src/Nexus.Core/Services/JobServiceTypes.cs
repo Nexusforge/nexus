@@ -1,38 +1,36 @@
-﻿using Nexus.Services;
-using System;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nexus.Core
 {
-    public abstract record Job
-    {
-        /// <example>06f8eb30-5924-4a71-bdff-322f92343f5b</example>
-        public Guid Id { get; init; } = Guid.NewGuid();
-        /// <example>test@nexus.localhost</example>
-        public string Owner { get; init; } = string.Empty;
-    }
-
-    public record ExportJob(ExportParameters Parameters) : Job;
+    /// <summary>
+    /// Description of a job.
+    /// </summary>
+    /// <param name="Id"><example>06f8eb30-5924-4a71-bdff-322f92343f5b</example></param>
+    /// <param name="Owner"><example>test@nexus.localhost</example></param>
+    /// <param name="Type"><example>export</example></param>
+    /// <param name="Parameters">Job parameters.</param>
+    public record Job(Guid Id, string Type, string Owner, object Parameters);
 
     public record JobStatus(
         DateTime Start,
         TaskStatus Status,
         double Progress,
         string ExceptionMessage,
-        string Result);
+        object Result);
 
-    internal record JobControl<T>(
+    internal record JobControl(
         DateTime Start,
-        T Job,
-        CancellationTokenSource CancellationTokenSource) where T : Job
+        Job Job,
+        CancellationTokenSource CancellationTokenSource)
     {
         public event EventHandler<double>? ProgressUpdated;
         public event EventHandler? Completed;
 
         public double Progress { get; private set; }
 
-        public Task<string> Task { get; set; } = null!;
+        public Task<object> Task { get; set; }
 
         public void OnProgressUpdated(double e)
         {

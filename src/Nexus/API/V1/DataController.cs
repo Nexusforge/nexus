@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Nexus.Core;
 using Nexus.Extensibility;
 using Nexus.Services;
@@ -50,12 +49,12 @@ namespace Nexus.Controllers.V1
         /// <returns></returns>
 
         [HttpGet]
-        public async Task<IActionResult> GetStream(
-            [BindRequired] string catalogId,
-            [BindRequired] string resourceId,
-            [BindRequired] string representationId,
-            [BindRequired] DateTime begin,
-            [BindRequired] DateTime end,
+        public async Task<IActionResult> GetStreamAsync(
+            string catalogId,
+            string resourceId,
+            string representationId,
+            DateTime begin,
+            DateTime end,
             CancellationToken cancellationToken)
         {
             catalogId = WebUtility.UrlDecode(catalogId);

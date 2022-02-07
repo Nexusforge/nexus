@@ -15,11 +15,13 @@ namespace Nexus.Controllers.V1
         // GET      /api/packagereferences
         // PUT      /api/packagereferences/{packageReferenceId}
         // DELETE   /api/packagereferences/{packageReferenceId}
+        // GET      /api/packagereferences/{packageReferenceId}/versions
 
         #region Fields
 
         private AppState _appState;
         private AppStateManager _appStateManager;
+        private IExtensionHive _extensionHive;
 
         #endregion
 
@@ -27,10 +29,12 @@ namespace Nexus.Controllers.V1
 
         public PackageReferencesController(
             AppState appState,
-            AppStateManager appStateManager)
+            AppStateManager appStateManager,
+            IExtensionHive extensionHive)
         {
             _appState = appState;
             _appStateManager = appStateManager;
+            _extensionHive = extensionHive;
         }
 
         #endregion
@@ -55,9 +59,9 @@ namespace Nexus.Controllers.V1
         /// <param name="request"></param>
         [HttpPut("{packageReferenceId}")]
         public Task
-            GetPackagesAsync(
+            PutPackageAsync(
             Guid packageReferenceId,
-            [FromBody] AddPackageReferenceRequest request)
+            [FromBody] PutPackageReferenceRequest request)
         {
             return _appStateManager.PutPackageReferenceAsync(packageReferenceId, request.PackageReference);
 
@@ -69,11 +73,32 @@ namespace Nexus.Controllers.V1
         /// <param name="packageReferenceId">The ID of the package reference.</param>
         [HttpDelete("{packageReferenceId}")]
         public Task
-            GetPackagesAsync(
+            DeletePackageAsync(
             Guid packageReferenceId)
         {
             return _appStateManager.DeletePackageReferenceAsync(packageReferenceId);
+        }
 
+        /// <summary>
+        /// Gets package versions.
+        /// </summary>
+        /// <param name="packageReferenceId">The ID of the package reference.</param>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
+        [HttpGet("{packageReferenceId}/versions")]
+        public async Task<ActionResult<string[]>>
+            GetVersionsAsync(
+            Guid packageReferenceId,
+            CancellationToken cancellationToken)
+        {
+            var project = _appState.Project;
+
+            if (!project.PackageReferences.TryGetValue(packageReferenceId, out var packageReference))
+                return NotFound($"Unable to find package reference with ID {packageReferenceId}.");
+
+            var result = await _extensionHive
+                .GetVersionsAsync(packageReference, cancellationToken);
+
+            return result;
         }
 
         #endregion

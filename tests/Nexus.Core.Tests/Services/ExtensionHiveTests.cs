@@ -76,7 +76,7 @@ namespace Services
                     packageReference
                 };
 
-                await hive.LoadPackagesAsync(packageReferences, CancellationToken.None);
+                await hive.LoadPackagesAsync(packageReferences, new Progress<double>(), CancellationToken.None);
 
                 // instantiate
                 Assert.True(hive.TryGetInstance<IDataSource>("TestExtensionProject.TestDataSource", out var dataSource));

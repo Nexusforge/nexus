@@ -30,7 +30,6 @@ namespace Nexus.PackageManagement
 
         private ILogger _logger;
         private PackageLoadContext? _loadContext;
-        private PackageReference _packageReference;
 
         #endregion
 
@@ -38,24 +37,27 @@ namespace Nexus.PackageManagement
 
         public PackageController(PackageReference packageReference, ILogger<PackageController> logger)
         {
-            _packageReference = packageReference;
+            PackageReference = packageReference;
             _logger = logger;
         }
 
         #endregion
 
+        #region Properties
+
+        public PackageReference PackageReference { get; }
+
+        #endregion
+
         #region Methods
 
-        public async Task<IEnumerable<string>> DiscoverAsync(CancellationToken cancellationToken)
+        public async Task<string[]> DiscoverAsync(CancellationToken cancellationToken)
         {
-            IEnumerable<string> result;
+            string[] result;
 
-            if (!_packageReference.Configuration.TryGetValue("Provider", out var provider))
-                throw new ArgumentException("The 'Provider' parameter is missing in the extension reference.");
+            _logger.LogDebug("Discover package versions using provider {Provider}", PackageReference.Provider);
 
-            _logger.LogDebug("Discover package versions using provider {Provider}", provider);
-
-            switch (provider)
+            switch (PackageReference.Provider)
             {
                 case "local":
                     result = await this.DiscoverLocalAsync(cancellationToken);
@@ -76,7 +78,7 @@ namespace Nexus.PackageManagement
                 //    break;
 
                 default:
-                    throw new ArgumentException($"The provider {provider} is not supported.");
+                    throw new ArgumentException($"The provider {PackageReference.Provider} is not supported.");
             }
 
             return result;
@@ -124,15 +126,12 @@ namespace Nexus.PackageManagement
 
         internal async Task<string> RestoreAsync(string restoreRoot, CancellationToken cancellationToken)
         {
-            if (!_packageReference.Configuration.TryGetValue("Provider", out var provider))
-                throw new ArgumentException("The 'Provider' parameter is missing in the extension reference.");
-
             string restoreFolderPath;
-            var actualRestoreRoot = Path.Combine(restoreRoot, provider);
+            var actualRestoreRoot = Path.Combine(restoreRoot, PackageReference.Provider);
 
-            _logger.LogDebug("Restore package to {RestoreRoot} using provider {Provider}", actualRestoreRoot, provider);
+            _logger.LogDebug("Restore package to {RestoreRoot} using provider {Provider}", actualRestoreRoot, PackageReference.Provider);
 
-            switch (provider)
+            switch (PackageReference.Provider)
             {
                 case "local":
                     restoreFolderPath = await this.RestoreLocalAsync(actualRestoreRoot, cancellationToken);
@@ -153,7 +152,7 @@ namespace Nexus.PackageManagement
                 //    break;
 
                 default:
-                    throw new ArgumentException($"The provider '{provider}' is not supported.");
+                    throw new ArgumentException($"The provider '{PackageReference.Provider}' is not supported.");
             }
 
             return restoreFolderPath;
@@ -232,10 +231,10 @@ namespace Nexus.PackageManagement
 
         #region local
 
-        private Task<IEnumerable<string>> DiscoverLocalAsync(CancellationToken cancellationToken)
+        private Task<string[]> DiscoverLocalAsync(CancellationToken cancellationToken)
         {
             var rawResult = new List<string>();
-            var configuration = _packageReference.Configuration;
+            var configuration = PackageReference.Configuration;
 
             if (!configuration.TryGetValue("Path", out var path))
                 throw new ArgumentException("The 'Path' parameter is missing in the extension reference.");
@@ -254,14 +253,14 @@ namespace Nexus.PackageManagement
 
             var result = rawResult.OrderBy(value => value).Reverse();
 
-            return Task.FromResult(result);
+            return Task.FromResult(result.ToArray());
         }
 
         private Task<string> RestoreLocalAsync(string restoreRoot, CancellationToken cancellationToken)
         {
             return Task.Run(() =>
             {
-                var configuration = _packageReference.Configuration;
+                var configuration = PackageReference.Configuration;
 
                 if (!configuration.TryGetValue("Path", out var path))
                     throw new ArgumentException("The 'Path' parameter is missing in the extension reference.");
@@ -295,10 +294,10 @@ namespace Nexus.PackageManagement
 
         #region github-releases
 
-        private async Task<IEnumerable<string>> DiscoverGithubReleasesAsync(CancellationToken cancellationToken)
+        private async Task<string[]> DiscoverGithubReleasesAsync(CancellationToken cancellationToken)
         {
             var result = new List<string>();
-            var configuration = _packageReference.Configuration;
+            var configuration = PackageReference.Configuration;
 
             if (!configuration.TryGetValue("ProjectPath", out var projectPath))
                 throw new ArgumentException("The 'ProjectPath' parameter is missing in the extension reference.");
@@ -348,12 +347,12 @@ namespace Nexus.PackageManagement
                 continue;
             }
 
-            return result;
+            return result.ToArray();
         }
 
         private async Task<string> RestoreGitHubReleasesAsync(string restoreRoot, CancellationToken cancellationToken)
         {
-            var configuration = _packageReference.Configuration;
+            var configuration = PackageReference.Configuration;
 
             if (!configuration.TryGetValue("ProjectPath", out var projectPath))
                 throw new ArgumentException("The 'ProjectPath' parameter is missing in the extension reference.");
@@ -429,10 +428,10 @@ namespace Nexus.PackageManagement
 
         #region gitlab-packages-generic-v4
 
-        private async Task<IEnumerable<string>> DiscoverGitLabPackagesGenericAsync(CancellationToken cancellationToken)
+        private async Task<string[]> DiscoverGitLabPackagesGenericAsync(CancellationToken cancellationToken)
         {
             var result = new List<string>();
-            var configuration = _packageReference.Configuration;
+            var configuration = PackageReference.Configuration;
 
             if (!configuration.TryGetValue("Server", out var server))
                 throw new ArgumentException("The 'Server' parameter is missing in the extension reference.");
@@ -459,12 +458,12 @@ namespace Nexus.PackageManagement
 
             result.Reverse();
 
-            return result;
+            return result.ToArray();
         }
 
         private async Task<string> RestoreGitLabPackagesGenericAsync(string restoreRoot, CancellationToken cancellationToken)
         {
-            var configuration = _packageReference.Configuration;
+            var configuration = PackageReference.Configuration;
 
             if (!configuration.TryGetValue("Server", out var server))
                 throw new ArgumentException("The 'Server' parameter is missing in the extension reference.");

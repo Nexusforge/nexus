@@ -25,8 +25,9 @@ namespace Nexus.Services
         bool TryReadAttachment(string catalogId, string attachmentId, [NotNullWhen(true)] out Stream? attachment);
         bool TryReadFirstAttachment(string catalogId, string searchPattern, EnumerationOptions enumerationOptions, [NotNullWhen(true)] out Stream? attachment);
 
-        /* /export */
-        Stream WriteExportFile(string fileName);
+        /* /artifacts */
+        bool TryReadArtifact(string artifactId, [NotNullWhen(true)] out Stream? artifact);
+        Stream WriteArtifact(string fileName);
     }
 
     internal class DatabaseManager : IDatabaseManager
@@ -81,7 +82,7 @@ namespace Nexus.Services
 
             var filePath = Path.Combine(folderPath, catalogMetadataFileName);
 
-            return File.Open(filePath, FileMode.Truncate, FileAccess.Write);
+            return File.Open(filePath, FileMode.Create, FileAccess.Write);
         }
 
         /* /users/user_id.json */
@@ -119,7 +120,7 @@ namespace Nexus.Services
 
             var filePath = Path.Combine(_pathsOptions.Config, "project.json");
 
-            return File.OpenWrite(filePath);
+            return File.Open(filePath, FileMode.Truncate, FileAccess.Write);
         }
 
         /* /catalogs/catalog_id/... */
@@ -179,14 +180,34 @@ namespace Nexus.Services
             return false;
         }
 
-        /* /export */
-        public Stream WriteExportFile(string fileName)
+        /* /artifact */
+        public bool TryReadArtifact(string artifactId, [NotNullWhen(true)] out Stream? artifact)
         {
-            Directory.CreateDirectory(_pathsOptions.Export);
+            artifact = null;
 
-            var filePath = Path.Combine(_pathsOptions.Export, fileName);
+            var artifactFolder = Path.Combine(_pathsOptions.Catalogs, artifactId);
 
-            return File.OpenWrite(filePath);
+            if (Directory.Exists(artifactFolder))
+            {
+                var attachmentFile = Path.Combine(artifactFolder, artifactId);
+
+                if (File.Exists(attachmentFile))
+                {
+                    artifact = File.OpenRead(attachmentFile);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public Stream WriteArtifact(string fileName)
+        {
+            Directory.CreateDirectory(_pathsOptions.Artifacts);
+
+            var filePath = Path.Combine(_pathsOptions.Artifacts, fileName);
+
+            return File.Open(filePath, FileMode.Create, FileAccess.Write);
         }
     }
 }

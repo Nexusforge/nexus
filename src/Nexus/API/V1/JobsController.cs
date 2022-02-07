@@ -16,26 +16,26 @@ namespace Nexus.Controllers.V1
     {
         #region Fields
 
+        private AppStateManager _appStateManager;
         private ILogger _logger;
         private IServiceProvider _serviceProvider;
         private Serilog.IDiagnosticContext _diagnosticContext;
-        private AppState _appState;
-        private JobService<ExportJob> _exportJobService;
+        private IJobService _jobService;
 
         #endregion
 
         #region Constructors
 
         public JobsController(
-            AppState appState,
-            JobService<ExportJob> exportJobService,
-            Serilog.IDiagnosticContext diagnosticContext,
+            AppStateManager appStateManager,
+            IJobService jobService,
             IServiceProvider serviceProvider,
+            Serilog.IDiagnosticContext diagnosticContext,
             ILogger<JobsController> logger)
         {
-            _appState = appState;
+            _appStateManager = appStateManager;
+            _jobService = jobService;
             _serviceProvider = serviceProvider;
-            _exportJobService = exportJobService;
             _diagnosticContext = diagnosticContext;
             _logger = logger;
         }
@@ -51,7 +51,7 @@ namespace Nexus.Controllers.V1
         /// <param name="cancellationToken">The token to cancel the current operation.</param>
         /// <returns></returns>
         [HttpPost("export")]
-        public async Task<ActionResult<ExportJob>> CreateExportJobAsync(
+        public async Task<ActionResult<Job>> ExportAsync(
             ExportParameters parameters,
             CancellationToken cancellationToken)
         {
@@ -60,7 +60,7 @@ namespace Nexus.Controllers.V1
             parameters.Begin = parameters.Begin.ToUniversalTime();
             parameters.End = parameters.End.ToUniversalTime();
 
-            var root = _appState.CatalogState.Root;
+            var root = _appStateManager.AppState.CatalogState.Root;
 
             // translate resource paths to representations
             (CatalogContainer Container, CatalogItem Item)[] catalogContainsAndItems;
@@ -112,25 +112,18 @@ namespace Nexus.Controllers.V1
             }
 
             //
-            var job = new ExportJob(
-                Parameters: parameters)
-            {
-                Owner = this.User.Identity.Name
-            };
-
+            var job = new Job(Guid.NewGuid(), "export", this.User.Identity.Name, parameters);
             var dataService = _serviceProvider.GetRequiredService<DataService>();
 
             try
             {
-                var jobControl = _exportJobService.AddJob(job, dataService.ReadProgress, async (jobControl, cts) =>
+                var jobControl = _jobService.AddJob(job, dataService.WriteProgress, async (jobControl, cts) =>
                 {
-#warning ExportId should be ASP Request ID!
-                    var exportId = Guid.NewGuid();
-
-                    return await dataService.ExportAsync(parameters, catalogItemsMap, exportId, cts.Token);
+                    var result = await dataService.ExportAsync(parameters, catalogItemsMap, job.Id, cts.Token);
+                    return result;
                 });
 
-                return this.Accepted($"{this.GetBasePath()}{this.Request.Path}/{jobControl.Job.Id}/status", jobControl.Job);
+                return this.Accepted(this.GetAcceptUrl(job.Id), job);
             }
             catch (ValidationException ex)
             {
@@ -139,56 +132,70 @@ namespace Nexus.Controllers.V1
         }
 
         /// <summary>
-        /// Gets a list of all export jobs.
+        /// Creates a new load packages job.
+        /// </summary>
+        /// <param name="cancellationToken">The token to cancel the current operation.</param>
+        [Authorize(Policy = Policies.RequireAdmin)]
+
+        [HttpPost("load-packages")]
+        public Task<ActionResult<Job>> LoadPackagesAsync(
+            CancellationToken cancellationToken)
+        {
+            var job = new Job(Guid.NewGuid(), "load-packages", this.User.Identity.Name, default);
+            var progress = new Progress<double>();
+
+            var jobControl = _jobService.AddJob(job, progress, async (jobControl, cts) =>
+            {
+                await _appStateManager.LoadPackagesAsync(progress, cancellationToken);
+                return null;
+            });
+
+            var response = (ActionResult<Job>)this.Accepted(this.GetAcceptUrl(job.Id), job);
+            return Task.FromResult(response);
+        }
+
+        /// <summary>
+        /// Gets a list of jobs.
         /// </summary>
         /// <returns></returns>
-        [HttpGet("export")]
-        public ActionResult<List<ExportJob>> GetExportJobs()
+        [HttpGet]
+        public ActionResult<List<Job>> GetJobs()
         {
-            return _exportJobService
+            var isAdmin = this.User.HasClaim(Claims.IS_ADMIN, "true");
+
+            return _jobService
                 .GetJobs()
                 .Select(jobControl => jobControl.Job)
+                .Where(job => job.Owner == this.User.Identity.Name || isAdmin)
                 .ToList();
         }
 
         /// <summary>
-        /// Gets the specified export job.
+        /// Gets the status of the specified job.
         /// </summary>
         /// <param name="jobId"></param>
         /// <returns></returns>
-        [HttpGet("export/{jobId}")]
-        public ActionResult<ExportJob> GetExportJob(Guid jobId)
+        [HttpGet("{jobId}/status")]
+        public ActionResult<JobStatus> GetJobStatus(Guid jobId)
         {
-            if (_exportJobService.TryGetJob(jobId, out var jobControl))
-                return jobControl.Job;
-            else
-                return this.NotFound(jobId);
-        }
-
-        /// <summary>
-        /// Gets the status of the specified export job.
-        /// </summary>
-        /// <param name="jobId"></param>
-        /// <returns></returns>
-        [HttpGet("export/{jobId}/status")]
-        public ActionResult<JobStatus> GetExportJobStatus(Guid jobId)
-        {
-            if (_exportJobService.TryGetJob(jobId, out var jobControl))
+            if (_jobService.TryGetJob(jobId, out var jobControl))
             {
-                if (this.User.Identity.Name == jobControl.Job.Owner ||
-                    jobControl.Job.Owner is null ||
-                    this.User.HasClaim(Claims.IS_ADMIN, "true"))
+                var isAdmin = this.User.HasClaim(Claims.IS_ADMIN, "true");
+
+                if (jobControl.Job.Owner == this.User.Identity.Name || isAdmin)
                 {
-                    return new JobStatus(
+                    var status = new JobStatus(
                         Start: jobControl.Start,
                         Progress: jobControl.Progress,
                         Status: jobControl.Task.Status,
                         ExceptionMessage: jobControl.Task.Exception is not null
                             ? jobControl.Task.Exception.Message
                             : string.Empty,
-                        Result: jobControl.Task.Status == TaskStatus.RanToCompletion
-                            ? $"{this.GetBasePath()}/{jobControl.Task.Result}"
+                        Result: jobControl.Task.Status == TaskStatus.RanToCompletion && jobControl.Task.Result is not null
+                            ? jobControl.Task.Result
                             : null);
+
+                    return status;
                 }
                 else
                 {
@@ -206,14 +213,14 @@ namespace Nexus.Controllers.V1
         /// </summary>
         /// <param name="jobId"></param>
         /// <returns></returns>
-        [HttpDelete("export/{jobId}")]
-        public ActionResult DeleteExportJob(Guid jobId)
+        [HttpDelete("{jobId}")]
+        public ActionResult DeleteJob(Guid jobId)
         {
-            if (_exportJobService.TryGetJob(jobId, out var jobControl))
+            if (_jobService.TryGetJob(jobId, out var jobControl))
             {
-                if (this.User.Identity.Name == jobControl.Job.Owner || 
-                    jobControl.Job.Owner is null ||
-                    this.User.HasClaim(Claims.IS_ADMIN, "true"))
+                var isAdmin = this.User.HasClaim(Claims.IS_ADMIN, "true");
+
+                if (jobControl.Job.Owner == this.User.Identity.Name || isAdmin)
                 {
                     jobControl.CancellationTokenSource.Cancel();
                     return this.Accepted();
@@ -233,9 +240,9 @@ namespace Nexus.Controllers.V1
 
         #region Methods
 
-        private string GetBasePath()
+        private string GetAcceptUrl(Guid jobId)
         {
-            return $"{this.Request.Scheme}://{this.Request.Host}";
+            return $"{this.Request.Scheme}://{this.Request.Host}{this.Request.Path}/{jobId}/status";
         }
 
         #endregion

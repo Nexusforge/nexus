@@ -16,14 +16,24 @@ namespace Nexus.Models
         string Username,
         List<BackendSource> BackendSources);
 
+    /// <summary>
+    /// An extension description.
+    /// </summary>
+    /// <param name="Type">The extension type.</param>
+    /// <param name="Description">An optional description.</param>
+    public record ExtensionDescription(string Type, string? Description);
+
     public record CatalogMetadata(
         string? Contact, 
         bool IsHidden, 
         string[]? GroupMemberships,
         ResourceCatalog? Overrides);
 
-    public record AddPackageReferenceRequest(
+    public record PutPackageReferenceRequest(
         PackageReference PackageReference);
+
+    public record PutBackendSourceRequest(
+        BackendSource BackendSource);
 
     public record SetMetadataRequest(
         CatalogMetadata Metadata);
@@ -35,7 +45,7 @@ namespace Nexus.Models
     public record AvailabilityResponse(
         Dictionary<DateTime, double> Data);
 
-    internal sealed record BackendSource(
+    public sealed record BackendSource(
         string Type,
         Uri ResourceLocator,
         Dictionary<string, string> Configuration,

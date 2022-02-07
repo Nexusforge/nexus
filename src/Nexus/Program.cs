@@ -9,6 +9,7 @@ using Nexus.Core;
 using Nexus.Models;
 using Nexus.Services;
 using NJsonSchema.Generation;
+using NSwag;
 using NSwag.AspNetCore;
 using Serilog;
 using System.Globalization;
@@ -177,6 +178,14 @@ void AddServices(IServiceCollection services, IConfiguration configuration)
 
             config.ApiGroupNames = new[] { description.GroupName };
             config.DocumentName = description.GroupName;
+
+            config.AddSecurity("JWT", Enumerable.Empty<string>(), new OpenApiSecurityScheme()
+            {
+                Type = OpenApiSecuritySchemeType.ApiKey,
+                Name = "Authorization",
+                In = OpenApiSecurityApiKeyLocation.Header,
+                Description = "Please enter 'Bearer {your JWT token}'"
+            });
         });
     }
 
@@ -191,12 +200,12 @@ void AddServices(IServiceCollection services, IConfiguration configuration)
 
     services.AddSingleton<AppState>();
     services.AddSingleton<AppStateManager>();
+    services.AddSingleton<IJobService, JobService>();
     services.AddSingleton<IDataControllerService, DataControllerService>();
     services.AddSingleton<ICatalogManager, CatalogManager>();
     services.AddSingleton<IDatabaseManager, DatabaseManager>();
     services.AddSingleton<IExtensionHive, ExtensionHive>();
     services.AddSingleton<IUserManagerWrapper, UserManagerWrapper>();
-    services.AddSingleton<JobService<ExportJob>>();
 
     services.Configure<GeneralOptions>(configuration.GetSection(GeneralOptions.Section));
     services.Configure<PathsOptions>(configuration.GetSection(PathsOptions.Section));
@@ -234,7 +243,7 @@ Task ConfigurePipelineAsync(WebApplication app)
     // static files
     app.UseStaticFiles();
 
-    Directory.CreateDirectory(pathsOptions.Value.Export);
+    Directory.CreateDirectory(pathsOptions.Value.Artifacts);
 
     app.UseStaticFiles("/export");
 
@@ -293,7 +302,7 @@ async Task InitializeAppAsync(
     await InitializeDatabaseAsync(serviceProvier, pathsOptions, securityOptions, logger);
 
     // packages and catalogs
-    await appStateManager.ReloadPackagesAsync(CancellationToken.None);
+    await appStateManager.LoadPackagesAsync(new Progress<double>(), CancellationToken.None);
 }
 
 async Task InitializeDatabaseAsync(
@@ -317,7 +326,6 @@ async Task InitializeDatabaseAsync(
         var rootUsername = securityOptions.RootUser;
         var rootPassword = securityOptions.RootPassword;
 
-        // ensure there is a root user
         if ((await userManager.FindByNameAsync(rootUsername)) is null)
         {
             var user = new NexusUser(rootUsername);

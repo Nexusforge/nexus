@@ -57,7 +57,7 @@ namespace Nexus.Core
         public string Config { get; set; } = Path.Combine(PathsOptions.PlatformSpecificRoot, "config");
         public string Cache { get; set; } = Path.Combine(PathsOptions.PlatformSpecificRoot, "cache");
         public string Catalogs { get; set; } = Path.Combine(PathsOptions.PlatformSpecificRoot, "catalogs");
-        public string Export { get; set; } = Path.Combine(PathsOptions.PlatformSpecificRoot, "export");
+        public string Artifacts { get; set; } = Path.Combine(PathsOptions.PlatformSpecificRoot, "artifacts");
         public string Users { get; set; } = Path.Combine(PathsOptions.PlatformSpecificRoot, "users");
         public string Packages { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nexus", "packages");
         // GetGlobalPackagesFolder: https://github.com/NuGet/NuGet.Client/blob/0fc58e13683565e7bdf30e706d49e58fc497bbed/src/NuGet.Core/NuGet.Configuration/Utility/SettingsUtility.cs#L225-L254
