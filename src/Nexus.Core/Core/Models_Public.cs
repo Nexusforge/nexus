@@ -33,7 +33,9 @@ namespace Nexus.Core
     /// </summary>
     /// <param name="Type">The extension type.</param>
     /// <param name="Description">An optional description.</param>
-    public record ExtensionDescription(string Type, string? Description);
+    public record ExtensionDescription(
+        string Type, 
+        string? Description);
 
     /// <summary>
     /// A structure for catalog metadata.
@@ -62,7 +64,7 @@ namespace Nexus.Core
     /// </summary>
     /// <param name="Data">The actual availability data.</param>
     public record CatalogAvailability(
-        Dictionary<DateTime, double> Data);
+        IReadOnlyDictionary<DateTime, double> Data);
 
     /// <summary>
     /// A backend source.
@@ -72,10 +74,10 @@ namespace Nexus.Core
     /// <param name="Configuration">Configuration parameters for the instantiated source.</param>
     /// <param name="Publish">A boolean which indicates if the found catalogs should be available for everyone.</param>
     /// <param name="Disable">A boolean which indicates if this backend source should be ignored.</param>
-    public sealed record BackendSource(
+    public record BackendSource(
         string Type,
         Uri ResourceLocator,
-        Dictionary<string, string> Configuration,
+        IReadOnlyDictionary<string, string> Configuration,
         bool Publish,
         bool Disable = false);
 
@@ -86,7 +88,11 @@ namespace Nexus.Core
     /// <param name="Owner"><example>test@nexus.localhost</example></param>
     /// <param name="Type"><example>export</example></param>
     /// <param name="Parameters">Job parameters.</param>
-    public record Job(Guid Id, string Type, string Owner, object? Parameters);
+    public record Job(
+        Guid Id,
+        string Type,
+        string Owner,
+        object? Parameters);
 
     /// <summary>
     /// Describes the status of the job.

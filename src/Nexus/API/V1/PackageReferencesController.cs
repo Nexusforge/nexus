@@ -12,7 +12,7 @@ namespace Nexus.Controllers.V1
     [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
-    public class PackageReferencesController : ControllerBase
+    internal class PackageReferencesController : ControllerBase
     {
         // GET      /api/packagereferences
         // PUT      /api/packagereferences/{packageReferenceId}
@@ -29,7 +29,7 @@ namespace Nexus.Controllers.V1
 
         #region Constructors
 
-        internal PackageReferencesController(
+        public PackageReferencesController(
             AppState appState,
             AppStateManager appStateManager,
             IExtensionHive extensionHive)

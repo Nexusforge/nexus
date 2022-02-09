@@ -12,7 +12,7 @@ namespace Nexus.Controllers.V1
     [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
-    public class BackendSourcesController : ControllerBase
+    internal class BackendSourcesController : ControllerBase
     {
         // GET      /api/backendsources
         // PUT      /api/backendsources/{backendSourceId}
@@ -27,7 +27,7 @@ namespace Nexus.Controllers.V1
 
         #region Constructors
 
-        internal BackendSourcesController(
+        public BackendSourcesController(
             AppState appState,
             AppStateManager appStateManager)
         {

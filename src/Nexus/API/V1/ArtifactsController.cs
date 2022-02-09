@@ -11,13 +11,13 @@ namespace Nexus.Controllers.V1
     [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
-    public class ArtifactsController : ControllerBase
+    internal class ArtifactsController : ControllerBase
     {
         // GET      /api/artifacts/{artifactId}
 
         #region Fields
 
-        private IDatabaseManager _databaseManager;
+        public IDatabaseManager _databaseManager;
 
         #endregion
 

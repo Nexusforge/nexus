@@ -16,7 +16,7 @@ namespace Nexus.Controllers.V1
     [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
-    public class DataController : ControllerBase
+    internal class DataController : ControllerBase
     {
         #region Fields
 
@@ -28,7 +28,7 @@ namespace Nexus.Controllers.V1
 
         #region Constructors
 
-        internal DataController(
+        public DataController(
             AppState appState,
             IDataControllerService dataControllerService,
             ILoggerFactory loggerFactory)

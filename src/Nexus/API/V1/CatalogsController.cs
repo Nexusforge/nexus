@@ -16,7 +16,7 @@ namespace Nexus.Controllers.V1
     [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
-    public class CatalogsController : ControllerBase
+    internal class CatalogsController : ControllerBase
     {
         // GET      /api/catalogs/{catalogId}
         // GET      /api/catalogs/{catalogId}/child-catalog-ids
@@ -37,7 +37,7 @@ namespace Nexus.Controllers.V1
 
         #region Constructors
 
-        internal CatalogsController(
+        public CatalogsController(
             AppState appState,
             IDatabaseManager databaseManager,
             IDataControllerService dataControllerService)

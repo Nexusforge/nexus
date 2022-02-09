@@ -14,7 +14,7 @@ namespace Nexus.Controllers.V1
     [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
-    public class UsersController : ControllerBase
+    internal class UsersController : ControllerBase
     {
         // /api/users
         // /api/users/authenticate
@@ -36,7 +36,7 @@ namespace Nexus.Controllers.V1
 
         #region Constructors
 
-        internal UsersController(
+        public UsersController(
             IDBService dBService,
             INexusAuthenticationService authService)
         {

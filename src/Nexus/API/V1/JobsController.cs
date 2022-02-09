@@ -15,7 +15,7 @@ namespace Nexus.Controllers.V1
     [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
-    public class JobsController : ControllerBase
+    internal class JobsController : ControllerBase
     {
         #region Fields
 
@@ -29,7 +29,7 @@ namespace Nexus.Controllers.V1
 
         #region Constructors
 
-        internal JobsController(
+        public JobsController(
             AppStateManager appStateManager,
             IJobService jobService,
             IServiceProvider serviceProvider,
