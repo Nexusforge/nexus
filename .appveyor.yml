@@ -1,5 +1,6 @@
 version: '{build}'
 clone_depth: 1
+stack: python 3.8
 
 image:
   - Ubuntu
@@ -20,7 +21,7 @@ init:
   - ps: git config --global core.autocrlf true
 
 install:
-  - ps: python3 -m pip install frictionless
+  - ps: python -m pip install frictionless
   - ps: dotnet tool restore
 
 build_script:
