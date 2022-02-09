@@ -90,7 +90,8 @@ namespace DataSource
                 [new DateTime(2020, 01, 02)] = 0.96041512538698282,
             };
 
-            Assert.True(expectedData.SequenceEqual(new SortedDictionary<DateTime, double>(actual.Data)));
+            var actualConverted = actual.Data.ToDictionary(entry => entry.Key, entry => entry.Value);
+            Assert.True(expectedData.SequenceEqual(new SortedDictionary<DateTime, double>(actualConverted)));
         }
 
         [Fact]
