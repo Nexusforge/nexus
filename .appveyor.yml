@@ -19,6 +19,9 @@ configuration:
 init:
   - ps: git config --global core.autocrlf true
 
+install:
+  - ps: dotnet tool --restore
+
 build_script:
   - ps: dotnet publish -c $Env:CONFIGURATION -o app --no-self-contained /p:Build=$Env:APPVEYOR_BUILD_NUMBER /p:IsFinalBuild=$Env:APPVEYOR_REPO_TAG src/Nexus/Nexus.csproj
 
