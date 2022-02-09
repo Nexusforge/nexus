@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace Nexus.DataModel
+﻿namespace Nexus.DataModel
 {
     /// <summary>
     /// A resource catalog builder simplifies building a resource catalog.

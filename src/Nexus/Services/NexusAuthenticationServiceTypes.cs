@@ -42,11 +42,11 @@ namespace Nexus.Services
         /// </summary>
         public bool IsExpired => DateTime.UtcNow >= Expires;
 
-        [Required]
-        [JsonIgnore]
         /// <summary>
         /// Gets or sets the owner of this token.
         /// </summary>
-        public NexusUser Owner { get; init; }
+        [Required]
+        [JsonIgnore]
+        public NexusUser Owner { get; init; } = null!;
     }
 }

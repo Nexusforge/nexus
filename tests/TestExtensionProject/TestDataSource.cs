@@ -1,8 +1,5 @@
 ﻿using Nexus.DataModel;
 using Nexus.Extensibility;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace TestExtensionProject
 {

@@ -4,12 +4,8 @@ using Microsoft.IdentityModel.Tokens;
 using Moq;
 using Nexus.Core;
 using Nexus.Services;
-using System;
-using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
 using System.Security.Claims;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Services
@@ -83,7 +79,7 @@ namespace Services
             Assert.Equal(refreshToken, user.RefreshTokens.First().Token);
 
             var principal = tokenHandler.ValidateToken(jwtToken, validationParameters, out var _);
-            var actualName = principal.Identity.Name;
+            var actualName = principal.Identity!.Name;
 
             Assert.Equal(expectedName, actualName);
         }
@@ -260,7 +256,7 @@ namespace Services
             Assert.Equal(refreshToken, user.RefreshTokens.First().Token);
 
             var principal = tokenHandler.ValidateToken(jwtToken, validationParameters, out var _);
-            var actualName = principal.Identity.Name;
+            var actualName = principal.Identity!.Name;
 
             Assert.Equal(expectedName, actualName);
         }

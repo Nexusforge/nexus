@@ -2,23 +2,23 @@
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.IO;
 using System.IO.Compression;
 using System.IO.Pipelines;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Nexus.Services
 {
-    internal class DataService
+    internal interface IDataService
+    {
+        Progress<double> ReadProgress { get; }
+        Progress<double> WriteProgress { get; }
+
+        Task<string> ExportAsync(ExportParameters exportParameters, Dictionary<CatalogContainer, IEnumerable<CatalogItem>> catalogItemsMap, Guid exportId, CancellationToken cancellationToken);
+    }
+
+    internal class DataService : IDataService
     {
         #region Fields
-
-        private AppState _appState;
 
         private ILogger _logger;
         private ILoggerFactory _loggerFactory;
@@ -30,13 +30,11 @@ namespace Nexus.Services
         #region Constructors
 
         public DataService(
-            AppState appState,
             IDataControllerService dataControllerService,
             IDatabaseManager databaseManager,
             ILogger<DataService> logger,
             ILoggerFactory loggerFactory)
         {
-            _appState = appState;
             _dataControllerService = dataControllerService;
             _databaseManager = databaseManager;
             _logger = logger;
@@ -123,7 +121,7 @@ namespace Nexus.Services
         private void CopyLicenseIfAvailable(string catalogId, string targetFolder)
         {
             var enumeratonOptions = new EnumerationOptions() { MatchCasing = MatchCasing.CaseInsensitive };
-            
+
             if (_databaseManager.TryReadFirstAttachment(catalogId, "license.md", enumeratonOptions, out var licenseStream))
             {
                 try

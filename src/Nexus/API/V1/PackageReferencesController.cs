@@ -1,16 +1,18 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Nexus.Core;
-using Nexus.Models;
 using Nexus.Services;
 
 namespace Nexus.Controllers.V1
 {
+    /// <summary>
+    /// Provides access to package references.
+    /// </summary>
     [Authorize(Policy = Policies.RequireAdmin)]
     [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
-    internal class PackageReferencesController : ControllerBase
+    public class PackageReferencesController : ControllerBase
     {
         // GET      /api/packagereferences
         // PUT      /api/packagereferences/{packageReferenceId}
@@ -27,7 +29,7 @@ namespace Nexus.Controllers.V1
 
         #region Constructors
 
-        public PackageReferencesController(
+        internal PackageReferencesController(
             AppState appState,
             AppStateManager appStateManager,
             IExtensionHive extensionHive)
@@ -55,15 +57,15 @@ namespace Nexus.Controllers.V1
         /// <summary>
         /// Puts a package reference.
         /// </summary>
-        /// <param name="packageReferenceId">The ID of the package reference.</param>
-        /// <param name="request"></param>
+        /// <param name="packageReferenceId">The identifier of the package reference.</param>
+        /// <param name="packageReference">The package reference to put.</param>
         [HttpPut("{packageReferenceId}")]
         public Task
             PutPackageReferencesAsync(
             Guid packageReferenceId,
-            [FromBody] PutPackageReferenceRequest request)
+            [FromBody] PackageReference packageReference)
         {
-            return _appStateManager.PutPackageReferenceAsync(packageReferenceId, request.PackageReference);
+            return _appStateManager.PutPackageReferenceAsync(packageReferenceId, packageReference);
         }
 
         /// <summary>

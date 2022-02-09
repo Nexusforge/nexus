@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace Nexus.DataModel
+﻿namespace Nexus.DataModel
 {
     /// <summary>
     /// Contains extension methods to make life easier working with the data model types.

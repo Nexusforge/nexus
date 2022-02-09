@@ -1,5 +1,4 @@
 ﻿using Nexus.DataModel;
-using System.Collections.Generic;
 
 namespace Nexus.ViewModels
 {

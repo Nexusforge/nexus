@@ -2,15 +2,9 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Writers;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace DataWriter
@@ -48,8 +42,9 @@ namespace DataWriter
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
             var samplePeriod = TimeSpan.FromSeconds(1);
 
-            var catalogItems = _fixture.Catalogs.SelectMany(catalog => catalog.Resources
-                .SelectMany(resource => resource.Representations.Select(representation => new CatalogItem(catalog, resource, representation))))
+            var catalogItems = _fixture.Catalogs.SelectMany(catalog => (catalog.Resources ?? throw new Exception("resource is null"))
+                .SelectMany(resource => (resource.Representations ?? throw new Exception("representations is null"))
+                .Select(representation => new CatalogItem(catalog, resource, representation))))
                 .ToArray();
 
             var random = new Random(Seed: 1);
@@ -121,6 +116,9 @@ namespace DataWriter
 
             using (var process = Process.Start(startInfo))
             {
+                if (process is null)
+                    throw new Exception("process is null");
+
                 process.WaitForExit();
                 Assert.Equal(0, process.ExitCode);
             }
@@ -129,6 +127,9 @@ namespace DataWriter
 
             using (var process = Process.Start(startInfo))
             {
+                if (process is null)
+                    throw new Exception("process is null");
+
                 process.WaitForExit();
                 Assert.Equal(0, process.ExitCode);
             }

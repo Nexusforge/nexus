@@ -7,11 +7,14 @@ using Nexus.Services;
 
 namespace Nexus.Controllers.V1
 {
+    /// <summary>
+    /// Provides access to users.
+    /// </summary>
     [Authorize]
     [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
-    internal class UsersController : ControllerBase
+    public class UsersController : ControllerBase
     {
         // /api/users
         // /api/users/authenticate
@@ -33,7 +36,7 @@ namespace Nexus.Controllers.V1
 
         #region Constructors
 
-        public UsersController(
+        internal UsersController(
             IDBService dBService,
             INexusAuthenticationService authService)
         {
@@ -111,9 +114,12 @@ namespace Nexus.Controllers.V1
         public async Task<ActionResult<List<RefreshToken>>> GetRefreshTokensAsync(string userId)
         {
             // authorize
-            var user = this.HttpContext.User;
+            var username = this.User.Identity?.Name;
 
-            if (!(user.Identity.Name == userId || this.HttpContext.User.HasClaim("IsAdmin", "true")))
+            if (username is null)
+                throw new Exception("This should never happen.");
+
+            if (!(username == userId || this.HttpContext.User.HasClaim("IsAdmin", "true")))
                 return this.Unauthorized("Only the user owning the refresh tokens and administrators can use this endpoint.");
 
             // get database user

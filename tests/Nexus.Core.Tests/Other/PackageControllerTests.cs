@@ -1,18 +1,12 @@
 ﻿using Microsoft.Extensions.Logging.Abstractions;
 using Nexus;
+using Nexus.Core;
 using Nexus.Extensibility;
-using Nexus.Models;
 using Nexus.PackageManagement;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Other
@@ -102,8 +96,15 @@ namespace Other
                 .ExportedTypes
                 .First(type => typeof(IDataSource).IsAssignableFrom(type));
 
+            if (dataSourceType is null)
+                throw new Exception("data source type is null");
+
             // run
-            var dataSource = (IDataSource)Activator.CreateInstance(dataSourceType);
+            var dataSource = Activator.CreateInstance(dataSourceType) as IDataSource;
+
+            if (dataSource is null)
+                throw new Exception("data source is null");
+
             var exception = await Assert.ThrowsAsync<NotImplementedException>(() => dataSource.GetCatalogAsync(string.Empty, CancellationToken.None));
 
             Assert.Equal(nameof(IDataSource.GetCatalogAsync), exception.Message);

@@ -1,5 +1,3 @@
-using System;
-
 namespace Nexus.Client
 {
     internal class DisposableConfiguration : IDisposable

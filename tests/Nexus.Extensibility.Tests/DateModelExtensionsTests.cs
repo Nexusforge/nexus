@@ -1,5 +1,4 @@
 using Nexus.DataModel;
-using System;
 using Xunit;
 
 namespace Nexus.Extensibility.Tests

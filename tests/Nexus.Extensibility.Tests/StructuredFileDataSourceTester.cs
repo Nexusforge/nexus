@@ -1,11 +1,5 @@
 ﻿using Nexus.DataModel;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Nexus.Extensibility.Tests
 {
@@ -13,10 +7,7 @@ namespace Nexus.Extensibility.Tests
     {
         #region Types
 
-        public record CatalogDescription()
-        {
-            public Dictionary<string, FileSource> Config { get; init; }
-        }
+        public record CatalogDescription(Dictionary<string, FileSource> Config);
 
         #endregion
 
@@ -38,9 +29,9 @@ namespace Nexus.Extensibility.Tests
 
         #region Properties
 
-        public Dictionary<string, CatalogDescription> Config { get; private set; }
+        public Dictionary<string, CatalogDescription> Config { get; private set; } = null!;
 
-        private DataSourceContext Context { get; set; }
+        private DataSourceContext Context { get; set; } = null!;
 
         #endregion
 
@@ -56,7 +47,7 @@ namespace Nexus.Extensibility.Tests
                 throw new Exception($"The configuration file does not exist on path '{configFilePath}'.");
 
             var jsonString = await File.ReadAllTextAsync(configFilePath, cancellationToken);
-            this.Config = JsonSerializer.Deserialize<Dictionary<string, CatalogDescription>>(jsonString);
+            this.Config = JsonSerializer.Deserialize<Dictionary<string, CatalogDescription>>(jsonString)!;
         }
 
         protected override Task<FileSourceProvider> GetFileSourceProviderAsync(CancellationToken cancellationToken)

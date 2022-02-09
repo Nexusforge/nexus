@@ -1,7 +1,4 @@
 ﻿using Nexus.DataModel;
-using System;
-using System.Collections.Generic;
-using System.IO;
 
 namespace DataWriter
 {

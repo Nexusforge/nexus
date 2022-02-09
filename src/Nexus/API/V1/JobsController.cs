@@ -8,11 +8,14 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Nexus.Controllers.V1
 {
+    /// <summary>
+    /// Provides access to jobs.
+    /// </summary>
     [Authorize]
     [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
-    internal class JobsController : ControllerBase
+    public class JobsController : ControllerBase
     {
         #region Fields
 
@@ -26,7 +29,7 @@ namespace Nexus.Controllers.V1
 
         #region Constructors
 
-        public JobsController(
+        internal JobsController(
             AppStateManager appStateManager,
             IJobService jobService,
             IServiceProvider serviceProvider,
@@ -57,8 +60,11 @@ namespace Nexus.Controllers.V1
         {
             _diagnosticContext.Set("Body", JsonSerializerHelper.SerializeIntended(parameters));
 
-            parameters.Begin = parameters.Begin.ToUniversalTime();
-            parameters.End = parameters.End.ToUniversalTime();
+            parameters = parameters with 
+            { 
+                Begin = parameters.Begin.ToUniversalTime(),
+                End = parameters.End.ToUniversalTime()
+            };
 
             var root = _appStateManager.AppState.CatalogState.Root;
 
@@ -71,7 +77,7 @@ namespace Nexus.Controllers.V1
                 {
                     var (catalogContainer, catalogItem) = await root.TryFindAsync(resourcePath, cancellationToken);
 
-                    if (catalogItem is null)
+                    if (catalogContainer is null || catalogItem is null)
                         throw new ValidationException($"Could not find resource path {resourcePath}.");
 
                     return (catalogContainer, catalogItem);
@@ -112,8 +118,13 @@ namespace Nexus.Controllers.V1
             }
 
             //
-            var job = new Job(Guid.NewGuid(), "export", this.User.Identity.Name, parameters);
-            var dataService = _serviceProvider.GetRequiredService<DataService>();
+            var username = this.User.Identity?.Name;
+
+            if (username is null)
+                throw new Exception("This should never happen.");
+
+            var job = new Job(Guid.NewGuid(), "export", username, parameters);
+            var dataService = _serviceProvider.GetRequiredService<IDataService>();
 
             try
             {
@@ -141,7 +152,12 @@ namespace Nexus.Controllers.V1
         public Task<ActionResult<Job>> LoadPackagesAsync(
             CancellationToken cancellationToken)
         {
-            var job = new Job(Guid.NewGuid(), "load-packages", this.User.Identity.Name, default);
+            var username = this.User.Identity?.Name;
+
+            if (username is null)
+                throw new Exception("This should never happen.");
+
+            var job = new Job(Guid.NewGuid(), "load-packages", username, default);
             var progress = new Progress<double>();
 
             var jobControl = _jobService.AddJob(job, progress, async (jobControl, cts) =>
@@ -159,15 +175,21 @@ namespace Nexus.Controllers.V1
         /// </summary>
         /// <returns></returns>
         [HttpGet]
-        public ActionResult<List<Job>> GetJobs()
+        public Task<ActionResult<List<Job>>> GetJobsAsync()
         {
             var isAdmin = this.User.HasClaim(Claims.IS_ADMIN, "true");
+            var username = this.User.Identity?.Name;
 
-            return _jobService
+            if (username is null)
+                throw new Exception("This should never happen.");
+
+            var result = _jobService
                 .GetJobs()
                 .Select(jobControl => jobControl.Job)
-                .Where(job => job.Owner == this.User.Identity.Name || isAdmin)
+                .Where(job => job.Owner == username || isAdmin)
                 .ToList();
+
+            return Task.FromResult((ActionResult<List<Job>>)result);
         }
 
         /// <summary>
@@ -176,13 +198,17 @@ namespace Nexus.Controllers.V1
         /// <param name="jobId"></param>
         /// <returns></returns>
         [HttpGet("{jobId}/status")]
-        public ActionResult<JobStatus> GetJobStatus(Guid jobId)
+        public async Task<ActionResult<JobStatus>> GetJobStatusAsync(Guid jobId)
         {
             if (_jobService.TryGetJob(jobId, out var jobControl))
             {
                 var isAdmin = this.User.HasClaim(Claims.IS_ADMIN, "true");
+                var username = this.User.Identity?.Name;
 
-                if (jobControl.Job.Owner == this.User.Identity.Name || isAdmin)
+                if (username is null)
+                    throw new Exception("This should never happen.");
+
+                if (jobControl.Job.Owner == username || isAdmin)
                 {
                     var status = new JobStatus(
                         Start: jobControl.Start,
@@ -191,8 +217,8 @@ namespace Nexus.Controllers.V1
                         ExceptionMessage: jobControl.Task.Exception is not null
                             ? jobControl.Task.Exception.Message
                             : string.Empty,
-                        Result: jobControl.Task.Status == TaskStatus.RanToCompletion && jobControl.Task.Result is not null
-                            ? jobControl.Task.Result
+                        Result: jobControl.Task.Status == TaskStatus.RanToCompletion && (await jobControl.Task) is not null
+                            ? await jobControl.Task
                             : null);
 
                     return status;
@@ -214,25 +240,30 @@ namespace Nexus.Controllers.V1
         /// <param name="jobId"></param>
         /// <returns></returns>
         [HttpDelete("{jobId}")]
-        public ActionResult DeleteJob(Guid jobId)
+        public Task<ActionResult> DeleteJobAsync(Guid jobId)
         {
             if (_jobService.TryGetJob(jobId, out var jobControl))
             {
                 var isAdmin = this.User.HasClaim(Claims.IS_ADMIN, "true");
+                var username = this.User.Identity?.Name;
 
-                if (jobControl.Job.Owner == this.User.Identity.Name || isAdmin)
+                if (username is null)
+                    throw new Exception("This should never happen.");
+
+                if (jobControl.Job.Owner == username || isAdmin)
                 {
                     jobControl.CancellationTokenSource.Cancel();
-                    return this.Accepted();
+                    return Task.FromResult((ActionResult)this.Accepted());
                 }
+
                 else
                 {
-                    return this.Unauthorized($"The current user is not authorized to cancel the job '{jobControl.Job.Id}'.");
+                    return Task.FromResult((ActionResult)this.Unauthorized($"The current user is not authorized to cancel the job '{jobControl.Job.Id}'."));
                 }
             }
             else
             {
-                return this.NotFound(jobId);
+                return Task.FromResult((ActionResult)this.NotFound(jobId));
             }
         }
 

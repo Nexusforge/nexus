@@ -1,17 +1,11 @@
 ﻿using Nexus.DataModel;
 using Nexus.Extensibility;
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading;
-using System.Threading.Tasks;
 
 // Bug?: https://github.com/frictionlessdata/frictionless-py/issues/991
 // Schema: https://frictionlessdata.io

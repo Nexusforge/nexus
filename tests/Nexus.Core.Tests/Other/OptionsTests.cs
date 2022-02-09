@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Configuration;
 using Nexus.Core;
-using System;
 using Xunit;
 
 namespace Other

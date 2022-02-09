@@ -1,10 +1,8 @@
 using Microsoft.Extensions.Logging;
 using Nexus.Core;
+using Nexus.Services;
 using Serilog;
 using Serilog.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Text.RegularExpressions;
 using Xunit;
 
@@ -58,7 +56,7 @@ namespace Other
             var loggerFactory = new SerilogLoggerFactory(serilogger);
 
             // 3. Create a logger
-            var logger = loggerFactory.CreateLogger<Nexus.Services.DataService>();
+            var logger = loggerFactory.CreateLogger<DataService>();
 
             // 3.1 Log-levels
             logger.LogTrace("Trace");

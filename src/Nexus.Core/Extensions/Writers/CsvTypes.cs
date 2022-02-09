@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace Nexus.Writers
+﻿namespace Nexus.Writers
 {
     internal record struct Layout(
         int[] HeaderRows);

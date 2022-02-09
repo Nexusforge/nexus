@@ -1,9 +1,5 @@
 ﻿using Nexus.DataModel;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 
 namespace Nexus.Utilities
 {
@@ -134,6 +130,9 @@ namespace Nexus.Utilities
 
         public static object? InvokeGenericMethod<T>(T instance, string methodName, BindingFlags bindingFlags, Type genericType, object[] parameters)
         {
+            if (instance is null)
+                throw new ArgumentNullException(nameof(instance));
+
             return NexusCoreUtilities.InvokeGenericMethod(typeof(T), instance, methodName, bindingFlags, genericType, parameters);
         }
 

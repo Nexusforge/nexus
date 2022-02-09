@@ -2,16 +2,10 @@
 using Microsoft.Extensions.Options;
 using Nexus.Core;
 using Nexus.Extensibility;
-using Nexus.Models;
 using Nexus.PackageManagement;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Nexus.Services
 {

@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFrameworkVersion>net6.0</TargetFrameworkVersion>
+	<Nullable>enable</Nullable>
+	<ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
       
   <PropertyGroup>

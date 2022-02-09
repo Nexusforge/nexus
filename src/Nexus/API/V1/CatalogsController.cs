@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Nexus.Core;
 using Nexus.DataModel;
-using Nexus.Models;
 using Nexus.Services;
 using Nexus.Utilities;
 using System.Data;
@@ -10,11 +9,14 @@ using System.Net;
 
 namespace Nexus.Controllers.V1
 {
+    /// <summary>
+    /// Provides access to catalogs.
+    /// </summary>
     [Authorize]
     [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
-    internal class CatalogsController : ControllerBase
+    public class CatalogsController : ControllerBase
     {
         // GET      /api/catalogs/{catalogId}
         // GET      /api/catalogs/{catalogId}/child-catalog-ids
@@ -35,7 +37,7 @@ namespace Nexus.Controllers.V1
 
         #region Constructors
 
-        public CatalogsController(
+        internal CatalogsController(
             AppState appState,
             IDatabaseManager databaseManager,
             IDataControllerService dataControllerService)
@@ -103,14 +105,14 @@ namespace Nexus.Controllers.V1
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpGet("{catalogId}/timerange")]
-        public Task<ActionResult<TimeRangeResponse>>
+        public Task<ActionResult<CatalogTimeRange>>
             GetTimeRangeAsync(
                 string catalogId,
                 CancellationToken cancellationToken)
         {
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            var response = this.ProcessCatalogIdAsync<TimeRangeResponse>(catalogId, async catalogContainer =>
+            var response = this.ProcessCatalogIdAsync<CatalogTimeRange>(catalogId, async catalogContainer =>
             {
                 using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(catalogContainer.BackendSource, cancellationToken);
                 return await dataSource.GetTimeRangeAsync(catalogContainer.Id, cancellationToken);
@@ -127,7 +129,7 @@ namespace Nexus.Controllers.V1
         /// <param name="end">End date.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpGet("{catalogId}/availability")]
-        public Task<ActionResult<AvailabilityResponse>>
+        public Task<ActionResult<CatalogAvailability>>
             GetCatalogAvailabilityAsync(
                 string catalogId,
                 DateTime begin,
@@ -136,7 +138,7 @@ namespace Nexus.Controllers.V1
         {
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            var response = this.ProcessCatalogIdAsync<AvailabilityResponse>(catalogId, async catalogContainer =>
+            var response = this.ProcessCatalogIdAsync<CatalogAvailability>(catalogId, async catalogContainer =>
             {
                 using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(catalogContainer.BackendSource, cancellationToken);
                 return await dataSource.GetAvailabilityAsync(catalogContainer.Id, begin, end, cancellationToken);
@@ -204,13 +206,13 @@ namespace Nexus.Controllers.V1
         /// Puts the catalog metadata.
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="request">The set catalog metadata request.</param>
+        /// <param name="catalogMetadata">The catalog metadata to put.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpPut("{catalogId}/metadata")]
         public Task
             PutCatalogMetadataAsync(
                 string catalogId,
-                [FromBody] SetMetadataRequest request,
+                [FromBody] CatalogMetadata catalogMetadata,
                 CancellationToken cancellationToken)
         {
             catalogId = WebUtility.UrlDecode(catalogId);
@@ -222,7 +224,7 @@ namespace Nexus.Controllers.V1
                 if (!canEdit)
                     return this.Unauthorized($"The current user is not authorized to modify the catalog '{catalogId}'.");
                 
-                await catalogContainer.UpdateMetadataAsync(request.Metadata);
+                await catalogContainer.UpdateMetadataAsync(catalogMetadata);
 
                 return new object();
 

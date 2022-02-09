@@ -1,11 +1,6 @@
 ﻿using Nexus.Core;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Timer = System.Timers.Timer;
 
 namespace Nexus.Services
@@ -15,7 +10,7 @@ namespace Nexus.Services
         JobControl AddJob(
             Job job, 
             Progress<double> progress,
-            Func<JobControl, CancellationTokenSource, Task<object>> createTask);
+            Func<JobControl, CancellationTokenSource, Task<object?>> createTask);
 
         List<JobControl> GetJobs();
 
@@ -70,7 +65,7 @@ namespace Nexus.Services
         public JobControl AddJob(
             Job job,
             Progress<double> progress,
-            Func<JobControl, CancellationTokenSource, Task<object>> createTask)
+            Func<JobControl, CancellationTokenSource, Task<object?>> createTask)
         {
             var cancellationTokenSource = new CancellationTokenSource();
 

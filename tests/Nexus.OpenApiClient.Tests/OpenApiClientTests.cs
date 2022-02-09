@@ -2,11 +2,8 @@
 using Moq.Protected;
 using Nexus.Client;
 using System.Net;
-using System.Net.Http;
 using System.Text;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Nexus.OpenApiClient.Tests
@@ -39,7 +36,7 @@ namespace Nexus.OpenApiClient.Tests
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
-                    ItExpr.Is<HttpRequestMessage>(x => x.RequestUri.ToString().EndsWith("authenticate")),
+                    ItExpr.Is<HttpRequestMessage>(x => x.RequestUri!.ToString().EndsWith("authenticate")),
                     ItExpr.IsAny<CancellationToken>())
                 .ReturnsAsync(authenticateResponseMessage);
 
@@ -57,7 +54,7 @@ namespace Nexus.OpenApiClient.Tests
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
-                    ItExpr.Is<HttpRequestMessage>(x => x.RequestUri.ToString().Contains("catalogs") && tryCount == 0),
+                    ItExpr.Is<HttpRequestMessage>(x => x.RequestUri!.ToString().Contains("catalogs") && tryCount == 0),
                     ItExpr.IsAny<CancellationToken>())
                 .Callback<HttpRequestMessage, CancellationToken>((requestMessage, cancellationToken) =>
                 { 
@@ -81,12 +78,12 @@ namespace Nexus.OpenApiClient.Tests
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
-                    ItExpr.Is<HttpRequestMessage>(x => x.RequestUri.ToString().EndsWith("refresh-token")),
+                    ItExpr.Is<HttpRequestMessage>(x => x.RequestUri!.ToString().EndsWith("refresh-token")),
                     ItExpr.IsAny<CancellationToken>())
                 .Callback<HttpRequestMessage, CancellationToken>((requestMessage, cancellationToken) =>
                 {
-                    var refreshTokenRequest = JsonSerializer.Deserialize<RefreshTokenRequest>(requestMessage.Content.ReadAsStream());
-                    Assert.Equal(authenticateResponse.RefreshToken, refreshTokenRequest.RefreshToken);
+                    var refreshTokenRequest = JsonSerializer.Deserialize<RefreshTokenRequest>(requestMessage.Content!.ReadAsStream());
+                    Assert.Equal(authenticateResponse.RefreshToken, refreshTokenRequest!.RefreshToken);
                 })
                 .ReturnsAsync(refreshTokenResponseMessage);
 
@@ -104,7 +101,7 @@ namespace Nexus.OpenApiClient.Tests
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
-                    ItExpr.Is<HttpRequestMessage>(x => x.RequestUri.ToString().Contains("catalogs") && tryCount == 1),
+                    ItExpr.Is<HttpRequestMessage>(x => x.RequestUri!.ToString().Contains("catalogs") && tryCount == 1),
                     ItExpr.IsAny<CancellationToken>())
                 .ReturnsAsync(catalogsResponseMessage2);
 

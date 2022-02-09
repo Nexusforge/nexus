@@ -1,17 +1,11 @@
 using Microsoft.Extensions.Logging;
 using Nexus.Core;
 using Nexus.DataModel;
-using Nexus.Models;
 using Nexus.Utilities;
-using System;
 using System.Buffers;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.IO.Pipelines;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Nexus.Extensibility
 {
@@ -118,7 +112,7 @@ namespace Nexus.Extensibility
             return catalog;
         }
 
-        public async Task<AvailabilityResponse>
+        public async Task<CatalogAvailability>
             GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
             var dateBegin = begin.Date;
@@ -135,16 +129,16 @@ namespace Nexus.Extensibility
 
             await Task.WhenAll(tasks);
 
-            return new AvailabilityResponse(
+            return new CatalogAvailability(
                 Data: aggregatedData.ToDictionary(entry => entry.Key, entry => entry.Value));
         }
 
-        public async Task<TimeRangeResponse>
+        public async Task<CatalogTimeRange>
             GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
         {
             (var begin, var end) = await this.DataSource.GetTimeRangeAsync(catalogId, cancellationToken);
 
-            return new TimeRangeResponse(
+            return new CatalogTimeRange(
                 Begin: begin,
                 End: end);
         }

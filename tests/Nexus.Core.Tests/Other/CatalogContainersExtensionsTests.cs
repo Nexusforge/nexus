@@ -2,9 +2,6 @@ using Moq;
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Services;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Other
@@ -27,33 +24,33 @@ namespace Other
                    {
                        "/" => new CatalogContainer[]
                        {
-                           new CatalogContainer(new CatalogRegistration("/A"), default, default, default, catalogManager, default, default),
+                           new CatalogContainer(new CatalogRegistration("/A"), default!, default!, default!, catalogManager, default!, default!),
                        },
                        "/A" => new CatalogContainer[] 
                        { 
-                           new CatalogContainer(new CatalogRegistration("/A/C"), default, default, default, catalogManager, default, default),
-                           new CatalogContainer(new CatalogRegistration("/A/B"), default, default, default, catalogManager, default, default),
-                           new CatalogContainer(new CatalogRegistration("/A/D"), default, default, default, catalogManager, default, default)
+                           new CatalogContainer(new CatalogRegistration("/A/C"), default!, default!, default!, catalogManager, default!, default!),
+                           new CatalogContainer(new CatalogRegistration("/A/B"), default!, default!, default!, catalogManager, default!, default!),
+                           new CatalogContainer(new CatalogRegistration("/A/D"), default!, default!, default!, catalogManager, default!, default!)
                        },
                        "/A/B" => new CatalogContainer[]
                        {
-                           new CatalogContainer(new CatalogRegistration("/A/B/D"), default, default, default, catalogManager, default, default),
-                           new CatalogContainer(new CatalogRegistration("/A/B/C"), default, default, default, catalogManager, default, default)
+                           new CatalogContainer(new CatalogRegistration("/A/B/D"), default!, default!, default!, catalogManager, default!, default!),
+                           new CatalogContainer(new CatalogRegistration("/A/B/C"), default!, default!, default!, catalogManager, default!, default!)
                        },
                        "/A/D" => new CatalogContainer[]
                        {
-                           new CatalogContainer(new CatalogRegistration("/A/D/F"), default, default, default, catalogManager, default, default),
-                           new CatalogContainer(new CatalogRegistration("/A/D/E"), default, default, default, catalogManager, default, default)
+                           new CatalogContainer(new CatalogRegistration("/A/D/F"), default!, default!, default!, catalogManager, default!, default!),
+                           new CatalogContainer(new CatalogRegistration("/A/D/E"), default!, default!, default!, catalogManager, default!, default!)
                        },
                        "/A/F" => new CatalogContainer[]
                        {
-                           new CatalogContainer(new CatalogRegistration("/A/F/H"), default, default, default, catalogManager, default, default)
+                           new CatalogContainer(new CatalogRegistration("/A/F/H"), default!, default!, default!, catalogManager, default!, default!)
                        },
                        _ => throw new Exception("Unsupported combination.")
                    });
                });
 
-            var root = CatalogContainer.CreateRoot(catalogManager, default);
+            var root = CatalogContainer.CreateRoot(catalogManager, default!);
 
             // act
             var catalogContainerA = await root.TryFindCatalogContainerAsync("/A/B/C", CancellationToken.None);
@@ -62,10 +59,10 @@ namespace Other
 
             // assert
             Assert.NotNull(catalogContainerA);
-            Assert.Equal("/A/B/C", catalogContainerA.Id);
+            Assert.Equal("/A/B/C", catalogContainerA?.Id);
 
             Assert.NotNull(catalogContainerB);
-            Assert.Equal("/A/D/E", catalogContainerB.Id);
+            Assert.Equal("/A/D/E", catalogContainerB?.Id);
 
             Assert.Null(catalogContainerC);
         }

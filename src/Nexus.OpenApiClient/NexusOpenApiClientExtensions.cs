@@ -1,6 +1,3 @@
-using System;
-using System.Linq;
-
 namespace Nexus.Client
 {
     /// <summary>

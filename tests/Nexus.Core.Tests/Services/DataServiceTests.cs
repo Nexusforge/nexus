@@ -3,15 +3,8 @@ using Moq;
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
-using Nexus.Models;
 using Nexus.Services;
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.IO.Compression;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Services
@@ -41,7 +34,7 @@ namespace Services
             var dataSourceController2 = Mock.Of<IDataSourceController>();
 
             var dataWriterController = Mock.Of<IDataWriterController>();
-            var tmpUri = default(Uri);
+            Uri tmpUri = null!;
 
             Mock.Get(dataWriterController)
                .Setup(s => s.WriteAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<TimeSpan>(), It.IsAny<CatalogItemPipeReader[]>(), It.IsAny<IProgress<double>>(), It.IsAny<CancellationToken>()))
@@ -62,10 +55,10 @@ namespace Services
                 .Setup(s => s.GetDataSourceControllerAsync(It.IsAny<BackendSource>(), It.IsAny<CancellationToken>()))
                 .Returns<BackendSource, CancellationToken>((backendSource, cancellationToken) =>
                 {
-                    if (backendSource.Equals(backendSource1))
+                    if (backendSource.Type == backendSource1.Type)
                         return Task.FromResult(dataSourceController1);
 
-                    else if (backendSource.Equals(backendSource2))
+                    else if (backendSource.Type == backendSource2.Type)
                         return Task.FromResult(dataSourceController2);
 
                     else
@@ -87,7 +80,7 @@ namespace Services
                     It.IsAny<string>(),
                     It.IsAny<string>(),
                     It.IsAny<EnumerationOptions>(), 
-                    out It.Ref<Stream>.IsAny))
+                    out It.Ref<Stream?>.IsAny))
                 .Callback(new GobbleReturns((string catalogId, string searchPattern, EnumerationOptions enumerationOptions, out Stream attachment) =>
                 {
                     attachment = new MemoryStream();
@@ -119,25 +112,24 @@ namespace Services
             var catalogItem2 = new CatalogItem(catalog2, resource2, representation2);
 
             // export parameters
-            var exportParameters = new ExportParameters()
-            {
-                Begin = begin,
-                End = end,
-                FilePeriod = TimeSpan.FromSeconds(10),
-                Type = "A",
-                ResourcePaths = new[] { catalogItem1.ToPath(), catalogItem2.ToPath() }
-            };
+            var exportParameters = new ExportParameters(
+                Begin: begin,
+                End: end,
+                FilePeriod: TimeSpan.FromSeconds(10),
+                Type: "A",
+                ResourcePaths: new[] { catalogItem1.ToPath(), catalogItem2.ToPath() },
+                Configuration: new Dictionary<string, string>());
 
             // data service
-            var dataService = new DataService(default, dataControllerService, databaseManager, logger, loggerFactory);
+            var dataService = new DataService(dataControllerService, databaseManager, logger, loggerFactory);
 
             // act
             try
             {
                 var catalogItemsMap = new Dictionary<CatalogContainer, IEnumerable<CatalogItem>>()
                 {
-                    [new CatalogContainer(new CatalogRegistration(catalog1.Id), default, backendSource1, default, default, default, default)] = new[] { catalogItem1 },
-                    [new CatalogContainer(new CatalogRegistration(catalog2.Id), default, backendSource2, default, default, default, default)] = new[] { catalogItem2 }
+                    [new CatalogContainer(new CatalogRegistration(catalog1.Id), default!, backendSource1, default!, default!, default!, default!)] = new[] { catalogItem1 },
+                    [new CatalogContainer(new CatalogRegistration(catalog2.Id), default!, backendSource2, default!, default!, default!, default!)] = new[] { catalogItem2 }
                 };
 
                 var relativeDownloadUrl = await dataService
@@ -145,7 +137,7 @@ namespace Services
 
                 // assert
                 var zipFile = Path.Combine(root, relativeDownloadUrl.Split('/').Last());
-                var unzipFolder = Path.GetDirectoryName(zipFile);
+                var unzipFolder = Path.GetDirectoryName(zipFile)!;
 
                 ZipFile.ExtractToDirectory(zipFile, unzipFolder);
 

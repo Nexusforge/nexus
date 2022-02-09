@@ -1,16 +1,18 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Nexus.Core;
-using Nexus.Models;
 using Nexus.Services;
 
 namespace Nexus.Controllers.V1
 {
+    /// <summary>
+    /// Provides access to backend sources.
+    /// </summary>
     [Authorize]
     [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
-    internal class BackendSourcesController : ControllerBase
+    public class BackendSourcesController : ControllerBase
     {
         // GET      /api/backendsources
         // PUT      /api/backendsources/{backendSourceId}
@@ -25,7 +27,7 @@ namespace Nexus.Controllers.V1
 
         #region Constructors
 
-        public BackendSourcesController(
+        internal BackendSourcesController(
             AppState appState,
             AppStateManager appStateManager)
         {
@@ -45,7 +47,10 @@ namespace Nexus.Controllers.V1
         public Task<IReadOnlyDictionary<Guid, BackendSource>>
             GetBackendSourcesAsync()
         {
-            var username = this.User.Identity.Name;
+            var username = this.User.Identity?.Name;
+
+            if (username is null)
+                throw new Exception("This should never happen.");
 
             if (_appState.Project.UserConfigurations.TryGetValue(username, out var userConfiguration))
                 return Task.FromResult(userConfiguration.BackendSources);
@@ -57,17 +62,20 @@ namespace Nexus.Controllers.V1
         /// <summary>
         /// Puts a backend source.
         /// </summary>
-        /// <param name="backendSourceId">The ID of the backend source.</param>
-        /// <param name="request"></param>
+        /// <param name="backendSourceId">The identifier of the backend source.</param>
+        /// <param name="backendSource">The backend source to put.</param>
         [HttpPut("{backendSourceId}")]
         public Task
             PutBackendSourceAsync(
             Guid backendSourceId,
-            [FromBody] PutBackendSourceRequest request)
+            [FromBody] BackendSource backendSource)
         {
-            var username = this.User.Identity.Name;
+            var username = this.User.Identity?.Name;
 
-            return _appStateManager.PutBackendSourceAsync(username, backendSourceId, request.BackendSource);
+            if (username is null)
+                throw new Exception("This should never happen.");
+
+            return _appStateManager.PutBackendSourceAsync(username, backendSourceId, backendSource);
         }
 
         /// <summary>
@@ -79,7 +87,10 @@ namespace Nexus.Controllers.V1
             DeleteBackendSourceAsync(
             Guid backendSourceId)
         {
-            var username = this.User.Identity.Name;
+            var username = this.User.Identity?.Name;
+
+            if (username is null)
+                throw new Exception("This should never happen.");
 
             return _appStateManager.DeleteBackendSourceAsync(username, backendSourceId);
         }

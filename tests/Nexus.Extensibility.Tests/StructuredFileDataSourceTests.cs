@@ -1,13 +1,8 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Nexus.DataModel;
-using System;
 using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Nexus.Extensibility.Tests
@@ -22,7 +17,7 @@ namespace Nexus.Extensibility.Tests
 
             var context = new DataSourceContext(
                 ResourceLocator: new Uri(Path.Combine(Directory.GetCurrentDirectory(), "DATABASES/F")),
-                Configuration: null,
+                Configuration: default!,
                 Logger: NullLogger.Instance);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
@@ -33,9 +28,12 @@ namespace Nexus.Extensibility.Tests
                     "TryGetFirstFile",
                     BindingFlags.NonPublic | BindingFlags.Instance);
 
+            if (methodInfo is null)
+                throw new Exception("method info is null");
+
             var config = tester.Config.Values.First().Config.Values.First();
 
-            var args = new object[] { config, null };
+            var args = new object[] { config, default! };
             methodInfo.Invoke(dataSource, args);
 
             Assert.EndsWith("DATA/2019-12/20191231_12_x_0000.dat", ((string)args[1]).Replace('\\', '/'));
@@ -59,7 +57,7 @@ namespace Nexus.Extensibility.Tests
 
             var context = new DataSourceContext(
                 ResourceLocator: new Uri(Path.Combine(Directory.GetCurrentDirectory(), root)),
-                Configuration: null,
+                Configuration: default!,
                 Logger: NullLogger.Instance);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
@@ -89,7 +87,7 @@ namespace Nexus.Extensibility.Tests
 
             var context = new DataSourceContext(
                 ResourceLocator: new Uri(Path.Combine(Directory.GetCurrentDirectory(), root)),
-                Configuration: null,
+                Configuration: default!,
                 Logger: NullLogger.Instance);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
@@ -111,7 +109,7 @@ namespace Nexus.Extensibility.Tests
 
             var context = new DataSourceContext(
                 ResourceLocator: new Uri(string.Empty, UriKind.Relative),
-                Configuration: null,
+                Configuration: default!,
                 Logger: NullLogger.Instance);
 
             await Assert.ThrowsAsync<ArgumentException>(() => 
@@ -127,14 +125,14 @@ namespace Nexus.Extensibility.Tests
 
             var context = new DataSourceContext(
                 ResourceLocator: new Uri(Path.Combine(Directory.GetCurrentDirectory(), "DATABASES/TESTDATA")),
-                Configuration: null,
+                Configuration: default!,
                 Logger: NullLogger.Instance);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
             var catalog = await dataSource.GetCatalogAsync("/A/B/C", CancellationToken.None);
-            var resource = catalog.Resources.First();
-            var representation = resource.Representations.First();
+            var resource = catalog.Resources!.First();
+            var representation = resource.Representations!.First();
             var catalogItem = new CatalogItem(catalog, resource, representation);
 
             var begin = new DateTime(2019, 12, 31, 0, 0, 0, DateTimeKind.Utc);
@@ -181,19 +179,19 @@ namespace Nexus.Extensibility.Tests
 
             var context = new DataSourceContext(
                 ResourceLocator: new Uri(Path.Combine(Directory.GetCurrentDirectory(), "DATABASES/TESTDATA")),
-                Configuration: null,
+                Configuration: default!,
                 Logger: NullLogger.Instance);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
             var catalog = await dataSource.GetCatalogAsync("/A/B/C", CancellationToken.None);
-            var resource = catalog.Resources.First();
-            var representation = resource.Representations.First();
+            var resource = catalog.Resources!.First();
+            var representation = resource.Representations!.First();
             var catalogItem = new CatalogItem(catalog, resource, representation);
             var request = new ReadRequest(catalogItem, default, default);
 
             await Assert.ThrowsAsync<ArgumentException>(() =>
-                dataSource.ReadAsync(begin, end, new ReadRequest[] { request }, default, CancellationToken.None));
+                dataSource.ReadAsync(begin, end, new ReadRequest[] { request }, default!, CancellationToken.None));
         }
     }
 }

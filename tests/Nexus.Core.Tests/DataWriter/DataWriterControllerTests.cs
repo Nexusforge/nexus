@@ -3,12 +3,7 @@ using Moq;
 using Nexus;
 using Nexus.DataModel;
 using Nexus.Extensibility;
-using System;
-using System.Collections.Generic;
 using System.IO.Pipelines;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace DataWriter
@@ -98,7 +93,7 @@ namespace DataWriter
             var configuration = new Dictionary<string, string>();
             var controller = new DataWriterController(dataWriter, resourceLocator, configuration, NullLogger<DataWriterController>.Instance);
 
-            await controller.InitializeAsync(default, CancellationToken.None);
+            await controller.InitializeAsync(default!, CancellationToken.None);
 
             // read data
             var chunkSize = 2;

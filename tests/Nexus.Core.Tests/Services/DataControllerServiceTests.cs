@@ -4,16 +4,10 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Nexus.Core;
 using Nexus.Extensibility;
-using Nexus.Models;
 using Nexus.Services;
 using Nexus.Sources;
 using Nexus.Writers;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Services
@@ -31,7 +25,7 @@ namespace Services
               .Returns(new InMemory());
 
             var backendSource = new BackendSource(
-                Type: default, 
+                Type: default!, 
                 new Uri("A", UriKind.Relative), 
                 Configuration: new Dictionary<string, string>(),
                 Publish: true);
@@ -39,7 +33,7 @@ namespace Services
             var expectedCatalog = InMemory.LoadCatalog("/A/B/C");
 
             var catalogState = new CatalogState(
-                Root: null,
+                Root: default!,
                 Cache: new CatalogCache()
             );
 
@@ -68,7 +62,12 @@ namespace Services
                 .Setup(loggerFactory => loggerFactory.CreateLogger(It.IsAny<string>()))
                 .Returns(NullLogger.Instance);
 
-            var dataControllerService = new DataControllerService(appState, httpContextAccessor, extensionHive, default, loggerFactory);
+            var dataControllerService = new DataControllerService(
+                appState, 
+                httpContextAccessor,
+                extensionHive,
+                default!, 
+                loggerFactory);
 
             // Act
             var actual = await dataControllerService.GetDataSourceControllerAsync(backendSource, CancellationToken.None);
@@ -97,10 +96,10 @@ namespace Services
 
             var loggerFactory = Mock.Of<ILoggerFactory>();
             var resourceLocator = new Uri("A", UriKind.Relative);
-            var exportParameters = new ExportParameters();
+            var exportParameters = new ExportParameters(default, default, default, default!, default!, default!);
 
             // Act
-            var dataControllerService = new DataControllerService(new AppState(), default, extensionHive, default, loggerFactory);
+            var dataControllerService = new DataControllerService(new AppState(), default!, extensionHive, default!, loggerFactory);
             var actual = await dataControllerService.GetDataWriterControllerAsync(resourceLocator, exportParameters, CancellationToken.None);
 
             // Assert

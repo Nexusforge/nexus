@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Nexus.Core;
-using Nexus.Models;
 using Nexus.Services;
 using NJsonSchema.Generation;
 using NSwag;
@@ -193,7 +192,7 @@ void AddServices(IServiceCollection services, IConfiguration configuration)
     services.AddHttpContextAccessor();
 
     // custom
-    services.AddTransient<DataService>();
+    services.AddTransient<IDataService, DataService>();
 
     services.AddScoped<IDBService, DbService>();
     services.AddScoped<INexusAuthenticationService, NexusAuthenticationService>();
@@ -293,7 +292,7 @@ async Task InitializeAppAsync(
 
     // project
     if (databaseManager.TryReadProject(out var project))
-        appState.Project = JsonSerializer.Deserialize<NexusProject>(project);
+        appState.Project = JsonSerializer.Deserialize<NexusProject>(project) ?? throw new Exception("project is null");
     
     else
         appState.Project = new NexusProject(

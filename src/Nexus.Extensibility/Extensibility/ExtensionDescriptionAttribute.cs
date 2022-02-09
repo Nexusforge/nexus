@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Nexus.Extensibility
+﻿namespace Nexus.Extensibility
 {
     /// <summary>
     /// An attribute to identify the extension.

@@ -1,17 +1,12 @@
 ﻿using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Nexus;
+using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
-using Nexus.Models;
 using Nexus.Sources;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO.Pipelines;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace DataSource
@@ -44,8 +39,8 @@ namespace DataSource
             };
 
             var backendSource = new BackendSource(
-                Type: default,
-                ResourceLocator: default,
+                Type: default!,
+                ResourceLocator: default!,
                 Configuration: backendSourceConfiguration,
                 Publish: true);
 
@@ -69,7 +64,7 @@ namespace DataSource
             };
 
             // Act
-            await controller.InitializeAsync(default, default, default);
+            await controller.InitializeAsync(default!, default!, default);
             var actualConfiguration = dataSourceContext.Configuration;
 
             // Assert
@@ -82,7 +77,7 @@ namespace DataSource
         internal async Task CanGetAvailability()
         {
             var controller = _fixture.Controller;
-            await controller.InitializeAsync(default, default, CancellationToken.None);
+            await controller.InitializeAsync(default!, default!, CancellationToken.None);
 
             var catalogId = InMemory.AccessibleCatalogId;
             var begin= new DateTime(2020, 01, 01, 00, 00, 00, DateTimeKind.Utc);
@@ -102,7 +97,7 @@ namespace DataSource
         public async Task CanGetTimeRange()
         {
             var controller = _fixture.Controller;
-            await controller.InitializeAsync(default, default, CancellationToken.None);
+            await controller.InitializeAsync(default!, default!, CancellationToken.None);
 
             var catalogId = InMemory.AccessibleCatalogId;
             var actual = await controller.GetTimeRangeAsync(catalogId, CancellationToken.None);
@@ -115,7 +110,7 @@ namespace DataSource
         public async Task CanCheckIsDataOfDayAvailable()
         {
             var controller = _fixture.Controller;
-            await controller.InitializeAsync(default, default, CancellationToken.None);
+            await controller.InitializeAsync(default!, default!, CancellationToken.None);
 
             var day = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
             var catalogId = InMemory.AccessibleCatalogId;
@@ -128,7 +123,7 @@ namespace DataSource
         public async Task CanRead()
         {
             var controller = _fixture.Controller;
-            await controller.InitializeAsync(new ConcurrentDictionary<string, ResourceCatalog>(), default, CancellationToken.None);
+            await controller.InitializeAsync(new ConcurrentDictionary<string, ResourceCatalog>(), default!, CancellationToken.None);
             
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 02, 0, 0, 1, DateTimeKind.Utc);
@@ -223,7 +218,7 @@ namespace DataSource
         public async Task CanReadAsStream()
         {
             var controller = _fixture.Controller;
-            await controller.InitializeAsync(new ConcurrentDictionary<string, ResourceCatalog>(), default, CancellationToken.None);
+            await controller.InitializeAsync(new ConcurrentDictionary<string, ResourceCatalog>(), default!, CancellationToken.None);
 
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 02, 0, 0, 1, DateTimeKind.Utc);

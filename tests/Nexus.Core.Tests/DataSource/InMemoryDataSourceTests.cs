@@ -3,11 +3,6 @@ using Nexus;
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Sources;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace DataSource
@@ -31,14 +26,14 @@ namespace DataSource
             var actual = await dataSource.GetCatalogAsync(InMemory.AccessibleCatalogId, CancellationToken.None);
 
             // assert
-            var actualIds = actual.Resources.Select(resource => resource.Id).ToList();
-            var actualUnits = actual.Resources.Select(resource => resource.Properties.GetValueOrDefault("Unit")).ToList();
-            var actualGroups = actual.Resources.SelectMany(
-                resource => resource.Properties.Where(current => current.Key.StartsWith("Groups"))).Select(current => current.Value).ToList();
-            var actualDataTypes = actual.Resources.SelectMany(resource => resource.Representations.Select(representation => representation.DataType)).ToList();
+            var actualIds = actual.Resources!.Select(resource => resource.Id).ToList();
+            var actualUnits = actual.Resources!.Select(resource => resource.Properties?.GetValueOrDefault("Unit")).ToList();
+            var actualGroups = actual.Resources!.SelectMany(
+                resource => resource.Properties!.Where(current => current.Key.StartsWith("Groups"))).Select(current => current.Value).ToList();
+            var actualDataTypes = actual.Resources!.SelectMany(resource => resource.Representations!.Select(representation => representation.DataType)).ToList();
 
             var expectedIds = new List<string>() { "T1", "V1", "unix_time1", "unix_time2" };
-            var expectedUnits = new List<string>() { "°C", "m/s", null, null };
+            var expectedUnits = new List<string>() { "°C", "m/s", default!, default! };
             var expectedGroups = new List<string>() { "Group 1", "Group 1", "Group 2", "Group 2" };
             var expectedDataTypes = new List<NexusDataType>() { NexusDataType.FLOAT64, NexusDataType.FLOAT64, NexusDataType.FLOAT64, NexusDataType.FLOAT64, NexusDataType.FLOAT64 };
 
@@ -99,8 +94,8 @@ namespace DataSource
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
             var catalog = await dataSource.GetCatalogAsync(InMemory.AccessibleCatalogId, CancellationToken.None);
-            var resource = catalog.Resources.First();
-            var representation = resource.Representations.First();
+            var resource = catalog.Resources!.First();
+            var representation = resource.Representations!.First();
             var catalogItem = new CatalogItem(catalog, resource, representation);
 
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);

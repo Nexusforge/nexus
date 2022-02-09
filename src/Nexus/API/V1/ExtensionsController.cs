@@ -1,18 +1,20 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Nexus.API.V1;
+using Nexus.Core;
 using Nexus.Extensibility;
-using Nexus.Models;
 using Nexus.Services;
 using System.Reflection;
 
 namespace Nexus.Controllers.V1
 {
+    /// <summary>
+    /// Provides access to extensions.
+    /// </summary>
     [Authorize]
     [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
-    internal class ExtensionsController : ControllerBase
+    public class ExtensionsController : ControllerBase
     {
         // GET      /api/extensions/sources
         // GET      /api/extensions/writers
@@ -25,7 +27,7 @@ namespace Nexus.Controllers.V1
 
         #region Constructors
 
-        public ExtensionsController(
+        internal ExtensionsController(
             IExtensionHive extensionHive)
         {
             _extensionHive = extensionHive;
@@ -63,7 +65,7 @@ namespace Nexus.Controllers.V1
                     ? null
                     : attribute.Description;
 
-                return new ExtensionDescription(type.FullName, description);
+                return new ExtensionDescription(type.FullName ?? throw new Exception("fullname is null"), description);
             })
             .ToArray();
         }

@@ -4,14 +4,8 @@ using Microsoft.Extensions.Options;
 using Moq;
 using Nexus.Core;
 using Nexus.Extensibility;
-using Nexus.Models;
 using Nexus.Services;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Services

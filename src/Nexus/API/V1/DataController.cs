@@ -9,11 +9,14 @@ using System.Net;
 
 namespace Nexus.Controllers.V1
 {
+    /// <summary>
+    /// Provides access to data.
+    /// </summary>
     [Authorize]
     [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
-    internal class DataController : ControllerBase
+    public class DataController : ControllerBase
     {
         #region Fields
 
@@ -25,7 +28,7 @@ namespace Nexus.Controllers.V1
 
         #region Constructors
 
-        public DataController(
+        internal DataController(
             AppState appState,
             IDataControllerService dataControllerService,
             ILoggerFactory loggerFactory)
@@ -73,7 +76,7 @@ namespace Nexus.Controllers.V1
 
                 var (catalogContainer, catalogItem) = await root.TryFindAsync(resourcePath, cancellationToken);
 
-                if (catalogItem is null)
+                if (catalogContainer is null || catalogItem is null)
                     return this.NotFound($"Could not find resource path {resourcePath}.");
 
                 var catalog = catalogItem.Catalog;

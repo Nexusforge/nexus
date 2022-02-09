@@ -4,16 +4,9 @@ using Moq;
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
-using Nexus.Models;
 using Nexus.Services;
 using Nexus.Utilities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Services
@@ -68,7 +61,7 @@ namespace Services
 
             var appState = new AppState()
             {
-                Project = new NexusProject(default, new Dictionary<string, UserConfiguration>()
+                Project = new NexusProject(default!, new Dictionary<string, UserConfiguration>()
                 {
                     ["UserA"] = new UserConfiguration(new Dictionary<Guid, BackendSource>() 
                     { 
@@ -88,7 +81,7 @@ namespace Services
             Mock.Get(databaseManager)
                .Setup(databaseManager => databaseManager.TryReadCatalogMetadata(
                    It.IsAny<string>(),
-                   out It.Ref<string>.IsAny))
+                   out It.Ref<string?>.IsAny))
                .Returns(new GobbleReturns((string catalogId, out string catalogMetadataString) =>
                {
                    catalogMetadataString = "{}";
@@ -127,9 +120,9 @@ namespace Services
                {
                    return username switch
                    {
-                       "UserA"  => Task.FromResult(userA),
-                       "UserB"  => Task.FromResult(userB),
-                       _        => Task.FromResult<ClaimsPrincipal>(null)
+                       "UserA"  => Task.FromResult((ClaimsPrincipal?)userA),
+                       "UserB"  => Task.FromResult((ClaimsPrincipal?)userB),
+                       _        => Task.FromResult<ClaimsPrincipal?>(default)
                    };
                });
 
@@ -146,7 +139,7 @@ namespace Services
                 NullLogger<CatalogManager>.Instance);
 
             // act
-            var root = CatalogContainer.CreateRoot(catalogManager, default);
+            var root = CatalogContainer.CreateRoot(catalogManager, default!);
             var rootCatalogContainers = (await root.GetChildCatalogContainersAsync(CancellationToken.None)).ToArray();
             var ACatalogContainers = (await rootCatalogContainers[0].GetChildCatalogContainersAsync(CancellationToken.None)).ToArray();
 
@@ -197,7 +190,7 @@ namespace Services
                 .Build();
 
             /* expected time range response */
-            var expectedTimeRange = new TimeRangeResponse(new DateTime(2020, 01, 01), new DateTime(2020, 01, 02));
+            var expectedTimeRange = new CatalogTimeRange(new DateTime(2020, 01, 01), new DateTime(2020, 01, 02));
 
             /* data controller service */
             var dataControllerService = Mock.Of<IDataControllerService>();
@@ -232,11 +225,18 @@ namespace Services
             var backendSource = new BackendSource(
                 Type: "A", 
                 ResourceLocator: new Uri("A", UriKind.Relative),
-                Configuration: default,
+                Configuration: default!,
                 Publish: true);
 
             /* catalog container */
-            var catalogContainer = new CatalogContainer(new CatalogRegistration("/A"), default, backendSource, catalogMetadata, default, default, dataControllerService);
+            var catalogContainer = new CatalogContainer(
+                new CatalogRegistration("/A"),
+                default!, 
+                backendSource,
+                catalogMetadata, 
+                default!,
+                default!, 
+                dataControllerService);
 
             // Act
             var catalogInfo = await catalogContainer.GetCatalogInfoAsync(CancellationToken.None);

@@ -1,9 +1,7 @@
 ﻿using Microsoft.Extensions.Logging.Abstractions;
+using Nexus.Core;
 using Nexus.Extensibility;
-using Nexus.Models;
 using Nexus.Sources;
-using System;
-using System.Collections.Generic;
 
 namespace DataSource
 {
@@ -14,7 +12,7 @@ namespace DataSource
             var dataSource = new InMemory();
 
             var backendSource = new BackendSource(
-                Type: typeof(InMemory).FullName ?? throw new Exception("full name is null"), 
+                Type: typeof(InMemory).FullName!, 
                 ResourceLocator: new Uri("memory://localhost"),
                 Configuration: new Dictionary<string, string>(),
                 Publish: true);

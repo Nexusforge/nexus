@@ -1,16 +1,17 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
-using Nexus.Core;
 using Nexus.Services;
 
 namespace Nexus.Controllers.V1
 {
+    /// <summary>
+    /// Provides access to artifacts.
+    /// </summary>
     [Authorize]
     [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
-    internal class ArtifactsController : ControllerBase
+    public class ArtifactsController : ControllerBase
     {
         // GET      /api/artifacts/{artifactId}
 
@@ -22,7 +23,7 @@ namespace Nexus.Controllers.V1
 
         #region Constructors
 
-        public ArtifactsController(
+        internal ArtifactsController(
             IDatabaseManager databaseManager)
         {
             _databaseManager = databaseManager;
@@ -37,7 +38,7 @@ namespace Nexus.Controllers.V1
         /// </summary>
         /// <param name="artifactId">The artifact identifier.</param>
         [HttpGet("{artifactId}")]
-        public Task<ActionResult>
+        internal Task<ActionResult>
             DownloadArtifactAsync(
                 string artifactId)
         {
