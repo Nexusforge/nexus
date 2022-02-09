@@ -28,6 +28,13 @@
 	
   <ItemGroup>
     <ProjectReference Include="..\Nexus.Core\Nexus.Core.csproj" />
+	  
+	<!-- 
+	    Probably because of the way how Blazor is compiled, when publishing, 
+	    the folder artfifacts/bin/Nexus.OpenApiClient/Release does not exist. 
+		As a workaround, add a direct to the OpenApiClient project here.
+	-->
+	<ProjectReference Include="..\Nexus.OpenApiClient\Nexus.OpenApiClient.csproj" />
   </ItemGroup>
 
 </Project>
