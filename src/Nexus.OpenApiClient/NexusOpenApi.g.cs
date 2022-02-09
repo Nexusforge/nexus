@@ -251,9 +251,10 @@ namespace Nexus.Client
         /// <summary>
         /// Puts a backend source.
         /// </summary>
-        /// <param name="backendSourceId">The ID of the backend source.</param>
+        /// <param name="backendSourceId">The identifier of the backend source.</param>
+        /// <param name="backendSource">The backend source to put.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task PutBackendSourceAsync(System.Guid backendSourceId, PutBackendSourceRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task PutBackendSourceAsync(System.Guid backendSourceId, BackendSource backendSource, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -369,15 +370,16 @@ namespace Nexus.Client
         /// <summary>
         /// Puts a backend source.
         /// </summary>
-        /// <param name="backendSourceId">The ID of the backend source.</param>
+        /// <param name="backendSourceId">The identifier of the backend source.</param>
+        /// <param name="backendSource">The backend source to put.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task PutBackendSourceAsync(System.Guid backendSourceId, PutBackendSourceRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task PutBackendSourceAsync(System.Guid backendSourceId, BackendSource backendSource, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (backendSourceId == null)
                 throw new System.ArgumentNullException("backendSourceId");
 
-            if (request == null)
-                throw new System.ArgumentNullException("request");
+            if (backendSource == null)
+                throw new System.ArgumentNullException("backendSource");
 
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/backendsources/{backendSourceId}");
@@ -389,7 +391,7 @@ namespace Nexus.Client
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
-                    var content_ = new System.Net.Http.StringContent(System.Text.Json.JsonSerializer.Serialize(request, _settings.Value));
+                    var content_ = new System.Net.Http.StringContent(System.Text.Json.JsonSerializer.Serialize(backendSource, _settings.Value));
                     content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
                     request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("PUT");
@@ -634,7 +636,7 @@ namespace Nexus.Client
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<TimeRangeResponse> GetTimeRangeAsync(string catalogId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<CatalogTimeRange> GetTimeRangeAsync(string catalogId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -644,7 +646,7 @@ namespace Nexus.Client
         /// <param name="begin">Start date.</param>
         /// <param name="end">End date.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<AvailabilityResponse> GetCatalogAvailabilityAsync(string catalogId, System.DateTime? begin = null, System.DateTime? end = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<CatalogAvailability> GetCatalogAvailabilityAsync(string catalogId, System.DateTime? begin = null, System.DateTime? end = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -668,9 +670,9 @@ namespace Nexus.Client
         /// Puts the catalog metadata.
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="request">The set catalog metadata request.</param>
+        /// <param name="catalogMetadata">The catalog metadata to put.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task PutCatalogMetadataAsync(string catalogId, SetMetadataRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task PutCatalogMetadataAsync(string catalogId, CatalogMetadata catalogMetadata, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
     }
 
@@ -860,7 +862,7 @@ namespace Nexus.Client
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<TimeRangeResponse> GetTimeRangeAsync(string catalogId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<CatalogTimeRange> GetTimeRangeAsync(string catalogId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (catalogId == null)
                 throw new System.ArgumentNullException("catalogId");
@@ -901,7 +903,7 @@ namespace Nexus.Client
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            var objectResponse_ = await ReadObjectResponseAsync<TimeRangeResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            var objectResponse_ = await ReadObjectResponseAsync<CatalogTimeRange>(response_, headers_, cancellationToken).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
                                 throw new NexusApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
@@ -936,7 +938,7 @@ namespace Nexus.Client
         /// <param name="begin">Start date.</param>
         /// <param name="end">End date.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<AvailabilityResponse> GetCatalogAvailabilityAsync(string catalogId, System.DateTime? begin = null, System.DateTime? end = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<CatalogAvailability> GetCatalogAvailabilityAsync(string catalogId, System.DateTime? begin = null, System.DateTime? end = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (catalogId == null)
                 throw new System.ArgumentNullException("catalogId");
@@ -986,7 +988,7 @@ namespace Nexus.Client
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            var objectResponse_ = await ReadObjectResponseAsync<AvailabilityResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            var objectResponse_ = await ReadObjectResponseAsync<CatalogAvailability>(response_, headers_, cancellationToken).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
                                 throw new NexusApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
@@ -1169,15 +1171,15 @@ namespace Nexus.Client
         /// Puts the catalog metadata.
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="request">The set catalog metadata request.</param>
+        /// <param name="catalogMetadata">The catalog metadata to put.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task PutCatalogMetadataAsync(string catalogId, SetMetadataRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task PutCatalogMetadataAsync(string catalogId, CatalogMetadata catalogMetadata, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (catalogId == null)
                 throw new System.ArgumentNullException("catalogId");
 
-            if (request == null)
-                throw new System.ArgumentNullException("request");
+            if (catalogMetadata == null)
+                throw new System.ArgumentNullException("catalogMetadata");
 
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/catalogs/{catalogId}/metadata");
@@ -1189,7 +1191,7 @@ namespace Nexus.Client
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
-                    var content_ = new System.Net.Http.StringContent(System.Text.Json.JsonSerializer.Serialize(request, _settings.Value));
+                    var content_ = new System.Net.Http.StringContent(System.Text.Json.JsonSerializer.Serialize(catalogMetadata, _settings.Value));
                     content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
                     request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("PUT");
@@ -2417,9 +2419,10 @@ namespace Nexus.Client
         /// <summary>
         /// Puts a package reference.
         /// </summary>
-        /// <param name="packageReferenceId">The ID of the package reference.</param>
+        /// <param name="packageReferenceId">The identifier of the package reference.</param>
+        /// <param name="packageReference">The package reference to put.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task PutPackageReferencesAsync(System.Guid packageReferenceId, PutPackageReferenceRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task PutPackageReferencesAsync(System.Guid packageReferenceId, PackageReference packageReference, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -2543,15 +2546,16 @@ namespace Nexus.Client
         /// <summary>
         /// Puts a package reference.
         /// </summary>
-        /// <param name="packageReferenceId">The ID of the package reference.</param>
+        /// <param name="packageReferenceId">The identifier of the package reference.</param>
+        /// <param name="packageReference">The package reference to put.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task PutPackageReferencesAsync(System.Guid packageReferenceId, PutPackageReferenceRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task PutPackageReferencesAsync(System.Guid packageReferenceId, PackageReference packageReference, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (packageReferenceId == null)
                 throw new System.ArgumentNullException("packageReferenceId");
 
-            if (request == null)
-                throw new System.ArgumentNullException("request");
+            if (packageReference == null)
+                throw new System.ArgumentNullException("packageReference");
 
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/packagereferences/{packageReferenceId}");
@@ -2563,7 +2567,7 @@ namespace Nexus.Client
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
-                    var content_ = new System.Net.Http.StringContent(System.Text.Json.JsonSerializer.Serialize(request, _settings.Value));
+                    var content_ = new System.Net.Http.StringContent(System.Text.Json.JsonSerializer.Serialize(packageReference, _settings.Value));
                     content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
                     request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("PUT");
@@ -3408,33 +3412,46 @@ namespace Nexus.Client
         }
     }
 
+    /// <summary>
+    /// A backend source.
+    /// </summary>
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.15.7.0 (NJsonSchema v10.6.7.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class BackendSource
     {
+        /// <summary>
+        /// The type of the backend source.
+        /// </summary>
 
         [System.Text.Json.Serialization.JsonPropertyName("type")]
         public string Type { get; set; } = default!;
 
+        /// <summary>
+        /// An URL which points to the data.
+        /// </summary>
+
         [System.Text.Json.Serialization.JsonPropertyName("resourceLocator")]
         public System.Uri ResourceLocator { get; set; } = default!;
+
+        /// <summary>
+        /// Configuration parameters for the instantiated source.
+        /// </summary>
 
         [System.Text.Json.Serialization.JsonPropertyName("configuration")]
         public System.Collections.Generic.IDictionary<string, string> Configuration { get; set; } = default!;
 
+        /// <summary>
+        /// A boolean which indicates if the found catalogs should be available for everyone.
+        /// </summary>
+
         [System.Text.Json.Serialization.JsonPropertyName("publish")]
         public bool Publish { get; set; } = default!;
 
+        /// <summary>
+        /// A boolean which indicates if this backend source should be ignored.
+        /// </summary>
+
         [System.Text.Json.Serialization.JsonPropertyName("disable")]
         public bool Disable { get; set; } = default!;
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.15.7.0 (NJsonSchema v10.6.7.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class PutBackendSourceRequest
-    {
-
-        [System.Text.Json.Serialization.JsonPropertyName("backendSource")]
-        public BackendSource BackendSource { get; set; } = default!;
 
     }
 
@@ -3572,51 +3589,76 @@ namespace Nexus.Client
 
     }
 
+    /// <summary>
+    /// A catalog time range.
+    /// </summary>
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.15.7.0 (NJsonSchema v10.6.7.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class TimeRangeResponse
+    public partial class CatalogTimeRange
     {
+        /// <summary>
+        /// The date/time of the first data in the catalog.
+        /// </summary>
 
         [System.Text.Json.Serialization.JsonPropertyName("begin")]
         public System.DateTime Begin { get; set; } = default!;
+
+        /// <summary>
+        /// The date/time of the last data in the catalog.
+        /// </summary>
 
         [System.Text.Json.Serialization.JsonPropertyName("end")]
         public System.DateTime End { get; set; } = default!;
 
     }
 
+    /// <summary>
+    /// The catalog availability.
+    /// </summary>
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.15.7.0 (NJsonSchema v10.6.7.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class AvailabilityResponse
+    public partial class CatalogAvailability
     {
+        /// <summary>
+        /// The actual availability data.
+        /// </summary>
 
         [System.Text.Json.Serialization.JsonPropertyName("data")]
         public System.Collections.Generic.IDictionary<string, double> Data { get; set; } = default!;
 
     }
 
+    /// <summary>
+    /// A structure for catalog metadata.
+    /// </summary>
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.15.7.0 (NJsonSchema v10.6.7.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class CatalogMetadata
     {
+        /// <summary>
+        /// The contact.
+        /// </summary>
 
         [System.Text.Json.Serialization.JsonPropertyName("contact")]
         public string? Contact { get; set; } = default!;
 
+        /// <summary>
+        /// A boolean which indicates if the catalog should be hidden.
+        /// </summary>
+
         [System.Text.Json.Serialization.JsonPropertyName("isHidden")]
         public bool IsHidden { get; set; } = default!;
+
+        /// <summary>
+        /// A list of groups the catalog is part of.
+        /// </summary>
 
         [System.Text.Json.Serialization.JsonPropertyName("groupMemberships")]
         public System.Collections.Generic.ICollection<string>? GroupMemberships { get; set; } = default!;
 
+        /// <summary>
+        /// Overrides for the catalog.
+        /// </summary>
+
         [System.Text.Json.Serialization.JsonPropertyName("overrides")]
         public ResourceCatalog? Overrides { get; set; } = default!;
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.15.7.0 (NJsonSchema v10.6.7.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class SetMetadataRequest
-    {
-
-        [System.Text.Json.Serialization.JsonPropertyName("metadata")]
-        public CatalogMetadata Metadata { get; set; } = default!;
 
     }
 
@@ -3674,53 +3716,101 @@ namespace Nexus.Client
         /// </summary>
 
         [System.Text.Json.Serialization.JsonPropertyName("parameters")]
-        public object Parameters { get; set; } = default!;
+        public object? Parameters { get; set; } = default!;
 
     }
 
+    /// <summary>
+    /// A structure for export parameters.
+    /// </summary>
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.15.7.0 (NJsonSchema v10.6.7.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class ExportParameters
     {
+        /// <summary>
+        /// 2020-02-01T00:00:00Z
+        /// </summary>
 
         [System.Text.Json.Serialization.JsonPropertyName("begin")]
         public System.DateTime Begin { get; set; } = default!;
 
+        /// <summary>
+        /// 2020-02-02T00:00:00Z
+        /// </summary>
+
         [System.Text.Json.Serialization.JsonPropertyName("end")]
         public System.DateTime End { get; set; } = default!;
+
+        /// <summary>
+        /// 00:00:00
+        /// </summary>
 
         [System.Text.Json.Serialization.JsonPropertyName("filePeriod")]
         public System.TimeSpan FilePeriod { get; set; } = default!;
 
+        /// <summary>
+        /// Nexus.Writers.Csv
+        /// </summary>
+
         [System.Text.Json.Serialization.JsonPropertyName("type")]
         public string Type { get; set; } = default!;
 
+        /// <summary>
+        /// ["/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean", "/IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean"]
+        /// </summary>
+
         [System.Text.Json.Serialization.JsonPropertyName("resourcePaths")]
         public System.Collections.Generic.ICollection<string> ResourcePaths { get; set; } = default!;
+
+        /// <summary>
+        /// { "RowIndexFormat": "Index", "SignificantFigures": "4" }
+        /// </summary>
 
         [System.Text.Json.Serialization.JsonPropertyName("configuration")]
         public System.Collections.Generic.IDictionary<string, string> Configuration { get; set; } = default!;
 
     }
 
+    /// <summary>
+    /// Describes the status of the job.
+    /// </summary>
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.15.7.0 (NJsonSchema v10.6.7.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class JobStatus
     {
+        /// <summary>
+        /// The start date/time.
+        /// </summary>
 
         [System.Text.Json.Serialization.JsonPropertyName("start")]
         public System.DateTime Start { get; set; } = default!;
+
+        /// <summary>
+        /// The status.
+        /// </summary>
 
         [System.Text.Json.Serialization.JsonPropertyName("status")]
         [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
         public TaskStatus Status { get; set; } = default!;
 
+        /// <summary>
+        /// The progress from 0 to 1.
+        /// </summary>
+
         [System.Text.Json.Serialization.JsonPropertyName("progress")]
         public double Progress { get; set; } = default!;
 
+        /// <summary>
+        /// An optional exception message.
+        /// </summary>
+
         [System.Text.Json.Serialization.JsonPropertyName("exceptionMessage")]
-        public string ExceptionMessage { get; set; } = default!;
+        public string? ExceptionMessage { get; set; } = default!;
+
+        /// <summary>
+        /// The optional result.
+        /// </summary>
 
         [System.Text.Json.Serialization.JsonPropertyName("result")]
-        public object Result { get; set; } = default!;
+        public object? Result { get; set; } = default!;
 
     }
 
@@ -3754,24 +3844,25 @@ namespace Nexus.Client
 
     }
 
+    /// <summary>
+    /// A package reference.
+    /// </summary>
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.15.7.0 (NJsonSchema v10.6.7.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class PackageReference
     {
+        /// <summary>
+        /// The provider which loads the package.
+        /// </summary>
 
         [System.Text.Json.Serialization.JsonPropertyName("provider")]
         public string Provider { get; set; } = default!;
 
+        /// <summary>
+        /// The configuration of the package reference.
+        /// </summary>
+
         [System.Text.Json.Serialization.JsonPropertyName("configuration")]
         public System.Collections.Generic.IDictionary<string, string> Configuration { get; set; } = default!;
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.15.7.0 (NJsonSchema v10.6.7.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class PutPackageReferenceRequest
-    {
-
-        [System.Text.Json.Serialization.JsonPropertyName("packageReference")]
-        public PackageReference PackageReference { get; set; } = default!;
 
     }
 

@@ -23,7 +23,7 @@ namespace Nexus.Controllers.V1
 
         #region Constructors
 
-        internal ArtifactsController(
+        public ArtifactsController(
             IDatabaseManager databaseManager)
         {
             _databaseManager = databaseManager;
@@ -38,7 +38,7 @@ namespace Nexus.Controllers.V1
         /// </summary>
         /// <param name="artifactId">The artifact identifier.</param>
         [HttpGet("{artifactId}")]
-        internal Task<ActionResult>
+        public Task<ActionResult>
             DownloadArtifactAsync(
                 string artifactId)
         {
