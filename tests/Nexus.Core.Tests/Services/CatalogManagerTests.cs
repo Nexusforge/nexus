@@ -61,19 +61,29 @@ namespace Services
                     return Task.FromResult(dataSourceController);
                 });
 
-            /* databaseManager */
+            /* appState */
             var backendSourceA = new BackendSource(Type: "A", new Uri("", UriKind.Relative), new Dictionary<string, string>(), Publish: true);
             var backendSourceB = new BackendSource(Type: "B", new Uri("", UriKind.Relative), new Dictionary<string, string>(), Publish: true);
             var backendSourceC = new BackendSource(Type: "C", new Uri("", UriKind.Relative), new Dictionary<string, string>(), Publish: false);
 
-            var userAConfig = new UserConfiguration("UserA", new List<BackendSource>() { backendSourceA });
-            var userBConfig = new UserConfiguration("UserB", new List<BackendSource>() { backendSourceB, backendSourceC });
+            var appState = new AppState()
+            {
+                Project = new NexusProject(default, new Dictionary<string, UserConfiguration>()
+                {
+                    ["UserA"] = new UserConfiguration(new Dictionary<Guid, BackendSource>() 
+                    { 
+                        [Guid.NewGuid()] = backendSourceA
+                    }),
+                    ["UserB"] = new UserConfiguration(new Dictionary<Guid, BackendSource>() 
+                    {
+                        [Guid.NewGuid()] = backendSourceB,
+                        [Guid.NewGuid()] = backendSourceC
+                    })
+                })
+            };
 
+            // databaseManager
             var databaseManager = Mock.Of<IDatabaseManager>();
-
-            Mock.Get(databaseManager)
-              .Setup(databaseManager => databaseManager.EnumerateUserConfigs())
-              .Returns(new[] { JsonSerializer.Serialize(userAConfig), JsonSerializer.Serialize(userBConfig) });
 
             Mock.Get(databaseManager)
                .Setup(databaseManager => databaseManager.TryReadCatalogMetadata(
@@ -128,6 +138,7 @@ namespace Services
 
             /* catalogManager */
             var catalogManager = new CatalogManager(
+                appState,
                 dataControllerService,
                 databaseManager,
                 userManagerWrapper,

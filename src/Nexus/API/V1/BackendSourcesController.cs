@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Nexus.Core;
 using Nexus.Models;
+using Nexus.Services;
 
 namespace Nexus.Controllers.V1
 {
@@ -16,14 +18,19 @@ namespace Nexus.Controllers.V1
 
         #region Fields
 
+        AppState _appState;
+        AppStateManager _appStateManager;
 
         #endregion
 
         #region Constructors
 
         public BackendSourcesController(
-            )
+            AppState appState,
+            AppStateManager appStateManager)
         {
+            _appState = appState;
+            _appStateManager = appStateManager;
         }
 
         #endregion
@@ -38,8 +45,13 @@ namespace Nexus.Controllers.V1
         public Task<IReadOnlyDictionary<Guid, BackendSource>>
             GetBackendSourcesAsync()
         {
-#error Implement this! CatalogManager loads UserConfig ... but it should be loaded earlier and be part of the AppState!
-            return Task.FromResult(_appState.Project.BackendSources);
+            var username = this.User.Identity.Name;
+
+            if (_appState.Project.UserConfigurations.TryGetValue(username, out var userConfiguration))
+                return Task.FromResult(userConfiguration.BackendSources);
+
+            else
+                return Task.FromResult((IReadOnlyDictionary<Guid, BackendSource>)new Dictionary<Guid, BackendSource>());
         }
 
         /// <summary>
@@ -53,8 +65,9 @@ namespace Nexus.Controllers.V1
             Guid backendSourceId,
             [FromBody] PutBackendSourceRequest request)
         {
-            return _appStateManager.PutBackendSourceAsync(backendSourceId, request.BackendSource);
+            var username = this.User.Identity.Name;
 
+            return _appStateManager.PutBackendSourceAsync(username, backendSourceId, request.BackendSource);
         }
 
         /// <summary>
@@ -66,7 +79,9 @@ namespace Nexus.Controllers.V1
             DeleteBackendSourceAsync(
             Guid backendSourceId)
         {
-            return _appStateManager.DeleteBackendSourceAsync(backendSourceId);
+            var username = this.User.Identity.Name;
+
+            return _appStateManager.DeleteBackendSourceAsync(username, backendSourceId);
         }
 
         #endregion

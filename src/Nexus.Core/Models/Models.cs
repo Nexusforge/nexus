@@ -6,15 +6,15 @@ using System.Linq;
 namespace Nexus.Models
 {
     internal record NexusProject(
-        IReadOnlyDictionary<Guid, PackageReference> PackageReferences);
+        IReadOnlyDictionary<Guid, PackageReference> PackageReferences,
+        IReadOnlyDictionary<string, UserConfiguration> UserConfigurations);
 
     public record PackageReference(
         string Provider,
         Dictionary<string, string> Configuration);
 
     internal record UserConfiguration(
-        string Username,
-        List<BackendSource> BackendSources);
+        IReadOnlyDictionary<Guid, BackendSource> BackendSources);
 
     /// <summary>
     /// An extension description.

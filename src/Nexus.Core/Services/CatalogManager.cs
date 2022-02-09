@@ -31,6 +31,7 @@ namespace Nexus.Services
 
         #region Fields
 
+        private AppState _appState;
         private IDataControllerService _dataControllerService;
         private IDatabaseManager _databaseManager;
         private IUserManagerWrapper _userManagerWrapper;
@@ -42,12 +43,14 @@ namespace Nexus.Services
         #region Constructors
 
         public CatalogManager(
+            AppState appState,
             IDataControllerService dataControllerService, 
             IDatabaseManager databaseManager,
             IUserManagerWrapper userManagerWrapper,
             IOptions<SecurityOptions> securityOptions,
             ILogger<CatalogManager> logger)
         {
+            _appState = appState;
             _dataControllerService = dataControllerService;
             _databaseManager = databaseManager;
             _userManagerWrapper = userManagerWrapper;
@@ -102,18 +105,15 @@ namespace Nexus.Services
                 }
 
                 /* => for each user with existing config file */
-                foreach (var jsonString in _databaseManager.EnumerateUserConfigs())
+                foreach (var (username, userConfiguration) in _appState.Project.UserConfigurations)
                 {
-                    var userConfig = JsonSerializer.Deserialize<UserConfiguration>(jsonString)
-                        ?? throw new Exception("userConfig is null");
-
-                    var user = await _userManagerWrapper.GetClaimsPrincipalAsync(userConfig.Username);
+                    var user = await _userManagerWrapper.GetClaimsPrincipalAsync(username);
 
                     if (user is null)
                         continue;
 
                     /* for each backend source */
-                    foreach (var backendSource in userConfig.BackendSources)
+                    foreach (var backendSource in userConfiguration.BackendSources.Values)
                     {
                         using var controller = await _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken);
                         var catalogIds = await controller.GetCatalogRegistrationsAsync(path, cancellationToken);

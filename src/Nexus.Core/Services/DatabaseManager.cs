@@ -13,9 +13,6 @@ namespace Nexus.Services
         bool TryReadCatalogMetadata(string catalogId, [NotNullWhen(true)] out string? catalogMetadata);
         Stream WriteCatalogMetadata(string catalogId);
 
-        /* /users/user_id.json */
-        IEnumerable<string> EnumerateUserConfigs();
-
         /* /config/project.json */
         bool TryReadProject([NotNullWhen(true)] out string? project);
         Stream WriteProject();
@@ -35,7 +32,6 @@ namespace Nexus.Services
         // generated, small files:
         //
         // <application data>/config/catalogs/catalog_id.json
-        // <application data>/config/users/user_name.json
         // <application data>/config/project.json
         // <application data>/config/users.db
 
@@ -83,20 +79,6 @@ namespace Nexus.Services
             var filePath = Path.Combine(folderPath, catalogMetadataFileName);
 
             return File.Open(filePath, FileMode.Create, FileAccess.Write);
-        }
-
-        /* /users/user_id.json */
-        public IEnumerable<string> EnumerateUserConfigs()
-        {
-            var userFolder = Path.Combine(_pathsOptions.Config, "users");
-
-            if (Directory.Exists(userFolder))
-                return Directory
-                    .EnumerateFiles(userFolder)
-                    .Select(filePath => File.ReadAllText(filePath));
-
-            else
-                return Enumerable.Empty<string>();
         }
 
         /* /config/project.json */

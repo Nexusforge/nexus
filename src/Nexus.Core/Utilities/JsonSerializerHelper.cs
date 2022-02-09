@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -10,7 +11,8 @@ namespace Nexus.Utilities
         private static JsonSerializerOptions _options = new JsonSerializerOptions()
         {
             WriteIndented = true,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
         };
 
         public static string SerializeIntended<T>(T value)

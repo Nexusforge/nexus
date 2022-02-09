@@ -20,6 +20,7 @@ namespace Nexus.Services
         private IDatabaseManager _databaseManager;
         private ILogger<AppStateManager> _logger;
         private SemaphoreSlim _reloadPackagesSemaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
+        private SemaphoreSlim _projectSemaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
 
         #endregion
 
@@ -49,7 +50,9 @@ namespace Nexus.Services
 
         #region Methods
 
-        public async Task LoadPackagesAsync(IProgress<double> progress, CancellationToken cancellationToken)
+        public async Task LoadPackagesAsync(
+            IProgress<double> progress,
+            CancellationToken cancellationToken)
         {
             await _reloadPackagesSemaphore.WaitAsync();
 
@@ -88,42 +91,141 @@ namespace Nexus.Services
             Guid packageReferenceId,
             PackageReference packageReference)
         {
-            var project = AppState.Project;
+            await _projectSemaphore.WaitAsync();
 
-            var packageReferences = project.PackageReferences
-                .ToDictionary(current => current.Key, current => current.Value);
+            try
+            {
+                var project = AppState.Project;
 
-            packageReferences[packageReferenceId] = packageReference;
+                var newPackageReferences = project.PackageReferences
+                    .ToDictionary(current => current.Key, current => current.Value);
 
-            var newProject = project with 
-            { 
-                PackageReferences = packageReferences
-            };
+                newPackageReferences[packageReferenceId] = packageReference;
 
-            using var stream = _databaseManager.WriteProject();
-            await JsonSerializerHelper.SerializeIntendedAsync(stream, newProject);
+                var newProject = project with
+                {
+                    PackageReferences = newPackageReferences
+                };
 
-            AppState.Project = newProject;
+                await this.SaveProjectAsync(newProject);
+
+                AppState.Project = newProject;
+            }
+            finally
+            {
+                _projectSemaphore.Release();
+            }
         }
 
-        public async Task DeletePackageReferenceAsync(Guid packageReferenceId)
+        public async Task DeletePackageReferenceAsync(
+            Guid packageReferenceId)
         {
-            var project = AppState.Project;
+            await _projectSemaphore.WaitAsync();
 
-            var packageReferences = project.PackageReferences
-                .ToDictionary(current => current.Key, current => current.Value);
-
-            packageReferences.Remove(packageReferenceId);
-
-            var newProject = project with
+            try
             {
-                PackageReferences = packageReferences
-            };
+                var project = AppState.Project;
 
-            using var stream = _databaseManager.WriteProject();
-            await JsonSerializerHelper.SerializeIntendedAsync(stream, newProject);
+                var newPackageReferences = project.PackageReferences
+                    .ToDictionary(current => current.Key, current => current.Value);
 
-            AppState.Project = newProject;
+                newPackageReferences.Remove(packageReferenceId);
+
+                var newProject = project with
+                {
+                    PackageReferences = newPackageReferences
+                };
+
+                await this.SaveProjectAsync(newProject);
+
+                AppState.Project = newProject;
+            }
+            finally
+            {
+                _projectSemaphore.Release();
+            }
+        }
+
+        public async Task PutBackendSourceAsync(string username, Guid backendSourceId, BackendSource backendSource)
+        {
+            await _projectSemaphore.WaitAsync();
+
+            try
+            {
+                var project = AppState.Project;
+
+                if (!project.UserConfigurations.TryGetValue(username, out var userConfiguration))
+                    userConfiguration = new UserConfiguration(new Dictionary<Guid, BackendSource>());
+
+                var newBackendSources = userConfiguration.BackendSources
+                    .ToDictionary(current => current.Key, current => current.Value);
+
+                newBackendSources[backendSourceId] = backendSource;
+
+                var newUserConfiguration = userConfiguration with
+                {
+                    BackendSources = newBackendSources
+                };
+
+                var userConfigurations = project.UserConfigurations
+                    .ToDictionary(current => current.Key, current => current.Value);
+
+                userConfigurations[username] = newUserConfiguration;
+
+                var newProject = project with
+                {
+                    UserConfigurations = userConfigurations
+                };
+
+                await this.SaveProjectAsync(newProject);
+
+                AppState.Project = newProject;
+            }
+            finally
+            {
+                _projectSemaphore.Release();
+            }
+        }
+
+        public async Task DeleteBackendSourceAsync(string username, Guid backendSourceId)
+        {
+            await _projectSemaphore.WaitAsync();
+
+            try
+            {
+                var project = AppState.Project;
+
+                if (!project.UserConfigurations.TryGetValue(username, out var userConfiguration))
+                    return;
+
+                var newBackendSources = userConfiguration.BackendSources
+                    .ToDictionary(current => current.Key, current => current.Value);
+
+                newBackendSources.Remove(backendSourceId);
+
+                var newUserConfiguration = userConfiguration with
+                {
+                    BackendSources = newBackendSources
+                };
+
+                var userConfigurations = project.UserConfigurations
+                    .ToDictionary(current => current.Key, current => current.Value);
+
+                userConfigurations[username] = newUserConfiguration;
+
+                var newProject = project with
+                {
+                    UserConfigurations = userConfigurations
+                };
+
+                await this.SaveProjectAsync(newProject);
+
+                AppState.Project = newProject;
+            }
+            finally
+            {
+                _projectSemaphore.Release();
+            }
         }
 
         private void LoadDataWriters()
@@ -154,6 +256,12 @@ namespace Nexus.Services
             }
 
             AppState.DataWriterInfoMap = dataWriterInfoMap;
+        }
+
+        private Task SaveProjectAsync(NexusProject project)
+        {
+            using var stream = _databaseManager.WriteProject();
+            return JsonSerializerHelper.SerializeIntendedAsync(stream, project);
         }
 
         #endregion

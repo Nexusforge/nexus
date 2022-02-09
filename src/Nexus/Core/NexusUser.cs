@@ -18,7 +18,7 @@ namespace Nexus.Core
             //
         }
 
-        public NexusUser(string userName) : base(userName)
+        public NexusUser(string username) : base(username)
         {
             //
         }

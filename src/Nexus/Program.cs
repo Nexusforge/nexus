@@ -63,7 +63,7 @@ try
 
     // Run
     var baseUrl = $"{serverOptions.HttpScheme}://{serverOptions.HttpAddress}:{serverOptions.HttpPort}";
-    app.Run();
+    app.Run(baseUrl);
 }
 catch (Exception ex)
 {
@@ -296,7 +296,9 @@ async Task InitializeAppAsync(
         appState.Project = JsonSerializer.Deserialize<NexusProject>(project);
     
     else
-        appState.Project = new NexusProject(default);
+        appState.Project = new NexusProject(
+            new Dictionary<Guid, PackageReference>(),
+            new Dictionary<string, UserConfiguration>());
 
     // user manager
     await InitializeDatabaseAsync(serviceProvier, pathsOptions, securityOptions, logger);

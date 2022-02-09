@@ -14,6 +14,9 @@ namespace Nexus.Controllers.V1
     [Route("api/v{version:apiVersion}/[controller]")]
     internal class ExtensionsController : ControllerBase
     {
+        // GET      /api/extensions/sources
+        // GET      /api/extensions/writers
+
         #region Fields
 
         IExtensionHive _extensionHive;
