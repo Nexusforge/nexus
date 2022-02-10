@@ -9,7 +9,7 @@ using System.Text;
 namespace SourceGenerator
 {
     [Generator]
-    public class HelloSourceGenerator : ISourceGenerator
+    public class OpenApiClientGenerator : ISourceGenerator
     {
         private static DiagnosticDescriptor n0000 = new DiagnosticDescriptor(
             "N0000",
