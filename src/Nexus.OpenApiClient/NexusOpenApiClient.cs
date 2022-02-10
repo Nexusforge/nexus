@@ -20,7 +20,7 @@ namespace Nexus.Client
         private HttpClient _httpClient;
 
         private ArtifactsClient _artifacts;
-        private BackendSourcesClient _backendSources;
+        private DataSourceRegistrationsClient _registrations;
         private CatalogsClient _catalogs;
         private ExtensionsClient _extensions;
         private DataClient _data;
@@ -38,7 +38,7 @@ namespace Nexus.Client
             _httpClient = httpClient ?? new HttpClient();
 
             _artifacts = new ArtifactsClient(baseUrl, _httpClient) { Client = this };
-            _backendSources = new BackendSourcesClient(baseUrl, _httpClient) { Client = this };
+            _registrations = new DataSourceRegistrationsClient(baseUrl, _httpClient) { Client = this };
             _catalogs = new CatalogsClient(baseUrl, _httpClient) { Client = this };
             _extensions = new ExtensionsClient(baseUrl, _httpClient) { Client = this };
             _data = new DataClient(baseUrl, _httpClient) { Client = this };
@@ -60,7 +60,7 @@ namespace Nexus.Client
         /// <summary>
         /// Gets the backend sources client.
         /// </summary>
-        public IBackendSourcesClient BackendSourcesClient => _backendSources;
+        public IDataSourceRegistrationsClient DataSourceRegistrationsClient => _registrations;
 
         /// <summary>
         /// Gets the catalogs client.

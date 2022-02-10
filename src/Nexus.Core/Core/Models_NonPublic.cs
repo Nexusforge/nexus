@@ -7,7 +7,7 @@ namespace Nexus.Core
         IReadOnlyDictionary<string, UserConfiguration> UserConfigurations);
 
     internal record UserConfiguration(
-        IReadOnlyDictionary<Guid, BackendSource> BackendSources);
+        IReadOnlyDictionary<Guid, DataSourceRegistration> DataSourceRegistrations);
 
     internal record CatalogState(
         CatalogContainer Root,

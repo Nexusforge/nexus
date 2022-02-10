@@ -153,8 +153,8 @@ namespace Nexus.Services
 
             foreach (var entry in exportContext.CatalogItemsMap)
             {
-                var backendSource = entry.Key.BackendSource;
-                var dataSourceController = await _dataControllerService.GetDataSourceControllerAsync(backendSource, cancellationToken);
+                var registration = entry.Key.DataSourceRegistration;
+                var dataSourceController = await _dataControllerService.GetDataSourceControllerAsync(registration, cancellationToken);
                 var catalogItemPipeWriters = new List<CatalogItemPipeWriter>();
 
                 foreach (var catalogItem in entry.Value)

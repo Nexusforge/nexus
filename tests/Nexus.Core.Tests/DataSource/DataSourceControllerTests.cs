@@ -32,16 +32,16 @@ namespace DataSource
               .Setup(dataSource => dataSource.SetContextAsync(It.IsAny<DataSourceContext>(), It.IsAny<CancellationToken>()))
               .Callback<DataSourceContext, CancellationToken>((context, cancellationToken) => dataSourceContext = context);
 
-            var backendSourceConfiguration = new Dictionary<string, string>()
+            var registrationConfiguration = new Dictionary<string, string>()
             {
                 ["foo"] = "to_be_overriden",
                 ["foo3"] = "bat",
             };
 
-            var backendSource = new BackendSource(
+            var registration = new DataSourceRegistration(
                 Type: default!,
                 ResourceLocator: default!,
-                Configuration: backendSourceConfiguration,
+                Configuration: registrationConfiguration,
                 Publish: true);
 
             var userConfiguration = new Dictionary<string, string>()
@@ -52,7 +52,7 @@ namespace DataSource
 
             var controller = new DataSourceController(
                 dataSource,
-                backendSource,
+                registration,
                 userConfiguration,
                 NullLogger<DataSourceController>.Instance);
 

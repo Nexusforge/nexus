@@ -17,18 +17,18 @@ namespace Nexus.Core
         private IDataControllerService _dataControllerService;
 
         public CatalogContainer(
-            CatalogRegistration registration,
+            CatalogRegistration catalogRegistration,
             ClaimsPrincipal owner,
-            BackendSource backendSource,
+            DataSourceRegistration dataSourceRegistration,
             CatalogMetadata metadata,
             ICatalogManager catalogManager,
             IDatabaseManager databaseManager,
             IDataControllerService dataControllerService)
         {
-            this.Id = registration.Path;
-            this.IsTransient = registration.IsTransient;
+            this.Id = catalogRegistration.Path;
+            this.IsTransient = catalogRegistration.IsTransient;
             this.Owner = owner;
-            this.BackendSource = backendSource;
+            this.DataSourceRegistration = dataSourceRegistration;
             this.Metadata = metadata;
 
             _catalogManager = catalogManager;
@@ -44,7 +44,7 @@ namespace Nexus.Core
 
         public string PhysicalName => this.Id.TrimStart('/').Replace('/', '_');
 
-        public BackendSource BackendSource { get; }
+        public DataSourceRegistration DataSourceRegistration { get; }
 
         public CatalogMetadata Metadata { get; internal set; }
 
@@ -121,7 +121,7 @@ namespace Nexus.Core
                 var catalogBegin = default(DateTime);
                 var catalogEnd = default(DateTime);
 
-                using var controller = await _dataControllerService.GetDataSourceControllerAsync(this.BackendSource, cancellationToken);
+                using var controller = await _dataControllerService.GetDataSourceControllerAsync(this.DataSourceRegistration, cancellationToken);
                 var catalog = await controller.GetCatalogAsync(this.Id, cancellationToken);
 
                 // get begin and end of project

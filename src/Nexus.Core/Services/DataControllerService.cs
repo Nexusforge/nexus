@@ -11,7 +11,7 @@ namespace Nexus.Services
     internal interface IDataControllerService
     {
         Task<IDataSourceController> GetDataSourceControllerAsync(
-            BackendSource backendSource,
+            DataSourceRegistration registration,
             CancellationToken cancellationToken);
 
         Task<IDataWriterController> GetDataWriterControllerAsync(
@@ -46,18 +46,18 @@ namespace Nexus.Services
         }
 
         public async Task<IDataSourceController> GetDataSourceControllerAsync(
-            BackendSource backendSource,
+            DataSourceRegistration registration,
             CancellationToken cancellationToken)
         {
             var logger1 = _loggerFactory.CreateLogger<DataSourceController>();
-            var logger2 = _loggerFactory.CreateLogger($"{backendSource.Type} - {backendSource.ResourceLocator}");
-            var dataSource = _extensionHive.GetInstance<IDataSource>(backendSource.Type);
+            var logger2 = _loggerFactory.CreateLogger($"{registration.Type} - {registration.ResourceLocator}");
+            var dataSource = _extensionHive.GetInstance<IDataSource>(registration.Type);
             var userConfiguration = this.GetUserConfiguration();
-            var controller = new DataSourceController(dataSource, backendSource, userConfiguration, logger1);
+            var controller = new DataSourceController(dataSource, registration, userConfiguration, logger1);
 
             var actualCatalogCache = _appState.CatalogState.Cache.GetOrAdd(
-                backendSource,
-                backendSource => new ConcurrentDictionary<string, ResourceCatalog>());
+                registration,
+                registration => new ConcurrentDictionary<string, ResourceCatalog>());
 
             await controller.InitializeAsync(actualCatalogCache, logger2, cancellationToken);
 

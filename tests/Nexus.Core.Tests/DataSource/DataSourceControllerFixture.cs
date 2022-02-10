@@ -11,7 +11,7 @@ namespace DataSource
         {
             var dataSource = new InMemory();
 
-            var backendSource = new BackendSource(
+            var registration = new DataSourceRegistration(
                 Type: typeof(InMemory).FullName!, 
                 ResourceLocator: new Uri("memory://localhost"),
                 Configuration: new Dictionary<string, string>(),
@@ -21,7 +21,7 @@ namespace DataSource
 
             this.Controller = new DataSourceController(
                 dataSource,
-                backendSource,
+                registration,
                 userConfiguration,
                 NullLogger<DataSourceController>.Instance);
         }

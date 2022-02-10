@@ -21,12 +21,12 @@ namespace Nexus.Extensibility
 
         public DataSourceController(
             IDataSource dataSource, 
-            BackendSource backendSource,
+            DataSourceRegistration registration,
             IReadOnlyDictionary<string, string> userConfiguration,
             ILogger<DataSourceController> logger)
         {
             this.DataSource = dataSource;
-            this.BackendSource = backendSource;
+            this.DataSourceRegistration = registration;
             this.UserConfiguration = userConfiguration;
             this.Logger = logger;
         }
@@ -39,7 +39,7 @@ namespace Nexus.Extensibility
 
         private IDataSource DataSource { get; }
 
-        private BackendSource BackendSource { get; }
+        private DataSourceRegistration DataSourceRegistration { get; }
 
         internal IReadOnlyDictionary<string, string> UserConfiguration { get; }
 
@@ -53,7 +53,7 @@ namespace Nexus.Extensibility
         {
             _catalogCache = catalogCache;
 
-            var mergedConfiguration = this.BackendSource.Configuration
+            var mergedConfiguration = this.DataSourceRegistration.Configuration
                 .ToDictionary(entry => entry.Key, entry => entry.Value);
 
             foreach (var entry in this.UserConfiguration)
@@ -62,7 +62,7 @@ namespace Nexus.Extensibility
             }
 
             var context = new DataSourceContext(
-                ResourceLocator: this.BackendSource.ResourceLocator,
+                ResourceLocator: this.DataSourceRegistration.ResourceLocator,
                 Configuration: mergedConfiguration,
                 Logger: logger);
 

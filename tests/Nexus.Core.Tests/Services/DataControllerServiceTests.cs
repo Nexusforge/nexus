@@ -24,7 +24,7 @@ namespace Services
               .Setup(extensionHive => extensionHive.GetInstance<IDataSource>(It.IsAny<string>()))
               .Returns(new InMemory());
 
-            var backendSource = new BackendSource(
+            var registration = new DataSourceRegistration(
                 Type: default!, 
                 new Uri("A", UriKind.Relative), 
                 Configuration: new Dictionary<string, string>(),
@@ -70,7 +70,7 @@ namespace Services
                 loggerFactory);
 
             // Act
-            var actual = await dataControllerService.GetDataSourceControllerAsync(backendSource, CancellationToken.None);
+            var actual = await dataControllerService.GetDataSourceControllerAsync(registration, CancellationToken.None);
 
             // Assert
             var actualCatalog = await actual.GetCatalogAsync("/A/B/C", CancellationToken.None);

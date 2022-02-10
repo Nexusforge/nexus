@@ -114,7 +114,7 @@ namespace Nexus.Controllers.V1
 
             var response = this.ProcessCatalogIdAsync<CatalogTimeRange>(catalogId, async catalogContainer =>
             {
-                using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(catalogContainer.BackendSource, cancellationToken);
+                using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(catalogContainer.DataSourceRegistration, cancellationToken);
                 return await dataSource.GetTimeRangeAsync(catalogContainer.Id, cancellationToken);
             }, cancellationToken);
 
@@ -140,7 +140,7 @@ namespace Nexus.Controllers.V1
 
             var response = this.ProcessCatalogIdAsync<CatalogAvailability>(catalogId, async catalogContainer =>
             {
-                using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(catalogContainer.BackendSource, cancellationToken);
+                using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(catalogContainer.DataSourceRegistration, cancellationToken);
                 return await dataSource.GetAvailabilityAsync(catalogContainer.Id, begin, end, cancellationToken);
             }, cancellationToken);
 

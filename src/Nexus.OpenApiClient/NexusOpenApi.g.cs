@@ -237,7 +237,7 @@ namespace Nexus.Client
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "13.15.7.0 (NJsonSchema v10.6.7.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial interface IBackendSourcesClient
+    public partial interface IDataSourceRegistrationsClient
     {
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
@@ -245,35 +245,35 @@ namespace Nexus.Client
         /// Gets the list of backend sources.
         /// </summary>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<System.Collections.Generic.IDictionary<string, BackendSource>> GetBackendSourcesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<System.Collections.Generic.IDictionary<string, DataSourceRegistration>> GetDataSourceRegistrationsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Puts a backend source.
         /// </summary>
-        /// <param name="backendSourceId">The identifier of the backend source.</param>
-        /// <param name="backendSource">The backend source to put.</param>
+        /// <param name="registrationId">The identifier of the backend source.</param>
+        /// <param name="registration">The backend source to put.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task PutBackendSourceAsync(System.Guid backendSourceId, BackendSource backendSource, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task PutDataSourceRegistrationAsync(System.Guid registrationId, DataSourceRegistration registration, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Deletes a backend source.
         /// </summary>
-        /// <param name="backendSourceId">The ID of the backend source.</param>
+        /// <param name="registrationId">The ID of the backend source.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task DeleteBackendSourceAsync(System.Guid backendSourceId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task DeleteDataSourceRegistrationAsync(System.Guid registrationId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "13.15.7.0 (NJsonSchema v10.6.7.0 (Newtonsoft.Json v13.0.0.0))")]
-    internal partial class BackendSourcesClient : NexusOpenApiClientBase, IBackendSourcesClient
+    internal partial class DataSourceRegistrationsClient : NexusOpenApiClientBase, IDataSourceRegistrationsClient
     {
         private string _baseUrl = "";
         private System.Net.Http.HttpClient _httpClient;
         private System.Lazy<System.Text.Json.JsonSerializerOptions> _settings;
 
-        public BackendSourcesClient(string baseUrl, System.Net.Http.HttpClient httpClient)
+        public DataSourceRegistrationsClient(string baseUrl, System.Net.Http.HttpClient httpClient)
         {
             BaseUrl = baseUrl;
             _httpClient = httpClient;
@@ -302,7 +302,7 @@ namespace Nexus.Client
         /// Gets the list of backend sources.
         /// </summary>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<System.Collections.Generic.IDictionary<string, BackendSource>> GetBackendSourcesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<System.Collections.Generic.IDictionary<string, DataSourceRegistration>> GetDataSourceRegistrationsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/backendsources");
@@ -339,7 +339,7 @@ namespace Nexus.Client
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            var objectResponse_ = await ReadObjectResponseAsync<System.Collections.Generic.IDictionary<string, BackendSource>>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            var objectResponse_ = await ReadObjectResponseAsync<System.Collections.Generic.IDictionary<string, DataSourceRegistration>>(response_, headers_, cancellationToken).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
                                 throw new NexusApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
@@ -370,20 +370,20 @@ namespace Nexus.Client
         /// <summary>
         /// Puts a backend source.
         /// </summary>
-        /// <param name="backendSourceId">The identifier of the backend source.</param>
-        /// <param name="backendSource">The backend source to put.</param>
+        /// <param name="registrationId">The identifier of the backend source.</param>
+        /// <param name="registration">The backend source to put.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task PutBackendSourceAsync(System.Guid backendSourceId, BackendSource backendSource, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task PutDataSourceRegistrationAsync(System.Guid registrationId, DataSourceRegistration registration, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
-            if (backendSourceId == null)
-                throw new System.ArgumentNullException("backendSourceId");
+            if (registrationId == null)
+                throw new System.ArgumentNullException("registrationId");
 
-            if (backendSource == null)
-                throw new System.ArgumentNullException("backendSource");
+            if (registration == null)
+                throw new System.ArgumentNullException("registration");
 
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/backendsources/{backendSourceId}");
-            urlBuilder_.Replace("{backendSourceId}", System.Uri.EscapeDataString(ConvertToString(backendSourceId, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/backendsources/{registrationId}");
+            urlBuilder_.Replace("{registrationId}", System.Uri.EscapeDataString(ConvertToString(registrationId, System.Globalization.CultureInfo.InvariantCulture)));
 
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -391,7 +391,7 @@ namespace Nexus.Client
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
-                    var content_ = new System.Net.Http.StringContent(System.Text.Json.JsonSerializer.Serialize(backendSource, _settings.Value));
+                    var content_ = new System.Net.Http.StringContent(System.Text.Json.JsonSerializer.Serialize(registration, _settings.Value));
                     content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
                     request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("PUT");
@@ -445,16 +445,16 @@ namespace Nexus.Client
         /// <summary>
         /// Deletes a backend source.
         /// </summary>
-        /// <param name="backendSourceId">The ID of the backend source.</param>
+        /// <param name="registrationId">The ID of the backend source.</param>
         /// <exception cref="NexusApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task DeleteBackendSourceAsync(System.Guid backendSourceId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task DeleteDataSourceRegistrationAsync(System.Guid registrationId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
-            if (backendSourceId == null)
-                throw new System.ArgumentNullException("backendSourceId");
+            if (registrationId == null)
+                throw new System.ArgumentNullException("registrationId");
 
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/backendsources/{backendSourceId}");
-            urlBuilder_.Replace("{backendSourceId}", System.Uri.EscapeDataString(ConvertToString(backendSourceId, System.Globalization.CultureInfo.InvariantCulture)));
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/backendsources/{registrationId}");
+            urlBuilder_.Replace("{registrationId}", System.Uri.EscapeDataString(ConvertToString(registrationId, System.Globalization.CultureInfo.InvariantCulture)));
 
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -3416,7 +3416,7 @@ namespace Nexus.Client
     /// A backend source.
     /// </summary>
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.15.7.0 (NJsonSchema v10.6.7.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class BackendSource
+    public partial class DataSourceRegistration
     {
         /// <summary>
         /// The type of the backend source.

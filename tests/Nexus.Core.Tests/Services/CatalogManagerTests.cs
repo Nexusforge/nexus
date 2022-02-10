@@ -30,8 +30,8 @@ namespace Services
             var dataControllerService = Mock.Of<IDataControllerService>();
 
             Mock.Get(dataControllerService)
-                .Setup(s => s.GetDataSourceControllerAsync(It.IsAny<BackendSource>(), It.IsAny<CancellationToken>()))
-                .Returns<BackendSource, CancellationToken>((backendSource, cancellationToken) =>
+                .Setup(s => s.GetDataSourceControllerAsync(It.IsAny<DataSourceRegistration>(), It.IsAny<CancellationToken>()))
+                .Returns<DataSourceRegistration, CancellationToken>((registration, cancellationToken) =>
                 {
                     var dataSourceController = Mock.Of<IDataSourceController>();
 
@@ -39,7 +39,7 @@ namespace Services
                         .Setup(s => s.GetCatalogRegistrationsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                         .Returns<string, CancellationToken>((path, cancellationToken) =>
                         {
-                            var type = backendSource.Type;
+                            var type = registration.Type;
 
                             return (type, path) switch
                             {
@@ -55,22 +55,22 @@ namespace Services
                 });
 
             /* appState */
-            var backendSourceA = new BackendSource(Type: "A", new Uri("", UriKind.Relative), new Dictionary<string, string>(), Publish: true);
-            var backendSourceB = new BackendSource(Type: "B", new Uri("", UriKind.Relative), new Dictionary<string, string>(), Publish: true);
-            var backendSourceC = new BackendSource(Type: "C", new Uri("", UriKind.Relative), new Dictionary<string, string>(), Publish: false);
+            var registrationA = new DataSourceRegistration(Type: "A", new Uri("", UriKind.Relative), new Dictionary<string, string>(), Publish: true);
+            var registrationB = new DataSourceRegistration(Type: "B", new Uri("", UriKind.Relative), new Dictionary<string, string>(), Publish: true);
+            var registrationC = new DataSourceRegistration(Type: "C", new Uri("", UriKind.Relative), new Dictionary<string, string>(), Publish: false);
 
             var appState = new AppState()
             {
                 Project = new NexusProject(default!, new Dictionary<string, UserConfiguration>()
                 {
-                    ["UserA"] = new UserConfiguration(new Dictionary<Guid, BackendSource>() 
+                    ["UserA"] = new UserConfiguration(new Dictionary<Guid, DataSourceRegistration>() 
                     { 
-                        [Guid.NewGuid()] = backendSourceA
+                        [Guid.NewGuid()] = registrationA
                     }),
-                    ["UserB"] = new UserConfiguration(new Dictionary<Guid, BackendSource>() 
+                    ["UserB"] = new UserConfiguration(new Dictionary<Guid, DataSourceRegistration>() 
                     {
-                        [Guid.NewGuid()] = backendSourceB,
-                        [Guid.NewGuid()] = backendSourceC
+                        [Guid.NewGuid()] = registrationB,
+                        [Guid.NewGuid()] = registrationC
                     })
                 })
             };
@@ -148,34 +148,34 @@ namespace Services
 
             Assert.Contains(
                 rootCatalogContainers,
-                container => container.Id == "/A" && container.BackendSource == backendSourceA && container.Owner == userA);
+                container => container.Id == "/A" && container.DataSourceRegistration == registrationA && container.Owner == userA);
 
             Assert.Contains(
                 rootCatalogContainers,
-                container => container.Id == "/B/A" && container.BackendSource == backendSourceA && container.Owner == userA);
+                container => container.Id == "/B/A" && container.DataSourceRegistration == registrationA && container.Owner == userA);
 
             Assert.Contains(
                 rootCatalogContainers,
-                container => container.Id == "/B/B" && container.BackendSource == backendSourceB && container.Owner == userB);
+                container => container.Id == "/B/B" && container.DataSourceRegistration == registrationB && container.Owner == userB);
 
             Assert.Contains(
                 rootCatalogContainers,
-                container => container.Id == "/B/B2" && container.BackendSource == backendSourceB && container.Owner == userB);
+                container => container.Id == "/B/B2" && container.DataSourceRegistration == registrationB && container.Owner == userB);
 
             Assert.Contains(
                 rootCatalogContainers,
-                container => container.Id == "/C/A" && container.BackendSource == backendSourceC && container.Owner == userB);
+                container => container.Id == "/C/A" && container.DataSourceRegistration == registrationC && container.Owner == userB);
 
             // assert 'A'
             Assert.Equal(2, ACatalogContainers.Length);
 
             Assert.Contains(
                 ACatalogContainers,
-                container => container.Id == "/A/B" && container.BackendSource == backendSourceA && container.Owner == userA);
+                container => container.Id == "/A/B" && container.DataSourceRegistration == registrationA && container.Owner == userA);
 
             Assert.Contains(
                 ACatalogContainers,
-                container => container.Id == "/A/C/A" && container.BackendSource == backendSourceA && container.Owner == userA);
+                container => container.Id == "/A/C/A" && container.DataSourceRegistration == registrationA && container.Owner == userA);
         }
 
         [Fact]
@@ -196,8 +196,8 @@ namespace Services
             var dataControllerService = Mock.Of<IDataControllerService>();
 
             Mock.Get(dataControllerService)
-                .Setup(s => s.GetDataSourceControllerAsync(It.IsAny<BackendSource>(), It.IsAny<CancellationToken>()))
-                .Returns<BackendSource, CancellationToken>((backendSource, cancellationToken) =>
+                .Setup(s => s.GetDataSourceControllerAsync(It.IsAny<DataSourceRegistration>(), It.IsAny<CancellationToken>()))
+                .Returns<DataSourceRegistration, CancellationToken>((registration, cancellationToken) =>
                 {
                     var dataSourceController = Mock.Of<IDataSourceController>();
 
@@ -222,7 +222,7 @@ namespace Services
                     .Build());
 
             /* backend sources */
-            var backendSource = new BackendSource(
+            var registration = new DataSourceRegistration(
                 Type: "A", 
                 ResourceLocator: new Uri("A", UriKind.Relative),
                 Configuration: default!,
@@ -232,7 +232,7 @@ namespace Services
             var catalogContainer = new CatalogContainer(
                 new CatalogRegistration("/A"),
                 default!, 
-                backendSource,
+                registration,
                 catalogMetadata, 
                 default!,
                 default!, 

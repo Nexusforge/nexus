@@ -140,7 +140,7 @@ namespace Nexus.Services
             }
         }
 
-        public async Task PutBackendSourceAsync(string username, Guid backendSourceId, BackendSource backendSource)
+        public async Task PutDataSourceRegistrationAsync(string username, Guid registrationId, DataSourceRegistration registration)
         {
             await _projectSemaphore.WaitAsync();
 
@@ -149,16 +149,16 @@ namespace Nexus.Services
                 var project = AppState.Project;
 
                 if (!project.UserConfigurations.TryGetValue(username, out var userConfiguration))
-                    userConfiguration = new UserConfiguration(new Dictionary<Guid, BackendSource>());
+                    userConfiguration = new UserConfiguration(new Dictionary<Guid, DataSourceRegistration>());
 
-                var newBackendSources = userConfiguration.BackendSources
+                var newDataSourceRegistrations = userConfiguration.DataSourceRegistrations
                     .ToDictionary(current => current.Key, current => current.Value);
 
-                newBackendSources[backendSourceId] = backendSource;
+                newDataSourceRegistrations[registrationId] = registration;
 
                 var newUserConfiguration = userConfiguration with
                 {
-                    BackendSources = newBackendSources
+                    DataSourceRegistrations = newDataSourceRegistrations
                 };
 
                 var userConfigurations = project.UserConfigurations
@@ -181,7 +181,7 @@ namespace Nexus.Services
             }
         }
 
-        public async Task DeleteBackendSourceAsync(string username, Guid backendSourceId)
+        public async Task DeleteDataSourceRegistrationAsync(string username, Guid registrationId)
         {
             await _projectSemaphore.WaitAsync();
 
@@ -192,14 +192,14 @@ namespace Nexus.Services
                 if (!project.UserConfigurations.TryGetValue(username, out var userConfiguration))
                     return;
 
-                var newBackendSources = userConfiguration.BackendSources
+                var newDataSourceRegistrations = userConfiguration.DataSourceRegistrations
                     .ToDictionary(current => current.Key, current => current.Value);
 
-                newBackendSources.Remove(backendSourceId);
+                newDataSourceRegistrations.Remove(registrationId);
 
                 var newUserConfiguration = userConfiguration with
                 {
-                    BackendSources = newBackendSources
+                    DataSourceRegistrations = newDataSourceRegistrations
                 };
 
                 var userConfigurations = project.UserConfigurations

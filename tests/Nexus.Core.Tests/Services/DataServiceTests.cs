@@ -26,8 +26,8 @@ namespace Services
             var samplePeriod = TimeSpan.FromSeconds(1);
             var exportId = Guid.NewGuid();
 
-            var backendSource1 = new BackendSource(Type: "A", new Uri("a", UriKind.Relative), new Dictionary<string, string>(), default);
-            var backendSource2 = new BackendSource(Type: "B", new Uri("a", UriKind.Relative), new Dictionary<string, string>(), default);
+            var registration1 = new DataSourceRegistration(Type: "A", new Uri("a", UriKind.Relative), new Dictionary<string, string>(), default);
+            var registration2 = new DataSourceRegistration(Type: "B", new Uri("a", UriKind.Relative), new Dictionary<string, string>(), default);
 
             // DI services
             var dataSourceController1 = Mock.Of<IDataSourceController>();
@@ -52,13 +52,13 @@ namespace Services
             var dataControllerService = Mock.Of<IDataControllerService>();
 
             Mock.Get(dataControllerService)
-                .Setup(s => s.GetDataSourceControllerAsync(It.IsAny<BackendSource>(), It.IsAny<CancellationToken>()))
-                .Returns<BackendSource, CancellationToken>((backendSource, cancellationToken) =>
+                .Setup(s => s.GetDataSourceControllerAsync(It.IsAny<DataSourceRegistration>(), It.IsAny<CancellationToken>()))
+                .Returns<DataSourceRegistration, CancellationToken>((registration, cancellationToken) =>
                 {
-                    if (backendSource.Type == backendSource1.Type)
+                    if (registration.Type == registration1.Type)
                         return Task.FromResult(dataSourceController1);
 
-                    else if (backendSource.Type == backendSource2.Type)
+                    else if (registration.Type == registration2.Type)
                         return Task.FromResult(dataSourceController2);
 
                     else
@@ -128,8 +128,8 @@ namespace Services
             {
                 var catalogItemsMap = new Dictionary<CatalogContainer, IEnumerable<CatalogItem>>()
                 {
-                    [new CatalogContainer(new CatalogRegistration(catalog1.Id), default!, backendSource1, default!, default!, default!, default!)] = new[] { catalogItem1 },
-                    [new CatalogContainer(new CatalogRegistration(catalog2.Id), default!, backendSource2, default!, default!, default!, default!)] = new[] { catalogItem2 }
+                    [new CatalogContainer(new CatalogRegistration(catalog1.Id), default!, registration1, default!, default!, default!, default!)] = new[] { catalogItem1 },
+                    [new CatalogContainer(new CatalogRegistration(catalog2.Id), default!, registration2, default!, default!, default!, default!)] = new[] { catalogItem2 }
                 };
 
                 var relativeDownloadUrl = await dataService

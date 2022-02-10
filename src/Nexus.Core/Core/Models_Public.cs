@@ -74,7 +74,7 @@ namespace Nexus.Core
     /// <param name="Configuration">Configuration parameters for the instantiated source.</param>
     /// <param name="Publish">A boolean which indicates if the found catalogs should be available for everyone.</param>
     /// <param name="Disable">A boolean which indicates if this backend source should be ignored.</param>
-    public record BackendSource(
+    public record DataSourceRegistration(
         string Type,
         Uri ResourceLocator,
         IReadOnlyDictionary<string, string> Configuration,

@@ -14,20 +14,19 @@ namespace Nexus.Controllers.V1
     [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
-    internal class ExtensionsController : ControllerBase
+    internal class WritersController : ControllerBase
     {
-        // GET      /api/extensions/sources
-        // GET      /api/extensions/writers
+        // GET      /api/writers/descriptions
 
         #region Fields
 
-        IExtensionHive _extensionHive;
+        private IExtensionHive _extensionHive;
 
         #endregion
 
         #region Constructors
 
-        public ExtensionsController(
+        public WritersController(
             IExtensionHive extensionHive)
         {
             _extensionHive = extensionHive;
@@ -35,21 +34,13 @@ namespace Nexus.Controllers.V1
 
         #endregion
 
-        /// <summary>
-        /// Gets the list of sources.
-        /// </summary>
-        [HttpGet("sources")]
-        public Task<ExtensionDescription[]> GetSourcesAsync()
-        {
-            var result = GetExtensionDescriptions(_extensionHive.GetExtensions<IDataSource>());
-            return Task.FromResult(result);
-        }
+        #region Methods
 
         /// <summary>
         /// Gets the list of writers.
         /// </summary>
-        [HttpGet("writers")]
-        public Task<ExtensionDescription[]> GetWritersAsync()
+        [HttpGet("descriptions")]
+        public Task<ExtensionDescription[]> GetWriterDescriptionsAsync()
         {
             var result = GetExtensionDescriptions(_extensionHive.GetExtensions<IDataWriter>());
             return Task.FromResult(result);
@@ -69,5 +60,7 @@ namespace Nexus.Controllers.V1
             })
             .ToArray();
         }
+
+        #endregion
     }
 }
