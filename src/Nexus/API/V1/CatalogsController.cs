@@ -75,9 +75,9 @@ namespace Nexus.Controllers.V1
 
         /// <summary>
         /// Gets a list of child catalog identifiers for the provided parent catalog identifier.
+        /// </summary>
         /// <param name="catalogId">The parent catalog identifier.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
-        /// </summary>
         [HttpGet("{catalogId}/child-catalog-ids")]
         public async Task<ActionResult<string[]>>
             GetChildCatalogIdsAsync(

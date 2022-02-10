@@ -35,6 +35,11 @@
 		As a workaround, add a direct to the OpenApiClient project here.
 	-->
 	<ProjectReference Include="..\Nexus.OpenApiClient\Nexus.OpenApiClient.csproj" />
+
+	<ProjectReference Include="..\Nexus.OpenApiClientGenerator\Nexus.OpenApiClientGenerator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+
   </ItemGroup>
 
 </Project>
