@@ -7,14 +7,10 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Nexus.Core;
 using Nexus.Services;
-using NJsonSchema.Generation;
-using NSwag;
-using NSwag.AspNetCore;
 using Serilog;
 using System.Globalization;
 using System.Security.Claims;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 // culture
@@ -58,7 +54,12 @@ try
     var app = builder.Build();
 
     // Configure the HTTP request pipeline.
-    await ConfigurePipelineAsync(app);
+    ConfigurePipeline(app);
+
+    // initialize app state
+    var pathsOptions = app.Services.GetRequiredService<IOptions<PathsOptions>>();
+    var securityOptions = app.Services.GetRequiredService<IOptions<SecurityOptions>>();
+    await InitializeAppAsync(app.Services, pathsOptions.Value, securityOptions.Value, app.Logger);
 
     // Run
     var baseUrl = $"{serverOptions.HttpScheme}://{serverOptions.HttpAddress}:{serverOptions.HttpPort}";
@@ -134,59 +135,11 @@ void AddServices(IServiceCollection services, IConfiguration configuration)
         options.AddPolicy(Policies.RequireAdmin, policy => policy.RequireClaim(Claims.IS_ADMIN, "true"));
     });
 
-    // swagger (https://github.com/dotnet/aspnet-api-versioning/tree/master/samples/aspnetcore/SwaggerSample)
-    services.AddControllers()
-        .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()))
-        .ConfigureApplicationPartManager(
-            manager =>
-            {
-                manager.FeatureProviders.Add(new InternalControllerFeatureProvider());
-            });
-
-    services.AddApiVersioning(
-        options =>
-        {
-            options.ReportApiVersions = true;
-        });
-
-    services.AddVersionedApiExplorer(
-        options =>
-        {
-            options.GroupNameFormat = "'v'VVV";
-            options.SubstituteApiVersionInUrl = true;
-        });
+    // Open API
+    services.AddNexusOpenApi();
 
     // routing
     services.AddRouting(options => options.LowercaseUrls = true);
-
-    /* not optimal */
-#pragma warning disable ASP0000 // Do not call 'IServiceCollection.BuildServiceProvider' in 'ConfigureServices'
-    var provider = services.BuildServiceProvider().GetRequiredService<IApiVersionDescriptionProvider>();
-#pragma warning restore ASP0000 // Do not call 'IServiceCollection.BuildServiceProvider' in 'ConfigureServices'
-
-    foreach (var description in provider.ApiVersionDescriptions)
-    {
-        services.AddOpenApiDocument(config =>
-        {
-            config.DefaultReferenceTypeNullHandling = ReferenceTypeNullHandling.NotNull;
-
-            config.Title = "Nexus REST API";
-            config.Version = description.GroupName;
-            config.Description = "Explore resources and get their data."
-                + (description.IsDeprecated ? " This API version is deprecated." : "");
-
-            config.ApiGroupNames = new[] { description.GroupName };
-            config.DocumentName = description.GroupName;
-
-            config.AddSecurity("JWT", Enumerable.Empty<string>(), new OpenApiSecurityScheme()
-            {
-                Type = OpenApiSecuritySchemeType.ApiKey,
-                Name = "Authorization",
-                In = OpenApiSecurityApiKeyLocation.Header,
-                Description = "Please enter 'Bearer {your JWT token}'"
-            });
-        });
-    }
 
     // HTTP context
     services.AddHttpContextAccessor();
@@ -213,12 +166,8 @@ void AddServices(IServiceCollection services, IConfiguration configuration)
     services.Configure<SmtpOptions>(configuration.GetSection(SmtpOptions.Section));
 }
 
-Task ConfigurePipelineAsync(WebApplication app)
+void ConfigurePipeline(WebApplication app)
 {
-    var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
-    var pathsOptions = app.Services.GetRequiredService<IOptions<PathsOptions>>();
-    var securityOptions = app.Services.GetRequiredService<IOptions<SecurityOptions>>();
-
     // https://docs.microsoft.com/en-us/aspnet/core/fundamentals/middleware/?view=aspnetcore-6.0
 
     app.UseForwardedHeaders();
@@ -242,21 +191,9 @@ Task ConfigurePipelineAsync(WebApplication app)
     // static files
     app.UseStaticFiles();
 
-    Directory.CreateDirectory(pathsOptions.Value.Artifacts);
-
-    app.UseStaticFiles("/export");
-
-    // swagger
-    app.UseOpenApi();
-    app.UseSwaggerUi3(settings =>
-    {
-        settings.Path = "/api";
-
-        foreach (var description in provider.ApiVersionDescriptions)
-        {
-            settings.SwaggerRoutes.Add(new SwaggerUi3Route(description.GroupName.ToUpperInvariant(), $"/swagger/{description.GroupName}/swagger.json"));
-        }
-    });
+    // Open API
+    var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+    app.UseNexusOpenApi(provider, addExplorer: true);
 
     // Serilog Request Logging (https://andrewlock.net/using-serilog-aspnetcore-in-asp-net-core-3-reducing-log-verbosity/)
     // LogContext properties are not included by default in request logging, workaround: https://nblumhardt.com/2019/10/serilog-mvc-logging/
@@ -275,9 +212,6 @@ Task ConfigurePipelineAsync(WebApplication app)
     app.MapRazorPages();
     app.MapControllers();
     app.MapFallbackToFile("index.html");
-
-    // initialize app state
-    return InitializeAppAsync(app.Services, pathsOptions.Value, securityOptions.Value, app.Logger);
 }
 
 async Task InitializeAppAsync(

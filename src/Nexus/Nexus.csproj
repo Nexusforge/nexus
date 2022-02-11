@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>$(TargetFrameworkVersion)</TargetFramework>
-	<ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,7 +18,6 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="6.0.0" />
 	<PackageReference Include="NSwag.AspNetCore" Version="13.15.7" />
     <PackageReference Include="Serilog.AspNetCore" Version="4.1.0" />
-    <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.21216.1" />
   </ItemGroup>
 
   <ItemGroup Condition="$(Configuration) == 'Debug'">
@@ -32,13 +30,9 @@
 	<!-- 
 	    Probably because of the way how Blazor is compiled, when publishing, 
 	    the folder artfifacts/bin/Nexus.OpenApiClient/Release does not exist. 
-		As a workaround, add a direct to the OpenApiClient project here.
+		As a workaround, add a direct reference to the OpenApiClient project here.
 	-->
 	<ProjectReference Include="..\Nexus.OpenApiClient\Nexus.OpenApiClient.csproj" />
-
-	<ProjectReference Include="..\Nexus.OpenApiClientGenerator\Nexus.OpenApiClientGenerator.csproj"
-                      OutputItemType="Analyzer"
-                      ReferenceOutputAssembly="false" />
 
   </ItemGroup>
 
