@@ -17,11 +17,11 @@ namespace Nexus.OpenApiClient.Tests
             var messageHandlerMock = new Mock<HttpMessageHandler>();
 
             // -> authenticate
-            var authenticateResponse = new AuthenticateResponse()
-            {
-                JwtToken = "123",
-                RefreshToken = "456"
-            };
+            var authenticateResponse = new AuthenticateResponse(
+                JwtToken: "123",
+                RefreshToken: "456",
+                Error: default
+            );
 
             var authenticateResponseMessage = new HttpResponseMessage()
             {
@@ -64,7 +64,7 @@ namespace Nexus.OpenApiClient.Tests
                 .ReturnsAsync(catalogsResponseMessage1);
 
             // -> refresh token
-            var refreshTokenResponseJsonString = JsonSerializer.Serialize(new RefreshTokenResponse());
+            var refreshTokenResponseJsonString = JsonSerializer.Serialize(new RefreshTokenResponse(default, default, default));
 
             var refreshTokenResponseMessage = new HttpResponseMessage(HttpStatusCode.OK)
             {
@@ -89,7 +89,7 @@ namespace Nexus.OpenApiClient.Tests
 
             // -> get catalogs (2nd try)
             var catalogId = "my-catalog-id";
-            var expectedCatalog = new ResourceCatalog() { Id = catalogId };
+            var expectedCatalog = new ResourceCatalog(Id: catalogId, default, default);
 
             var catalogsResponseMessage2 = new HttpResponseMessage()
             {
@@ -112,7 +112,8 @@ namespace Nexus.OpenApiClient.Tests
             var client = new NexusOpenApiClient("http://localhost", httpClient);
 
             // Act
-            await client.PasswordSignInAsync("foo", "bar");
+            throw new Exception("reenable");
+            //await client.PasswordSignInAsync("foo", "bar");
             var actualCatalog = await client.Catalogs.GetCatalogAsync(catalogId);
 
             // Assert

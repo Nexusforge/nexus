@@ -55,7 +55,7 @@ namespace Nexus.Controllers.V1
         public async Task<ActionResult<List<string>>> GetUsersAsync()
         {
             var users = await _dBService.GetUsers()
-                .Select(user => user.UserName)
+                .Select(user => user.UserId)
                 .ToListAsync();
 
             return users;

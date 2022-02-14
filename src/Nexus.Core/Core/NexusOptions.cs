@@ -8,8 +8,6 @@ namespace Nexus.Core
 
     internal abstract record NexusOptionsBase()
     {
-        public const string IdentitySection = "Identity";
-
         // for testing only
         public string? BlindSample { get; set; }
 

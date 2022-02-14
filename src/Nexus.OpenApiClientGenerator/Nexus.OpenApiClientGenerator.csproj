@@ -8,6 +8,16 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Compile Remove="Template.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Content Include="Template.cs">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Content>
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="Microsoft.OpenApi.Readers" Version="1.2.3" />
 	</ItemGroup>
 

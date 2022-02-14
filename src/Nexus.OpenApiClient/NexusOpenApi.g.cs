@@ -1,9 +1,22 @@
+// 0 = Namespace
+// 1 = ClientName
+// 2 = NexusConfigurationHeaderKey
+// 3 = AuthorizationHeaderKey
+// 4 = SubClientFields
+// 5 = SubClientFieldAssignment
+// 6 = SubClientProperties
+// 7 = SubClientSource
+// 8 = ExceptionType
+// 9 = Models
+
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Security;
+using System.Net;
 
 namespace Nexus.Client;
 
@@ -23,6 +36,7 @@ public class NexusOpenApiClient
     private string? _refreshToken;
 
     private HttpClient _httpClient;
+
     private ArtifactsClient _Artifacts;
     private CatalogsClient _Catalogs;
     private DataClient _Data;
@@ -34,8 +48,8 @@ public class NexusOpenApiClient
 
     static NexusOpenApiClient()
     {
-        _options = new JsonSerializerOptions() 
-        { 
+        _options = new JsonSerializerOptions()
+        {
             PropertyNameCaseInsensitive = true
         };
 
@@ -43,7 +57,7 @@ public class NexusOpenApiClient
     }
 
     /// <summary>
-    /// Initializes a new instances of the <see cref="NexusOpenApiClient"/>.
+    /// Initializes a new instance of the <see cref="NexusOpenApiClient"/>.
     /// </summary>
     /// <param name="baseUrl">The base URL to connect to.</param>
     /// <param name="httpClient">An optional HTTP client.</param>
@@ -60,7 +74,13 @@ public class NexusOpenApiClient
         _Sources = new SourcesClient(this);
         _Users = new UsersClient(this);
         _Writers = new WritersClient(this);
+
     }
+
+    /// <summary>
+    /// Gets a value which indicates if the user is authenticated.
+    /// </summary>
+    public bool IsAuthenticated => _jwtToken != null;
 
     public IArtifactsClient Artifacts => _Artifacts;
     public ICatalogsClient Catalogs => _Catalogs;
@@ -71,33 +91,106 @@ public class NexusOpenApiClient
     public IUsersClient Users => _Users;
     public IWritersClient Writers => _Writers;
 
+
+    /// <summary>
+    /// Attempts to sign in the user.
+    /// </summary>
+    /// <param name="userId">The user ID.</param>
+    /// <param name="password">The user password.</param>
+    /// <returns>A task.</returns>
+    /// <exception cref="SecurityException">Thrown when the authentication fails.</exception>
+    public async Task PasswordSignInAsync(string userId, string password)
+    {
+        var authenticateRequest = new AuthenticateRequest(UserId: userId, Password: password);
+        var authenticateResponse = await this.Users.AuthenticateAsync(authenticateRequest);
+
+        if (authenticateResponse.Error is not null)
+            throw new SecurityException($"Unable to authenticate. Reason: {authenticateResponse.Error}");
+
+        _httpClient.DefaultRequestHeaders.Add(AuthorizationHeaderKey, $"Bearer {authenticateResponse.JwtToken}");
+
+        _jwtToken = authenticateResponse.JwtToken;
+        _refreshToken = authenticateResponse.RefreshToken;
+    }
+
+    /// <summary>
+    /// Attaches configuration data to subsequent Nexus OpenAPI requests.
+    /// </summary>
+    /// <param name="configuration">The configuration data.</param>
+    public IDisposable AttachConfiguration(IDictionary<string, string> configuration)
+    {
+        var encodedJson = Convert.ToBase64String(JsonSerializer.SerializeToUtf8Bytes(configuration));
+
+        _httpClient.DefaultRequestHeaders.Remove(NexusConfigurationHeaderKey);
+        _httpClient.DefaultRequestHeaders.Add(NexusConfigurationHeaderKey, encodedJson);
+
+        return new DisposableConfiguration(this);
+    }
+
+    /// <summary>
+    /// Clears configuration data for all subsequent Nexus OpenAPI requests.
+    /// </summary>
+    public void ClearConfiguration()
+    {
+        _httpClient.DefaultRequestHeaders.Remove(NexusConfigurationHeaderKey);
+    }
+
     internal async Task<T> InvokeAsync<T>(string method, string relativeUrl, string? acceptHeaderValue, object? content, CancellationToken cancellationToken)
     {
+        // prepare request
         var httpContent = content is null
             ? default
             : JsonContent.Create(content, options: _options);
 
-        using var request = new HttpRequestMessage()
-        {
-            Method = new HttpMethod(method),
-            RequestUri = new Uri(_baseUrl, relativeUrl),
-            Content = httpContent
-        };
+        using var request = this.BuildRequestMessage(method, relativeUrl, httpContent);
 
         if (acceptHeaderValue is not null)
             request.Headers.Accept.Add(MediaTypeWithQualityHeaderValue.Parse(acceptHeaderValue));
 
+        // send request
         var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
+        // process response
         if (!response.IsSuccessStatusCode)
         {
-            var message = await response.Content.ReadAsStringAsync();
+            // try to refresh the access token
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                var wwwAuthenticateHeader = response.Headers.WwwAuthenticate.FirstOrDefault();
+                var signOut = true;
 
-            if (string.IsNullOrWhiteSpace(message))
-                throw new NexusApiException($"The HTTP status code is {response.StatusCode}.");
+                if (wwwAuthenticateHeader is not null)
+                {
+                    var parameter = wwwAuthenticateHeader.Parameter;
 
-            else
-                throw new NexusApiException($"The HTTP status code is {response.StatusCode}. The response message is: {message}");
+                    if (parameter is not null && parameter.Contains("The token expired at"))
+                    {
+                        using var newRequest = this.BuildRequestMessage(method, relativeUrl, httpContent);
+                        var newResponse = await this.RefreshTokenAsync(response, newRequest, cancellationToken);
+
+                        if (newResponse is not null)
+                        {
+                            response.Dispose();
+                            response = newResponse;
+                            signOut = false;
+                        }
+                    }
+                }
+
+                if (signOut)
+                    this.SignOut();
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var message = await response.Content.ReadAsStringAsync();
+
+                if (string.IsNullOrWhiteSpace(message))
+                    throw new NexusApiException($"The HTTP status code is {response.StatusCode}.");
+
+                else
+                    throw new NexusApiException($"The HTTP status code is {response.StatusCode}. The response message is: {message}");
+            }
         }
 
         try
@@ -129,6 +222,49 @@ public class NexusOpenApiClient
             if (typeof(T) == typeof(StreamResponse))
                 response.Dispose();
         }
+    }
+    
+    private HttpRequestMessage BuildRequestMessage(string method, string relativeUrl, HttpContent? httpContent)
+    {
+        return new HttpRequestMessage()
+        {
+            Method = new HttpMethod(method),
+            RequestUri = new Uri(_baseUrl, relativeUrl),
+            Content = httpContent
+        };
+    }
+
+    private async Task<HttpResponseMessage?> RefreshTokenAsync(
+        HttpResponseMessage response, 
+        HttpRequestMessage newRequest,
+        CancellationToken cancellationToken)
+    {
+        // see https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/dev/src/Microsoft.IdentityModel.Tokens/Validators.cs#L390
+
+        if (_refreshToken is null || response.RequestMessage is null)
+            throw new Exception("Refresh token or request message is null. This should never happen.");
+
+        var refreshRequest = new RefreshTokenRequest(RefreshToken: _refreshToken);
+        var refreshResponse = await this.Users.RefreshTokenAsync(refreshRequest);
+
+        if (refreshResponse.Error is not null)
+            return default;
+
+        var authorizationHeaderValue = $"Bearer {refreshResponse.JwtToken}";
+        _httpClient.DefaultRequestHeaders.Remove(AuthorizationHeaderKey);
+        _httpClient.DefaultRequestHeaders.Add(AuthorizationHeaderKey, authorizationHeaderValue);
+
+        _jwtToken = refreshResponse.JwtToken;
+        _refreshToken = refreshResponse.RefreshToken;
+
+        return await _httpClient.SendAsync(newRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+    }
+
+    private void SignOut()
+    {
+        _httpClient.DefaultRequestHeaders.Remove(AuthorizationHeaderKey);
+        _refreshToken = null;
+        _jwtToken = null;
     }
 }
 
@@ -654,6 +790,49 @@ public class WritersClient : IWritersClient
 
 }
 
+public class StreamResponse : IDisposable
+{
+    HttpResponseMessage _response;
+
+    public StreamResponse(HttpResponseMessage response, Stream stream)
+    {
+        _response = response;
+
+        Stream = stream;
+    }
+
+    public Stream Stream { get; }
+
+    public void Dispose()
+    {
+        Stream.Dispose();
+        _response.Dispose();
+    }
+}
+
+public class NexusApiException : Exception
+{
+    public NexusApiException(string message) : base(message)
+    {
+        //
+    }
+}
+
+internal class DisposableConfiguration : IDisposable
+{
+    private NexusOpenApiClient _client;
+
+    public DisposableConfiguration(NexusOpenApiClient client)
+    {
+        _client = client;
+    }
+
+    public void Dispose()
+    {
+        _client.ClearConfiguration();
+    }
+}
+
 public record ResourceCatalog (string Id, IDictionary<string, string>? Properties, ICollection<Resource>? Resources);
 
 public record Resource (string Id, IDictionary<string, string>? Properties, ICollection<Representation>? Representations);
@@ -719,30 +898,4 @@ public record RevokeTokenRequest (string Token);
 public record RefreshToken (string Token, DateTime Created, DateTime Expires, bool IsExpired);
 
 
-public class StreamResponse : IDisposable
-{
-    HttpResponseMessage _response;
 
-    public StreamResponse(HttpResponseMessage response, Stream stream)
-    {
-        _response = response;
-
-        Stream = stream;
-    }
-
-    public Stream Stream { get; }
-
-    public void Dispose()
-    {
-        Stream.Dispose();
-        _response.Dispose();
-    }
-}
-
-public class NexusApiException : Exception
-{
-    public NexusApiException(string message) : base(message)
-    {
-        //
-    }
-}

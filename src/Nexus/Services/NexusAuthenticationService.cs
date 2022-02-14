@@ -169,7 +169,7 @@ namespace Nexus.Services
             var claims = await _dbService.GetClaimsAsync(user);
 
             // generate a token pair
-            var jwtToken = this.GenerateJwtToken(user.UserName, claims);
+            var jwtToken = this.GenerateJwtToken(user.UserId, claims);
             var refreshToken = this.GenerateRefreshToken();
 
             // return response

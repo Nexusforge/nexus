@@ -3,14 +3,13 @@ using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Readers;
 using Nexus.Controllers.V1;
-using System.Text;
 
 namespace Nexus.OpenApiClientGenerator
 {
     public static class Program
     {
 #error TODO:
-#error C#: Add authentication, add XML comments, add configuration support via headers:
+#error C#: Extend/Test authentication, add XML comments:
 #error Python: Add client
 
         public static async Task Main(string[] args)
@@ -36,13 +35,10 @@ namespace Nexus.OpenApiClientGenerator
 
             response.EnsureSuccessStatusCode();
 
-            using var stream = await response.Content.ReadAsStreamAsync();
+            var openApiJsonString = await response.Content.ReadAsStringAsync();
 
-            var openApiDocument = await new StreamReader(stream, Encoding.UTF8).ReadToEndAsync();
-            stream.Position = 0;
-
-            var document = new OpenApiStreamReader()
-                .Read(stream, out var diagnostic);
+            var document = new OpenApiStringReader()
+                .Read(openApiJsonString, out var diagnostic);
 
             // client generation settings
             var settings = new GeneratorSettings(
@@ -63,7 +59,7 @@ namespace Nexus.OpenApiClientGenerator
 
             // save open API document
             var openApiDocumentOutputPath = $"../../../../../openapi.json";
-            File.WriteAllText(openApiDocumentOutputPath, openApiDocument);
+            File.WriteAllText(openApiDocumentOutputPath, openApiJsonString);
         }
     }
 }

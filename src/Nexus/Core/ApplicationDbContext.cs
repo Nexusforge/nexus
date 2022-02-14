@@ -1,11 +1,9 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace Nexus.Core
 {
-    internal class ApplicationDbContext : IdentityDbContext<NexusUser, IdentityRole, string>
+    internal class ApplicationDbContext : DbContext
     {
         private PathsOptions _pathsOptions;
 
@@ -13,6 +11,8 @@ namespace Nexus.Core
         {
             _pathsOptions = pathsOptions.Value;
         }
+
+        public DbSet<NexusUser> Users { get; set; } = null!;
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {

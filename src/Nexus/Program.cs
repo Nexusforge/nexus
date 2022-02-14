@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -9,7 +7,6 @@ using Nexus.Core;
 using Nexus.Services;
 using Serilog;
 using System.Globalization;
-using System.Security.Claims;
 using System.Text.Json;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
@@ -93,16 +90,6 @@ void AddServices(IServiceCollection services, IConfiguration configuration)
         options.KnownProxies.Clear();
     });
 
-    // identity
-    services
-        .Configure<IdentityOptions>(configuration.GetSection(NexusOptionsBase.IdentitySection));
-
-    services
-        .AddIdentityCore<NexusUser>()
-        .AddSignInManager<SignInManager<NexusUser>>()
-        .AddDefaultTokenProviders()
-        .AddEntityFrameworkStores<ApplicationDbContext>();
-
     // authentication
     services
         .AddAuthentication(options =>
@@ -122,9 +109,6 @@ void AddServices(IServiceCollection services, IConfiguration configuration)
                 IssuerSigningKey = new SymmetricSecurityKey(Convert.FromBase64String(securityOptions.Base64JwtSigningKey))
             };
         });
-
-    // email sender
-    services.AddTransient<IEmailSender, EmailSender>();
 
     // blazor
     services.AddRazorPages();
@@ -233,84 +217,6 @@ async Task InitializeAppAsync(
             new Dictionary<Guid, PackageReference>(),
             new Dictionary<string, UserConfiguration>());
 
-    // user manager
-    await InitializeDatabaseAsync(serviceProvier, pathsOptions, securityOptions, logger);
-
     // packages and catalogs
     await appStateManager.LoadPackagesAsync(new Progress<double>(), CancellationToken.None);
-}
-
-async Task InitializeDatabaseAsync(
-    IServiceProvider serviceProvider,
-    PathsOptions pathsOptions,
-    SecurityOptions securityOptions,
-    ILogger logger)
-{
-    using (var scope = serviceProvider.CreateScope())
-    {
-        var userDB = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<NexusUser>>();
-
-        // database
-        Directory.CreateDirectory(pathsOptions.Config);
-
-        if (userDB.Database.EnsureCreated())
-            logger.LogInformation("SQLite database initialized");
-
-        // ensure there is a root user
-        var rootUsername = securityOptions.RootUser;
-        var rootPassword = securityOptions.RootPassword;
-
-        if ((await userManager.FindByNameAsync(rootUsername)) is null)
-        {
-            var user = new NexusUser(rootUsername);
-            var result = await userManager.CreateAsync(user, rootPassword);
-
-            if (result.Succeeded)
-            {
-                // confirm account
-                var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
-                await userManager.ConfirmEmailAsync(user, token);
-
-                // add claim
-                var claim = new Claim(Claims.IS_ADMIN, "true");
-                await userManager.AddClaimAsync(user, claim);
-
-                // remove default root user
-                if (rootUsername != SecurityOptions.DefaultRootUser)
-                {
-                    var userToDelete = await userManager.FindByNameAsync(SecurityOptions.DefaultRootUser);
-
-                    if (userToDelete is not null)
-                        await userManager.DeleteAsync(userToDelete);
-                }
-            }
-            else
-            {
-                await userManager.CreateAsync(
-                    new NexusUser(SecurityOptions.DefaultRootUser), SecurityOptions.DefaultRootPassword);
-            }
-        }
-
-        // ensure there is a test user
-        var defaultTestUsername = "test@nexus.localhost";
-        var defaultTestPassword = "#test0/User1";
-
-        if ((await userManager.FindByNameAsync(defaultTestUsername)) is null)
-        {
-            var user = new NexusUser(defaultTestUsername);
-            var result = await userManager.CreateAsync(user, defaultTestPassword);
-
-            if (result.Succeeded)
-            {
-                // confirm account
-                var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
-                await userManager.ConfirmEmailAsync(user, token);
-
-                // add claim
-                var claim = new Claim(Claims.CAN_ACCESS_CATALOG, "/IN_MEMORY/TEST/ACCESSIBLE");
-                await userManager.AddClaimAsync(user, claim);
-            }
-        }
-    }
 }

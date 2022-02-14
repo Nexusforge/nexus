@@ -38,7 +38,7 @@ namespace Nexus.Services
         {
            return _context.Users
                 .Include(user => user.RefreshTokens)
-                .FirstOrDefaultAsync(user => user.UserName == userId);
+                .FirstOrDefaultAsync(user => user.UserId == userId);
         }
 
         public Task<NexusUser?> FindByTokenAsync(string token)
