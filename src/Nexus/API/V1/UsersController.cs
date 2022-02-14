@@ -120,7 +120,7 @@ namespace Nexus.Controllers.V1
                 throw new Exception("This should never happen.");
 
             if (!(username == userId || this.HttpContext.User.HasClaim("IsAdmin", "true")))
-                return this.Unauthorized("Only the user owning the refresh tokens and administrators can use this endpoint.");
+                return this.Forbid("Only the user owning the refresh tokens and administrators can use this endpoint.");
 
             // get database user
             var dbUser = await _dBService.FindByIdAsync(userId);

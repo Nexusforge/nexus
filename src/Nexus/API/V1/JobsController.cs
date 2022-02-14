@@ -105,7 +105,7 @@ namespace Nexus.Controllers.V1
                             var catalogContainer = group.First().Container;
 
                             if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, this.HttpContext.User))
-                                throw new UnauthorizedAccessException($"The current user is not authorized to access catalog '{catalogContainer.Id}'.");
+                                throw new UnauthorizedAccessException($"The current user is not permitted to access catalog '{catalogContainer.Id}'.");
 
                             return catalogContainer;
                         },
@@ -114,7 +114,7 @@ namespace Nexus.Controllers.V1
             }
             catch (UnauthorizedAccessException ex)
             {
-                return this.Unauthorized(ex.Message);
+                return this.Forbid(ex.Message);
             }
 
             //
@@ -225,7 +225,7 @@ namespace Nexus.Controllers.V1
                 }
                 else
                 {
-                    return this.Unauthorized($"The current user is not authorized to access the status of job '{jobControl.Job.Id}'.");
+                    return this.Forbid($"The current user is not permitted to access the status of job '{jobControl.Job.Id}'.");
                 }
             }
             else
@@ -258,7 +258,7 @@ namespace Nexus.Controllers.V1
 
                 else
                 {
-                    return Task.FromResult((ActionResult)this.Unauthorized($"The current user is not authorized to cancel the job '{jobControl.Job.Id}'."));
+                    return Task.FromResult((ActionResult)this.Forbid($"The current user is not permitted to cancel the job '{jobControl.Job.Id}'."));
                 }
             }
             else

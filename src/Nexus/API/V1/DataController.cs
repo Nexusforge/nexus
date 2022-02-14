@@ -83,7 +83,7 @@ namespace Nexus.Controllers.V1
 
                 // security check
                 if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, this.User))
-                    return this.Unauthorized($"The current user is not authorized to access the catalog {catalog.Id}.");
+                    return this.Forbid($"The current user is not permitted to access the catalog {catalog.Id}.");
 
                 // controller
                 using var controller = await _dataControllerService.GetDataSourceControllerAsync(
