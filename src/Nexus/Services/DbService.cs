@@ -1,7 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Nexus.Core;
-using System.Security.Claims;
 
 namespace Nexus.Services
 {
@@ -10,28 +8,17 @@ namespace Nexus.Services
         IQueryable<NexusUser> GetUsers();
         Task<NexusUser?> FindByIdAsync(string userId);
         Task<NexusUser?> FindByTokenAsync(string token);
-        Task<bool> IsEmailConfirmedAsync(NexusUser user);
-        Task<SignInResult> CheckPasswordSignInAsync(NexusUser user, string password, bool lockoutOnFailure);
-        Task<IdentityResult> UpdateAsync(NexusUser user);
-        Task<IList<Claim>> GetClaimsAsync(NexusUser user);
+        void UpdateUser(NexusUser user);
     }
 
     internal class DbService : IDBService
     {
         ApplicationDbContext _context;
-        SignInManager<NexusUser> _signInManager;
 
         public DbService(
-            ApplicationDbContext context,
-            SignInManager<NexusUser> signInManager)
+            ApplicationDbContext context)
         {
             _context = context;
-            _signInManager = signInManager;
-        }
-
-        public Task<SignInResult> CheckPasswordSignInAsync(NexusUser user, string password, bool lockoutOnFailure)
-        {
-            return _signInManager.CheckPasswordSignInAsync(user, password, lockoutOnFailure);
         }
 
         public Task<NexusUser?> FindByIdAsync(string userId)
@@ -48,24 +35,14 @@ namespace Nexus.Services
                  .FirstOrDefaultAsync(user => user.RefreshTokens.Any(current => current.Token == token));
         }
 
-        public Task<IList<Claim>> GetClaimsAsync(NexusUser user)
-        {
-            return _signInManager.UserManager.GetClaimsAsync(user);
-        }
-
         public IQueryable<NexusUser> GetUsers()
         {
-            return _signInManager.UserManager.Users;
+            return _context.Users;
         }
 
-        public Task<bool> IsEmailConfirmedAsync(NexusUser user)
+        public void UpdateUser(NexusUser user)
         {
-            return _signInManager.UserManager.IsEmailConfirmedAsync(user);
-        }
-
-        public Task<IdentityResult> UpdateAsync(NexusUser user)
-        {
-            return _signInManager.UserManager.UpdateAsync(user);
+            _context.Users.Update(user);
         }
     }
 }

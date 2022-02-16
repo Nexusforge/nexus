@@ -1,9 +1,10 @@
-﻿using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
 namespace Nexus.Core
 {
+#warning Records with IConfiguration: wait for issue https://github.com/dotnet/runtime/issues/43662 to be solved
+
     // template: https://grafana.com/docs/grafana/latest/administration/configuration/
 
     internal abstract record NexusOptionsBase()
@@ -13,8 +14,16 @@ namespace Nexus.Core
 
         internal static IConfiguration BuildConfiguration(string[] args)
         {
+            var environmentName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+
             var builder = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.json");
+
+            if (!string.IsNullOrWhiteSpace(environmentName))
+            {
+                builder
+                    .AddJsonFile($"appsettings.{environmentName}.json", optional: true, reloadOnChange: true);
+            }
 
             var settingsPath = Environment.GetEnvironmentVariable("NEXUS_PATHS__SETTINGS");
 
@@ -72,6 +81,17 @@ namespace Nexus.Core
         #endregion
     }
 
+    internal record OpenIdConnectProvider
+    {
+#pragma warning disable CS8618 // Ein Non-Nullable-Feld muss beim Beenden des Konstruktors einen Wert ungleich NULL enthalten. Erwägen Sie die Deklaration als Nullable.
+        public string Scheme { get; init; }
+        public string DisplayName { get; init; }
+        public string Authority { get; init; }
+        public string ClientId { get; init; }
+        public string ClientSecret { get; init; }
+#pragma warning restore CS8618 // Ein Non-Nullable-Feld muss beim Beenden des Konstruktors einen Wert ungleich NULL enthalten. Erwägen Sie die Deklaration als Nullable.
+    }
+
     internal partial record SecurityOptions() : NexusOptionsBase
     {
         private static string _defaultKey = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
@@ -82,7 +102,7 @@ namespace Nexus.Core
         public string Base64JwtSigningKey { get; set; } = _defaultKey;
         public TimeSpan JwtTokenLifeTime { get; set; }
         public TimeSpan RefreshTokenLifeTime { get; set; }
-        public List<OpenIdConnectOptions>? OidcProviders { get; set; }
+        public List<OpenIdConnectProvider> OidcProviders { get; set; } = new();
     }
 
     internal record SmtpOptions : NexusOptionsBase

@@ -29,7 +29,6 @@ namespace Nexus.Services
         #region Fields
 
         private IDBService _dbService;
-        private IdentityOptions _identityOptions;
         private SecurityOptions _securityOptions;
         private SigningCredentials _signingCredentials;
 
@@ -39,11 +38,9 @@ namespace Nexus.Services
 
         public NexusAuthenticationService(
             IDBService dbService,
-            IOptions<IdentityOptions> identityOptions,
             IOptions<SecurityOptions> securityOptions)
         {
             _dbService = dbService;
-            _identityOptions = identityOptions.Value;
             _securityOptions = securityOptions.Value;
 
             var key = Convert.FromBase64String(_securityOptions.Base64JwtSigningKey);
@@ -64,22 +61,8 @@ namespace Nexus.Services
             if (user is null)
                 return (null, null, "The user does not exist.");
 
-            // check if user e-mail address is confirmed
-            var isConfirmed =
-                !_identityOptions.SignIn.RequireConfirmedAccount ||
-                await _dbService.IsEmailConfirmedAsync(user);
-
-            if (!isConfirmed)
-                return (null, null, "The e-mail address is not confirmed.");
-
-            // sign in
-            var signInResult = await _dbService.CheckPasswordSignInAsync(user, password, lockoutOnFailure: false);
-
-            if (!signInResult.Succeeded)
-                return (null, null, "Sign-in failed.");
-
             // generate token pair
-            var (jwtToken, refreshToken) = await this.GenerateTokenPairAsync(user);
+            var (jwtToken, refreshToken) = this.GenerateTokenPair(user);
 
             // add refresh token
             user.RefreshTokens.Add(refreshToken);
@@ -88,7 +71,7 @@ namespace Nexus.Services
             this.ClearExpiredTokens(user.RefreshTokens);
 
             // save changes
-            await _dbService.UpdateAsync(user);
+            _dbService.UpdateUser(user);
 
             return (jwtToken, refreshToken.Token, null);
         }
@@ -112,7 +95,7 @@ namespace Nexus.Services
                 return (null, null, "The refresh token has expired.");
 
             // generate new token pair
-            var (newJwtToken, newRefreshToken) = await this.GenerateTokenPairAsync(user);
+            var (newJwtToken, newRefreshToken) = this.GenerateTokenPair(user);
 
             // delete redeemed refresh token
             user.RefreshTokens.RemoveAll(current => current.Token == token);
@@ -124,7 +107,7 @@ namespace Nexus.Services
             this.ClearExpiredTokens(user.RefreshTokens);
 
             // save changes
-            await _dbService.UpdateAsync(user);
+            _dbService.UpdateUser(user);
 
             return (newJwtToken, newRefreshToken.Token, null);
         }
@@ -149,7 +132,7 @@ namespace Nexus.Services
             this.ClearExpiredTokens(user.RefreshTokens);
 
             // save changes
-            await _dbService.UpdateAsync(user);
+            _dbService.UpdateUser(user);
 
             return error;
         }
@@ -163,13 +146,10 @@ namespace Nexus.Services
             refreshTokens.RemoveAll(current => current.IsExpired);
         }
 
-        private async Task<(string, RefreshToken)> GenerateTokenPairAsync(NexusUser user)
+        private (string, RefreshToken) GenerateTokenPair(NexusUser user)
         {
-            // get user claims
-            var claims = await _dbService.GetClaimsAsync(user);
-
             // generate a token pair
-            var jwtToken = this.GenerateJwtToken(user.UserId, claims);
+            var jwtToken = this.GenerateJwtToken(user.UserId, user.Claims);
             var refreshToken = this.GenerateRefreshToken();
 
             // return response

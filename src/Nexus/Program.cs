@@ -1,8 +1,9 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
+using Microsoft.EntityFrameworkCore;
 using Nexus.Core;
 using Nexus.Services;
 using Serilog;
@@ -30,6 +31,10 @@ var securityOptions = configuration
     .GetSection(SecurityOptions.Section)
     .Get<SecurityOptions>();
 
+var pathsOptions = configuration
+    .GetSection(PathsOptions.Section)
+    .Get<PathsOptions>();
+
 // logging (https://nblumhardt.com/2019/10/serilog-in-aspnetcore-3/)
 var applicationName = generalOptions.ApplicationName;
 
@@ -42,6 +47,9 @@ Log.Logger = new LoggerConfiguration()
 if (securityOptions.RootUser is null)
     Log.Warning("No root user configured");
 
+if (!securityOptions.OidcProviders.Any())
+    Log.Warning("No OpenID Connect provider configured");
+
 // run
 try
 {
@@ -53,7 +61,7 @@ try
     builder.Host.UseSerilog();
 
     // Add services to the container.
-    AddServices(builder.Services, configuration, securityOptions);
+    AddServices(builder.Services, configuration, pathsOptions, securityOptions);
 
     // Build 
     var app = builder.Build();
@@ -62,8 +70,7 @@ try
     ConfigurePipeline(app);
 
     // initialize app state
-    var pathsOptions = app.Services.GetRequiredService<IOptions<PathsOptions>>();
-    await InitializeAppAsync(app.Services, pathsOptions.Value, securityOptions, app.Logger);
+    await InitializeAppAsync(app.Services, pathsOptions, securityOptions, app.Logger);
 
     // Run
     var baseUrl = $"{serverOptions.HttpScheme}://{serverOptions.HttpAddress}:{serverOptions.HttpPort}";
@@ -79,10 +86,17 @@ finally
     Log.CloseAndFlush();
 }
 
-void AddServices(IServiceCollection services, IConfiguration configuration, SecurityOptions securityOptions)
+void AddServices(
+    IServiceCollection services, 
+    IConfiguration configuration, 
+    PathsOptions pathsOptions,
+    SecurityOptions securityOptions)
 {
     // database
-    services.AddDbContext<ApplicationDbContext>();
+    var filePath = Path.Combine(pathsOptions.Config, "users.db");
+
+    services.AddDbContext<ApplicationDbContext>(
+        options => options.UseSqlite($"Data Source={filePath}"));
 
     // forwarded headers
     services.Configure<ForwardedHeadersOptions>(options =>
@@ -94,24 +108,43 @@ void AddServices(IServiceCollection services, IConfiguration configuration, Secu
     });
 
     // authentication
-    services
+    var builder = services
         .AddAuthentication(options =>
         {
-            // Very important, because AddIdentity made Cookie Authentication the default.
-            options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
         })
-        .AddJwtBearer(options =>
+        .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme);
+        //.AddJwtBearer(options =>
+        //{
+        //    options.TokenValidationParameters = new TokenValidationParameters()
+        //    {
+        //        ClockSkew = TimeSpan.Zero,
+        //        ValidateAudience = false,
+        //        ValidateIssuer = false,
+        //        ValidateActor = false,
+        //        ValidateLifetime = true,
+        //        IssuerSigningKey = new SymmetricSecurityKey(Convert.FromBase64String(securityOptions.Base64JwtSigningKey))
+        //    };
+        //});
+
+    foreach (var provider in securityOptions.OidcProviders)
+    {
+        builder.AddOpenIdConnect(provider.Scheme, provider.DisplayName, options =>
         {
-            options.TokenValidationParameters = new TokenValidationParameters()
+            options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+
+            options.Authority = provider.Authority;
+            options.ClientId = provider.ClientId;
+            options.ClientSecret = provider.ClientSecret;
+
+#warning only for testing
+            options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
             {
-                ClockSkew = TimeSpan.Zero,
-                ValidateAudience = false,
-                ValidateIssuer = false,
-                ValidateActor = false,
-                ValidateLifetime = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Convert.FromBase64String(securityOptions.Base64JwtSigningKey))
+                ValidateIssuer = false
             };
         });
+    }
 
     // blazor
     services.AddRazorPages();
@@ -185,11 +218,24 @@ void ConfigurePipeline(WebApplication app)
     // LogContext properties are not included by default in request logging, workaround: https://nblumhardt.com/2019/10/serilog-mvc-logging/
     app.UseSerilogRequestLogging();
 
-    // routing (for REST API)
+    //// routing (for REST API)
     app.UseRouting();
 
     // default authentication
     app.UseAuthentication();
+
+    // test
+    app.UseWhen(context => context.Request.Path.StartsWithSegments("/mytestlogin"), app =>
+    {
+        app.Run(async context =>
+        {
+            if (!context.User.Identity.IsAuthenticated)
+                await context.ChallengeAsync("Microsoft");
+
+            else
+                await context.Response.WriteAsync($"Your are authenticated!! Welcome {context.User.Identity.Name}.");
+        });
+    });
 
     // authorization
     app.UseAuthorization();
