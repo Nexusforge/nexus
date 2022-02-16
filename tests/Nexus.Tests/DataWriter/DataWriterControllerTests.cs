@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Nexus;
+using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using System.IO.Pipelines;

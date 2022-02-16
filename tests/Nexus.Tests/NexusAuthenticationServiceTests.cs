@@ -20,11 +20,11 @@ namespace Services
             // Arrange
             var expectedName = "foo";
 
-            var user = new NexusUser()
-            {
-                UserName = expectedName,
-                RefreshTokens = new List<RefreshToken>()
-            };
+            var user = new NexusUser(
+                UserId: expectedName,
+                Claims: new List<Claim>(),
+                RefreshTokens: new List<RefreshToken>()
+            );
 
             var dbService = Mock.Of<IDBService>();
 
@@ -123,11 +123,11 @@ namespace Services
             // Arrange
             var expectedName = "foo";
 
-            var user = new NexusUser()
-            {
-                UserName = expectedName,
-                RefreshTokens = new List<RefreshToken>()
-            };
+            var user = new NexusUser(
+                UserId: expectedName,
+                Claims: new List<Claim>(),
+                RefreshTokens: new List<RefreshToken>()
+            );
 
             var dbService = Mock.Of<IDBService>();
 
@@ -162,11 +162,11 @@ namespace Services
             // Arrange
             var expectedName = "foo";
 
-            var user = new NexusUser()
-            {
-                UserName = expectedName,
-                RefreshTokens = new List<RefreshToken>()
-            };
+            var user = new NexusUser(
+                UserId: expectedName,
+                Claims: new List<Claim>(),
+                RefreshTokens: new List<RefreshToken>()
+            );
 
             var dbService = Mock.Of<IDBService>();
 
@@ -204,11 +204,11 @@ namespace Services
             var expectedName = "foo";
             var storedRefreshToken = new RefreshToken("123", DateTime.UtcNow.AddDays(1));
 
-            var user = new NexusUser()
-            {
-                UserName = expectedName,
-                RefreshTokens = new List<RefreshToken>() { storedRefreshToken }
-            };
+            var user = new NexusUser(
+                UserId: expectedName,
+                Claims: new List<Claim>(),
+                RefreshTokens: new List<RefreshToken>() { storedRefreshToken }
+            );
 
             var dbService = Mock.Of<IDBService>();
 
@@ -267,11 +267,11 @@ namespace Services
             // Arrange
             var storedRefreshToken = new RefreshToken("validToken", DateTime.UtcNow.AddDays(1));
 
-            var user = new NexusUser()
-            {
-                UserName = "foo",
-                RefreshTokens = new List<RefreshToken>() { storedRefreshToken }
-            };
+            var user = new NexusUser(
+                UserId: "foo",
+                Claims: new List<Claim>(),
+                RefreshTokens: new List<RefreshToken>() { storedRefreshToken }
+            );
 
             var dbService = Mock.Of<IDBService>();
 
@@ -301,11 +301,11 @@ namespace Services
             // Arrange
             var storedRefreshToken = new RefreshToken("validToken", DateTime.UtcNow);
 
-            var user = new NexusUser()
-            {
-                UserName = "foo",
-                RefreshTokens = new List<RefreshToken>() { storedRefreshToken }
-            };
+            var user = new NexusUser(
+                UserId: "foo",
+                Claims: new List<Claim>(),
+                RefreshTokens: new List<RefreshToken>() { storedRefreshToken }
+            );
 
             var dbService = Mock.Of<IDBService>();
 
@@ -335,11 +335,11 @@ namespace Services
             // Arrange
             var storedRefreshToken = new RefreshToken("123", DateTime.UtcNow.AddDays(1));
 
-            var user = new NexusUser()
-            {
-                UserName = "foo",
-                RefreshTokens = new List<RefreshToken>() { storedRefreshToken }
-            };
+            var user = new NexusUser(
+                UserId: "foo",
+                Claims: new List<Claim>(),
+                RefreshTokens: new List<RefreshToken>() { storedRefreshToken }
+            );
 
             var dbService = Mock.Of<IDBService>();
 
@@ -367,11 +367,11 @@ namespace Services
             // Arrange
             var expectedName = "foo";
 
-            var user = new NexusUser()
-            {
-                UserName = expectedName,
-                RefreshTokens = new List<RefreshToken>()
-            };
+            var user = new NexusUser(
+                UserId: expectedName,
+                Claims: new List<Claim>(),
+                RefreshTokens: new List<RefreshToken>()
+            );
 
             var dbService = Mock.Of<IDBService>();
 
@@ -399,11 +399,11 @@ namespace Services
             var expectedName = "foo";
             var expiredToken = new RefreshToken("123", DateTime.UtcNow);
 
-            var user = new NexusUser()
-            {
-                UserName = expectedName,
-                RefreshTokens = new List<RefreshToken>() { expiredToken }
-            };
+            var user = new NexusUser(
+                UserId: expectedName,
+                Claims: new List<Claim>(),
+                RefreshTokens: new List<RefreshToken>()
+            );
 
             var dbService = Mock.Of<IDBService>();
 

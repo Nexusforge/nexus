@@ -8,10 +8,6 @@ namespace Nexus.OpenApiClientGenerator
 {
     public static class Program
     {
-#error TODO:
-#error C#: Extend/Test authentication, add XML comments:
-#error Python: Add client
-
         public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);

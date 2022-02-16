@@ -24,8 +24,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{D4BFDD2B-4F5
 		src\Directory.Build.targets = src\Directory.Build.targets
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nexus.Core", "src\Nexus.Core\Nexus.Core.csproj", "{7F63F0AA-5146-4A61-BB22-AAB76FAB1D4B}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nexus.Tests", "tests\Nexus.Tests\Nexus.Tests.csproj", "{E8ADD668-F935-4AE3-B98B-8B6480ACE533}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nexus", "src\Nexus\Nexus.csproj", "{6DDD84D7-8FCF-4E49-A5DB-EAF95B0E040F}"
@@ -33,8 +31,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nexus.Extensibility", "src\Nexus.Extensibility\Nexus.Extensibility.csproj", "{50E86970-3134-434C-8590-5C61819A92F7}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nexus.Extensibility.Tests", "tests\Nexus.Extensibility.Tests\Nexus.Extensibility.Tests.csproj", "{63758BAF-D4B2-46E5-B0A3-8BA8B103EFBD}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nexus.Core.Tests", "tests\Nexus.Core.Tests\Nexus.Core.Tests.csproj", "{770B340D-0709-4082-9A87-C9D9F6753D50}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "benchmarks", "benchmarks", "{DF97B5B8-21D4-4E8F-BA1B-AE599467BF96}"
 EndProject

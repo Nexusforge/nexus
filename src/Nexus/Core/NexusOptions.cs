@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
@@ -72,18 +72,17 @@ namespace Nexus.Core
         #endregion
     }
 
-    internal record SecurityOptions() : NexusOptionsBase
+    internal partial record SecurityOptions() : NexusOptionsBase
     {
         private static string _defaultKey = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
 
         public const string Section = "Security";
-        public static string DefaultRootUser { get; } = "root@nexus.localhost";
-        public static string DefaultRootPassword { get; } = "#root0/User1";
-        public string RootUser { get; set; } = SecurityOptions.DefaultRootUser;
-        public string RootPassword { get; set; } = SecurityOptions.DefaultRootPassword;
+        public const string OicdSubSection = "Oidc";
+        public string? RootUser { get; set; }
         public string Base64JwtSigningKey { get; set; } = _defaultKey;
         public TimeSpan JwtTokenLifeTime { get; set; }
         public TimeSpan RefreshTokenLifeTime { get; set; }
+        public List<OpenIdConnectOptions>? OidcProviders { get; set; }
     }
 
     internal record SmtpOptions : NexusOptionsBase

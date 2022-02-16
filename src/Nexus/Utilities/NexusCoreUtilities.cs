@@ -1,4 +1,5 @@
-﻿using Nexus.DataModel;
+﻿using Nexus.Core;
+using Nexus.DataModel;
 using System.Reflection;
 
 namespace Nexus.Utilities

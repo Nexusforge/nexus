@@ -2,7 +2,7 @@ using Nexus.Utilities;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Nexus
+namespace Nexus.Core
 {
     internal static class CustomExtensions
     {

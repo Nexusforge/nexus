@@ -5,6 +5,12 @@ using System.Security.Claims;
 namespace Nexus.Services
 {
 #warning The type is only required for the CatalogManager ("EnsureNoHierarchy") and hard to remove. But I would like to remove it.
+
+    internal interface IUserManagerWrapper
+    {
+        Task<ClaimsPrincipal?> GetClaimsPrincipalAsync(string username);
+    }
+
     internal class UserManagerWrapper : IUserManagerWrapper
     {
         private ILogger _logger;

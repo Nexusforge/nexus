@@ -26,6 +26,10 @@ var serverOptions = configuration
     .GetSection(ServerOptions.Section)
     .Get<ServerOptions>();
 
+var securityOptions = configuration
+    .GetSection(SecurityOptions.Section)
+    .Get<SecurityOptions>();
+
 // logging (https://nblumhardt.com/2019/10/serilog-in-aspnetcore-3/)
 var applicationName = generalOptions.ApplicationName;
 
@@ -34,10 +38,14 @@ Log.Logger = new LoggerConfiguration()
     .Enrich.WithProperty("ApplicationName", applicationName)
     .CreateLogger();
 
+// checks
+if (securityOptions.RootUser is null)
+    Log.Warning("No root user configured");
+
 // run
 try
 {
-    Log.Information("Start host.");
+    Log.Information("Start host");
 
     var builder = WebApplication.CreateBuilder(args);
 
@@ -45,7 +53,7 @@ try
     builder.Host.UseSerilog();
 
     // Add services to the container.
-    AddServices(builder.Services, configuration);
+    AddServices(builder.Services, configuration, securityOptions);
 
     // Build 
     var app = builder.Build();
@@ -55,8 +63,7 @@ try
 
     // initialize app state
     var pathsOptions = app.Services.GetRequiredService<IOptions<PathsOptions>>();
-    var securityOptions = app.Services.GetRequiredService<IOptions<SecurityOptions>>();
-    await InitializeAppAsync(app.Services, pathsOptions.Value, securityOptions.Value, app.Logger);
+    await InitializeAppAsync(app.Services, pathsOptions.Value, securityOptions, app.Logger);
 
     // Run
     var baseUrl = $"{serverOptions.HttpScheme}://{serverOptions.HttpAddress}:{serverOptions.HttpPort}";
@@ -64,7 +71,7 @@ try
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "Host terminated unexpectedly.");
+    Log.Fatal(ex, "Host terminated unexpectedly");
     throw;
 }
 finally
@@ -72,12 +79,8 @@ finally
     Log.CloseAndFlush();
 }
 
-void AddServices(IServiceCollection services, IConfiguration configuration)
+void AddServices(IServiceCollection services, IConfiguration configuration, SecurityOptions securityOptions)
 {
-    var securityOptions = configuration
-        .GetSection(SecurityOptions.Section)
-        .Get<SecurityOptions>();
-
     // database
     services.AddDbContext<ApplicationDbContext>();
 
@@ -162,8 +165,7 @@ void ConfigurePipeline(WebApplication app)
     }
     else
     {
-#warning Ooops. Something went wrong ;-)
-        app.UseExceptionHandler("/Error");
+#warning write error page HTML here without razor page (example: app.UseExceptionHandler)
 
         // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
         app.UseHsts();
@@ -193,7 +195,6 @@ void ConfigurePipeline(WebApplication app)
     app.UseAuthorization();
 
     // endpoints
-    app.MapRazorPages();
     app.MapControllers();
     app.MapFallbackToFile("index.html");
 }
