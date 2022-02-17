@@ -13,10 +13,10 @@ namespace Nexus.Services
 
     internal class DbService : IDBService
     {
-        ApplicationDbContext _context;
+        UserDbContext _context;
 
         public DbService(
-            ApplicationDbContext context)
+            UserDbContext context)
         {
             _context = context;
         }
@@ -25,7 +25,7 @@ namespace Nexus.Services
         {
            return _context.Users
                 .Include(user => user.RefreshTokens)
-                .FirstOrDefaultAsync(user => user.UserId == userId);
+                .FirstOrDefaultAsync(user => user.Id == userId);
         }
 
         public Task<NexusUser?> FindByTokenAsync(string token)

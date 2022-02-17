@@ -98,7 +98,6 @@ namespace Nexus.Core
 
         public const string Section = "Security";
         public const string OicdSubSection = "Oidc";
-        public string? RootUser { get; set; }
         public string Base64JwtSigningKey { get; set; } = _defaultKey;
         public TimeSpan JwtTokenLifeTime { get; set; }
         public TimeSpan RefreshTokenLifeTime { get; set; }

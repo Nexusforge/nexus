@@ -1,0 +1,8 @@
+﻿@page "/logout"
+
+<PageTitle>Logout</PageTitle>
+
+<form action="/api/v1/users/signout">
+    <input type="hidden" name="returnUrl" value="/login" /> 
+    <input type="submit" value="Logout" />
+</form>

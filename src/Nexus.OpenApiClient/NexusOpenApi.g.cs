@@ -92,26 +92,26 @@ public class NexusOpenApiClient
     public IWritersClient Writers => _Writers;
 
 
-    /// <summary>
-    /// Attempts to sign in the user.
-    /// </summary>
-    /// <param name="userId">The user ID.</param>
-    /// <param name="password">The user password.</param>
-    /// <returns>A task.</returns>
-    /// <exception cref="SecurityException">Thrown when the authentication fails.</exception>
-    public async Task PasswordSignInAsync(string userId, string password)
-    {
-        var authenticateRequest = new AuthenticateRequest(UserId: userId, Password: password);
-        var authenticateResponse = await this.Users.AuthenticateAsync(authenticateRequest);
+    ///// <summary>
+    ///// Attempts to sign in the user.
+    ///// </summary>
+    ///// <param name="userId">The user ID.</param>
+    ///// <param name="password">The user password.</param>
+    ///// <returns>A task.</returns>
+    ///// <exception cref="SecurityException">Thrown when the authentication fails.</exception>
+    //public async Task PasswordSignInAsync(string userId, string password)
+    //{
+    //    var authenticateRequest = new AuthenticateRequest(UserId: userId, Password: password);
+    //    var authenticateResponse = await this.Users.AuthenticateAsync(authenticateRequest);
 
-        if (authenticateResponse.Error is not null)
-            throw new SecurityException($"Unable to authenticate. Reason: {authenticateResponse.Error}");
+    //    if (authenticateResponse.Error is not null)
+    //        throw new SecurityException($"Unable to authenticate. Reason: {authenticateResponse.Error}");
 
-        _httpClient.DefaultRequestHeaders.Add(AuthorizationHeaderKey, $"Bearer {authenticateResponse.JwtToken}");
+    //    _httpClient.DefaultRequestHeaders.Add(AuthorizationHeaderKey, $"Bearer {authenticateResponse.JwtToken}");
 
-        _jwtToken = authenticateResponse.JwtToken;
-        _refreshToken = authenticateResponse.RefreshToken;
-    }
+    //    _jwtToken = authenticateResponse.JwtToken;
+    //    _refreshToken = authenticateResponse.RefreshToken;
+    //}
 
     /// <summary>
     /// Attaches configuration data to subsequent Nexus OpenAPI requests.
@@ -684,7 +684,8 @@ public class SourcesClient : ISourcesClient
 public interface IUsersClient
 {
     Task<ICollection<string>> GetUsersAsync(CancellationToken cancellationToken = default);
-    Task<AuthenticateResponse> AuthenticateAsync(AuthenticateRequest request, CancellationToken cancellationToken = default);
+    Task<ICollection<AuthenticationSchemeDescription>> GetAuthenticationSchemesAsync(CancellationToken cancellationToken = default);
+    Task<StreamResponse> AuthenticateAsync(string scheme, string returnUrl, CancellationToken cancellationToken = default);
     Task<RefreshTokenResponse> RefreshTokenAsync(RefreshTokenRequest request, CancellationToken cancellationToken = default);
     Task<RevokeTokenResponse> RevokeTokenAsync(RevokeTokenRequest request, CancellationToken cancellationToken = default);
     Task<ICollection<RefreshToken>> GetRefreshTokensAsync(string userId, CancellationToken cancellationToken = default);
@@ -712,15 +713,36 @@ public class UsersClient : IUsersClient
     }
 
     /// <summary>
+    /// Returns a list of available authentication schemes.
+    /// </summary>
+    public Task<ICollection<AuthenticationSchemeDescription>> GetAuthenticationSchemesAsync(CancellationToken cancellationToken = default)
+    {
+        var urlBuilder = new StringBuilder();
+        urlBuilder.Append("/api/v1/Users/authentication-schemes");
+
+        var url = urlBuilder.ToString();
+        return _client.InvokeAsync<ICollection<AuthenticationSchemeDescription>>("GET", url, "application/json", default, cancellationToken);
+    }
+
+    /// <summary>
     /// Authenticates the user.
     /// </summary>
-    public Task<AuthenticateResponse> AuthenticateAsync(AuthenticateRequest request, CancellationToken cancellationToken = default)
+    public Task<StreamResponse> AuthenticateAsync(string scheme, string returnUrl, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/Users/authenticate");
 
+        var queryValues = new Dictionary<string, string>()
+        {
+            ["scheme"] = Uri.EscapeDataString(Convert.ToString(scheme, CultureInfo.InvariantCulture)),
+            ["returnUrl"] = Uri.EscapeDataString(Convert.ToString(returnUrl, CultureInfo.InvariantCulture)),
+        };
+
+        var query = "?" + string.Join('&', queryValues.Select(entry => $"{entry.Key}={entry.Value}"));
+        urlBuilder.Append(query);
+
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<AuthenticateResponse>("POST", url, "application/json", request, cancellationToken);
+        return _client.InvokeAsync<StreamResponse>("GET", url, "application/octet-stream", default, cancellationToken);
     }
 
     /// <summary>
@@ -883,9 +905,7 @@ public record ExtensionDescription (string Type, string? Description);
 
 public record DataSourceRegistration (string Type, Uri ResourceLocator, IDictionary<string, string> Configuration, bool Publish, bool Disable);
 
-public record AuthenticateResponse (string? JwtToken, string? RefreshToken, string? Error);
-
-public record AuthenticateRequest (string UserId, string Password);
+public record AuthenticationSchemeDescription (string Scheme, string DisplayName);
 
 public record RefreshTokenResponse (string? JwtToken, string? RefreshToken, string? Error);
 

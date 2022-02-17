@@ -18,7 +18,7 @@ namespace Nexus.Core
 
         public CatalogContainer(
             CatalogRegistration catalogRegistration,
-            ClaimsPrincipal owner,
+            ClaimsPrincipal? owner,
             DataSourceRegistration dataSourceRegistration,
             CatalogMetadata metadata,
             ICatalogManager catalogManager,
@@ -40,7 +40,7 @@ namespace Nexus.Core
 
         public bool IsTransient { get; }
 
-        public ClaimsPrincipal Owner { get; }
+        public ClaimsPrincipal? Owner { get; }
 
         public string PhysicalName => this.Id.TrimStart('/').Replace('/', '_');
 

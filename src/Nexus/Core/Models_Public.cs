@@ -108,4 +108,13 @@ namespace Nexus.Core
         double Progress,
         string? ExceptionMessage,
         object? Result);
+
+    /// <summary>
+    /// Describes an OpenID connect provider.
+    /// </summary>
+    /// <param name="Scheme">The scheme.</param>
+    /// <param name="DisplayName">The display name.</param>
+    public record AuthenticationSchemeDescription(
+        string Scheme,
+        string DisplayName);
 }

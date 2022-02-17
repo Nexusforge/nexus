@@ -19,7 +19,7 @@ namespace Nexus.Services
     {
         #region Types
 
-        record CatalogPrototype(CatalogRegistration Registration, DataSourceRegistration DataSourceRegistration, ClaimsPrincipal Owner);
+        record CatalogPrototype(CatalogRegistration Registration, DataSourceRegistration DataSourceRegistration, ClaimsPrincipal? Owner);
 
         #endregion
 
@@ -80,21 +80,17 @@ namespace Nexus.Services
                 var catalogPrototypes = new List<CatalogPrototype>();
 
                 /* => for the built-in backend sources */
-                var rootUser = await _userManagerWrapper.GetClaimsPrincipalAsync(_securityOptions.RootUser);
 
 #warning Load Parallel?
-                if (rootUser is not null)
+                /* for each backend source */
+                foreach (var registration in builtinDataSourceRegistrations)
                 {
-                    /* for each backend source */
-                    foreach (var registration in builtinDataSourceRegistrations)
-                    {
-                        using var controller = await _dataControllerService.GetDataSourceControllerAsync(registration, cancellationToken);
-                        var catalogRegistrations = await controller.GetCatalogRegistrationsAsync(path, cancellationToken);
+                    using var controller = await _dataControllerService.GetDataSourceControllerAsync(registration, cancellationToken);
+                    var catalogRegistrations = await controller.GetCatalogRegistrationsAsync(path, cancellationToken);
 
-                        foreach (var catalogRegistration in catalogRegistrations)
-                        {
-                            catalogPrototypes.Add(new CatalogPrototype(catalogRegistration, registration, rootUser));
-                        }
+                    foreach (var catalogRegistration in catalogRegistrations)
+                    {
+                        catalogPrototypes.Add(new CatalogPrototype(catalogRegistration, registration, null));
                     }
                 }
 
@@ -223,10 +219,12 @@ namespace Nexus.Services
                 else
                 {
                     var owner = catalogPrototype.Owner;
-                    var otherOwner = catalogPrototypesToKeep[referenceIndex].Owner;
+                    var ownerIsAdmin = owner is null || owner.HasClaim(Claims.IS_ADMIN, "true");
 
-                    /* other user is no admin, but current user is */
-                    if (!otherOwner.HasClaim(Claims.IS_ADMIN, "true") && owner.HasClaim(Claims.IS_ADMIN, "true"))
+                    var otherOwner = catalogPrototypesToKeep[referenceIndex].Owner;
+                    var otherOwnerIsAdmin = otherOwner is null || otherOwner.HasClaim(Claims.IS_ADMIN, "true");
+
+                    if (!otherOwnerIsAdmin && ownerIsAdmin)
                     {
                         _logger.LogWarning("Duplicate catalog {CatalogId}", catalogPrototypesToKeep[referenceIndex]);
                         catalogPrototypesToKeep[referenceIndex] = catalogPrototype;

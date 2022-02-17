@@ -326,6 +326,7 @@
           {
             "name": "catalogId",
             "in": "query",
+            "required": true,
             "description": "The catalog identifier.",
             "schema": {
               "type": "string"
@@ -335,6 +336,7 @@
           {
             "name": "resourceId",
             "in": "query",
+            "required": true,
             "description": "The resource identifier.",
             "schema": {
               "type": "string"
@@ -344,6 +346,7 @@
           {
             "name": "representationId",
             "in": "query",
+            "required": true,
             "description": "The representation identifier.",
             "schema": {
               "type": "string"
@@ -353,6 +356,7 @@
           {
             "name": "begin",
             "in": "query",
+            "required": true,
             "description": "Start date/time.",
             "schema": {
               "type": "string",
@@ -363,6 +367,7 @@
           {
             "name": "end",
             "in": "query",
+            "required": true,
             "description": "End date/time.",
             "schema": {
               "type": "string",
@@ -795,33 +800,67 @@
         }
       }
     },
+    "/api/v1/Users/authentication-schemes": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Returns a list of available authentication schemes.",
+        "operationId": "Users_GetAuthenticationSchemes",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AuthenticationSchemeDescription"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/Users/authenticate": {
-      "post": {
+      "get": {
         "tags": [
           "Users"
         ],
         "summary": "Authenticates the user.",
         "operationId": "Users_Authenticate",
-        "requestBody": {
-          "x-name": "request",
-          "description": "The authentication request.",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AuthenticateRequest"
-              }
-            }
+        "parameters": [
+          {
+            "name": "scheme",
+            "in": "query",
+            "required": true,
+            "description": "The authentication scheme to challenge.",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
           },
-          "required": true,
-          "x-position": 1
-        },
+          {
+            "name": "returnUrl",
+            "in": "query",
+            "required": true,
+            "description": "The URL to return after successful authentication.",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 2
+          }
+        ],
         "responses": {
           "200": {
-            "description": "A pair of JWT and refresh token.",
+            "description": "",
             "content": {
-              "application/json": {
+              "application/octet-stream": {
                 "schema": {
-                  "$ref": "#/components/schemas/AuthenticateResponse"
+                  "type": "string",
+                  "format": "binary"
                 }
               }
             }
@@ -1323,40 +1362,18 @@
           }
         }
       },
-      "AuthenticateResponse": {
+      "AuthenticationSchemeDescription": {
         "type": "object",
-        "description": "The authentication request response.",
+        "description": "Describes an OpenID connect provider.",
         "additionalProperties": false,
         "properties": {
-          "jwtToken": {
+          "scheme": {
             "type": "string",
-            "description": "The JWT token. null when an error occured.",
-            "nullable": true
+            "description": "The scheme."
           },
-          "refreshToken": {
+          "displayName": {
             "type": "string",
-            "description": "The refresh token. null when an error occured.",
-            "nullable": true
-          },
-          "error": {
-            "type": "string",
-            "description": "An optional error message. Not null when an error occured.",
-            "nullable": true
-          }
-        }
-      },
-      "AuthenticateRequest": {
-        "type": "object",
-        "description": "An authentication request.",
-        "additionalProperties": false,
-        "properties": {
-          "userId": {
-            "type": "string",
-            "description": "The user ID."
-          },
-          "password": {
-            "type": "string",
-            "description": "The password."
+            "description": "The display name."
           }
         }
       },

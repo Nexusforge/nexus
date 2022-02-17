@@ -149,21 +149,21 @@ namespace Nexus.Services
         private (string, RefreshToken) GenerateTokenPair(NexusUser user)
         {
             // generate a token pair
-            var jwtToken = this.GenerateJwtToken(user.UserId, user.Claims);
+            var jwtToken = this.GenerateJwtToken(user.Id, user.Claims);
             var refreshToken = this.GenerateRefreshToken();
 
             // return response
             return (jwtToken, refreshToken);
         }
 
-        private string GenerateJwtToken(string userId, IList<Claim> claims)
+        private string GenerateJwtToken(string userId, IList<NexusClaim> claims)
         {
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new []
                 {
                     new Claim(ClaimTypes.Name, userId)
-                }.Concat(claims)),
+                }.Concat(claims.Select(claim => new Claim(claim.Type, claim.Value)))),
                 NotBefore = DateTime.UtcNow,
                 Expires = DateTime.UtcNow.Add(_securityOptions.JwtTokenLifeTime),
                 SigningCredentials = _signingCredentials

@@ -68,26 +68,26 @@ public class {1}
 
 {6}
 
-    /// <summary>
-    /// Attempts to sign in the user.
-    /// </summary>
-    /// <param name="userId">The user ID.</param>
-    /// <param name="password">The user password.</param>
-    /// <returns>A task.</returns>
-    /// <exception cref="SecurityException">Thrown when the authentication fails.</exception>
-    public async Task PasswordSignInAsync(string userId, string password)
-    {
-        var authenticateRequest = new AuthenticateRequest(UserId: userId, Password: password);
-        var authenticateResponse = await this.Users.AuthenticateAsync(authenticateRequest);
+    ///// <summary>
+    ///// Attempts to sign in the user.
+    ///// </summary>
+    ///// <param name="userId">The user ID.</param>
+    ///// <param name="password">The user password.</param>
+    ///// <returns>A task.</returns>
+    ///// <exception cref="SecurityException">Thrown when the authentication fails.</exception>
+    //public async Task PasswordSignInAsync(string userId, string password)
+    //{
+    //    var authenticateRequest = new AuthenticateRequest(UserId: userId, Password: password);
+    //    var authenticateResponse = await this.Users.AuthenticateAsync(authenticateRequest);
 
-        if (authenticateResponse.Error is not null)
-            throw new SecurityException($"Unable to authenticate. Reason: {authenticateResponse.Error}");
+    //    if (authenticateResponse.Error is not null)
+    //        throw new SecurityException($"Unable to authenticate. Reason: {authenticateResponse.Error}");
 
-        _httpClient.DefaultRequestHeaders.Add(AuthorizationHeaderKey, $"Bearer {authenticateResponse.JwtToken}");
+    //    _httpClient.DefaultRequestHeaders.Add(AuthorizationHeaderKey, $"Bearer {authenticateResponse.JwtToken}");
 
-        _jwtToken = authenticateResponse.JwtToken;
-        _refreshToken = authenticateResponse.RefreshToken;
-    }
+    //    _jwtToken = authenticateResponse.JwtToken;
+    //    _refreshToken = authenticateResponse.RefreshToken;
+    //}
 
     /// <summary>
     /// Attaches configuration data to subsequent Nexus OpenAPI requests.

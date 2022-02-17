@@ -4,10 +4,12 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Nexus.Core;
 using Nexus.Services;
 using Serilog;
 using System.Globalization;
+using System.Security.Claims;
 using System.Text.Json;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
@@ -44,9 +46,6 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 
 // checks
-if (securityOptions.RootUser is null)
-    Log.Warning("No root user configured");
-
 if (!securityOptions.OidcProviders.Any())
     Log.Warning("No OpenID Connect provider configured");
 
@@ -95,7 +94,7 @@ void AddServices(
     // database
     var filePath = Path.Combine(pathsOptions.Config, "users.db");
 
-    services.AddDbContext<ApplicationDbContext>(
+    services.AddDbContext<UserDbContext>(
         options => options.UseSqlite($"Data Source={filePath}"));
 
     // forwarded headers
@@ -108,42 +107,112 @@ void AddServices(
     });
 
     // authentication
-    var builder = services
-        .AddAuthentication(options =>
-        {
-            options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-            options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
-        })
-        .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme);
-        //.AddJwtBearer(options =>
-        //{
-        //    options.TokenValidationParameters = new TokenValidationParameters()
-        //    {
-        //        ClockSkew = TimeSpan.Zero,
-        //        ValidateAudience = false,
-        //        ValidateIssuer = false,
-        //        ValidateActor = false,
-        //        ValidateLifetime = true,
-        //        IssuerSigningKey = new SymmetricSecurityKey(Convert.FromBase64String(securityOptions.Base64JwtSigningKey))
-        //    };
-        //});
-
-    foreach (var provider in securityOptions.OidcProviders)
+    if (securityOptions.OidcProviders.Any())
     {
-        builder.AddOpenIdConnect(provider.Scheme, provider.DisplayName, options =>
-        {
-            options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-
-            options.Authority = provider.Authority;
-            options.ClientId = provider.ClientId;
-            options.ClientSecret = provider.ClientSecret;
-
-#warning only for testing
-            options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        var builder = services
+            .AddAuthentication(options =>
             {
-                ValidateIssuer = false
-            };
-        });
+                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = securityOptions.OidcProviders.First().Scheme;
+            })
+            .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme);
+            //.AddJwtBearer(options =>
+            //{
+            //    options.TokenValidationParameters = new TokenValidationParameters()
+            //    {
+            //        ClockSkew = TimeSpan.Zero,
+            //        ValidateAudience = false,
+            //        ValidateIssuer = false,
+            //        ValidateActor = false,
+            //        ValidateLifetime = true,
+            //        IssuerSigningKey = new SymmetricSecurityKey(Convert.FromBase64String(securityOptions.Base64JwtSigningKey))
+            //    };
+            //});
+
+        foreach (var provider in securityOptions.OidcProviders)
+        {
+            builder.AddOpenIdConnect(provider.Scheme, provider.DisplayName, options =>
+            {
+                options.Authority = provider.Authority;
+                options.ClientId = provider.ClientId;
+                options.ClientSecret = provider.ClientSecret;
+
+                options.CallbackPath = $"/signin-oidc/{provider.Scheme}";
+                options.ResponseType = OpenIdConnectResponseType.Code;
+
+                var environmentName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+
+                if (environmentName == "Development")
+                    options.RequireHttpsMetadata = false;
+
+                options.Events = new OpenIdConnectEvents()
+                {
+                    OnTokenValidated = async context =>
+                    {
+                        // scopes
+                        // https://openid.net/specs/openid-connect-basic-1_0.html#Scopes
+
+                        // sub claim type will be mapped to ClaimTypes.NameIdentifier
+                        // https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/6e7a53e241e4566998d3bf365f03acd0da699a31/src/System.IdentityModel.Tokens.Jwt/ClaimTypeMapping.cs#L59
+
+                        var principal = context.Principal;
+
+                        if (principal is null)
+                            throw new Exception("The principal is null. This should never happen.");
+
+                        var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier) 
+                            ?? throw new Exception("The name identifier claim is missing. This should never happen.");
+
+                        var userName = principal.FindFirstValue(ClaimTypes.Name)
+                            ?? throw new Exception("The name claim is missing.");
+
+                        var userContext = context.HttpContext.RequestServices.GetRequiredService<UserDbContext>();
+                        
+                        var user = await userContext.Users
+                            .Include(user => user.Claims)
+                            .SingleOrDefaultAsync(user => 
+                                user.Id == userId && 
+                                user.Scheme == context.Scheme.Name);
+
+                        if (user is null)
+                        {
+                            user = new NexusUser()
+                            {
+                                Id = userId,
+                                Name = userName,
+                                Scheme = context.Scheme.Name,
+                                Claims = new List<NexusClaim>(),
+                                RefreshTokens = new List<RefreshToken>()
+                            };
+
+                            var isFirstUser = !userContext.Users.Any();
+
+                            if (isFirstUser)
+                            {
+                                user.Claims.Add(new NexusClaim()
+                                {
+                                    Type = Claims.IS_ADMIN,
+                                    Value = "true"
+                                });
+                            }
+
+                            userContext.Users.Add(user);
+                        }
+
+                        else
+                        {
+                            // user name may change, so update it
+                            user.Name = userName;
+                        }
+
+                        await userContext.SaveChangesAsync();
+
+                        var appIdentity = new ClaimsIdentity(user.Claims.Select(claim => new Claim(claim.Type, claim.Value)));
+                        principal.AddIdentity(appIdentity);
+                    }
+                };
+            });
+        }
     }
 
     // blazor
@@ -218,24 +287,11 @@ void ConfigurePipeline(WebApplication app)
     // LogContext properties are not included by default in request logging, workaround: https://nblumhardt.com/2019/10/serilog-mvc-logging/
     app.UseSerilogRequestLogging();
 
-    //// routing (for REST API)
+    // routing (for REST API)
     app.UseRouting();
 
     // default authentication
     app.UseAuthentication();
-
-    // test
-    app.UseWhen(context => context.Request.Path.StartsWithSegments("/mytestlogin"), app =>
-    {
-        app.Run(async context =>
-        {
-            if (!context.User.Identity.IsAuthenticated)
-                await context.ChallengeAsync("Microsoft");
-
-            else
-                await context.Response.WriteAsync($"Your are authenticated!! Welcome {context.User.Identity.Name}.");
-        });
-    });
 
     // authorization
     app.UseAuthorization();
@@ -246,14 +302,20 @@ void ConfigurePipeline(WebApplication app)
 }
 
 async Task InitializeAppAsync(
-    IServiceProvider serviceProvier,
+    IServiceProvider serviceProvider,
     PathsOptions pathsOptions,
     SecurityOptions securityOptions,
     ILogger logger)
 {
-    var appState = serviceProvier.GetRequiredService<AppState>();
-    var appStateManager = serviceProvier.GetRequiredService<AppStateManager>();
-    var databaseManager = serviceProvier.GetRequiredService<IDatabaseManager>();
+    var appState = serviceProvider.GetRequiredService<AppState>();
+    var appStateManager = serviceProvider.GetRequiredService<AppStateManager>();
+    var databaseManager = serviceProvider.GetRequiredService<IDatabaseManager>();
+
+    // database
+    using var scope = serviceProvider.CreateScope();
+    var userContext = scope.ServiceProvider.GetRequiredService<UserDbContext>();
+
+    await userContext.Database.EnsureCreatedAsync();
 
     // project
     if (databaseManager.TryReadProject(out var project))

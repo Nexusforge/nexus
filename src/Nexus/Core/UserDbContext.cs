@@ -2,9 +2,9 @@
 
 namespace Nexus.Core
 {
-    internal class ApplicationDbContext : DbContext
+    internal class UserDbContext : DbContext
     {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        public UserDbContext(DbContextOptions<UserDbContext> options)
             : base(options)
         {
             //

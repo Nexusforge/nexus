@@ -1,6 +1,9 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Nexus.API.V1;
 using Nexus.Core;
 using Nexus.Services;
@@ -31,6 +34,7 @@ namespace Nexus.Controllers.V1
 
         private IDBService _dBService;
         private INexusAuthenticationService _authService;
+        private SecurityOptions _securityOptions;
 
         #endregion
 
@@ -38,10 +42,12 @@ namespace Nexus.Controllers.V1
 
         public UsersController(
             IDBService dBService,
-            INexusAuthenticationService authService)
+            INexusAuthenticationService authService,
+            IOptions<SecurityOptions> securityOptions)
         {
             _dBService = dBService;
             _authService = authService;
+            _securityOptions = securityOptions.Value;
         }
 
         #endregion
@@ -55,25 +61,59 @@ namespace Nexus.Controllers.V1
         public async Task<ActionResult<List<string>>> GetUsersAsync()
         {
             var users = await _dBService.GetUsers()
-                .Select(user => user.UserId)
+                .Select(user => user.Id)
                 .ToListAsync();
 
             return users;
         }
 
         /// <summary>
+        /// Returns a list of available authentication schemes.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet("authentication-schemes")]
+        public List<AuthenticationSchemeDescription> GetAuthenticationSchemes()
+        {
+            return _securityOptions.OidcProviders
+                .Select(provider => new AuthenticationSchemeDescription(provider.Scheme, provider.DisplayName))
+                .ToList();
+        }
+
+        /// <summary>
         /// Authenticates the user.
         /// </summary>
-        /// <param name="request">The authentication request.</param>
-        /// <returns>A pair of JWT and refresh token.</returns>
+        /// <param name="scheme">The authentication scheme to challenge.</param>
+        /// <param name="returnUrl">The URL to return after successful authentication.</param>
         [AllowAnonymous]
-        [HttpPost("authenticate")]
-        public async Task<ActionResult<AuthenticateResponse>> AuthenticateAsync(AuthenticateRequest request)
+        [HttpGet("authenticate")]
+        public ChallengeResult Authenticate(
+            [BindRequired] string scheme,
+            [BindRequired] string returnUrl)
         {
-            var (jwtToken, refreshToken, error) = await _authService
-                .AuthenticateAsync(request.UserId, request.Password);
+            var properties = new AuthenticationProperties()
+            {
+                RedirectUri = returnUrl
+            };
 
-            return new AuthenticateResponse(jwtToken, refreshToken, error);
+            return Challenge(properties, scheme);
+        }
+
+        /// <summary>
+        /// Logs out the user.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet("signout")]
+        public async Task<RedirectResult> SignOutAsync(
+            [BindRequired] string returnUrl)
+        {
+            // If called SignOut with a scheme, the user is forwarded to the identity providers
+            // logout page. But that doesn't seem to be required here. Simply log out of Nexus.
+            //
+            // return SignOut(properties, scheme);
+
+            await HttpContext.SignOutAsync();
+
+            return Redirect(returnUrl);
         }
 
         /// <summary>
