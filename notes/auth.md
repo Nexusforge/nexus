@@ -18,16 +18,19 @@ When an API request is made, Nexus needs to know the user's identity to determin
 This works by first authenticating the user, then consulting a database to find the user's claims (e.g. a claim which describes which resource catalogs the user can access) and finally setting a cookie with the user's identity information.
 
 ## Summary
+
 Using OAuth means that permissions are managed by the authorization server (in the form of scopes), so you need control over that server, which isn't always the case. Instead, OpenID connect allows authentication via a single sign-on (SSO) provider, while authorization is still controlled by Nexus.
 
-## Disadvantages: 
+## Disadvantages
+
 - the cookie might become very large
 - the SPA cannot extract the username from the encrypted cookie, an additional API call is required
 
-## Other clients:
+## Other clients
 Non-browser clients could use the device code flow but that is not supported by Open ID Connect. Therefore, Nexus will offer an API for authenticated users to obtain an access and refresh token as a json file stream. This file should be stored somewhere where the non-browser application can access it. Nexus will add bearer authentication along with the cookie authentication middleware to support both scenarios.
 
 ## Security considerations
+
 - The audience should be provided in the OpenID Connect provider configuration to allow Nexus to validate the `aud` claim [RFC 7519](https://www.rfc-editor.org/rfc/rfc7519#section-4.1.3). This is an important security measure as described [here](https://www.keycloak.org/docs/11.0/server_admin/#_audience).
 
 ## Implementation details
@@ -35,6 +38,10 @@ Non-browser clients could use the device code flow but that is not supported by 
 The backend of Nexus is a confidential client upon user request, it will perform the authorization code flow to obtain an ID token to authenticate and sign-in the user.
 
 Nexus supports multiple OpenID Connect providers. See [Configuration] on how to add configuration values.
+
+Nexus configuration does not offer any `audience` or `scope` property available because it does not use the access token to access a resource server (which would validate the `aud` claim) and the ID token is not allowed to be sent anywhere. 
+
+According to this [tutorial](https://auth0.com/blog/backend-for-frontend-pattern-with-auth0-and-dotnet/), it might be required to attach an audience value to get a token using `context.ProtocolMessage.SetParameter("audience", value)`. Support for this will be implemented when this becomes an issue for anyone.
 
 ## Alternative approach (and why it did not work):
 
@@ -68,4 +75,5 @@ When during an OAuth flow an API scope is requested, it will become part of the 
 When an API scope is requested during an OAuth flow, it becomes part of the `scope` claim of the returned access token. Also, the audience (`aud`) claim is set to the resource that the scope belongs to. This is important to understand audience validation. The audience value should identify the recipient of the access token, i.e. the resource server.
 
 ### Bearer token validation:
+
 Bearer token validation does not necessarily require a manually provided token signing key for validation. The .NET middleware tries to get the public key from the authorization server on the first request [[Source](https://stackoverflow.com/questions/58758198/does-addjwtbearer-do-what-i-think-it-does)].

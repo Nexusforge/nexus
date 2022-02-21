@@ -9,7 +9,8 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     internal static class OpenApiExtensions
     {
-        public static IServiceCollection AddNexusOpenApi(this IServiceCollection services)
+        public static IServiceCollection AddNexusOpenApi(
+            this IServiceCollection services)
         {
             // https://github.com/dotnet/aspnet-api-versioning/tree/master/samples/aspnetcore/SwaggerSample
             services.AddControllers()
