@@ -219,10 +219,10 @@ namespace Nexus.Services
                 else
                 {
                     var owner = catalogPrototype.Owner;
-                    var ownerIsAdmin = owner is null || owner.HasClaim(Claims.IS_ADMIN, "true");
+                    var ownerIsAdmin = owner is null || owner.HasClaim(NexusClaims.IS_ADMIN, "true");
 
                     var otherOwner = catalogPrototypesToKeep[referenceIndex].Owner;
-                    var otherOwnerIsAdmin = otherOwner is null || otherOwner.HasClaim(Claims.IS_ADMIN, "true");
+                    var otherOwnerIsAdmin = otherOwner is null || otherOwner.HasClaim(NexusClaims.IS_ADMIN, "true");
 
                     if (!otherOwnerIsAdmin && ownerIsAdmin)
                     {

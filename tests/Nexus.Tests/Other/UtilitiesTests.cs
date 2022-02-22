@@ -32,9 +32,9 @@ namespace Other
             var catalogMetadata = new CatalogMetadata(default, default, GroupMemberships: new[] { "A" }, default);
 
             var principal = new ClaimsPrincipal(new ClaimsIdentity(
-                new Claim[] { new Claim(Claims.IS_ADMIN, isAdmin) }
-                .Concat(canAccessCatalog.Split(";").Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => new Claim(Claims.CAN_ACCESS_CATALOG, value)))
-                .Concat(canAccessGroup.Split(";").Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => new Claim(Claims.CAN_ACCESS_GROUP, value))), authenticationType));
+                new Claim[] { new Claim(NexusClaims.IS_ADMIN, isAdmin) }
+                .Concat(canAccessCatalog.Split(";").Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => new Claim(NexusClaims.CAN_ACCESS_CATALOG, value)))
+                .Concat(canAccessGroup.Split(";").Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => new Claim(NexusClaims.CAN_ACCESS_GROUP, value))), authenticationType));
 
             // Act
             var actual = AuthorizationUtilities.IsCatalogAccessible(catalogId, catalogMetadata, principal);
@@ -61,8 +61,8 @@ namespace Other
             var catalogId = "/A/B/C";
 
             var principal = new ClaimsPrincipal(new ClaimsIdentity(
-               new Claim[] { new Claim(Claims.IS_ADMIN, isAdmin) }
-               .Concat(canEditCatalog.Split(";").Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => new Claim(Claims.CAN_EDIT_CATALOG, value))), authenticationType));
+               new Claim[] { new Claim(NexusClaims.IS_ADMIN, isAdmin) }
+               .Concat(canEditCatalog.Split(";").Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => new Claim(NexusClaims.CAN_EDIT_CATALOG, value))), authenticationType));
 
             // Act
             var actual = AuthorizationUtilities.IsCatalogEditable(principal, catalogId);
@@ -89,7 +89,7 @@ namespace Other
 
             var principal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]
             {
-                new Claim(Claims.IS_ADMIN, isAdmin)
+                new Claim(NexusClaims.IS_ADMIN, isAdmin)
             }, authenticationType));
 
             // Act

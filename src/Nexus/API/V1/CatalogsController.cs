@@ -219,7 +219,7 @@ namespace Nexus.Controllers.V1
 
             var response = this.ProcessCatalogIdAsync<object>(catalogId, async catalogContainer =>
             {
-                var canEdit = this.User.HasClaim(Claims.CAN_EDIT_CATALOG, "true");
+                var canEdit = this.User.HasClaim(NexusClaims.CAN_EDIT_CATALOG, "true");
 
                 if (!canEdit)
                     return this.Forbid($"The current user is not permitted to modify the catalog '{catalogId}'.");

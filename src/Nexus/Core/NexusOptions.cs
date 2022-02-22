@@ -103,13 +103,4 @@ namespace Nexus.Core
         public TimeSpan RefreshTokenLifeTime { get; set; }
         public List<OpenIdConnectProvider> OidcProviders { get; set; } = new();
     }
-
-    internal record SmtpOptions : NexusOptionsBase
-    {
-        public const string Section = "Smtp";
-        public string? Host { get; set; }
-        public ushort Port { get; set; }
-        public string? FromAddress { get; set; }
-        public string? FromName { get; set; }
-    }
 }

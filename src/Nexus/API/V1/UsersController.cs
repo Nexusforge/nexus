@@ -74,7 +74,11 @@ namespace Nexus.Controllers.V1
         [HttpGet("authentication-schemes")]
         public List<AuthenticationSchemeDescription> GetAuthenticationSchemes()
         {
-            return _securityOptions.OidcProviders
+            var providers = _securityOptions.OidcProviders.Any()
+                ? _securityOptions.OidcProviders
+                : new List<OpenIdConnectProvider>() { AuthenticationExtensions.DefaultProvider };
+
+            return providers
                 .Select(provider => new AuthenticationSchemeDescription(provider.Scheme, provider.DisplayName))
                 .ToList();
         }
@@ -114,6 +118,15 @@ namespace Nexus.Controllers.V1
             await HttpContext.SignOutAsync();
 
             return Redirect(returnUrl);
+        }
+
+        /// <summary>
+        /// Gets the user info.
+        /// </summary>
+        [HttpGet("info")]
+        public ActionResult<UserInfo> GetUserInfo()
+        {
+            return new UserInfo(this.User.Identity!.Name!);
         }
 
         /// <summary>

@@ -1,4 +1,5 @@
-﻿@inherits LayoutComponentBase
+﻿@using Nexus.Client
+@inherits LayoutComponentBase
 
 <div class="page">
     <div class="sidebar">
@@ -7,7 +8,10 @@
 
     <main>
         <div class="top-row px-4">
-            <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
+            @if (_userInfo is not null)
+            {
+                <span>Hello, @_userInfo.Name!</span>
+            }
         </div>
 
         <article class="content px-4">
@@ -15,3 +19,22 @@
         </article>
     </main>
 </div>
+
+@code {
+    UserInfo? _userInfo;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var httpClient = new HttpClient();
+            var client = new NexusOpenApiClient("https://localhost:8443", httpClient);
+
+            _userInfo = await client.Users.GetUserInfoAsync();
+        }
+        catch
+        {
+            //   
+        }
+    }
+}

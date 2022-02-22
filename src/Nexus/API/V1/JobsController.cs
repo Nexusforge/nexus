@@ -177,7 +177,7 @@ namespace Nexus.Controllers.V1
         [HttpGet]
         public Task<ActionResult<List<Job>>> GetJobsAsync()
         {
-            var isAdmin = this.User.HasClaim(Claims.IS_ADMIN, "true");
+            var isAdmin = this.User.HasClaim(NexusClaims.IS_ADMIN, "true");
             var username = this.User.Identity?.Name;
 
             if (username is null)
@@ -202,7 +202,7 @@ namespace Nexus.Controllers.V1
         {
             if (_jobService.TryGetJob(jobId, out var jobControl))
             {
-                var isAdmin = this.User.HasClaim(Claims.IS_ADMIN, "true");
+                var isAdmin = this.User.HasClaim(NexusClaims.IS_ADMIN, "true");
                 var username = this.User.Identity?.Name;
 
                 if (username is null)
@@ -244,7 +244,7 @@ namespace Nexus.Controllers.V1
         {
             if (_jobService.TryGetJob(jobId, out var jobControl))
             {
-                var isAdmin = this.User.HasClaim(Claims.IS_ADMIN, "true");
+                var isAdmin = this.User.HasClaim(NexusClaims.IS_ADMIN, "true");
                 var username = this.User.Identity?.Name;
 
                 if (username is null)

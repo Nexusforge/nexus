@@ -686,6 +686,8 @@ public interface IUsersClient
     Task<ICollection<string>> GetUsersAsync(CancellationToken cancellationToken = default);
     Task<ICollection<AuthenticationSchemeDescription>> GetAuthenticationSchemesAsync(CancellationToken cancellationToken = default);
     Task<StreamResponse> AuthenticateAsync(string scheme, string returnUrl, CancellationToken cancellationToken = default);
+    Task<StreamResponse> SignOutAsync(string returnUrl, CancellationToken cancellationToken = default);
+    Task<UserInfo> GetUserInfoAsync(CancellationToken cancellationToken = default);
     Task<RefreshTokenResponse> RefreshTokenAsync(RefreshTokenRequest request, CancellationToken cancellationToken = default);
     Task<RevokeTokenResponse> RevokeTokenAsync(RevokeTokenRequest request, CancellationToken cancellationToken = default);
     Task<ICollection<RefreshToken>> GetRefreshTokensAsync(string userId, CancellationToken cancellationToken = default);
@@ -743,6 +745,38 @@ public class UsersClient : IUsersClient
 
         var url = urlBuilder.ToString();
         return _client.InvokeAsync<StreamResponse>("GET", url, "application/octet-stream", default, cancellationToken);
+    }
+
+    /// <summary>
+    /// Logs out the user.
+    /// </summary>
+    public Task<StreamResponse> SignOutAsync(string returnUrl, CancellationToken cancellationToken = default)
+    {
+        var urlBuilder = new StringBuilder();
+        urlBuilder.Append("/api/v1/Users/signout");
+
+        var queryValues = new Dictionary<string, string>()
+        {
+            ["returnUrl"] = Uri.EscapeDataString(Convert.ToString(returnUrl, CultureInfo.InvariantCulture)),
+        };
+
+        var query = "?" + string.Join('&', queryValues.Select(entry => $"{entry.Key}={entry.Value}"));
+        urlBuilder.Append(query);
+
+        var url = urlBuilder.ToString();
+        return _client.InvokeAsync<StreamResponse>("GET", url, "application/octet-stream", default, cancellationToken);
+    }
+
+    /// <summary>
+    /// Gets the user info.
+    /// </summary>
+    public Task<UserInfo> GetUserInfoAsync(CancellationToken cancellationToken = default)
+    {
+        var urlBuilder = new StringBuilder();
+        urlBuilder.Append("/api/v1/Users/info");
+
+        var url = urlBuilder.ToString();
+        return _client.InvokeAsync<UserInfo>("GET", url, "application/json", default, cancellationToken);
     }
 
     /// <summary>
@@ -906,6 +940,8 @@ public record ExtensionDescription (string Type, string? Description);
 public record DataSourceRegistration (string Type, Uri ResourceLocator, IDictionary<string, string> Configuration, bool Publish, bool Disable);
 
 public record AuthenticationSchemeDescription (string Scheme, string DisplayName);
+
+public record UserInfo (string Name);
 
 public record RefreshTokenResponse (string? JwtToken, string? RefreshToken, string? Error);
 

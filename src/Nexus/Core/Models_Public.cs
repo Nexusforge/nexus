@@ -117,4 +117,10 @@ namespace Nexus.Core
     public record AuthenticationSchemeDescription(
         string Scheme,
         string DisplayName);
+
+    /// <summary>
+    /// Describes a user.
+    /// </summary>
+    /// <param name="Name">The user name.</param>
+    public record UserInfo(string Name);
 }
