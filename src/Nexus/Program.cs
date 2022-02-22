@@ -1,10 +1,14 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Nexus.Core;
 using Nexus.Services;
 using Serilog;
 using System.Globalization;
+using System.Security.Claims;
 using System.Text.Json;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
@@ -42,7 +46,7 @@ Log.Logger = new LoggerConfiguration()
 
 // checks
 if (!securityOptions.OidcProviders.Any())
-    Log.Warning("No OpenID Connect providers configured");
+    Log.Warning("No OpenID Connect provider configured");
 
 // run
 try
@@ -87,7 +91,6 @@ void AddServices(
     SecurityOptions securityOptions)
 {
     // database
-    Directory.CreateDirectory(pathsOptions.Config);
     var filePath = Path.Combine(pathsOptions.Config, "users.db");
 
     services.AddDbContext<UserDbContext>(
@@ -117,8 +120,9 @@ void AddServices(
     // Open API
     services.AddNexusOpenApi();
 
-    // development identity provider
-    services.AddNexusIdentityProvider();
+    // OpendIddict
+    if (!securityOptions.OidcProviders.Any())
+        services.AddNexusIdentityProvider();
 
     // routing
     services.AddRouting(options => options.LowercaseUrls = true);
@@ -186,9 +190,6 @@ void ConfigurePipeline(WebApplication app)
 
     // routing (for REST API)
     app.UseRouting();
-
-    // development identity provider
-    app.UseNexusIdentityProvider();
 
     // default authentication
     app.UseAuthentication();

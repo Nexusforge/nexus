@@ -1,12 +1,11 @@
-﻿using IdentityServer4;
-using IdentityServer4.Events;
-using IdentityServer4.Models;
-using IdentityServer4.Services;
-using IdentityServer4.Test;
+﻿using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
-using System.Net.Mime;
+using Microsoft.EntityFrameworkCore;
+using OpenIddict.Abstractions;
+using OpenIddict.Server.AspNetCore;
 using System.Security.Claims;
+using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -15,149 +14,208 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IServiceCollection AddNexusIdentityProvider(
             this IServiceCollection services)
         {
-            services
-                .AddIdentityServer()
+            // entity framework
+            services.AddDbContext<DbContext>(options =>
+            {
+                options.UseInMemoryDatabase("OpenIddict");
+                options.UseOpenIddict();
+            });
 
-                .AddInMemoryClients(new List<Client>
+            // MVC
+            services.AddMvcCore();
+
+            // OpenIddict
+            services.AddOpenIddict()
+
+                .AddCore(options =>
                 {
-                    new Client()
-                    {
-                        AllowedGrantTypes = GrantTypes.Code,
-                        AllowedScopes = new List<string>
-                        {
-                            IdentityServerConstants.StandardScopes.OpenId,
-                            IdentityServerConstants.StandardScopes.Profile
-                        },
-                        AlwaysIncludeUserClaimsInIdToken = true,
-                        ClientId = "nexus",
-                        ClientName = "Nexus",
-                        ClientSecrets = new List<Secret>
-                        {
-                            new Secret("nexus-secret".Sha256())
-                        },
-                        RedirectUris = new List<string>
-                        {
-                            "https://localhost:8443/signin-oidc/nexus",
-                            "https://{codeFlowClientUrl}/signin-oidc/nexus"
-                        }
-                    }
+                    options
+                        .UseEntityFrameworkCore()
+                        .UseDbContext<DbContext>();
                 })
 
-                .AddInMemoryIdentityResources(new List<IdentityResource>()
+                .AddServer(options =>
                 {
-                    new IdentityResources.OpenId(),
-                    new IdentityResources.Profile(),
-                })
+                    options
+                        .AllowAuthorizationCodeFlow()
+                        .RequireProofKeyForCodeExchange();
 
-                .AddTestUsers(new List<TestUser>
-                {
-                    new TestUser()
-                    {
-                        SubjectId = "b31b7c59-928d-4690-bbfb-3df1bfd4f923",
-                        Username = "root@nexus.localhost",
-                        Password = "password",
-                        Claims = new[]
-                        {
-                            new Claim("name", "Star Lord")
-                        }
-                    }
-                })
+                    options
+                        .AddEphemeralEncryptionKey()
+                        .AddEphemeralSigningKey();
 
-                .AddDeveloperSigningCredential();
+                    options
+                        .SetAuthorizationEndpointUris("/connect/authorize")
+                        .SetTokenEndpointUris("/connect/token");
+
+                    options
+                        .RegisterScopes(
+                            Scopes.OpenId, 
+                            Scopes.Profile);
+
+                    options
+                        .UseAspNetCore()
+                        .EnableTokenEndpointPassthrough()
+                        .EnableAuthorizationEndpointPassthrough();
+                });
+
+                services.AddHostedService<HostedService>();
 
             return services;
         }
 
         public static WebApplication UseNexusIdentityProvider(
-           this WebApplication app)
+            this WebApplication app)
         {
-            app.UseIdentityServer();
-
-            app.MapGet("/Account/Login", async (HttpContext context) =>
+            // AuthorizationController.cs https://github.com/openiddict/openiddict-samples/blob/dev/samples/Balosar/Balosar.Server/Controllers/AuthorizationController.cs
+            app.MapGet("/connect/authorize", async (
+                HttpContext httpContext,
+                [FromServices] IOpenIddictApplicationManager applicationManager,
+                [FromServices] IOpenIddictAuthorizationManager authorizationManager) =>
             {
-                var returnUrl = context.Request.Query["ReturnUrl"];
+                // request
+                var request = httpContext.GetOpenIddictServerRequest() ??
+                    throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
 
-                context.Response.Headers.ContentType = MediaTypeNames.Text.Html;
-                await context.Response.WriteAsync(GetPage(returnUrl));
+                // client
+                var clientId = request.ClientId ?? string.Empty;
+
+                var client = await applicationManager.FindByClientIdAsync(clientId) ??
+                    throw new InvalidOperationException("Details concerning the calling client application cannot be found.");
+
+                // subject
+                var subject = Guid.NewGuid().ToString();
+
+                // principal
+                var principal = new ClaimsPrincipal(new[]
+                {
+                    new ClaimsIdentity(new[]
+                    {
+                        new Claim(Claims.Subject, subject),
+                        new Claim(Claims.Name, "Star Lord"),
+                    }, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme)
+                });
+
+                // authorization
+                var authorizationsEnumerable = authorizationManager.FindAsync(
+                    subject: subject,
+                    client: (await applicationManager.GetIdAsync(client))!,
+                    status: Statuses.Valid,
+                    type: AuthorizationTypes.Permanent,
+                    scopes: request.GetScopes());
+
+                var authorizations = new List<object>();
+
+                await foreach (var current in authorizationsEnumerable)
+                    authorizations.Add(current);
+
+                var authorization = authorizations
+                    .LastOrDefault();
+
+                if (authorization is null)
+                {
+                    authorization = await authorizationManager.CreateAsync(
+                        principal: principal,
+                        subject: subject,
+                        client: (await applicationManager.GetIdAsync(client))!,
+                        type: AuthorizationTypes.Permanent,
+                        scopes: principal.GetScopes());
+                }
+
+                principal
+                    .SetAuthorizationId(await authorizationManager.GetIdAsync(authorization));
+
+                // claims
+                foreach (var claim in principal.Claims)
+                {
+                    claim.SetDestinations(Destinations.IdentityToken);
+                }
+
+                return Results.SignIn(principal, authenticationScheme: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
             });
 
-            app.MapPost("/Account/Login", async (
+            // AuthorizationController.cs https://github.com/openiddict/openiddict-samples/blob/dev/samples/Balosar/Balosar.Server/Controllers/AuthorizationController.cs
+            app.MapPost("/connect/token", async (
                 HttpContext httpContext,
-                [FromServices] TestUserStore users,
-                [FromServices] IEventService events,
-                [FromServices] IIdentityServerInteractionService interaction) =>
+                [FromServices] IOpenIddictApplicationManager applicationManager,
+                [FromServices] IOpenIddictAuthorizationManager authorizationManager) =>
             {
-                // [FromForm] binding is not working in .NET 6 and minimal API
-                var content = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
-                var parts = content.Split('&');
+                var request = httpContext.GetOpenIddictServerRequest() ??
+                    throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
 
-                var username = Uri.UnescapeDataString(parts[0].Split(new[] { '=' }, count: 2)[1]);
-                var password = Uri.UnescapeDataString(parts[1].Split(new[] { '=' }, count: 2)[1]);
-                var returnUrl = Uri.UnescapeDataString(parts[2].Split(new[] { '=' }, count: 2)[1]);
-
-                var context = await interaction.GetAuthorizationContextAsync(returnUrl);
-
-                if (users.ValidateCredentials(username, password))
+                if (request.IsAuthorizationCodeGrantType())
                 {
-                    var user = users.FindByUsername(username);
+                    var principal = (await httpContext
+                        .AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme))
+                        .Principal;
 
-                    await events.RaiseAsync(new UserLoginSuccessEvent(
-                        user.Username, 
-                        user.SubjectId, 
-                        user.Username, 
-                        clientId: context?.Client.ClientId));
-
-                    var isuser = new IdentityServerUser(user.SubjectId)
+                    if (principal is null)
                     {
-                        DisplayName = user.Username
-                    };
+                        return Results.Forbid(
+                            authenticationSchemes: new[] { OpenIddictServerAspNetCoreDefaults.AuthenticationScheme },
+                            properties: new AuthenticationProperties(new Dictionary<string, string?>
+                            {
+                                [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidGrant,
+                                [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The token is no longer valid."
+                            }));
+                    }
 
-                    await httpContext.SignInAsync(isuser);
-
-                    return Results.Redirect(returnUrl);
+                    // returning a SignInResult will ask OpenIddict to issue the appropriate access/identity tokens.
+                    return Results.SignIn(principal, authenticationScheme: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
                 }
 
-                else
-                {
-                    await events.RaiseAsync(new UserLoginFailureEvent(
-                        username,
-                        "invalid credentials",
-                        clientId: context?.Client.ClientId));
-                    
-                    httpContext.Response.Headers.ContentType = MediaTypeNames.Text.Html;
-                    await httpContext.Response.WriteAsync(GetPage(returnUrl));
-#warning incorrect
-                    return Results.Ok();
-                }
+                throw new InvalidOperationException("The specified grant type is not supported.");
             });
 
             return app;
         }
+    }
 
-        private static string GetPage(string returnUrl)
+    internal class HostedService : IHostedService
+    {
+        private IServiceProvider _serviceProvider;
+
+        public HostedService(IServiceProvider serviceProvider)
         {
-            return $@"
-<!DOCTYPE html>
-<html lang=""en"">
-  <head>
-    <meta charset=""utf-8"">
-    <title>Sign in</title>
-  </head>
-  <body>
-    <form action=""/Account/Login"" method=""post"">
-      <label for=""username"">Username:</label><br>
-      <input type=""text"" id=""username"" name=""username"" value=""root@nexus.localhost"">
-      <br>
-      <label for=""password"">Password:</label><br>
-      <input type=""password"" id=""password"" name=""password"" value=""password"">
-      <br>
-      <br>
-      <input type=""hidden"" id=""returnUrl"" name=""returnUrl"" value=""{returnUrl}"" /> 
-      <input type=""submit"" value=""Sign in"">
-    </form> 
-  </body>
-</html>
-";
+            _serviceProvider = serviceProvider;
         }
+
+        public async Task StartAsync(CancellationToken cancellationToken)
+        {
+            using var scope = _serviceProvider.CreateScope();
+
+            var context = scope.ServiceProvider.GetRequiredService<DbContext>();
+            await context.Database.EnsureCreatedAsync(cancellationToken);
+
+            var manager = scope.ServiceProvider.GetRequiredService<IOpenIddictApplicationManager>();
+
+            if (await manager.FindByClientIdAsync("nexus", cancellationToken) is null)
+            {
+                await manager.CreateAsync(new OpenIddictApplicationDescriptor
+                {
+                    ClientId = "nexus",
+                    ClientSecret = "nexus-secret",
+                    DisplayName = "Nexus",
+                    RedirectUris = { new Uri("https://localhost:8443/signin-oidc/nexus") },
+                    Permissions =
+                    {
+                        // endpoints
+                        Permissions.Endpoints.Authorization,
+                        Permissions.Endpoints.Token,
+                        
+                        // grant types
+                        Permissions.GrantTypes.AuthorizationCode,
+
+                        // response types
+                        Permissions.ResponseTypes.Code,
+
+                        // scopes
+                        Permissions.Scopes.Profile
+                    }
+                }, cancellationToken);
+            }
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
 }
