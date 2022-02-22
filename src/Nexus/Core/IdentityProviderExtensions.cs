@@ -1,12 +1,12 @@
-﻿using Duende.IdentityServer;
-using Duende.IdentityServer.Events;
-using Duende.IdentityServer.Models;
-using Duende.IdentityServer.Services;
-using Duende.IdentityServer.Test;
+﻿using IdentityServer4;
+using IdentityServer4.Events;
+using IdentityServer4.Models;
+using IdentityServer4.Services;
+using IdentityServer4.Test;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using System.Net.Mime;
-using System.Security.Policy;
+using System.Security.Claims;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -23,20 +23,22 @@ namespace Microsoft.Extensions.DependencyInjection
                     new Client()
                     {
                         AllowedGrantTypes = GrantTypes.Code,
-                        AllowedScopes = new List<string> 
-                        { 
+                        AllowedScopes = new List<string>
+                        {
                             IdentityServerConstants.StandardScopes.OpenId,
                             IdentityServerConstants.StandardScopes.Profile
                         },
+                        AlwaysIncludeUserClaimsInIdToken = true,
                         ClientId = "nexus",
                         ClientName = "Nexus",
                         ClientSecrets = new List<Secret>
-                        { 
-                            new Secret("nexus-secret")
+                        {
+                            new Secret("nexus-secret".Sha256())
                         },
                         RedirectUris = new List<string>
-                        { 
-                            "https://localhost:8443/signin-oidc/nexus"
+                        {
+                            "https://localhost:8443/signin-oidc/nexus",
+                            "https://{codeFlowClientUrl}/signin-oidc/nexus"
                         }
                     }
                 })
@@ -53,9 +55,15 @@ namespace Microsoft.Extensions.DependencyInjection
                     {
                         SubjectId = "b31b7c59-928d-4690-bbfb-3df1bfd4f923",
                         Username = "root@nexus.localhost",
-                        Password = "password"
+                        Password = "password",
+                        Claims = new[]
+                        {
+                            new Claim("name", "Star Lord")
+                        }
                     }
-                });
+                })
+
+                .AddDeveloperSigningCredential();
 
             return services;
         }
@@ -70,30 +78,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 var returnUrl = context.Request.Query["ReturnUrl"];
 
                 context.Response.Headers.ContentType = MediaTypeNames.Text.Html;
-
-                await context.Response.WriteAsync($@"
-<!DOCTYPE html>
-<html lang=""en"">
-  <head>
-    <meta charset=""utf-8"">
-    <title>Sign in</title>
-  </head>
-  <body>
-    <form action=""/Account/Login"" method=""post"">
-      <label for=""username"">Username:</label><br>
-      <input type=""text"" id=""username"" name=""username"" value=""root@nexus.localhost"">
-      <br>
-      <label for=""password"">Password:</label><br>
-      <input type=""password"" id=""password"" name=""password"" value=""password"">
-      <br>
-      <br>
-      <input type=""hidden"" id=""returnUrl"" name=""returnUrl"" value=""{returnUrl}"" /> 
-      <input type=""submit"" value=""Sign in"">
-    </form> 
-</form>
-  </body>
-</html>
-");
+                await context.Response.WriteAsync(GetPage(returnUrl));
             });
 
             app.MapPost("/Account/Login", async (
@@ -129,38 +114,50 @@ namespace Microsoft.Extensions.DependencyInjection
 
                     await httpContext.SignInAsync(isuser);
 
-                    //if (context != null)
-                        return Results.Redirect(returnUrl);
-
-                    // request for a local page
-#warning implement this
-                    //if (Url.IsLocalUrl(returnUrl))
-                    //{
-                    //    return Results.Redirect(returnUrl);
-                    //}
-
-                    //else if (string.IsNullOrEmpty(returnUrl))
-                    //{
-                    //    return Results.Redirect("~/");
-                    //}
-
-                    //else
-                    //{
-                    //    // user might have clicked on a malicious link - should be logged
-                    //    throw new Exception("invalid return URL");
-                    //}
+                    return Results.Redirect(returnUrl);
                 }
 
-                await events.RaiseAsync(new UserLoginFailureEvent(
-                    username,
-                    "invalid credentials",
-                    clientId: context?.Client.ClientId));
-
-                return Results.Redirect("~/");
-                //return "Failed.";
+                else
+                {
+                    await events.RaiseAsync(new UserLoginFailureEvent(
+                        username,
+                        "invalid credentials",
+                        clientId: context?.Client.ClientId));
+                    
+                    httpContext.Response.Headers.ContentType = MediaTypeNames.Text.Html;
+                    await httpContext.Response.WriteAsync(GetPage(returnUrl));
+#warning incorrect
+                    return Results.Ok();
+                }
             });
 
             return app;
+        }
+
+        private static string GetPage(string returnUrl)
+        {
+            return $@"
+<!DOCTYPE html>
+<html lang=""en"">
+  <head>
+    <meta charset=""utf-8"">
+    <title>Sign in</title>
+  </head>
+  <body>
+    <form action=""/Account/Login"" method=""post"">
+      <label for=""username"">Username:</label><br>
+      <input type=""text"" id=""username"" name=""username"" value=""root@nexus.localhost"">
+      <br>
+      <label for=""password"">Password:</label><br>
+      <input type=""password"" id=""password"" name=""password"" value=""password"">
+      <br>
+      <br>
+      <input type=""hidden"" id=""returnUrl"" name=""returnUrl"" value=""{returnUrl}"" /> 
+      <input type=""submit"" value=""Sign in"">
+    </form> 
+  </body>
+</html>
+";
         }
     }
 }

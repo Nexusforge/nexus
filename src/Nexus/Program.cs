@@ -87,6 +87,7 @@ void AddServices(
     SecurityOptions securityOptions)
 {
     // database
+    Directory.CreateDirectory(pathsOptions.Config);
     var filePath = Path.Combine(pathsOptions.Config, "users.db");
 
     services.AddDbContext<UserDbContext>(
