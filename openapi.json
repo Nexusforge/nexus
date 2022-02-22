@@ -868,6 +868,60 @@
         }
       }
     },
+    "/api/v1/Users/signout": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Logs out the user.",
+        "operationId": "Users_SignOut",
+        "parameters": [
+          {
+            "name": "returnUrl",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Users/info": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Gets the user info.",
+        "operationId": "Users_GetUserInfo",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/Users/refresh-token": {
       "post": {
         "tags": [
@@ -1374,6 +1428,17 @@
           "displayName": {
             "type": "string",
             "description": "The display name."
+          }
+        }
+      },
+      "UserInfo": {
+        "type": "object",
+        "description": "Describes a user.",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The user name."
           }
         }
       },

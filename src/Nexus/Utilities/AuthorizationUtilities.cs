@@ -16,14 +16,14 @@ namespace Nexus.Utilities
 
             if (identity is not null && identity.IsAuthenticated)
             {
-                var isAdmin = principal.HasClaim(claim => claim.Type == Claims.IS_ADMIN && claim.Value == "true");
+                var isAdmin = principal.HasClaim(claim => claim.Type == NexusClaims.IS_ADMIN && claim.Value == "true");
 
                 var canAccessCatalog = principal.HasClaim(
-                    claim => claim.Type == Claims.CAN_ACCESS_CATALOG &&
+                    claim => claim.Type == NexusClaims.CAN_ACCESS_CATALOG &&
                     Regex.IsMatch(catalogId, claim.Value));
 
                 var canAccessGroup = catalogMetadata.GroupMemberships is not null && principal.HasClaim(
-                    claim => claim.Type == Claims.CAN_ACCESS_GROUP &&
+                    claim => claim.Type == NexusClaims.CAN_ACCESS_GROUP &&
                     catalogMetadata.GroupMemberships.Any(group => Regex.IsMatch(group, claim.Value)));
 
                 var inMemoryDataSourceFullName = typeof(InMemory).FullName ?? throw new Exception("full name is null");
@@ -44,9 +44,9 @@ namespace Nexus.Utilities
 
             if (identity is not null && identity.IsAuthenticated)
             {
-                var isAdmin = principal.HasClaim(claim => claim.Type == Claims.IS_ADMIN && claim.Value == "true");
+                var isAdmin = principal.HasClaim(claim => claim.Type == NexusClaims.IS_ADMIN && claim.Value == "true");
 
-                var canEditCatalog = principal.HasClaim(claim => claim.Type == Claims.CAN_EDIT_CATALOG &&
+                var canEditCatalog = principal.HasClaim(claim => claim.Type == NexusClaims.CAN_EDIT_CATALOG &&
                                                         Regex.IsMatch(catalogId, claim.Value));
 
                 return isAdmin || canEditCatalog;
@@ -62,7 +62,7 @@ namespace Nexus.Utilities
             // 1. catalog is visible if user is admin
             if (identity is not null && identity.IsAuthenticated)
             {
-                var isAdmin = principal.HasClaim(claim => claim.Type == Claims.IS_ADMIN && claim.Value == "true");
+                var isAdmin = principal.HasClaim(claim => claim.Type == NexusClaims.IS_ADMIN && claim.Value == "true");
 
                 if (isAdmin)
                     return true; // not "return isAdmin"!!

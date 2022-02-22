@@ -1,6 +1,6 @@
 ﻿namespace Nexus.Core
 {
-    internal static class Claims
+    internal static class NexusClaims
     {
         public const string IS_ADMIN = "IsAdmin";
         public const string CAN_ACCESS_CATALOG = "CanAccessCatalog";
