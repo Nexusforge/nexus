@@ -120,7 +120,7 @@ void AddServices(
     // Open API
     services.AddNexusOpenApi();
 
-    // OpendIddict
+    // default Identity Provider
     if (!securityOptions.OidcProviders.Any())
         services.AddNexusIdentityProvider();
 
@@ -180,7 +180,7 @@ void ConfigurePipeline(WebApplication app)
     var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
     app.UseNexusOpenApi(provider, addExplorer: true);
 
-    // OpenIddict
+    // default Identity Provider
     if (!securityOptions.OidcProviders.Any())
         app.UseNexusIdentityProvider();
 
