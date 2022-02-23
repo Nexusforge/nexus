@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-
-namespace Nexus.Extensibility
+﻿namespace Nexus.Extensibility
 {
     internal interface IDataWriterController : IDisposable
     {

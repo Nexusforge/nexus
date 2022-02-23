@@ -1,14 +1,10 @@
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Nexus.Core;
 using Nexus.Services;
 using Serilog;
 using System.Globalization;
-using System.Security.Claims;
 using System.Text.Json;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
@@ -43,6 +39,10 @@ Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(configuration)
     .Enrich.WithProperty("ApplicationName", applicationName)
     .CreateLogger();
+
+// checks
+if (securityOptions.Base64JwtSigningKey == SecurityOptions.DefaultKey)
+    Log.Logger.Warning("You are using the default key to sign JWT tokens. It is strongly advised to use a different key in production.");
 
 // run
 try
@@ -102,16 +102,7 @@ void AddServices(
     });
 
     // authentication
-    services.AddNexusAuthentication(securityOptions);
-
-    // blazor
-    services.AddRazorPages();
-
-    // authorization
-    services.AddAuthorization(options =>
-    {
-        options.AddPolicy(Policies.RequireAdmin, policy => policy.RequireClaim(NexusClaims.IS_ADMIN, "true"));
-    });
+    services.AddNexusAuth(securityOptions);
 
     // Open API
     services.AddNexusOpenApi();

@@ -84,7 +84,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     throw new InvalidOperationException("Details concerning the calling client application cannot be found.");
 
                 // subject
-                var subject = Guid.NewGuid().ToString();
+                var subject = "f9208f50-cd54-4165-8041-b5cd19af45a4";
 
                 // principal
                 var principal = new ClaimsPrincipal(new[]

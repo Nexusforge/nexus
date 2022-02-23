@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using Microsoft.IdentityModel.Tokens;
 using Nexus.Core;
-using Nexus.Services;
 using System.Collections.ObjectModel;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -11,7 +13,7 @@ using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-    internal static class AuthenticationExtensions
+    internal static class AuthExtensions
     {
         public static OpenIdConnectProvider DefaultProvider { get; } = new OpenIdConnectProvider()
         {
@@ -22,30 +24,33 @@ namespace Microsoft.Extensions.DependencyInjection
             ClientSecret = "nexus-secret"
         };
 
-        public static IServiceCollection AddNexusAuthentication(
+        public static IServiceCollection AddNexusAuth(
             this IServiceCollection services,
             SecurityOptions securityOptions)
         {
             JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
             var builder = services
+
                 .AddAuthentication(options =>
                 {
                     options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                 })
-                .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme);
-            //.AddJwtBearer(options =>
-            //{
-            //    options.TokenValidationParameters = new TokenValidationParameters()
-            //    {
-            //        ClockSkew = TimeSpan.Zero,
-            //        ValidateAudience = false,
-            //        ValidateIssuer = false,
-            //        ValidateActor = false,
-            //        ValidateLifetime = true,
-            //        IssuerSigningKey = new SymmetricSecurityKey(Convert.FromBase64String(securityOptions.Base64JwtSigningKey))
-            //    };
-            //});
+
+                .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme)
+
+                .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
+                {
+                    options.TokenValidationParameters = new TokenValidationParameters()
+                    {
+                        ClockSkew = TimeSpan.Zero,
+                        ValidateAudience = false,
+                        ValidateIssuer = false,
+                        ValidateActor = false,
+                        ValidateLifetime = true,
+                        IssuerSigningKey = new SymmetricSecurityKey(Convert.FromBase64String(securityOptions.Base64JwtSigningKey))
+                    };
+                });
 
             var providers = securityOptions.OidcProviders.Any()
                 ? securityOptions.OidcProviders
@@ -144,6 +149,25 @@ namespace Microsoft.Extensions.DependencyInjection
                     };
                 });
             }
+
+            var authenticationSchemes = new[]
+            {
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                JwtBearerDefaults.AuthenticationScheme
+            };
+
+            services.AddAuthorization(options =>
+            {
+                options.DefaultPolicy = new AuthorizationPolicyBuilder()
+                    .RequireAuthenticatedUser()
+                    .AddAuthenticationSchemes(authenticationSchemes)
+                    .Build();
+
+                options
+                    .AddPolicy(Policies.RequireAdmin, policy => policy
+                    .RequireClaim(NexusClaims.IS_ADMIN, "true")
+                    .AddAuthenticationSchemes(authenticationSchemes));
+            });
 
             return services;
         }

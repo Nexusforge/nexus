@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Utilities;

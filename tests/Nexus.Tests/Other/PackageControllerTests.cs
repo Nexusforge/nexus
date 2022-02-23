@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging.Abstractions;
-using Nexus;
 using Nexus.Core;
 using Nexus.Extensibility;
 using Nexus.PackageManagement;

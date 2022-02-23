@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using Nexus.Core;
 using Nexus.Extensibility;
 using Nexus.PackageManagement;

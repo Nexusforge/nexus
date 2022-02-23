@@ -94,11 +94,11 @@ namespace Nexus.Core
 
     internal partial record SecurityOptions() : NexusOptionsBase
     {
-        private static string _defaultKey = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+        public const string DefaultKey = "WOE6/wiy6E4UQJefC03ffOsBnilijFOjhFUw1eUtzhD/8/YNR7auSUeH+5VcGfXU4pki7ZLCulmvNq8c03S96g==";
 
         public const string Section = "Security";
         public const string OicdSubSection = "Oidc";
-        public string Base64JwtSigningKey { get; set; } = _defaultKey;
+        public string Base64JwtSigningKey { get; set; } = DefaultKey;
         public TimeSpan AccessTokenLifeTime { get; set; }
         public TimeSpan RefreshTokenLifeTime { get; set; }
         public List<OpenIdConnectProvider> OidcProviders { get; set; } = new();

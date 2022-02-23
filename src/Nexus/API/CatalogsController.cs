@@ -222,7 +222,7 @@ namespace Nexus.Controllers
                 var canEdit = this.User.HasClaim(NexusClaims.CAN_EDIT_CATALOG, "true");
 
                 if (!canEdit)
-                    return this.Forbid($"The current user is not permitted to modify the catalog '{catalogId}'.");
+                    return this.StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to modify the catalog '{catalogId}'.");
                 
                 await catalogContainer.UpdateMetadataAsync(catalogMetadata);
 
@@ -247,7 +247,7 @@ namespace Nexus.Controllers
             if (catalogContainer is not null)
             {
                 if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, this.User))
-                    return this.Forbid($"The current user is not permitted to access the catalog '{catalogId}'.");
+                    return this.StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to access the catalog '{catalogId}'.");
 
                 return await action.Invoke(catalogContainer);
             }
@@ -268,7 +268,7 @@ namespace Nexus.Controllers
             if (catalogContainer is not null)
             {
                 if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, this.User))
-                    return this.Forbid($"The current user is not permitted to access the catalog '{catalogId}'.");
+                    return this.StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to access the catalog '{catalogId}'.");
 
                 return await action.Invoke(catalogContainer);
             }

@@ -1,6 +1,5 @@
 ﻿using ICSharpCode.SharpZipLib.GZip;
 using ICSharpCode.SharpZipLib.Tar;
-using Microsoft.Extensions.Logging;
 using Nexus.Core;
 using System.IO.Compression;
 using System.Net;

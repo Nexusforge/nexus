@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-
-namespace Nexus.Core
+﻿namespace Nexus.Core
 {
     internal static class LoggerExtensions
 	{

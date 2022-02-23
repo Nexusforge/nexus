@@ -24,6 +24,9 @@ namespace {0};
 /// </summary>
 public class {1}
 {
+    private static string _tokenFolderPath = Path.Combine(Path.GetTempPath(), "nexus", "tokens");
+
+
     private static JsonSerializerOptions _options;
 
     private const string NexusConfigurationHeaderKey = "{2}";
@@ -31,8 +34,8 @@ public class {1}
 
     private Uri _baseUrl;
 
-    private string? _accessToken;
-    private string? _refreshToken;
+    private TokenPair? _tokenPair;
+    private string? _tokenFilePath;
 
     private HttpClient _httpClient;
 
@@ -41,7 +44,8 @@ public class {1}
     {
         _options = new JsonSerializerOptions()
         {
-            PropertyNameCaseInsensitive = true
+            PropertyNameCaseInsensitive = true,
+            WriteIndented = true
         };
 
         _options.Converters.Add(new JsonStringEnumConverter());
@@ -73,22 +77,33 @@ public class {1}
     /// <summary>
     /// Gets a value which indicates if the user is authenticated.
     /// </summary>
-    public bool IsAuthenticated => _accessToken != null;
+    public bool IsAuthenticated => _tokenPair is not null;
 
 {6}
 
     /// <summary>
     /// Signs in the user.
     /// </summary>
-    /// <param name="accessToken">The access token.</param>
-    /// <param name="refreshToken">The refresh token to use when the access token expires.</param>
+    /// <param name="tokenPair">A pair of access and refresh tokens.</param>
     /// <returns>A task.</returns>
-    public async Task SignInAsync(string accessToken, string refreshToken)
+    public void SignIn(TokenPair tokenPair)
     {
-        _httpClient.DefaultRequestHeaders.Add(AuthorizationHeaderKey, $"Bearer {accessToken}");
+        _tokenFilePath = Path.Combine(_tokenFolderPath, Uri.EscapeDataString(tokenPair.RefreshToken) + ".json");
+        
+        if (File.Exists(_tokenFilePath))
+        {
+            tokenPair = JsonSerializer.Deserialize<TokenPair>(File.ReadAllText(_tokenFilePath), _options);
+        }
 
-        _accessToken = accessToken;
-        _refreshToken = refreshToken;
+        else
+        {
+            Directory.CreateDirectory(_tokenFolderPath);
+            File.WriteAllText(_tokenFilePath, JsonSerializer.Serialize(tokenPair, _options));
+        }
+
+        _httpClient.DefaultRequestHeaders.Add(AuthorizationHeaderKey, $"Bearer {tokenPair.AccessToken}");
+
+        _tokenPair = tokenPair;
     }
 
     /// <summary>
@@ -132,7 +147,7 @@ public class {1}
         if (!response.IsSuccessStatusCode)
         {
             // try to refresh the access token
-            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            if (response.StatusCode == HttpStatusCode.Unauthorized && _tokenPair is not null)
             {
                 var wwwAuthenticateHeader = response.Headers.WwwAuthenticate.FirstOrDefault();
                 var signOut = true;
@@ -144,13 +159,21 @@ public class {1}
                     if (parameter is not null && parameter.Contains("The token expired at"))
                     {
                         using var newRequest = this.BuildRequestMessage(method, relativeUrl, httpContent);
-                        var newResponse = await this.RefreshTokenAsync(response, newRequest, cancellationToken);
 
-                        if (newResponse is not null)
+                        try
                         {
-                            response.Dispose();
-                            response = newResponse;
-                            signOut = false;
+                            var newResponse = await this.RefreshTokenAsync(response, newRequest, cancellationToken);
+
+                            if (newResponse is not null)
+                            {
+                                response.Dispose();
+                                response = newResponse;
+                                signOut = false;
+                            }
+                        }
+                        catch
+                        {
+                            //
                         }
                     }
                 }
@@ -219,18 +242,23 @@ public class {1}
     {
         // see https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/dev/src/Microsoft.IdentityModel.Tokens/Validators.cs#L390
 
-        if (_refreshToken is null || response.RequestMessage is null)
+        if (_tokenPair is null || response.RequestMessage is null)
             throw new Exception("Refresh token or request message is null. This should never happen.");
 
-        var refreshRequest = new RefreshTokenRequest(RefreshToken: _refreshToken);
+        var refreshRequest = new RefreshTokenRequest(RefreshToken: _tokenPair.RefreshToken);
         var tokenPair = await this.Users.RefreshTokenAsync(refreshRequest);
+
+        if (_tokenFilePath is not null)
+        {
+            Directory.CreateDirectory(_tokenFolderPath);
+            File.WriteAllText(_tokenFilePath, JsonSerializer.Serialize(tokenPair, _options));
+        }
 
         var authorizationHeaderValue = $"Bearer {tokenPair.AccessToken}";
         _httpClient.DefaultRequestHeaders.Remove(AuthorizationHeaderKey);
         _httpClient.DefaultRequestHeaders.Add(AuthorizationHeaderKey, authorizationHeaderValue);
 
-        _accessToken = tokenPair.AccessToken;
-        _refreshToken = tokenPair.RefreshToken;
+        _tokenPair = tokenPair;
 
         return await _httpClient.SendAsync(newRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
     }
@@ -238,8 +266,7 @@ public class {1}
     private void SignOut()
     {
         _httpClient.DefaultRequestHeaders.Remove(AuthorizationHeaderKey);
-        _refreshToken = null;
-        _accessToken = null;
+        _tokenPair = null;
     }
 }
 

@@ -114,7 +114,7 @@ namespace Nexus.Controllers
             }
             catch (UnauthorizedAccessException ex)
             {
-                return this.Forbid(ex.Message);
+                return this.StatusCode(StatusCodes.Status403Forbidden, ex.Message);
             }
 
             //
@@ -225,7 +225,7 @@ namespace Nexus.Controllers
                 }
                 else
                 {
-                    return this.Forbid($"The current user is not permitted to access the status of job '{jobControl.Job.Id}'.");
+                    return this.StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to access the status of job '{jobControl.Job.Id}'.");
                 }
             }
             else
@@ -258,7 +258,7 @@ namespace Nexus.Controllers
 
                 else
                 {
-                    return this.Forbid($"The current user is not permitted to cancel the job '{jobControl.Job.Id}'.");
+                    return this.StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to cancel the job '{jobControl.Job.Id}'.");
                 }
             }
 

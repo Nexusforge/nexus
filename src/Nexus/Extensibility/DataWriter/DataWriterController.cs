@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Nexus.Core;
+﻿using Nexus.Core;
 using Nexus.Utilities;
 using System.ComponentModel.DataAnnotations;
 

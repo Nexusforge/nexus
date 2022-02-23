@@ -148,7 +148,7 @@ $@"public class {className} : I{className}
                 foreach (var operation in entry.Value.Operations)
                 {
                     AppendImplementationMethodSourceText(
-                        entry.Key,
+                        path: entry.Key,
                         operation.Key, 
                         operation.Value,
                         sourceTextBuilder);
