@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Readers;
-using Nexus.Controllers.V1;
+using Nexus.Controllers;
 
 namespace Nexus.OpenApiClientGenerator
 {

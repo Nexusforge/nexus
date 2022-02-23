@@ -1523,7 +1523,7 @@
         "description": "A token pair.",
         "additionalProperties": false,
         "properties": {
-          "jwtToken": {
+          "accessToken": {
             "type": "string",
             "description": "The JWT token."
           },
@@ -1557,40 +1557,30 @@
       },
       "NexusUser": {
         "type": "object",
+        "description": "Represents a user.",
         "additionalProperties": false,
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "description": "The user identifier."
           },
           "name": {
-            "type": "string"
-          },
-          "claims": {
-            "type": "object",
-            "additionalProperties": {
-              "$ref": "#/components/schemas/NexusClaim"
-            }
+            "type": "string",
+            "description": "The user name."
           },
           "refreshTokens": {
             "type": "array",
+            "description": "The list of refresh tokens.",
             "items": {
               "$ref": "#/components/schemas/RefreshToken"
             }
-          }
-        }
-      },
-      "NexusClaim": {
-        "type": "object",
-        "description": "Represents a claim.",
-        "additionalProperties": false,
-        "properties": {
-          "type": {
-            "type": "string",
-            "description": "The claim type."
           },
-          "value": {
-            "type": "string",
-            "description": "The claim value."
+          "claims": {
+            "type": "object",
+            "description": "The map of claims.",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/NexusClaim"
+            }
           }
         }
       },
@@ -1616,6 +1606,21 @@
           "isExpired": {
             "type": "boolean",
             "description": "Gets a value that indicates if the token has expired."
+          }
+        }
+      },
+      "NexusClaim": {
+        "type": "object",
+        "description": "Represents a claim.",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "The claim type."
+          },
+          "value": {
+            "type": "string",
+            "description": "The claim value."
           }
         }
       }

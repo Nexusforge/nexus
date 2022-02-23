@@ -55,7 +55,7 @@ namespace Nexus.Services
             NexusUser user)
         {
             // generate token pair
-            var (jwtToken, refreshToken) = this.InternalGenerateTokenPair(user);
+            var (accessToken, refreshToken) = this.InternalGenerateTokenPair(user);
 
             // add refresh token
             user.RefreshTokens.Add(refreshToken);
@@ -66,13 +66,13 @@ namespace Nexus.Services
             // save changes
             await _dbService.UpdateUserAsync(user);
 
-            return new TokenPair(jwtToken, refreshToken.Token);
+            return new TokenPair(accessToken, refreshToken.Token);
         }
 
         public async Task<TokenPair> RefreshTokenAsync(NexusUser user, string refreshTokenString)
         {
             // generate new token pair
-            var (newJwtToken, newRefreshToken) = this.InternalGenerateTokenPair(user);
+            var (newAccessToken, newRefreshToken) = this.InternalGenerateTokenPair(user);
 
             // delete redeemed refresh token
             user.RefreshTokens.RemoveAll(current => current.Token == refreshTokenString);
@@ -86,7 +86,7 @@ namespace Nexus.Services
             // save changes
             await _dbService.UpdateUserAsync(user);
 
-            return new TokenPair(newJwtToken, newRefreshToken.Token);
+            return new TokenPair(newAccessToken, newRefreshToken.Token);
         }
 
         public async Task RevokeTokenAsync(NexusUser user, string refreshTokenString)
@@ -114,14 +114,14 @@ namespace Nexus.Services
         private (string, RefreshToken) InternalGenerateTokenPair(NexusUser user)
         {
             // generate a token pair
-            var jwtToken = this.GenerateJwtToken(user.Id, user.Claims.Select(entry => entry.Value));
+            var accessToken = this.GenerateAccessToken(user.Id, user.Claims.Select(entry => entry.Value));
             var refreshToken = this.GenerateRefreshToken();
 
             // return response
-            return (jwtToken, refreshToken);
+            return (accessToken, refreshToken);
         }
 
-        private string GenerateJwtToken(string userId, IEnumerable<NexusClaim> claims)
+        private string GenerateAccessToken(string userId, IEnumerable<NexusClaim> claims)
         {
             var tokenDescriptor = new SecurityTokenDescriptor
             {
@@ -130,7 +130,7 @@ namespace Nexus.Services
                     new Claim(ClaimTypes.Name, userId)
                 }.Concat(claims.Select(claim => new Claim(claim.Type, claim.Value)))),
                 NotBefore = DateTime.UtcNow,
-                Expires = DateTime.UtcNow.Add(_securityOptions.JwtTokenLifeTime),
+                Expires = DateTime.UtcNow.Add(_securityOptions.AccessTokenLifeTime),
                 SigningCredentials = _signingCredentials
             };
 

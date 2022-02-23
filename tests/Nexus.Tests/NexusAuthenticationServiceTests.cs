@@ -51,7 +51,7 @@ namespace Services
                 Options.Create(new SecurityOptions() 
                 {
                     Base64JwtSigningKey = Base64JwtSigningKey,
-                    JwtTokenLifeTime = TimeSpan.FromHours(1),
+                    AccessTokenLifeTime = TimeSpan.FromHours(1),
                     RefreshTokenLifeTime = TimeSpan.FromHours(1)
                 }));
 
@@ -68,17 +68,17 @@ namespace Services
             };
 
             // Act
-            var (jwtToken, refreshToken, error) = await service.AuthenticateAsync("foo", "bar");
+            var (accessToken, refreshToken, error) = await service.AuthenticateAsync("foo", "bar");
 
             // Assert
-            Assert.NotNull(jwtToken);
+            Assert.NotNull(accessToken);
             Assert.NotNull(refreshToken);
             Assert.Null(error);
 
             Assert.Single(user.RefreshTokens);
             Assert.Equal(refreshToken, user.RefreshTokens.First().Token);
 
-            var principal = tokenHandler.ValidateToken(jwtToken, validationParameters, out var _);
+            var principal = tokenHandler.ValidateToken(accessToken, validationParameters, out var _);
             var actualName = principal.Identity!.Name;
 
             Assert.Equal(expectedName, actualName);
@@ -108,10 +108,10 @@ namespace Services
                 Options.Create(new SecurityOptions()));
 
             // Act
-            var (jwtToken, refreshToken, error) = await service.AuthenticateAsync("foo", "bar");
+            var (accessToken, refreshToken, error) = await service.AuthenticateAsync("foo", "bar");
 
             // Assert
-            Assert.Null(jwtToken);
+            Assert.Null(accessToken);
             Assert.Null(refreshToken);
 
             Assert.Equal("The user does not exist.", error);
@@ -147,10 +147,10 @@ namespace Services
                 Options.Create(new SecurityOptions()));
 
             // Act
-            var (jwtToken, refreshToken, error) = await service.AuthenticateAsync(expectedName, "bar");
+            var (accessToken, refreshToken, error) = await service.AuthenticateAsync(expectedName, "bar");
 
             // Assert
-            Assert.Null(jwtToken);
+            Assert.Null(accessToken);
             Assert.Null(refreshToken);
 
             Assert.Equal("The e-mail address is not confirmed.", error);
@@ -188,10 +188,10 @@ namespace Services
                 Options.Create(new SecurityOptions()));
 
             // Act
-            var (jwtToken, refreshToken, error) = await service.AuthenticateAsync(expectedName, "bar");
+            var (accessToken, refreshToken, error) = await service.AuthenticateAsync(expectedName, "bar");
 
             // Assert
-            Assert.Null(jwtToken);
+            Assert.Null(accessToken);
             Assert.Null(refreshToken);
 
             Assert.Equal("Sign-in failed.", error);
@@ -228,7 +228,7 @@ namespace Services
                 Options.Create(new SecurityOptions()
                 {
                     Base64JwtSigningKey = Base64JwtSigningKey,
-                    JwtTokenLifeTime = TimeSpan.FromHours(1),
+                    AccessTokenLifeTime = TimeSpan.FromHours(1),
                     RefreshTokenLifeTime = TimeSpan.FromHours(1)
                 }));
 
@@ -245,17 +245,17 @@ namespace Services
             };
 
             // Act
-            var (jwtToken, refreshToken, error) = await service.RefreshTokenAsync(storedRefreshToken.Token);
+            var (accessToken, refreshToken, error) = await service.RefreshTokenAsync(storedRefreshToken.Token);
 
             // Assert
-            Assert.NotNull(jwtToken);
+            Assert.NotNull(accessToken);
             Assert.NotNull(refreshToken);
             Assert.Null(error);
 
             Assert.Single(user.RefreshTokens);
             Assert.Equal(refreshToken, user.RefreshTokens.First().Token);
 
-            var principal = tokenHandler.ValidateToken(jwtToken, validationParameters, out var _);
+            var principal = tokenHandler.ValidateToken(accessToken, validationParameters, out var _);
             var actualName = principal.Identity!.Name;
 
             Assert.Equal(expectedName, actualName);
@@ -286,10 +286,10 @@ namespace Services
                 Options.Create(new SecurityOptions()));
 
             // Act
-            var (jwtToken, refreshToken, error) = await service.RefreshTokenAsync("invalidToken");
+            var (accessToken, refreshToken, error) = await service.RefreshTokenAsync("invalidToken");
 
             // Assert
-            Assert.Null(jwtToken);
+            Assert.Null(accessToken);
             Assert.Null(refreshToken);
 
             Assert.Equal("Token not found.", error);
@@ -320,10 +320,10 @@ namespace Services
                 Options.Create(new SecurityOptions()));
 
             // Act
-            var (jwtToken, refreshToken, error) = await service.RefreshTokenAsync(storedRefreshToken.Token);
+            var (accessToken, refreshToken, error) = await service.RefreshTokenAsync(storedRefreshToken.Token);
 
             // Assert
-            Assert.Null(jwtToken);
+            Assert.Null(accessToken);
             Assert.Null(refreshToken);
 
             Assert.Equal("The refresh token has expired.", error);

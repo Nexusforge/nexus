@@ -18,7 +18,7 @@ namespace Nexus.OpenApiClient.Tests
 
             // -> authenticate
             var authenticateResponse = new AuthenticateResponse(
-                JwtToken: "123",
+                AccessToken: "123",
                 RefreshToken: "456",
                 Error: default
             );

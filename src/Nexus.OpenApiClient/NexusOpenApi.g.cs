@@ -9,14 +9,13 @@
 // 8 = ExceptionType
 // 9 = Models
 
+using System.Globalization;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Security;
-using System.Net;
 
 namespace Nexus.Client;
 
@@ -32,7 +31,7 @@ public class NexusOpenApiClient
 
     private Uri _baseUrl;
 
-    private string? _jwtToken;
+    private string? _accessToken;
     private string? _refreshToken;
 
     private HttpClient _httpClient;
@@ -60,11 +59,21 @@ public class NexusOpenApiClient
     /// Initializes a new instance of the <see cref="NexusOpenApiClient"/>.
     /// </summary>
     /// <param name="baseUrl">The base URL to connect to.</param>
-    /// <param name="httpClient">An optional HTTP client.</param>
-    public NexusOpenApiClient(string baseUrl, HttpClient? httpClient = null)
+    public NexusOpenApiClient(Uri baseUrl) : this(new HttpClient() { BaseAddress = baseUrl })
     {
-        _baseUrl = new Uri(baseUrl);
-        _httpClient = httpClient ?? new HttpClient();
+        //
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="NexusOpenApiClient"/>.
+    /// </summary>
+    /// <param name="httpClient">The HTTP client to use.</param>
+    public NexusOpenApiClient(HttpClient httpClient)
+    {
+        if (httpClient.BaseAddress is null)
+            throw new Exception("The base address of the HTTP client must be set.");
+
+        _httpClient = httpClient;
 
         _Artifacts = new ArtifactsClient(this);
         _Catalogs = new CatalogsClient(this);
@@ -80,7 +89,7 @@ public class NexusOpenApiClient
     /// <summary>
     /// Gets a value which indicates if the user is authenticated.
     /// </summary>
-    public bool IsAuthenticated => _jwtToken != null;
+    public bool IsAuthenticated => _accessToken != null;
 
     public IArtifactsClient Artifacts => _Artifacts;
     public ICatalogsClient Catalogs => _Catalogs;
@@ -92,26 +101,19 @@ public class NexusOpenApiClient
     public IWritersClient Writers => _Writers;
 
 
-    ///// <summary>
-    ///// Attempts to sign in the user.
-    ///// </summary>
-    ///// <param name="userId">The user ID.</param>
-    ///// <param name="password">The user password.</param>
-    ///// <returns>A task.</returns>
-    ///// <exception cref="SecurityException">Thrown when the authentication fails.</exception>
-    //public async Task PasswordSignInAsync(string userId, string password)
-    //{
-    //    var authenticateRequest = new AuthenticateRequest(UserId: userId, Password: password);
-    //    var authenticateResponse = await this.Users.AuthenticateAsync(authenticateRequest);
+    /// <summary>
+    /// Signs in the user.
+    /// </summary>
+    /// <param name="accessToken">The access token.</param>
+    /// <param name="refreshToken">The refresh token to use when the access token expires.</param>
+    /// <returns>A task.</returns>
+    public async Task SignInAsync(string accessToken, string refreshToken)
+    {
+        _httpClient.DefaultRequestHeaders.Add(AuthorizationHeaderKey, $"Bearer {accessToken}");
 
-    //    if (authenticateResponse.Error is not null)
-    //        throw new SecurityException($"Unable to authenticate. Reason: {authenticateResponse.Error}");
-
-    //    _httpClient.DefaultRequestHeaders.Add(AuthorizationHeaderKey, $"Bearer {authenticateResponse.JwtToken}");
-
-    //    _jwtToken = authenticateResponse.JwtToken;
-    //    _refreshToken = authenticateResponse.RefreshToken;
-    //}
+        _accessToken = accessToken;
+        _refreshToken = refreshToken;
+    }
 
     /// <summary>
     /// Attaches configuration data to subsequent Nexus OpenAPI requests.
@@ -229,7 +231,7 @@ public class NexusOpenApiClient
         return new HttpRequestMessage()
         {
             Method = new HttpMethod(method),
-            RequestUri = new Uri(_baseUrl, relativeUrl),
+            RequestUri = new Uri(relativeUrl, UriKind.Relative),
             Content = httpContent
         };
     }
@@ -245,14 +247,14 @@ public class NexusOpenApiClient
             throw new Exception("Refresh token or request message is null. This should never happen.");
 
         var refreshRequest = new RefreshTokenRequest(RefreshToken: _refreshToken);
-        var refreshResponse = await this.Users.RefreshTokenAsync(refreshRequest);
+        var tokenPair = await this.Users.RefreshTokenAsync(refreshRequest);
 
-        var authorizationHeaderValue = $"Bearer {refreshResponse.JwtToken}";
+        var authorizationHeaderValue = $"Bearer {tokenPair.AccessToken}";
         _httpClient.DefaultRequestHeaders.Remove(AuthorizationHeaderKey);
         _httpClient.DefaultRequestHeaders.Add(AuthorizationHeaderKey, authorizationHeaderValue);
 
-        _jwtToken = refreshResponse.JwtToken;
-        _refreshToken = refreshResponse.RefreshToken;
+        _accessToken = tokenPair.AccessToken;
+        _refreshToken = tokenPair.RefreshToken;
 
         return await _httpClient.SendAsync(newRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
     }
@@ -261,7 +263,7 @@ public class NexusOpenApiClient
     {
         _httpClient.DefaultRequestHeaders.Remove(AuthorizationHeaderKey);
         _refreshToken = null;
-        _jwtToken = null;
+        _accessToken = null;
     }
 }
 
@@ -967,17 +969,17 @@ public record DataSourceRegistration (string Type, Uri ResourceLocator, IDiction
 
 public record AuthenticationSchemeDescription (string Scheme, string DisplayName);
 
-public record TokenPair (string JwtToken, string RefreshToken);
+public record TokenPair (string AccessToken, string RefreshToken);
 
 public record RefreshTokenRequest (string RefreshToken);
 
 public record RevokeTokenRequest (string Token);
 
-public record NexusUser (string Id, string Name, IDictionary<string, NexusClaim> Claims, ICollection<RefreshToken> RefreshTokens);
-
-public record NexusClaim (string Type, string Value);
+public record NexusUser (string Id, string Name, ICollection<RefreshToken> RefreshTokens, IDictionary<string, NexusClaim> Claims);
 
 public record RefreshToken (string Token, DateTime Created, DateTime Expires, bool IsExpired);
+
+public record NexusClaim (string Type, string Value);
 
 
 

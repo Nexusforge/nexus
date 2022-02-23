@@ -144,10 +144,10 @@ namespace Nexus.Core
     /// <summary>
     /// A token pair.
     /// </summary>
-    /// <param name="JwtToken">The JWT token.</param>
+    /// <param name="AccessToken">The JWT token.</param>
     /// <param name="RefreshToken">The refresh token.</param>
     public record TokenPair(
-        string JwtToken,
+        string AccessToken,
         string RefreshToken);
 
     /// <summary>
