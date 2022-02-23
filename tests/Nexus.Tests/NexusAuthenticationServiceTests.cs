@@ -29,7 +29,7 @@ namespace Services
             var dbService = Mock.Of<IDBService>();
 
             Mock.Get(dbService)
-                .Setup(s => s.FindByIdAsync(
+                .Setup(s => s.FindByIdAndSchemeAsync(
                     It.IsAny<string>()))
                 .ReturnsAsync(user);
 
@@ -91,7 +91,7 @@ namespace Services
             var dbService = Mock.Of<IDBService>();
 
             Mock.Get(dbService)
-                .Setup(s => s.FindByIdAsync(
+                .Setup(s => s.FindByIdAndSchemeAsync(
                     It.IsAny<string>()))
                 .ReturnsAsync(default(NexusUser));
 
@@ -132,7 +132,7 @@ namespace Services
             var dbService = Mock.Of<IDBService>();
 
             Mock.Get(dbService)
-                .Setup(s => s.FindByIdAsync(
+                .Setup(s => s.FindByIdAndSchemeAsync(
                     It.IsAny<string>()))
                 .ReturnsAsync(user);
 
@@ -171,7 +171,7 @@ namespace Services
             var dbService = Mock.Of<IDBService>();
 
             Mock.Get(dbService)
-                .Setup(s => s.FindByIdAsync(
+                .Setup(s => s.FindByIdAndSchemeAsync(
                     It.IsAny<string>()))
                 .ReturnsAsync(user);
 
@@ -408,7 +408,7 @@ namespace Services
             var dbService = Mock.Of<IDBService>();
 
             Mock.Get(dbService)
-                .Setup(s => s.FindByIdAsync(
+                .Setup(s => s.FindByIdAndSchemeAsync(
                     It.IsAny<string>()))
                 .ReturnsAsync(user);
 

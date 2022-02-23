@@ -5,7 +5,7 @@ using Nexus.Extensibility;
 using Nexus.Services;
 using System.Reflection;
 
-namespace Nexus.Controllers.V1
+namespace Nexus.Controllers
 {
     /// <summary>
     /// Provides access to extensions.
@@ -40,10 +40,10 @@ namespace Nexus.Controllers.V1
         /// Gets the list of writers.
         /// </summary>
         [HttpGet("descriptions")]
-        public Task<ExtensionDescription[]> GetWriterDescriptionsAsync()
+        public ExtensionDescription[] GetWriterDescriptions()
         {
             var result = GetExtensionDescriptions(_extensionHive.GetExtensions<IDataWriter>());
-            return Task.FromResult(result);
+            return result;
         }
 
         private ExtensionDescription[] GetExtensionDescriptions(IEnumerable<Type> extensions)

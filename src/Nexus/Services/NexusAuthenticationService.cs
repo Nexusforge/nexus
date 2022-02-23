@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
@@ -13,15 +12,16 @@ namespace Nexus.Services
 
     internal interface INexusAuthenticationService
     {
-        Task<(string?, string?, string?)> AuthenticateAsync(
-            string userId, 
-            string password);
+        Task<TokenPair> GenerateTokenPairAsync(
+            NexusUser user);
 
-        Task<(string?, string?, string?)> RefreshTokenAsync(
-            string token);
+        Task<TokenPair> RefreshTokenAsync(
+            NexusUser user,
+            string refreshTokenString);
 
-        Task<string?> RevokeTokenAsync(
-            string token);
+        Task RevokeTokenAsync(
+            NexusUser user,
+            string refreshTokenString);
     }
 
     internal class NexusAuthenticationService : INexusAuthenticationService
@@ -51,18 +51,11 @@ namespace Nexus.Services
 
         #region Methods
 
-        public async Task<(string?, string?, string?)> AuthenticateAsync(
-            string userId,
-            string password)
+        public async Task<TokenPair> GenerateTokenPairAsync(
+            NexusUser user)
         {
-            // get user
-            var user = await _dbService.FindByIdAsync(userId);
-
-            if (user is null)
-                return (null, null, "The user does not exist.");
-
             // generate token pair
-            var (jwtToken, refreshToken) = this.GenerateTokenPair(user);
+            var (jwtToken, refreshToken) = this.InternalGenerateTokenPair(user);
 
             // add refresh token
             user.RefreshTokens.Add(refreshToken);
@@ -71,34 +64,18 @@ namespace Nexus.Services
             this.ClearExpiredTokens(user.RefreshTokens);
 
             // save changes
-            _dbService.UpdateUser(user);
+            await _dbService.UpdateUserAsync(user);
 
-            return (jwtToken, refreshToken.Token, null);
+            return new TokenPair(jwtToken, refreshToken.Token);
         }
 
-        public async Task<(string?, string?, string?)> RefreshTokenAsync(string token)
+        public async Task<TokenPair> RefreshTokenAsync(NexusUser user, string refreshTokenString)
         {
-            // get user
-            var user = await _dbService.FindByTokenAsync(token);
-
-            if (user is null)
-                return (null, null, "Token not found.");
-
-            // get token
-            var refreshToken = user.RefreshTokens.FirstOrDefault(current => current.Token == token);
-
-            if (refreshToken is null)
-                return (null, null, "Token not found.");
-
-            // check token
-            if (refreshToken.IsExpired)
-                return (null, null, "The refresh token has expired.");
-
             // generate new token pair
-            var (newJwtToken, newRefreshToken) = this.GenerateTokenPair(user);
+            var (newJwtToken, newRefreshToken) = this.InternalGenerateTokenPair(user);
 
             // delete redeemed refresh token
-            user.RefreshTokens.RemoveAll(current => current.Token == token);
+            user.RefreshTokens.RemoveAll(current => current.Token == refreshTokenString);
 
             // add refresh token
             user.RefreshTokens.Add(newRefreshToken);
@@ -107,34 +84,22 @@ namespace Nexus.Services
             this.ClearExpiredTokens(user.RefreshTokens);
 
             // save changes
-            _dbService.UpdateUser(user);
+            await _dbService.UpdateUserAsync(user);
 
-            return (newJwtToken, newRefreshToken.Token, null);
+            return new TokenPair(newJwtToken, newRefreshToken.Token);
         }
 
-        public async Task<string?> RevokeTokenAsync(string token)
+        public async Task RevokeTokenAsync(NexusUser user, string refreshTokenString)
         {
-            // get user
-            var user = await _dbService.FindByTokenAsync(token);
-
-            if (user is null)
-                return "Token not found.";
-
             // remove token
             var count = user.RefreshTokens.Count;
-            user.RefreshTokens.RemoveAll(current => current.Token == token);
-
-            var error = user.RefreshTokens.Count != count
-                ? null
-                : "Token not found.";
+            user.RefreshTokens.RemoveAll(current => current.Token == refreshTokenString);
 
             // clear expired tokens
             this.ClearExpiredTokens(user.RefreshTokens);
 
             // save changes
-            _dbService.UpdateUser(user);
-
-            return error;
+            await _dbService.UpdateUserAsync(user);
         }
 
         #endregion
@@ -146,17 +111,17 @@ namespace Nexus.Services
             refreshTokens.RemoveAll(current => current.IsExpired);
         }
 
-        private (string, RefreshToken) GenerateTokenPair(NexusUser user)
+        private (string, RefreshToken) InternalGenerateTokenPair(NexusUser user)
         {
             // generate a token pair
-            var jwtToken = this.GenerateJwtToken(user.Id, user.Claims);
+            var jwtToken = this.GenerateJwtToken(user.Id, user.Claims.Select(entry => entry.Value));
             var refreshToken = this.GenerateRefreshToken();
 
             // return response
             return (jwtToken, refreshToken);
         }
 
-        private string GenerateJwtToken(string userId, IList<NexusClaim> claims)
+        private string GenerateJwtToken(string userId, IEnumerable<NexusClaim> claims)
         {
             var tokenDescriptor = new SecurityTokenDescriptor
             {

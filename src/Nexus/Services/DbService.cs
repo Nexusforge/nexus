@@ -8,7 +8,7 @@ namespace Nexus.Services
         IQueryable<NexusUser> GetUsers();
         Task<NexusUser?> FindByIdAsync(string userId);
         Task<NexusUser?> FindByTokenAsync(string token);
-        void UpdateUser(NexusUser user);
+        Task UpdateUserAsync(NexusUser user);
     }
 
     internal class DbService : IDBService
@@ -21,9 +21,15 @@ namespace Nexus.Services
             _context = context;
         }
 
+        public IQueryable<NexusUser> GetUsers()
+        {
+            return _context.Users
+                .Include(user => user.RefreshTokens);
+        }
+
         public Task<NexusUser?> FindByIdAsync(string userId)
         {
-           return _context.Users
+            return _context.Users
                 .Include(user => user.RefreshTokens)
                 .FirstOrDefaultAsync(user => user.Id == userId);
         }
@@ -31,18 +37,14 @@ namespace Nexus.Services
         public Task<NexusUser?> FindByTokenAsync(string token)
         {
             return _context.Users
-                 .Include(user => user.RefreshTokens)
-                 .FirstOrDefaultAsync(user => user.RefreshTokens.Any(current => current.Token == token));
+                .Include(user => user.RefreshTokens)
+                .FirstOrDefaultAsync(user => user.RefreshTokens.Any(current => current.Token == token));
         }
 
-        public IQueryable<NexusUser> GetUsers()
-        {
-            return _context.Users;
-        }
-
-        public void UpdateUser(NexusUser user)
+        public Task UpdateUserAsync(NexusUser user)
         {
             _context.Users.Update(user);
+            return _context.SaveChangesAsync();
         }
     }
 }

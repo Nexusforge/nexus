@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Nexus.Core;
 using Nexus.Services;
 
-namespace Nexus.Controllers.V1
+namespace Nexus.Controllers
 {
     /// <summary>
     /// Provides access to package references.
@@ -48,10 +48,10 @@ namespace Nexus.Controllers.V1
         /// </summary>
         /// <returns></returns>
         [HttpGet]
-        public Task<IReadOnlyDictionary<Guid, PackageReference>>
-            GetPackageReferencesAsync()
+        public IReadOnlyDictionary<Guid, PackageReference>
+            GetPackageReferences()
         {
-            return Task.FromResult(_appState.Project.PackageReferences);
+            return _appState.Project.PackageReferences;
         }
 
         /// <summary>

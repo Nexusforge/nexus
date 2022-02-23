@@ -723,7 +723,7 @@
             "name": "registrationId",
             "in": "path",
             "required": true,
-            "description": "The identifier of the backend source.",
+            "description": "The identifier of the registration.",
             "schema": {
               "type": "string",
               "format": "guid"
@@ -733,7 +733,7 @@
         ],
         "requestBody": {
           "x-name": "registration",
-          "description": "The backend source to put.",
+          "description": "The registration to put.",
           "content": {
             "application/json": {
               "schema": {
@@ -761,7 +761,7 @@
             "name": "registrationId",
             "in": "path",
             "required": true,
-            "description": "The ID of the backend source.",
+            "description": "The identifier of the registration.",
             "schema": {
               "type": "string",
               "format": "guid"
@@ -772,30 +772,6 @@
         "responses": {
           "200": {
             "description": ""
-          }
-        }
-      }
-    },
-    "/api/v1/Users": {
-      "get": {
-        "tags": [
-          "Users"
-        ],
-        "summary": "Gets a list of users.",
-        "operationId": "Users_GetUsers",
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
           }
         }
       }
@@ -901,27 +877,6 @@
         }
       }
     },
-    "/api/v1/Users/info": {
-      "get": {
-        "tags": [
-          "Users"
-        ],
-        "summary": "Gets the user info.",
-        "operationId": "Users_GetUserInfo",
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserInfo"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/Users/refresh-token": {
       "post": {
         "tags": [
@@ -948,7 +903,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RefreshTokenResponse"
+                  "$ref": "#/components/schemas/TokenPair"
                 }
               }
             }
@@ -980,9 +935,10 @@
           "200": {
             "description": "",
             "content": {
-              "application/json": {
+              "application/octet-stream": {
                 "schema": {
-                  "$ref": "#/components/schemas/RevokeTokenResponse"
+                  "type": "string",
+                  "format": "binary"
                 }
               }
             }
@@ -990,35 +946,166 @@
         }
       }
     },
-    "/api/v1/Users/{userId}/tokens": {
+    "/api/v1/Users/me": {
       "get": {
         "tags": [
           "Users"
         ],
-        "summary": "Get a list of refresh tokens for the specified user.",
-        "operationId": "Users_GetRefreshTokens",
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "path",
-            "required": true,
-            "description": "The user to get the tokens for.",
-            "schema": {
-              "type": "string"
-            },
-            "x-position": 1
-          }
-        ],
+        "summary": "Gets the current user.",
+        "operationId": "Users_GetMe",
         "responses": {
           "200": {
-            "description": "Returns the list of available refresh tokens.",
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NexusUser"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Users/generate-tokens": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Generates a set of tokens.",
+        "operationId": "Users_GenerateTokens",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenPair"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Users": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Gets a list of users.",
+        "operationId": "Users_GetUsers",
+        "responses": {
+          "200": {
+            "description": "",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/RefreshToken"
+                    "$ref": "#/components/schemas/NexusUser"
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Users/{userId}/{claimId}": {
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Puts a claim.",
+        "operationId": "Users_PutClaim",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "description": "The identifier of the user.",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "claimId",
+            "in": "path",
+            "required": true,
+            "description": "The identifier of claim.",
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 2
+          }
+        ],
+        "requestBody": {
+          "x-name": "claim",
+          "description": "The claim to put.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NexusClaim"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 3
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Deletes a claim.",
+        "operationId": "Users_DeleteClaim",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "description": "The identifier of the user.",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "claimId",
+            "in": "path",
+            "required": true,
+            "description": "The identifier of the claim.",
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
                 }
               }
             }
@@ -1431,36 +1518,18 @@
           }
         }
       },
-      "UserInfo": {
+      "TokenPair": {
         "type": "object",
-        "description": "Describes a user.",
-        "additionalProperties": false,
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "The user name."
-          }
-        }
-      },
-      "RefreshTokenResponse": {
-        "type": "object",
-        "description": "The refresh token request response.",
+        "description": "A token pair.",
         "additionalProperties": false,
         "properties": {
           "jwtToken": {
             "type": "string",
-            "description": "The JWT token. null when an error occured.",
-            "nullable": true
+            "description": "The JWT token."
           },
           "refreshToken": {
             "type": "string",
-            "description": "The refresh token. null when an error occured.",
-            "nullable": true
-          },
-          "error": {
-            "type": "string",
-            "description": "An optional error message. Not null when an error occured.",
-            "nullable": true
+            "description": "The refresh token."
           }
         }
       },
@@ -1475,18 +1544,6 @@
           }
         }
       },
-      "RevokeTokenResponse": {
-        "type": "object",
-        "description": "The revoke token request response.",
-        "additionalProperties": false,
-        "properties": {
-          "error": {
-            "type": "string",
-            "description": "An optional error message. Not null when an error occured.",
-            "nullable": true
-          }
-        }
-      },
       "RevokeTokenRequest": {
         "type": "object",
         "description": "A revoke token request.",
@@ -1495,6 +1552,45 @@
           "token": {
             "type": "string",
             "description": "The refresh token."
+          }
+        }
+      },
+      "NexusUser": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "claims": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/NexusClaim"
+            }
+          },
+          "refreshTokens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RefreshToken"
+            }
+          }
+        }
+      },
+      "NexusClaim": {
+        "type": "object",
+        "description": "Represents a claim.",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "The claim type."
+          },
+          "value": {
+            "type": "string",
+            "description": "The claim value."
           }
         }
       },

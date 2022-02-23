@@ -7,7 +7,7 @@ using Nexus.Utilities;
 using System.Data;
 using System.Net;
 
-namespace Nexus.Controllers.V1
+namespace Nexus.Controllers
 {
     /// <summary>
     /// Provides access to catalogs.

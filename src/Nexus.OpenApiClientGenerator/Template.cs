@@ -223,9 +223,6 @@ public class {1}
         var refreshRequest = new RefreshTokenRequest(RefreshToken: _refreshToken);
         var refreshResponse = await this.Users.RefreshTokenAsync(refreshRequest);
 
-        if (refreshResponse.Error is not null)
-            return default;
-
         var authorizationHeaderValue = $"Bearer {refreshResponse.JwtToken}";
         _httpClient.DefaultRequestHeaders.Remove(AuthorizationHeaderKey);
         _httpClient.DefaultRequestHeaders.Add(AuthorizationHeaderKey, authorizationHeaderValue);

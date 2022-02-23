@@ -247,9 +247,6 @@ public class NexusOpenApiClient
         var refreshRequest = new RefreshTokenRequest(RefreshToken: _refreshToken);
         var refreshResponse = await this.Users.RefreshTokenAsync(refreshRequest);
 
-        if (refreshResponse.Error is not null)
-            return default;
-
         var authorizationHeaderValue = $"Bearer {refreshResponse.JwtToken}";
         _httpClient.DefaultRequestHeaders.Remove(AuthorizationHeaderKey);
         _httpClient.DefaultRequestHeaders.Add(AuthorizationHeaderKey, authorizationHeaderValue);
@@ -683,14 +680,16 @@ public class SourcesClient : ISourcesClient
 
 public interface IUsersClient
 {
-    Task<ICollection<string>> GetUsersAsync(CancellationToken cancellationToken = default);
     Task<ICollection<AuthenticationSchemeDescription>> GetAuthenticationSchemesAsync(CancellationToken cancellationToken = default);
     Task<StreamResponse> AuthenticateAsync(string scheme, string returnUrl, CancellationToken cancellationToken = default);
     Task<StreamResponse> SignOutAsync(string returnUrl, CancellationToken cancellationToken = default);
-    Task<UserInfo> GetUserInfoAsync(CancellationToken cancellationToken = default);
-    Task<RefreshTokenResponse> RefreshTokenAsync(RefreshTokenRequest request, CancellationToken cancellationToken = default);
-    Task<RevokeTokenResponse> RevokeTokenAsync(RevokeTokenRequest request, CancellationToken cancellationToken = default);
-    Task<ICollection<RefreshToken>> GetRefreshTokensAsync(string userId, CancellationToken cancellationToken = default);
+    Task<TokenPair> RefreshTokenAsync(RefreshTokenRequest request, CancellationToken cancellationToken = default);
+    Task<StreamResponse> RevokeTokenAsync(RevokeTokenRequest request, CancellationToken cancellationToken = default);
+    Task<NexusUser> GetMeAsync(CancellationToken cancellationToken = default);
+    Task<TokenPair> GenerateTokensAsync(CancellationToken cancellationToken = default);
+    Task<ICollection<NexusUser>> GetUsersAsync(CancellationToken cancellationToken = default);
+    Task<StreamResponse> PutClaimAsync(string userId, Guid claimId, NexusClaim claim, CancellationToken cancellationToken = default);
+    Task<StreamResponse> DeleteClaimAsync(string userId, Guid claimId, CancellationToken cancellationToken = default);
 }
 
 public class UsersClient : IUsersClient
@@ -700,18 +699,6 @@ public class UsersClient : IUsersClient
     internal UsersClient(NexusOpenApiClient client)
     {
         _client = client;
-    }
-
-    /// <summary>
-    /// Gets a list of users.
-    /// </summary>
-    public Task<ICollection<string>> GetUsersAsync(CancellationToken cancellationToken = default)
-    {
-        var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Users");
-
-        var url = urlBuilder.ToString();
-        return _client.InvokeAsync<ICollection<string>>("GET", url, "application/json", default, cancellationToken);
     }
 
     /// <summary>
@@ -768,52 +755,91 @@ public class UsersClient : IUsersClient
     }
 
     /// <summary>
-    /// Gets the user info.
-    /// </summary>
-    public Task<UserInfo> GetUserInfoAsync(CancellationToken cancellationToken = default)
-    {
-        var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Users/info");
-
-        var url = urlBuilder.ToString();
-        return _client.InvokeAsync<UserInfo>("GET", url, "application/json", default, cancellationToken);
-    }
-
-    /// <summary>
     /// Refreshes the JWT token.
     /// </summary>
-    public Task<RefreshTokenResponse> RefreshTokenAsync(RefreshTokenRequest request, CancellationToken cancellationToken = default)
+    public Task<TokenPair> RefreshTokenAsync(RefreshTokenRequest request, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/Users/refresh-token");
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<RefreshTokenResponse>("POST", url, "application/json", request, cancellationToken);
+        return _client.InvokeAsync<TokenPair>("POST", url, "application/json", request, cancellationToken);
     }
 
     /// <summary>
     /// Revokes a refresh token.
     /// </summary>
-    public Task<RevokeTokenResponse> RevokeTokenAsync(RevokeTokenRequest request, CancellationToken cancellationToken = default)
+    public Task<StreamResponse> RevokeTokenAsync(RevokeTokenRequest request, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/Users/revoke-token");
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<RevokeTokenResponse>("POST", url, "application/json", request, cancellationToken);
+        return _client.InvokeAsync<StreamResponse>("POST", url, "application/octet-stream", request, cancellationToken);
     }
 
     /// <summary>
-    /// Get a list of refresh tokens for the specified user.
+    /// Gets the current user.
     /// </summary>
-    public Task<ICollection<RefreshToken>> GetRefreshTokensAsync(string userId, CancellationToken cancellationToken = default)
+    public Task<NexusUser> GetMeAsync(CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Users/{userId}/tokens");
-        urlBuilder.Replace("{userId}", Uri.EscapeDataString(Convert.ToString(userId, CultureInfo.InvariantCulture)));
+        urlBuilder.Append("/api/v1/Users/me");
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<ICollection<RefreshToken>>("GET", url, "application/json", default, cancellationToken);
+        return _client.InvokeAsync<NexusUser>("GET", url, "application/json", default, cancellationToken);
+    }
+
+    /// <summary>
+    /// Generates a set of tokens.
+    /// </summary>
+    public Task<TokenPair> GenerateTokensAsync(CancellationToken cancellationToken = default)
+    {
+        var urlBuilder = new StringBuilder();
+        urlBuilder.Append("/api/v1/Users/generate-tokens");
+
+        var url = urlBuilder.ToString();
+        return _client.InvokeAsync<TokenPair>("POST", url, "application/json", default, cancellationToken);
+    }
+
+    /// <summary>
+    /// Gets a list of users.
+    /// </summary>
+    public Task<ICollection<NexusUser>> GetUsersAsync(CancellationToken cancellationToken = default)
+    {
+        var urlBuilder = new StringBuilder();
+        urlBuilder.Append("/api/v1/Users");
+
+        var url = urlBuilder.ToString();
+        return _client.InvokeAsync<ICollection<NexusUser>>("GET", url, "application/json", default, cancellationToken);
+    }
+
+    /// <summary>
+    /// Puts a claim.
+    /// </summary>
+    public Task<StreamResponse> PutClaimAsync(string userId, Guid claimId, NexusClaim claim, CancellationToken cancellationToken = default)
+    {
+        var urlBuilder = new StringBuilder();
+        urlBuilder.Append("/api/v1/Users/{userId}/{claimId}");
+        urlBuilder.Replace("{userId}", Uri.EscapeDataString(Convert.ToString(userId, CultureInfo.InvariantCulture)));
+        urlBuilder.Replace("{claimId}", Uri.EscapeDataString(Convert.ToString(claimId, CultureInfo.InvariantCulture)));
+
+        var url = urlBuilder.ToString();
+        return _client.InvokeAsync<StreamResponse>("PUT", url, "application/octet-stream", claim, cancellationToken);
+    }
+
+    /// <summary>
+    /// Deletes a claim.
+    /// </summary>
+    public Task<StreamResponse> DeleteClaimAsync(string userId, Guid claimId, CancellationToken cancellationToken = default)
+    {
+        var urlBuilder = new StringBuilder();
+        urlBuilder.Append("/api/v1/Users/{userId}/{claimId}");
+        urlBuilder.Replace("{userId}", Uri.EscapeDataString(Convert.ToString(userId, CultureInfo.InvariantCulture)));
+        urlBuilder.Replace("{claimId}", Uri.EscapeDataString(Convert.ToString(claimId, CultureInfo.InvariantCulture)));
+
+        var url = urlBuilder.ToString();
+        return _client.InvokeAsync<StreamResponse>("DELETE", url, "application/octet-stream", default, cancellationToken);
     }
 
 }
@@ -941,15 +967,15 @@ public record DataSourceRegistration (string Type, Uri ResourceLocator, IDiction
 
 public record AuthenticationSchemeDescription (string Scheme, string DisplayName);
 
-public record UserInfo (string Name);
-
-public record RefreshTokenResponse (string? JwtToken, string? RefreshToken, string? Error);
+public record TokenPair (string JwtToken, string RefreshToken);
 
 public record RefreshTokenRequest (string RefreshToken);
 
-public record RevokeTokenResponse (string? Error);
-
 public record RevokeTokenRequest (string Token);
+
+public record NexusUser (string Id, string Name, IDictionary<string, NexusClaim> Claims, ICollection<RefreshToken> RefreshTokens);
+
+public record NexusClaim (string Type, string Value);
 
 public record RefreshToken (string Token, DateTime Created, DateTime Expires, bool IsExpired);
 

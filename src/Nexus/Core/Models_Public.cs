@@ -1,7 +1,155 @@
 using Nexus.DataModel;
+using System.Collections.ObjectModel;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Nexus.Core
 {
+    /// <summary>
+    /// A refresh token.
+    /// </summary>
+    public class RefreshToken
+    {
+        internal RefreshToken(string token, DateTime expires)
+        {
+            this.Token = token;
+            this.Expires = expires;
+        }
+
+        /// <summary>
+        /// Gets or sets the primary key.
+        /// </summary>
+        [Key]
+        [JsonIgnore]
+        public int? Id { get; init; }
+
+        /// <summary>
+        /// Gets or sets the refresh token.
+        /// </summary>
+        public string Token { get; init; }
+
+        /// <summary>
+        /// Gets or sets the date/time when the token was created.
+        /// </summary>
+        public DateTime Created { get; init; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// Gets or sets the date/time when the token expires.
+        /// </summary>
+        public DateTime Expires { get; init; }
+
+        /// <summary>
+        /// Gets a value that indicates if the token has expired.
+        /// </summary>
+        public bool IsExpired => DateTime.UtcNow >= Expires;
+
+        /// <summary>
+        /// Gets or sets the owner of this token.
+        /// </summary>
+        [Required]
+        [JsonIgnore]
+        public NexusUser Owner { get; init; } = null!;
+    }
+
+    /// <summary>
+    /// Represents a user.
+    /// </summary>
+    public class NexusUser
+    {
+        /// <summary>
+        /// The user identifier.
+        /// </summary>
+        [Key]
+        public string Id { get; set; } = default!;
+
+        /// <summary>
+        /// The user name.
+        /// </summary>
+        public string Name { get; set; } = default!;
+
+        /// <summary>
+        /// The list of refresh tokens.
+        /// </summary>
+        public List<RefreshToken> RefreshTokens { get; set; } = default!;
+
+        #region Claims
+
+        // - Do not use normal Claim here because the Claim type all its
+        // properties would become part of the generated OpenAPI client!
+
+        // - It is difficult to use dictionaries in a database, so below
+        // is a workaorund using the JsonSerializer.
+
+        // - Using this method, Include(user => user.Claims) is not required anymore.
+
+        private ReadOnlyDictionary<Guid, NexusClaim>? _claims;
+
+        /// <summary>
+        /// The map of claims.
+        /// </summary>
+        [NotMapped]
+        public ReadOnlyDictionary<Guid, NexusClaim> Claims
+        {
+            get
+            {
+                if (_claims is null)
+                {
+                    var dictionary = JsonSerializer.Deserialize<Dictionary<Guid, NexusClaim>>(this.ClaimsAsJson)!;
+                    _claims = new ReadOnlyDictionary<Guid, NexusClaim>(dictionary);
+                }
+
+                return _claims;
+            }
+
+            set
+            {
+                this.ClaimsAsJson = JsonSerializer.Serialize(value);
+                _claims = value;
+            }
+        }
+
+#pragma warning disable CS1591
+        [JsonIgnore]
+        public string ClaimsAsJson { get; set; } = default!;
+#pragma warning restore CS1591
+
+        #endregion
+    }
+
+    /// <summary>
+    /// Represents a claim.
+    /// </summary>
+    /// <param name="Type">The claim type.</param>
+    /// <param name="Value">The claim value.</param>
+    public record NexusClaim(
+        string Type, 
+        string Value);
+
+    /// <summary>
+    /// A refresh token request.
+    /// </summary>
+    /// <param name="RefreshToken">The refresh token.</param>
+    public record RefreshTokenRequest(
+        [Required] string RefreshToken);
+
+    /// <summary>
+    /// A revoke token request.
+    /// </summary>
+    /// <param name="Token">The refresh token.</param>
+    public record RevokeTokenRequest(
+        [Required] string Token);
+
+    /// <summary>
+    /// A token pair.
+    /// </summary>
+    /// <param name="JwtToken">The JWT token.</param>
+    /// <param name="RefreshToken">The refresh token.</param>
+    public record TokenPair(
+        string JwtToken,
+        string RefreshToken);
+
     /// <summary>
     /// A package reference.
     /// </summary>
@@ -117,10 +265,4 @@ namespace Nexus.Core
     public record AuthenticationSchemeDescription(
         string Scheme,
         string DisplayName);
-
-    /// <summary>
-    /// Describes a user.
-    /// </summary>
-    /// <param name="Name">The user name.</param>
-    public record UserInfo(string Name);
 }

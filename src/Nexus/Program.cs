@@ -44,10 +44,6 @@ Log.Logger = new LoggerConfiguration()
     .Enrich.WithProperty("ApplicationName", applicationName)
     .CreateLogger();
 
-// checks
-if (!securityOptions.OidcProviders.Any())
-    Log.Warning("No OpenID Connect provider configured");
-
 // run
 try
 {

@@ -337,6 +337,7 @@ $@"public class {className} : I{className}
                     },
                     ("boolean", _,  _) => "bool",
                     ("number", "double", _) => "double",
+                    ("integer", "int32", _) => "int",
                     ("string", "uri", _) => "Uri",
                     ("string", "guid", _) => "Guid",
                     ("string", "duration", _) => "TimeSpan",

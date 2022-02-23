@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Nexus.Services;
 
-namespace Nexus.Controllers.V1
+namespace Nexus.Controllers
 {
     /// <summary>
     /// Provides access to artifacts.
@@ -38,20 +38,19 @@ namespace Nexus.Controllers.V1
         /// </summary>
         /// <param name="artifactId">The artifact identifier.</param>
         [HttpGet("{artifactId}")]
-        public Task<ActionResult>
-            DownloadArtifactAsync(
+        public ActionResult
+            DownloadArtifact(
                 string artifactId)
         {
             if (_databaseManager.TryReadArtifact(artifactId, out var artifactStream))
             {
                 this.Response.Headers.ContentLength = artifactStream.Length;
-                return Task.FromResult((ActionResult)
-                    this.File(artifactStream, "application/octet-stream", artifactId));
+                return this.File(artifactStream, "application/octet-stream", artifactId);
             }
+
             else
             {
-                return Task.FromResult((ActionResult)
-                    this.NotFound($"Could not find artifact {artifactId}."));
+                return this.NotFound($"Could not find artifact {artifactId}.");
             }
         }
 

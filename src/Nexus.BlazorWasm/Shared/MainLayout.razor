@@ -1,40 +1,60 @@
-﻿@using Nexus.Client
+﻿@inject ClientProvider ClientProvider
+@inject NavigationManager NavigationManager
+
 @inherits LayoutComponentBase
 
 <div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
 
-    <main>
-        <div class="top-row px-4">
-            @if (_userInfo is not null)
+    <AuthorizeView>
+
+        <Authorized>
+            <div class="sidebar">
+                <NavMenu />
+            </div>
+
+            <main>
+                <div class="top-row px-4">
+                    <span>Hello, @context.User.Identity!.Name!</span>
+                    <form action="/api/v1/users/signout">
+                        <input type="hidden" name="returnUrl" value="/" /> 
+                        <input type="submit" value="Logout" />
+                    </form>            
+                </div>
+
+                <article class="content px-4">
+                    @Body
+                </article>
+            </main>
+        </Authorized>
+
+        <NotAuthorized>
+            @if (_authenticationSchemes is null)
             {
-                <span>Hello, @_userInfo.Name!</span>
+                <span>Loading authentication schemes ...</span>
             }
-        </div>
+            else
+            {
+                @foreach (var scheme in _authenticationSchemes)
+                {
+                    <form action="/api/v1/users/authenticate">
+                        <input type="hidden" name="scheme" value="@scheme.Scheme" /> 
+                        <input type="hidden" name="returnUrl" value="@NavigationManager.Uri" /> 
+                        <input type="submit" value="Login via @scheme.DisplayName" />
+                    </form>
+                }
+            }
+        </NotAuthorized>
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
+    </AuthorizeView>
+
 </div>
 
 @code {
-    UserInfo? _userInfo;
+
+    private ICollection<AuthenticationSchemeDescription> _authenticationSchemes { get; set; } = default!;
 
     protected override async Task OnInitializedAsync()
     {
-        try
-        {
-            var httpClient = new HttpClient();
-            var client = new NexusOpenApiClient("https://localhost:8443", httpClient);
-
-            _userInfo = await client.Users.GetUserInfoAsync();
-        }
-        catch
-        {
-            //   
-        }
+        _authenticationSchemes = await ClientProvider.Client.Users.GetAuthenticationSchemesAsync();
     }
 }

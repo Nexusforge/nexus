@@ -6,7 +6,7 @@ using Nexus.Services;
 using Nexus.Utilities;
 using System.ComponentModel.DataAnnotations;
 
-namespace Nexus.Controllers.V1
+namespace Nexus.Controllers
 {
     /// <summary>
     /// Provides access to jobs.
@@ -149,7 +149,7 @@ namespace Nexus.Controllers.V1
         [Authorize(Policy = Policies.RequireAdmin)]
 
         [HttpPost("load-packages")]
-        public Task<ActionResult<Job>> LoadPackagesAsync(
+        public ActionResult<Job> LoadPackages(
             CancellationToken cancellationToken)
         {
             var username = this.User.Identity?.Name;
@@ -167,7 +167,7 @@ namespace Nexus.Controllers.V1
             });
 
             var response = (ActionResult<Job>)this.Accepted(this.GetAcceptUrl(job.Id), job);
-            return Task.FromResult(response);
+            return response;
         }
 
         /// <summary>
@@ -175,7 +175,7 @@ namespace Nexus.Controllers.V1
         /// </summary>
         /// <returns></returns>
         [HttpGet]
-        public Task<ActionResult<List<Job>>> GetJobsAsync()
+        public ActionResult<List<Job>> GetJobs()
         {
             var isAdmin = this.User.HasClaim(NexusClaims.IS_ADMIN, "true");
             var username = this.User.Identity?.Name;
@@ -189,7 +189,7 @@ namespace Nexus.Controllers.V1
                 .Where(job => job.Owner == username || isAdmin)
                 .ToList();
 
-            return Task.FromResult((ActionResult<List<Job>>)result);
+            return result;
         }
 
         /// <summary>
@@ -240,7 +240,7 @@ namespace Nexus.Controllers.V1
         /// <param name="jobId"></param>
         /// <returns></returns>
         [HttpDelete("{jobId}")]
-        public Task<ActionResult> DeleteJobAsync(Guid jobId)
+        public ActionResult DeleteJob(Guid jobId)
         {
             if (_jobService.TryGetJob(jobId, out var jobControl))
             {
@@ -253,17 +253,18 @@ namespace Nexus.Controllers.V1
                 if (jobControl.Job.Owner == username || isAdmin)
                 {
                     jobControl.CancellationTokenSource.Cancel();
-                    return Task.FromResult((ActionResult)this.Accepted());
+                    return this.Accepted();
                 }
 
                 else
                 {
-                    return Task.FromResult((ActionResult)this.Forbid($"The current user is not permitted to cancel the job '{jobControl.Job.Id}'."));
+                    return this.Forbid($"The current user is not permitted to cancel the job '{jobControl.Job.Id}'.");
                 }
             }
+
             else
             {
-                return Task.FromResult((ActionResult)this.NotFound(jobId));
+                return this.NotFound(jobId);
             }
         }
 

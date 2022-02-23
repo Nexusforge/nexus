@@ -5,7 +5,7 @@ using Nexus.Extensibility;
 using Nexus.Services;
 using System.Reflection;
 
-namespace Nexus.Controllers.V1
+namespace Nexus.Controllers
 {
     /// <summary>
     /// Provides access to extensions.
@@ -47,10 +47,10 @@ namespace Nexus.Controllers.V1
         /// Gets the list of sources.
         /// </summary>
         [HttpGet("descriptions")]
-        public Task<ExtensionDescription[]> GetSourceDescriptionsAsync()
+        public ExtensionDescription[] GetSourceDescriptions()
         {
             var result = GetExtensionDescriptions(_extensionHive.GetExtensions<IDataSource>());
-            return Task.FromResult(result);
+            return result;
         }
 
         /// <summary>
@@ -58,8 +58,8 @@ namespace Nexus.Controllers.V1
         /// </summary>
         /// <returns></returns>
         [HttpGet("registrations")]
-        public Task<IReadOnlyDictionary<Guid, DataSourceRegistration>>
-            GetSourceRegistrationsAsync()
+        public IReadOnlyDictionary<Guid, DataSourceRegistration>
+            GetSourceRegistrations()
         {
             var username = this.User.Identity?.Name;
 
@@ -67,45 +67,37 @@ namespace Nexus.Controllers.V1
                 throw new Exception("This should never happen.");
 
             if (_appState.Project.UserConfigurations.TryGetValue(username, out var userConfiguration))
-                return Task.FromResult(userConfiguration.DataSourceRegistrations);
+                return userConfiguration.DataSourceRegistrations;
 
             else
-                return Task.FromResult((IReadOnlyDictionary<Guid, DataSourceRegistration>)new Dictionary<Guid, DataSourceRegistration>());
+                return new Dictionary<Guid, DataSourceRegistration>();
         }
 
         /// <summary>
         /// Puts a backend source.
         /// </summary>
-        /// <param name="registrationId">The identifier of the backend source.</param>
-        /// <param name="registration">The backend source to put.</param>
+        /// <param name="registrationId">The identifier of the registration.</param>
+        /// <param name="registration">The registration to put.</param>
         [HttpPut("registrations/{registrationId}")]
         public Task
             PutSourceRegistrationAsync(
             Guid registrationId,
             [FromBody] DataSourceRegistration registration)
         {
-            var username = this.User.Identity?.Name;
-
-            if (username is null)
-                throw new Exception("This should never happen.");
-
+            var username = this.User.Identity?.Name!;
             return _appStateManager.PutDataSourceRegistrationAsync(username, registrationId, registration);
         }
 
         /// <summary>
         /// Deletes a backend source.
         /// </summary>
-        /// <param name="registrationId">The ID of the backend source.</param>
+        /// <param name="registrationId">The identifier of the registration.</param>
         [HttpDelete("registrations/{registrationId}")]
         public Task
             DeleteSourceRegistrationAsync(
             Guid registrationId)
         {
-            var username = this.User.Identity?.Name;
-
-            if (username is null)
-                throw new Exception("This should never happen.");
-
+            var username = this.User.Identity?.Name!;
             return _appStateManager.DeleteDataSourceRegistrationAsync(username, registrationId);
         }
 

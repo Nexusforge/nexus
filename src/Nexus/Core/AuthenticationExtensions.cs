@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Nexus.Core;
 using Nexus.Services;
+using System.Collections.ObjectModel;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using static OpenIddict.Abstractions.OpenIddictConstants;
@@ -61,6 +62,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     options.CallbackPath = $"/signin-oidc/{provider.Scheme}";
                     options.ResponseType = OpenIdConnectResponseType.Code;
 
+                    options.TokenValidationParameters.AuthenticationType = provider.Scheme;
                     options.TokenValidationParameters.NameClaimType = Claims.Name;
 
                     /* user info endpoint is contacted AFTER OnTokenValidated, which requires the name claim to be present */
@@ -90,35 +92,29 @@ namespace Microsoft.Extensions.DependencyInjection
                                 ?? throw new Exception("The name claim is required.");
 
                             var userContext = context.HttpContext.RequestServices.GetRequiredService<UserDbContext>();
+                            var uniqueUserId = $"{userId}@{context.Scheme.Name}";
 
+                            // user
                             var user = await userContext.Users
-                                .Include(user => user.Claims)
-                                .SingleOrDefaultAsync(user =>
-                                    user.Id == userId &&
-                                    user.Scheme == context.Scheme.Name);
+                                .SingleOrDefaultAsync(user => user.Id == uniqueUserId);
 
                             if (user is null)
                             {
+                                var newClaims = new Dictionary<Guid, NexusClaim>();
+
                                 user = new NexusUser()
                                 {
-                                    Id = userId,
+                                    Id = uniqueUserId,
                                     Name = userName,
-                                    Scheme = context.Scheme.Name,
-                                    Claims = new List<NexusClaim>(),
                                     RefreshTokens = new List<RefreshToken>()
                                 };
 
                                 var isFirstUser = !userContext.Users.Any();
 
                                 if (isFirstUser)
-                                {
-                                    user.Claims.Add(new NexusClaim()
-                                    {
-                                        Type = NexusClaims.IS_ADMIN,
-                                        Value = "true"
-                                    });
-                                }
+                                    newClaims[Guid.NewGuid()] = new NexusClaim(NexusClaims.IS_ADMIN, "true");
 
+                                user.Claims = new ReadOnlyDictionary<Guid, NexusClaim>(newClaims);
                                 userContext.Users.Add(user);
                             }
 
@@ -130,7 +126,19 @@ namespace Microsoft.Extensions.DependencyInjection
 
                             await userContext.SaveChangesAsync();
 
-                            var appIdentity = new ClaimsIdentity(user.Claims.Select(claim => new Claim(claim.Type, claim.Value)));
+                            // oicd identity
+                            var oidcIdentity = (ClaimsIdentity)principal.Identity!;
+                            var subClaim = oidcIdentity.FindFirst(Claims.Subject);
+                            
+                            if (subClaim is not null)
+                                oidcIdentity.RemoveClaim(subClaim);
+
+                            oidcIdentity.AddClaim(new Claim(Claims.Subject, uniqueUserId));
+
+                            // app identity
+                            var claims = user.Claims.Select(entry => new Claim(entry.Value.Type, entry.Value.Value));
+                            var appIdentity = new ClaimsIdentity(claims, authenticationType: context.Scheme.Name);
+
                             principal.AddIdentity(appIdentity);
                         }
                     };
