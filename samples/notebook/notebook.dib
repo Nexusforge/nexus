@@ -11,8 +11,8 @@ Add package source
 #!csharp
 
 // https://github.com/dotnet/interactive/issues/698
-#i "nuget: file:///D:/Git/GitHub/nexusforge/nexus/artifacts/packages"
-#r "nuget: Nexus.OpenApiClient, 1.0.0-beta.1"
+#i "nuget: https://www.myget.org/F/apollo3zehn-dev/api/v3/index.json"
+#r "nuget: Nexus.OpenApiClient, 1.0.0-beta.1.152"
 #r "nuget: XPlot.Plotly.Interactive, 4.0.6"
 
 #!markdown
