@@ -1007,7 +1007,7 @@ public record RevokeTokenRequest (string Token);
 
 public record NexusUser (string Id, string Name, ICollection<RefreshToken> RefreshTokens, IDictionary<string, NexusClaim> Claims);
 
-public record RefreshToken (string Token, DateTime Created, DateTime Expires, bool IsExpired);
+public record RefreshToken (string Token, DateTime Created, DateTime Expires, DateTime? Revoked, string? ReplacedByToken, bool IsExpired, bool IsRevoked, bool IsActive);
 
 public record NexusClaim (string Type, string Value);
 

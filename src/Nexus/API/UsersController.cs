@@ -51,7 +51,7 @@ namespace Nexus.Controllers
             IDBService dBService,
             INexusAuthenticationService authService,
             IOptions<SecurityOptions> securityOptions,
-            ILogger<NexusAuthenticationService> logger)
+            ILogger<UsersController> logger)
         {
             _dbService = dBService;
             _authService = authService;
@@ -134,13 +134,12 @@ namespace Nexus.Controllers
             // check token
             if (token.IsRevoked)
             {
-                _logger.LogWarning($"Attempted reuse of revoked token of user {token.Owner.Name}.");
-                _authService.RevokeDescendantTokens(token, user, ipAddress, $"Attempted reuse of revoked ancestor token: {token}");
+                _logger.LogWarning($"Attempted reuse of revoked token of user {token.Owner.Id} ({token.Owner.Name}).");
+                await _authService.RevokeDescendantTokensAsync(token);
             }
 
             if (!token.IsActive)
                 return UnprocessableEntity("Invalid token.");
-#error
 
             // refresh token
             var tokenPair = await _authService

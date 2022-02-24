@@ -55,7 +55,7 @@ namespace Nexus.Services
         public async Task<TokenPair> GenerateTokenPairAsync(
             NexusUser user)
         {
-            // generate token pair
+            // new token pair
             var newRefreshToken = GenerateRefreshToken(user.Id);
             var newAccessToken = GenerateAccessToken(user.Id, user.Claims.Select(entry => entry.Value));
 
@@ -78,14 +78,14 @@ namespace Nexus.Services
             var newRefreshToken = RotateToken(token);
             user.RefreshTokens.Add(newRefreshToken);
 
+            // access token
+            var newAccessToken = GenerateAccessToken(user.Id, user.Claims.Select(entry => entry.Value));
+
             // clear old tokens
             ClearOldTokens(token.Owner);
 
             // save changes
             await _dbService.UpdateUserAsync(token.Owner);
-
-            // access token
-            var newAccessToken = GenerateAccessToken(user.Id, user.Claims.Select(entry => entry.Value));
 
             return new TokenPair(newAccessToken, newRefreshToken.Token);
         }
