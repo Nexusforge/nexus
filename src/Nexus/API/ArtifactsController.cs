@@ -44,13 +44,13 @@ namespace Nexus.Controllers
         {
             if (_databaseManager.TryReadArtifact(artifactId, out var artifactStream))
             {
-                this.Response.Headers.ContentLength = artifactStream.Length;
-                return this.File(artifactStream, "application/octet-stream", artifactId);
+                Response.Headers.ContentLength = artifactStream.Length;
+                return File(artifactStream, "application/octet-stream", artifactId);
             }
 
             else
             {
-                return this.NotFound($"Could not find artifact {artifactId}.");
+                return NotFound($"Could not find artifact {artifactId}.");
             }
         }
 

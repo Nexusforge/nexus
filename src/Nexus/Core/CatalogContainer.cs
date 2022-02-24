@@ -25,11 +25,11 @@ namespace Nexus.Core
             IDatabaseManager databaseManager,
             IDataControllerService dataControllerService)
         {
-            this.Id = catalogRegistration.Path;
-            this.IsTransient = catalogRegistration.IsTransient;
-            this.Owner = owner;
-            this.DataSourceRegistration = dataSourceRegistration;
-            this.Metadata = metadata;
+            Id = catalogRegistration.Path;
+            IsTransient = catalogRegistration.IsTransient;
+            Owner = owner;
+            DataSourceRegistration = dataSourceRegistration;
+            Metadata = metadata;
 
             _catalogManager = catalogManager;
             _databaseManager = databaseManager;
@@ -42,7 +42,7 @@ namespace Nexus.Core
 
         public ClaimsPrincipal? Owner { get; }
 
-        public string PhysicalName => this.Id.TrimStart('/').Replace('/', '_');
+        public string PhysicalName => Id.TrimStart('/').Replace('/', '_');
 
         public DataSourceRegistration DataSourceRegistration { get; }
 
@@ -60,7 +60,7 @@ namespace Nexus.Core
 
             try
             {
-                if (this.IsTransient || _childCatalogContainers is null)
+                if (IsTransient || _childCatalogContainers is null)
                     _childCatalogContainers = await _catalogManager.GetCatalogContainersAsync(this, cancellationToken);
 
                 return _childCatalogContainers;
@@ -77,7 +77,7 @@ namespace Nexus.Core
 
             try
             {
-                await this.EnsureCatalogInfoAsync(cancellationToken);
+                await EnsureCatalogInfoAsync(cancellationToken);
 
                 var catalogInfo = _catalogInfo;
 
@@ -99,11 +99,11 @@ namespace Nexus.Core
             try
             {
                 // persist
-                using var stream = _databaseManager.WriteCatalogMetadata(this.Id);
+                using var stream = _databaseManager.WriteCatalogMetadata(Id);
                 await JsonSerializerHelper.SerializeIntendedAsync(stream, metadata);
 
                 // assign
-                this.Metadata = metadata;
+                Metadata = metadata;
 
                 // trigger merging of catalog and catalog overrides
                 _catalogInfo = null;
@@ -116,13 +116,13 @@ namespace Nexus.Core
 
         private async Task EnsureCatalogInfoAsync(CancellationToken cancellationToken)
         {
-            if (this.IsTransient || _catalogInfo is null)
+            if (IsTransient || _catalogInfo is null)
             {
                 var catalogBegin = default(DateTime);
                 var catalogEnd = default(DateTime);
 
-                using var controller = await _dataControllerService.GetDataSourceControllerAsync(this.DataSourceRegistration, cancellationToken);
-                var catalog = await controller.GetCatalogAsync(this.Id, cancellationToken);
+                using var controller = await _dataControllerService.GetDataSourceControllerAsync(DataSourceRegistration, cancellationToken);
+                var catalog = await controller.GetCatalogAsync(Id, cancellationToken);
 
                 // get begin and end of project
                 var timeRangeResult = await controller.GetTimeRangeAsync(catalog.Id, cancellationToken);
@@ -141,8 +141,8 @@ namespace Nexus.Core
                     catalogEnd = new DateTime(Math.Max(catalogEnd.Ticks, timeRangeResult.End.Ticks));
 
                 // merge catalog
-                if (this.Metadata?.Overrides is not null)
-                    catalog = catalog.Merge(this.Metadata.Overrides, MergeMode.NewWins);
+                if (Metadata?.Overrides is not null)
+                    catalog = catalog.Merge(Metadata.Overrides, MergeMode.NewWins);
 
                 _catalogInfo = new CatalogInfo(catalogBegin, catalogEnd, catalog);
             }

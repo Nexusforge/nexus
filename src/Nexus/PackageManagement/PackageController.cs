@@ -52,21 +52,21 @@ namespace Nexus.PackageManagement
             switch (PackageReference.Provider)
             {
                 case "local":
-                    result = await this.DiscoverLocalAsync(cancellationToken);
+                    result = await DiscoverLocalAsync(cancellationToken);
                     break;
 
                 case "github-releases":
-                    result = await this.DiscoverGithubReleasesAsync(cancellationToken);
+                    result = await DiscoverGithubReleasesAsync(cancellationToken);
                     break;
 
                 case "gitlab-packages-generic-v4":
-                    result = await this.DiscoverGitLabPackagesGenericAsync(cancellationToken);
+                    result = await DiscoverGitLabPackagesGenericAsync(cancellationToken);
                     break;
 
                 /* this approach does not work, see rationale below (#region gitlab-releases-v4) */
 
                 //case "gitlab-releases-v4":
-                //    result = await this.DiscoverGitLabReleasesAsync(cancellationToken);
+                //    result = await DiscoverGitLabReleasesAsync(cancellationToken);
                 //    break;
 
                 default:
@@ -81,7 +81,7 @@ namespace Nexus.PackageManagement
             if (_loadContext is not null)
                 throw new Exception("The extension is already loaded.");
 
-            var restoreFolderPath = await this.RestoreAsync(restoreRoot, cancellationToken);
+            var restoreFolderPath = await RestoreAsync(restoreRoot, cancellationToken);
             var depsJsonExtension = ".deps.json";
 
             var depsJsonFilePath = Directory
@@ -126,21 +126,21 @@ namespace Nexus.PackageManagement
             switch (PackageReference.Provider)
             {
                 case "local":
-                    restoreFolderPath = await this.RestoreLocalAsync(actualRestoreRoot, cancellationToken);
+                    restoreFolderPath = await RestoreLocalAsync(actualRestoreRoot, cancellationToken);
                     break;
 
                 case "github-releases":
-                    restoreFolderPath = await this.RestoreGitHubReleasesAsync(actualRestoreRoot, cancellationToken);
+                    restoreFolderPath = await RestoreGitHubReleasesAsync(actualRestoreRoot, cancellationToken);
                     break;
 
                 case "gitlab-packages-generic-v4":
-                    restoreFolderPath = await this.RestoreGitLabPackagesGenericAsync(actualRestoreRoot, cancellationToken);
+                    restoreFolderPath = await RestoreGitLabPackagesGenericAsync(actualRestoreRoot, cancellationToken);
                     break;
 
                 /* this approach does not work, see rationale below (#region gitlab-releases-v4) */
 
                 //case "gitlab-releases-v4":
-                //    restoreFolderPath = await this.RestoreGitLabReleasesAsync(actualRestoreRoot, cancellationToken);
+                //    restoreFolderPath = await RestoreGitLabReleasesAsync(actualRestoreRoot, cancellationToken);
                 //    break;
 
                 default:

@@ -78,13 +78,13 @@ namespace Nexus.Controllers
                 var (catalogContainer, catalogItem) = await root.TryFindAsync(resourcePath, cancellationToken);
 
                 if (catalogContainer is null || catalogItem is null)
-                    return this.NotFound($"Could not find resource path {resourcePath}.");
+                    return NotFound($"Could not find resource path {resourcePath}.");
 
                 var catalog = catalogItem.Catalog;
 
                 // security check
-                if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, this.User))
-                    return this.StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to access the catalog {catalog.Id}.");
+                if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, User))
+                    return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to access the catalog {catalog.Id}.");
 
                 // controller
                 using var controller = await _dataControllerService.GetDataSourceControllerAsync(
@@ -94,12 +94,12 @@ namespace Nexus.Controllers
                 // read data
                 var stream = controller.ReadAsStream(begin, end, catalogItem, _loggerFactory.CreateLogger<DataSourceController>());
 
-                this.Response.Headers.ContentLength = stream.Length;
-                return this.File(stream, "application/octet-stream", "data.bin");
+                Response.Headers.ContentLength = stream.Length;
+                return File(stream, "application/octet-stream", "data.bin");
             }
             catch (ValidationException ex)
             {
-                return this.UnprocessableEntity(ex.Message);
+                return UnprocessableEntity(ex.Message);
             }
         }
     }

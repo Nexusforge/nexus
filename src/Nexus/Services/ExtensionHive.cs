@@ -57,7 +57,7 @@ namespace Nexus.Services
 
             // add built-in extensions
             var thisAssembly = Assembly.GetExecutingAssembly();
-            var thisTypes = this.ScanAssembly(thisAssembly, thisAssembly.DefinedTypes);
+            var thisTypes = ScanAssembly(thisAssembly, thisAssembly.DefinedTypes);
 
             _builtinExtensions = thisTypes;
         }
@@ -98,7 +98,7 @@ namespace Nexus.Services
                 {
                     _logger.LogDebug("Load package");
                     var assembly = await packageController.LoadAsync(_pathsOptions.Packages, cancellationToken);
-                    var types = this.ScanAssembly(assembly, assembly.ExportedTypes);
+                    var types = ScanAssembly(assembly, assembly.ExportedTypes);
                     packageControllerMap[packageController] = types;
                 }
                 catch (Exception ex)

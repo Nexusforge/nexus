@@ -45,7 +45,7 @@ namespace Nexus.Services
                 var now = DateTime.UtcNow;
                 var maxRuntime = TimeSpan.FromDays(3);
 
-                foreach (var jobControl in this.GetJobs())
+                foreach (var jobControl in GetJobs())
                 {
                     if (jobControl.Task.IsCompleted)
                     {
@@ -95,7 +95,7 @@ namespace Nexus.Services
                 }
             });
 
-            this.TryAddJob(jobControl);
+            TryAddJob(jobControl);
             return jobControl;
         }
 

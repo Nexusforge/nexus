@@ -61,7 +61,7 @@ namespace Nexus.Controllers
         public IReadOnlyDictionary<Guid, DataSourceRegistration>
             GetSourceRegistrations()
         {
-            var username = this.User.Identity?.Name;
+            var username = User.Identity?.Name;
 
             if (username is null)
                 throw new Exception("This should never happen.");
@@ -84,7 +84,7 @@ namespace Nexus.Controllers
             Guid registrationId,
             [FromBody] DataSourceRegistration registration)
         {
-            var username = this.User.Identity?.Name!;
+            var username = User.Identity?.Name!;
             return _appStateManager.PutDataSourceRegistrationAsync(username, registrationId, registration);
         }
 
@@ -97,7 +97,7 @@ namespace Nexus.Controllers
             DeleteSourceRegistrationAsync(
             Guid registrationId)
         {
-            var username = this.User.Identity?.Name!;
+            var username = User.Identity?.Name!;
             return _appStateManager.DeleteDataSourceRegistrationAsync(username, registrationId);
         }
 

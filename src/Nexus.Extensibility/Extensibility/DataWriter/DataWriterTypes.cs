@@ -35,7 +35,7 @@ namespace Nexus.Extensibility
         /// <param name="formatName">The file format name to be display in the Nexus GUI.</param>
         public DataWriterFormatNameAttribute(string formatName)
         {
-            this.FormatName = formatName;
+            FormatName = formatName;
         }
 
         /// <summary>
@@ -48,8 +48,8 @@ namespace Nexus.Extensibility
     {
         public OptionAttribute(string configurationKey, string label)
         {
-            this.ConfigurationKey = configurationKey;
-            this.Label = label;
+            ConfigurationKey = configurationKey;
+            Label = label;
         }
 
         public string ConfigurationKey { get; }
@@ -63,9 +63,9 @@ namespace Nexus.Extensibility
         public DataWriterSelectOptionAttribute(string configurationKey, string label, string defaultValue, string[] keys, string[] values)
             : base(configurationKey, label)
         {
-            this.DefaultValue = defaultValue;
+            DefaultValue = defaultValue;
 
-            this.KeyValueMap = keys
+            KeyValueMap = keys
                 .Zip(values)
                 .ToDictionary(entry => entry.First, entry => entry.Second);
         }
@@ -81,10 +81,10 @@ namespace Nexus.Extensibility
         public DataWriterIntegerNumberInputOptionAttribute(string configurationKey, string label, int defaultValue, int minmum, int maximum) 
             : base(configurationKey, label)
         {
-            this.DefaultValue = defaultValue;
+            DefaultValue = defaultValue;
 
-            this.Minmum = minmum;
-            this.Maximum = maximum;
+            Minmum = minmum;
+            Maximum = maximum;
         }
 
         public int DefaultValue { get; }

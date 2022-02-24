@@ -68,7 +68,7 @@ namespace Nexus.Writers
 
         public Task SetContextAsync(DataWriterContext context, CancellationToken cancellationToken)
         {
-            this.Context = context;
+            Context = context;
             return Task.CompletedTask;
         }
 
@@ -90,7 +90,7 @@ namespace Nexus.Writers
 
                 var catalog = catalogItemGroup.Key;
                 var physicalId = catalog.Id.TrimStart('/').Replace('/', '_');
-                var root = this.Context.ResourceLocator.ToPath();
+                var root = Context.ResourceLocator.ToPath();
 
                 /* metadata */
                 var resourceFileNameWithoutExtension = $"{physicalId}_{samplePeriod.ToUnitString()}";
@@ -99,7 +99,7 @@ namespace Nexus.Writers
 
                 if (!_resourceMap.TryGetValue(resourceFilePath, out var resource))
                 {
-                    var rowIndexFormat = this.Context.Configuration.GetValueOrDefault("RowIndexFormat", "Index");
+                    var rowIndexFormat = Context.Configuration.GetValueOrDefault("RowIndexFormat", "Index");
                     var constraints = new Constraints(Required: true);
 
                     var timestampField = rowIndexFormat switch

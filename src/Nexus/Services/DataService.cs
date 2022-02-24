@@ -39,8 +39,8 @@ namespace Nexus.Services
             _logger = logger;
             _loggerFactory = loggerFactory;
 
-            this.ReadProgress = new Progress<double>();
-            this.WriteProgress = new Progress<double>();
+            ReadProgress = new Progress<double>();
+            WriteProgress = new Progress<double>();
         }
 
         #endregion
@@ -93,7 +93,7 @@ namespace Nexus.Services
 
             foreach (var catalogId in catalogIds)
             {
-                this.CopyLicenseIfAvailable(catalogId, tmpFolderPath);
+                CopyLicenseIfAvailable(catalogId, tmpFolderPath);
             }
 
             // get data writer controller
@@ -104,7 +104,7 @@ namespace Nexus.Services
             try
             {
                 var exportContext = new ExportContext(samplePeriod, catalogItemsMap, exportParameters);
-                await this.CreateFilesAsync(exportContext, controller, cancellationToken);
+                await CreateFilesAsync(exportContext, controller, cancellationToken);
             }
             finally
             {
@@ -112,7 +112,7 @@ namespace Nexus.Services
             }
 
             // write zip archive
-            this.WriteZipArchiveEntries(zipArchive, tmpFolderPath, cancellationToken);
+            WriteZipArchiveEntries(zipArchive, tmpFolderPath, cancellationToken);
 
             return $"api/artifacts/{zipFileName}";
         }
@@ -179,7 +179,7 @@ namespace Nexus.Services
                 exportParameters.End,
                 exportContext.SamplePeriod,
                 readingGroups.ToArray(),
-                this.ReadProgress,
+                ReadProgress,
                 logger,
                 cts.Token);
 
@@ -196,7 +196,7 @@ namespace Nexus.Services
                 exportContext.SamplePeriod,
                 filePeriod,
                 catalogItemPipeReaders.ToArray(),
-                this.WriteProgress,
+                WriteProgress,
                 cts.Token
             );
 
@@ -242,7 +242,7 @@ namespace Nexus.Services
             }
             finally
             {
-                this.CleanUp(sourceFolderPath);
+                CleanUp(sourceFolderPath);
             }
         }
 

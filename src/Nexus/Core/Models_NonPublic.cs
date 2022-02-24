@@ -37,13 +37,13 @@ namespace Nexus.Core
 
         public void OnProgressUpdated(double e)
         {
-            this.Progress = e;
-            this.ProgressUpdated?.Invoke(this, e);
+            Progress = e;
+            ProgressUpdated?.Invoke(this, e);
         }
 
         public void OnCompleted()
         {
-            this.Completed?.Invoke(this, EventArgs.Empty);
+            Completed?.Invoke(this, EventArgs.Empty);
         }
     }
 }

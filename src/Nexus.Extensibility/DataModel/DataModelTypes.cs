@@ -86,7 +86,7 @@
         /// <returns>The full qualified path.</returns>
         public string ToPath()
         {
-            return $"{this.Catalog.Id}/{this.Resource.Id}/{this.Representation.Id}";
+            return $"{Catalog.Id}/{Resource.Id}/{Representation.Id}";
         }
     }
 

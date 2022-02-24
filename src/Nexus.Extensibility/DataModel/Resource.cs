@@ -34,12 +34,12 @@ namespace Nexus.DataModel
             if (!_idValidator.IsMatch(id))
                 throw new ArgumentException($"The resource identifier '{id}' is not valid.");
 
-            this.Id = id;
+            Id = id;
 
             _properties = properties;
 
             if (representations is not null)
-                this.ValidateRepresentations(representations);
+                ValidateRepresentations(representations);
 
             _representations = representations;
         }
@@ -75,7 +75,7 @@ namespace Nexus.DataModel
             init
             {
                 if (value is not null)
-                    this.ValidateRepresentations(value);
+                    ValidateRepresentations(value);
 
                 _representations = value;
             }
@@ -87,13 +87,13 @@ namespace Nexus.DataModel
 
         internal Resource Merge(Resource resource, MergeMode mergeMode)
         {
-            if (this.Id != resource.Id)
+            if (Id != resource.Id)
                 throw new ArgumentException("The resources to be merged have different identifiers.");
 
             var newProperties = resource.Properties ?? _emptyProperties;
             var newRepresentations = resource.Representations ?? _emptyRepresentations;
-            var thisProperties = this.Properties ?? _emptyProperties;
-            var thisRepresentations = this.Representations ?? _emptyRepresentations;
+            var thisProperties = Properties ?? _emptyProperties;
+            var thisRepresentations = Representations ?? _emptyRepresentations;
 
             // merge representations
             var mergedRepresentations = thisRepresentations
@@ -185,13 +185,13 @@ namespace Nexus.DataModel
         internal Resource DeepCopy()
         {
             return new Resource(
-                id: this.Id,
-                representations: this.Representations is null 
+                id: Id,
+                representations: Representations is null 
                     ? null
-                    : this.Representations.Select(representation => representation.DeepCopy()).ToList(),
-                properties: this.Properties is null
+                    : Representations.Select(representation => representation.DeepCopy()).ToList(),
+                properties: Properties is null
                     ? null
-                    : this.Properties.ToDictionary(entry => entry.Key, entry => entry.Value));
+                    : Properties.ToDictionary(entry => entry.Key, entry => entry.Value));
         }
 
         private void ValidateRepresentations(IReadOnlyList<Representation> representations)

@@ -55,7 +55,7 @@ namespace Other
                 );
 
                 var fileToDelete = Path.Combine(restoreRoot, "local", pathHash, version, "TestExtensionProject.dll");
-                var weakReference = await this.Load_Run_and_Unload_Async(restoreRoot, fileToDelete, packageReference);
+                var weakReference = await Load_Run_and_Unload_Async(restoreRoot, fileToDelete, packageReference);
 
                 for (int i = 0; weakReference.IsAlive && i < 10; i++)
                 {

@@ -24,10 +24,10 @@ namespace Nexus.Extensibility
             IReadOnlyDictionary<string, string> userConfiguration,
             ILogger<DataSourceController> logger)
         {
-            this.DataSource = dataSource;
-            this.DataSourceRegistration = registration;
-            this.UserConfiguration = userConfiguration;
-            this.Logger = logger;
+            DataSource = dataSource;
+            DataSourceRegistration = registration;
+            UserConfiguration = userConfiguration;
+            Logger = logger;
         }
 
         #endregion
@@ -52,26 +52,26 @@ namespace Nexus.Extensibility
         {
             _catalogCache = catalogCache;
 
-            var mergedConfiguration = this.DataSourceRegistration.Configuration
+            var mergedConfiguration = DataSourceRegistration.Configuration
                 .ToDictionary(entry => entry.Key, entry => entry.Value);
 
-            foreach (var entry in this.UserConfiguration)
+            foreach (var entry in UserConfiguration)
             {
                 mergedConfiguration[entry.Key] = entry.Value;
             }
 
             var context = new DataSourceContext(
-                ResourceLocator: this.DataSourceRegistration.ResourceLocator,
+                ResourceLocator: DataSourceRegistration.ResourceLocator,
                 Configuration: mergedConfiguration,
                 Logger: logger);
 
-            await this.DataSource.SetContextAsync(context, cancellationToken);
+            await DataSource.SetContextAsync(context, cancellationToken);
         }
 
         public async Task<CatalogRegistration[]>
            GetCatalogRegistrationsAsync(string path, CancellationToken cancellationToken)
         {
-            var catalogRegistrations = await this.DataSource
+            var catalogRegistrations = await DataSource
                 .GetCatalogRegistrationsAsync(path, cancellationToken);
 
             for (int i = 0; i < catalogRegistrations.Length; i++)
@@ -101,9 +101,9 @@ namespace Nexus.Extensibility
         public async Task<ResourceCatalog>
             GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
         {
-            this.Logger.LogDebug("Load catalog {CatalogId}", catalogId);
+            Logger.LogDebug("Load catalog {CatalogId}", catalogId);
 
-            var catalog = await this.DataSource.GetCatalogAsync(catalogId, cancellationToken);
+            var catalog = await DataSource.GetCatalogAsync(catalogId, cancellationToken);
 
             /* GetOrAdd is not working because it requires a synchronous delegate */
             _catalogCache.TryAdd(catalogId, catalog);
@@ -122,7 +122,7 @@ namespace Nexus.Extensibility
             var tasks = Enumerable.Range(0, totalDays).Select(async day =>
             {
                 var date = dateBegin.AddDays(day);
-                var availability = await this.DataSource.GetAvailabilityAsync(catalogId, date, date.AddDays(1), cancellationToken);
+                var availability = await DataSource.GetAvailabilityAsync(catalogId, date, date.AddDays(1), cancellationToken);
                 aggregatedData.TryAdd(date, availability);
             });
 
@@ -135,7 +135,7 @@ namespace Nexus.Extensibility
         public async Task<CatalogTimeRange>
             GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
         {
-            (var begin, var end) = await this.DataSource.GetTimeRangeAsync(catalogId, cancellationToken);
+            (var begin, var end) = await DataSource.GetTimeRangeAsync(catalogId, cancellationToken);
 
             return new CatalogTimeRange(
                 Begin: begin,
@@ -144,7 +144,7 @@ namespace Nexus.Extensibility
 
         public async Task<bool> IsDataOfDayAvailableAsync(string catalogId, DateTime day, CancellationToken cancellationToken)
         {
-            return (await this.DataSource.GetAvailabilityAsync(catalogId, day, day.AddDays(1), cancellationToken)) > 0;
+            return (await DataSource.GetAvailabilityAsync(catalogId, day, day.AddDays(1), cancellationToken)) > 0;
         }
 
         public async Task ReadAsync(
@@ -225,7 +225,7 @@ namespace Nexus.Extensibility
 
             try
             {
-                await this.DataSource.ReadAsync(
+                await DataSource.ReadAsync(
                     begin,
                     end,
                     requests,
@@ -240,7 +240,7 @@ namespace Nexus.Extensibility
                 {
                     var (catalogItem, dataWriter, statusWriter) = catalogItemPipeWriter;
 
-                    using var scope = this.Logger.BeginScope(new Dictionary<string, object>()
+                    using var scope = Logger.BeginScope(new Dictionary<string, object>()
                     {
                         ["ResourcePath"] = catalogItem.ToPath()
                     });
@@ -258,7 +258,7 @@ namespace Nexus.Extensibility
                             .GetMemory(dataLength)
                             .Slice(0, dataLength);
 
-                        this.Logger.LogTrace("Merge status buffer and data buffer");
+                        Logger.LogTrace("Merge status buffer and data buffer");
 
 #warning this is blocking
                         BufferUtilities.ApplyRepresentationStatusByDataType(
@@ -268,7 +268,7 @@ namespace Nexus.Extensibility
                             target: new CastMemoryManager<byte, double>(buffer).Memory);
 
                         /* update progress */
-                        this.Logger.LogTrace("Advance data pipe writer by {DataLength} bytes", dataLength);
+                        Logger.LogTrace("Advance data pipe writer by {DataLength} bytes", dataLength);
                         dataWriter.Advance(dataLength);
                         dataTasks.Add(dataWriter.FlushAsync());
                     }
@@ -279,11 +279,11 @@ namespace Nexus.Extensibility
                         var dataLength = elementCount * elementSize;
 
                         /* update progress */
-                        this.Logger.LogTrace("Advance data pipe writer by {DataLength} bytes", dataLength);
+                        Logger.LogTrace("Advance data pipe writer by {DataLength} bytes", dataLength);
                         dataWriter.Advance(dataLength);
                         dataTasks.Add(dataWriter.FlushAsync());
 
-                        this.Logger.LogTrace("Advance status pipe writer by {StatusLength} bytes", elementCount);
+                        Logger.LogTrace("Advance status pipe writer by {StatusLength} bytes", elementCount);
                         statusWriter.Advance(elementCount);
                         statusTasks.Add(statusWriter.FlushAsync());
                     }
@@ -457,7 +457,7 @@ namespace Nexus.Extensibility
             {
                 if (disposing)
                 {
-                    var disposable = this.DataSource as IDisposable;
+                    var disposable = DataSource as IDisposable;
                     disposable?.Dispose();
                 }
 

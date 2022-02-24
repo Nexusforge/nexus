@@ -12,7 +12,7 @@
         /// <param name="description">The extension description.</param>
         public ExtensionDescriptionAttribute(string description)
         {
-            this.Description = description;
+            Description = description;
         }
 
         /// <summary>

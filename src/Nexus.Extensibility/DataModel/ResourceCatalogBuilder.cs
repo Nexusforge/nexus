@@ -66,7 +66,7 @@
         /// <returns>The resource catalog builder.</returns>
         public ResourceCatalogBuilder AddResources(params Resource[] resources)
         {
-            return this.AddResources((IEnumerable<Resource>)resources);
+            return AddResources((IEnumerable<Resource>)resources);
         }
 
         /// <summary>

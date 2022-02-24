@@ -85,12 +85,12 @@ namespace Nexus.Controllers
             }
             catch (ValidationException ex)
             {
-                return this.UnprocessableEntity(ex.Message);
+                return UnprocessableEntity(ex.Message);
             }
 
             // check that there is anything to export
             if (!catalogContainsAndItems.Any())
-                return this.BadRequest("The list of resource paths is empty.");
+                return BadRequest("The list of resource paths is empty.");
 
             // build up catalog items map and authorize
             Dictionary<CatalogContainer, IEnumerable<CatalogItem>> catalogItemsMap;
@@ -104,7 +104,7 @@ namespace Nexus.Controllers
                         {
                             var catalogContainer = group.First().Container;
 
-                            if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, this.HttpContext.User))
+                            if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, HttpContext.User))
                                 throw new UnauthorizedAccessException($"The current user is not permitted to access catalog '{catalogContainer.Id}'.");
 
                             return catalogContainer;
@@ -114,11 +114,11 @@ namespace Nexus.Controllers
             }
             catch (UnauthorizedAccessException ex)
             {
-                return this.StatusCode(StatusCodes.Status403Forbidden, ex.Message);
+                return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
             }
 
             //
-            var username = this.User.Identity?.Name;
+            var username = User.Identity?.Name;
 
             if (username is null)
                 throw new Exception("This should never happen.");
@@ -134,11 +134,11 @@ namespace Nexus.Controllers
                     return result;
                 });
 
-                return this.Accepted(this.GetAcceptUrl(job.Id), job);
+                return Accepted(GetAcceptUrl(job.Id), job);
             }
             catch (ValidationException ex)
             {
-                return this.UnprocessableEntity(ex.Message);
+                return UnprocessableEntity(ex.Message);
             }
         }
 
@@ -152,7 +152,7 @@ namespace Nexus.Controllers
         public ActionResult<Job> LoadPackages(
             CancellationToken cancellationToken)
         {
-            var username = this.User.Identity?.Name;
+            var username = User.Identity?.Name;
 
             if (username is null)
                 throw new Exception("This should never happen.");
@@ -166,7 +166,7 @@ namespace Nexus.Controllers
                 return null;
             });
 
-            var response = (ActionResult<Job>)this.Accepted(this.GetAcceptUrl(job.Id), job);
+            var response = (ActionResult<Job>)Accepted(GetAcceptUrl(job.Id), job);
             return response;
         }
 
@@ -177,8 +177,8 @@ namespace Nexus.Controllers
         [HttpGet]
         public ActionResult<List<Job>> GetJobs()
         {
-            var isAdmin = this.User.HasClaim(NexusClaims.IS_ADMIN, "true");
-            var username = this.User.Identity?.Name;
+            var isAdmin = User.HasClaim(NexusClaims.IS_ADMIN, "true");
+            var username = User.Identity?.Name;
 
             if (username is null)
                 throw new Exception("This should never happen.");
@@ -202,8 +202,8 @@ namespace Nexus.Controllers
         {
             if (_jobService.TryGetJob(jobId, out var jobControl))
             {
-                var isAdmin = this.User.HasClaim(NexusClaims.IS_ADMIN, "true");
-                var username = this.User.Identity?.Name;
+                var isAdmin = User.HasClaim(NexusClaims.IS_ADMIN, "true");
+                var username = User.Identity?.Name;
 
                 if (username is null)
                     throw new Exception("This should never happen.");
@@ -225,12 +225,12 @@ namespace Nexus.Controllers
                 }
                 else
                 {
-                    return this.StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to access the status of job '{jobControl.Job.Id}'.");
+                    return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to access the status of job '{jobControl.Job.Id}'.");
                 }
             }
             else
             {
-                return this.NotFound(jobId);
+                return NotFound(jobId);
             }
         }
 
@@ -244,8 +244,8 @@ namespace Nexus.Controllers
         {
             if (_jobService.TryGetJob(jobId, out var jobControl))
             {
-                var isAdmin = this.User.HasClaim(NexusClaims.IS_ADMIN, "true");
-                var username = this.User.Identity?.Name;
+                var isAdmin = User.HasClaim(NexusClaims.IS_ADMIN, "true");
+                var username = User.Identity?.Name;
 
                 if (username is null)
                     throw new Exception("This should never happen.");
@@ -253,18 +253,18 @@ namespace Nexus.Controllers
                 if (jobControl.Job.Owner == username || isAdmin)
                 {
                     jobControl.CancellationTokenSource.Cancel();
-                    return this.Accepted();
+                    return Accepted();
                 }
 
                 else
                 {
-                    return this.StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to cancel the job '{jobControl.Job.Id}'.");
+                    return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to cancel the job '{jobControl.Job.Id}'.");
                 }
             }
 
             else
             {
-                return this.NotFound(jobId);
+                return NotFound(jobId);
             }
         }
 
@@ -274,7 +274,7 @@ namespace Nexus.Controllers
 
         private string GetAcceptUrl(Guid jobId)
         {
-            return $"{this.Request.Scheme}://{this.Request.Host}{this.Request.Path}/{jobId}/status";
+            return $"{Request.Scheme}://{Request.Host}{Request.Path}/{jobId}/status";
         }
 
         #endregion

@@ -35,10 +35,10 @@ namespace Nexus.DataModel
             if (!_idValidator.IsMatch(id))
                 throw new ArgumentException($"The resource catalog identifier '{id}' is not valid.");
 
-            this.Id = id;
+            Id = id;
 
             if (resources is not null)
-                this.ValidateResources(resources);
+                ValidateResources(resources);
 
             _properties = properties;
             _resources = resources;
@@ -75,7 +75,7 @@ namespace Nexus.DataModel
             init
             {
                 if (value is not null)
-                    this.ValidateResources(value);
+                    ValidateResources(value);
 
                 _resources = value;
             }
@@ -93,13 +93,13 @@ namespace Nexus.DataModel
         /// <returns>The merged catalog.</returns>
         public ResourceCatalog Merge(ResourceCatalog catalog, MergeMode mergeMode)
         {
-            if (this.Id != catalog.Id)
+            if (Id != catalog.Id)
                 throw new ArgumentException("The catalogs to be merged have different identifiers.");
 
             var newProperties = catalog.Properties ?? _emptyProperties;
             var newResources = catalog.Resources ?? _emptyResources;
-            var thisProperties = this.Properties ?? _emptyProperties;
-            var thisResources = this.Resources ?? _emptyResources;
+            var thisProperties = Properties ?? _emptyProperties;
+            var thisResources = Resources ?? _emptyResources;
 
             // merge resources
             var mergedResources = thisResources
@@ -185,10 +185,10 @@ namespace Nexus.DataModel
             var resourceId = pathParts[^2];
             var representationId = pathParts[^1];
 
-            if (catalogId != this.Id)
+            if (catalogId != Id)
                 return false;
 
-            var resource = this.Resources?.FirstOrDefault(resource => resource.Id == resourceId);
+            var resource = Resources?.FirstOrDefault(resource => resource.Id == resourceId);
 
             if (resource is null)
                 return false;
@@ -204,7 +204,7 @@ namespace Nexus.DataModel
 
         internal CatalogItem Find(string resourcePath)
         {
-            if (!this.TryFind(resourcePath, out var catalogItem))
+            if (!TryFind(resourcePath, out var catalogItem))
                 throw new Exception($"The resource path '{resourcePath}' could not be found.");
 
             return catalogItem;

@@ -68,7 +68,7 @@ namespace Nexus.Services
                         .LoadPackagesAsync(AppState.Project.PackageReferences.Values, progress, cancellationToken)
                         .ContinueWith(task =>
                         {
-                            this.LoadDataWriters();
+                            LoadDataWriters();
                             AppState.ReloadPackagesTask = null;
                             return Task.CompletedTask;
                         }, TaskScheduler.Default);
@@ -100,7 +100,7 @@ namespace Nexus.Services
                     PackageReferences = newPackageReferences
                 };
 
-                await this.SaveProjectAsync(newProject);
+                await SaveProjectAsync(newProject);
 
                 AppState.Project = newProject;
             }
@@ -129,7 +129,7 @@ namespace Nexus.Services
                     PackageReferences = newPackageReferences
                 };
 
-                await this.SaveProjectAsync(newProject);
+                await SaveProjectAsync(newProject);
 
                 AppState.Project = newProject;
             }
@@ -170,7 +170,7 @@ namespace Nexus.Services
                     UserConfigurations = userConfigurations
                 };
 
-                await this.SaveProjectAsync(newProject);
+                await SaveProjectAsync(newProject);
 
                 AppState.Project = newProject;
             }
@@ -211,7 +211,7 @@ namespace Nexus.Services
                     UserConfigurations = userConfigurations
                 };
 
-                await this.SaveProjectAsync(newProject);
+                await SaveProjectAsync(newProject);
 
                 AppState.Project = newProject;
             }

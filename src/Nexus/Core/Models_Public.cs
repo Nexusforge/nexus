@@ -14,8 +14,8 @@ namespace Nexus.Core
     {
         internal RefreshToken(string token, DateTime expires)
         {
-            this.Token = token;
-            this.Expires = expires;
+            Token = token;
+            Expires = expires;
         }
 
         /// <summary>
@@ -116,7 +116,7 @@ namespace Nexus.Core
             {
                 if (_claims is null)
                 {
-                    var dictionary = JsonSerializer.Deserialize<Dictionary<Guid, NexusClaim>>(this.ClaimsAsJson)!;
+                    var dictionary = JsonSerializer.Deserialize<Dictionary<Guid, NexusClaim>>(ClaimsAsJson)!;
                     _claims = new ReadOnlyDictionary<Guid, NexusClaim>(dictionary);
                 }
 
@@ -125,7 +125,7 @@ namespace Nexus.Core
 
             set
             {
-                this.ClaimsAsJson = JsonSerializer.Serialize(value);
+                ClaimsAsJson = JsonSerializer.Serialize(value);
                 _claims = value;
             }
         }

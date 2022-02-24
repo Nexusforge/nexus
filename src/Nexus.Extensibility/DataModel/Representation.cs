@@ -32,18 +32,18 @@ namespace Nexus.DataModel
             if (!_nexusDataTypeValues.Contains(dataType))
                 throw new ArgumentException($"The identifier '{dataType}' is not valid.");
 
-            this.DataType = dataType;
+            DataType = dataType;
 
             if (samplePeriod.Equals(default))
                 throw new ArgumentException($"The sample period '{samplePeriod}' is not valid.");
 
-            this.SamplePeriod = samplePeriod;
+            SamplePeriod = samplePeriod;
 
             if (detail is not null && !_detailValidator.IsMatch(detail))
                 throw new ArgumentException($"The representation detail '{detail}' is not valid.");
 
-            this.Detail = detail;
-            this.IsPrimary = isPrimary;
+            Detail = detail;
+            IsPrimary = isPrimary;
         }
 
         #endregion
@@ -58,9 +58,9 @@ namespace Nexus.DataModel
         {
             get
             {
-                return string.IsNullOrWhiteSpace(this.Detail)
-                    ? $"{this.SamplePeriod.ToUnitString()}"
-                    : $"{this.SamplePeriod.ToUnitString()}_{this.Detail}";
+                return string.IsNullOrWhiteSpace(Detail)
+                    ? $"{SamplePeriod.ToUnitString()}"
+                    : $"{SamplePeriod.ToUnitString()}_{Detail}";
             }
         }
 
@@ -88,7 +88,7 @@ namespace Nexus.DataModel
         /// Gets the number of bits per element.
         /// </summary>
         [JsonIgnore]
-        public int ElementSize => ((int)this.DataType & 0xFF) >> 3;
+        public int ElementSize => ((int)DataType & 0xFF) >> 3;
 
         #endregion
 

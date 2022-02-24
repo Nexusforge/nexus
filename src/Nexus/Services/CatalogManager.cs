@@ -114,7 +114,7 @@ namespace Nexus.Services
                     }
                 }
 
-                catalogContainers = this.ProcessCatalogPrototypes(catalogPrototypes.ToArray());
+                catalogContainers = ProcessCatalogPrototypes(catalogPrototypes.ToArray());
                 _logger.LogInformation("Found {CatalogCount} top level catalogs.", catalogContainers.Length);
             }
 
@@ -130,7 +130,7 @@ namespace Nexus.Services
                 var prototypes = catalogRegistrations
                     .Select(catalogId => new CatalogPrototype(catalogId, parent.DataSourceRegistration, parent.Owner));
 
-                catalogContainers = this.ProcessCatalogPrototypes(prototypes.ToArray());
+                catalogContainers = ProcessCatalogPrototypes(prototypes.ToArray());
             }
 
             return catalogContainers;
@@ -140,7 +140,7 @@ namespace Nexus.Services
             IEnumerable<CatalogPrototype> catalogPrototypes)
         {
             /* clean up */
-            catalogPrototypes = this.EnsureNoHierarchy(catalogPrototypes);
+            catalogPrototypes = EnsureNoHierarchy(catalogPrototypes);
 
             /* convert to catalog containers */
             var catalogContainers = catalogPrototypes.Select(prototype =>

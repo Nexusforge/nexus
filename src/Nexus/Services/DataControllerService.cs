@@ -50,7 +50,7 @@ namespace Nexus.Services
             var logger1 = _loggerFactory.CreateLogger<DataSourceController>();
             var logger2 = _loggerFactory.CreateLogger($"{registration.Type} - {registration.ResourceLocator}");
             var dataSource = _extensionHive.GetInstance<IDataSource>(registration.Type);
-            var userConfiguration = this.GetUserConfiguration();
+            var userConfiguration = GetUserConfiguration();
             var controller = new DataSourceController(dataSource, registration, userConfiguration, logger1);
 
             var actualCatalogCache = _appState.CatalogState.Cache.GetOrAdd(

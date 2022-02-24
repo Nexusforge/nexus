@@ -116,18 +116,18 @@ namespace Nexus.Extensibility
                 var minDateTime = DateTime.MaxValue;
                 var maxDateTime = DateTime.MinValue;
 
-                if (Directory.Exists(this.Root))
+                if (Directory.Exists(Root))
                 {
-                    foreach (var fileSource in this.FileSourceProvider.All[catalogId])
+                    foreach (var fileSource in FileSourceProvider.All[catalogId])
                     {
                         cancellationToken.ThrowIfCancellationRequested();
 
-                        using var scope = this.Context.Logger.BeginScope(fileSource);
-                        this.Context.Logger.LogDebug("Analyzing file source");
+                        using var scope = Context.Logger.BeginScope(fileSource);
+                        Context.Logger.LogDebug("Analyzing file source");
 
                         // first
                         var firstDateTime = StructuredFileDataSource
-                            .GetCandidateFiles(this.Root, DateTime.MinValue, DateTime.MinValue, fileSource, cancellationToken)
+                            .GetCandidateFiles(Root, DateTime.MinValue, DateTime.MinValue, fileSource, cancellationToken)
                             .Select(file => file.DateTime)
                             .OrderBy(current => current)
                             .FirstOrDefault();
@@ -135,14 +135,14 @@ namespace Nexus.Extensibility
                         if (firstDateTime == default)
                             firstDateTime = DateTime.MaxValue;
 
-                        firstDateTime = this.AdjustToUtc(firstDateTime, fileSource.UtcOffset);
+                        firstDateTime = AdjustToUtc(firstDateTime, fileSource.UtcOffset);
 
                         if (firstDateTime < minDateTime)
                             minDateTime = firstDateTime;
 
                         // last
                         var lastDateTime = StructuredFileDataSource
-                            .GetCandidateFiles(this.Root, DateTime.MaxValue, DateTime.MaxValue, fileSource, cancellationToken)
+                            .GetCandidateFiles(Root, DateTime.MaxValue, DateTime.MaxValue, fileSource, cancellationToken)
                             .Select(file => file.DateTime)
                             .OrderByDescending(current => current)
                             .FirstOrDefault();
@@ -150,18 +150,18 @@ namespace Nexus.Extensibility
                         if (lastDateTime == default)
                             lastDateTime = DateTime.MinValue;
 
-                        lastDateTime = this.AdjustToUtc(lastDateTime, fileSource.UtcOffset);
+                        lastDateTime = AdjustToUtc(lastDateTime, fileSource.UtcOffset);
                         lastDateTime = lastDateTime.Add(fileSource.FilePeriod);
 
                         if (lastDateTime > maxDateTime)
                             maxDateTime = lastDateTime;
 
-                        this.Context.Logger.LogDebug("Analyzing file source resulted in begin = {FirstDateTime} and end = {LastDateTime}", firstDateTime, lastDateTime);
+                        Context.Logger.LogDebug("Analyzing file source resulted in begin = {FirstDateTime} and end = {LastDateTime}", firstDateTime, lastDateTime);
                     }
                 }
                 else
                 {
-                    this.Context.Logger.LogDebug("Folder {Root} does not exist, return default time range", this.Root);
+                    Context.Logger.LogDebug("Folder {Root} does not exist, return default time range", Root);
                 }
 
                 return (minDateTime, maxDateTime);
@@ -182,23 +182,23 @@ namespace Nexus.Extensibility
             if (begin >= end)
                 throw new ArgumentException("The start time must be before the end time.");
 
-            this.EnsureUtc(begin);
-            this.EnsureUtc(end);
+            EnsureUtc(begin);
+            EnsureUtc(end);
 
             // no true async file enumeration available: https://github.com/dotnet/runtime/issues/809
             return Task.Run(async () =>
             {
                 double availability;
 
-                if (Directory.Exists(this.Root))
+                if (Directory.Exists(Root))
                 {
                     var summedAvailability = 0.0;
-                    var fileSources = this.FileSourceProvider.All[catalogId];
+                    var fileSources = FileSourceProvider.All[catalogId];
 
                     foreach (var fileSource in fileSources)
                     {
-                        using var scope = this.Context.Logger.BeginScope(fileSource);
-                        this.Context.Logger.LogDebug("Analyzing file source");
+                        using var scope = Context.Logger.BeginScope(fileSource);
+                        Context.Logger.LogDebug("Analyzing file source");
 
                         cancellationToken.ThrowIfCancellationRequested();
 
@@ -206,7 +206,7 @@ namespace Nexus.Extensibility
                         var localEnd = end.Add(fileSource.UtcOffset);
 
                         var candidateFiles = StructuredFileDataSource
-                            .GetCandidateFiles(this.Root, localBegin, localEnd, fileSource, cancellationToken);
+                            .GetCandidateFiles(Root, localBegin, localEnd, fileSource, cancellationToken);
 
                         var files = candidateFiles
                             .Where(current => localBegin <= current.DateTime && current.DateTime < localEnd)
@@ -214,10 +214,10 @@ namespace Nexus.Extensibility
 
                         var availabilityTasks = files.Select(file =>
                         {
-                            var availabilityTask = this.GetFileAvailabilityAsync(file.FilePath, cancellationToken);
+                            var availabilityTask = GetFileAvailabilityAsync(file.FilePath, cancellationToken);
 
                             _ = availabilityTask.ContinueWith(
-                                x => this.Context.Logger.LogDebug(availabilityTask.Exception, "Could not process file {FilePath}", file.FilePath),
+                                x => Context.Logger.LogDebug(availabilityTask.Exception, "Could not process file {FilePath}", file.FilePath),
                                 TaskContinuationOptions.OnlyOnFaulted
                             );
 
@@ -236,7 +236,7 @@ namespace Nexus.Extensibility
                 else
                 {
                     availability = 0.0;
-                    this.Context.Logger.LogDebug("Folder {Root} does not exist, return default availabilit.", this.Root);
+                    Context.Logger.LogDebug("Folder {Root} does not exist, return default availabilit.", Root);
                 }
 
                 return availability;
@@ -271,7 +271,7 @@ namespace Nexus.Extensibility
             var representation = catalogItem.Representation;
             var catalog = catalogItem.Catalog;
             var samplePeriod = representation.SamplePeriod;
-            var fileSource = this.FileSourceProvider.Single(catalogItem);
+            var fileSource = FileSourceProvider.Single(catalogItem);
             var fileLength = fileSource.FilePeriod.Ticks / samplePeriod.Ticks;
 
             var bufferOffset = 0;
@@ -285,7 +285,7 @@ namespace Nexus.Extensibility
                 cancellationToken.ThrowIfCancellationRequested();
 
                 // get file path and begin
-                (var filePaths, var fileBegin) = await this.FindFilePathsAsync(currentBegin, fileSource);
+                (var filePaths, var fileBegin) = await FindFilePathsAsync(currentBegin, fileSource);
 
                 // determine file begin if not yet done using the first file name returned
                 if (fileBegin == default)
@@ -315,7 +315,7 @@ namespace Nexus.Extensibility
                     var remainingFilePeriod = fileSource.FilePeriod - consumedFilePeriod;
 
                     currentPeriod = TimeSpan.FromTicks(Math.Min(remainingFilePeriod.Ticks, remainingPeriod.Ticks));
-                    this.Context.Logger.LogTrace("Process period {CurrentBegin} to {CurrentEnd}", currentBegin, currentBegin + currentPeriod);
+                    Context.Logger.LogTrace("Process period {CurrentBegin} to {CurrentEnd}", currentBegin, currentBegin + currentPeriod);
 
                     fileBlock = (int)(currentPeriod.Ticks / samplePeriod.Ticks);
 
@@ -325,7 +325,7 @@ namespace Nexus.Extensibility
                     {
                         if (File.Exists(filePath))
                         {
-                            this.Context.Logger.LogTrace("Process file {FilePath}", filePath);
+                            Context.Logger.LogTrace("Process file {FilePath}", filePath);
 
                             try
                             {
@@ -351,19 +351,19 @@ namespace Nexus.Extensibility
                             }
                             catch (Exception ex)
                             {
-                                this.Context.Logger.LogDebug(ex, "Could not process file {FilePath}", filePath);
+                                Context.Logger.LogDebug(ex, "Could not process file {FilePath}", filePath);
                             }
                         }
                         else
                         {
-                            this.Context.Logger.LogDebug("File {FilePath} does not exist", filePath);
+                            Context.Logger.LogDebug("File {FilePath} does not exist", filePath);
                         }
                     }
                 }
                 /* there was an incomplete file, skip the incomplete part */
                 else if (CB_PLUS_FP <= fileBegin && fileBegin < end)
                 {
-                    this.Context.Logger.LogDebug("Skipping period {FileBegin} to {CurrentBegin}", fileBegin, currentBegin);
+                    Context.Logger.LogDebug("Skipping period {FileBegin} to {CurrentBegin}", fileBegin, currentBegin);
                     currentPeriod = fileBegin - currentBegin;
                     fileBlock = (int)(currentPeriod.Ticks / samplePeriod.Ticks);
                 }
@@ -422,7 +422,7 @@ namespace Nexus.Extensibility
                 .PathSegments
                 .Select(segment => localBegin.ToString(segment));
 
-            var folderNameArray = new List<string>() { this.Root }
+            var folderNameArray = new List<string>() { Root }
                 .Concat(folderNames)
                 .ToArray();
 
@@ -455,7 +455,7 @@ namespace Nexus.Extensibility
         {
             filePath = StructuredFileDataSource
                 .GetCandidateFiles(
-                    this.Root,
+                    Root,
                     DateTime.MinValue,
                     DateTime.MinValue,
                     fileSource,
@@ -473,35 +473,35 @@ namespace Nexus.Extensibility
         async Task 
             IDataSource.SetContextAsync(DataSourceContext context, CancellationToken cancellationToken)
         {
-            this.Root = context.ResourceLocator.ToPath();
-            this.Context = context;
+            Root = context.ResourceLocator.ToPath();
+            Context = context;
 
-            await this.SetContextAsync(context, cancellationToken);
-            this.FileSourceProvider = await this.GetFileSourceProviderAsync(cancellationToken);
+            await SetContextAsync(context, cancellationToken);
+            FileSourceProvider = await GetFileSourceProviderAsync(cancellationToken);
         }
 
         Task<CatalogRegistration[]>
            IDataSource.GetCatalogRegistrationsAsync(string path, CancellationToken cancellationToken)
         {
-            return this.GetCatalogRegistrationsAsync(path, cancellationToken);
+            return GetCatalogRegistrationsAsync(path, cancellationToken);
         }
 
         Task<ResourceCatalog> 
             IDataSource.GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
         {
-            return this.GetCatalogAsync(catalogId, cancellationToken);
+            return GetCatalogAsync(catalogId, cancellationToken);
         }
 
         Task<(DateTime Begin, DateTime End)> 
             IDataSource.GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
         {
-            return this.GetTimeRangeAsync(catalogId, cancellationToken);
+            return GetTimeRangeAsync(catalogId, cancellationToken);
         }
 
         Task<double> 
             IDataSource.GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
-            return this.GetAvailabilityAsync(catalogId, begin, end, cancellationToken);
+            return GetAvailabilityAsync(catalogId, begin, end, cancellationToken);
         }
 
         async Task
@@ -510,27 +510,27 @@ namespace Nexus.Extensibility
             if (begin >= end)
                 throw new ArgumentException("The start time must be before the end time.");
 
-            this.EnsureUtc(begin);
-            this.EnsureUtc(end);
+            EnsureUtc(begin);
+            EnsureUtc(end);
 
             var counter = 0.0;
 
             foreach (var (catalogItem, dataBuffer, statusBuffer) in requests)
             {
-                using var scope = this.Context.Logger.BeginScope(new Dictionary<string, object>()
+                using var scope = Context.Logger.BeginScope(new Dictionary<string, object>()
                 {
                     ["ResourcePath"] = catalogItem.ToPath()
                 });
 
-                this.Context.Logger.LogDebug("Read catalog item");
+                Context.Logger.LogDebug("Read catalog item");
 
                 try
                 {
-                    await this.ReadSingleAsync(catalogItem, begin, end, dataBuffer, statusBuffer, cancellationToken);
+                    await ReadSingleAsync(catalogItem, begin, end, dataBuffer, statusBuffer, cancellationToken);
                 }
                 catch (Exception ex)
                 {
-                    this.Context.Logger.LogError(ex, "Could not read catalog item");
+                    Context.Logger.LogError(ex, "Could not read catalog item");
                 }
 
                 progress.Report(++counter / requests.Length);

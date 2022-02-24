@@ -19,7 +19,7 @@ namespace DataSource
 
             var userConfiguration = new Dictionary<string, string>();
 
-            this.Controller = new DataSourceController(
+            Controller = new DataSourceController(
                 dataSource,
                 registration,
                 userConfiguration,
@@ -32,7 +32,7 @@ namespace DataSource
         {
             try
             {
-                this.Controller.Dispose();
+                Controller.Dispose();
             }
             catch
             {

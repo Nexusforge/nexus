@@ -14,7 +14,7 @@ namespace Nexus.Core
             var entryAssembly = Assembly.GetEntryAssembly() ?? throw new Exception("entry assembly is null");
             var version = entryAssembly.GetName().Version ?? throw new Exception("version is null");
 
-            this.Version = version.ToString();
+            Version = version.ToString();
         }
 
         #endregion

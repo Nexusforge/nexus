@@ -39,20 +39,20 @@ namespace Nexus.Extensibility.Tests
 
         protected override async Task SetContextAsync(DataSourceContext context, CancellationToken cancellationToken)
         {
-            this.Context = context;
+            Context = context;
 
-            var configFilePath = Path.Combine(this.Root, "config.json");
+            var configFilePath = Path.Combine(Root, "config.json");
 
             if (!File.Exists(configFilePath))
                 throw new Exception($"The configuration file does not exist on path '{configFilePath}'.");
 
             var jsonString = await File.ReadAllTextAsync(configFilePath, cancellationToken);
-            this.Config = JsonSerializer.Deserialize<Dictionary<string, CatalogDescription>>(jsonString)!;
+            Config = JsonSerializer.Deserialize<Dictionary<string, CatalogDescription>>(jsonString)!;
         }
 
         protected override Task<FileSourceProvider> GetFileSourceProviderAsync(CancellationToken cancellationToken)
         {
-            var all = this.Config.ToDictionary(
+            var all = Config.ToDictionary(
                 config => config.Key,
                 config => config.Value.Config.Values.Cast<FileSource>().ToArray());
 

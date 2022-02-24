@@ -159,7 +159,7 @@ public class NexusOpenApiClient
             ? default
             : JsonContent.Create(content, options: _options);
 
-        using var request = this.BuildRequestMessage(method, relativeUrl, httpContent);
+        using var request = BuildRequestMessage(method, relativeUrl, httpContent);
 
         if (acceptHeaderValue is not null)
             request.Headers.Accept.Add(MediaTypeWithQualityHeaderValue.Parse(acceptHeaderValue));
@@ -182,11 +182,11 @@ public class NexusOpenApiClient
 
                     if (parameter is not null && parameter.Contains("The token expired at"))
                     {
-                        using var newRequest = this.BuildRequestMessage(method, relativeUrl, httpContent);
+                        using var newRequest = BuildRequestMessage(method, relativeUrl, httpContent);
 
                         try
                         {
-                            var newResponse = await this.RefreshTokenAsync(response, newRequest, cancellationToken);
+                            var newResponse = await RefreshTokenAsync(response, newRequest, cancellationToken);
 
                             if (newResponse is not null)
                             {
@@ -203,7 +203,7 @@ public class NexusOpenApiClient
                 }
 
                 if (signOut)
-                    this.SignOut();
+                    SignOut();
             }
 
             if (!response.IsSuccessStatusCode)
@@ -271,7 +271,7 @@ public class NexusOpenApiClient
             throw new Exception("Refresh token or request message is null. This should never happen.");
 
         var refreshRequest = new RefreshTokenRequest(RefreshToken: _tokenPair.RefreshToken);
-        var tokenPair = await this.Users.RefreshTokenAsync(refreshRequest);
+        var tokenPair = await Users.RefreshTokenAsync(refreshRequest);
 
         if (_tokenFilePath is not null)
         {

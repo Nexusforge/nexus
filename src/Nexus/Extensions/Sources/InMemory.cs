@@ -25,7 +25,7 @@ namespace Nexus.Sources
 
         public Task SetContextAsync(DataSourceContext context, CancellationToken cancellationToken)
         {
-            this.Context = context;
+            Context = context;
             return Task.CompletedTask;
         }
 
@@ -86,7 +86,7 @@ namespace Nexus.Sources
                     {
                         int seedValue = (int)begin.Ticks;
 
-                        if (this.Context.Configuration.TryGetValue("seed", out var seed))
+                        if (Context.Configuration.TryGetValue("seed", out var seed))
                             int.TryParse(seed, out seedValue);
 
                         var kernelSize = 1000;
@@ -104,7 +104,7 @@ namespace Nexus.Sources
                     }
 
                     // offset
-                    if (this.Context.Configuration.TryGetValue("offset", out var offsetString))
+                    if (Context.Configuration.TryGetValue("offset", out var offsetString))
                     {
                         if (double.TryParse(offsetString, out var offset))
                         {

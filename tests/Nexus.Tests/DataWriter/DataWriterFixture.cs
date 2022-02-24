@@ -37,7 +37,7 @@ namespace DataWriter
                 .WithProperty("my-custom-parameter3", "my-custom-value3")
                 .AddResource(resourceBuilder2.Build());
 
-            this.Catalogs = new[] { catalogBuilder1.Build(), catalogBuilder2.Build() };
+            Catalogs = new[] { catalogBuilder1.Build(), catalogBuilder2.Build() };
         }
 
         public ResourceCatalog[] Catalogs { get; }

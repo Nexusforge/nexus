@@ -16,10 +16,10 @@ namespace Nexus.Extensibility
             Dictionary<string, string> configuration, 
             ILogger<DataWriterController> logger)
         {
-            this.DataWriter = dataWriter;
-            this.ResourceLocator = resourceLocator;
-            this.Configuration = configuration;
-            this.Logger = logger;
+            DataWriter = dataWriter;
+            ResourceLocator = resourceLocator;
+            Configuration = configuration;
+            Logger = logger;
         }
 
         #endregion
@@ -41,11 +41,11 @@ namespace Nexus.Extensibility
         public async Task InitializeAsync(ILogger logger, CancellationToken cancellationToken)
         {
             var context = new DataWriterContext(
-                ResourceLocator: this.ResourceLocator,
-                Configuration: this.Configuration,
+                ResourceLocator: ResourceLocator,
+                Configuration: Configuration,
                 Logger: logger);
 
-            await this.DataWriter.SetContextAsync(context, cancellationToken);
+            await DataWriter.SetContextAsync(context, cancellationToken);
         }
 
         public async Task WriteAsync(
@@ -71,7 +71,7 @@ namespace Nexus.Extensibility
 
             /* periods */
             var totalPeriod = end - begin;
-            this.Logger.LogDebug("The total period is {TotalPeriod}", totalPeriod);
+            Logger.LogDebug("The total period is {TotalPeriod}", totalPeriod);
 
             var consumedPeriod = TimeSpan.Zero;
             var currentPeriod = default(TimeSpan);
@@ -112,17 +112,17 @@ namespace Nexus.Extensibility
                 cancellationToken.ThrowIfCancellationRequested();
 
                 var currentBegin = fileBegin + fileOffset;
-                this.Logger.LogTrace("Process period {CurrentBegin} to {CurrentEnd}", currentBegin, currentBegin + duration);
+                Logger.LogTrace("Process period {CurrentBegin} to {CurrentEnd}", currentBegin, currentBegin + duration);
 
                 /* close / open */
                 if (fileBegin != lastFileBegin)
                 {
                     /* close */
                     if (lastFileBegin != default)
-                        await this.DataWriter.CloseAsync(cancellationToken);
+                        await DataWriter.CloseAsync(cancellationToken);
 
                     /* open */
-                    await this.DataWriter.OpenAsync(
+                    await DataWriter.OpenAsync(
                         fileBegin,
                         filePeriod,
                         samplePeriod,
@@ -164,7 +164,7 @@ namespace Nexus.Extensibility
                         return writeRequest;
                     }).ToArray();
 
-                    await this.DataWriter.WriteAsync(
+                    await DataWriter.WriteAsync(
                         fileOffset + consumedFilePeriod,
                         requests,
                         dataWriterProgress,
@@ -186,7 +186,7 @@ namespace Nexus.Extensibility
             });
 
             /* close */
-            await this.DataWriter.CloseAsync(cancellationToken);
+            await DataWriter.CloseAsync(cancellationToken);
 
             foreach (var (_, dataReader) in catalogItemPipeReaders)
             {
@@ -215,7 +215,7 @@ namespace Nexus.Extensibility
             {
                 if (disposing)
                 {
-                    var disposable = this.DataWriter as IDisposable;
+                    var disposable = DataWriter as IDisposable;
                     disposable?.Dispose();
                 }
 
