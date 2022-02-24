@@ -2,6 +2,9 @@
 
   <PropertyGroup>
     <TargetFramework>$(TargetFrameworkVersion)</TargetFramework>
+  </PropertyGroup>
+	
+  <PropertyGroup>
 	<GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
 

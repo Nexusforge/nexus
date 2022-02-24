@@ -27,6 +27,10 @@ install:
 build_script:
   - ps: dotnet publish -c $Env:CONFIGURATION -o app /p:Build=$Env:APPVEYOR_BUILD_NUMBER /p:IsFinalBuild=$Env:APPVEYOR_REPO_TAG src/Nexus/Nexus.csproj
 
+after_build:
+  - ps: dotnet run --project src/Nexus.OpenApiClientGenerator/Nexus.OpenApiClientGenerator.csproj -- ./ openapi_new.json
+  - ps: diff --strip-trailing-cr openapi.json openapi_new.json
+
 test_script:
   - ps: dotnet test -c $Env:CONFIGURATION /p:BuildProjectReferences=false
 

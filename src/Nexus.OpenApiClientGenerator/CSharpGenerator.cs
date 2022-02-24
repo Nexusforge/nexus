@@ -1,5 +1,6 @@
 ﻿using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -96,8 +97,10 @@ $@"    /// <summary>
             var models = sourceTextBuilder.ToString();
 
             // Build final source text
+            var basePath = Assembly.GetExecutingAssembly().Location;
+
             var template = File
-                .ReadAllText("Template.cs")
+                .ReadAllText(Path.Combine(basePath, "..", "Template.cs"))
                 .Replace("{", "{{")
                 .Replace("}", "}}");
 

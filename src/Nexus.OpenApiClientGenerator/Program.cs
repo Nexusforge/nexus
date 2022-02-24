@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Readers;
 using Nexus.Controllers;
+using System.Reflection;
 
 namespace Nexus.OpenApiClientGenerator
 {
@@ -10,6 +11,15 @@ namespace Nexus.OpenApiClientGenerator
     {
         public static async Task Main(string[] args)
         {
+            var solutionRoot = args.Length >= 1
+                ? args[0]
+                : "../../../../../";
+
+            var openApiFileName = args.Length == 2
+                ? args[1]
+                : "openapi.json";
+
+            //
             var builder = WebApplication.CreateBuilder(args);
 
             builder.Services
@@ -49,7 +59,8 @@ namespace Nexus.OpenApiClientGenerator
                 AuthorizationHeaderKey: "Authorization");
 
             // generate C# client
-            var csharpOutputPath = $"../../../../../src/Nexus.OpenApiClient/{settings.OutputFileName}.g.cs";
+            var basePath = Assembly.GetExecutingAssembly().Location;
+            var csharpOutputPath = $"{solutionRoot}src/Nexus.OpenApiClient/{settings.OutputFileName}.g.cs";
             var generator = new CSharpGenerator();
             var csharpCode = generator.Generate(document, settings);
 
@@ -57,7 +68,7 @@ namespace Nexus.OpenApiClientGenerator
             File.WriteAllText(csharpOutputPath, csharpCode);
 
             // save open API document
-            var openApiDocumentOutputPath = $"../../../../../openapi.json";
+            var openApiDocumentOutputPath = $"{solutionRoot}{openApiFileName}";
             File.WriteAllText(openApiDocumentOutputPath, openApiJsonString);
         }
     }
