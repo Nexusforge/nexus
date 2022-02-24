@@ -316,7 +316,7 @@ public class NexusOpenApiClient
         }
         finally
         {
-            if (typeof(T) == typeof(StreamResponse))
+            if (typeof(T) != typeof(StreamResponse))
                 response.Dispose();
         }
     }
@@ -1458,5 +1458,4 @@ public record RefreshToken (string Token, DateTime Created, DateTime Expires, Da
 /// <param name="Type">The claim type.</param>
 /// <param name="Value">The claim value.</param>
 public record NexusClaim (string Type, string Value);
-
 

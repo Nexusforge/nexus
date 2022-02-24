@@ -236,7 +236,7 @@ public class {1}
         }
         finally
         {
-            if (typeof(T) == typeof(StreamResponse))
+            if (typeof(T) != typeof(StreamResponse))
                 response.Dispose();
         }
     }
