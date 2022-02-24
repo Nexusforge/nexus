@@ -1591,40 +1591,40 @@
         "properties": {
           "token": {
             "type": "string",
-            "description": "Gets or sets the refresh token."
+            "description": "The refresh token."
           },
           "created": {
             "type": "string",
-            "description": "Gets or sets the date/time when the token was created.",
+            "description": "The date/time when the token was created.",
             "format": "date-time"
           },
           "expires": {
             "type": "string",
-            "description": "Gets or sets the date/time when the token expires.",
+            "description": "The date/time when the token expires.",
             "format": "date-time"
           },
           "revoked": {
             "type": "string",
-            "description": "Gets or sets the date/time when the token was revoked.",
+            "description": "The date/time when the token was revoked.",
             "format": "date-time",
             "nullable": true
           },
           "replacedByToken": {
             "type": "string",
-            "description": "Gets the token that replaced this one.",
+            "description": "The token that replaced this one.",
             "nullable": true
           },
           "isExpired": {
             "type": "boolean",
-            "description": "Gets a value that indicates if the token has expired."
+            "description": "A boolean that indicates if the token has expired."
           },
           "isRevoked": {
             "type": "boolean",
-            "description": "Gets a value that indicates if the token has expired."
+            "description": "A boolean that indicates if the token has been revoked."
           },
           "isActive": {
             "type": "boolean",
-            "description": "Gets a value that indicates if the token is active."
+            "description": "A boolean that indicates if the token is active."
           }
         }
       },

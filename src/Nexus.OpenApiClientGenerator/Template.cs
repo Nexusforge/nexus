@@ -1,4 +1,6 @@
-﻿// 0 = Namespace
+﻿#nullable enable
+
+// 0 = Namespace
 // 1 = ClientName
 // 2 = NexusConfigurationHeaderKey
 // 3 = AuthorizationHeaderKey
@@ -8,6 +10,7 @@
 // 7 = SubClientSource
 // 8 = ExceptionType
 // 9 = Models
+// 10 = SubClientInterfacePoperties
 
 using System.Globalization;
 using System.Net;
@@ -22,20 +25,42 @@ namespace {0};
 /// <summary>
 /// The OpenAPI client for the Nexus system.
 /// </summary>
+public interface I{1}
+{
+    /// <summary>
+    /// Signs in the user.
+    /// </summary>
+    /// <param name="tokenPair">A pair of access and refresh tokens.</param>
+    /// <returns>A task.</returns>
+    void SignIn(TokenPair tokenPair);
+
+    /// <summary>
+    /// Attaches configuration data to subsequent Nexus OpenAPI requests.
+    /// </summary>
+    /// <param name="configuration">The configuration data.</param>
+    IDisposable AttachConfiguration(IDictionary<string, string> configuration);
+
+    /// <summary>
+    /// Clears configuration data for all subsequent Nexus OpenAPI requests.
+    /// </summary>
+    void ClearConfiguration();
+
+{10}}
+
+/// <summary>
+/// The OpenAPI client for the Nexus system.
+/// </summary>
 public class {1}
 {
-    private static string _tokenFolderPath = Path.Combine(Path.GetTempPath(), "nexus", "tokens");
-
-
-    private static JsonSerializerOptions _options;
-
     private const string NexusConfigurationHeaderKey = "{2}";
     private const string AuthorizationHeaderKey = "{3}";
 
-    private TokenPair? _tokenPair;
-    private string? _tokenFilePath;
+    private static string _tokenFolderPath = Path.Combine(Path.GetTempPath(), "nexus", "tokens");
+    private static JsonSerializerOptions _options;
 
+    private TokenPair? _tokenPair;
     private HttpClient _httpClient;
+    private string? _tokenFilePath;
 
 {4}
     static {1}()
@@ -79,18 +104,15 @@ public class {1}
 
 {6}
 
-    /// <summary>
-    /// Signs in the user.
-    /// </summary>
-    /// <param name="tokenPair">A pair of access and refresh tokens.</param>
-    /// <returns>A task.</returns>
+    /// <inheritdoc />
     public void SignIn(TokenPair tokenPair)
     {
         _tokenFilePath = Path.Combine(_tokenFolderPath, Uri.EscapeDataString(tokenPair.RefreshToken) + ".json");
         
         if (File.Exists(_tokenFilePath))
         {
-            tokenPair = JsonSerializer.Deserialize<TokenPair>(File.ReadAllText(_tokenFilePath), _options);
+            tokenPair = JsonSerializer.Deserialize<TokenPair>(File.ReadAllText(_tokenFilePath), _options)
+                ?? throw new Exception($"Unable to deserialize file {_tokenFilePath} into a token pair.");
         }
 
         else
@@ -104,10 +126,7 @@ public class {1}
         _tokenPair = tokenPair;
     }
 
-    /// <summary>
-    /// Attaches configuration data to subsequent Nexus OpenAPI requests.
-    /// </summary>
-    /// <param name="configuration">The configuration data.</param>
+    /// <inheritdoc />
     public IDisposable AttachConfiguration(IDictionary<string, string> configuration)
     {
         var encodedJson = Convert.ToBase64String(JsonSerializer.SerializeToUtf8Bytes(configuration));
@@ -118,9 +137,7 @@ public class {1}
         return new DisposableConfiguration(this);
     }
 
-    /// <summary>
-    /// Clears configuration data for all subsequent Nexus OpenAPI requests.
-    /// </summary>
+    /// <inheritdoc />
     public void ClearConfiguration()
     {
         _httpClient.DefaultRequestHeaders.Remove(NexusConfigurationHeaderKey);
@@ -199,7 +216,7 @@ public class {1}
 
             if (typeof(T) == typeof(object))
             {
-                return default;
+                return default!;
             }
 
             else if (typeof(T) == typeof(StreamResponse))
@@ -269,19 +286,26 @@ public class {1}
     }
 }
 
-{7}public class StreamResponse : IDisposable
+{7}/// <summary>
+/// A stream response. 
+/// </summary>
+public class StreamResponse : IDisposable
 {
     HttpResponseMessage _response;
 
-    public StreamResponse(HttpResponseMessage response, Stream stream)
+    internal StreamResponse(HttpResponseMessage response, Stream stream)
     {
         _response = response;
 
         Stream = stream;
     }
 
+    /// <summary>
+    /// The stream.
+    /// </summary>
     public Stream Stream { get; }
 
+    /// <inheritdoc />
     public void Dispose()
     {
         Stream.Dispose();
@@ -289,13 +313,19 @@ public class {1}
     }
 }
 
+/// <summary>
+/// A {8}.
+/// </summary>
 public class {8} : Exception
 {
-    public {8}(string statusCode, string message) : base(message)
+    internal {8}(string statusCode, string message) : base(message)
     {
         StatusCode = statusCode;
     }
 
+    /// <summary>
+    /// The exception status code.
+    /// </summary>
     public string StatusCode { get; }
 }
 
@@ -315,4 +345,3 @@ internal class DisposableConfiguration : IDisposable
 }
 
 {9}
-

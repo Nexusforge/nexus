@@ -42,10 +42,27 @@ namespace Nexus.OpenApiClientGenerator
 
             foreach (var subClient in subClients)
             {
+                sourceTextBuilder.AppendLine("    /// <inheritdoc />");
                 sourceTextBuilder.AppendLine($"    public I{subClient}Client {subClient} => _{subClient};");
+                sourceTextBuilder.AppendLine();
             }
 
             var subClientProperties = sourceTextBuilder.ToString();
+
+            // SubClientInterfaceProperties
+            sourceTextBuilder.Clear();
+
+            foreach (var subClient in subClients)
+            {
+                sourceTextBuilder.AppendLine(
+$@"    /// <summary>
+    /// Gets the <see cref=""I{subClient}Client""/>.
+    /// </summary>");
+                sourceTextBuilder.AppendLine($"    I{subClient}Client {subClient} {{ get; set; }}");
+                sourceTextBuilder.AppendLine();
+            }
+
+            var subClientInterfaceProperties = sourceTextBuilder.ToString();
 
             // SubClientSource
             sourceTextBuilder.Clear();
@@ -98,7 +115,8 @@ namespace Nexus.OpenApiClientGenerator
                 subClientProperties,
                 subClientSource,
                 settings.ExceptionType,
-                models);
+                models,
+                subClientInterfaceProperties);
         }
 
         private void AppendSubClientSourceText(
@@ -107,11 +125,14 @@ namespace Nexus.OpenApiClientGenerator
             StringBuilder sourceTextBuilder,
             GeneratorSettings settings)
         {
-            className += "Client";
+            var augmentedClassName = className + "Client";
 
             // interface
             sourceTextBuilder.AppendLine(
-$@"public interface I{className}
+$@"/// <summary>
+/// Provides methods to interact with {SplitCamelCase(className).ToLower()}.
+/// </summary>
+public interface I{augmentedClassName}
 {{");
 
             foreach (var entry in methodMap)
@@ -122,6 +143,7 @@ $@"public interface I{className}
                 foreach (var operation in entry.Value.Operations)
                 {
                     AppendInterfaceMethodSourceText(operation.Key, operation.Value, sourceTextBuilder);
+                    sourceTextBuilder.AppendLine();
                 }
             }
 
@@ -129,12 +151,15 @@ $@"public interface I{className}
             sourceTextBuilder.AppendLine();
 
             // implementation
+            sourceTextBuilder
+                .AppendLine("/// <inheritdoc />");
+
             sourceTextBuilder.AppendLine(
-$@"public class {className} : I{className}
+$@"public class {augmentedClassName} : I{augmentedClassName}
 {{
     private {settings.ClientName} _client;
     
-    internal {className}({settings.ClientName} client)
+    internal {augmentedClassName}({settings.ClientName} client)
     {{
         _client = client;
     }}
@@ -169,12 +194,27 @@ $@"public class {className} : I{className}
                 operationType,
                 operation,
                 out var returnType,
-                out var _,
-                out var _);
+                out var parameters,
+                out var body);
 
             var preparedReturnType = string.IsNullOrWhiteSpace(returnType)
                 ? returnType
                 : $"<{returnType}>";
+
+            sourceTextBuilder.AppendLine(
+$@"    /// <summary>
+    /// {operation.Summary}
+    /// </summary>");
+
+            foreach (var parameter in parameters)
+            {
+                sourceTextBuilder.AppendLine($"    /// <param name=\"{parameter.Item2.Name}\">{parameter.Item2.Description}</param>");
+            }
+
+            if (operation.RequestBody is not null && body is not null)
+                sourceTextBuilder.AppendLine($"    /// <param name=\"{body.Split(" ")[1]}\">{operation.RequestBody.Description}</param>");
+
+            sourceTextBuilder.AppendLine($"    /// <param name=\"cancellationToken\">The token to cancel the current operation.</param>");
 
             sourceTextBuilder.AppendLine($"    Task{preparedReturnType} {signature};");
         }
@@ -193,9 +233,7 @@ $@"public class {className} : I{className}
                 out var bodyParameter);
 
             sourceTextBuilder
-                .AppendLine("    /// <summary>")
-                .AppendLine($"    /// {operation.Summary}")
-                .AppendLine("    /// </summary>");
+                .AppendLine("    /// <inheritdoc />");
 
             var isVoidReturnType = string.IsNullOrWhiteSpace(returnType);
             var actualReturnType = isVoidReturnType ? "" : $"<{returnType}>";
@@ -216,7 +254,7 @@ $@"public class {className} : I{className}
             foreach (var parameter in pathParameters)
             {
                 var parameterName = parameter.Item1.Split(" ")[1];
-                sourceTextBuilder.AppendLine($"        urlBuilder.Replace(\"{{{parameterName}}}\", Uri.EscapeDataString(Convert.ToString({parameterName}, CultureInfo.InvariantCulture)));");
+                sourceTextBuilder.AppendLine($"        urlBuilder.Replace(\"{{{parameterName}}}\", Uri.EscapeDataString(Convert.ToString({parameterName}, CultureInfo.InvariantCulture)!));");
             }
 
             // query parameters
@@ -271,21 +309,34 @@ $@"public class {className} : I{className}
             OpenApiSchema schema,
             StringBuilder sourceTextBuilder)
         {
+            // Maybe schema.Extensions[0].x-enumNames would be a better selection.
+
             if (schema.Enum.Any())
             {
                 if (schema.Type != "string")
                     throw new Exception("Only enum of type string is supported.");
 
                 var enumValues = string
-                    .Join($",{Environment.NewLine}    ", schema.Enum
+                    .Join($",{Environment.NewLine}{Environment.NewLine}", schema.Enum
                     .OfType<OpenApiString>()
-                    .Select(current => current.Value));
+                    .Select(current =>
+$@"    /// <summary>
+    /// {current.Value}
+    /// </summary>
+    {current.Value}"));
+
+                sourceTextBuilder.AppendLine(
+@$"/// <summary>
+/// {schema.Description}
+/// </summary>");
 
                 sourceTextBuilder.AppendLine(
 @$"public enum {modelName}
 {{
-    {enumValues}
+{enumValues}
 }}");
+
+                sourceTextBuilder.AppendLine();
             }
 
             else
@@ -294,7 +345,21 @@ $@"public class {className} : I{className}
                    ? string.Empty
                    : GetProperties(schema.Properties);
 
-                sourceTextBuilder.AppendLine($"public record {modelName} ({parameters});");
+                sourceTextBuilder.AppendLine(
+@$"/// <summary>
+/// {schema.Description}
+/// </summary>");
+
+                if (schema.Properties is not null)
+                {
+                    foreach (var property in schema.Properties)
+                    {
+                        sourceTextBuilder.AppendLine($"/// <param name=\"{FirstCharToUpper(property.Key)}\">{property.Value.Description}</param>");
+                    }
+                }
+
+                sourceTextBuilder
+                    .AppendLine($"public record {modelName} ({parameters});");
             }
         }
 
@@ -448,6 +513,11 @@ $@"public class {className} : I{className}
 
                 return $"{asyncMethodName}({parametersString}, CancellationToken cancellationToken = default)";
             }
+        }
+
+        private static string SplitCamelCase(string input)
+        {
+            return Regex.Replace(input, "(?<=[a-z])([A-Z])", " $1").Trim();
         }
     }
 }

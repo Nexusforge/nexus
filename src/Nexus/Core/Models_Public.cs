@@ -19,54 +19,54 @@ namespace Nexus.Core
         }
 
         /// <summary>
-        /// Gets or sets the primary key.
+        /// The primary key.
         /// </summary>
         [Key]
         [JsonIgnore]
         public int? Id { get; init; }
 
         /// <summary>
-        /// Gets or sets the refresh token.
+        /// The refresh token.
         /// </summary>
         public string Token { get; init; }
 
         /// <summary>
-        /// Gets or sets the date/time when the token was created.
+        /// The date/time when the token was created.
         /// </summary>
         public DateTime Created { get; init; } = DateTime.UtcNow;
 
         /// <summary>
-        /// Gets or sets the date/time when the token expires.
+        /// The date/time when the token expires.
         /// </summary>
         public DateTime Expires { get; init; }
 
         /// <summary>
-        /// Gets or sets the date/time when the token was revoked.
+        /// The date/time when the token was revoked.
         /// </summary>
         public DateTime? Revoked { get; set; }
 
         /// <summary>
-        /// Gets the token that replaced this one.
+        /// The token that replaced this one.
         /// </summary>
         public string? ReplacedByToken { get; set; }
 
         /// <summary>
-        /// Gets a value that indicates if the token has expired.
+        /// A boolean that indicates if the token has expired.
         /// </summary>
         public bool IsExpired => DateTime.UtcNow >= Expires;
 
         /// <summary>
-        /// Gets a value that indicates if the token has expired.
+        /// A boolean that indicates if the token has been revoked.
         /// </summary>
         public bool IsRevoked => Revoked != null;
 
         /// <summary>
-        /// Gets a value that indicates if the token is active.
+        /// A boolean that indicates if the token is active.
         /// </summary>
         public bool IsActive => !IsRevoked && !IsExpired;
 
         /// <summary>
-        /// Gets or sets the owner of this token.
+        /// The owner of this token.
         /// </summary>
         [Required]
         [JsonIgnore]
