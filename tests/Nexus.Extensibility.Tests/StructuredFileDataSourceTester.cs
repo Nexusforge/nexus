@@ -1,11 +1,5 @@
 ﻿using Nexus.DataModel;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Nexus.Extensibility.Tests
 {
@@ -13,10 +7,7 @@ namespace Nexus.Extensibility.Tests
     {
         #region Types
 
-        public record CatalogDescription()
-        {
-            public Dictionary<string, FileSource> Config { get; init; }
-        }
+        public record CatalogDescription(Dictionary<string, FileSource> Config);
 
         #endregion
 
@@ -38,9 +29,9 @@ namespace Nexus.Extensibility.Tests
 
         #region Properties
 
-        public Dictionary<string, CatalogDescription> Config { get; private set; }
+        public Dictionary<string, CatalogDescription> Config { get; private set; } = null!;
 
-        private DataSourceContext Context { get; set; }
+        private DataSourceContext Context { get; set; } = null!;
 
         #endregion
 
@@ -48,19 +39,20 @@ namespace Nexus.Extensibility.Tests
 
         protected override async Task SetContextAsync(DataSourceContext context, CancellationToken cancellationToken)
         {
-            this.Context = context;
+            Context = context;
 
-            var configFilePath = Path.Combine(this.Root, "config.json");
+            var configFilePath = Path.Combine(Root, "config.json");
 
             if (!File.Exists(configFilePath))
                 throw new Exception($"The configuration file does not exist on path '{configFilePath}'.");
 
-            this.Config = await DeserializeAsync<Dictionary<string, CatalogDescription>>(configFilePath);
+            var jsonString = await File.ReadAllTextAsync(configFilePath, cancellationToken);
+            Config = JsonSerializer.Deserialize<Dictionary<string, CatalogDescription>>(jsonString)!;
         }
 
         protected override Task<FileSourceProvider> GetFileSourceProviderAsync(CancellationToken cancellationToken)
         {
-            var all = this.Config.ToDictionary(
+            var all = Config.ToDictionary(
                 config => config.Key,
                 config => config.Value.Config.Values.Cast<FileSource>().ToArray());
 
@@ -69,9 +61,9 @@ namespace Nexus.Extensibility.Tests
                 Single: catalogItem => all[catalogItem.Catalog.Id].First()));
         }
 
-        protected override Task<string[]> GetCatalogIdsAsync(CancellationToken cancellationToken)
+        protected override Task<CatalogRegistration[]> GetCatalogRegistrationsAsync(string path, CancellationToken cancellationToken)
         {
-            return Task.FromResult(new[] { "/A/B/C" });
+            return Task.FromResult(new CatalogRegistration[] { new CatalogRegistration("/A/B/C") });
         }
 
         protected override Task<ResourceCatalog> GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
@@ -112,23 +104,6 @@ namespace Nexus.Extensibility.Tests
             {
                 return await base.FindFilePathsAsync(begin, config);
             }
-        }
-
-        #endregion
-
-        #region Helpers
-
-        private static async Task<T> DeserializeAsync<T>(string filePath)
-        {
-            using var jsonStream = File.OpenRead(filePath);
-
-            var options = new JsonSerializerOptions();
-            options.Converters.Add(new TimeSpanConverter());
-
-            return await JsonSerializer
-                .DeserializeAsync<T>(jsonStream, options)
-                .AsTask()
-                ;
         }
 
         #endregion

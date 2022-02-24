@@ -1,92 +1,222 @@
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using Microsoft.EntityFrameworkCore;
 using Nexus.Core;
+using Nexus.Services;
 using Serilog;
-using System;
 using System.Globalization;
+using System.Text.Json;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
-namespace Nexus
+// culture
+CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
+CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+
+// configuration
+var configuration = NexusOptionsBase.BuildConfiguration(args);
+
+var generalOptions = configuration
+    .GetSection(GeneralOptions.Section)
+    .Get<GeneralOptions>();
+
+var serverOptions = configuration
+    .GetSection(ServerOptions.Section)
+    .Get<ServerOptions>();
+
+var securityOptions = configuration
+    .GetSection(SecurityOptions.Section)
+    .Get<SecurityOptions>();
+
+var pathsOptions = configuration
+    .GetSection(PathsOptions.Section)
+    .Get<PathsOptions>();
+
+// logging (https://nblumhardt.com/2019/10/serilog-in-aspnetcore-3/)
+var applicationName = generalOptions.ApplicationName;
+
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(configuration)
+    .Enrich.WithProperty("ApplicationName", applicationName)
+    .CreateLogger();
+
+// checks
+if (securityOptions.Base64JwtSigningKey == SecurityOptions.DefaultSigningKey)
+    Log.Logger.Warning("You are using the default key to sign JWT tokens. It is strongly advised to use a different key in production.");
+
+if (securityOptions.AccessTokenLifetime >= securityOptions.RefreshTokenLifetime)
+    Log.Logger.Warning("The refresh token life time should be greater than then access token lifetime.");
+
+// run
+try
 {
-    internal class Program
+    Log.Information("Start host");
+
+    var builder = WebApplication.CreateBuilder(args);
+
+    builder.Configuration.AddConfiguration(configuration);
+    builder.Host.UseSerilog();
+
+    // Add services to the container.
+    AddServices(builder.Services, configuration, pathsOptions, securityOptions);
+
+    // Build 
+    var app = builder.Build();
+
+    // Configure the HTTP request pipeline.
+    ConfigurePipeline(app);
+
+    // initialize app state
+    await InitializeAppAsync(app.Services, pathsOptions, securityOptions, app.Logger);
+
+    // Run
+    var baseUrl = $"{serverOptions.HttpScheme}://{serverOptions.HttpAddress}:{serverOptions.HttpPort}";
+    app.Run(baseUrl);
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Host terminated unexpectedly");
+    throw;
+}
+finally
+{
+    Log.CloseAndFlush();
+}
+
+void AddServices(
+    IServiceCollection services, 
+    IConfiguration configuration, 
+    PathsOptions pathsOptions,
+    SecurityOptions securityOptions)
+{
+    // database
+    var filePath = Path.Combine(pathsOptions.Config, "users.db");
+
+    services.AddDbContext<UserDbContext>(
+        options => options.UseSqlite($"Data Source={filePath}"));
+
+    // forwarded headers
+    services.Configure<ForwardedHeadersOptions>(options =>
     {
-        #region Properties
+        options.ForwardedHeaders = ForwardedHeaders.All;
+#warning replace this with proper external configuration
+        options.KnownNetworks.Clear();
+        options.KnownProxies.Clear();
+    });
 
-        public static string Language { get; private set; }
+    // authentication
+    services.AddNexusAuth(securityOptions);
 
-        #endregion
+    // Open API
+    services.AddNexusOpenApi();
 
-        #region Methods
+    // default Identity Provider
+    if (!securityOptions.OidcProviders.Any())
+        services.AddNexusIdentityProvider();
 
-        public static void Main(string[] args)
-        {
-            // culture
-            CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
-            CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
-            CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+    // routing
+    services.AddRouting(options => options.LowercaseUrls = true);
 
-            // configuration
-            var configuration = NexusOptionsBase.BuildConfiguration(args);
+    // HTTP context
+    services.AddHttpContextAccessor();
 
-            var generalOptions = new GeneralOptions();
-            configuration.GetSection(GeneralOptions.Section).Bind(generalOptions);
+    // custom
+    services.AddTransient<IDataService, DataService>();
 
-            Program.Language = generalOptions.Language;
+    services.AddScoped<IDBService, DbService>();
+    services.AddScoped<INexusAuthenticationService, NexusAuthenticationService>();
 
-            // logging (https://nblumhardt.com/2019/10/serilog-in-aspnetcore-3/)
-            var applicationName = generalOptions.ApplicationName;
+    services.AddSingleton<AppState>();
+    services.AddSingleton<AppStateManager>();
+    services.AddSingleton<IJobService, JobService>();
+    services.AddSingleton<IDataControllerService, DataControllerService>();
+    services.AddSingleton<ICatalogManager, CatalogManager>();
+    services.AddSingleton<IDatabaseManager, DatabaseManager>();
+    services.AddSingleton<IExtensionHive, ExtensionHive>();
+    services.AddSingleton<IUserManagerWrapper, UserManagerWrapper>();
 
-            Log.Logger = new LoggerConfiguration()
-                .ReadFrom.Configuration(configuration)
-                .Enrich.WithProperty("ApplicationName", applicationName)
-                .CreateLogger();
+    services.Configure<GeneralOptions>(configuration.GetSection(GeneralOptions.Section));
+    services.Configure<PathsOptions>(configuration.GetSection(PathsOptions.Section));
+    services.Configure<SecurityOptions>(configuration.GetSection(SecurityOptions.Section));
+    services.Configure<ServerOptions>(configuration.GetSection(ServerOptions.Section));
+}
 
-            // run
-            try
-            {
-                Log.Information("Start host.");
+void ConfigurePipeline(WebApplication app)
+{
+    // https://docs.microsoft.com/en-us/aspnet/core/fundamentals/middleware/?view=aspnetcore-6.0
 
-                Program
-                    .CreateHostBuilder(Environment.CurrentDirectory, configuration)
-                    .Build()
-                    .Run();
-            }
-            catch (Exception ex)
-            {
-                Log.Fatal(ex, "Host terminated unexpectedly.");
-                throw;
-            }
-            finally
-            {
-                Log.CloseAndFlush();
-            }
-        }
+    app.UseForwardedHeaders();
 
-        private static IHostBuilder CreateHostBuilder(string currentDirectory, IConfiguration configuration) => 
-            Host.CreateDefaultBuilder()
-
-                .UseSerilog()
-
-                .ConfigureAppConfiguration(builder =>
-                {
-                    builder.AddConfiguration(configuration);
-                })
-
-                .ConfigureWebHostDefaults(webBuilder =>
-                {
-                    webBuilder.UseStartup<Startup>();
-
-                    var serverOptions = configuration
-                        .GetSection(ServerOptions.Section)
-                        .Get<ServerOptions>();
-
-                    var baseUrl = $"{serverOptions.HttpScheme}://{serverOptions.HttpAddress}:{serverOptions.HttpPort}";
-
-                    webBuilder.UseUrls(baseUrl);
-                    webBuilder.UseContentRoot(currentDirectory);
-                });
-
-        #endregion
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseWebAssemblyDebugging();
     }
+
+    else
+    {
+#warning write error page HTML here without razor page (example: app.UseExceptionHandler)
+
+        // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+        app.UseHsts();
+    }
+
+    // blazor wasm
+    app.UseBlazorFrameworkFiles();
+
+    // static files
+    app.UseStaticFiles();
+
+    // Open API
+    var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+    app.UseNexusOpenApi(provider, addExplorer: true);
+
+    // default Identity Provider
+    if (!securityOptions.OidcProviders.Any())
+        app.UseNexusIdentityProvider();
+
+    // Serilog Request Logging (https://andrewlock.net/using-serilog-aspnetcore-in-asp-net-core-3-reducing-log-verbosity/)
+    // LogContext properties are not included by default in request logging, workaround: https://nblumhardt.com/2019/10/serilog-mvc-logging/
+    app.UseSerilogRequestLogging();
+
+    // routing (for REST API)
+    app.UseRouting();
+
+    // default authentication
+    app.UseAuthentication();
+
+    // authorization
+    app.UseAuthorization();
+
+    // endpoints
+    app.MapControllers();
+    app.MapFallbackToFile("index.html");
+}
+
+async Task InitializeAppAsync(
+    IServiceProvider serviceProvider,
+    PathsOptions pathsOptions,
+    SecurityOptions securityOptions,
+    ILogger logger)
+{
+    var appState = serviceProvider.GetRequiredService<AppState>();
+    var appStateManager = serviceProvider.GetRequiredService<AppStateManager>();
+    var databaseManager = serviceProvider.GetRequiredService<IDatabaseManager>();
+
+    // database
+    using var scope = serviceProvider.CreateScope();
+    var userContext = scope.ServiceProvider.GetRequiredService<UserDbContext>();
+
+    await userContext.Database.EnsureCreatedAsync();
+
+    // project
+    if (databaseManager.TryReadProject(out var project))
+        appState.Project = JsonSerializer.Deserialize<NexusProject>(project) ?? throw new Exception("project is null");
+    
+    else
+        appState.Project = new NexusProject(
+            new Dictionary<Guid, PackageReference>(),
+            new Dictionary<string, UserConfiguration>());
+
+    // packages and catalogs
+    await appStateManager.LoadPackagesAsync(new Progress<double>(), CancellationToken.None);
 }

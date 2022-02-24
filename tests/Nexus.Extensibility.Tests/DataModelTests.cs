@@ -1,6 +1,4 @@
 ﻿using Nexus.DataModel;
-using System;
-using System.Collections.Generic;
 using System.Text.Json;
 using Xunit;
 
@@ -60,6 +58,23 @@ namespace Nexus.Extensibility.Tests
 
             else
                 Assert.Throws<ArgumentException>(() => new Resource(id: id));
+        }
+
+        [Fact]
+        public void CanValidateResourceHaveSinglePrimaryRepresentation()
+        {
+            Action action = () => new Resource("a", representations: new[]
+            {
+                 new Representation(
+                    dataType: NexusDataType.FLOAT64,
+                    samplePeriod: TimeSpan.FromSeconds(1)),
+
+                 new Representation(
+                    dataType: NexusDataType.FLOAT32,
+                    samplePeriod: TimeSpan.FromSeconds(2))
+            });
+
+            Assert.Throws<ArgumentException>(action);
         }
 
         [Theory]
@@ -183,11 +198,8 @@ namespace Nexus.Extensibility.Tests
             var catalog0_actual = catalog0_V0.Merge(catalog0_V1, MergeMode.NewWins);
 
             // assert
-            var options = new JsonSerializerOptions();
-            options.Converters.Add(new TimeSpanConverter());
-
-            var expected = JsonSerializer.Serialize(catalog0_Vnew, options);
-            var actual = JsonSerializer.Serialize(catalog0_actual, options);
+            var expected = JsonSerializer.Serialize(catalog0_Vnew);
+            var actual = JsonSerializer.Serialize(catalog0_actual);
 
             Assert.Equal(expected, actual);
         }
@@ -264,17 +276,17 @@ namespace Nexus.Extensibility.Tests
         {
             // Arrange
             var resource1 = new Resource(
-                id: "R1",
+                id: "myresource",
                 representations: new List<Representation>() 
                 { 
                     new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(1), detail: "RP1") 
                 });
 
             var resource2 = new Resource(
-                id: "R2",
+                id: "myresource",
                 representations: new List<Representation>()
                 {
-                    new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(1), detail: "RP1"),
+                    new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(1), detail: "RP1", isPrimary: true),
                     new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(1), detail: "RP2"),
                     new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(1), detail: "RP3")
                 });
@@ -283,7 +295,7 @@ namespace Nexus.Extensibility.Tests
             Action action = () => resource1.Merge(resource2, MergeMode.ExclusiveOr);
 
             // Assert
-            Assert.Throws<ArgumentException>(action);
+            Assert.Throws<Exception>(action);
         }
 
         [Fact]
@@ -311,7 +323,7 @@ namespace Nexus.Extensibility.Tests
             var resource = new Resource(id: "Resource1", representations: new List<Representation>() { representation });
             var catalog = new ResourceCatalog(id: "/A/B/C", resources: new List<Resource>() { resource });
             var catalogItem = new CatalogItem(catalog, resource, representation);
-            var foundCatalogItem = catalog.Find(catalogItem.GetPath());
+            var foundCatalogItem = catalog.Find(catalogItem.ToPath());
             var foundCatalogItemByName = catalog.Find($"{catalogItem.Catalog.Id}/{catalogItem.Resource.Id}/{catalogItem.Representation.Id}");
 
             Assert.Equal(catalogItem, foundCatalogItem);
@@ -329,7 +341,7 @@ namespace Nexus.Extensibility.Tests
             var resource = new Resource(id: "Resource1", representations: new List<Representation>() { representation });
             var catalog = new ResourceCatalog(id: "/A/B/C", resources: new List<Resource>() { resource });
             var catalogItem = new CatalogItem(catalog, resource, representation);
-            var success = catalog.TryFind(catalogItem.GetPath(), out var foundCatalogItem1);
+            var success = catalog.TryFind(catalogItem.ToPath(), out var foundCatalogItem1);
 
             Assert.Equal(catalogItem, foundCatalogItem1);
             Assert.True(success);

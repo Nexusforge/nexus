@@ -1,15 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
+  
+  <PropertyGroup>
+    <TargetFramework>$(TargetFrameworkVersion)</TargetFramework>
+  </PropertyGroup>
+	
   <PropertyGroup>
     <Description>Type definitions to implement data sources and data writers for the Nexus system.</Description>
     <PackageTags>Nexus extensibility time-series data lake</PackageTags>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <TargetFramework>$(TargetFrameworkVersion)</TargetFramework>
-    <Nullable>enable</Nullable>
     <PackageIcon>icon.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
+  <!-- This prevents the package to be rebuilt when dotnet test is executed. -->
+  <PropertyGroup Condition="$(BuildProjectReferences) == 'false'">
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+  
   <ItemGroup>
     <None Include="../../doc/images/icon.png" Pack="true" PackagePath="/" />
   </ItemGroup>

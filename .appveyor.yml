@@ -1,5 +1,6 @@
 version: '{build}'
 clone_depth: 1
+stack: python 3.8
 
 image:
   - Ubuntu
@@ -10,7 +11,7 @@ environment:
 
 branches:
   only:
-    - master
+    - main
     - dev
 
 configuration:
@@ -18,14 +19,20 @@ configuration:
 
 init:
   - ps: git config --global core.autocrlf true
-  - ps: sudo apt-get update; sudo apt-get install -y apt-transport-https; sudo apt-get install -y dotnet-sdk-6.0
+
+install:
+  - ps: python -m pip install frictionless
+  - ps: dotnet tool restore
 
 build_script:
-  - ps: echo "Skip build_script."
+  - ps: dotnet publish -c $Env:CONFIGURATION -o app /p:Build=$Env:APPVEYOR_BUILD_NUMBER /p:IsFinalBuild=$Env:APPVEYOR_REPO_TAG src/Nexus/Nexus.csproj
+
+after_build:
+  - ps: dotnet run --project src/Nexus.OpenApiClientGenerator/Nexus.OpenApiClientGenerator.csproj -- ./ openapi_new.json
+  - ps: diff --strip-trailing-cr openapi.json openapi_new.json
 
 test_script:
-  - ps: dotnet publish -c $Env:CONFIGURATION -o app --no-self-contained /p:Build=$Env:APPVEYOR_BUILD_NUMBER /p:IsFinalBuild=$Env:APPVEYOR_REPO_TAG src/Nexus/Nexus.csproj
-  - ps: dotnet test -c $Env:CONFIGURATION /p:BuildProjectReferences=false /p:GeneratePackageOnBuild=false
+  - ps: dotnet test -c $Env:CONFIGURATION /p:BuildProjectReferences=false
 
 artifacts:
   - path: artifacts/packages/**/*.nupkg
@@ -57,5 +64,5 @@ deploy:
     skip_symbols: true
     artifact: /.*\.nupkg/ 
     on:
-      branch: master
+      branch: main
       APPVEYOR_REPO_TAG: true

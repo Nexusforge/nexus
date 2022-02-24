@@ -1,11 +1,20 @@
 ﻿using Nexus.DataModel;
-using System;
 using System.Buffers;
 
 namespace Nexus.Extensibility
 {
+    /// <summary>
+    /// A static class with useful helper methods.
+    /// </summary>
     public static class ExtensibilityUtilities
     {
+        /// <summary>
+        /// Creates buffers of the correct size for a given representation and time period.
+        /// </summary>
+        /// <param name="representation">The representation.</param>
+        /// <param name="begin">The beginning of the time period.</param>
+        /// <param name="end">The end of the time period.</param>
+        /// <returns>The data and status buffers.</returns>
         public static (Memory<byte>, Memory<byte>) CreateBuffers(Representation representation, DateTime begin, DateTime end)
         {
             var elementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, representation.SamplePeriod);

@@ -1,28 +1,46 @@
 ﻿using Microsoft.Extensions.Logging;
 using Nexus.DataModel;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Nexus.Extensibility
 {
+    /// <summary>
+    /// The starter package for a data writer.
+    /// </summary>
+    /// <param name="ResourceLocator">The resource locator.</param>
+    /// <param name="Configuration">The configuration.</param>
+    /// <param name="Logger">The logger.</param>
     public record DataWriterContext(
         Uri ResourceLocator,
         Dictionary<string, string> Configuration,
         ILogger Logger);
 
+    /// <summary>
+    /// A write request.
+    /// </summary>
+    /// <param name="CatalogItem">The catalog item to be written.</param>
+    /// <param name="Data">The data to be written.</param>
     public record WriteRequest(
         CatalogItem CatalogItem,
         ReadOnlyMemory<double> Data);
 
+    /// <summary>
+    /// An attribute to provide the file format name to be display in the Nexus GUI.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Class)]
     public class DataWriterFormatNameAttribute : Attribute
     {
+        /// <summary>
+        /// Initializes a new instances of the <see cref="DataWriterFormatNameAttribute"/>.
+        /// </summary>
+        /// <param name="formatName">The file format name to be display in the Nexus GUI.</param>
         public DataWriterFormatNameAttribute(string formatName)
         {
-            this.FormatName = formatName;
+            FormatName = formatName;
         }
 
+        /// <summary>
+        /// Gets the file format name.
+        /// </summary>
         public string FormatName { get; }
     }
 
@@ -30,8 +48,8 @@ namespace Nexus.Extensibility
     {
         public OptionAttribute(string configurationKey, string label)
         {
-            this.ConfigurationKey = configurationKey;
-            this.Label = label;
+            ConfigurationKey = configurationKey;
+            Label = label;
         }
 
         public string ConfigurationKey { get; }
@@ -45,9 +63,9 @@ namespace Nexus.Extensibility
         public DataWriterSelectOptionAttribute(string configurationKey, string label, string defaultValue, string[] keys, string[] values)
             : base(configurationKey, label)
         {
-            this.DefaultValue = defaultValue;
+            DefaultValue = defaultValue;
 
-            this.KeyValueMap = keys
+            KeyValueMap = keys
                 .Zip(values)
                 .ToDictionary(entry => entry.First, entry => entry.Second);
         }
@@ -63,10 +81,10 @@ namespace Nexus.Extensibility
         public DataWriterIntegerNumberInputOptionAttribute(string configurationKey, string label, int defaultValue, int minmum, int maximum) 
             : base(configurationKey, label)
         {
-            this.DefaultValue = defaultValue;
+            DefaultValue = defaultValue;
 
-            this.Minmum = minmum;
-            this.Maximum = maximum;
+            Minmum = minmum;
+            Maximum = maximum;
         }
 
         public int DefaultValue { get; }

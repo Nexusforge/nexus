@@ -1,12 +1,9 @@
 ﻿using Nexus.DataModel;
 using Nexus.Extensibility;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace TestExtensionProject
 {
-    [ExtensionIdentification("my-unique-data-source", "My unique data source", "A data source for unit tests.")]
+    [ExtensionDescription("A data source for unit tests.")]
     public class TestDataSource : IDataSource
     {
         public Task SetContextAsync(DataSourceContext context, CancellationToken cancellationToken)
@@ -14,7 +11,7 @@ namespace TestExtensionProject
             throw new NotImplementedException(nameof(SetContextAsync));
         }
 
-        public Task<string[]> GetCatalogIdsAsync(CancellationToken cancellationToken)
+        public Task<CatalogRegistration[]> GetCatalogRegistrationsAsync(string path, CancellationToken cancellationToken)
         {
             throw new NotImplementedException(nameof(GetCatalogAsync));
         }

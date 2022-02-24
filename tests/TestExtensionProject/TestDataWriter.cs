@@ -1,12 +1,9 @@
 ﻿using Nexus.DataModel;
 using Nexus.Extensibility;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace TestExtensionProject
 {
-    [ExtensionIdentification("my-unique-data-writer", "My unique data writer", "A data writer for unit tests.")]
+    [ExtensionDescription("A data writer for unit tests.")]
     public class TestDataWriter : IDataWriter
     {
         public Task CloseAsync(CancellationToken cancellationToken)
@@ -14,7 +11,7 @@ namespace TestExtensionProject
             throw new NotImplementedException(nameof(CloseAsync));
         }
 
-        public Task OpenAsync(DateTime fileBegin, TimeSpan samplePeriod, CatalogItem[] catalogItems, CancellationToken cancellationToken)
+        public Task OpenAsync(DateTime fileBegin, TimeSpan filePeriod, TimeSpan samplePeriod, CatalogItem[] catalogItems, CancellationToken cancellationToken)
         {
             throw new NotImplementedException(nameof(OpenAsync));
         }

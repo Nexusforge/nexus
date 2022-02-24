@@ -1,17 +1,14 @@
 using Microsoft.Extensions.Logging;
 using Nexus.DataModel;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Nexus.Extensibility
 {
+    /// <summary>
+    /// A base class to simplify reading data from structured, file-based data sources.
+    /// </summary>
     public abstract class StructuredFileDataSource : IDataSource
     {
         // This implementation assumes the following:
@@ -49,6 +46,9 @@ namespace Nexus.Extensibility
 
         #region Properties
 
+        /// <summary>
+        /// Gets the root path of the database.
+        /// </summary>
         protected string Root { get; private set; } = null!;
 
         private DataSourceContext Context { get; set; } = null!;
@@ -59,14 +59,31 @@ namespace Nexus.Extensibility
 
         #region Protected API as seen by subclass
 
+        /// <summary>
+        /// Invoked by Nexus right after construction to provide the context.
+        /// </summary>
+        /// <param name="context">The <paramref name="context"/>.</param>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
+        /// <returns>The task.</returns>
         protected abstract Task
             SetContextAsync(DataSourceContext context, CancellationToken cancellationToken);
 
+        /// <summary>
+        /// Gets the file source provider that in turn provides information about the file structure within the database.
+        /// </summary>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
+        /// <returns>The task.</returns>
         protected abstract Task<FileSourceProvider>
             GetFileSourceProviderAsync(CancellationToken cancellationToken);
 
-        protected abstract Task<string[]>
-           GetCatalogIdsAsync(CancellationToken cancellationToken);
+        /// <summary>
+        /// Gets the catalog registrations that are located under <paramref name="path"/>.
+        /// </summary>
+        /// <param name="path">The parent path for which to return catalog registrations.</param>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
+        /// <returns>The catalog identifiers task.</returns>
+        protected abstract Task<CatalogRegistration[]>
+           GetCatalogRegistrationsAsync(string path, CancellationToken cancellationToken);
 
         // GetCatalogAsync:
         // It is not uncommon to have measurement data files with varying channel list over
@@ -76,9 +93,21 @@ namespace Nexus.Extensibility
         // file version, e.g. [".../fileV1.dat", ".../fileV2.dat" ] or
         // [".../2020-01-01.dat", ".../2020-06-01.dat" ].
 
+        /// <summary>
+        /// Gets the requested <see cref="ResourceCatalog"/>.
+        /// </summary>
+        /// <param name="catalogId">The catalog identifier.</param>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
+        /// <returns>The catalog request task.</returns>
         protected abstract Task<ResourceCatalog>
             GetCatalogAsync(string catalogId, CancellationToken cancellationToken);
 
+        /// <summary>
+        /// Gets the time range of the <see cref="ResourceCatalog"/>.
+        /// </summary>
+        /// <param name="catalogId">The catalog identifier.</param>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
+        /// <returns>The time range task.</returns>
         protected virtual Task<(DateTime Begin, DateTime End)> 
             GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
         {
@@ -87,18 +116,18 @@ namespace Nexus.Extensibility
                 var minDateTime = DateTime.MaxValue;
                 var maxDateTime = DateTime.MinValue;
 
-                if (Directory.Exists(this.Root))
+                if (Directory.Exists(Root))
                 {
-                    foreach (var fileSource in this.FileSourceProvider.All[catalogId])
+                    foreach (var fileSource in FileSourceProvider.All[catalogId])
                     {
                         cancellationToken.ThrowIfCancellationRequested();
 
-                        using var scope = this.Context.Logger.BeginScope(fileSource);
-                        this.Context.Logger.LogDebug("Analyzing file source");
+                        using var scope = Context.Logger.BeginScope(fileSource);
+                        Context.Logger.LogDebug("Analyzing file source");
 
                         // first
                         var firstDateTime = StructuredFileDataSource
-                            .GetCandidateFiles(this.Root, DateTime.MinValue, DateTime.MinValue, fileSource, cancellationToken)
+                            .GetCandidateFiles(Root, DateTime.MinValue, DateTime.MinValue, fileSource, cancellationToken)
                             .Select(file => file.DateTime)
                             .OrderBy(current => current)
                             .FirstOrDefault();
@@ -106,14 +135,14 @@ namespace Nexus.Extensibility
                         if (firstDateTime == default)
                             firstDateTime = DateTime.MaxValue;
 
-                        firstDateTime = this.AdjustToUtc(firstDateTime, fileSource.UtcOffset);
+                        firstDateTime = AdjustToUtc(firstDateTime, fileSource.UtcOffset);
 
                         if (firstDateTime < minDateTime)
                             minDateTime = firstDateTime;
 
                         // last
                         var lastDateTime = StructuredFileDataSource
-                            .GetCandidateFiles(this.Root, DateTime.MaxValue, DateTime.MaxValue, fileSource, cancellationToken)
+                            .GetCandidateFiles(Root, DateTime.MaxValue, DateTime.MaxValue, fileSource, cancellationToken)
                             .Select(file => file.DateTime)
                             .OrderByDescending(current => current)
                             .FirstOrDefault();
@@ -121,47 +150,55 @@ namespace Nexus.Extensibility
                         if (lastDateTime == default)
                             lastDateTime = DateTime.MinValue;
 
-                        lastDateTime = this.AdjustToUtc(lastDateTime, fileSource.UtcOffset);
+                        lastDateTime = AdjustToUtc(lastDateTime, fileSource.UtcOffset);
                         lastDateTime = lastDateTime.Add(fileSource.FilePeriod);
 
                         if (lastDateTime > maxDateTime)
                             maxDateTime = lastDateTime;
 
-                        this.Context.Logger.LogDebug("Analyzing file source resulted in begin = {FirstDateTime} and end = {LastDateTime}", firstDateTime, lastDateTime);
+                        Context.Logger.LogDebug("Analyzing file source resulted in begin = {FirstDateTime} and end = {LastDateTime}", firstDateTime, lastDateTime);
                     }
                 }
                 else
                 {
-                    this.Context.Logger.LogDebug("Folder {Root} does not exist, return default time range", this.Root);
+                    Context.Logger.LogDebug("Folder {Root} does not exist, return default time range", Root);
                 }
 
                 return (minDateTime, maxDateTime);
             });
         }
 
+        /// <summary>
+        /// Gets the availability of the <see cref="ResourceCatalog"/>.
+        /// </summary>
+        /// <param name="catalogId">The catalog identifier</param>
+        /// <param name="begin">The begin of the availability period..</param>
+        /// <param name="end">The end of the availability period.</param>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
+        /// <returns>The availability task.</returns>
         protected virtual Task<double>
             GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
             if (begin >= end)
                 throw new ArgumentException("The start time must be before the end time.");
 
-            this.EnsureUtc(begin);
-            this.EnsureUtc(end);
+            EnsureUtc(begin);
+            EnsureUtc(end);
 
             // no true async file enumeration available: https://github.com/dotnet/runtime/issues/809
             return Task.Run(async () =>
             {
                 double availability;
 
-                if (Directory.Exists(this.Root))
+                if (Directory.Exists(Root))
                 {
                     var summedAvailability = 0.0;
-                    var fileSources = this.FileSourceProvider.All[catalogId];
+                    var fileSources = FileSourceProvider.All[catalogId];
 
                     foreach (var fileSource in fileSources)
                     {
-                        using var scope = this.Context.Logger.BeginScope(fileSource);
-                        this.Context.Logger.LogDebug("Analyzing file source");
+                        using var scope = Context.Logger.BeginScope(fileSource);
+                        Context.Logger.LogDebug("Analyzing file source");
 
                         cancellationToken.ThrowIfCancellationRequested();
 
@@ -169,7 +206,7 @@ namespace Nexus.Extensibility
                         var localEnd = end.Add(fileSource.UtcOffset);
 
                         var candidateFiles = StructuredFileDataSource
-                            .GetCandidateFiles(this.Root, localBegin, localEnd, fileSource, cancellationToken);
+                            .GetCandidateFiles(Root, localBegin, localEnd, fileSource, cancellationToken);
 
                         var files = candidateFiles
                             .Where(current => localBegin <= current.DateTime && current.DateTime < localEnd)
@@ -177,10 +214,10 @@ namespace Nexus.Extensibility
 
                         var availabilityTasks = files.Select(file =>
                         {
-                            var availabilityTask = this.GetFileAvailabilityAsync(file.FilePath, cancellationToken);
+                            var availabilityTask = GetFileAvailabilityAsync(file.FilePath, cancellationToken);
 
                             _ = availabilityTask.ContinueWith(
-                                x => this.Context.Logger.LogDebug(availabilityTask.Exception, "Could not process file {FilePath}", file.FilePath),
+                                x => Context.Logger.LogDebug(availabilityTask.Exception, "Could not process file {FilePath}", file.FilePath),
                                 TaskContinuationOptions.OnlyOnFaulted
                             );
 
@@ -199,26 +236,42 @@ namespace Nexus.Extensibility
                 else
                 {
                     availability = 0.0;
-                    this.Context.Logger.LogDebug("Folder {Root} does not exist, return default availabilit.", this.Root);
+                    Context.Logger.LogDebug("Folder {Root} does not exist, return default availabilit.", Root);
                 }
 
                 return availability;
             });
         }
 
+        /// <summary>
+        /// Returns the availability within a file.
+        /// </summary>
+        /// <param name="filePath">The file path.</param>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
+        /// <returns>the availability within a file.</returns>
         protected virtual Task<double> 
             GetFileAvailabilityAsync(string filePath, CancellationToken cancellationToken)
         {
             return Task.FromResult(1.0);
         }
 
+        /// <summary>
+        /// Reads a dataset.
+        /// </summary>
+        /// <param name="catalogItem">The catalog item to read.</param>
+        /// <param name="begin">The beginning of the period to read.</param>
+        /// <param name="end">The end of the period to read.</param>
+        /// <param name="data">The data buffer.</param>
+        /// <param name="status">The status buffer.</param>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
+        /// <returns>The task.</returns>
         protected virtual async Task 
             ReadSingleAsync(CatalogItem catalogItem, DateTime begin, DateTime end, Memory<byte> data, Memory<byte> status, CancellationToken cancellationToken)
         {
             var representation = catalogItem.Representation;
             var catalog = catalogItem.Catalog;
             var samplePeriod = representation.SamplePeriod;
-            var fileSource = this.FileSourceProvider.Single(catalogItem);
+            var fileSource = FileSourceProvider.Single(catalogItem);
             var fileLength = fileSource.FilePeriod.Ticks / samplePeriod.Ticks;
 
             var bufferOffset = 0;
@@ -232,7 +285,7 @@ namespace Nexus.Extensibility
                 cancellationToken.ThrowIfCancellationRequested();
 
                 // get file path and begin
-                (var filePaths, var fileBegin) = await this.FindFilePathsAsync(currentBegin, fileSource);
+                (var filePaths, var fileBegin) = await FindFilePathsAsync(currentBegin, fileSource);
 
                 // determine file begin if not yet done using the first file name returned
                 if (fileBegin == default)
@@ -262,7 +315,7 @@ namespace Nexus.Extensibility
                     var remainingFilePeriod = fileSource.FilePeriod - consumedFilePeriod;
 
                     currentPeriod = TimeSpan.FromTicks(Math.Min(remainingFilePeriod.Ticks, remainingPeriod.Ticks));
-                    this.Context.Logger.LogDebug("Process period {CurrentBegin} to {CurrentEnd}", currentBegin, currentBegin + currentPeriod);
+                    Context.Logger.LogTrace("Process period {CurrentBegin} to {CurrentEnd}", currentBegin, currentBegin + currentPeriod);
 
                     fileBlock = (int)(currentPeriod.Ticks / samplePeriod.Ticks);
 
@@ -272,7 +325,7 @@ namespace Nexus.Extensibility
                     {
                         if (File.Exists(filePath))
                         {
-                            this.Context.Logger.LogTrace("Process file {FilePath}", filePath);
+                            Context.Logger.LogTrace("Process file {FilePath}", filePath);
 
                             try
                             {
@@ -298,19 +351,19 @@ namespace Nexus.Extensibility
                             }
                             catch (Exception ex)
                             {
-                                this.Context.Logger.LogDebug(ex, "Could not process file {FilePath}", filePath);
+                                Context.Logger.LogDebug(ex, "Could not process file {FilePath}", filePath);
                             }
                         }
                         else
                         {
-                            this.Context.Logger.LogDebug("File {FilePath} does not exist", filePath);
+                            Context.Logger.LogDebug("File {FilePath} does not exist", filePath);
                         }
                     }
                 }
                 /* there was an incomplete file, skip the incomplete part */
                 else if (CB_PLUS_FP <= fileBegin && fileBegin < end)
                 {
-                    this.Context.Logger.LogDebug("Skipping period {FileBegin} to {CurrentBegin}", fileBegin, currentBegin);
+                    Context.Logger.LogDebug("Skipping period {FileBegin} to {CurrentBegin}", fileBegin, currentBegin);
                     currentPeriod = fileBegin - currentBegin;
                     fileBlock = (int)(currentPeriod.Ticks / samplePeriod.Ticks);
                 }
@@ -327,9 +380,22 @@ namespace Nexus.Extensibility
             }
         }
 
+        /// <summary>
+        /// Reads a dataset from the provided file.
+        /// </summary>
+        /// <param name="info">The read information.</param>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
+        /// <returns>The task.</returns>
         protected abstract Task
             ReadSingleAsync(ReadInfo info, CancellationToken cancellationToken);
 
+        /// <summary>
+        /// Finds files given the date/time and the <see cref="FileSource"/>.
+        /// </summary>
+        /// <param name="begin">The file begin.</param>
+        /// <param name="fileSource">The file source.</param>
+        /// <returns>A tuple of file names and date/times.</returns>
+        /// <exception cref="ArgumentException">Thrown when the begin value does not have its kind property set.</exception>
         protected virtual Task<(string[], DateTime)> 
             FindFilePathsAsync(DateTime begin, FileSource fileSource)
         {
@@ -356,7 +422,7 @@ namespace Nexus.Extensibility
                 .PathSegments
                 .Select(segment => localBegin.ToString(segment));
 
-            var folderNameArray = new List<string>() { this.Root }
+            var folderNameArray = new List<string>() { Root }
                 .Concat(folderNames)
                 .ToArray();
 
@@ -379,11 +445,17 @@ namespace Nexus.Extensibility
             return Task.FromResult((filePaths, fileBegin));
         }
 
+        /// <summary>
+        /// Tries to find the first file for a given <see cref="FileSource"/>. 
+        /// </summary>
+        /// <param name="fileSource">The file source for which to find the first file.</param>
+        /// <param name="filePath">The found file path.</param>
+        /// <returns>True when a file was found, false otherwise.</returns>
         protected bool TryGetFirstFile(FileSource fileSource, [NotNullWhen(true)] out string? filePath)
         {
             filePath = StructuredFileDataSource
                 .GetCandidateFiles(
-                    this.Root,
+                    Root,
                     DateTime.MinValue,
                     DateTime.MinValue,
                     fileSource,
@@ -401,35 +473,35 @@ namespace Nexus.Extensibility
         async Task 
             IDataSource.SetContextAsync(DataSourceContext context, CancellationToken cancellationToken)
         {
-            this.Root = context.ResourceLocator.ToPath();
-            this.Context = context;
+            Root = context.ResourceLocator.ToPath();
+            Context = context;
 
-            await this.SetContextAsync(context, cancellationToken);
-            this.FileSourceProvider = await this.GetFileSourceProviderAsync(cancellationToken);
+            await SetContextAsync(context, cancellationToken);
+            FileSourceProvider = await GetFileSourceProviderAsync(cancellationToken);
         }
 
-        Task<string[]>
-           IDataSource.GetCatalogIdsAsync(CancellationToken cancellationToken)
+        Task<CatalogRegistration[]>
+           IDataSource.GetCatalogRegistrationsAsync(string path, CancellationToken cancellationToken)
         {
-            return this.GetCatalogIdsAsync(cancellationToken);
+            return GetCatalogRegistrationsAsync(path, cancellationToken);
         }
 
         Task<ResourceCatalog> 
             IDataSource.GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
         {
-            return this.GetCatalogAsync(catalogId, cancellationToken);
+            return GetCatalogAsync(catalogId, cancellationToken);
         }
 
         Task<(DateTime Begin, DateTime End)> 
             IDataSource.GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
         {
-            return this.GetTimeRangeAsync(catalogId, cancellationToken);
+            return GetTimeRangeAsync(catalogId, cancellationToken);
         }
 
         Task<double> 
             IDataSource.GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
-            return this.GetAvailabilityAsync(catalogId, begin, end, cancellationToken);
+            return GetAvailabilityAsync(catalogId, begin, end, cancellationToken);
         }
 
         async Task
@@ -438,27 +510,27 @@ namespace Nexus.Extensibility
             if (begin >= end)
                 throw new ArgumentException("The start time must be before the end time.");
 
-            this.EnsureUtc(begin);
-            this.EnsureUtc(end);
+            EnsureUtc(begin);
+            EnsureUtc(end);
 
             var counter = 0.0;
 
             foreach (var (catalogItem, dataBuffer, statusBuffer) in requests)
             {
-                using var scope = this.Context.Logger.BeginScope(new Dictionary<string, object>()
+                using var scope = Context.Logger.BeginScope(new Dictionary<string, object>()
                 {
-                    ["ResourcePath"] = catalogItem.GetPath()
+                    ["ResourcePath"] = catalogItem.ToPath()
                 });
 
-                this.Context.Logger.LogDebug("Read catalog item");
+                Context.Logger.LogDebug("Read catalog item");
 
                 try
                 {
-                    await this.ReadSingleAsync(catalogItem, begin, end, dataBuffer, statusBuffer, cancellationToken);
+                    await ReadSingleAsync(catalogItem, begin, end, dataBuffer, statusBuffer, cancellationToken);
                 }
                 catch (Exception ex)
                 {
-                    this.Context.Logger.LogError(ex, "Could not read catalog item");
+                    Context.Logger.LogError(ex, "Could not read catalog item");
                 }
 
                 progress.Report(++counter / requests.Length);

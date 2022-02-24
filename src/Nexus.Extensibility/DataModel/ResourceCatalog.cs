@@ -1,12 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace Nexus.DataModel
 {
+    /// <summary>
+    /// A catalog is a top level element and holds a list of resources.
+    /// </summary>
     [DebuggerDisplay("{Id,nq}")]
     public record ResourceCatalog
     {
@@ -23,15 +23,22 @@ namespace Nexus.DataModel
 
         #region Constructors
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ResourceCatalog"/>.
+        /// </summary>
+        /// <param name="id">The catalog identifier.</param>
+        /// <param name="properties">The map of properties.</param>
+        /// <param name="resources">The list of representations.</param>
+        /// <exception cref="ArgumentException">Thrown when the resource identifier is not valid.</exception>
         public ResourceCatalog(string id, IReadOnlyDictionary<string, string>? properties = null, IReadOnlyList<Resource>? resources = null)
         {
             if (!_idValidator.IsMatch(id))
                 throw new ArgumentException($"The resource catalog identifier '{id}' is not valid.");
 
-            this.Id = id;
+            Id = id;
 
             if (resources is not null)
-                this.ValidateResources(resources);
+                ValidateResources(resources);
 
             _properties = properties;
             _resources = resources;
@@ -41,14 +48,23 @@ namespace Nexus.DataModel
 
         #region Properties
 
+        /// <summary>
+        /// Gets the identifier.
+        /// </summary>
         public string Id { get; init;  }
 
+        /// <summary>
+        /// Gets the map of properties.
+        /// </summary>
         public IReadOnlyDictionary<string, string>? Properties
         {
             get => _properties;
             init => _properties = value;
         }
 
+        /// <summary>
+        /// Gets the list of representations.
+        /// </summary>
         public IReadOnlyList<Resource>? Resources
         {
             get
@@ -59,7 +75,7 @@ namespace Nexus.DataModel
             init
             {
                 if (value is not null)
-                    this.ValidateResources(value);
+                    ValidateResources(value);
 
                 _resources = value;
             }
@@ -69,15 +85,21 @@ namespace Nexus.DataModel
 
         #region "Methods"
 
+        /// <summary>
+        /// Merges another catalog with this instance.
+        /// </summary>
+        /// <param name="catalog">The catalog to merge into this instance.</param>
+        /// <param name="mergeMode">The <paramref name="mergeMode"/>.</param>
+        /// <returns>The merged catalog.</returns>
         public ResourceCatalog Merge(ResourceCatalog catalog, MergeMode mergeMode)
         {
-            if (this.Id != catalog.Id)
+            if (Id != catalog.Id)
                 throw new ArgumentException("The catalogs to be merged have different identifiers.");
 
             var newProperties = catalog.Properties ?? _emptyProperties;
             var newResources = catalog.Resources ?? _emptyResources;
-            var thisProperties = this.Properties ?? _emptyProperties;
-            var thisResources = this.Resources ?? _emptyResources;
+            var thisProperties = Properties ?? _emptyProperties;
+            var thisResources = Resources ?? _emptyResources;
 
             // merge resources
             var mergedResources = thisResources
@@ -158,15 +180,15 @@ namespace Nexus.DataModel
         {
             catalogItem = null;
 
-            var pathParts = resourcePath.Split("/");
-            var catalogId = string.Join('/', pathParts.Take(pathParts.Length - 2));
-            var resourceId = pathParts[4];
-            var representationId = pathParts[5];
+            var pathParts = resourcePath.Split('/');
+            var catalogId = string.Join('/', pathParts[..^2]);
+            var resourceId = pathParts[^2];
+            var representationId = pathParts[^1];
 
-            if (catalogId != this.Id)
+            if (catalogId != Id)
                 return false;
 
-            var resource = this.Resources?.FirstOrDefault(resource => resource.Id == resourceId);
+            var resource = Resources?.FirstOrDefault(resource => resource.Id == resourceId);
 
             if (resource is null)
                 return false;
@@ -182,7 +204,7 @@ namespace Nexus.DataModel
 
         internal CatalogItem Find(string resourcePath)
         {
-            if (!this.TryFind(resourcePath, out var catalogItem))
+            if (!TryFind(resourcePath, out var catalogItem))
                 throw new Exception($"The resource path '{resourcePath}' could not be found.");
 
             return catalogItem;

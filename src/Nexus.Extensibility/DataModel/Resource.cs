@@ -1,11 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
+﻿using System.Diagnostics;
 using System.Text.RegularExpressions;
 
 namespace Nexus.DataModel
 {
+    /// <summary>
+    /// A resource is part of a resource catalog and holds a list of representations.
+    /// </summary>
     [DebuggerDisplay("{Id,nq}")]
     public record Resource
     {
@@ -22,17 +22,24 @@ namespace Nexus.DataModel
 
         #region Constructors
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Resource"/>.
+        /// </summary>
+        /// <param name="id">The resource identifier.</param>
+        /// <param name="properties">The map of properties.</param>
+        /// <param name="representations">The list of representations.</param>
+        /// <exception cref="ArgumentException">Thrown when the resource identifier is not valid.</exception>
         public Resource(string id, IReadOnlyDictionary<string, string>? properties = null, IReadOnlyList<Representation>? representations = null)
         {
             if (!_idValidator.IsMatch(id))
                 throw new ArgumentException($"The resource identifier '{id}' is not valid.");
 
-            this.Id = id;
+            Id = id;
 
             _properties = properties;
 
             if (representations is not null)
-                this.ValidateRepresentations(representations);
+                ValidateRepresentations(representations);
 
             _representations = representations;
         }
@@ -41,14 +48,23 @@ namespace Nexus.DataModel
 
         #region Properties
 
+        /// <summary>
+        /// Gets the identifier.
+        /// </summary>
         public string Id { get; }
 
+        /// <summary>
+        /// Gets the map of properties.
+        /// </summary>
         public IReadOnlyDictionary<string, string>? Properties
         {
             get => _properties;
             init => _properties = value;
         }
 
+        /// <summary>
+        /// Gets the list of representations.
+        /// </summary>
         public IReadOnlyList<Representation>? Representations
         {
             get
@@ -59,25 +75,25 @@ namespace Nexus.DataModel
             init
             {
                 if (value is not null)
-                    this.ValidateRepresentations(value);
+                    ValidateRepresentations(value);
 
                 _representations = value;
             }
         }
 
         #endregion
-
+        
         #region "Methods"
 
         internal Resource Merge(Resource resource, MergeMode mergeMode)
         {
-            if (this.Id != resource.Id)
+            if (Id != resource.Id)
                 throw new ArgumentException("The resources to be merged have different identifiers.");
 
             var newProperties = resource.Properties ?? _emptyProperties;
             var newRepresentations = resource.Representations ?? _emptyRepresentations;
-            var thisProperties = this.Properties ?? _emptyProperties;
-            var thisRepresentations = this.Representations ?? _emptyRepresentations;
+            var thisProperties = Properties ?? _emptyProperties;
+            var thisRepresentations = Representations ?? _emptyRepresentations;
 
             // merge representations
             var mergedRepresentations = thisRepresentations
@@ -169,13 +185,13 @@ namespace Nexus.DataModel
         internal Resource DeepCopy()
         {
             return new Resource(
-                id: this.Id,
-                representations: this.Representations is null 
+                id: Id,
+                representations: Representations is null 
                     ? null
-                    : this.Representations.Select(representation => representation.DeepCopy()).ToList(),
-                properties: this.Properties is null
+                    : Representations.Select(representation => representation.DeepCopy()).ToList(),
+                properties: Properties is null
                     ? null
-                    : this.Properties.ToDictionary(entry => entry.Key, entry => entry.Value));
+                    : Properties.ToDictionary(entry => entry.Key, entry => entry.Value));
         }
 
         private void ValidateRepresentations(IReadOnlyList<Representation> representations)
@@ -186,6 +202,12 @@ namespace Nexus.DataModel
 
             if (uniqueIds.Count() != representations.Count)
                 throw new ArgumentException("There are multiple representations with the same identifier.");
+
+            if (representations.Count > 1)
+            {
+                if (representations.Where(representation => representation.IsPrimary).Count() != 1)
+                    throw new ArgumentException("When there is more than one representation part of the resource, one of these representations must be the primary one.");
+            }
         }
 
         #endregion
