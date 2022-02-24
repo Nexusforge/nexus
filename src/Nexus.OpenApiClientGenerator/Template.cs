@@ -185,12 +185,13 @@ public class {1}
             if (!response.IsSuccessStatusCode)
             {
                 var message = await response.Content.ReadAsStringAsync();
+                var statusCode = $"N00.{response.StatusCode}";
 
                 if (string.IsNullOrWhiteSpace(message))
-                    throw new NexusApiException($"The HTTP status code is {response.StatusCode}.");
+                    throw new {8}(statusCode, $"The HTTP request failed with status code {response.StatusCode}.");
 
                 else
-                    throw new NexusApiException($"The HTTP status code is {response.StatusCode}. The response message is: {message}");
+                    throw new {8}(statusCode, $"The HTTP request failed with status code {response.StatusCode}. The response message is: {message}");
             }
         }
 
@@ -213,7 +214,7 @@ public class {1}
                 var returnValue = await JsonSerializer.DeserializeAsync<T>(stream, _options);
 
                 if (returnValue is null)
-                    throw new NexusApiException("Response data could not be deserialized.");
+                    throw new {8}($"N01", "Response data could not be deserialized.");
 
                 return returnValue;
             }
@@ -292,10 +293,12 @@ public class {1}
 
 public class {8} : Exception
 {
-    public {8}(string message) : base(message)
+    public {8}(string statusCode, string message) : base(message)
     {
-        //
+        StatusCode = statusCode;
     }
+
+    public string StatusCode { get; }
 }
 
 internal class DisposableConfiguration : IDisposable

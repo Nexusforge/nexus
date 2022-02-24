@@ -97,7 +97,7 @@ namespace Microsoft.Extensions.DependencyInjection
                                 ?? throw new Exception("The name claim is required.");
 
                             var userContext = context.HttpContext.RequestServices.GetRequiredService<UserDbContext>();
-                            var uniqueUserId = $"{userId}@{context.Scheme.Name}";
+                            var uniqueUserId = $"{Uri.EscapeDataString(userId)}@{Uri.EscapeDataString(context.Scheme.Name)}";
 
                             // user
                             var user = await userContext.Users

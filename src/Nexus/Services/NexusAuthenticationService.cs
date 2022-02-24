@@ -16,12 +16,13 @@ namespace Nexus.Services
             NexusUser user);
 
         Task<TokenPair> RefreshTokenAsync(
-            NexusUser user,
-            string refreshTokenString);
+            RefreshToken token);
 
         Task RevokeTokenAsync(
-            NexusUser user,
-            string refreshTokenString);
+            RefreshToken token);
+
+        Task RevokeDescendantTokensAsync(
+            RefreshToken token);
     }
 
     internal class NexusAuthenticationService : INexusAuthenticationService
@@ -42,7 +43,7 @@ namespace Nexus.Services
         {
             _dbService = dbService;
             _securityOptions = securityOptions.Value;
-
+            
             var key = Convert.FromBase64String(_securityOptions.Base64JwtSigningKey);
             _signingCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature);
         }
@@ -55,33 +56,13 @@ namespace Nexus.Services
             NexusUser user)
         {
             // generate token pair
-            var (accessToken, refreshToken) = this.InternalGenerateTokenPair(user);
+            var newRefreshToken = GenerateRefreshToken(user.Id);
+            var newAccessToken = GenerateAccessToken(user.Id, user.Claims.Select(entry => entry.Value));
 
-            // add refresh token
-            user.RefreshTokens.Add(refreshToken);
-
-            // clear expired tokens
-            this.ClearExpiredTokens(user.RefreshTokens);
-
-            // save changes
-            await _dbService.UpdateUserAsync(user);
-
-            return new TokenPair(accessToken, refreshToken.Token);
-        }
-
-        public async Task<TokenPair> RefreshTokenAsync(NexusUser user, string refreshTokenString)
-        {
-            // generate new token pair
-            var (newAccessToken, newRefreshToken) = this.InternalGenerateTokenPair(user);
-
-            // delete redeemed refresh token
-            user.RefreshTokens.RemoveAll(current => current.Token == refreshTokenString);
-
-            // add refresh token
             user.RefreshTokens.Add(newRefreshToken);
 
-            // clear expired tokens
-            this.ClearExpiredTokens(user.RefreshTokens);
+            // clear old tokens
+            ClearOldTokens(user);
 
             // save changes
             await _dbService.UpdateUserAsync(user);
@@ -89,37 +70,53 @@ namespace Nexus.Services
             return new TokenPair(newAccessToken, newRefreshToken.Token);
         }
 
-        public async Task RevokeTokenAsync(NexusUser user, string refreshTokenString)
+        public async Task<TokenPair> RefreshTokenAsync(RefreshToken token)
         {
-            // remove token
-            var count = user.RefreshTokens.Count;
-            user.RefreshTokens.RemoveAll(current => current.Token == refreshTokenString);
+            var user = token.Owner;
 
-            // clear expired tokens
-            this.ClearExpiredTokens(user.RefreshTokens);
+            // rotate token
+            var newRefreshToken = RotateToken(token);
+            user.RefreshTokens.Add(newRefreshToken);
+
+            // clear old tokens
+            ClearOldTokens(token.Owner);
 
             // save changes
-            await _dbService.UpdateUserAsync(user);
+            await _dbService.UpdateUserAsync(token.Owner);
+
+            // access token
+            var newAccessToken = GenerateAccessToken(user.Id, user.Claims.Select(entry => entry.Value));
+
+            return new TokenPair(newAccessToken, newRefreshToken.Token);
+        }
+
+        public async Task RevokeTokenAsync(RefreshToken token)
+        {
+            // revoke token
+            InternalRevokeToken(token);
+
+            // clear old tokens
+            ClearOldTokens(token.Owner);
+
+            // save changes
+            await _dbService.UpdateUserAsync(token.Owner);
+        }
+
+        public async Task RevokeDescendantTokensAsync(RefreshToken token)
+        {
+            // revoke descendant tokens
+            InternalRevokeDescendantTokens(token);
+
+            // clear old tokens
+            ClearOldTokens(token.Owner);
+
+            // save changes
+            await _dbService.UpdateUserAsync(token.Owner);
         }
 
         #endregion
 
         #region Helper Methods
-
-        private void ClearExpiredTokens(List<RefreshToken> refreshTokens)
-        {
-            refreshTokens.RemoveAll(current => current.IsExpired);
-        }
-
-        private (string, RefreshToken) InternalGenerateTokenPair(NexusUser user)
-        {
-            // generate a token pair
-            var accessToken = this.GenerateAccessToken(user.Id, user.Claims.Select(entry => entry.Value));
-            var refreshToken = this.GenerateRefreshToken();
-
-            // return response
-            return (accessToken, refreshToken);
-        }
 
         private string GenerateAccessToken(string userId, IEnumerable<NexusClaim> claims)
         {
@@ -130,7 +127,7 @@ namespace Nexus.Services
                     new Claim(ClaimTypes.Name, userId)
                 }.Concat(claims.Select(claim => new Claim(claim.Type, claim.Value)))),
                 NotBefore = DateTime.UtcNow,
-                Expires = DateTime.UtcNow.Add(_securityOptions.AccessTokenLifeTime),
+                Expires = DateTime.UtcNow.Add(_securityOptions.AccessTokenLifetime),
                 SigningCredentials = _signingCredentials
             };
 
@@ -140,13 +137,52 @@ namespace Nexus.Services
             return token;
         }
 
-        private RefreshToken GenerateRefreshToken()
+        private RefreshToken GenerateRefreshToken(string userId)
         {
             var randomBytes = RandomNumberGenerator.GetBytes(64);
-            var token = Convert.ToBase64String(randomBytes);
-            var expires = DateTime.UtcNow.Add(_securityOptions.RefreshTokenLifeTime);
+            var token = $"{Uri.EscapeDataString(userId)}@{Convert.ToBase64String(randomBytes)}";
+            var expires = DateTime.UtcNow.Add(_securityOptions.RefreshTokenLifetime);
 
             return new RefreshToken(token, expires);
+        }
+
+        private RefreshToken RotateToken(RefreshToken refreshToken)
+        {
+            var newRefreshToken = GenerateRefreshToken(refreshToken.Owner.Id);
+            InternalRevokeToken(refreshToken, newRefreshToken.Token);
+
+            return newRefreshToken;
+        }
+
+        private void ClearOldTokens(NexusUser user)
+        {
+            user.RefreshTokens.RemoveAll(x =>
+                !x.IsActive &&
+                x.Created.Add(_securityOptions.TokenAbuseDetectionPeriod) <= DateTime.UtcNow);
+        }
+
+        private void InternalRevokeToken(RefreshToken token, string? replacedByToken = default)
+        {
+            token.Revoked = DateTime.UtcNow;
+            token.ReplacedByToken = replacedByToken;
+        }
+
+        public void InternalRevokeDescendantTokens(RefreshToken token)
+        {
+            if (!string.IsNullOrEmpty(token.ReplacedByToken))
+            {
+                var descendantToken = token.Owner.RefreshTokens
+                    .FirstOrDefault(current => current.Token == token.ReplacedByToken);
+
+                if (descendantToken is not null)
+                {
+                    if (descendantToken.IsActive)
+                        InternalRevokeToken(descendantToken);
+
+                    else
+                        InternalRevokeDescendantTokens(descendantToken);
+                }
+            }
         }
 
         #endregion

@@ -41,6 +41,7 @@ namespace Nexus.Controllers
         private IDBService _dbService;
         private INexusAuthenticationService _authService;
         private SecurityOptions _securityOptions;
+        private ILogger<UsersController> _logger;
 
         #endregion
 
@@ -49,11 +50,13 @@ namespace Nexus.Controllers
         public UsersController(
             IDBService dBService,
             INexusAuthenticationService authService,
-            IOptions<SecurityOptions> securityOptions)
+            IOptions<SecurityOptions> securityOptions,
+            ILogger<NexusAuthenticationService> logger)
         {
             _dbService = dBService;
             _authService = authService;
             _securityOptions = securityOptions.Value;
+            _logger = logger;
         }
 
         #endregion
@@ -122,25 +125,26 @@ namespace Nexus.Controllers
         [HttpPost("refresh-token")]
         public async Task<ActionResult<TokenPair>> RefreshTokenAsync(RefreshTokenRequest request)
         {
-            // get user
-            var user = await _dbService.FindByTokenAsync(request.RefreshToken);
-
-            if (user is null)
-                return NotFound("Token not found.");
-
             // get token
-            var refreshToken = user.RefreshTokens.FirstOrDefault(current => current.Token == request.RefreshToken);
+            var token = await _dbService.FindTokenAsync(request.RefreshToken);
 
-            if (refreshToken is null)
+            if (token is null)
                 return NotFound("Token not found.");
 
             // check token
-            if (refreshToken.IsExpired)
-                return UnprocessableEntity("The refresh token has expired.");
+            if (token.IsRevoked)
+            {
+                _logger.LogWarning($"Attempted reuse of revoked token of user {token.Owner.Name}.");
+                _authService.RevokeDescendantTokens(token, user, ipAddress, $"Attempted reuse of revoked ancestor token: {token}");
+            }
+
+            if (!token.IsActive)
+                return UnprocessableEntity("Invalid token.");
+#error
 
             // refresh token
             var tokenPair = await _authService
-                .RefreshTokenAsync(user, refreshToken.Token);
+                .RefreshTokenAsync(token);
 
             return tokenPair;
         }
@@ -153,14 +157,17 @@ namespace Nexus.Controllers
         [HttpPost("revoke-token")]
         public async Task<ActionResult> RevokeTokenAsync(RevokeTokenRequest request)
         {
-            // get user
-            var user = await _dbService.FindByTokenAsync(request.Token);
+            // get token
+            var token = await _dbService.FindTokenAsync(request.Token);
 
-            if (user is null)
+            if (token is null)
                 return NotFound("Token not found.");
 
+            if (!token.IsActive)
+                return UnprocessableEntity("The token is inactive.");
+
             await _authService
-                .RefreshTokenAsync(user, request.Token);
+                .RevokeTokenAsync(token);
 
             return Ok();
         }
@@ -176,7 +183,7 @@ namespace Nexus.Controllers
         public async Task<ActionResult<NexusUser>> GetMeAsync()
         {
             var userId = User.FindFirst(Claims.Subject)!.Value;          
-            var user = await _dbService.FindByIdAsync(userId);
+            var user = await _dbService.FindUserAsync(userId);
 
             if (user is null)
                 return NotFound($"Could not find user {userId}.");
@@ -191,7 +198,7 @@ namespace Nexus.Controllers
         public async Task<ActionResult<TokenPair>> GenerateTokensAsync()
         {
             var userId = User.FindFirst(Claims.Subject)!.Value;
-            var user = await _dbService.FindByIdAsync(userId);
+            var user = await _dbService.FindUserAsync(userId);
 
             if (user is null)
                 return NotFound($"Could not find user {userId}.");
@@ -234,7 +241,7 @@ namespace Nexus.Controllers
         {
 #warning Is this thread safe? Maybe yes, because of scoped EF context.
 
-            var user = await _dbService.FindByIdAsync(userId);
+            var user = await _dbService.FindUserAsync(userId);
 
             if (user is null)
                 return NotFound($"Could not find user {userId}.");
@@ -263,7 +270,7 @@ namespace Nexus.Controllers
         {
 #warning Is this thread safe? Maybe yes, because of scoped EF context.
 
-            var user = await _dbService.FindByIdAsync(userId);
+            var user = await _dbService.FindUserAsync(userId);
 
             if (user is null)
                 return NotFound($"Could not find user {userId}.");

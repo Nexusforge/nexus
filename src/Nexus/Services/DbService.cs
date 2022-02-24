@@ -6,8 +6,8 @@ namespace Nexus.Services
     internal interface IDBService
     {
         IQueryable<NexusUser> GetUsers();
-        Task<NexusUser?> FindByIdAsync(string userId);
-        Task<NexusUser?> FindByTokenAsync(string token);
+        Task<NexusUser?> FindUserAsync(string userId);
+        Task<RefreshToken?> FindTokenAsync(string token);
         Task UpdateUserAsync(NexusUser user);
     }
 
@@ -27,18 +27,31 @@ namespace Nexus.Services
                 .Include(user => user.RefreshTokens);
         }
 
-        public Task<NexusUser?> FindByIdAsync(string userId)
+        public Task<NexusUser?> FindUserAsync(string userId)
         {
             return _context.Users
                 .Include(user => user.RefreshTokens)
                 .FirstOrDefaultAsync(user => user.Id == userId);
         }
 
-        public Task<NexusUser?> FindByTokenAsync(string token)
+        public async Task<RefreshToken?> FindTokenAsync(string token)
         {
-            return _context.Users
-                .Include(user => user.RefreshTokens)
-                .FirstOrDefaultAsync(user => user.RefreshTokens.Any(current => current.Token == token));
+            var userId = Uri.UnescapeDataString(token.Split('@')[0]);
+
+            var user = await _context.Users
+               .Where(user => user.Id == userId)
+               .Include(user => user.RefreshTokens)
+               .FirstOrDefaultAsync();
+
+            if (user is not null)
+            {
+                var refreshToken = user.RefreshTokens
+                    .FirstOrDefault(current => current.Token == token);
+
+                return refreshToken;
+            }
+
+            return default;
         }
 
         public Task UpdateUserAsync(NexusUser user)

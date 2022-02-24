@@ -41,9 +41,29 @@ namespace Nexus.Core
         public DateTime Expires { get; init; }
 
         /// <summary>
+        /// Gets or sets the date/time when the token was revoked.
+        /// </summary>
+        public DateTime? Revoked { get; set; }
+
+        /// <summary>
+        /// Gets the token that replaced this one.
+        /// </summary>
+        public string? ReplacedByToken { get; set; }
+
+        /// <summary>
         /// Gets a value that indicates if the token has expired.
         /// </summary>
         public bool IsExpired => DateTime.UtcNow >= Expires;
+
+        /// <summary>
+        /// Gets a value that indicates if the token has expired.
+        /// </summary>
+        public bool IsRevoked => Revoked != null;
+
+        /// <summary>
+        /// Gets a value that indicates if the token is active.
+        /// </summary>
+        public bool IsActive => !IsRevoked && !IsExpired;
 
         /// <summary>
         /// Gets or sets the owner of this token.

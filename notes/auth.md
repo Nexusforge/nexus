@@ -26,12 +26,27 @@ Using OAuth means that permissions are managed by the authorization server (in t
 - the cookie might become very large
 - the SPA cannot extract the username from the encrypted cookie, an additional API call is required
 
-## Other clients
-Non-browser clients could use the device code flow but that is not supported by Open ID Connect. Therefore, Nexus will offer an API for authenticated users to obtain an access and refresh token as a json file stream. This file should be stored somewhere where the non-browser application can access it. Nexus will add bearer authentication along with the cookie authentication middleware to support both scenarios.
+## Non-browser clients
+Clients without the ability to follow redirects and show a browser-based login screen could use the device code flow but that is not supported by Open ID Connect. Therefore, Nexus offers an API for authenticated users to obtain an access and refresh token as a json file stream. This file should be stored somewhere where the non-browser application can access it. Nexus adds bearer authentication along with the cookie authentication middleware to support both scenarios.
 
-## Security considerations
+## Why refresh tokens?
 
-- The audience should be provided in the OpenID Connect provider configuration to allow Nexus to validate the `aud` claim [RFC 7519](https://www.rfc-editor.org/rfc/rfc7519#section-4.1.3). This is an important security measure as described [here](https://www.keycloak.org/docs/11.0/server_admin/#_audience).
+Some web services like GitHub offer the possibility to create an API key with a limited or sometimes unlimited lifetime. These keys tend to be long-lived, which means they can be used for a very long time in case they have been stolen. In addition, the server must be able to manage them in a database and associate the API key with a user, which means frequent database access.
+
+A solution to this is a short-lived and asymmetrically signed access token that contains all information about the user. The token can be verified as long as the signing key is known. The validation process is an in-memory operation and does not require database access.
+
+An access token alone has the disadvantage that it cannot be revoked in the event of theft, since the token's signature is still valid. And now that the token is short-lived, there needs to be a mechanism to refresh it automatically.
+
+The solution is a refresh token that is issued along with the access token. The refresh token is long-lived and stored in a database. When the access token expires, the refresh token can be silently exchanged for a new access/refresh token pair. It differs from the API key in that the database needs to be consulted only when the access token expires, rather than every time the API is accessed.
+
+A refresh token is very powerful. Once an attacker gets their hands on that token, they can forever issue new access tokens. It is therefore advisable to limit the lifetime of the first and all subsequently issued refresh tokens to an absolute point in time in the future. After this time, the user has to authenticate again. 
+
+> [OAuth 2.0 for Browser-Based Apps](
+https://datatracker.ietf.org/doc/html/draft-ietf-oauth-browser-based-apps-08): _"[...] MUST NOT extend the lifetime of the new refresh token beyond the lifetime of the initial refresh token"_
+
+In order to detect a compromised token, it is recommended to implement token rotation, i.e. always issue new refresh tokens and invalidate the old ones. If an attacker or the user both use the refresh token, it will fail for one of them. In this case, Nexus can invalidate all tokens in the same token family (all refresh tokens descending from the original refresh token issued for the client) and thus force the user to re-authenticate. 
+
+> See also [Auth0](https://auth0.com/docs/secure/tokens/refresh-tokens/refresh-token-rotation#:~:text=Refresh%20token%20rotation%20is%20a,that%20goes%20beyond%20silent%20authentication.&text=Refresh%20tokens%20are%20often%20used,issue%20long%2Dlived%20access%20tokens.) for a concise explanation about refresh tokens.
 
 ## Implementation details
 
@@ -60,9 +75,9 @@ To solve the first issue, one might think that the ID token could be used instea
 
 In the end it's clear that while there is nice OpenID connection support for Blazor wasm SPA, this approach doesn't suit Nexus.
 
-## Other findings (informative):
+## Other findings (informative)
 
-### Scopes:
+### Scopes / Audience:
 
 >_Scopes represent what a client application is allowed to do. They represent the scoped access [...] mentioned before. In IdentityServer, scopes are typically modeled as resources, which come in two flavors: identity and API._
 
@@ -70,9 +85,9 @@ In the end it's clear that while there is nice OpenID connection support for Bla
 
 >_An API resource allows you to model access to an entire protected resource, an API, with individual permissions levels (scopes) that a client application can request access to."_ [[Source](https://www.scottbrady91.com/identity-server/getting-started-with-identityserver-4)]
 
-When during an OAuth flow an API scope is requested, it will become part of the scope claim of the returned access token. Additionally, the audience claim will be set to the resource the scope belongs to. This is important to understand the audience validation.
+When during an OAuth flow an API scope is requested, it will become part of the scope claim of the returned access token. Additionally, the audience claim will be set to the resource the scope belongs to. This is important to understand the audience validation. This is an important security measure as described [here](https://www.keycloak.org/docs/11.0/server_admin/#_audience).
 
-When an API scope is requested during an OAuth flow, it becomes part of the `scope` claim of the returned access token. Also, the audience (`aud`) claim is set to the resource that the scope belongs to. This is important to understand audience validation. The audience value should identify the recipient of the access token, i.e. the resource server.
+When an API scope is requested during an OAuth flow, it becomes part of the `scope` claim of the returned access token. Also, the audience (`aud`) claim [[RFC 7519](https://www.rfc-editor.org/rfc/rfc7519#section-4.1.3)] is set to the resource that the scope belongs to. This is important to understand audience validation. The audience value should identify the recipient of the access token, i.e. the resource server.
 
 ### Bearer token validation:
 

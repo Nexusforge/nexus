@@ -94,13 +94,13 @@ namespace Nexus.Core
 
     internal partial record SecurityOptions() : NexusOptionsBase
     {
+        public const string Section = "Security";
         public const string DefaultKey = "WOE6/wiy6E4UQJefC03ffOsBnilijFOjhFUw1eUtzhD/8/YNR7auSUeH+5VcGfXU4pki7ZLCulmvNq8c03S96g==";
 
-        public const string Section = "Security";
-        public const string OicdSubSection = "Oidc";
         public string Base64JwtSigningKey { get; set; } = DefaultKey;
-        public TimeSpan AccessTokenLifeTime { get; set; }
-        public TimeSpan RefreshTokenLifeTime { get; set; }
+        public TimeSpan AccessTokenLifetime { get; set; }
+        public TimeSpan RefreshTokenLifetime { get; set; }
+        public TimeSpan TokenAbuseDetectionPeriod { get; set; }
         public List<OpenIdConnectProvider> OidcProviders { get; set; } = new();
     }
 }
