@@ -95,9 +95,9 @@ namespace Nexus.Core
     internal partial record SecurityOptions() : NexusOptionsBase
     {
         public const string Section = "Security";
-        public const string DefaultKey = "WOE6/wiy6E4UQJefC03ffOsBnilijFOjhFUw1eUtzhD/8/YNR7auSUeH+5VcGfXU4pki7ZLCulmvNq8c03S96g==";
+        public const string DefaultSigningKey = "WOE6/wiy6E4UQJefC03ffOsBnilijFOjhFUw1eUtzhD/8/YNR7auSUeH+5VcGfXU4pki7ZLCulmvNq8c03S96g==";
 
-        public string Base64JwtSigningKey { get; set; } = DefaultKey;
+        public string Base64JwtSigningKey { get; set; } = DefaultSigningKey;
         public TimeSpan AccessTokenLifetime { get; set; }
         public TimeSpan RefreshTokenLifetime { get; set; }
         public TimeSpan TokenAbuseDetectionPeriod { get; set; }

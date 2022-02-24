@@ -1,200 +1,79 @@
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Moq;
 using Nexus.Core;
 using Nexus.Services;
+using System.Collections.ObjectModel;
 using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using Xunit;
+using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Services
 {
     public class NexusAuthenticationServiceTests
     {
-        const string Base64JwtSigningKey = "/EaQ5vPn7YfXzA0Fz5PS3+mz11mYAbWeIWnETvobZHAqJQJDm3pKqxm/bVOJ1eOwcIK0w3+F6x6qZfI6rw6Lwg==";
+        private static IOptions<SecurityOptions> _securityOptions = Options.Create(new SecurityOptions()
+        {
+            AccessTokenLifetime = TimeSpan.FromHours(1),
+            RefreshTokenLifetime = TimeSpan.FromHours(1),
+            TokenAbuseDetectionPeriod = TimeSpan.FromHours(1)
+        });
+
+        private static TokenValidationParameters _validationParameters = new TokenValidationParameters()
+        {
+            NameClaimType = Claims.Name,
+            LifetimeValidator = (before, expires, token, parameters) => expires > DateTime.UtcNow,
+            ValidateAudience = false,
+            ValidateIssuer = false,
+            ValidateActor = false,
+            ValidateLifetime = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Convert.FromBase64String(SecurityOptions.DefaultSigningKey))
+        };
+
+        private NexusUser CreateUser(string name, params RefreshToken[] refreshTokens)
+        {
+            JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
+
+            return new NexusUser()
+            {
+                Id = Guid.NewGuid().ToString(),
+                Name = name,
+                Claims = new ReadOnlyDictionary<Guid, NexusClaim>(new Dictionary<Guid, NexusClaim>()),
+                RefreshTokens = refreshTokens.ToList()
+            };
+        }
 
         [Fact]
-        public async Task CanAuthenticate()
+        public async Task CanGenerateTokenPair()
         {
             // Arrange
             var expectedName = "foo";
-
-            var user = new NexusUser(
-                UserId: expectedName,
-                Claims: new List<Claim>(),
-                RefreshTokens: new List<RefreshToken>()
-            );
+            var user = CreateUser(expectedName);
 
             var dbService = Mock.Of<IDBService>();
 
-            Mock.Get(dbService)
-                .Setup(s => s.FindByIdAndSchemeAsync(
-                    It.IsAny<string>()))
-                .ReturnsAsync(user);
-
-            Mock.Get(dbService)
-               .Setup(s => s.CheckPasswordSignInAsync(
-                   It.IsAny<NexusUser>(),
-                   It.IsAny<string>(),
-                   It.IsAny<bool>()))
-               .ReturnsAsync(SignInResult.Success);
-
-            Mock.Get(dbService)
-                .Setup(s => s.GetClaimsAsync(
-                    It.IsAny<NexusUser>()))
-                .ReturnsAsync(new List<Claim>());
-
-            var service = new NexusAuthenticationService(
+            var authService = new NexusAuthenticationService(
                 dbService,
-                Options.Create(new IdentityOptions()),
-                Options.Create(new SecurityOptions() 
-                {
-                    Base64JwtSigningKey = Base64JwtSigningKey,
-                    AccessTokenLifeTime = TimeSpan.FromHours(1),
-                    RefreshTokenLifeTime = TimeSpan.FromHours(1)
-                }));
+                _securityOptions);
 
             var tokenHandler = new JwtSecurityTokenHandler();
 
-            var validationParameters = new TokenValidationParameters()
-            {
-                LifetimeValidator = (before, expires, token, parameters) => expires > DateTime.UtcNow,
-                ValidateAudience = false,
-                ValidateIssuer = false,
-                ValidateActor = false,
-                ValidateLifetime = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Convert.FromBase64String(Base64JwtSigningKey))
-            };
-
             // Act
-            var (accessToken, refreshToken, error) = await service.AuthenticateAsync("foo", "bar");
+            var tokenPair = await authService.GenerateTokenPairAsync(user);
 
             // Assert
-            Assert.NotNull(accessToken);
-            Assert.NotNull(refreshToken);
-            Assert.Null(error);
-
             Assert.Single(user.RefreshTokens);
-            Assert.Equal(refreshToken, user.RefreshTokens.First().Token);
+            Assert.Equal(tokenPair.RefreshToken, user.RefreshTokens.First().Token);
 
-            var principal = tokenHandler.ValidateToken(accessToken, validationParameters, out var _);
+            Assert.Equal(
+                user.RefreshTokens.First().Expires,
+                DateTime.UtcNow.Add(_securityOptions.Value.RefreshTokenLifetime),
+                TimeSpan.FromMinutes(1));
+
+            var principal = tokenHandler.ValidateToken(tokenPair.AccessToken, _validationParameters, out var _);
             var actualName = principal.Identity!.Name;
 
             Assert.Equal(expectedName, actualName);
-        }
-
-        [Fact]
-        public async Task AuthenticateErrorsForNotExistingUser()
-        {
-            // Arrange
-            var dbService = Mock.Of<IDBService>();
-
-            Mock.Get(dbService)
-                .Setup(s => s.FindByIdAndSchemeAsync(
-                    It.IsAny<string>()))
-                .ReturnsAsync(default(NexusUser));
-
-            Mock.Get(dbService)
-               .Setup(s => s.CheckPasswordSignInAsync(
-                   It.IsAny<NexusUser>(),
-                   It.IsAny<string>(),
-                   It.IsAny<bool>()))
-               .ReturnsAsync(SignInResult.Failed);
-
-            var service = new NexusAuthenticationService(
-                dbService,
-                Options.Create(new IdentityOptions()),
-                Options.Create(new SecurityOptions()));
-
-            // Act
-            var (accessToken, refreshToken, error) = await service.AuthenticateAsync("foo", "bar");
-
-            // Assert
-            Assert.Null(accessToken);
-            Assert.Null(refreshToken);
-
-            Assert.Equal("The user does not exist.", error);
-        }
-
-        [Fact]
-        public async Task AuthenticateErrorsForNonConfirmedEmailAddress()
-        {
-            // Arrange
-            var expectedName = "foo";
-
-            var user = new NexusUser(
-                UserId: expectedName,
-                Claims: new List<Claim>(),
-                RefreshTokens: new List<RefreshToken>()
-            );
-
-            var dbService = Mock.Of<IDBService>();
-
-            Mock.Get(dbService)
-                .Setup(s => s.FindByIdAndSchemeAsync(
-                    It.IsAny<string>()))
-                .ReturnsAsync(user);
-
-            Mock.Get(dbService)
-               .Setup(s => s.IsEmailConfirmedAsync(
-                   It.IsAny<NexusUser>()))
-               .ReturnsAsync(false);
-
-            var service = new NexusAuthenticationService(
-                dbService,
-                Options.Create(new IdentityOptions() { SignIn = new SignInOptions() { RequireConfirmedAccount = true } }),
-                Options.Create(new SecurityOptions()));
-
-            // Act
-            var (accessToken, refreshToken, error) = await service.AuthenticateAsync(expectedName, "bar");
-
-            // Assert
-            Assert.Null(accessToken);
-            Assert.Null(refreshToken);
-
-            Assert.Equal("The e-mail address is not confirmed.", error);
-        }
-
-        [Fact]
-        public async Task AuthenticateErrorsForFailedSignin()
-        {
-            // Arrange
-            var expectedName = "foo";
-
-            var user = new NexusUser(
-                UserId: expectedName,
-                Claims: new List<Claim>(),
-                RefreshTokens: new List<RefreshToken>()
-            );
-
-            var dbService = Mock.Of<IDBService>();
-
-            Mock.Get(dbService)
-                .Setup(s => s.FindByIdAndSchemeAsync(
-                    It.IsAny<string>()))
-                .ReturnsAsync(user);
-
-            Mock.Get(dbService)
-               .Setup(s => s.CheckPasswordSignInAsync(
-                   It.IsAny<NexusUser>(),
-                   It.IsAny<string>(),
-                   It.IsAny<bool>()))
-               .ReturnsAsync(SignInResult.Failed);
-
-            var service = new NexusAuthenticationService(
-                dbService, 
-                Options.Create(new IdentityOptions()),
-                Options.Create(new SecurityOptions()));
-
-            // Act
-            var (accessToken, refreshToken, error) = await service.AuthenticateAsync(expectedName, "bar");
-
-            // Assert
-            Assert.Null(accessToken);
-            Assert.Null(refreshToken);
-
-            Assert.Equal("Sign-in failed.", error);
         }
 
         [Fact]
@@ -203,130 +82,31 @@ namespace Services
             // Arrange
             var expectedName = "foo";
             var storedRefreshToken = new RefreshToken("123", DateTime.UtcNow.AddDays(1));
-
-            var user = new NexusUser(
-                UserId: expectedName,
-                Claims: new List<Claim>(),
-                RefreshTokens: new List<RefreshToken>() { storedRefreshToken }
-            );
+            var user = CreateUser(expectedName, storedRefreshToken);
+            storedRefreshToken.Owner = user;
 
             var dbService = Mock.Of<IDBService>();
 
-            Mock.Get(dbService)
-                .Setup(s => s.FindByTokenAsync(
-                    It.IsAny<string>()))
-                .ReturnsAsync(user);
-
-            Mock.Get(dbService)
-                .Setup(s => s.GetClaimsAsync(
-                    It.IsAny<NexusUser>()))
-                .ReturnsAsync(new List<Claim>());
-
             var service = new NexusAuthenticationService(
                 dbService,
-                Options.Create(new IdentityOptions()),
-                Options.Create(new SecurityOptions()
-                {
-                    Base64JwtSigningKey = Base64JwtSigningKey,
-                    AccessTokenLifeTime = TimeSpan.FromHours(1),
-                    RefreshTokenLifeTime = TimeSpan.FromHours(1)
-                }));
+                _securityOptions);
 
             var tokenHandler = new JwtSecurityTokenHandler();
 
-            var validationParameters = new TokenValidationParameters()
-            {
-                LifetimeValidator = (before, expires, token, parameters) => expires > DateTime.UtcNow,
-                ValidateAudience = false,
-                ValidateIssuer = false,
-                ValidateActor = false,
-                ValidateLifetime = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Convert.FromBase64String(Base64JwtSigningKey))
-            };
-
             // Act
-            var (accessToken, refreshToken, error) = await service.RefreshTokenAsync(storedRefreshToken.Token);
+            var tokenPair = await service.RefreshTokenAsync(storedRefreshToken);
 
             // Assert
-            Assert.NotNull(accessToken);
-            Assert.NotNull(refreshToken);
-            Assert.Null(error);
+            Assert.Equal(2, user.RefreshTokens.Count);
+            Assert.Equal(storedRefreshToken.Token, user.RefreshTokens[0].Token);
+            Assert.Equal(tokenPair.RefreshToken, user.RefreshTokens[1].Token);
+            Assert.Equal(user.RefreshTokens[0].ReplacedByToken, user.RefreshTokens[1].Token);
+            Assert.Equal(user.RefreshTokens[1].Expires, user.RefreshTokens[0].Expires);
 
-            Assert.Single(user.RefreshTokens);
-            Assert.Equal(refreshToken, user.RefreshTokens.First().Token);
-
-            var principal = tokenHandler.ValidateToken(accessToken, validationParameters, out var _);
+            var principal = tokenHandler.ValidateToken(tokenPair.AccessToken, _validationParameters, out var _);
             var actualName = principal.Identity!.Name;
 
             Assert.Equal(expectedName, actualName);
-        }
-
-        [Fact]
-        public async Task RefreshErrorsForTokenNotFound()
-        {
-            // Arrange
-            var storedRefreshToken = new RefreshToken("validToken", DateTime.UtcNow.AddDays(1));
-
-            var user = new NexusUser(
-                UserId: "foo",
-                Claims: new List<Claim>(),
-                RefreshTokens: new List<RefreshToken>() { storedRefreshToken }
-            );
-
-            var dbService = Mock.Of<IDBService>();
-
-            Mock.Get(dbService)
-                .Setup(s => s.FindByTokenAsync(
-                    It.IsAny<string>()))
-                .ReturnsAsync(user);
-
-            var service = new NexusAuthenticationService(
-                dbService,
-                Options.Create(new IdentityOptions()),
-                Options.Create(new SecurityOptions()));
-
-            // Act
-            var (accessToken, refreshToken, error) = await service.RefreshTokenAsync("invalidToken");
-
-            // Assert
-            Assert.Null(accessToken);
-            Assert.Null(refreshToken);
-
-            Assert.Equal("Token not found.", error);
-        }
-
-        [Fact]
-        public async Task RefreshErrorsForExpiredToken()
-        {
-            // Arrange
-            var storedRefreshToken = new RefreshToken("validToken", DateTime.UtcNow);
-
-            var user = new NexusUser(
-                UserId: "foo",
-                Claims: new List<Claim>(),
-                RefreshTokens: new List<RefreshToken>() { storedRefreshToken }
-            );
-
-            var dbService = Mock.Of<IDBService>();
-
-            Mock.Get(dbService)
-                .Setup(s => s.FindByTokenAsync(
-                    It.IsAny<string>()))
-                .ReturnsAsync(user);
-
-            var service = new NexusAuthenticationService(
-                dbService,
-                Options.Create(new IdentityOptions()),
-                Options.Create(new SecurityOptions()));
-
-            // Act
-            var (accessToken, refreshToken, error) = await service.RefreshTokenAsync(storedRefreshToken.Token);
-
-            // Assert
-            Assert.Null(accessToken);
-            Assert.Null(refreshToken);
-
-            Assert.Equal("The refresh token has expired.", error);
         }
 
         [Fact]
@@ -334,62 +114,77 @@ namespace Services
         {
             // Arrange
             var storedRefreshToken = new RefreshToken("123", DateTime.UtcNow.AddDays(1));
-
-            var user = new NexusUser(
-                UserId: "foo",
-                Claims: new List<Claim>(),
-                RefreshTokens: new List<RefreshToken>() { storedRefreshToken }
-            );
+            var user = CreateUser("foo", storedRefreshToken);
+            storedRefreshToken.Owner = user;
 
             var dbService = Mock.Of<IDBService>();
 
-            Mock.Get(dbService)
-                .Setup(s => s.FindByTokenAsync(
-                    It.IsAny<string>()))
-                .ReturnsAsync(user);
-
             var service = new NexusAuthenticationService(
                 dbService,
-                Options.Create(new IdentityOptions()),
-                Options.Create(new SecurityOptions()));
+                _securityOptions);
 
             // Act
-            var error = await service.RevokeTokenAsync(storedRefreshToken.Token);
+            await service.RevokeTokenAsync(storedRefreshToken);
 
             // Assert
-            Assert.Null(error);
-            Assert.Empty(user.RefreshTokens);
+            Assert.Single(user.RefreshTokens);
+            Assert.Equal(storedRefreshToken.Token, user.RefreshTokens.First().Token);
+            Assert.True(user.RefreshTokens.First().IsRevoked);
         }
 
         [Fact]
-        public async Task RevokeErrorsForTokenNotFound()
+        public async Task CanRevokeDescendants()
         {
             // Arrange
-            var expectedName = "foo";
+            var storedRefreshToken0 = new RefreshToken("123", DateTime.UtcNow.AddDays(1));
+            var storedRefreshToken1 = new RefreshToken("456", DateTime.UtcNow.AddDays(1));
+            var storedRefreshToken2 = new RefreshToken("789", DateTime.UtcNow.AddDays(1));
+            var storedRefreshToken3 = new RefreshToken("987", DateTime.UtcNow.AddDays(1));
 
-            var user = new NexusUser(
-                UserId: expectedName,
-                Claims: new List<Claim>(),
-                RefreshTokens: new List<RefreshToken>()
-            );
+            var user = CreateUser("foo", 
+                storedRefreshToken0, storedRefreshToken1, storedRefreshToken2, storedRefreshToken3);
+
+            storedRefreshToken0.Owner = user;
+
+            storedRefreshToken1.Owner = user;
+            storedRefreshToken1.Revoked = DateTime.UtcNow;
+            storedRefreshToken1.ReplacedByToken = storedRefreshToken2.Token;
+
+            storedRefreshToken2.Owner = user;
+            storedRefreshToken2.Revoked = DateTime.UtcNow;
+            storedRefreshToken2.ReplacedByToken = storedRefreshToken3.Token;
+
+            storedRefreshToken3.Owner = user;
 
             var dbService = Mock.Of<IDBService>();
 
-            Mock.Get(dbService)
-                .Setup(s => s.FindByTokenAsync(
-                    It.IsAny<string>()))
-                .ReturnsAsync(user);
-
             var service = new NexusAuthenticationService(
                 dbService,
-                Options.Create(new IdentityOptions()),
-                Options.Create(new SecurityOptions()));
+                _securityOptions);
 
             // Act
-            var error = await service.RevokeTokenAsync("token");
+            await service.RevokeDescendantTokensAsync(storedRefreshToken1);
 
             // Assert
-            Assert.Equal("Token not found.", error);
+            Assert.Equal(4, user.RefreshTokens.Count);
+            Assert.Equal(storedRefreshToken0.Token, user.RefreshTokens[0].Token);
+            Assert.Equal(storedRefreshToken1.Token, user.RefreshTokens[1].Token);
+            Assert.Equal(storedRefreshToken2.Token, user.RefreshTokens[2].Token);
+            Assert.Equal(storedRefreshToken3.Token, user.RefreshTokens[3].Token);
+
+            Assert.False(user.RefreshTokens[0].IsExpired);
+            Assert.False(user.RefreshTokens[0].IsRevoked);
+
+            Assert.False(user.RefreshTokens[1].IsExpired);
+            Assert.True(user.RefreshTokens[1].IsRevoked);
+            Assert.Equal(user.RefreshTokens[1].ReplacedByToken, user.RefreshTokens[2].Token);
+
+            Assert.False(user.RefreshTokens[2].IsExpired);
+            Assert.True(user.RefreshTokens[2].IsRevoked);
+            Assert.Equal(user.RefreshTokens[2].ReplacedByToken, user.RefreshTokens[3].Token);
+
+            Assert.False(user.RefreshTokens[3].IsExpired);
+            Assert.True(user.RefreshTokens[3].IsRevoked);
         }
 
         [Fact]
@@ -397,46 +192,32 @@ namespace Services
         {
             // Arrange
             var expectedName = "foo";
-            var expiredToken = new RefreshToken("123", DateTime.UtcNow);
+            var activeToken = new RefreshToken("123", DateTime.UtcNow.AddDays(1));
+            var expiredToken = new RefreshToken("456", DateTime.UtcNow);
+            var revokedToken = new RefreshToken("789", DateTime.UtcNow.AddDays(1));
+            var user = CreateUser(expectedName, activeToken, expiredToken, revokedToken);
 
-            var user = new NexusUser(
-                UserId: expectedName,
-                Claims: new List<Claim>(),
-                RefreshTokens: new List<RefreshToken>()
-            );
+            revokedToken.Revoked = DateTime.UtcNow;
 
             var dbService = Mock.Of<IDBService>();
 
-            Mock.Get(dbService)
-                .Setup(s => s.FindByIdAndSchemeAsync(
-                    It.IsAny<string>()))
-                .ReturnsAsync(user);
-
-            Mock.Get(dbService)
-               .Setup(s => s.CheckPasswordSignInAsync(
-                   It.IsAny<NexusUser>(),
-                   It.IsAny<string>(),
-                   It.IsAny<bool>()))
-               .ReturnsAsync(SignInResult.Success);
-
-            Mock.Get(dbService)
-                .Setup(s => s.GetClaimsAsync(
-                    It.IsAny<NexusUser>()))
-                .ReturnsAsync(new List<Claim>());
+            var securityOptions = _securityOptions.Value with
+            {
+                TokenAbuseDetectionPeriod = TimeSpan.Zero
+            };
 
             var service = new NexusAuthenticationService(
                 dbService,
-                Options.Create(new IdentityOptions()),
-                Options.Create(new SecurityOptions()
-                {
-                    RefreshTokenLifeTime = TimeSpan.FromHours(1)
-                }));
+                Options.Create(securityOptions));
 
             // Act
-            await service.AuthenticateAsync("foo", "bar");
+            await service.GenerateTokenPairAsync(user);
 
             // Assert
-            Assert.DoesNotContain(user.RefreshTokens, token => token == expiredToken);
+            Assert.Equal(2, user.RefreshTokens.Count);
+            Assert.Contains(user.RefreshTokens, token => token.Token == activeToken.Token);
+            Assert.DoesNotContain(user.RefreshTokens, token => token.Token == expiredToken.Token);
+            Assert.DoesNotContain(user.RefreshTokens, token => token.Token == revokedToken.Token);
         }
     }
 }

@@ -1,5 +1,5 @@
 ﻿{
-  "Smtp": {
-    "Port": "26"
+  "Server": {
+    "HttpPort": "26"
   }
 }

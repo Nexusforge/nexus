@@ -32,8 +32,6 @@ public class {1}
     private const string NexusConfigurationHeaderKey = "{2}";
     private const string AuthorizationHeaderKey = "{3}";
 
-    private Uri _baseUrl;
-
     private TokenPair? _tokenPair;
     private string? _tokenFilePath;
 

@@ -41,7 +41,7 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 
 // checks
-if (securityOptions.Base64JwtSigningKey == SecurityOptions.DefaultKey)
+if (securityOptions.Base64JwtSigningKey == SecurityOptions.DefaultSigningKey)
     Log.Logger.Warning("You are using the default key to sign JWT tokens. It is strongly advised to use a different key in production.");
 
 if (securityOptions.AccessTokenLifetime >= securityOptions.RefreshTokenLifetime)

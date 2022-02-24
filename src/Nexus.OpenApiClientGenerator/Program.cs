@@ -16,6 +16,9 @@ namespace Nexus.OpenApiClientGenerator
                 .AddMvcCore().AddApplicationPart(typeof(ArtifactsController).Assembly);
 
             builder.Services
+                .AddRouting(options => options.LowercaseUrls = true);
+
+            builder.Services
                 .AddNexusOpenApi();
 
             var app = builder.Build();

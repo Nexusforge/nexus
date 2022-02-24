@@ -32,8 +32,6 @@ public class NexusOpenApiClient
     private const string NexusConfigurationHeaderKey = "Nexus-Configuration";
     private const string AuthorizationHeaderKey = "Authorization";
 
-    private Uri _baseUrl;
-
     private TokenPair? _tokenPair;
     private string? _tokenFilePath;
 
@@ -315,7 +313,7 @@ public class ArtifactsClient : IArtifactsClient
     public Task<StreamResponse> DownloadArtifactAsync(string artifactId, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Artifacts/{artifactId}");
+        urlBuilder.Append("/api/v1/artifacts/{artifactId}");
         urlBuilder.Replace("{artifactId}", Uri.EscapeDataString(Convert.ToString(artifactId, CultureInfo.InvariantCulture)));
 
         var url = urlBuilder.ToString();
@@ -350,7 +348,7 @@ public class CatalogsClient : ICatalogsClient
     public Task<ResourceCatalog> GetCatalogAsync(string catalogId, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Catalogs/{catalogId}");
+        urlBuilder.Append("/api/v1/catalogs/{catalogId}");
         urlBuilder.Replace("{catalogId}", Uri.EscapeDataString(Convert.ToString(catalogId, CultureInfo.InvariantCulture)));
 
         var url = urlBuilder.ToString();
@@ -363,7 +361,7 @@ public class CatalogsClient : ICatalogsClient
     public Task<ICollection<string>> GetChildCatalogIdsAsync(string catalogId, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Catalogs/{catalogId}/child-catalog-ids");
+        urlBuilder.Append("/api/v1/catalogs/{catalogId}/child-catalog-ids");
         urlBuilder.Replace("{catalogId}", Uri.EscapeDataString(Convert.ToString(catalogId, CultureInfo.InvariantCulture)));
 
         var url = urlBuilder.ToString();
@@ -376,7 +374,7 @@ public class CatalogsClient : ICatalogsClient
     public Task<CatalogTimeRange> GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Catalogs/{catalogId}/timerange");
+        urlBuilder.Append("/api/v1/catalogs/{catalogId}/timerange");
         urlBuilder.Replace("{catalogId}", Uri.EscapeDataString(Convert.ToString(catalogId, CultureInfo.InvariantCulture)));
 
         var url = urlBuilder.ToString();
@@ -389,7 +387,7 @@ public class CatalogsClient : ICatalogsClient
     public Task<CatalogAvailability> GetCatalogAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Catalogs/{catalogId}/availability");
+        urlBuilder.Append("/api/v1/catalogs/{catalogId}/availability");
         urlBuilder.Replace("{catalogId}", Uri.EscapeDataString(Convert.ToString(catalogId, CultureInfo.InvariantCulture)));
 
         var queryValues = new Dictionary<string, string>()
@@ -411,7 +409,7 @@ public class CatalogsClient : ICatalogsClient
     public Task<StreamResponse> DownloadAttachementAsync(string catalogId, string attachmentId, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Catalogs/{catalogId}/attachments/{attachmentId}/content");
+        urlBuilder.Append("/api/v1/catalogs/{catalogId}/attachments/{attachmentId}/content");
         urlBuilder.Replace("{catalogId}", Uri.EscapeDataString(Convert.ToString(catalogId, CultureInfo.InvariantCulture)));
         urlBuilder.Replace("{attachmentId}", Uri.EscapeDataString(Convert.ToString(attachmentId, CultureInfo.InvariantCulture)));
 
@@ -425,7 +423,7 @@ public class CatalogsClient : ICatalogsClient
     public Task<CatalogMetadata> GetCatalogMetadataAsync(string catalogId, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Catalogs/{catalogId}/metadata");
+        urlBuilder.Append("/api/v1/catalogs/{catalogId}/metadata");
         urlBuilder.Replace("{catalogId}", Uri.EscapeDataString(Convert.ToString(catalogId, CultureInfo.InvariantCulture)));
 
         var url = urlBuilder.ToString();
@@ -438,7 +436,7 @@ public class CatalogsClient : ICatalogsClient
     public Task PutCatalogMetadataAsync(string catalogId, CatalogMetadata catalogMetadata, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Catalogs/{catalogId}/metadata");
+        urlBuilder.Append("/api/v1/catalogs/{catalogId}/metadata");
         urlBuilder.Replace("{catalogId}", Uri.EscapeDataString(Convert.ToString(catalogId, CultureInfo.InvariantCulture)));
 
         var url = urlBuilder.ToString();
@@ -467,7 +465,7 @@ public class DataClient : IDataClient
     public Task<StreamResponse> GetStreamAsync(string catalogId, string resourceId, string representationId, DateTime begin, DateTime end, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Data");
+        urlBuilder.Append("/api/v1/data");
 
         var queryValues = new Dictionary<string, string>()
         {
@@ -511,7 +509,7 @@ public class JobsClient : IJobsClient
     public Task<Job> ExportAsync(ExportParameters parameters, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Jobs/export");
+        urlBuilder.Append("/api/v1/jobs/export");
 
         var url = urlBuilder.ToString();
         return _client.InvokeAsync<Job>("POST", url, "application/json", parameters, cancellationToken);
@@ -523,7 +521,7 @@ public class JobsClient : IJobsClient
     public Task<Job> LoadPackagesAsync(CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Jobs/load-packages");
+        urlBuilder.Append("/api/v1/jobs/load-packages");
 
         var url = urlBuilder.ToString();
         return _client.InvokeAsync<Job>("POST", url, "application/json", default, cancellationToken);
@@ -535,7 +533,7 @@ public class JobsClient : IJobsClient
     public Task<ICollection<Job>> GetJobsAsync(CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Jobs");
+        urlBuilder.Append("/api/v1/jobs");
 
         var url = urlBuilder.ToString();
         return _client.InvokeAsync<ICollection<Job>>("GET", url, "application/json", default, cancellationToken);
@@ -547,7 +545,7 @@ public class JobsClient : IJobsClient
     public Task<JobStatus> GetJobStatusAsync(Guid jobId, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Jobs/{jobId}/status");
+        urlBuilder.Append("/api/v1/jobs/{jobId}/status");
         urlBuilder.Replace("{jobId}", Uri.EscapeDataString(Convert.ToString(jobId, CultureInfo.InvariantCulture)));
 
         var url = urlBuilder.ToString();
@@ -560,7 +558,7 @@ public class JobsClient : IJobsClient
     public Task<StreamResponse> DeleteJobAsync(Guid jobId, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Jobs/{jobId}");
+        urlBuilder.Append("/api/v1/jobs/{jobId}");
         urlBuilder.Replace("{jobId}", Uri.EscapeDataString(Convert.ToString(jobId, CultureInfo.InvariantCulture)));
 
         var url = urlBuilder.ToString();
@@ -592,7 +590,7 @@ public class PackageReferencesClient : IPackageReferencesClient
     public Task<IDictionary<string, PackageReference>> GetPackageReferencesAsync(CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/PackageReferences");
+        urlBuilder.Append("/api/v1/packagereferences");
 
         var url = urlBuilder.ToString();
         return _client.InvokeAsync<IDictionary<string, PackageReference>>("GET", url, "application/json", default, cancellationToken);
@@ -604,7 +602,7 @@ public class PackageReferencesClient : IPackageReferencesClient
     public Task PutPackageReferencesAsync(Guid packageReferenceId, PackageReference packageReference, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/PackageReferences/{packageReferenceId}");
+        urlBuilder.Append("/api/v1/packagereferences/{packageReferenceId}");
         urlBuilder.Replace("{packageReferenceId}", Uri.EscapeDataString(Convert.ToString(packageReferenceId, CultureInfo.InvariantCulture)));
 
         var url = urlBuilder.ToString();
@@ -617,7 +615,7 @@ public class PackageReferencesClient : IPackageReferencesClient
     public Task DeletePackageReferencesAsync(Guid packageReferenceId, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/PackageReferences/{packageReferenceId}");
+        urlBuilder.Append("/api/v1/packagereferences/{packageReferenceId}");
         urlBuilder.Replace("{packageReferenceId}", Uri.EscapeDataString(Convert.ToString(packageReferenceId, CultureInfo.InvariantCulture)));
 
         var url = urlBuilder.ToString();
@@ -630,7 +628,7 @@ public class PackageReferencesClient : IPackageReferencesClient
     public Task<ICollection<string>> GetPackageVersionsAsync(Guid packageReferenceId, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/PackageReferences/{packageReferenceId}/versions");
+        urlBuilder.Append("/api/v1/packagereferences/{packageReferenceId}/versions");
         urlBuilder.Replace("{packageReferenceId}", Uri.EscapeDataString(Convert.ToString(packageReferenceId, CultureInfo.InvariantCulture)));
 
         var url = urlBuilder.ToString();
@@ -662,7 +660,7 @@ public class SourcesClient : ISourcesClient
     public Task<ICollection<ExtensionDescription>> GetSourceDescriptionsAsync(CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Sources/descriptions");
+        urlBuilder.Append("/api/v1/sources/descriptions");
 
         var url = urlBuilder.ToString();
         return _client.InvokeAsync<ICollection<ExtensionDescription>>("GET", url, "application/json", default, cancellationToken);
@@ -674,7 +672,7 @@ public class SourcesClient : ISourcesClient
     public Task<IDictionary<string, DataSourceRegistration>> GetSourceRegistrationsAsync(CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Sources/registrations");
+        urlBuilder.Append("/api/v1/sources/registrations");
 
         var url = urlBuilder.ToString();
         return _client.InvokeAsync<IDictionary<string, DataSourceRegistration>>("GET", url, "application/json", default, cancellationToken);
@@ -686,7 +684,7 @@ public class SourcesClient : ISourcesClient
     public Task PutSourceRegistrationAsync(Guid registrationId, DataSourceRegistration registration, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Sources/registrations/{registrationId}");
+        urlBuilder.Append("/api/v1/sources/registrations/{registrationId}");
         urlBuilder.Replace("{registrationId}", Uri.EscapeDataString(Convert.ToString(registrationId, CultureInfo.InvariantCulture)));
 
         var url = urlBuilder.ToString();
@@ -699,7 +697,7 @@ public class SourcesClient : ISourcesClient
     public Task DeleteSourceRegistrationAsync(Guid registrationId, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Sources/registrations/{registrationId}");
+        urlBuilder.Append("/api/v1/sources/registrations/{registrationId}");
         urlBuilder.Replace("{registrationId}", Uri.EscapeDataString(Convert.ToString(registrationId, CultureInfo.InvariantCulture)));
 
         var url = urlBuilder.ToString();
@@ -737,7 +735,7 @@ public class UsersClient : IUsersClient
     public Task<ICollection<AuthenticationSchemeDescription>> GetAuthenticationSchemesAsync(CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Users/authentication-schemes");
+        urlBuilder.Append("/api/v1/users/authentication-schemes");
 
         var url = urlBuilder.ToString();
         return _client.InvokeAsync<ICollection<AuthenticationSchemeDescription>>("GET", url, "application/json", default, cancellationToken);
@@ -749,7 +747,7 @@ public class UsersClient : IUsersClient
     public Task<StreamResponse> AuthenticateAsync(string scheme, string returnUrl, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Users/authenticate");
+        urlBuilder.Append("/api/v1/users/authenticate");
 
         var queryValues = new Dictionary<string, string>()
         {
@@ -770,7 +768,7 @@ public class UsersClient : IUsersClient
     public Task<StreamResponse> SignOutAsync(string returnUrl, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Users/signout");
+        urlBuilder.Append("/api/v1/users/signout");
 
         var queryValues = new Dictionary<string, string>()
         {
@@ -790,7 +788,7 @@ public class UsersClient : IUsersClient
     public Task<TokenPair> RefreshTokenAsync(RefreshTokenRequest request, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Users/refresh-token");
+        urlBuilder.Append("/api/v1/users/refresh-token");
 
         var url = urlBuilder.ToString();
         return _client.InvokeAsync<TokenPair>("POST", url, "application/json", request, cancellationToken);
@@ -802,7 +800,7 @@ public class UsersClient : IUsersClient
     public Task<StreamResponse> RevokeTokenAsync(RevokeTokenRequest request, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Users/revoke-token");
+        urlBuilder.Append("/api/v1/users/revoke-token");
 
         var url = urlBuilder.ToString();
         return _client.InvokeAsync<StreamResponse>("POST", url, "application/octet-stream", request, cancellationToken);
@@ -814,7 +812,7 @@ public class UsersClient : IUsersClient
     public Task<NexusUser> GetMeAsync(CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Users/me");
+        urlBuilder.Append("/api/v1/users/me");
 
         var url = urlBuilder.ToString();
         return _client.InvokeAsync<NexusUser>("GET", url, "application/json", default, cancellationToken);
@@ -826,7 +824,7 @@ public class UsersClient : IUsersClient
     public Task<TokenPair> GenerateTokensAsync(CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Users/generate-tokens");
+        urlBuilder.Append("/api/v1/users/generate-tokens");
 
         var url = urlBuilder.ToString();
         return _client.InvokeAsync<TokenPair>("POST", url, "application/json", default, cancellationToken);
@@ -838,7 +836,7 @@ public class UsersClient : IUsersClient
     public Task<ICollection<NexusUser>> GetUsersAsync(CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Users");
+        urlBuilder.Append("/api/v1/users");
 
         var url = urlBuilder.ToString();
         return _client.InvokeAsync<ICollection<NexusUser>>("GET", url, "application/json", default, cancellationToken);
@@ -850,7 +848,7 @@ public class UsersClient : IUsersClient
     public Task<StreamResponse> PutClaimAsync(string userId, Guid claimId, NexusClaim claim, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Users/{userId}/{claimId}");
+        urlBuilder.Append("/api/v1/users/{userId}/{claimId}");
         urlBuilder.Replace("{userId}", Uri.EscapeDataString(Convert.ToString(userId, CultureInfo.InvariantCulture)));
         urlBuilder.Replace("{claimId}", Uri.EscapeDataString(Convert.ToString(claimId, CultureInfo.InvariantCulture)));
 
@@ -864,7 +862,7 @@ public class UsersClient : IUsersClient
     public Task<StreamResponse> DeleteClaimAsync(string userId, Guid claimId, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Users/{userId}/{claimId}");
+        urlBuilder.Append("/api/v1/users/{userId}/{claimId}");
         urlBuilder.Replace("{userId}", Uri.EscapeDataString(Convert.ToString(userId, CultureInfo.InvariantCulture)));
         urlBuilder.Replace("{claimId}", Uri.EscapeDataString(Convert.ToString(claimId, CultureInfo.InvariantCulture)));
 
@@ -894,7 +892,7 @@ public class WritersClient : IWritersClient
     public Task<ICollection<ExtensionDescription>> GetWriterDescriptionsAsync(CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/Writers/descriptions");
+        urlBuilder.Append("/api/v1/writers/descriptions");
 
         var url = urlBuilder.ToString();
         return _client.InvokeAsync<ICollection<ExtensionDescription>>("GET", url, "application/json", default, cancellationToken);

@@ -12,7 +12,7 @@
     }
   ],
   "paths": {
-    "/api/v1/Artifacts/{artifactId}": {
+    "/api/v1/artifacts/{artifactId}": {
       "get": {
         "tags": [
           "Artifacts"
@@ -46,7 +46,7 @@
         }
       }
     },
-    "/api/v1/Catalogs/{catalogId}": {
+    "/api/v1/catalogs/{catalogId}": {
       "get": {
         "tags": [
           "Catalogs"
@@ -79,7 +79,7 @@
         }
       }
     },
-    "/api/v1/Catalogs/{catalogId}/child-catalog-ids": {
+    "/api/v1/catalogs/{catalogId}/child-catalog-ids": {
       "get": {
         "tags": [
           "Catalogs"
@@ -115,7 +115,7 @@
         }
       }
     },
-    "/api/v1/Catalogs/{catalogId}/timerange": {
+    "/api/v1/catalogs/{catalogId}/timerange": {
       "get": {
         "tags": [
           "Catalogs"
@@ -148,7 +148,7 @@
         }
       }
     },
-    "/api/v1/Catalogs/{catalogId}/availability": {
+    "/api/v1/catalogs/{catalogId}/availability": {
       "get": {
         "tags": [
           "Catalogs"
@@ -201,7 +201,7 @@
         }
       }
     },
-    "/api/v1/Catalogs/{catalogId}/attachments/{attachmentId}/content": {
+    "/api/v1/catalogs/{catalogId}/attachments/{attachmentId}/content": {
       "get": {
         "tags": [
           "Catalogs"
@@ -245,7 +245,7 @@
         }
       }
     },
-    "/api/v1/Catalogs/{catalogId}/metadata": {
+    "/api/v1/catalogs/{catalogId}/metadata": {
       "get": {
         "tags": [
           "Catalogs"
@@ -315,7 +315,7 @@
         }
       }
     },
-    "/api/v1/Data": {
+    "/api/v1/data": {
       "get": {
         "tags": [
           "Data"
@@ -391,7 +391,7 @@
         }
       }
     },
-    "/api/v1/Jobs/export": {
+    "/api/v1/jobs/export": {
       "post": {
         "tags": [
           "Jobs"
@@ -425,7 +425,7 @@
         }
       }
     },
-    "/api/v1/Jobs/load-packages": {
+    "/api/v1/jobs/load-packages": {
       "post": {
         "tags": [
           "Jobs"
@@ -446,7 +446,7 @@
         }
       }
     },
-    "/api/v1/Jobs": {
+    "/api/v1/jobs": {
       "get": {
         "tags": [
           "Jobs"
@@ -470,7 +470,7 @@
         }
       }
     },
-    "/api/v1/Jobs/{jobId}/status": {
+    "/api/v1/jobs/{jobId}/status": {
       "get": {
         "tags": [
           "Jobs"
@@ -503,7 +503,7 @@
         }
       }
     },
-    "/api/v1/Jobs/{jobId}": {
+    "/api/v1/jobs/{jobId}": {
       "delete": {
         "tags": [
           "Jobs"
@@ -537,7 +537,7 @@
         }
       }
     },
-    "/api/v1/PackageReferences": {
+    "/api/v1/packagereferences": {
       "get": {
         "tags": [
           "PackageReferences"
@@ -561,7 +561,7 @@
         }
       }
     },
-    "/api/v1/PackageReferences/{packageReferenceId}": {
+    "/api/v1/packagereferences/{packageReferenceId}": {
       "put": {
         "tags": [
           "PackageReferences"
@@ -626,7 +626,7 @@
         }
       }
     },
-    "/api/v1/PackageReferences/{packageReferenceId}/versions": {
+    "/api/v1/packagereferences/{packageReferenceId}/versions": {
       "get": {
         "tags": [
           "PackageReferences"
@@ -663,7 +663,7 @@
         }
       }
     },
-    "/api/v1/Sources/descriptions": {
+    "/api/v1/sources/descriptions": {
       "get": {
         "tags": [
           "Sources"
@@ -687,7 +687,7 @@
         }
       }
     },
-    "/api/v1/Sources/registrations": {
+    "/api/v1/sources/registrations": {
       "get": {
         "tags": [
           "Sources"
@@ -711,7 +711,7 @@
         }
       }
     },
-    "/api/v1/Sources/registrations/{registrationId}": {
+    "/api/v1/sources/registrations/{registrationId}": {
       "put": {
         "tags": [
           "Sources"
@@ -776,7 +776,7 @@
         }
       }
     },
-    "/api/v1/Users/authentication-schemes": {
+    "/api/v1/users/authentication-schemes": {
       "get": {
         "tags": [
           "Users"
@@ -800,7 +800,7 @@
         }
       }
     },
-    "/api/v1/Users/authenticate": {
+    "/api/v1/users/authenticate": {
       "get": {
         "tags": [
           "Users"
@@ -844,7 +844,7 @@
         }
       }
     },
-    "/api/v1/Users/signout": {
+    "/api/v1/users/signout": {
       "get": {
         "tags": [
           "Users"
@@ -877,7 +877,7 @@
         }
       }
     },
-    "/api/v1/Users/refresh-token": {
+    "/api/v1/users/refresh-token": {
       "post": {
         "tags": [
           "Users"
@@ -911,7 +911,7 @@
         }
       }
     },
-    "/api/v1/Users/revoke-token": {
+    "/api/v1/users/revoke-token": {
       "post": {
         "tags": [
           "Users"
@@ -946,7 +946,7 @@
         }
       }
     },
-    "/api/v1/Users/me": {
+    "/api/v1/users/me": {
       "get": {
         "tags": [
           "Users"
@@ -967,7 +967,7 @@
         }
       }
     },
-    "/api/v1/Users/generate-tokens": {
+    "/api/v1/users/generate-tokens": {
       "post": {
         "tags": [
           "Users"
@@ -988,7 +988,7 @@
         }
       }
     },
-    "/api/v1/Users": {
+    "/api/v1/users": {
       "get": {
         "tags": [
           "Users"
@@ -1012,7 +1012,7 @@
         }
       }
     },
-    "/api/v1/Users/{userId}/{claimId}": {
+    "/api/v1/users/{userId}/{claimId}": {
       "put": {
         "tags": [
           "Users"
@@ -1113,7 +1113,7 @@
         }
       }
     },
-    "/api/v1/Writers/descriptions": {
+    "/api/v1/writers/descriptions": {
       "get": {
         "tags": [
           "Writers"

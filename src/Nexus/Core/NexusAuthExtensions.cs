@@ -13,7 +13,7 @@ using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-    internal static class AuthExtensions
+    internal static class NexusAuthExtensions
     {
         public static OpenIdConnectProvider DefaultProvider { get; } = new OpenIdConnectProvider()
         {

@@ -35,7 +35,7 @@ namespace Other
                 .GetSection(ServerOptions.Section)
                 .Get<ServerOptions>();
 
-            Assert.Equal(25, options.HttpPort);
+            Assert.Equal(8443, options.HttpPort);
         }
 
         [Fact]
@@ -80,13 +80,13 @@ namespace Other
             }
         }
 
-        [InlineData("SMTP:PORT=28")]
-        [InlineData("/SMTP:PORT=28")]
-        [InlineData("--SMTP:PORT=28")]
+        [InlineData("SERVER:HTTPPORT=28")]
+        [InlineData("/SERVER:HTTPPORT=28")]
+        [InlineData("--SERVER:HTTPPORT=28")]
 
-        [InlineData("smtp:port=28")]
-        [InlineData("/smtp:port=28")]
-        [InlineData("--smtp:port=28")]
+        [InlineData("server:httpport=28")]
+        [InlineData("/server:httpport=28")]
+        [InlineData("--server:httpport=28")]
 
         [Theory]
         public void CanOverrideEnvironmentVariable_With_CommandLineParameter1(string arg)

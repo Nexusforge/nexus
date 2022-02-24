@@ -121,7 +121,7 @@ $@"public interface I{className}
 
                 foreach (var operation in entry.Value.Operations)
                 {
-                    AppendInterfaceMethodSourceText(entry.Key, operation.Key, operation.Value, sourceTextBuilder);
+                    AppendInterfaceMethodSourceText(operation.Key, operation.Value, sourceTextBuilder);
                 }
             }
 
@@ -161,7 +161,6 @@ $@"public class {className} : I{className}
         }
 
         private void AppendInterfaceMethodSourceText(
-            string path,
             OperationType operationType,
             OpenApiOperation operation,
             StringBuilder sourceTextBuilder)

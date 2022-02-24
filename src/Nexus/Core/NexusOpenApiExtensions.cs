@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-    internal static class OpenApiExtensions
+    internal static class NexusOpenApiExtensions
     {
         public static IServiceCollection AddNexusOpenApi(
             this IServiceCollection services)

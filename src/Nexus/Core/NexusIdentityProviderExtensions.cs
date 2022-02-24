@@ -9,7 +9,7 @@ using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-    internal static class IdentityProviderExtensions
+    internal static class NexusIdentityProviderExtensions
     {
         public static IServiceCollection AddNexusIdentityProvider(
             this IServiceCollection services)

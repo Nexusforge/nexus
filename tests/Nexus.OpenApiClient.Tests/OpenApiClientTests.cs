@@ -16,29 +16,10 @@ namespace Nexus.OpenApiClient.Tests
             // Arrange
             var messageHandlerMock = new Mock<HttpMessageHandler>();
 
-            // -> authenticate
-            var authenticateResponse = new AuthenticateResponse(
+            var tokenPair = new TokenPair(
                 AccessToken: "123",
-                RefreshToken: "456",
-                Error: default
+                RefreshToken: "456"
             );
-
-            var authenticateResponseMessage = new HttpResponseMessage()
-            {
-                StatusCode = HttpStatusCode.OK,
-                Content = new StringContent(
-                    JsonSerializer.Serialize(authenticateResponse),
-                    Encoding.UTF8,
-                    "application/json")
-            };
-
-            messageHandlerMock
-                .Protected()
-                .Setup<Task<HttpResponseMessage>>(
-                    "SendAsync",
-                    ItExpr.Is<HttpRequestMessage>(x => x.RequestUri!.ToString().EndsWith("authenticate")),
-                    ItExpr.IsAny<CancellationToken>())
-                .ReturnsAsync(authenticateResponseMessage);
 
             // -> get catalogs (1st try)
             var tryCount = 0;
@@ -57,14 +38,21 @@ namespace Nexus.OpenApiClient.Tests
                     ItExpr.Is<HttpRequestMessage>(x => x.RequestUri!.ToString().Contains("catalogs") && tryCount == 0),
                     ItExpr.IsAny<CancellationToken>())
                 .Callback<HttpRequestMessage, CancellationToken>((requestMessage, cancellationToken) =>
-                { 
+                {
+                    var actual = requestMessage.Headers.Authorization!;
+                    Assert.Equal($"Bearer {tokenPair.AccessToken}", $"{actual.Scheme} {actual.Parameter}");
                     catalogsResponseMessage1.RequestMessage = requestMessage;
                     tryCount++;
                 })
                 .ReturnsAsync(catalogsResponseMessage1);
 
             // -> refresh token
-            var refreshTokenResponseJsonString = JsonSerializer.Serialize(new RefreshTokenResponse(default, default, default));
+            var newTokenPair = new TokenPair(
+                AccessToken: "123",
+                RefreshToken: "456"
+            );
+
+            var refreshTokenResponseJsonString = JsonSerializer.Serialize(newTokenPair);
 
             var refreshTokenResponseMessage = new HttpResponseMessage(HttpStatusCode.OK)
             {
@@ -83,7 +71,7 @@ namespace Nexus.OpenApiClient.Tests
                 .Callback<HttpRequestMessage, CancellationToken>((requestMessage, cancellationToken) =>
                 {
                     var refreshTokenRequest = JsonSerializer.Deserialize<RefreshTokenRequest>(requestMessage.Content!.ReadAsStream());
-                    Assert.Equal(authenticateResponse.RefreshToken, refreshTokenRequest!.RefreshToken);
+                    Assert.Equal(tokenPair.RefreshToken, refreshTokenRequest!.RefreshToken);
                 })
                 .ReturnsAsync(refreshTokenResponseMessage);
 
@@ -103,17 +91,24 @@ namespace Nexus.OpenApiClient.Tests
                     "SendAsync",
                     ItExpr.Is<HttpRequestMessage>(x => x.RequestUri!.ToString().Contains("catalogs") && tryCount == 1),
                     ItExpr.IsAny<CancellationToken>())
+                .Callback<HttpRequestMessage, CancellationToken>((requestMessage, cancellationToken) =>
+                {
+                    var actual = requestMessage.Headers.Authorization!;
+                    Assert.Equal($"Bearer {newTokenPair.AccessToken}", $"{actual.Scheme} {actual.Parameter}");
+                })
                 .ReturnsAsync(catalogsResponseMessage2);
 
             // -> http client
-            var httpClient = new HttpClient(messageHandlerMock.Object);
+            var httpClient = new HttpClient(messageHandlerMock.Object)
+            {
+                BaseAddress = new Uri("http://localhost")
+            };
 
             // -> OpenApi client
-            var client = new NexusOpenApiClient("http://localhost", httpClient);
+            var client = new NexusOpenApiClient(httpClient);
 
             // Act
-            throw new Exception("reenable");
-            //await client.PasswordSignInAsync("foo", "bar");
+            client.SignIn(tokenPair);
             var actualCatalog = await client.Catalogs.GetCatalogAsync(catalogId);
 
             // Assert

@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using Nexus.Core;
 using System.Security.Claims;
 using System.Security.Cryptography;
+using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Nexus.Services
 {
@@ -56,8 +58,8 @@ namespace Nexus.Services
             NexusUser user)
         {
             // new token pair
+            var newAccessToken = GenerateAccessToken(user);
             var newRefreshToken = GenerateRefreshToken(user.Id);
-            var newAccessToken = GenerateAccessToken(user.Id, user.Claims.Select(entry => entry.Value));
 
             user.RefreshTokens.Add(newRefreshToken);
 
@@ -74,12 +76,11 @@ namespace Nexus.Services
         {
             var user = token.Owner;
 
-            // rotate token
+            // new token pair
+            var newAccessToken = GenerateAccessToken(token.Owner);
             var newRefreshToken = RotateToken(token);
-            user.RefreshTokens.Add(newRefreshToken);
 
-            // access token
-            var newAccessToken = GenerateAccessToken(user.Id, user.Claims.Select(entry => entry.Value));
+            user.RefreshTokens.Add(newRefreshToken);
 
             // clear old tokens
             ClearOldTokens(token.Owner);
@@ -118,14 +119,26 @@ namespace Nexus.Services
 
         #region Helper Methods
 
-        private string GenerateAccessToken(string userId, IEnumerable<NexusClaim> claims)
+        private string GenerateAccessToken(NexusUser user)
         {
+            var mandatoryClaims = new[]
+            {
+                new Claim(Claims.Subject, user.Id),
+                new Claim(Claims.Name, user.Name)
+            };
+
+            var claims = user.Claims
+                .Select(entry => new Claim(entry.Value.Type, entry.Value.Value));
+
+            var claimsIdentity = new ClaimsIdentity(
+                mandatoryClaims.Concat(claims),
+                authenticationType: JwtBearerDefaults.AuthenticationScheme,
+                nameType: Claims.Name,
+                roleType: Claims.Role);
+
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(new []
-                {
-                    new Claim(ClaimTypes.Name, userId)
-                }.Concat(claims.Select(claim => new Claim(claim.Type, claim.Value)))),
+                Subject = claimsIdentity,
                 NotBefore = DateTime.UtcNow,
                 Expires = DateTime.UtcNow.Add(_securityOptions.AccessTokenLifetime),
                 SigningCredentials = _signingCredentials
@@ -137,18 +150,23 @@ namespace Nexus.Services
             return token;
         }
 
-        private RefreshToken GenerateRefreshToken(string userId)
+        private RefreshToken GenerateRefreshToken(string userId, DateTime expires = default)
         {
+            if (expires.Equals(default))
+                expires = DateTime.UtcNow.Add(_securityOptions.RefreshTokenLifetime);
+
             var randomBytes = RandomNumberGenerator.GetBytes(64);
             var token = $"{Uri.EscapeDataString(userId)}@{Convert.ToBase64String(randomBytes)}";
-            var expires = DateTime.UtcNow.Add(_securityOptions.RefreshTokenLifetime);
 
             return new RefreshToken(token, expires);
         }
 
         private RefreshToken RotateToken(RefreshToken refreshToken)
         {
-            var newRefreshToken = GenerateRefreshToken(refreshToken.Owner.Id);
+            var newRefreshToken = GenerateRefreshToken(
+                refreshToken.Owner.Id,
+                refreshToken.Expires);
+
             InternalRevokeToken(refreshToken, newRefreshToken.Token);
 
             return newRefreshToken;

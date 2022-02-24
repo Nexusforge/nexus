@@ -72,7 +72,7 @@ namespace Nexus.Controllers
         {
             var providers = _securityOptions.OidcProviders.Any()
                 ? _securityOptions.OidcProviders
-                : new List<OpenIdConnectProvider>() { AuthExtensions.DefaultProvider };
+                : new List<OpenIdConnectProvider>() { NexusAuthExtensions.DefaultProvider };
 
             return providers
                 .Select(provider => new AuthenticationSchemeDescription(provider.Scheme, provider.DisplayName))
