@@ -4,7 +4,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Nexus.OpenApiClientGenerator
+namespace Nexus.ClientGenerator
 {
     public class CSharpGenerator
     {

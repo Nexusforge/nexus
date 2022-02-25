@@ -6,9 +6,9 @@ using System.Text;
 using System.Text.Json;
 using Xunit;
 
-namespace Nexus.OpenApiClient.Tests
+namespace Nexus.Client.Tests
 {
-    public class OpenApiClientTests
+    public class ClientTests
     {
         [Fact]
         public async Task CanAuthenticateAndRefreshAsync()
@@ -104,8 +104,8 @@ namespace Nexus.OpenApiClient.Tests
                 BaseAddress = new Uri("http://localhost")
             };
 
-            // -> OpenApi client
-            var client = new NexusOpenApiClient(httpClient);
+            // -> API client
+            var client = new NexusClient(httpClient);
 
             // Act
             client.SignIn(tokenPair);

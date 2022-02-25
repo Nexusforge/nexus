@@ -6,7 +6,7 @@ namespace Nexus.BlazorWasm.Services
 {
     public class NexusAuthenticationStateProvider : AuthenticationStateProvider
     {
-        private readonly NexusOpenApiClient _client;
+        private readonly NexusClient _client;
 
         public NexusAuthenticationStateProvider(ClientProvider clientProvider)
         {

@@ -6,9 +6,9 @@ namespace Nexus.BlazorWasm.Services
     {
         public ClientProvider(HttpClient httpClient)
         {
-            Client = new NexusOpenApiClient(httpClient);
+            Client = new NexusClient(httpClient);
         }
 
-        public NexusOpenApiClient Client { get; set; } 
+        public NexusClient Client { get; set; } 
     }
 }

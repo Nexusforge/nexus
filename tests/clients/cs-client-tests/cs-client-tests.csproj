@@ -20,8 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Nexus.OpenApiClient\Nexus.OpenApiClient.csproj" />
-    <ProjectReference Include="..\..\src\Nexus\Nexus.csproj" />
+    <ProjectReference Include="..\..\..\src\clients\cs-client\cs-client.csproj" />
   </ItemGroup>
 
 </Project>

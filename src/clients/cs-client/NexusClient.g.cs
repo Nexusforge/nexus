@@ -23,9 +23,9 @@ using System.Text.Json.Serialization;
 namespace Nexus.Client;
 
 /// <summary>
-/// The OpenAPI client for the Nexus system.
+/// The client for the Nexus system.
 /// </summary>
-public interface INexusOpenApiClient
+public interface INexusClient
 {
     /// <summary>
     /// Signs in the user.
@@ -35,13 +35,13 @@ public interface INexusOpenApiClient
     void SignIn(TokenPair tokenPair);
 
     /// <summary>
-    /// Attaches configuration data to subsequent Nexus OpenAPI requests.
+    /// Attaches configuration data to subsequent Nexus API requests.
     /// </summary>
     /// <param name="configuration">The configuration data.</param>
     IDisposable AttachConfiguration(IDictionary<string, string> configuration);
 
     /// <summary>
-    /// Clears configuration data for all subsequent Nexus OpenAPI requests.
+    /// Clears configuration data for all subsequent Nexus API requests.
     /// </summary>
     void ClearConfiguration();
 
@@ -88,9 +88,9 @@ public interface INexusOpenApiClient
 }
 
 /// <summary>
-/// The OpenAPI client for the Nexus system.
+/// A client for the Nexus system.
 /// </summary>
-public class NexusOpenApiClient
+public class NexusClient
 {
     private const string NexusConfigurationHeaderKey = "Nexus-Configuration";
     private const string AuthorizationHeaderKey = "Authorization";
@@ -111,7 +111,7 @@ public class NexusOpenApiClient
     private UsersClient _Users;
     private WritersClient _Writers;
 
-    static NexusOpenApiClient()
+    static NexusClient()
     {
         _options = new JsonSerializerOptions()
         {
@@ -123,19 +123,19 @@ public class NexusOpenApiClient
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="NexusOpenApiClient"/>.
+    /// Initializes a new instance of the <see cref="NexusClient"/>.
     /// </summary>
     /// <param name="baseUrl">The base URL to connect to.</param>
-    public NexusOpenApiClient(Uri baseUrl) : this(new HttpClient() { BaseAddress = baseUrl })
+    public NexusClient(Uri baseUrl) : this(new HttpClient() { BaseAddress = baseUrl })
     {
         //
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="NexusOpenApiClient"/>.
+    /// Initializes a new instance of the <see cref="NexusClient"/>.
     /// </summary>
     /// <param name="httpClient">The HTTP client to use.</param>
-    public NexusOpenApiClient(HttpClient httpClient)
+    public NexusClient(HttpClient httpClient)
     {
         if (httpClient.BaseAddress is null)
             throw new Exception("The base address of the HTTP client must be set.");
@@ -283,10 +283,10 @@ public class NexusOpenApiClient
                 var statusCode = $"N00.{response.StatusCode}";
 
                 if (string.IsNullOrWhiteSpace(message))
-                    throw new NexusApiException(statusCode, $"The HTTP request failed with status code {response.StatusCode}.");
+                    throw new NexusException(statusCode, $"The HTTP request failed with status code {response.StatusCode}.");
 
                 else
-                    throw new NexusApiException(statusCode, $"The HTTP request failed with status code {response.StatusCode}. The response message is: {message}");
+                    throw new NexusException(statusCode, $"The HTTP request failed with status code {response.StatusCode}. The response message is: {message}");
             }
         }
 
@@ -309,7 +309,7 @@ public class NexusOpenApiClient
                 var returnValue = await JsonSerializer.DeserializeAsync<T>(stream, _options);
 
                 if (returnValue is null)
-                    throw new NexusApiException($"N01", "Response data could not be deserialized.");
+                    throw new NexusException($"N01", "Response data could not be deserialized.");
 
                 return returnValue;
             }
@@ -383,9 +383,9 @@ public interface IArtifactsClient
 /// <inheritdoc />
 public class ArtifactsClient : IArtifactsClient
 {
-    private NexusOpenApiClient _client;
+    private NexusClient _client;
     
-    internal ArtifactsClient(NexusOpenApiClient client)
+    internal ArtifactsClient(NexusClient client)
     {
         _client = client;
     }
@@ -466,9 +466,9 @@ public interface ICatalogsClient
 /// <inheritdoc />
 public class CatalogsClient : ICatalogsClient
 {
-    private NexusOpenApiClient _client;
+    private NexusClient _client;
     
-    internal CatalogsClient(NexusOpenApiClient client)
+    internal CatalogsClient(NexusClient client)
     {
         _client = client;
     }
@@ -583,9 +583,9 @@ public interface IDataClient
 /// <inheritdoc />
 public class DataClient : IDataClient
 {
-    private NexusOpenApiClient _client;
+    private NexusClient _client;
     
-    internal DataClient(NexusOpenApiClient client)
+    internal DataClient(NexusClient client)
     {
         _client = client;
     }
@@ -657,9 +657,9 @@ public interface IJobsClient
 /// <inheritdoc />
 public class JobsClient : IJobsClient
 {
-    private NexusOpenApiClient _client;
+    private NexusClient _client;
     
-    internal JobsClient(NexusOpenApiClient client)
+    internal JobsClient(NexusClient client)
     {
         _client = client;
     }
@@ -756,9 +756,9 @@ public interface IPackageReferencesClient
 /// <inheritdoc />
 public class PackageReferencesClient : IPackageReferencesClient
 {
-    private NexusOpenApiClient _client;
+    private NexusClient _client;
     
-    internal PackageReferencesClient(NexusOpenApiClient client)
+    internal PackageReferencesClient(NexusClient client)
     {
         _client = client;
     }
@@ -845,9 +845,9 @@ public interface ISourcesClient
 /// <inheritdoc />
 public class SourcesClient : ISourcesClient
 {
-    private NexusOpenApiClient _client;
+    private NexusClient _client;
     
-    internal SourcesClient(NexusOpenApiClient client)
+    internal SourcesClient(NexusClient client)
     {
         _client = client;
     }
@@ -976,9 +976,9 @@ public interface IUsersClient
 /// <inheritdoc />
 public class UsersClient : IUsersClient
 {
-    private NexusOpenApiClient _client;
+    private NexusClient _client;
     
-    internal UsersClient(NexusOpenApiClient client)
+    internal UsersClient(NexusClient client)
     {
         _client = client;
     }
@@ -1122,9 +1122,9 @@ public interface IWritersClient
 /// <inheritdoc />
 public class WritersClient : IWritersClient
 {
-    private NexusOpenApiClient _client;
+    private NexusClient _client;
     
-    internal WritersClient(NexusOpenApiClient client)
+    internal WritersClient(NexusClient client)
     {
         _client = client;
     }
@@ -1169,11 +1169,11 @@ public class StreamResponse : IDisposable
 }
 
 /// <summary>
-/// A NexusApiException.
+/// A NexusException.
 /// </summary>
-public class NexusApiException : Exception
+public class NexusException : Exception
 {
-    internal NexusApiException(string statusCode, string message) : base(message)
+    internal NexusException(string statusCode, string message) : base(message)
     {
         StatusCode = statusCode;
     }
@@ -1186,9 +1186,9 @@ public class NexusApiException : Exception
 
 internal class DisposableConfiguration : IDisposable
 {
-    private NexusOpenApiClient _client;
+    private NexusClient _client;
 
-    public DisposableConfiguration(NexusOpenApiClient client)
+    public DisposableConfiguration(NexusClient client)
     {
         _client = client;
     }

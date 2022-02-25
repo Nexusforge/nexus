@@ -1,4 +1,4 @@
-﻿namespace Nexus.OpenApiClientGenerator
+﻿namespace Nexus.ClientGenerator
 {
     public record GeneratorSettings(
         string Namespace, 

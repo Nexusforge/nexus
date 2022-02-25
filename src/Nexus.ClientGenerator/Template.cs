@@ -23,7 +23,7 @@ using System.Text.Json.Serialization;
 namespace {0};
 
 /// <summary>
-/// The OpenAPI client for the Nexus system.
+/// The client for the Nexus system.
 /// </summary>
 public interface I{1}
 {
@@ -35,20 +35,20 @@ public interface I{1}
     void SignIn(TokenPair tokenPair);
 
     /// <summary>
-    /// Attaches configuration data to subsequent Nexus OpenAPI requests.
+    /// Attaches configuration data to subsequent Nexus API requests.
     /// </summary>
     /// <param name="configuration">The configuration data.</param>
     IDisposable AttachConfiguration(IDictionary<string, string> configuration);
 
     /// <summary>
-    /// Clears configuration data for all subsequent Nexus OpenAPI requests.
+    /// Clears configuration data for all subsequent Nexus API requests.
     /// </summary>
     void ClearConfiguration();
 
 {10}}
 
 /// <summary>
-/// The OpenAPI client for the Nexus system.
+/// A client for the Nexus system.
 /// </summary>
 public class {1}
 {

@@ -5,7 +5,7 @@ using Microsoft.OpenApi.Readers;
 using Nexus.Controllers;
 using System.Reflection;
 
-namespace Nexus.OpenApiClientGenerator
+namespace Nexus.ClientGenerator
 {
     public static class Program
     {
@@ -52,15 +52,15 @@ namespace Nexus.OpenApiClientGenerator
             // client generation settings
             var settings = new GeneratorSettings(
                 Namespace: "Nexus.Client",
-                ClientName: "NexusOpenApiClient",
-                OutputFileName: "NexusOpenApi",
-                ExceptionType: "NexusApiException",
+                ClientName: "NexusClient",
+                OutputFileName: "NexusClient",
+                ExceptionType: "NexusException",
                 NexusConfigurationHeaderKey: "Nexus-Configuration",
                 AuthorizationHeaderKey: "Authorization");
 
             // generate C# client
             var basePath = Assembly.GetExecutingAssembly().Location;
-            var csharpOutputPath = $"{solutionRoot}src/Nexus.OpenApiClient/{settings.OutputFileName}.g.cs";
+            var csharpOutputPath = $"{solutionRoot}src/clients/cs-client/{settings.OutputFileName}.g.cs";
             var generator = new CSharpGenerator();
             var csharpCode = generator.Generate(document, settings);
 

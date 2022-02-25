@@ -97,7 +97,7 @@ namespace Nexus.Core
         #region Claims
 
         // - Do not use normal Claim here because the Claim type all its
-        // properties would become part of the generated OpenAPI client!
+        // properties would become part of the generated clients!
 
         // - It is difficult to use dictionaries in a database, so below
         // is a workaorund using the JsonSerializer.
