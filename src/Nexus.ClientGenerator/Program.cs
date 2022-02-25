@@ -49,8 +49,11 @@ namespace Nexus.ClientGenerator
             var document = new OpenApiStringReader()
                 .Read(openApiJsonString, out var diagnostic);
 
-            // client generation settings
-            var settings = new GeneratorSettings(
+            // generate clients
+            var basePath = Assembly.GetExecutingAssembly().Location;
+
+            // generate C# client
+            var csharpSettings = new GeneratorSettings(
                 Namespace: "Nexus.Client",
                 ClientName: "NexusClient",
                 OutputFileName: "NexusClient",
@@ -58,14 +61,26 @@ namespace Nexus.ClientGenerator
                 NexusConfigurationHeaderKey: "Nexus-Configuration",
                 AuthorizationHeaderKey: "Authorization");
 
-            // generate C# client
-            var basePath = Assembly.GetExecutingAssembly().Location;
-            var csharpOutputPath = $"{solutionRoot}src/clients/cs-client/{settings.OutputFileName}.g.cs";
-            var generator = new CSharpGenerator();
-            var csharpCode = generator.Generate(document, settings);
+            var csharpOutputPath = $"{solutionRoot}src/clients/cs-client/{csharpSettings.OutputFileName}.g.cs";
+            var csharpGenerator = new CSharpGenerator();
+            var csharpCode = csharpGenerator.Generate(document, csharpSettings);
 
-            // save output
             File.WriteAllText(csharpOutputPath, csharpCode);
+
+            // generate Python client
+            var pythonSettings = new GeneratorSettings(
+                Namespace: "Nexus.Client",
+                ClientName: "NexusClient",
+                OutputFileName: "NexusClient",
+                ExceptionType: "NexusException",
+                NexusConfigurationHeaderKey: "Nexus-Configuration",
+                AuthorizationHeaderKey: "Authorization");
+
+            var pythonOutputPath = $"{solutionRoot}src/clients/python-client/{pythonSettings.OutputFileName}.g.py";
+            var pythonGenerator = new PythonGenerator();
+            var pythonCode = pythonGenerator.Generate(document, pythonSettings);
+
+            File.WriteAllText(pythonOutputPath, pythonCode);
 
             // save open API document
             var openApiDocumentOutputPath = $"{solutionRoot}{openApiFileName}";

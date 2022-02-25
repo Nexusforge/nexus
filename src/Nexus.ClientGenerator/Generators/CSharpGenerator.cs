@@ -100,7 +100,7 @@ $@"    /// <summary>
             var basePath = Assembly.GetExecutingAssembly().Location;
 
             var template = File
-                .ReadAllText(Path.Combine(basePath, "..", "Template.cs"))
+                .ReadAllText(Path.Combine(basePath, "..", "Templates", "CSharpTemplate.cs"))
                 .Replace("{", "{{")
                 .Replace("}", "}}");
 

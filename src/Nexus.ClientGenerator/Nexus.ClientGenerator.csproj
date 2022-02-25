@@ -10,19 +10,16 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <TargetFramework>$(TargetFrameworkVersion)</TargetFramework>
-    <OutputType>Exe</OutputType>
-    <GenerateDocumentationFile>false</GenerateDocumentationFile>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
-
   <ItemGroup>
-    <Compile Remove="Template.cs" />
+    <Compile Remove="Templates\CSharpTemplate.cs" />
+    <Compile Remove="Templates\PythonTemplate.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Template.cs">
+    <Content Include="Templates\CSharpTemplate.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Templates\PythonTemplate.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
@@ -34,15 +31,5 @@
   <ItemGroup>
     <ProjectReference Include="..\Nexus\Nexus.csproj" />
   </ItemGroup>
-
-  <PropertyGroup>
-    <GetTargetPathDependsOn>$(GetTargetPathDependsOn);GetDependencyTargetPaths</GetTargetPathDependsOn>
-  </PropertyGroup>
-
-  <Target Name="GetDependencyTargetPaths" AfterTargets="ResolvePackageDependenciesForBuild">
-      <ItemGroup>
-        <TargetPathWithTargetPlatformMoniker Include="@(ResolvedCompileFileDefinitions)" IncludeRuntimeDependency="false" />
-      </ItemGroup>
-  </Target>
 
 </Project>
