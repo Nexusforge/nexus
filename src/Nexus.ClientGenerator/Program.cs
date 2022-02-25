@@ -76,7 +76,7 @@ namespace Nexus.ClientGenerator
                 NexusConfigurationHeaderKey: "Nexus-Configuration",
                 AuthorizationHeaderKey: "Authorization");
 
-            var pythonOutputPath = $"{solutionRoot}src/clients/python-client/{pythonSettings.OutputFileName}.g.py";
+            var pythonOutputPath = $"{solutionRoot}src/clients/python-client/{pythonSettings.OutputFileName}.py";
             var pythonGenerator = new PythonGenerator();
             var pythonCode = pythonGenerator.Generate(document, pythonSettings);
 

@@ -10,7 +10,7 @@
 // 7 = SubClientSource
 // 8 = ExceptionType
 // 9 = Models
-// 10 = SubClientInterfacePoperties
+// 10 = SubClientInterfaceProperties
 
 using System.Globalization;
 using System.Net;
@@ -23,10 +23,12 @@ using System.Text.Json.Serialization;
 namespace {0};
 
 /// <summary>
-/// The client for the Nexus system.
+/// A client for the Nexus system.
 /// </summary>
 public interface I{1}
 {
+{10}
+
     /// <summary>
     /// Signs in the user.
     /// </summary>
@@ -44,12 +46,9 @@ public interface I{1}
     /// Clears configuration data for all subsequent Nexus API requests.
     /// </summary>
     void ClearConfiguration();
+}
 
-{10}}
-
-/// <summary>
-/// A client for the Nexus system.
-/// </summary>
+/// <inheritdoc />
 public class {1}
 {
     private const string NexusConfigurationHeaderKey = "{2}";
@@ -150,10 +149,7 @@ public class {1}
             ? default
             : JsonContent.Create(content, options: _options);
 
-        using var request = BuildRequestMessage(method, relativeUrl, httpContent);
-
-        if (acceptHeaderValue is not null)
-            request.Headers.Accept.Add(MediaTypeWithQualityHeaderValue.Parse(acceptHeaderValue));
+        using var request = BuildRequestMessage(method, relativeUrl, httpContent, acceptHeaderValue);
 
         // send request
         var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
@@ -173,7 +169,7 @@ public class {1}
 
                     if (parameter is not null && parameter.Contains("The token expired at"))
                     {
-                        using var newRequest = BuildRequestMessage(method, relativeUrl, httpContent);
+                        using var newRequest = BuildRequestMessage(method, relativeUrl, httpContent, acceptHeaderValue);
 
                         try
                         {
@@ -241,14 +237,19 @@ public class {1}
         }
     }
     
-    private HttpRequestMessage BuildRequestMessage(string method, string relativeUrl, HttpContent? httpContent)
+    private HttpRequestMessage BuildRequestMessage(string method, string relativeUrl, HttpContent? httpContent, string? acceptHeaderValue)
     {
-        return new HttpRequestMessage()
+        var requestMessage = new HttpRequestMessage()
         {
             Method = new HttpMethod(method),
             RequestUri = new Uri(relativeUrl, UriKind.Relative),
             Content = httpContent
         };
+
+        if (acceptHeaderValue is not null)
+            requestMessage.Headers.Accept.Add(MediaTypeWithQualityHeaderValue.Parse(acceptHeaderValue));
+
+        return requestMessage;
     }
 
     private async Task<HttpResponseMessage?> RefreshTokenAsync(

@@ -12,14 +12,17 @@
 
   <ItemGroup>
     <Compile Remove="Templates\CSharpTemplate.cs" />
-    <Compile Remove="Templates\PythonTemplate.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Templates\PythonTemplate.py" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="Templates\CSharpTemplate.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Templates\PythonTemplate.cs">
+    <Content Include="Templates\PythonTemplate.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

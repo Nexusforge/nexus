@@ -23,7 +23,7 @@ namespace Nexus.ClientGenerator
             
             foreach (var subClient in subClients)
             {
-                sourceTextBuilder.AppendLine($"    private {subClient}Client _{subClient};");
+                sourceTextBuilder.AppendLine($"    private {subClient}Client _{Shared.FirstCharToLower(subClient)};");
             }
 
             var subClientFields = sourceTextBuilder.ToString();
@@ -33,7 +33,7 @@ namespace Nexus.ClientGenerator
 
             foreach (var subClient in subClients)
             {
-                sourceTextBuilder.AppendLine($"        _{subClient} = new {subClient}Client(this);");
+                sourceTextBuilder.AppendLine($"        _{Shared.FirstCharToLower(subClient)} = new {subClient}Client(this);");
             }
 
             var subClientFieldAssignments = sourceTextBuilder.ToString();
@@ -44,7 +44,7 @@ namespace Nexus.ClientGenerator
             foreach (var subClient in subClients)
             {
                 sourceTextBuilder.AppendLine("    /// <inheritdoc />");
-                sourceTextBuilder.AppendLine($"    public I{subClient}Client {subClient} => _{subClient};");
+                sourceTextBuilder.AppendLine($"    public I{subClient}Client {subClient} => _{Shared.FirstCharToLower(subClient)};");
                 sourceTextBuilder.AppendLine();
             }
 
@@ -133,7 +133,7 @@ $@"    /// <summary>
             // interface
             sourceTextBuilder.AppendLine(
 $@"/// <summary>
-/// Provides methods to interact with {SplitCamelCase(className).ToLower()}.
+/// Provides methods to interact with {Shared.SplitCamelCase(className).ToLower()}.
 /// </summary>
 public interface I{augmentedClassName}
 {{");
@@ -357,12 +357,12 @@ $@"    /// <summary>
                 {
                     foreach (var property in schema.Properties)
                     {
-                        sourceTextBuilder.AppendLine($"/// <param name=\"{FirstCharToUpper(property.Key)}\">{property.Value.Description}</param>");
+                        sourceTextBuilder.AppendLine($"/// <param name=\"{Shared.FirstCharToUpper(property.Key)}\">{property.Value.Description}</param>");
                     }
                 }
 
                 sourceTextBuilder
-                    .AppendLine($"public record {modelName} ({parameters});");
+                    .AppendLine($"public record {modelName}({parameters});");
             }
         }
 
@@ -370,9 +370,9 @@ $@"    /// <summary>
         {
             var methodParameters = propertyMap.Select(entry =>
             {
-                var returnType = GetType(entry.Value);
-                var parameterName = FirstCharToUpper(entry.Key);
-                return $"{returnType} {parameterName}";
+                var type = GetType(entry.Value);
+                var parameterName = Shared.FirstCharToUpper(entry.Key);
+                return $"{type} {parameterName}";
             });
 
             return string.Join(", ", methodParameters);
@@ -424,17 +424,6 @@ $@"    /// <summary>
             return schema.Nullable
                 ? $"{type}?"
                 : type;
-        }
-
-        // https://stackoverflow.com/questions/4135317/make-first-letter-of-a-string-upper-case-with-maximum-performance?rq=1
-        private static string FirstCharToUpper(string input)
-        {
-            return input switch
-            {
-                null => throw new ArgumentNullException(nameof(input)),
-                "" => throw new ArgumentException($"{nameof(input)} cannot be empty", nameof(input)),
-                _ => input[0].ToString().ToUpper() + input.Substring(1)
-            };
         }
 
         private string GetMethodSignature(
@@ -516,11 +505,6 @@ $@"    /// <summary>
 
                 return $"{asyncMethodName}({parametersString}, CancellationToken cancellationToken = default)";
             }
-        }
-
-        private static string SplitCamelCase(string input)
-        {
-            return Regex.Replace(input, "(?<=[a-z])([A-Z])", " $1").Trim();
         }
     }
 }

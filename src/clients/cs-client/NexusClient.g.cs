@@ -10,7 +10,7 @@
 // 7 = SubClientSource
 // 8 = ExceptionType
 // 9 = Models
-// 10 = SubClientInterfacePoperties
+// 10 = SubClientInterfaceProperties
 
 using System.Globalization;
 using System.Net;
@@ -23,28 +23,10 @@ using System.Text.Json.Serialization;
 namespace Nexus.Client;
 
 /// <summary>
-/// The client for the Nexus system.
+/// A client for the Nexus system.
 /// </summary>
 public interface INexusClient
 {
-    /// <summary>
-    /// Signs in the user.
-    /// </summary>
-    /// <param name="tokenPair">A pair of access and refresh tokens.</param>
-    /// <returns>A task.</returns>
-    void SignIn(TokenPair tokenPair);
-
-    /// <summary>
-    /// Attaches configuration data to subsequent Nexus API requests.
-    /// </summary>
-    /// <param name="configuration">The configuration data.</param>
-    IDisposable AttachConfiguration(IDictionary<string, string> configuration);
-
-    /// <summary>
-    /// Clears configuration data for all subsequent Nexus API requests.
-    /// </summary>
-    void ClearConfiguration();
-
     /// <summary>
     /// Gets the <see cref="IArtifactsClient"/>.
     /// </summary>
@@ -85,11 +67,28 @@ public interface INexusClient
     /// </summary>
     IWritersClient Writers { get; set; }
 
+
+
+    /// <summary>
+    /// Signs in the user.
+    /// </summary>
+    /// <param name="tokenPair">A pair of access and refresh tokens.</param>
+    /// <returns>A task.</returns>
+    void SignIn(TokenPair tokenPair);
+
+    /// <summary>
+    /// Attaches configuration data to subsequent Nexus API requests.
+    /// </summary>
+    /// <param name="configuration">The configuration data.</param>
+    IDisposable AttachConfiguration(IDictionary<string, string> configuration);
+
+    /// <summary>
+    /// Clears configuration data for all subsequent Nexus API requests.
+    /// </summary>
+    void ClearConfiguration();
 }
 
-/// <summary>
-/// A client for the Nexus system.
-/// </summary>
+/// <inheritdoc />
 public class NexusClient
 {
     private const string NexusConfigurationHeaderKey = "Nexus-Configuration";
@@ -102,14 +101,14 @@ public class NexusClient
     private HttpClient _httpClient;
     private string? _tokenFilePath;
 
-    private ArtifactsClient _Artifacts;
-    private CatalogsClient _Catalogs;
-    private DataClient _Data;
-    private JobsClient _Jobs;
-    private PackageReferencesClient _PackageReferences;
-    private SourcesClient _Sources;
-    private UsersClient _Users;
-    private WritersClient _Writers;
+    private ArtifactsClient _artifacts;
+    private CatalogsClient _catalogs;
+    private DataClient _data;
+    private JobsClient _jobs;
+    private PackageReferencesClient _packageReferences;
+    private SourcesClient _sources;
+    private UsersClient _users;
+    private WritersClient _writers;
 
     static NexusClient()
     {
@@ -142,14 +141,14 @@ public class NexusClient
 
         _httpClient = httpClient;
 
-        _Artifacts = new ArtifactsClient(this);
-        _Catalogs = new CatalogsClient(this);
-        _Data = new DataClient(this);
-        _Jobs = new JobsClient(this);
-        _PackageReferences = new PackageReferencesClient(this);
-        _Sources = new SourcesClient(this);
-        _Users = new UsersClient(this);
-        _Writers = new WritersClient(this);
+        _artifacts = new ArtifactsClient(this);
+        _catalogs = new CatalogsClient(this);
+        _data = new DataClient(this);
+        _jobs = new JobsClient(this);
+        _packageReferences = new PackageReferencesClient(this);
+        _sources = new SourcesClient(this);
+        _users = new UsersClient(this);
+        _writers = new WritersClient(this);
 
     }
 
@@ -159,28 +158,28 @@ public class NexusClient
     public bool IsAuthenticated => _tokenPair is not null;
 
     /// <inheritdoc />
-    public IArtifactsClient Artifacts => _Artifacts;
+    public IArtifactsClient Artifacts => _artifacts;
 
     /// <inheritdoc />
-    public ICatalogsClient Catalogs => _Catalogs;
+    public ICatalogsClient Catalogs => _catalogs;
 
     /// <inheritdoc />
-    public IDataClient Data => _Data;
+    public IDataClient Data => _data;
 
     /// <inheritdoc />
-    public IJobsClient Jobs => _Jobs;
+    public IJobsClient Jobs => _jobs;
 
     /// <inheritdoc />
-    public IPackageReferencesClient PackageReferences => _PackageReferences;
+    public IPackageReferencesClient PackageReferences => _packageReferences;
 
     /// <inheritdoc />
-    public ISourcesClient Sources => _Sources;
+    public ISourcesClient Sources => _sources;
 
     /// <inheritdoc />
-    public IUsersClient Users => _Users;
+    public IUsersClient Users => _users;
 
     /// <inheritdoc />
-    public IWritersClient Writers => _Writers;
+    public IWritersClient Writers => _writers;
 
 
 
@@ -230,10 +229,7 @@ public class NexusClient
             ? default
             : JsonContent.Create(content, options: _options);
 
-        using var request = BuildRequestMessage(method, relativeUrl, httpContent);
-
-        if (acceptHeaderValue is not null)
-            request.Headers.Accept.Add(MediaTypeWithQualityHeaderValue.Parse(acceptHeaderValue));
+        using var request = BuildRequestMessage(method, relativeUrl, httpContent, acceptHeaderValue);
 
         // send request
         var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
@@ -253,7 +249,7 @@ public class NexusClient
 
                     if (parameter is not null && parameter.Contains("The token expired at"))
                     {
-                        using var newRequest = BuildRequestMessage(method, relativeUrl, httpContent);
+                        using var newRequest = BuildRequestMessage(method, relativeUrl, httpContent, acceptHeaderValue);
 
                         try
                         {
@@ -321,14 +317,19 @@ public class NexusClient
         }
     }
     
-    private HttpRequestMessage BuildRequestMessage(string method, string relativeUrl, HttpContent? httpContent)
+    private HttpRequestMessage BuildRequestMessage(string method, string relativeUrl, HttpContent? httpContent, string? acceptHeaderValue)
     {
-        return new HttpRequestMessage()
+        var requestMessage = new HttpRequestMessage()
         {
             Method = new HttpMethod(method),
             RequestUri = new Uri(relativeUrl, UriKind.Relative),
             Content = httpContent
         };
+
+        if (acceptHeaderValue is not null)
+            requestMessage.Headers.Accept.Add(MediaTypeWithQualityHeaderValue.Parse(acceptHeaderValue));
+
+        return requestMessage;
     }
 
     private async Task<HttpResponseMessage?> RefreshTokenAsync(
@@ -1205,7 +1206,7 @@ internal class DisposableConfiguration : IDisposable
 /// <param name="Id">Gets the identifier.</param>
 /// <param name="Properties">Gets the map of properties.</param>
 /// <param name="Resources">Gets the list of representations.</param>
-public record ResourceCatalog (string Id, IDictionary<string, string>? Properties, ICollection<Resource>? Resources);
+public record ResourceCatalog(string Id, IDictionary<string, string>? Properties, ICollection<Resource>? Resources);
 
 /// <summary>
 /// A resource is part of a resource catalog and holds a list of representations.
@@ -1213,7 +1214,7 @@ public record ResourceCatalog (string Id, IDictionary<string, string>? Propertie
 /// <param name="Id">Gets the identifier.</param>
 /// <param name="Properties">Gets the map of properties.</param>
 /// <param name="Representations">Gets the list of representations.</param>
-public record Resource (string Id, IDictionary<string, string>? Properties, ICollection<Representation>? Representations);
+public record Resource(string Id, IDictionary<string, string>? Properties, ICollection<Representation>? Representations);
 
 /// <summary>
 /// A representation is part of a resource.
@@ -1222,7 +1223,7 @@ public record Resource (string Id, IDictionary<string, string>? Properties, ICol
 /// <param name="SamplePeriod">Gets the sample period.</param>
 /// <param name="Detail">Gets the detail.</param>
 /// <param name="IsPrimary">Gets a value which indicates the primary representation to be used for aggregations. The value of this property is only relevant for resources with multiple representations.</param>
-public record Representation (NexusDataType DataType, TimeSpan SamplePeriod, string? Detail, bool IsPrimary);
+public record Representation(NexusDataType DataType, TimeSpan SamplePeriod, string? Detail, bool IsPrimary);
 
 /// <summary>
 /// Specifies the Nexus data type.
@@ -1286,13 +1287,13 @@ public enum NexusDataType
 /// </summary>
 /// <param name="Begin">The date/time of the first data in the catalog.</param>
 /// <param name="End">The date/time of the last data in the catalog.</param>
-public record CatalogTimeRange (DateTime Begin, DateTime End);
+public record CatalogTimeRange(DateTime Begin, DateTime End);
 
 /// <summary>
 /// The catalog availability.
 /// </summary>
 /// <param name="Data">The actual availability data.</param>
-public record CatalogAvailability (IDictionary<string, double> Data);
+public record CatalogAvailability(IDictionary<string, double> Data);
 
 /// <summary>
 /// A structure for catalog metadata.
@@ -1301,7 +1302,7 @@ public record CatalogAvailability (IDictionary<string, double> Data);
 /// <param name="IsHidden">A boolean which indicates if the catalog should be hidden.</param>
 /// <param name="GroupMemberships">A list of groups the catalog is part of.</param>
 /// <param name="Overrides">Overrides for the catalog.</param>
-public record CatalogMetadata (string? Contact, bool IsHidden, ICollection<string>? GroupMemberships, ResourceCatalog? Overrides);
+public record CatalogMetadata(string? Contact, bool IsHidden, ICollection<string>? GroupMemberships, ResourceCatalog? Overrides);
 
 /// <summary>
 /// Description of a job.
@@ -1310,7 +1311,7 @@ public record CatalogMetadata (string? Contact, bool IsHidden, ICollection<strin
 /// <param name="Type">export</param>
 /// <param name="Owner">test@nexus.localhost</param>
 /// <param name="Parameters">Job parameters.</param>
-public record Job (Guid Id, string Type, string Owner, object? Parameters);
+public record Job(Guid Id, string Type, string Owner, object? Parameters);
 
 /// <summary>
 /// A structure for export parameters.
@@ -1321,7 +1322,7 @@ public record Job (Guid Id, string Type, string Owner, object? Parameters);
 /// <param name="Type">Nexus.Writers.Csv</param>
 /// <param name="ResourcePaths">["/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean", "/IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean"]</param>
 /// <param name="Configuration">{ "RowIndexFormat": "Index", "SignificantFigures": "4" }</param>
-public record ExportParameters (DateTime Begin, DateTime End, TimeSpan FilePeriod, string Type, ICollection<string> ResourcePaths, IDictionary<string, string> Configuration);
+public record ExportParameters(DateTime Begin, DateTime End, TimeSpan FilePeriod, string Type, ICollection<string> ResourcePaths, IDictionary<string, string> Configuration);
 
 /// <summary>
 /// Describes the status of the job.
@@ -1331,7 +1332,7 @@ public record ExportParameters (DateTime Begin, DateTime End, TimeSpan FilePerio
 /// <param name="Progress">The progress from 0 to 1.</param>
 /// <param name="ExceptionMessage">An optional exception message.</param>
 /// <param name="Result">The optional result.</param>
-public record JobStatus (DateTime Start, TaskStatus Status, double Progress, string? ExceptionMessage, object? Result);
+public record JobStatus(DateTime Start, TaskStatus Status, double Progress, string? ExceptionMessage, object? Result);
 
 /// <summary>
 /// 
@@ -1385,14 +1386,14 @@ public enum TaskStatus
 /// </summary>
 /// <param name="Provider">The provider which loads the package.</param>
 /// <param name="Configuration">The configuration of the package reference.</param>
-public record PackageReference (string Provider, IDictionary<string, string> Configuration);
+public record PackageReference(string Provider, IDictionary<string, string> Configuration);
 
 /// <summary>
 /// An extension description.
 /// </summary>
 /// <param name="Type">The extension type.</param>
 /// <param name="Description">An optional description.</param>
-public record ExtensionDescription (string Type, string? Description);
+public record ExtensionDescription(string Type, string? Description);
 
 /// <summary>
 /// A backend source.
@@ -1402,33 +1403,33 @@ public record ExtensionDescription (string Type, string? Description);
 /// <param name="Configuration">Configuration parameters for the instantiated source.</param>
 /// <param name="Publish">A boolean which indicates if the found catalogs should be available for everyone.</param>
 /// <param name="Disable">A boolean which indicates if this backend source should be ignored.</param>
-public record DataSourceRegistration (string Type, Uri ResourceLocator, IDictionary<string, string> Configuration, bool Publish, bool Disable);
+public record DataSourceRegistration(string Type, Uri ResourceLocator, IDictionary<string, string> Configuration, bool Publish, bool Disable);
 
 /// <summary>
 /// Describes an OpenID connect provider.
 /// </summary>
 /// <param name="Scheme">The scheme.</param>
 /// <param name="DisplayName">The display name.</param>
-public record AuthenticationSchemeDescription (string Scheme, string DisplayName);
+public record AuthenticationSchemeDescription(string Scheme, string DisplayName);
 
 /// <summary>
 /// A token pair.
 /// </summary>
 /// <param name="AccessToken">The JWT token.</param>
 /// <param name="RefreshToken">The refresh token.</param>
-public record TokenPair (string AccessToken, string RefreshToken);
+public record TokenPair(string AccessToken, string RefreshToken);
 
 /// <summary>
 /// A refresh token request.
 /// </summary>
 /// <param name="RefreshToken">The refresh token.</param>
-public record RefreshTokenRequest (string RefreshToken);
+public record RefreshTokenRequest(string RefreshToken);
 
 /// <summary>
 /// A revoke token request.
 /// </summary>
 /// <param name="Token">The refresh token.</param>
-public record RevokeTokenRequest (string Token);
+public record RevokeTokenRequest(string Token);
 
 /// <summary>
 /// Represents a user.
@@ -1437,7 +1438,7 @@ public record RevokeTokenRequest (string Token);
 /// <param name="Name">The user name.</param>
 /// <param name="RefreshTokens">The list of refresh tokens.</param>
 /// <param name="Claims">The map of claims.</param>
-public record NexusUser (string Id, string Name, ICollection<RefreshToken> RefreshTokens, IDictionary<string, NexusClaim> Claims);
+public record NexusUser(string Id, string Name, ICollection<RefreshToken> RefreshTokens, IDictionary<string, NexusClaim> Claims);
 
 /// <summary>
 /// A refresh token.
@@ -1450,12 +1451,12 @@ public record NexusUser (string Id, string Name, ICollection<RefreshToken> Refre
 /// <param name="IsExpired">A boolean that indicates if the token has expired.</param>
 /// <param name="IsRevoked">A boolean that indicates if the token has been revoked.</param>
 /// <param name="IsActive">A boolean that indicates if the token is active.</param>
-public record RefreshToken (string Token, DateTime Created, DateTime Expires, DateTime? Revoked, string? ReplacedByToken, bool IsExpired, bool IsRevoked, bool IsActive);
+public record RefreshToken(string Token, DateTime Created, DateTime Expires, DateTime? Revoked, string? ReplacedByToken, bool IsExpired, bool IsRevoked, bool IsActive);
 
 /// <summary>
 /// Represents a claim.
 /// </summary>
 /// <param name="Type">The claim type.</param>
 /// <param name="Value">The claim value.</param>
-public record NexusClaim (string Type, string Value);
+public record NexusClaim(string Type, string Value);
 
