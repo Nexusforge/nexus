@@ -109,7 +109,7 @@ namespace Nexus.Controllers
 
                             return catalogContainer;
                         },
-                        group => (IEnumerable<CatalogItem>)group);
+                        group => group.Select(entry => entry.Item));
 
             }
             catch (UnauthorizedAccessException ex)

@@ -43,6 +43,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 {
                     options.TokenValidationParameters = new TokenValidationParameters()
                     {
+                        NameClaimType = Claims.Name,
                         ClockSkew = TimeSpan.Zero,
                         ValidateAudience = false,
                         ValidateIssuer = false,
@@ -93,14 +94,14 @@ namespace Microsoft.Extensions.DependencyInjection
                             var userId = principal.FindFirstValue(Claims.Subject)
                                 ?? throw new Exception("The subject claim is missing. This should never happen.");
 
-                            var userName = principal.FindFirstValue(Claims.Name)
+                            var username = principal.FindFirstValue(Claims.Name)
                                 ?? throw new Exception("The name claim is required.");
 
-                            var userContext = context.HttpContext.RequestServices.GetRequiredService<UserDbContext>();
+                            var dbContext = context.HttpContext.RequestServices.GetRequiredService<UserDbContext>();
                             var uniqueUserId = $"{Uri.EscapeDataString(userId)}@{Uri.EscapeDataString(context.Scheme.Name)}";
 
                             // user
-                            var user = await userContext.Users
+                            var user = await dbContext.Users
                                 .SingleOrDefaultAsync(user => user.Id == uniqueUserId);
 
                             if (user is null)
@@ -110,26 +111,26 @@ namespace Microsoft.Extensions.DependencyInjection
                                 user = new NexusUser()
                                 {
                                     Id = uniqueUserId,
-                                    Name = userName,
+                                    Name = username,
                                     RefreshTokens = new List<RefreshToken>()
                                 };
 
-                                var isFirstUser = !userContext.Users.Any();
+                                var isFirstUser = !dbContext.Users.Any();
 
                                 if (isFirstUser)
                                     newClaims[Guid.NewGuid()] = new NexusClaim(NexusClaims.IS_ADMIN, "true");
 
                                 user.Claims = new ReadOnlyDictionary<Guid, NexusClaim>(newClaims);
-                                userContext.Users.Add(user);
+                                dbContext.Users.Add(user);
                             }
 
                             else
                             {
                                 // user name may change, so update it
-                                user.Name = userName;
+                                user.Name = username;
                             }
 
-                            await userContext.SaveChangesAsync();
+                            await dbContext.SaveChangesAsync();
 
                             // oicd identity
                             var oidcIdentity = (ClaimsIdentity)principal.Identity!;

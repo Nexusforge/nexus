@@ -1,16 +1,24 @@
 ﻿from __future__ import annotations
 
+import dataclasses
 import json
 import os
+import re
 import tempfile
-import uuid
+import types
+import typing
+from base64 import decode
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Awaitable, Dict, List, Type
+from json import JSONEncoder
+from pathlib import Path
+from types import GenericAlias
+from typing import Any, Awaitable, Type, TypeVar
 from urllib.parse import quote
+from uuid import UUID
 
-from httpx import AsyncClient, AsyncByteStream, Request, Response, codes
+from httpx import AsyncByteStream, AsyncClient, Request, Response, codes
 
 # 0 = Namespace
 # 1 = ClientName
@@ -23,6 +31,123 @@ from httpx import AsyncClient, AsyncByteStream, Request, Response, codes
 # 8 = ExceptionType
 # 9 = Models
 # 10 = SubClientInterfaceProperties
+
+class _MyEncoder(JSONEncoder):
+
+    def default(self, value):
+        return self._convert(value)
+
+    def _convert(self, value):
+
+        # date/time
+        if isinstance(value, datetime):
+            result = value.isoformat()
+
+        # timedelta
+        elif isinstance(value, timedelta):
+            hours, remainder = divmod(value.seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            result = f"{int(value.days)}.{int(hours):02}:{int(minutes):02}:{int(seconds):02}.{value.microseconds}"
+
+        # enum
+        elif isinstance(value, Enum):
+            result = value.value
+
+        # dataclass
+        elif dataclasses.is_dataclass(value):
+            result = {}
+
+            for (key, local_value) in value.__dict__.items():
+                result[self._to_camel_case(key)] = self._convert(local_value)
+
+        # else
+        else:
+            result = value
+
+        return result
+
+    def _to_camel_case(self, value):
+        components = value.split("_")
+        return components[0] + ''.join(x.title() for x in components[1:])
+
+T = TypeVar("T")
+snake_case_pattern = re.compile('((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))')
+
+def _decode(cls: Type[T], data) -> T:
+
+    if (data is None):
+        return None
+
+    if isinstance(cls, GenericAlias):
+
+        origin = typing.get_origin(cls)
+        args = typing.get_args(cls)
+
+        # list
+        if (issubclass(origin, list)):
+
+            listType = args[0]
+            instance: list = list()
+
+            for value in data:
+                instance.append(_decode(listType, value))
+
+            return instance
+        
+        # dict
+        elif (issubclass(origin, dict)):
+
+            keyType = args[0]
+            valueType = args[1]
+
+            instance: dict = dict()
+
+            for key, value in data.items():
+                key = snake_case_pattern.sub(r'_\1', key).lower()
+                instance[_decode(keyType, key)] = _decode(valueType, value)
+
+            return instance
+
+        else:
+            raise Exception(f"Type {str(origin)} cannot be deserialized.")
+
+    elif issubclass(cls, datetime):
+        return datetime.strptime(data[:-1], "%Y-%m-%dT%H:%M:%S.%f")
+
+    elif issubclass(cls, UUID):
+        return UUID(data)
+       
+    elif dataclasses.is_dataclass(cls):
+
+        p = []
+
+        for name, value in data.items():
+
+            type_hints = typing.get_type_hints(cls)
+            name = snake_case_pattern.sub(r'_\1', name).lower()
+            parameterType = type_hints.get(name)
+            value = _decode(parameterType, value)
+
+            p.append(value)
+
+        parameters_count = len(p)
+
+        if (parameters_count == 0): return cls()
+        if (parameters_count == 1): return cls(p[0])
+        if (parameters_count == 2): return cls(p[0], p[1])
+        if (parameters_count == 3): return cls(p[0], p[1], p[2])
+        if (parameters_count == 4): return cls(p[0], p[1], p[2], p[3])
+        if (parameters_count == 5): return cls(p[0], p[1], p[2], p[3], p[4])
+        if (parameters_count == 6): return cls(p[0], p[1], p[2], p[3], p[4], p[5])
+        if (parameters_count == 7): return cls(p[0], p[1], p[2], p[3], p[4], p[5], p[6])
+        if (parameters_count == 8): return cls(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7])
+        if (parameters_count == 9): return cls(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8])
+        if (parameters_count == 10): return cls(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9])
+
+        raise Exception("Dataclasses with more than 10 parameters cannot be deserialized.")
+
+    else:
+        return data
 
 class StreamResponse:
     """A stream response."""
@@ -108,23 +233,22 @@ class {1}:
         Args:
             token_pair: A pair of access and refresh tokens.
         """
-        # _tokenFilePath = Path.Combine(_tokenFolderPath, Uri.EscapeDataString(tokenPair.RefreshToken) + ".json");
+
+        self._token_file_path = os.path.join(self._token_folder_path, quote(token_pair.refresh_token, safe="") + ".json")
         
-        # if (File.Exists(_tokenFilePath))
-        # {
-        #     tokenPair = JsonSerializer.Deserialize<TokenPair>(File.ReadAllText(_tokenFilePath), _options)
-        #         ?? throw new Exception($"Unable to deserialize file {_tokenFilePath} into a token pair.");
-        # }
+        if Path(self._token_file_path).is_file():
+            with open(self._token_file_path) as json_file:
+                jsonObject = json.load(json_file)
+                token_pair = _decode(TokenPair, jsonObject)
 
-        # else
-        # {
-        #     Directory.CreateDirectory(_tokenFolderPath);
-        #     File.WriteAllText(_tokenFilePath, JsonSerializer.Serialize(tokenPair, _options));
-        # }
+        else:
+            Path(self._token_folder_path).mkdir(parents=True, exist_ok=True)
 
-        # _httpClient.DefaultRequestHeaders.Add(AuthorizationHeaderKey, $"Bearer {tokenPair.AccessToken}");
-
-        # _tokenPair = tokenPair;
+            with open(self._token_file_path, "w") as json_file:
+                json.dump(token_pair, json_file, indent=4, cls=_MyEncoder)
+                
+        self._http_client.headers[self._authorization_header_key] = f"Bearer {token_pair.access_token}"
+        self._token_pair = token_pair
 
     # /// <inheritdoc />
     # public IDisposable AttachConfiguration(IDictionary<string, string> configuration)
@@ -147,7 +271,7 @@ class {1}:
         # prepare request
         http_content: Any = None \
             if content is None \
-            else json.dumps(content)
+            else json.dumps(content, cls=_MyEncoder)
 
         request = self.build_request_message(method, relative_url, http_content, accept_header_value)
 
@@ -165,16 +289,16 @@ class {1}:
 
                 if www_authenticate_header is not None:
 
-                    if www_authenticate_header.contains("The token expired at"):
-
-                        new_request = self.build_request_message(method, relative_url, http_content, accept_header_value)
+                    if "The token expired at" in www_authenticate_header:
 
                         try:
+                            await self._refresh_token_async()
 
-                            new_response = await self.refresh_token_async(response, new_request)
+                            new_request = self.build_request_message(method, relative_url, http_content, accept_header_value)
+                            new_response = await self._http_client.send(new_request)
 
                             if new_response is not None:
-                                response.Dispose()
+                                await response.aclose()
                                 response = new_response
                                 sign_out = False
 
@@ -197,26 +321,25 @@ class {1}:
 
         try:
 
-            stream = await response.stream
-
             if type is object:
                 return None
 
             elif type is StreamResponse:
-                return StreamResponse(response, stream)
+                return StreamResponse(response, response.stream)
 
             else:
 
-                returnValue = await JsonSerializer.deserialize_async(type, stream)
+                jsonObject = json.loads(response.text)
+                return_value = _decode(type, jsonObject)
 
-                if returnValue is None:
+                if return_value is None:
                     raise NexusException(f"N01", "Response data could not be deserialized.")
 
-                return returnValue
+                return return_value
 
         finally:
             if type is StreamResponse:
-                response.close()
+                await response.aclose()
     
     def build_request_message(self, method: str, relative_url: str, http_content: Any, accept_header_value: str) -> Request:
        
@@ -228,35 +351,27 @@ class {1}:
 
         return request_message
 
-    # private async Task<HttpResponseMessage?> RefreshTokenAsync(
-    #     HttpResponseMessage response, 
-    #     HttpRequestMessage newRequest,
-    #     CancellationToken cancellationToken)
-    # {
-    #     // see https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/dev/src/Microsoft.IdentityModel.Tokens/Validators.cs#L390
+    async def _refresh_token_async(self) -> Awaitable[Response]:
+        # see https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/dev/src/Microsoft.IdentityModel.Tokens/Validators.cs#L390
 
-    #     if (_tokenPair is null || response.RequestMessage is null)
-    #         throw new Exception("Refresh token or request message is null. This should never happen.");
+        if self._token_pair is None:
+            raise Exception("Refresh token is null. This should never happen.")
 
-    #     var refreshRequest = new RefreshTokenRequest(RefreshToken: _tokenPair.RefreshToken);
-    #     var tokenPair = await Users.RefreshTokenAsync(refreshRequest);
+        refresh_request = RefreshTokenRequest(refresh_token=self._token_pair.refresh_token)
+        token_pair = await self.users.refresh_token_async(refresh_request)
 
-    #     if (_tokenFilePath is not null)
-    #     {
-    #         Directory.CreateDirectory(_tokenFolderPath);
-    #         File.WriteAllText(_tokenFilePath, JsonSerializer.Serialize(tokenPair, _options));
-    #     }
+        if self._token_file_path is not None:
+            Path(self._token_folder_path).mkdir(parents=True, exist_ok=True)
+            
+            with open(self._token_file_path, "w") as json_file:
+                json.dump(token_pair, json_file, indent=4, cls=_MyEncoder)
 
-    #     var authorizationHeaderValue = $"Bearer {tokenPair.AccessToken}";
-    #     _httpClient.DefaultRequestHeaders.Remove(AuthorizationHeaderKey);
-    #     _httpClient.DefaultRequestHeaders.Add(AuthorizationHeaderKey, authorizationHeaderValue);
+        authorizationHeaderValue = f"Bearer {token_pair.access_token}"
+        del self._http_client.headers[self._authorization_header_key]
+        self._http_client.headers[self._authorization_header_key] = authorizationHeaderValue
 
-    #     _tokenPair = tokenPair;
-
-    #     return await _httpClient.SendAsync(newRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-    # }
+        self._token_pair = token_pair
 
     def sign_out(self) -> None:
-        # self._httpClient.DefaultRequestHeaders.Remove(AuthorizationHeaderKey);
+        del self._http_client.headers[self._authorization_header_key]
         self._token_pair = None
-

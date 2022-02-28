@@ -186,7 +186,7 @@ $@"class {augmentedClassName}:
             foreach (var parameter in pathParameters)
             {
                 var parameterName = parameter.Item1.Split(":")[0];
-                sourceTextBuilder.AppendLine($"        url = url.replace(\"{{{parameterName}}}\", quote(str({parameterName})))");
+                sourceTextBuilder.AppendLine($"        url = url.replace(\"{{{parameterName}}}\", quote(str({parameterName}), safe=\"\"))");
             }
 
             // query parameters
@@ -197,12 +197,12 @@ $@"class {augmentedClassName}:
             if (queryParameters.Any())
             {
                 sourceTextBuilder.AppendLine();
-                sourceTextBuilder.AppendLine("        queryValues: Dict[str, str] = {");
+                sourceTextBuilder.AppendLine("        queryValues: dict[str, str] = {");
 
                 foreach (var parameter in queryParameters)
                 {
                     var parameterName = parameter.Item1.Split(":")[0];
-                    var parameterValue = $"quote(str({parameterName}))";
+                    var parameterValue = $"quote(str({parameterName}), safe=\"\")";
 
                     sourceTextBuilder.AppendLine($"            \"{parameterName}\": {parameterValue},");
                 }
@@ -227,7 +227,7 @@ $@"class {augmentedClassName}:
                 : bodyParameter.Split(":")[0];
 
             sourceTextBuilder.AppendLine();
-            sourceTextBuilder.AppendLine($"        return self._client.invoke_async(type({returnType}), \"{operationType.ToString().ToUpper()}\", url, {acceptHeaderValue}, {contentValue})");
+            sourceTextBuilder.AppendLine($"        return self._client.invoke_async({returnType}, \"{operationType.ToString().ToUpper()}\", url, {acceptHeaderValue}, {contentValue})");
         }
 
         private void AppendModelSourceText(
@@ -319,12 +319,12 @@ class {modelName}:");
                     ("number", "double", _) => "float",
                     ("integer", "int32", _) => "int",
                     ("string", "uri", _) => "str",
-                    ("string", "guid", _) => "uuid",
+                    ("string", "guid", _) => "UUID",
                     ("string", "duration", _) => "timedelta",
                     ("string", "date-time", _) => "datetime",
                     ("string", _, _) => "str",
-                    ("array", _, _) => $"List[{GetType(schema.Items)}]",
-                    ("object", _, true) => $"Dict[str, {GetType(schema.AdditionalProperties)}]",
+                    ("array", _, _) => $"list[{GetType(schema.Items)}]",
+                    ("object", _, true) => $"dict[str, {GetType(schema.AdditionalProperties)}]",
                     (_, _, _) => throw new Exception($"The schema type {schema.Type} (or one of its formats) is not supported.")
                 };
             }

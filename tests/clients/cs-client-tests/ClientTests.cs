@@ -10,6 +10,8 @@ namespace Nexus.Client.Tests
 {
     public class ClientTests
     {
+        public const string NexusConfigurationHeaderKey = "Nexus-Configuration";
+
         [Fact]
         public async Task CanAuthenticateAndRefreshAsync()
         {
@@ -115,6 +117,70 @@ namespace Nexus.Client.Tests
             Assert.Equal(
                 JsonSerializer.Serialize(expectedCatalog),
                 JsonSerializer.Serialize(actualCatalog));
+        }
+
+        [Fact]
+        public async Task CanAddConfigurationAsync()
+        {
+            // Arrange
+            var messageHandlerMock = new Mock<HttpMessageHandler>();
+            var catalogId = "my-catalog-id";
+            var expectedCatalog = new ResourceCatalog(Id: catalogId, default, default);
+
+            var actualHeaders = new List<IEnumerable<string>?>();
+
+            messageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .Callback<HttpRequestMessage, CancellationToken>((requestMessage, cancellationToken) =>
+                {
+                    requestMessage.Headers.TryGetValues(NexusConfigurationHeaderKey, out var headers);
+                    actualHeaders.Add(headers);
+                })
+                .ReturnsAsync(() =>
+                {
+                    return new HttpResponseMessage()
+                    {
+                        StatusCode = HttpStatusCode.OK,
+                        Content = new StringContent(JsonSerializer.Serialize(expectedCatalog), Encoding.UTF8, "application/json"),
+                    };
+                });
+
+            // -> http client
+            var httpClient = new HttpClient(messageHandlerMock.Object)
+            {
+                BaseAddress = new Uri("http://localhost")
+            };
+
+            // -> API client
+            var client = new NexusClient(httpClient);
+
+            // Act
+            _ = await client.Catalogs.GetCatalogAsync(catalogId);
+
+            var configuration = new Dictionary<string, string>
+            {
+                ["foo1"] = "bar1",
+                ["foo2"] = "bar2"
+            };
+
+            using (var disposable = client.AttachConfiguration(configuration))
+            {
+                _ = await client.Catalogs.GetCatalogAsync(catalogId);
+            }
+
+            _ = await client.Catalogs.GetCatalogAsync(catalogId);
+
+            // Assert
+            var encodedJson = Convert.ToBase64String(JsonSerializer.SerializeToUtf8Bytes(configuration));
+
+            Assert.Collection(actualHeaders,
+                headers => Assert.Null(headers),
+                headers => Assert.Collection(headers, header => Assert.Equal(encodedJson, header)),
+                headers => Assert.Null(headers));
         }
     }
 }

@@ -169,11 +169,12 @@ public class {1}
 
                     if (parameter is not null && parameter.Contains("The token expired at"))
                     {
-                        using var newRequest = BuildRequestMessage(method, relativeUrl, httpContent, acceptHeaderValue);
-
                         try
                         {
-                            var newResponse = await RefreshTokenAsync(response, newRequest, cancellationToken);
+                            await RefreshTokenAsync(cancellationToken);
+
+                            using var newRequest = BuildRequestMessage(method, relativeUrl, httpContent, acceptHeaderValue);
+                            var newResponse = await _httpClient.SendAsync(newRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
                             if (newResponse is not null)
                             {
@@ -252,18 +253,15 @@ public class {1}
         return requestMessage;
     }
 
-    private async Task<HttpResponseMessage?> RefreshTokenAsync(
-        HttpResponseMessage response, 
-        HttpRequestMessage newRequest,
-        CancellationToken cancellationToken)
+    private async Task RefreshTokenAsync(CancellationToken cancellationToken)
     {
         // see https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/dev/src/Microsoft.IdentityModel.Tokens/Validators.cs#L390
 
-        if (_tokenPair is null || response.RequestMessage is null)
-            throw new Exception("Refresh token or request message is null. This should never happen.");
+        if (_tokenPair is null)
+            throw new Exception("Refresh token is null. This should never happen.");
 
         var refreshRequest = new RefreshTokenRequest(RefreshToken: _tokenPair.RefreshToken);
-        var tokenPair = await Users.RefreshTokenAsync(refreshRequest);
+        var tokenPair = await Users.RefreshTokenAsync(refreshRequest, cancellationToken);
 
         if (_tokenFilePath is not null)
         {
@@ -276,8 +274,6 @@ public class {1}
         _httpClient.DefaultRequestHeaders.Add(AuthorizationHeaderKey, authorizationHeaderValue);
 
         _tokenPair = tokenPair;
-
-        return await _httpClient.SendAsync(newRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
     }
 
     private void SignOut()
