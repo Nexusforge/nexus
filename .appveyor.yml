@@ -21,7 +21,7 @@ init:
   - ps: git config --global core.autocrlf true
 
 install:
-  - ps: python -m pip install frictionless
+  - ps: python -m pip install frictionless pyright
   - ps: dotnet tool restore
 
 build_script:
@@ -33,6 +33,8 @@ after_build:
 
 test_script:
   - ps: dotnet test -c $Env:CONFIGURATION /p:BuildProjectReferences=false
+  - ps: pyright
+  - ps: pytest
 
 artifacts:
   - path: artifacts/packages/**/*.nupkg

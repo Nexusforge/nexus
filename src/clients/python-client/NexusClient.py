@@ -73,6 +73,7 @@ class _MyEncoder(JSONEncoder):
 
 T = TypeVar("T")
 snake_case_pattern = re.compile('((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))')
+timespan_pattern = re.compile('^(?:([0-9]+)\.)?([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\.([0-9]+))?$')
 
 def _decode(cls: Type[T], data: Any) -> T:
 
@@ -114,6 +115,26 @@ def _decode(cls: Type[T], data: Any) -> T:
 
     elif issubclass(cls, datetime):
         return typing.cast(T, datetime.strptime(data[:-1], "%Y-%m-%dT%H:%M:%S.%f"))
+
+    elif issubclass(cls, timedelta):
+        # ^(?:([0-9]+)\.)?([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\.([0-9]+))?$
+        # 12:08:07
+        # 12:08:07.1250000
+        # 3000.00:08:07
+        # 3000.00:08:07.1250000
+        match = timespan_pattern.match(data)
+
+        if match:
+            days = int(match.group(1)) if match.group(1) else 0
+            hours = int(match.group(2)) if match.group(2) else 0
+            minutes = int(match.group(3)) if match.group(3) else 0
+            seconds = int(match.group(4)) if match.group(4) else 0
+            milliseconds = int(match.group(5)) if match.group(5) else 0
+
+            return typing.cast(T, timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds, milliseconds=milliseconds))
+
+        else:
+            raise Exception(f"Unable to deserialize {data} into value of type timedelta.")
 
     elif issubclass(cls, UUID):
         return typing.cast(T, UUID(data))
@@ -1053,7 +1074,7 @@ class NexusClient:
                 return typing.cast(T, type(None))
 
             elif type is StreamResponse:
-                return typing.cast(T, StreamResponse(response, response.stream))
+                return typing.cast(T, StreamResponse(response, typing.cast(AsyncByteStream, response.stream)))
 
             else:
 

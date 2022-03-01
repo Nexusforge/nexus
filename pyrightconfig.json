@@ -1,0 +1,6 @@
+{
+  "include": [
+    "src/clients/python-client",
+    "tests/clients/python-client-tests"
+  ]
+}
