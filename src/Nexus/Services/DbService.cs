@@ -9,6 +9,7 @@ namespace Nexus.Services
         Task<NexusUser?> FindUserAsync(string userId);
         Task<RefreshToken?> FindTokenAsync(string token);
         Task UpdateUserAsync(NexusUser user);
+        Task DeleteUserAsync(string userId);
     }
 
     internal class DbService : IDBService
@@ -58,6 +59,16 @@ namespace Nexus.Services
         {
             _context.Users.Update(user);
             return _context.SaveChangesAsync();
+        }
+
+        public async Task DeleteUserAsync(string userId)
+        {
+            var user = await FindUserAsync(userId);
+
+            if (user is not null)
+                _context.Users.Remove(user);
+
+            await _context.SaveChangesAsync();
         }
     }
 }

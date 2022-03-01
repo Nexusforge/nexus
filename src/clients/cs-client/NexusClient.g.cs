@@ -89,7 +89,7 @@ public interface INexusClient
 }
 
 /// <inheritdoc />
-public class NexusClient
+public class NexusClient : IDisposable
 {
     private const string NexusConfigurationHeaderKey = "Nexus-Configuration";
     private const string AuthorizationHeaderKey = "Authorization";
@@ -360,6 +360,12 @@ public class NexusClient
     {
         _httpClient.DefaultRequestHeaders.Remove(AuthorizationHeaderKey);
         _tokenPair = null;
+    }
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        _httpClient?.Dispose();
     }
 }
 
@@ -952,6 +958,13 @@ public interface IUsersClient
     Task<ICollection<NexusUser>> GetUsersAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Deletes a user.
+    /// </summary>
+    /// <param name="userId">The identifier of the user.</param>
+    /// <param name="cancellationToken">The token to cancel the current operation.</param>
+    Task<StreamResponse> DeleteUserAsync(string userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Puts a claim.
     /// </summary>
     /// <param name="userId">The identifier of the user.</param>
@@ -1075,6 +1088,17 @@ public class UsersClient : IUsersClient
 
         var url = urlBuilder.ToString();
         return _client.InvokeAsync<ICollection<NexusUser>>("GET", url, "application/json", default, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<StreamResponse> DeleteUserAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        var urlBuilder = new StringBuilder();
+        urlBuilder.Append("/api/v1/users/{userId}");
+        urlBuilder.Replace("{userId}", Uri.EscapeDataString(Convert.ToString(userId, CultureInfo.InvariantCulture)!));
+
+        var url = urlBuilder.ToString();
+        return _client.InvokeAsync<StreamResponse>("DELETE", url, "application/octet-stream", default, cancellationToken);
     }
 
     /// <inheritdoc />

@@ -49,7 +49,7 @@ public interface I{1}
 }
 
 /// <inheritdoc />
-public class {1}
+public class {1} : IDisposable
 {
     private const string NexusConfigurationHeaderKey = "{2}";
     private const string AuthorizationHeaderKey = "{3}";
@@ -280,6 +280,12 @@ public class {1}
     {
         _httpClient.DefaultRequestHeaders.Remove(AuthorizationHeaderKey);
         _tokenPair = null;
+    }
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        _httpClient?.Dispose();
     }
 }
 

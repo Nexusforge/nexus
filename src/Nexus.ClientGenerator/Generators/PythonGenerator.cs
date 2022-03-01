@@ -185,8 +185,9 @@ $@"class {augmentedClassName}:
 
             foreach (var parameter in pathParameters)
             {
+                var originalParameterName = parameter.Item2.Name;
                 var parameterName = parameter.Item1.Split(":")[0];
-                sourceTextBuilder.AppendLine($"        url = url.replace(\"{{{parameterName}}}\", quote(str({parameterName}), safe=\"\"))");
+                sourceTextBuilder.AppendLine($"        url = url.replace(\"{{{originalParameterName}}}\", quote(str({parameterName}), safe=\"\"))");
             }
 
             // query parameters
@@ -201,10 +202,11 @@ $@"class {augmentedClassName}:
 
                 foreach (var parameter in queryParameters)
                 {
+                    var originalParameterName = parameter.Item2.Name;
                     var parameterName = parameter.Item1.Split(":")[0];
-                    var parameterValue = $"quote(str({parameterName}), safe=\"\")";
+                    var parameterValue = $"quote(to_string({parameterName}), safe=\"\")";
 
-                    sourceTextBuilder.AppendLine($"            \"{parameterName}\": {parameterValue},");
+                    sourceTextBuilder.AppendLine($"            \"{originalParameterName}\": {parameterValue},");
                 }
 
                 sourceTextBuilder.AppendLine("        }");
@@ -214,7 +216,7 @@ $@"class {augmentedClassName}:
             }
 
             if (isVoidReturnType)
-                returnType = "object";
+                returnType = "type(None)";
 
             var content = operation.Responses.First().Value.Content.FirstOrDefault();
 
@@ -335,7 +337,7 @@ class {modelName}:");
             }
 
             return schema.Nullable
-                ? $"{type}"
+                ? $"Optional[{type}]"
                 : type;
         }
 

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -33,6 +34,7 @@ namespace Nexus.Controllers
 
         // [privileged]
         // GET      /api/users
+        // DELETE   /api/users/{userId}
         // PUT      /api/users/{userId}/{claimId}
         // DELETE   /api/users/{userId}/{claimId}
 
@@ -193,6 +195,7 @@ namespace Nexus.Controllers
         /// <summary>
         /// Generates a set of tokens.
         /// </summary>
+        [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
         [HttpPost("generate-tokens")]
         public async Task<ActionResult<TokenPair>> GenerateTokensAsync()
         {
@@ -223,6 +226,19 @@ namespace Nexus.Controllers
                 .ToListAsync();
 
             return users;
+        }
+
+        /// <summary>
+        /// Deletes a user.
+        /// </summary>
+        /// <param name="userId">The identifier of the user.</param>
+        [Authorize(Policy = Policies.RequireAdmin)]
+        [HttpDelete("{userId}")]
+        public async Task<ActionResult> DeleteUserAsync(
+            string userId)
+        {
+            await _dbService.DeleteUserAsync(userId);
+            return Ok();
         }
 
         /// <summary>

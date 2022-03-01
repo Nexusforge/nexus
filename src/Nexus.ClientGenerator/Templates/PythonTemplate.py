@@ -1,20 +1,19 @@
-﻿from __future__ import annotations
+﻿# until Python < 3.10
+from __future__ import annotations
 
 import dataclasses
 import json
 import os
 import re
 import tempfile
-import types
 import typing
-from base64 import decode
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
 from json import JSONEncoder
 from pathlib import Path
 from types import GenericAlias
-from typing import Any, Awaitable, Type, TypeVar
+from typing import Any, Awaitable, Optional, Type, TypeVar
 from urllib.parse import quote
 from uuid import UUID
 
@@ -34,10 +33,12 @@ from httpx import AsyncByteStream, AsyncClient, Request, Response, codes
 
 class _MyEncoder(JSONEncoder):
 
-    def default(self, value):
-        return self._convert(value)
+    def default(self, o: Any):
+        return self._convert(o)
 
-    def _convert(self, value):
+    def _convert(self, value: Any) -> Any:
+
+        result: Any
 
         # date/time
         if isinstance(value, datetime):
@@ -66,33 +67,33 @@ class _MyEncoder(JSONEncoder):
 
         return result
 
-    def _to_camel_case(self, value):
+    def _to_camel_case(self, value: str) -> str:
         components = value.split("_")
         return components[0] + ''.join(x.title() for x in components[1:])
 
 T = TypeVar("T")
 snake_case_pattern = re.compile('((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))')
 
-def _decode(cls: Type[T], data) -> T:
+def _decode(cls: Type[T], data: Any) -> T:
 
     if (data is None):
-        return None
+        return typing.cast(T, type(None))
 
     if isinstance(cls, GenericAlias):
 
-        origin = typing.get_origin(cls)
+        origin = typing.cast(Type, typing.get_origin(cls))
         args = typing.get_args(cls)
 
         # list
         if (issubclass(origin, list)):
 
             listType = args[0]
-            instance: list = list()
+            instance1: list = list()
 
             for value in data:
-                instance.append(_decode(listType, value))
+                instance1.append(_decode(listType, value))
 
-            return instance
+            return typing.cast(T, instance1)
         
         # dict
         elif (issubclass(origin, dict)):
@@ -100,22 +101,22 @@ def _decode(cls: Type[T], data) -> T:
             keyType = args[0]
             valueType = args[1]
 
-            instance: dict = dict()
+            instance2: dict = dict()
 
             for key, value in data.items():
                 key = snake_case_pattern.sub(r'_\1', key).lower()
-                instance[_decode(keyType, key)] = _decode(valueType, value)
+                instance2[_decode(keyType, key)] = _decode(valueType, value)
 
-            return instance
+            return typing.cast(T, instance2)
 
         else:
             raise Exception(f"Type {str(origin)} cannot be deserialized.")
 
     elif issubclass(cls, datetime):
-        return datetime.strptime(data[:-1], "%Y-%m-%dT%H:%M:%S.%f")
+        return typing.cast(T, datetime.strptime(data[:-1], "%Y-%m-%dT%H:%M:%S.%f"))
 
     elif issubclass(cls, UUID):
-        return UUID(data)
+        return typing.cast(T, UUID(data))
        
     elif dataclasses.is_dataclass(cls):
 
@@ -125,7 +126,7 @@ def _decode(cls: Type[T], data) -> T:
 
             type_hints = typing.get_type_hints(cls)
             name = snake_case_pattern.sub(r'_\1', name).lower()
-            parameterType = type_hints.get(name)
+            parameterType = typing.cast(Type, type_hints.get(name))
             value = _decode(parameterType, value)
 
             p.append(value)
@@ -149,6 +150,14 @@ def _decode(cls: Type[T], data) -> T:
     else:
         return data
 
+def to_string(value: Any) -> str:
+
+    if type(value) is datetime:
+        return value.isoformat()
+
+    else:
+        return str(value)
+
 class StreamResponse:
     """A stream response."""
 
@@ -160,12 +169,12 @@ class StreamResponse:
         self._stream = stream
 
     @property
-    def stream(self) -> bool:
+    def stream(self) -> AsyncByteStream:
         """The stream."""
         return self._stream
 
     def __aexit__(self, exc_type, exc_value, exc_traceback): 
-        self._stream.aclose()
+        return self._stream.aclose()
 
 class {8}(Exception):
     """A {8}."""
@@ -191,9 +200,9 @@ class {1}:
 
     _token_folder_path: str = os.path.join(tempfile.gettempdir(), "nexus", "tokens")
 
-    _token_pair: TokenPair
+    _token_pair: Optional[TokenPair]
     _http_client: AsyncClient
-    _token_file_path: str
+    _token_file_path: Optional[str]
 
 {4}
 
@@ -266,7 +275,7 @@ class {1}:
         # _httpClient.DefaultRequestHeaders.Remove(NexusConfigurationHeaderKey)
         pass
 
-    async def invoke_async(self, type: Type, method: str, relative_url: str, accept_header_value: str, content: Any) -> Awaitable[Any]:
+    async def invoke_async(self, type: Type[T], method: str, relative_url: str, accept_header_value: str, content: Any) -> T:
 
         # prepare request
         http_content: Any = None \
@@ -321,11 +330,11 @@ class {1}:
 
         try:
 
-            if type is object:
-                return None
+            if type is type(None):
+                return typing.cast(T, type(None))
 
             elif type is StreamResponse:
-                return StreamResponse(response, response.stream)
+                return typing.cast(T, StreamResponse(response, response.stream))
 
             else:
 
@@ -351,7 +360,7 @@ class {1}:
 
         return request_message
 
-    async def _refresh_token_async(self) -> Awaitable[Response]:
+    async def _refresh_token_async(self):
         # see https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/dev/src/Microsoft.IdentityModel.Tokens/Validators.cs#L390
 
         if self._token_pair is None:
@@ -375,3 +384,7 @@ class {1}:
     def sign_out(self) -> None:
         del self._http_client.headers[self._authorization_header_key]
         self._token_pair = None
+
+    def __aexit__(self, exc_type, exc_value, exc_traceback):
+        if (self._http_client is not None):
+            return self._http_client.aclose()

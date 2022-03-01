@@ -26,7 +26,7 @@ using Nexus.Client;
 var accessToken = "<access token>";
 var refreshToken = "<refresh token>";
 
-var client = new NexusClient(new Uri("https://localhost:8443"));
+using var client = new NexusClient(new Uri("https://localhost:8443"));
 client.SignIn(new TokenPair(accessToken, refreshToken));
 
 #!markdown
