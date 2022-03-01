@@ -1,6 +1,7 @@
 # until Python < 3.10
 from __future__ import annotations
 
+import base64
 import dataclasses
 import json
 import os
@@ -73,12 +74,12 @@ class _MyEncoder(JSONEncoder):
 
 T = TypeVar("T")
 snake_case_pattern = re.compile('((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))')
-timespan_pattern = re.compile('^(?:([0-9]+)\.)?([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\.([0-9]+))?$')
+timespan_pattern = re.compile('^(?:([0-9]+)\\.)?([0-9]Nexus-Configuration):([0-9]Nexus-Configuration):([0-9]Nexus-Configuration)(?:\\.([0-9]+))?$')
 
 def _decode(cls: Type[T], data: Any) -> T:
 
     if (data is None):
-        return typing.cast(T, type(None))
+        return typing.cast(T, None)
 
     if isinstance(cls, GenericAlias):
 
@@ -117,7 +118,7 @@ def _decode(cls: Type[T], data: Any) -> T:
         return typing.cast(T, datetime.strptime(data[:-1], "%Y-%m-%dT%H:%M:%S.%f"))
 
     elif issubclass(cls, timedelta):
-        # ^(?:([0-9]+)\.)?([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\.([0-9]+))?$
+        # ^(?:([0-9]+)\.)?([0-9]Nexus-Configuration):([0-9]Nexus-Configuration):([0-9]Nexus-Configuration)(?:\.([0-9]+))?$
         # 12:08:07
         # 12:08:07.1250000
         # 3000.00:08:07
@@ -209,6 +210,18 @@ class NexusException(Exception):
 
     message: str
     """The exception message."""
+
+class _DisposableConfiguration:
+    _client : NexusClient
+
+    def __init__(self, client: NexusClient):
+        self._client = client
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self._client.clear_configuration()
 
 @dataclass
 class ResourceCatalog:
@@ -999,23 +1012,23 @@ class NexusClient:
         self._http_client.headers[self._authorization_header_key] = f"Bearer {token_pair.access_token}"
         self._token_pair = token_pair
 
-    # /// <inheritdoc />
-    # public IDisposable AttachConfiguration(IDictionary<string, string> configuration)
-    # {
-    #     var encodedJson = Convert.ToBase64String(JsonSerializer.SerializeToUtf8Bytes(configuration));
+    def attach_configuration(self, configuration: dict[str, str]) -> Any:
+        encoded_json = base64.b64encode(json.dumps(configuration).encode("utf-8")).decode("utf-8")
 
-    #     _httpClient.DefaultRequestHeaders.Remove(NexusConfigurationHeaderKey);
-    #     _httpClient.DefaultRequestHeaders.Add(NexusConfigurationHeaderKey, encodedJson);
+        if self._nexus_configuration_header_key in self._http_client.headers:
+            del self._http_client.headers[self._nexus_configuration_header_key]
 
-    #     return new DisposableConfiguration(this);
-    # }
+        self._http_client.headers[self._nexus_configuration_header_key] = encoded_json
+
+        return _DisposableConfiguration(self)
 
     def clear_configuration(self) -> None:
         """Clears configuration data for all subsequent Nexus API requests."""
-        # _httpClient.DefaultRequestHeaders.Remove(NexusConfigurationHeaderKey)
-        pass
 
-    async def invoke_async(self, type: Type[T], method: str, relative_url: str, accept_header_value: str, content: Any) -> T:
+        if self._nexus_configuration_header_key in self._http_client.headers:
+            del self._http_client.headers[self._nexus_configuration_header_key]
+
+    async def invoke_async(self, typeOfT: Type[T], method: str, relative_url: str, accept_header_value: str, content: Any) -> T:
 
         # prepare request
         http_content: Any = None \
@@ -1070,16 +1083,16 @@ class NexusClient:
 
         try:
 
-            if type is type(None):
+            if typeOfT is type(None):
                 return typing.cast(T, type(None))
 
-            elif type is StreamResponse:
+            elif typeOfT is StreamResponse:
                 return typing.cast(T, StreamResponse(response, typing.cast(AsyncByteStream, response.stream)))
 
             else:
 
                 jsonObject = json.loads(response.text)
-                return_value = _decode(type, jsonObject)
+                return_value = _decode(typeOfT, jsonObject)
 
                 if return_value is None:
                     raise NexusException(f"N01", "Response data could not be deserialized.")
@@ -1087,7 +1100,7 @@ class NexusClient:
                 return return_value
 
         finally:
-            if type is StreamResponse:
+            if typeOfT is StreamResponse:
                 await response.aclose()
     
     def build_request_message(self, method: str, relative_url: str, http_content: Any, accept_header_value: str) -> Request:
@@ -1116,15 +1129,24 @@ class NexusClient:
                 json.dump(token_pair, json_file, indent=4, cls=_MyEncoder)
 
         authorizationHeaderValue = f"Bearer {token_pair.access_token}"
-        del self._http_client.headers[self._authorization_header_key]
+
+        if self._authorization_header_key in self._http_client.headers:
+            del self._http_client.headers[self._authorization_header_key]
+
         self._http_client.headers[self._authorization_header_key] = authorizationHeaderValue
 
         self._token_pair = token_pair
 
     def sign_out(self) -> None:
-        del self._http_client.headers[self._authorization_header_key]
+
+        if self._authorization_header_key in self._http_client.headers:
+            del self._http_client.headers[self._authorization_header_key]
+
         self._token_pair = None
 
-    def __aexit__(self, exc_type, exc_value, exc_traceback):
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc_value, exc_traceback):
         if (self._http_client is not None):
             return self._http_client.aclose()

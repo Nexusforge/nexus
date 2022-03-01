@@ -1,6 +1,5 @@
 ﻿using Moq;
 using Moq.Protected;
-using Nexus.Client;
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -158,14 +157,15 @@ namespace Nexus.Client.Tests
             // -> API client
             var client = new NexusClient(httpClient);
 
-            // Act
-            _ = await client.Catalogs.GetCatalogAsync(catalogId);
-
+            // -> configuration
             var configuration = new Dictionary<string, string>
             {
                 ["foo1"] = "bar1",
                 ["foo2"] = "bar2"
             };
+
+            // Act
+            _ = await client.Catalogs.GetCatalogAsync(catalogId);
 
             using (var disposable = client.AttachConfiguration(configuration))
             {
