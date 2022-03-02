@@ -110,7 +110,7 @@ namespace Nexus.Client.Tests
 
             // Act
             client.SignIn(tokenPair);
-            var actualCatalog = await client.Catalogs.GetCatalogAsync(catalogId);
+            var actualCatalog = await client.Catalogs.GetAsync(catalogId);
 
             // Assert
             Assert.Equal(
@@ -165,14 +165,14 @@ namespace Nexus.Client.Tests
             };
 
             // Act
-            _ = await client.Catalogs.GetCatalogAsync(catalogId);
+            _ = await client.Catalogs.GetAsync(catalogId);
 
             using (var disposable = client.AttachConfiguration(configuration))
             {
-                _ = await client.Catalogs.GetCatalogAsync(catalogId);
+                _ = await client.Catalogs.GetAsync(catalogId);
             }
 
-            _ = await client.Catalogs.GetCatalogAsync(catalogId);
+            _ = await client.Catalogs.GetAsync(catalogId);
 
             // Assert
             var encodedJson = Convert.ToBase64String(JsonSerializer.SerializeToUtf8Bytes(configuration));
