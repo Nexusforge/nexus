@@ -212,9 +212,9 @@ class {8}(Exception):
     """The exception message."""
 
 class _DisposableConfiguration:
-    _client : NexusClient
+    _client : {1}
 
-    def __init__(self, client: NexusClient):
+    def __init__(self, client: {1}):
         self._client = client
 
     def __enter__(self):
@@ -241,14 +241,14 @@ class {1}:
 {4}
 
     @classmethod
-    def create(cls, base_url: str) -> NexusClient:
+    def create(cls, base_url: str) -> {1}:
         """
         Initializes a new instance of the {1}
         
             Args:
                 base_url: The base URL to use.
         """
-        return NexusClient(AsyncClient(base_url=base_url))
+        return {1}(AsyncClient(base_url=base_url))
 
     def __init__(self, http_client: AsyncClient):
         """
@@ -431,6 +431,6 @@ class {1}:
     async def __aenter__(self) -> {1}:
         return self
 
-    async def __aexit__(self, exc_type, exc_value, exc_traceback) -> Union[Awaitable[None], None]:
+    async def __aexit__(self, exc_type, exc_value, exc_traceback) -> Optional[Awaitable[None]]:
         if (self._http_client is not None):
             return self._http_client.aclose()

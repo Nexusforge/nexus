@@ -1496,6 +1496,6 @@ class NexusClient:
     async def __aenter__(self) -> NexusClient:
         return self
 
-    async def __aexit__(self, exc_type, exc_value, exc_traceback) -> Union[Awaitable[None], None]:
+    async def __aexit__(self, exc_type, exc_value, exc_traceback) -> Optional[Awaitable[None]]:
         if (self._http_client is not None):
             return self._http_client.aclose()
