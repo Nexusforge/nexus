@@ -2,5 +2,13 @@
   "include": [
     "src/clients/python-client",
     "tests/clients/python-client-tests"
+  ],
+  "executionEnvironments":[
+    {
+      "root": ".",
+      "extraPaths": [
+        "src/clients/python-client"
+      ]
+    }
   ]
 }
