@@ -29,7 +29,7 @@ install:
 
 build_script:
   - ps: dotnet publish -c $Env:CONFIGURATION -o app /p:Build=$Env:APPVEYOR_BUILD_NUMBER /p:IsFinalBuild=$Env:APPVEYOR_REPO_TAG src/Nexus/Nexus.csproj
-  - ps: python3 -m build --wheel --outdir artifacts/packages/python-client --no-isolation src/clients/python-client-build
+  - ps: python -m build --wheel --outdir artifacts/packages/python-client --no-isolation src/clients/python-client-build
 
 after_build:
   - ps: dotnet run --project src/Nexus.ClientGenerator/Nexus.ClientGenerator.csproj -- ./ openapi_new.json
@@ -88,6 +88,6 @@ deploy_script:
   - ps: |
       if ($Env:APPVEYOR_REPO_BRANCH -eq "main" -and $Env:APPVEYOR_REPO_TAG -eq "true") { 
         foreach ($artifact in $artifacts.Values) {
-          python -m twine upload $artifact.path -u__token__ -p"$Env:PYPI_API_KEY"
+          twine upload $artifact.path -u__token__ -p"$Env:PYPI_API_KEY"
         }
       }
