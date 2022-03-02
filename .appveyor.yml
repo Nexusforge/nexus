@@ -26,7 +26,7 @@ init:
 
 install:
   - ps: npm install -g pyright
-  - ps: python -m pip install frictionless build
+  - ps: python -m pip install frictionless build httpx
 
 build_script:
   - ps: dotnet publish -c $Env:CONFIGURATION -o app /p:Build=$Env:APPVEYOR_BUILD_NUMBER /p:IsFinalBuild=$Env:APPVEYOR_REPO_TAG src/Nexus/Nexus.csproj
