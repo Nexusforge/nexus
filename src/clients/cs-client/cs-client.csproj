@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <!-- This prevents the package to be rebuilt when dotnet test is executed. -->
-  <PropertyGroup Condition="$(BuildProjectReferences) != 'false'">
+  <PropertyGroup Condition="$(GeneratePackage) == 'true'">
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
