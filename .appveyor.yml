@@ -1,6 +1,6 @@
 version: '{build}'
 clone_depth: 1
-stack: python 3.9
+stack: python 3.9, node 17
 
 image:
   - Ubuntu
@@ -25,7 +25,8 @@ init:
   - ps: git config --global core.autocrlf true
 
 install:
-  - ps: python -m pip install frictionless pyright build
+  - ps: npm install -g pyright
+  - ps: python -m pip install frictionless build
 
 build_script:
   - ps: dotnet publish -c $Env:CONFIGURATION -o app /p:Build=$Env:APPVEYOR_BUILD_NUMBER /p:IsFinalBuild=$Env:APPVEYOR_REPO_TAG src/Nexus/Nexus.csproj
