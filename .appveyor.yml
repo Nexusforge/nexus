@@ -81,7 +81,9 @@ deploy_script:
   - ps: |
       if ($Env:APPVEYOR_REPO_BRANCH -eq "dev") {
         foreach ($artifact in $artifacts.Values) {
-          curl -k -X POST https://www.myget.org/F/apollo3zehn-dev/python/upload -H "Authorization: Bearer $Env:MYGET_API_KEY" -F "data=@$($artifact.path)"
+          if ($artifact.path.EndsWith(".whl")) {
+            curl -k -X POST https://www.myget.org/F/apollo3zehn-dev/python/upload -H "Authorization: Bearer $Env:MYGET_API_KEY" -F "data=@$($artifact.path)"
+          }
         }
       }
 
@@ -89,6 +91,8 @@ deploy_script:
   - ps: |
       if ($Env:APPVEYOR_REPO_BRANCH -eq "main" -and $Env:APPVEYOR_REPO_TAG -eq "true") { 
         foreach ($artifact in $artifacts.Values) {
-          twine upload $artifact.path -u__token__ -p"$Env:PYPI_API_KEY"
+          if ($artifact.path.EndsWith(".whl")) {
+            twine upload $artifact.path -u__token__ -p"$Env:PYPI_API_KEY"
+          }
         }
       }
