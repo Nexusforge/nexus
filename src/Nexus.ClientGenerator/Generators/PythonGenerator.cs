@@ -169,14 +169,24 @@ $@"class {augmentedClassName}:
             var isVoidReturnType = string.IsNullOrWhiteSpace(returnType);
             var actualReturnType = isVoidReturnType ? "None" : $"{returnType}";
 
-            sourceTextBuilder
-                .AppendLine(
+            sourceTextBuilder.AppendLine(
 @$"    def {signature} -> Awaitable[{actualReturnType}]:
-        """"""{operation.Summary}""""""
-        ");
+        """"""
+        {operation.Summary}
+
+        Args:");
+
+            foreach (var parameter in parameters)
+            {
+                var parameterName = parameter.Item1.Split(":")[0];
+                sourceTextBuilder.AppendLine($"            {parameterName}: {parameter.Item2.Description}");
+            }
+
+            sourceTextBuilder.AppendLine(@"        """"""
+");
 
             sourceTextBuilder
-                .AppendLine($"        url: str = \"{path}\"");
+                .AppendLine($"        url = \"{path}\"");
 
             // path parameters
             var pathParameters = parameters
@@ -204,7 +214,7 @@ $@"class {augmentedClassName}:
                 {
                     var originalParameterName = parameter.Item2.Name;
                     var parameterName = parameter.Item1.Split(":")[0];
-                    var parameterValue = $"quote(to_string({parameterName}), safe=\"\")";
+                    var parameterValue = $"quote(_to_string({parameterName}), safe=\"\")";
 
                     sourceTextBuilder.AppendLine($"            \"{originalParameterName}\": {parameterValue},");
                 }
@@ -229,7 +239,7 @@ $@"class {augmentedClassName}:
                 : bodyParameter.Split(":")[0];
 
             sourceTextBuilder.AppendLine();
-            sourceTextBuilder.AppendLine($"        return self._client.invoke_async({returnType}, \"{operationType.ToString().ToUpper()}\", url, {acceptHeaderValue}, {contentValue})");
+            sourceTextBuilder.AppendLine($"        return self._client._invoke_async({returnType}, \"{operationType.ToString().ToUpper()}\", url, {acceptHeaderValue}, {contentValue})");
         }
 
         private void AppendModelSourceText(
@@ -268,7 +278,9 @@ $@"@dataclass
 class {modelName}:");
 
                 sourceTextBuilder.AppendLine(
-@$"    """"""{schema.Description}
+@$"    """"""
+    {schema.Description}
+
     Args:");
 
                 if (schema.Properties is not null)

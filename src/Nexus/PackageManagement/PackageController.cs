@@ -144,7 +144,7 @@ namespace Nexus.PackageManagement
                 //    break;
 
                 default:
-                    throw new ArgumentException($"The provider '{PackageReference.Provider}' is not supported.");
+                    throw new ArgumentException($"The provider {PackageReference.Provider} is not supported.");
             }
 
             return restoreFolderPath;
@@ -232,7 +232,7 @@ namespace Nexus.PackageManagement
                 throw new ArgumentException("The 'Path' parameter is missing in the extension reference.");
 
             if (!Directory.Exists(path))
-                throw new DirectoryNotFoundException($"The extension path '{path}' does not exist.");
+                throw new DirectoryNotFoundException($"The extension path {path} does not exist.");
 
             foreach (var folderPath in Directory.EnumerateDirectories(path))
             {
@@ -263,7 +263,7 @@ namespace Nexus.PackageManagement
                 var sourcePath = Path.Combine(path, version);
 
                 if (!Directory.Exists(sourcePath))
-                    throw new DirectoryNotFoundException($"The source path '{sourcePath}' does not exist.");
+                    throw new DirectoryNotFoundException($"The source path {sourcePath} does not exist.");
 
                 var pathHash = new Guid(path.Hash()).ToString();
                 var targetPath = Path.Combine(restoreRoot, pathHash, version);

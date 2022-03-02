@@ -33,7 +33,7 @@ namespace Nexus.DataModel
         public ResourceCatalog(string id, IReadOnlyDictionary<string, string>? properties = null, IReadOnlyList<Resource>? resources = null)
         {
             if (!_idValidator.IsMatch(id))
-                throw new ArgumentException($"The resource catalog identifier '{id}' is not valid.");
+                throw new ArgumentException($"The resource catalog identifier {id} is not valid.");
 
             Id = id;
 
@@ -49,12 +49,12 @@ namespace Nexus.DataModel
         #region Properties
 
         /// <summary>
-        /// Gets the identifier.
+        /// The identifier.
         /// </summary>
         public string Id { get; init;  }
 
         /// <summary>
-        /// Gets the map of properties.
+        /// The map of properties.
         /// </summary>
         public IReadOnlyDictionary<string, string>? Properties
         {
@@ -63,7 +63,7 @@ namespace Nexus.DataModel
         }
 
         /// <summary>
-        /// Gets the list of representations.
+        /// The list of representations.
         /// </summary>
         public IReadOnlyList<Resource>? Resources
         {
@@ -137,7 +137,7 @@ namespace Nexus.DataModel
                     foreach (var (key, value) in newProperties)
                     {
                         if (mergedProperties1.ContainsKey(key))
-                            throw new Exception($"The left catalog has already the property '{key}'.");
+                            throw new Exception($"The left catalog has already the property {key}.");
 
                         else
                             mergedProperties1[key] = value;
@@ -205,7 +205,7 @@ namespace Nexus.DataModel
         internal CatalogItem Find(string resourcePath)
         {
             if (!TryFind(resourcePath, out var catalogItem))
-                throw new Exception($"The resource path '{resourcePath}' could not be found.");
+                throw new Exception($"The resource path {resourcePath} could not be found.");
 
             return catalogItem;
         }

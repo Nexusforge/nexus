@@ -30,17 +30,17 @@ namespace Nexus.DataModel
         public Representation(NexusDataType dataType, TimeSpan samplePeriod, string? detail = null, bool isPrimary = false)
         {
             if (!_nexusDataTypeValues.Contains(dataType))
-                throw new ArgumentException($"The identifier '{dataType}' is not valid.");
+                throw new ArgumentException($"The identifier {dataType} is not valid.");
 
             DataType = dataType;
 
             if (samplePeriod.Equals(default))
-                throw new ArgumentException($"The sample period '{samplePeriod}' is not valid.");
+                throw new ArgumentException($"The sample period {samplePeriod} is not valid.");
 
             SamplePeriod = samplePeriod;
 
             if (detail is not null && !_detailValidator.IsMatch(detail))
-                throw new ArgumentException($"The representation detail '{detail}' is not valid.");
+                throw new ArgumentException($"The representation detail {detail} is not valid.");
 
             Detail = detail;
             IsPrimary = isPrimary;
@@ -51,7 +51,7 @@ namespace Nexus.DataModel
         #region Properties
 
         /// <summary>
-        /// Gets the identifer of the representation. It is constructed using the sample period and the optional detail.
+        /// The identifer of the representation. It is constructed using the sample period and the optional detail.
         /// </summary>
         [JsonIgnore]
         public string Id
@@ -65,27 +65,27 @@ namespace Nexus.DataModel
         }
 
         /// <summary>
-        /// Gets the data type.
+        /// The data type.
         /// </summary>
         public NexusDataType DataType { get; }
 
         /// <summary>
-        /// Gets the sample period.
+        /// The sample period.
         /// </summary>
         public TimeSpan SamplePeriod { get; }
 
         /// <summary>
-        /// Gets the detail.
+        /// The detail.
         /// </summary>
         public string? Detail { get; }
 
         /// <summary>
-        /// Gets a value which indicates the primary representation to be used for aggregations. The value of this property is only relevant for resources with multiple representations.
+        /// A value which indicates the primary representation to be used for aggregations. The value of this property is only relevant for resources with multiple representations.
         /// </summary>
         public bool IsPrimary { get; }
 
         /// <summary>
-        /// Gets the number of bits per element.
+        /// The number of bits per element.
         /// </summary>
         [JsonIgnore]
         public int ElementSize => ((int)DataType & 0xFF) >> 3;

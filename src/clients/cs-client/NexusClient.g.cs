@@ -1223,26 +1223,26 @@ internal class DisposableConfiguration : IDisposable
 /// <summary>
 /// A catalog is a top level element and holds a list of resources.
 /// </summary>
-/// <param name="Id">Gets the identifier.</param>
-/// <param name="Properties">Gets the map of properties.</param>
-/// <param name="Resources">Gets the list of representations.</param>
+/// <param name="Id">The identifier.</param>
+/// <param name="Properties">The map of properties.</param>
+/// <param name="Resources">The list of representations.</param>
 public record ResourceCatalog(string Id, IDictionary<string, string>? Properties, ICollection<Resource>? Resources);
 
 /// <summary>
 /// A resource is part of a resource catalog and holds a list of representations.
 /// </summary>
-/// <param name="Id">Gets the identifier.</param>
-/// <param name="Properties">Gets the map of properties.</param>
-/// <param name="Representations">Gets the list of representations.</param>
+/// <param name="Id">The identifier.</param>
+/// <param name="Properties">The map of properties.</param>
+/// <param name="Representations">Tshe list of representations.</param>
 public record Resource(string Id, IDictionary<string, string>? Properties, ICollection<Representation>? Representations);
 
 /// <summary>
 /// A representation is part of a resource.
 /// </summary>
-/// <param name="DataType">Gets the data type.</param>
-/// <param name="SamplePeriod">Gets the sample period.</param>
-/// <param name="Detail">Gets the detail.</param>
-/// <param name="IsPrimary">Gets a value which indicates the primary representation to be used for aggregations. The value of this property is only relevant for resources with multiple representations.</param>
+/// <param name="DataType">The data type.</param>
+/// <param name="SamplePeriod">The sample period.</param>
+/// <param name="Detail">The detail.</param>
+/// <param name="IsPrimary">A value which indicates the primary representation to be used for aggregations. The value of this property is only relevant for resources with multiple representations.</param>
 public record Representation(NexusDataType DataType, TimeSpan SamplePeriod, string? Detail, bool IsPrimary);
 
 /// <summary>

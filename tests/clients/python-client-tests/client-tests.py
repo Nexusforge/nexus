@@ -44,7 +44,6 @@ async def can_authenticate_and_refresh_test():
     # arrange
     catalog_id = "my-catalog-id"
     expected_catalog = ResourceCatalog(catalog_id, None, None)
-    
     http_client = AsyncClient(base_url="http://localhost", transport=MockTransport(_handler1))
 
     async with NexusClient(http_client) as client:
@@ -52,6 +51,8 @@ async def can_authenticate_and_refresh_test():
         # act
         client.sign_in(token_pair)
         actual_catalog = await client.catalogs.get_catalog_async(catalog_id)
+
+        
 
         # assert
         assert expected_catalog == actual_catalog

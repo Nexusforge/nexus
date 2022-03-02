@@ -1,4 +1,4 @@
-# until Python < 3.10
+# Python <= 3.9
 from __future__ import annotations
 
 import base64
@@ -31,6 +31,10 @@ from httpx import AsyncByteStream, AsyncClient, Request, Response, codes
 # 8 = ExceptionType
 # 9 = Models
 # 10 = SubClientInterfaceProperties
+
+T = TypeVar("T")
+snake_case_pattern = re.compile('((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))')
+timespan_pattern = re.compile('^(?:([0-9]+)\\.)?([0-9]Nexus-Configuration):([0-9]Nexus-Configuration):([0-9]Nexus-Configuration)(?:\\.([0-9]+))?$')
 
 class _MyEncoder(JSONEncoder):
 
@@ -71,10 +75,6 @@ class _MyEncoder(JSONEncoder):
     def _to_camel_case(self, value: str) -> str:
         components = value.split("_")
         return components[0] + ''.join(x.title() for x in components[1:])
-
-T = TypeVar("T")
-snake_case_pattern = re.compile('((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))')
-timespan_pattern = re.compile('^(?:([0-9]+)\\.)?([0-9]Nexus-Configuration):([0-9]Nexus-Configuration):([0-9]Nexus-Configuration)(?:\\.([0-9]+))?$')
 
 def _decode(cls: Type[T], data: Any) -> T:
 
@@ -172,7 +172,7 @@ def _decode(cls: Type[T], data: Any) -> T:
     else:
         return data
 
-def to_string(value: Any) -> str:
+def _to_string(value: Any) -> str:
 
     if type(value) is datetime:
         return value.isoformat()
@@ -195,7 +195,7 @@ class StreamResponse:
         """The stream."""
         return self._stream
 
-    def __aexit__(self, exc_type, exc_value, exc_traceback): 
+    def __aexit__(self, exc_type, exc_value, exc_traceback) -> Awaitable[None]: 
         return self._stream.aclose()
 
 class NexusException(Exception):
@@ -225,11 +225,13 @@ class _DisposableConfiguration:
 
 @dataclass
 class ResourceCatalog:
-    """A catalog is a top level element and holds a list of resources.
+    """
+    A catalog is a top level element and holds a list of resources.
+
     Args:
-        id: Gets the identifier.
-        properties: Gets the map of properties.
-        resources: Gets the list of representations.
+        id: The identifier.
+        properties: The map of properties.
+        resources: The list of representations.
     """
     id: str
     properties: Optional[dict[str, str]]
@@ -237,11 +239,13 @@ class ResourceCatalog:
 
 @dataclass
 class Resource:
-    """A resource is part of a resource catalog and holds a list of representations.
+    """
+    A resource is part of a resource catalog and holds a list of representations.
+
     Args:
-        id: Gets the identifier.
-        properties: Gets the map of properties.
-        representations: Gets the list of representations.
+        id: The identifier.
+        properties: The map of properties.
+        representations: Tshe list of representations.
     """
     id: str
     properties: Optional[dict[str, str]]
@@ -249,12 +253,14 @@ class Resource:
 
 @dataclass
 class Representation:
-    """A representation is part of a resource.
+    """
+    A representation is part of a resource.
+
     Args:
-        data_type: Gets the data type.
-        sample_period: Gets the sample period.
-        detail: Gets the detail.
-        is_primary: Gets a value which indicates the primary representation to be used for aggregations. The value of this property is only relevant for resources with multiple representations.
+        data_type: The data type.
+        sample_period: The sample period.
+        detail: The detail.
+        is_primary: A value which indicates the primary representation to be used for aggregations. The value of this property is only relevant for resources with multiple representations.
     """
     data_type: NexusDataType
     sample_period: timedelta
@@ -297,7 +303,9 @@ class NexusDataType(Enum):
 
 @dataclass
 class CatalogTimeRange:
-    """A catalog time range.
+    """
+    A catalog time range.
+
     Args:
         begin: The date/time of the first data in the catalog.
         end: The date/time of the last data in the catalog.
@@ -307,7 +315,9 @@ class CatalogTimeRange:
 
 @dataclass
 class CatalogAvailability:
-    """The catalog availability.
+    """
+    The catalog availability.
+
     Args:
         data: The actual availability data.
     """
@@ -315,7 +325,9 @@ class CatalogAvailability:
 
 @dataclass
 class CatalogMetadata:
-    """A structure for catalog metadata.
+    """
+    A structure for catalog metadata.
+
     Args:
         contact: The contact.
         is_hidden: A boolean which indicates if the catalog should be hidden.
@@ -329,7 +341,9 @@ class CatalogMetadata:
 
 @dataclass
 class Job:
-    """Description of a job.
+    """
+    Description of a job.
+
     Args:
         id: 06f8eb30-5924-4a71-bdff-322f92343f5b
         type: export
@@ -343,7 +357,9 @@ class Job:
 
 @dataclass
 class ExportParameters:
-    """A structure for export parameters.
+    """
+    A structure for export parameters.
+
     Args:
         begin: 2020-02-01T00:00:00Z
         end: 2020-02-02T00:00:00Z
@@ -361,7 +377,9 @@ class ExportParameters:
 
 @dataclass
 class JobStatus:
-    """Describes the status of the job.
+    """
+    Describes the status of the job.
+
     Args:
         start: The start date/time.
         status: The status.
@@ -405,7 +423,9 @@ class TaskStatus(Enum):
 
 @dataclass
 class PackageReference:
-    """A package reference.
+    """
+    A package reference.
+
     Args:
         provider: The provider which loads the package.
         configuration: The configuration of the package reference.
@@ -415,7 +435,9 @@ class PackageReference:
 
 @dataclass
 class ExtensionDescription:
-    """An extension description.
+    """
+    An extension description.
+
     Args:
         type: The extension type.
         description: An optional description.
@@ -425,7 +447,9 @@ class ExtensionDescription:
 
 @dataclass
 class DataSourceRegistration:
-    """A backend source.
+    """
+    A backend source.
+
     Args:
         type: The type of the backend source.
         resource_locator: An URL which points to the data.
@@ -441,7 +465,9 @@ class DataSourceRegistration:
 
 @dataclass
 class AuthenticationSchemeDescription:
-    """Describes an OpenID connect provider.
+    """
+    Describes an OpenID connect provider.
+
     Args:
         scheme: The scheme.
         display_name: The display name.
@@ -451,7 +477,9 @@ class AuthenticationSchemeDescription:
 
 @dataclass
 class TokenPair:
-    """A token pair.
+    """
+    A token pair.
+
     Args:
         access_token: The JWT token.
         refresh_token: The refresh token.
@@ -461,7 +489,9 @@ class TokenPair:
 
 @dataclass
 class RefreshTokenRequest:
-    """A refresh token request.
+    """
+    A refresh token request.
+
     Args:
         refresh_token: The refresh token.
     """
@@ -469,7 +499,9 @@ class RefreshTokenRequest:
 
 @dataclass
 class RevokeTokenRequest:
-    """A revoke token request.
+    """
+    A revoke token request.
+
     Args:
         token: The refresh token.
     """
@@ -477,7 +509,9 @@ class RevokeTokenRequest:
 
 @dataclass
 class NexusUser:
-    """Represents a user.
+    """
+    Represents a user.
+
     Args:
         id: The user identifier.
         name: The user name.
@@ -491,7 +525,9 @@ class NexusUser:
 
 @dataclass
 class RefreshToken:
-    """A refresh token.
+    """
+    A refresh token.
+
     Args:
         token: The refresh token.
         created: The date/time when the token was created.
@@ -513,7 +549,9 @@ class RefreshToken:
 
 @dataclass
 class NexusClaim:
-    """Represents a claim.
+    """
+    Represents a claim.
+
     Args:
         type: The claim type.
         value: The claim value.
@@ -531,12 +569,17 @@ class ArtifactsClient:
         self._client = client
 
     def download_artifact_async(self, artifact_id: str) -> Awaitable[StreamResponse]:
-        """Gets the specified artifact."""
-        
-        url: str = "/api/v1/artifacts/{artifactId}"
+        """
+        Gets the specified artifact.
+
+        Args:
+            artifact_id: The artifact identifier.
+        """
+
+        url = "/api/v1/artifacts/{artifactId}"
         url = url.replace("{artifactId}", quote(str(artifact_id), safe=""))
 
-        return self._client.invoke_async(StreamResponse, "GET", url, "application/octet-stream", None)
+        return self._client._invoke_async(StreamResponse, "GET", url, "application/octet-stream", None)
 
 
 class CatalogsClient:
@@ -548,69 +591,107 @@ class CatalogsClient:
         self._client = client
 
     def get_catalog_async(self, catalog_id: str) -> Awaitable[ResourceCatalog]:
-        """Gets the specified catalog."""
-        
-        url: str = "/api/v1/catalogs/{catalogId}"
+        """
+        Gets the specified catalog.
+
+        Args:
+            catalog_id: The catalog identifier.
+        """
+
+        url = "/api/v1/catalogs/{catalogId}"
         url = url.replace("{catalogId}", quote(str(catalog_id), safe=""))
 
-        return self._client.invoke_async(ResourceCatalog, "GET", url, "application/json", None)
+        return self._client._invoke_async(ResourceCatalog, "GET", url, "application/json", None)
 
     def get_child_catalog_ids_async(self, catalog_id: str) -> Awaitable[list[str]]:
-        """Gets a list of child catalog identifiers for the provided parent catalog identifier."""
-        
-        url: str = "/api/v1/catalogs/{catalogId}/child-catalog-ids"
+        """
+        Gets a list of child catalog identifiers for the provided parent catalog identifier.
+
+        Args:
+            catalog_id: The parent catalog identifier.
+        """
+
+        url = "/api/v1/catalogs/{catalogId}/child-catalog-ids"
         url = url.replace("{catalogId}", quote(str(catalog_id), safe=""))
 
-        return self._client.invoke_async(list[str], "GET", url, "application/json", None)
+        return self._client._invoke_async(list[str], "GET", url, "application/json", None)
 
     def get_time_range_async(self, catalog_id: str) -> Awaitable[CatalogTimeRange]:
-        """Gets the specified catalog's time range."""
-        
-        url: str = "/api/v1/catalogs/{catalogId}/timerange"
+        """
+        Gets the specified catalog's time range.
+
+        Args:
+            catalog_id: The catalog identifier.
+        """
+
+        url = "/api/v1/catalogs/{catalogId}/timerange"
         url = url.replace("{catalogId}", quote(str(catalog_id), safe=""))
 
-        return self._client.invoke_async(CatalogTimeRange, "GET", url, "application/json", None)
+        return self._client._invoke_async(CatalogTimeRange, "GET", url, "application/json", None)
 
     def get_catalog_availability_async(self, catalog_id: str, begin: datetime, end: datetime) -> Awaitable[CatalogAvailability]:
-        """Gets the specified catalog availability."""
-        
-        url: str = "/api/v1/catalogs/{catalogId}/availability"
+        """
+        Gets the specified catalog availability.
+
+        Args:
+            catalog_id: The catalog identifier.
+            begin: Start date.
+            end: End date.
+        """
+
+        url = "/api/v1/catalogs/{catalogId}/availability"
         url = url.replace("{catalogId}", quote(str(catalog_id), safe=""))
 
         queryValues: dict[str, str] = {
-            "begin": quote(to_string(begin), safe=""),
-            "end": quote(to_string(end), safe=""),
+            "begin": quote(_to_string(begin), safe=""),
+            "end": quote(_to_string(end), safe=""),
         }
 
         query: str = "?" + "&".join(f"{key}={value}" for (key, value) in queryValues.items())
         url += query
 
-        return self._client.invoke_async(CatalogAvailability, "GET", url, "application/json", None)
+        return self._client._invoke_async(CatalogAvailability, "GET", url, "application/json", None)
 
     def download_attachement_async(self, catalog_id: str, attachment_id: str) -> Awaitable[StreamResponse]:
-        """Gets the specified attachment."""
-        
-        url: str = "/api/v1/catalogs/{catalogId}/attachments/{attachmentId}/content"
+        """
+        Gets the specified attachment.
+
+        Args:
+            catalog_id: The catalog identifier.
+            attachment_id: The attachment identifier.
+        """
+
+        url = "/api/v1/catalogs/{catalogId}/attachments/{attachmentId}/content"
         url = url.replace("{catalogId}", quote(str(catalog_id), safe=""))
         url = url.replace("{attachmentId}", quote(str(attachment_id), safe=""))
 
-        return self._client.invoke_async(StreamResponse, "GET", url, "application/octet-stream", None)
+        return self._client._invoke_async(StreamResponse, "GET", url, "application/octet-stream", None)
 
     def get_catalog_metadata_async(self, catalog_id: str) -> Awaitable[CatalogMetadata]:
-        """Gets the catalog metadata."""
-        
-        url: str = "/api/v1/catalogs/{catalogId}/metadata"
+        """
+        Gets the catalog metadata.
+
+        Args:
+            catalog_id: The catalog identifier.
+        """
+
+        url = "/api/v1/catalogs/{catalogId}/metadata"
         url = url.replace("{catalogId}", quote(str(catalog_id), safe=""))
 
-        return self._client.invoke_async(CatalogMetadata, "GET", url, "application/json", None)
+        return self._client._invoke_async(CatalogMetadata, "GET", url, "application/json", None)
 
     def put_catalog_metadata_async(self, catalog_id: str, catalog_metadata: CatalogMetadata) -> Awaitable[None]:
-        """Puts the catalog metadata."""
-        
-        url: str = "/api/v1/catalogs/{catalogId}/metadata"
+        """
+        Puts the catalog metadata.
+
+        Args:
+            catalog_id: The catalog identifier.
+        """
+
+        url = "/api/v1/catalogs/{catalogId}/metadata"
         url = url.replace("{catalogId}", quote(str(catalog_id), safe=""))
 
-        return self._client.invoke_async(type(None), "PUT", url, "", catalog_metadata)
+        return self._client._invoke_async(type(None), "PUT", url, "", catalog_metadata)
 
 
 class DataClient:
@@ -622,22 +703,31 @@ class DataClient:
         self._client = client
 
     def get_stream_async(self, catalog_id: str, resource_id: str, representation_id: str, begin: datetime, end: datetime) -> Awaitable[StreamResponse]:
-        """Gets the requested data."""
-        
-        url: str = "/api/v1/data"
+        """
+        Gets the requested data.
+
+        Args:
+            catalog_id: The catalog identifier.
+            resource_id: The resource identifier.
+            representation_id: The representation identifier.
+            begin: Start date/time.
+            end: End date/time.
+        """
+
+        url = "/api/v1/data"
 
         queryValues: dict[str, str] = {
-            "catalogId": quote(to_string(catalog_id), safe=""),
-            "resourceId": quote(to_string(resource_id), safe=""),
-            "representationId": quote(to_string(representation_id), safe=""),
-            "begin": quote(to_string(begin), safe=""),
-            "end": quote(to_string(end), safe=""),
+            "catalogId": quote(_to_string(catalog_id), safe=""),
+            "resourceId": quote(_to_string(resource_id), safe=""),
+            "representationId": quote(_to_string(representation_id), safe=""),
+            "begin": quote(_to_string(begin), safe=""),
+            "end": quote(_to_string(end), safe=""),
         }
 
         query: str = "?" + "&".join(f"{key}={value}" for (key, value) in queryValues.items())
         url += query
 
-        return self._client.invoke_async(StreamResponse, "GET", url, "application/octet-stream", None)
+        return self._client._invoke_async(StreamResponse, "GET", url, "application/octet-stream", None)
 
 
 class JobsClient:
@@ -649,41 +739,63 @@ class JobsClient:
         self._client = client
 
     def export_async(self, parameters: ExportParameters) -> Awaitable[Job]:
-        """Creates a new export job."""
-        
-        url: str = "/api/v1/jobs/export"
+        """
+        Creates a new export job.
 
-        return self._client.invoke_async(Job, "POST", url, "application/json", parameters)
+        Args:
+        """
+
+        url = "/api/v1/jobs/export"
+
+        return self._client._invoke_async(Job, "POST", url, "application/json", parameters)
 
     def load_packages_async(self) -> Awaitable[Job]:
-        """Creates a new load packages job."""
-        
-        url: str = "/api/v1/jobs/load-packages"
+        """
+        Creates a new load packages job.
 
-        return self._client.invoke_async(Job, "POST", url, "application/json", None)
+        Args:
+        """
+
+        url = "/api/v1/jobs/load-packages"
+
+        return self._client._invoke_async(Job, "POST", url, "application/json", None)
 
     def get_jobs_async(self) -> Awaitable[list[Job]]:
-        """Gets a list of jobs."""
-        
-        url: str = "/api/v1/jobs"
+        """
+        Gets a list of jobs.
 
-        return self._client.invoke_async(list[Job], "GET", url, "application/json", None)
+        Args:
+        """
+
+        url = "/api/v1/jobs"
+
+        return self._client._invoke_async(list[Job], "GET", url, "application/json", None)
 
     def get_job_status_async(self, job_id: UUID) -> Awaitable[JobStatus]:
-        """Gets the status of the specified job."""
-        
-        url: str = "/api/v1/jobs/{jobId}/status"
+        """
+        Gets the status of the specified job.
+
+        Args:
+            job_id: 
+        """
+
+        url = "/api/v1/jobs/{jobId}/status"
         url = url.replace("{jobId}", quote(str(job_id), safe=""))
 
-        return self._client.invoke_async(JobStatus, "GET", url, "application/json", None)
+        return self._client._invoke_async(JobStatus, "GET", url, "application/json", None)
 
     def delete_job_async(self, job_id: UUID) -> Awaitable[StreamResponse]:
-        """Cancels the specified job."""
-        
-        url: str = "/api/v1/jobs/{jobId}"
+        """
+        Cancels the specified job.
+
+        Args:
+            job_id: 
+        """
+
+        url = "/api/v1/jobs/{jobId}"
         url = url.replace("{jobId}", quote(str(job_id), safe=""))
 
-        return self._client.invoke_async(StreamResponse, "DELETE", url, "application/octet-stream", None)
+        return self._client._invoke_async(StreamResponse, "DELETE", url, "application/octet-stream", None)
 
 
 class PackageReferencesClient:
@@ -695,35 +807,54 @@ class PackageReferencesClient:
         self._client = client
 
     def get_package_references_async(self) -> Awaitable[dict[str, PackageReference]]:
-        """Gets the list of package references."""
-        
-        url: str = "/api/v1/packagereferences"
+        """
+        Gets the list of package references.
 
-        return self._client.invoke_async(dict[str, PackageReference], "GET", url, "application/json", None)
+        Args:
+        """
+
+        url = "/api/v1/packagereferences"
+
+        return self._client._invoke_async(dict[str, PackageReference], "GET", url, "application/json", None)
 
     def put_package_references_async(self, package_reference_id: UUID, package_reference: PackageReference) -> Awaitable[None]:
-        """Puts a package reference."""
-        
-        url: str = "/api/v1/packagereferences/{packageReferenceId}"
+        """
+        Puts a package reference.
+
+        Args:
+            package_reference_id: The identifier of the package reference.
+        """
+
+        url = "/api/v1/packagereferences/{packageReferenceId}"
         url = url.replace("{packageReferenceId}", quote(str(package_reference_id), safe=""))
 
-        return self._client.invoke_async(type(None), "PUT", url, "", package_reference)
+        return self._client._invoke_async(type(None), "PUT", url, "", package_reference)
 
     def delete_package_references_async(self, package_reference_id: UUID) -> Awaitable[None]:
-        """Deletes a package reference."""
-        
-        url: str = "/api/v1/packagereferences/{packageReferenceId}"
+        """
+        Deletes a package reference.
+
+        Args:
+            package_reference_id: The ID of the package reference.
+        """
+
+        url = "/api/v1/packagereferences/{packageReferenceId}"
         url = url.replace("{packageReferenceId}", quote(str(package_reference_id), safe=""))
 
-        return self._client.invoke_async(type(None), "DELETE", url, "", None)
+        return self._client._invoke_async(type(None), "DELETE", url, "", None)
 
     def get_package_versions_async(self, package_reference_id: UUID) -> Awaitable[list[str]]:
-        """Gets package versions."""
-        
-        url: str = "/api/v1/packagereferences/{packageReferenceId}/versions"
+        """
+        Gets package versions.
+
+        Args:
+            package_reference_id: The ID of the package reference.
+        """
+
+        url = "/api/v1/packagereferences/{packageReferenceId}/versions"
         url = url.replace("{packageReferenceId}", quote(str(package_reference_id), safe=""))
 
-        return self._client.invoke_async(list[str], "GET", url, "application/json", None)
+        return self._client._invoke_async(list[str], "GET", url, "application/json", None)
 
 
 class SourcesClient:
@@ -735,34 +866,52 @@ class SourcesClient:
         self._client = client
 
     def get_source_descriptions_async(self) -> Awaitable[list[ExtensionDescription]]:
-        """Gets the list of sources."""
-        
-        url: str = "/api/v1/sources/descriptions"
+        """
+        Gets the list of sources.
 
-        return self._client.invoke_async(list[ExtensionDescription], "GET", url, "application/json", None)
+        Args:
+        """
+
+        url = "/api/v1/sources/descriptions"
+
+        return self._client._invoke_async(list[ExtensionDescription], "GET", url, "application/json", None)
 
     def get_source_registrations_async(self) -> Awaitable[dict[str, DataSourceRegistration]]:
-        """Gets the list of backend sources."""
-        
-        url: str = "/api/v1/sources/registrations"
+        """
+        Gets the list of backend sources.
 
-        return self._client.invoke_async(dict[str, DataSourceRegistration], "GET", url, "application/json", None)
+        Args:
+        """
+
+        url = "/api/v1/sources/registrations"
+
+        return self._client._invoke_async(dict[str, DataSourceRegistration], "GET", url, "application/json", None)
 
     def put_source_registration_async(self, registration_id: UUID, registration: DataSourceRegistration) -> Awaitable[None]:
-        """Puts a backend source."""
-        
-        url: str = "/api/v1/sources/registrations/{registrationId}"
+        """
+        Puts a backend source.
+
+        Args:
+            registration_id: The identifier of the registration.
+        """
+
+        url = "/api/v1/sources/registrations/{registrationId}"
         url = url.replace("{registrationId}", quote(str(registration_id), safe=""))
 
-        return self._client.invoke_async(type(None), "PUT", url, "", registration)
+        return self._client._invoke_async(type(None), "PUT", url, "", registration)
 
     def delete_source_registration_async(self, registration_id: UUID) -> Awaitable[None]:
-        """Deletes a backend source."""
-        
-        url: str = "/api/v1/sources/registrations/{registrationId}"
+        """
+        Deletes a backend source.
+
+        Args:
+            registration_id: The identifier of the registration.
+        """
+
+        url = "/api/v1/sources/registrations/{registrationId}"
         url = url.replace("{registrationId}", quote(str(registration_id), safe=""))
 
-        return self._client.invoke_async(type(None), "DELETE", url, "", None)
+        return self._client._invoke_async(type(None), "DELETE", url, "", None)
 
 
 class UsersClient:
@@ -774,101 +923,153 @@ class UsersClient:
         self._client = client
 
     def get_authentication_schemes_async(self) -> Awaitable[list[AuthenticationSchemeDescription]]:
-        """Returns a list of available authentication schemes."""
-        
-        url: str = "/api/v1/users/authentication-schemes"
+        """
+        Returns a list of available authentication schemes.
 
-        return self._client.invoke_async(list[AuthenticationSchemeDescription], "GET", url, "application/json", None)
+        Args:
+        """
+
+        url = "/api/v1/users/authentication-schemes"
+
+        return self._client._invoke_async(list[AuthenticationSchemeDescription], "GET", url, "application/json", None)
 
     def authenticate_async(self, scheme: str, return_url: str) -> Awaitable[StreamResponse]:
-        """Authenticates the user."""
-        
-        url: str = "/api/v1/users/authenticate"
+        """
+        Authenticates the user.
+
+        Args:
+            scheme: The authentication scheme to challenge.
+            return_url: The URL to return after successful authentication.
+        """
+
+        url = "/api/v1/users/authenticate"
 
         queryValues: dict[str, str] = {
-            "scheme": quote(to_string(scheme), safe=""),
-            "returnUrl": quote(to_string(return_url), safe=""),
+            "scheme": quote(_to_string(scheme), safe=""),
+            "returnUrl": quote(_to_string(return_url), safe=""),
         }
 
         query: str = "?" + "&".join(f"{key}={value}" for (key, value) in queryValues.items())
         url += query
 
-        return self._client.invoke_async(StreamResponse, "GET", url, "application/octet-stream", None)
+        return self._client._invoke_async(StreamResponse, "GET", url, "application/octet-stream", None)
 
     def sign_out_async(self, return_url: str) -> Awaitable[StreamResponse]:
-        """Logs out the user."""
-        
-        url: str = "/api/v1/users/signout"
+        """
+        Logs out the user.
+
+        Args:
+            return_url: 
+        """
+
+        url = "/api/v1/users/signout"
 
         queryValues: dict[str, str] = {
-            "returnUrl": quote(to_string(return_url), safe=""),
+            "returnUrl": quote(_to_string(return_url), safe=""),
         }
 
         query: str = "?" + "&".join(f"{key}={value}" for (key, value) in queryValues.items())
         url += query
 
-        return self._client.invoke_async(StreamResponse, "GET", url, "application/octet-stream", None)
+        return self._client._invoke_async(StreamResponse, "GET", url, "application/octet-stream", None)
 
     def refresh_token_async(self, request: RefreshTokenRequest) -> Awaitable[TokenPair]:
-        """Refreshes the JWT token."""
-        
-        url: str = "/api/v1/users/refresh-token"
+        """
+        Refreshes the JWT token.
 
-        return self._client.invoke_async(TokenPair, "POST", url, "application/json", request)
+        Args:
+        """
+
+        url = "/api/v1/users/refresh-token"
+
+        return self._client._invoke_async(TokenPair, "POST", url, "application/json", request)
 
     def revoke_token_async(self, request: RevokeTokenRequest) -> Awaitable[StreamResponse]:
-        """Revokes a refresh token."""
-        
-        url: str = "/api/v1/users/revoke-token"
+        """
+        Revokes a refresh token.
 
-        return self._client.invoke_async(StreamResponse, "POST", url, "application/octet-stream", request)
+        Args:
+        """
+
+        url = "/api/v1/users/revoke-token"
+
+        return self._client._invoke_async(StreamResponse, "POST", url, "application/octet-stream", request)
 
     def get_me_async(self) -> Awaitable[NexusUser]:
-        """Gets the current user."""
-        
-        url: str = "/api/v1/users/me"
+        """
+        Gets the current user.
 
-        return self._client.invoke_async(NexusUser, "GET", url, "application/json", None)
+        Args:
+        """
+
+        url = "/api/v1/users/me"
+
+        return self._client._invoke_async(NexusUser, "GET", url, "application/json", None)
 
     def generate_tokens_async(self) -> Awaitable[TokenPair]:
-        """Generates a set of tokens."""
-        
-        url: str = "/api/v1/users/generate-tokens"
+        """
+        Generates a set of tokens.
 
-        return self._client.invoke_async(TokenPair, "POST", url, "application/json", None)
+        Args:
+        """
+
+        url = "/api/v1/users/generate-tokens"
+
+        return self._client._invoke_async(TokenPair, "POST", url, "application/json", None)
 
     def get_users_async(self) -> Awaitable[list[NexusUser]]:
-        """Gets a list of users."""
-        
-        url: str = "/api/v1/users"
+        """
+        Gets a list of users.
 
-        return self._client.invoke_async(list[NexusUser], "GET", url, "application/json", None)
+        Args:
+        """
+
+        url = "/api/v1/users"
+
+        return self._client._invoke_async(list[NexusUser], "GET", url, "application/json", None)
 
     def delete_user_async(self, user_id: str) -> Awaitable[StreamResponse]:
-        """Deletes a user."""
-        
-        url: str = "/api/v1/users/{userId}"
+        """
+        Deletes a user.
+
+        Args:
+            user_id: The identifier of the user.
+        """
+
+        url = "/api/v1/users/{userId}"
         url = url.replace("{userId}", quote(str(user_id), safe=""))
 
-        return self._client.invoke_async(StreamResponse, "DELETE", url, "application/octet-stream", None)
+        return self._client._invoke_async(StreamResponse, "DELETE", url, "application/octet-stream", None)
 
     def put_claim_async(self, user_id: str, claim_id: UUID, claim: NexusClaim) -> Awaitable[StreamResponse]:
-        """Puts a claim."""
-        
-        url: str = "/api/v1/users/{userId}/{claimId}"
+        """
+        Puts a claim.
+
+        Args:
+            user_id: The identifier of the user.
+            claim_id: The identifier of claim.
+        """
+
+        url = "/api/v1/users/{userId}/{claimId}"
         url = url.replace("{userId}", quote(str(user_id), safe=""))
         url = url.replace("{claimId}", quote(str(claim_id), safe=""))
 
-        return self._client.invoke_async(StreamResponse, "PUT", url, "application/octet-stream", claim)
+        return self._client._invoke_async(StreamResponse, "PUT", url, "application/octet-stream", claim)
 
     def delete_claim_async(self, user_id: str, claim_id: UUID) -> Awaitable[StreamResponse]:
-        """Deletes a claim."""
-        
-        url: str = "/api/v1/users/{userId}/{claimId}"
+        """
+        Deletes a claim.
+
+        Args:
+            user_id: The identifier of the user.
+            claim_id: The identifier of the claim.
+        """
+
+        url = "/api/v1/users/{userId}/{claimId}"
         url = url.replace("{userId}", quote(str(user_id), safe=""))
         url = url.replace("{claimId}", quote(str(claim_id), safe=""))
 
-        return self._client.invoke_async(StreamResponse, "DELETE", url, "application/octet-stream", None)
+        return self._client._invoke_async(StreamResponse, "DELETE", url, "application/octet-stream", None)
 
 
 class WritersClient:
@@ -880,11 +1081,15 @@ class WritersClient:
         self._client = client
 
     def get_writer_descriptions_async(self) -> Awaitable[list[ExtensionDescription]]:
-        """Gets the list of writers."""
-        
-        url: str = "/api/v1/writers/descriptions"
+        """
+        Gets the list of writers.
 
-        return self._client.invoke_async(list[ExtensionDescription], "GET", url, "application/json", None)
+        Args:
+        """
+
+        url = "/api/v1/writers/descriptions"
+
+        return self._client._invoke_async(list[ExtensionDescription], "GET", url, "application/json", None)
 
 
 
@@ -1028,14 +1233,14 @@ class NexusClient:
         if self._nexus_configuration_header_key in self._http_client.headers:
             del self._http_client.headers[self._nexus_configuration_header_key]
 
-    async def invoke_async(self, typeOfT: Type[T], method: str, relative_url: str, accept_header_value: str, content: Any) -> T:
+    async def _invoke_async(self, typeOfT: Type[T], method: str, relative_url: str, accept_header_value: str, content: Any) -> T:
 
         # prepare request
         http_content: Any = None \
             if content is None \
             else json.dumps(content, cls=_MyEncoder)
 
-        request = self.build_request_message(method, relative_url, http_content, accept_header_value)
+        request = self._build_request_message(method, relative_url, http_content, accept_header_value)
 
         # send request
         response = await self._http_client.send(request)
@@ -1056,7 +1261,7 @@ class NexusClient:
                         try:
                             await self._refresh_token_async()
 
-                            new_request = self.build_request_message(method, relative_url, http_content, accept_header_value)
+                            new_request = self._build_request_message(method, relative_url, http_content, accept_header_value)
                             new_response = await self._http_client.send(new_request)
 
                             if new_response is not None:
@@ -1103,7 +1308,7 @@ class NexusClient:
             if typeOfT is StreamResponse:
                 await response.aclose()
     
-    def build_request_message(self, method: str, relative_url: str, http_content: Any, accept_header_value: str) -> Request:
+    def _build_request_message(self, method: str, relative_url: str, http_content: Any, accept_header_value: str) -> Request:
        
         request_message = self._http_client.build_request(method, relative_url, content = http_content)
         request_message.headers["Content-Type"] = "application/json"
@@ -1144,9 +1349,9 @@ class NexusClient:
 
         self._token_pair = None
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> NexusClient:
         return self
 
-    async def __aexit__(self, exc_type, exc_value, exc_traceback):
+    async def __aexit__(self, exc_type, exc_value, exc_traceback) -> Union[Awaitable[None], None]:
         if (self._http_client is not None):
             return self._http_client.aclose()

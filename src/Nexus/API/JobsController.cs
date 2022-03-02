@@ -105,7 +105,7 @@ namespace Nexus.Controllers
                             var catalogContainer = group.First().Container;
 
                             if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, HttpContext.User))
-                                throw new UnauthorizedAccessException($"The current user is not permitted to access catalog '{catalogContainer.Id}'.");
+                                throw new UnauthorizedAccessException($"The current user is not permitted to access catalog {catalogContainer.Id}.");
 
                             return catalogContainer;
                         },
@@ -225,7 +225,7 @@ namespace Nexus.Controllers
                 }
                 else
                 {
-                    return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to access the status of job '{jobControl.Job.Id}'.");
+                    return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to access the status of job {jobControl.Job.Id}.");
                 }
             }
             else
@@ -258,7 +258,7 @@ namespace Nexus.Controllers
 
                 else
                 {
-                    return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to cancel the job '{jobControl.Job.Id}'.");
+                    return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to cancel the job {jobControl.Job.Id}.");
                 }
             }
 

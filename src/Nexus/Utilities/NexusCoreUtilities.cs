@@ -105,7 +105,7 @@ namespace Nexus.Utilities
                 NexusDataType.INT64 => typeof(Int64),
                 NexusDataType.FLOAT32 => typeof(Single),
                 NexusDataType.FLOAT64 => typeof(Double),
-                _ => throw new NotSupportedException($"The specified data type '{dataType}' is not supported.")
+                _ => throw new NotSupportedException($"The specified data type {dataType} is not supported.")
             };
         }
 

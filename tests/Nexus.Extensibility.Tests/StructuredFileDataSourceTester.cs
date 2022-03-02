@@ -44,7 +44,7 @@ namespace Nexus.Extensibility.Tests
             var configFilePath = Path.Combine(Root, "config.json");
 
             if (!File.Exists(configFilePath))
-                throw new Exception($"The configuration file does not exist on path '{configFilePath}'.");
+                throw new Exception($"The configuration file does not exist on path {configFilePath}.");
 
             var jsonString = await File.ReadAllTextAsync(configFilePath, cancellationToken);
             Config = JsonSerializer.Deserialize<Dictionary<string, CatalogDescription>>(jsonString)!;

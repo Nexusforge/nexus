@@ -32,7 +32,7 @@ namespace Nexus.DataModel
         public Resource(string id, IReadOnlyDictionary<string, string>? properties = null, IReadOnlyList<Representation>? representations = null)
         {
             if (!_idValidator.IsMatch(id))
-                throw new ArgumentException($"The resource identifier '{id}' is not valid.");
+                throw new ArgumentException($"The resource identifier {id} is not valid.");
 
             Id = id;
 
@@ -49,12 +49,12 @@ namespace Nexus.DataModel
         #region Properties
 
         /// <summary>
-        /// Gets the identifier.
+        /// The identifier.
         /// </summary>
         public string Id { get; }
 
         /// <summary>
-        /// Gets the map of properties.
+        /// The map of properties.
         /// </summary>
         public IReadOnlyDictionary<string, string>? Properties
         {
@@ -63,7 +63,7 @@ namespace Nexus.DataModel
         }
 
         /// <summary>
-        /// Gets the list of representations.
+        /// Tshe list of representations.
         /// </summary>
         public IReadOnlyList<Representation>? Representations
         {
@@ -121,7 +121,7 @@ namespace Nexus.DataModel
 
                         default:
 
-                            throw new NotSupportedException($"The merge mode '{mergeMode}' is not supported.");
+                            throw new NotSupportedException($"The merge mode {mergeMode} is not supported.");
                     }
                 }
                 else
@@ -143,7 +143,7 @@ namespace Nexus.DataModel
                     foreach (var (key, value) in newProperties)
                     {
                         if (mergedProperties1.ContainsKey(key))
-                            throw new Exception($"The left resource has already the property '{key}'.");
+                            throw new Exception($"The left resource has already the property {key}.");
 
                         else
                             mergedProperties1[key] = value;
@@ -176,7 +176,7 @@ namespace Nexus.DataModel
                     break;
 
                 default:
-                    throw new NotSupportedException($"The merge mode '{mergeMode}' is not supported.");
+                    throw new NotSupportedException($"The merge mode {mergeMode} is not supported.");
             }
 
             return merged;

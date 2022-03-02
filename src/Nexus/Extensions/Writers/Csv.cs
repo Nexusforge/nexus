@@ -108,7 +108,7 @@ namespace Nexus.Writers
                         "Unix" => new Field("Unix time", "number", constraints, default),
                         "Excel" => new Field("Excel time", "number", constraints, default),
                         "ISO 8601" => new Field("ISO 8601 time", "datetime", constraints, default),
-                        _ => throw new NotSupportedException($"The row index format '{rowIndexFormat}' is not supported.")
+                        _ => throw new NotSupportedException($"The row index format {rowIndexFormat} is not supported.")
                     };
 
                     var layout = new Layout()
@@ -247,7 +247,7 @@ namespace Nexus.Writers
                             break;
 
                         default:
-                            throw new NotSupportedException($"The row index format '{rowIndexFormat}' is not supported.");
+                            throw new NotSupportedException($"The row index format {rowIndexFormat} is not supported.");
                     }
 
                     for (int i = 0; i < writeRequests.Length; i++)

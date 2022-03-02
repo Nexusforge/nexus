@@ -1,4 +1,4 @@
-﻿# until Python < 3.10
+﻿# Python <= 3.9
 from __future__ import annotations
 
 import base64
@@ -31,6 +31,10 @@ from httpx import AsyncByteStream, AsyncClient, Request, Response, codes
 # 8 = ExceptionType
 # 9 = Models
 # 10 = SubClientInterfaceProperties
+
+T = TypeVar("T")
+snake_case_pattern = re.compile('((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))')
+timespan_pattern = re.compile('^(?:([0-9]+)\\.)?([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\\.([0-9]+))?$')
 
 class _MyEncoder(JSONEncoder):
 
@@ -71,10 +75,6 @@ class _MyEncoder(JSONEncoder):
     def _to_camel_case(self, value: str) -> str:
         components = value.split("_")
         return components[0] + ''.join(x.title() for x in components[1:])
-
-T = TypeVar("T")
-snake_case_pattern = re.compile('((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))')
-timespan_pattern = re.compile('^(?:([0-9]+)\\.)?([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\\.([0-9]+))?$')
 
 def _decode(cls: Type[T], data: Any) -> T:
 
@@ -172,7 +172,7 @@ def _decode(cls: Type[T], data: Any) -> T:
     else:
         return data
 
-def to_string(value: Any) -> str:
+def _to_string(value: Any) -> str:
 
     if type(value) is datetime:
         return value.isoformat()
@@ -195,7 +195,7 @@ class StreamResponse:
         """The stream."""
         return self._stream
 
-    def __aexit__(self, exc_type, exc_value, exc_traceback): 
+    def __aexit__(self, exc_type, exc_value, exc_traceback) -> Awaitable[None]: 
         return self._stream.aclose()
 
 class {8}(Exception):
@@ -309,14 +309,14 @@ class {1}:
         if self._nexus_configuration_header_key in self._http_client.headers:
             del self._http_client.headers[self._nexus_configuration_header_key]
 
-    async def invoke_async(self, typeOfT: Type[T], method: str, relative_url: str, accept_header_value: str, content: Any) -> T:
+    async def _invoke_async(self, typeOfT: Type[T], method: str, relative_url: str, accept_header_value: str, content: Any) -> T:
 
         # prepare request
         http_content: Any = None \
             if content is None \
             else json.dumps(content, cls=_MyEncoder)
 
-        request = self.build_request_message(method, relative_url, http_content, accept_header_value)
+        request = self._build_request_message(method, relative_url, http_content, accept_header_value)
 
         # send request
         response = await self._http_client.send(request)
@@ -337,7 +337,7 @@ class {1}:
                         try:
                             await self._refresh_token_async()
 
-                            new_request = self.build_request_message(method, relative_url, http_content, accept_header_value)
+                            new_request = self._build_request_message(method, relative_url, http_content, accept_header_value)
                             new_response = await self._http_client.send(new_request)
 
                             if new_response is not None:
@@ -384,7 +384,7 @@ class {1}:
             if typeOfT is StreamResponse:
                 await response.aclose()
     
-    def build_request_message(self, method: str, relative_url: str, http_content: Any, accept_header_value: str) -> Request:
+    def _build_request_message(self, method: str, relative_url: str, http_content: Any, accept_header_value: str) -> Request:
        
         request_message = self._http_client.build_request(method, relative_url, content = http_content)
         request_message.headers["Content-Type"] = "application/json"
@@ -425,9 +425,9 @@ class {1}:
 
         self._token_pair = None
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> {1}:
         return self
 
-    async def __aexit__(self, exc_type, exc_value, exc_traceback):
+    async def __aexit__(self, exc_type, exc_value, exc_traceback) -> Union[Awaitable[None], None]:
         if (self._http_client is not None):
             return self._http_client.aclose()

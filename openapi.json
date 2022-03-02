@@ -1181,11 +1181,11 @@
         "properties": {
           "id": {
             "type": "string",
-            "description": "Gets the identifier."
+            "description": "The identifier."
           },
           "properties": {
             "type": "object",
-            "description": "Gets the map of properties.",
+            "description": "The map of properties.",
             "nullable": true,
             "additionalProperties": {
               "type": "string"
@@ -1193,7 +1193,7 @@
           },
           "resources": {
             "type": "array",
-            "description": "Gets the list of representations.",
+            "description": "The list of representations.",
             "nullable": true,
             "items": {
               "$ref": "#/components/schemas/Resource"
@@ -1208,11 +1208,11 @@
         "properties": {
           "id": {
             "type": "string",
-            "description": "Gets the identifier."
+            "description": "The identifier."
           },
           "properties": {
             "type": "object",
-            "description": "Gets the map of properties.",
+            "description": "The map of properties.",
             "nullable": true,
             "additionalProperties": {
               "type": "string"
@@ -1220,7 +1220,7 @@
           },
           "representations": {
             "type": "array",
-            "description": "Gets the list of representations.",
+            "description": "Tshe list of representations.",
             "nullable": true,
             "items": {
               "$ref": "#/components/schemas/Representation"
@@ -1234,7 +1234,7 @@
         "additionalProperties": false,
         "properties": {
           "dataType": {
-            "description": "Gets the data type.",
+            "description": "The data type.",
             "oneOf": [
               {
                 "$ref": "#/components/schemas/NexusDataType"
@@ -1243,17 +1243,17 @@
           },
           "samplePeriod": {
             "type": "string",
-            "description": "Gets the sample period.",
+            "description": "The sample period.",
             "format": "duration"
           },
           "detail": {
             "type": "string",
-            "description": "Gets the detail.",
+            "description": "The detail.",
             "nullable": true
           },
           "isPrimary": {
             "type": "boolean",
-            "description": "Gets a value which indicates the primary representation to be used for aggregations. The value of this property is only relevant for resources with multiple representations."
+            "description": "A value which indicates the primary representation to be used for aggregations. The value of this property is only relevant for resources with multiple representations."
           }
         }
       },
