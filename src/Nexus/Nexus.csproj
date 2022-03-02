@@ -43,7 +43,7 @@
 	  
     <!-- 
       Probably because of the way how Blazor is compiled, when publishing, 
-      the folder artfifacts/bin/Nexus.Client/Release does not exist. 
+      the folder artfifacts/bin/Nexus.Api/Release does not exist. 
       As a workaround, add a direct reference to the Client project here.
     -->
 	  <ProjectReference Include="..\clients\cs-client\cs-client.csproj" />

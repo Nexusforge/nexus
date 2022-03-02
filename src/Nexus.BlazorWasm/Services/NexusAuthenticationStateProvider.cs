@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components.Authorization;
-using Nexus.Client;
+using Nexus.Api;
 using System.Security.Claims;
 
 namespace Nexus.BlazorWasm.Services

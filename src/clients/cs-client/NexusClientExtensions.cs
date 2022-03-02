@@ -1,4 +1,4 @@
-namespace Nexus.Client
+namespace Nexus.Api
 {
     /// <summary>
     /// Contains extension methods for instances of type <see cref="NexusClient"/>.

@@ -20,7 +20,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Nexus.Client;
+namespace Nexus.Api;
 
 /// <summary>
 /// A client for the Nexus system.

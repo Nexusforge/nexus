@@ -57,7 +57,7 @@ namespace Nexus.ClientGenerator
 
             // generate C# client
             var csharpSettings = new GeneratorSettings(
-                Namespace: "Nexus.Client",
+                Namespace: "Nexus.Api",
                 ClientName: "NexusClient",
                 OutputFileName: "NexusClient",
                 ExceptionType: "NexusException");

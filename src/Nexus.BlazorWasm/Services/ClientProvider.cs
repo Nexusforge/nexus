@@ -1,4 +1,4 @@
-﻿using Nexus.Client;
+﻿using Nexus.Api;
 
 namespace Nexus.BlazorWasm.Services
 {

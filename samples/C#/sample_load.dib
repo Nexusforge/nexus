@@ -12,7 +12,7 @@ Add package source
 
 // https://github.com/dotnet/interactive/issues/698
 #i "nuget: https://www.myget.org/F/apollo3zehn-dev/api/v3/index.json"
-#r "nuget: Nexus.Api, 1.0.0-beta.1.177"
+#r "nuget: Nexus.Api, 1.0.0-beta.1.179"
 #r "nuget: XPlot.Plotly.Interactive, 4.0.6"
 
 #!markdown
@@ -21,7 +21,7 @@ Create client and authenticate
 
 #!csharp
 
-using Nexus.Client;
+using Nexus.Api;
 
 var accessToken = "<access token>";
 var refreshToken = "<refresh token>";

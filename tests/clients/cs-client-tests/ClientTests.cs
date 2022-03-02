@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.Json;
 using Xunit;
 
-namespace Nexus.Client.Tests
+namespace Nexus.Api.Tests
 {
     public class ClientTests
     {
