@@ -47,7 +47,7 @@ namespace Nexus.Controllers
         /// Gets the list of sources.
         /// </summary>
         [HttpGet("descriptions")]
-        public ExtensionDescription[] GetSourceDescriptions()
+        public ExtensionDescription[] GetDescriptions()
         {
             var result = GetExtensionDescriptions(_extensionHive.GetExtensions<IDataSource>());
             return result;
@@ -59,7 +59,7 @@ namespace Nexus.Controllers
         /// <returns></returns>
         [HttpGet("registrations")]
         public IReadOnlyDictionary<Guid, DataSourceRegistration>
-            GetSourceRegistrations()
+            GetRegistrations()
         {
             var username = User.Identity?.Name;
 
@@ -80,7 +80,7 @@ namespace Nexus.Controllers
         /// <param name="registration">The registration to put.</param>
         [HttpPut("registrations/{registrationId}")]
         public Task
-            PutSourceRegistrationAsync(
+            PutRegistrationAsync(
             Guid registrationId,
             [FromBody] DataSourceRegistration registration)
         {
@@ -94,7 +94,7 @@ namespace Nexus.Controllers
         /// <param name="registrationId">The identifier of the registration.</param>
         [HttpDelete("registrations/{registrationId}")]
         public Task
-            DeleteSourceRegistrationAsync(
+            DeleteRegistrationAsync(
             Guid registrationId)
         {
             var username = User.Identity?.Name!;

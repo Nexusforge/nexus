@@ -240,19 +240,22 @@ class {1}:
 
 {4}
 
-    # /// <param name="baseUrl">The base URL to connect to.</param>
-    # public {1}(Uri baseUrl) : this(new HttpClient() { BaseAddress = baseUrl })
-    # {
-    #     //
-    # }
+    @classmethod
+    def create(cls, base_url: str) -> NexusClient:
+        """
+        Initializes a new instance of the {1}
+        
+            Args:
+                base_url: The base URL to use.
+        """
+        return NexusClient(AsyncClient(base_url=base_url))
 
     def __init__(self, http_client: AsyncClient):
         """
         Initializes a new instance of the {1}
         
             Args:
-
-            http_client: The HTTP client to use.
+                http_client: The HTTP client to use.
         """
 
         if http_client.base_url is None:

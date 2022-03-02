@@ -102,8 +102,8 @@ $@"    @property
                 template,
                 settings.Namespace,
                 settings.ClientName,
-                settings.NexusConfigurationHeaderKey,
-                settings.AuthorizationHeaderKey,
+                Program.NexusConfigurationHeaderKey,
+                Program.AuthorizationHeaderKey,
                 subClientFields,
                 subClientFieldAssignments,
                 subClientProperties,
@@ -291,15 +291,21 @@ class {modelName}:");
                     }
                 }
 
-                sourceTextBuilder.AppendLine($"    \"\"\"");
+                sourceTextBuilder.AppendLine(
+@"    """"""
+");
 
                 if (schema.Properties is not null)
                 {
                     foreach (var property in schema.Properties)
                     {
                         var type = GetType(property.Value);
-                        var parameterName = Shared.ToSnakeCase(property.Key);
-                        sourceTextBuilder.AppendLine($"    {parameterName}: {type}");
+                        var propertyName = Shared.ToSnakeCase(property.Key);
+
+                        sourceTextBuilder.AppendLine(
+$@"    {propertyName}: {type}
+    """"""{property.Value.Description}""""""
+");
                     }
                 }
             }

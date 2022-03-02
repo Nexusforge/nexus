@@ -18,7 +18,7 @@
           "Artifacts"
         ],
         "summary": "Gets the specified artifact.",
-        "operationId": "Artifacts_DownloadArtifact",
+        "operationId": "Artifacts_Download",
         "parameters": [
           {
             "name": "artifactId",
@@ -52,7 +52,7 @@
           "Catalogs"
         ],
         "summary": "Gets the specified catalog.",
-        "operationId": "Catalogs_GetCatalog",
+        "operationId": "Catalogs_Get",
         "parameters": [
           {
             "name": "catalogId",
@@ -154,7 +154,7 @@
           "Catalogs"
         ],
         "summary": "Gets the specified catalog availability.",
-        "operationId": "Catalogs_GetCatalogAvailability",
+        "operationId": "Catalogs_GetAvailability",
         "parameters": [
           {
             "name": "catalogId",
@@ -207,7 +207,7 @@
           "Catalogs"
         ],
         "summary": "Gets the specified attachment.",
-        "operationId": "Catalogs_DownloadAttachement",
+        "operationId": "Catalogs_GetAttachementStream",
         "parameters": [
           {
             "name": "catalogId",
@@ -251,7 +251,7 @@
           "Catalogs"
         ],
         "summary": "Gets the catalog metadata.",
-        "operationId": "Catalogs_GetCatalogMetadata",
+        "operationId": "Catalogs_GetMetadata",
         "parameters": [
           {
             "name": "catalogId",
@@ -282,7 +282,7 @@
           "Catalogs"
         ],
         "summary": "Puts the catalog metadata.",
-        "operationId": "Catalogs_PutCatalogMetadata",
+        "operationId": "Catalogs_PutMetadata",
         "parameters": [
           {
             "name": "catalogId",
@@ -543,7 +543,7 @@
           "PackageReferences"
         ],
         "summary": "Gets the list of package references.",
-        "operationId": "PackageReferences_GetPackageReferences",
+        "operationId": "PackageReferences_Get",
         "responses": {
           "200": {
             "description": "",
@@ -567,7 +567,7 @@
           "PackageReferences"
         ],
         "summary": "Puts a package reference.",
-        "operationId": "PackageReferences_PutPackageReferences",
+        "operationId": "PackageReferences_Put",
         "parameters": [
           {
             "name": "packageReferenceId",
@@ -605,7 +605,7 @@
           "PackageReferences"
         ],
         "summary": "Deletes a package reference.",
-        "operationId": "PackageReferences_DeletePackageReferences",
+        "operationId": "PackageReferences_Delete",
         "parameters": [
           {
             "name": "packageReferenceId",
@@ -632,7 +632,7 @@
           "PackageReferences"
         ],
         "summary": "Gets package versions.",
-        "operationId": "PackageReferences_GetPackageVersions",
+        "operationId": "PackageReferences_GetVersions",
         "parameters": [
           {
             "name": "packageReferenceId",
@@ -669,7 +669,7 @@
           "Sources"
         ],
         "summary": "Gets the list of sources.",
-        "operationId": "Sources_GetSourceDescriptions",
+        "operationId": "Sources_GetDescriptions",
         "responses": {
           "200": {
             "description": "",
@@ -693,7 +693,7 @@
           "Sources"
         ],
         "summary": "Gets the list of backend sources.",
-        "operationId": "Sources_GetSourceRegistrations",
+        "operationId": "Sources_GetRegistrations",
         "responses": {
           "200": {
             "description": "",
@@ -717,7 +717,7 @@
           "Sources"
         ],
         "summary": "Puts a backend source.",
-        "operationId": "Sources_PutSourceRegistration",
+        "operationId": "Sources_PutRegistration",
         "parameters": [
           {
             "name": "registrationId",
@@ -755,7 +755,7 @@
           "Sources"
         ],
         "summary": "Deletes a backend source.",
-        "operationId": "Sources_DeleteSourceRegistration",
+        "operationId": "Sources_DeleteRegistration",
         "parameters": [
           {
             "name": "registrationId",
@@ -1153,7 +1153,7 @@
           "Writers"
         ],
         "summary": "Gets the list of writers.",
-        "operationId": "Writers_GetWriterDescriptions",
+        "operationId": "Writers_GetDescriptions",
         "responses": {
           "200": {
             "description": "",

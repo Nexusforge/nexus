@@ -8,6 +8,10 @@ image:
 environment:
   DOCKER_PASSWORD:
      secure: 5thIPcBWPN+Qcha5VkR8Ng== 
+  MYGET_API_KEY:
+    secure: DVadlPknnKPMR4F2+3VqeU7BFFmtLcXDHzkySA590MqQNIdzbx8HRuaPwDVbHRqX
+  PYPI_API_KEY:
+    secure: s5Md1LN0G3oRHkXAXA1gBsDHPQH6wBKzNjdZ2BqxO6j9A4oGpikY/vO62KlLsNo/LU2UCO42ofoBauiY9D5iOZYj1h5fh3oMYN5+TQLA4iufI5hILP8+Y3d+tRBjnJIuNuLXuQdrY773Cp68MeUWk1GZbhmMEyV31+XKNfiqf/niySBIS80j+gvzEVhdgGBA4xQqZv+rh7x2bTiB7aa7fAlymUewd/w/yhUI+zQoi8I=
 
 branches:
   only:
@@ -21,11 +25,12 @@ init:
   - ps: git config --global core.autocrlf true
 
 install:
-  - ps: python -m pip install frictionless pyright
+  - ps: python -m pip install frictionless pyright build
   - ps: dotnet tool restore
 
 build_script:
   - ps: dotnet publish -c $Env:CONFIGURATION -o app /p:Build=$Env:APPVEYOR_BUILD_NUMBER /p:IsFinalBuild=$Env:APPVEYOR_REPO_TAG src/Nexus/Nexus.csproj
+  - ps: python3 -m build --wheel --outdir artifacts/packages/python-client --no-isolation src/clients/python-client-build
 
 after_build:
   - ps: dotnet run --project src/Nexus.ClientGenerator/Nexus.ClientGenerator.csproj -- ./ openapi_new.json
@@ -38,6 +43,7 @@ test_script:
 
 artifacts:
   - path: artifacts/packages/**/*.nupkg
+  - path: artifacts/packages/**/*.whl
 
 after_test:
 
@@ -48,7 +54,7 @@ after_test:
 
 deploy:
 
-# MyGet (dev)
+# MyGet (dev, .NET)
   - provider: NuGet
     server: https://www.myget.org/F/apollo3zehn-dev/api/v2/package
     api_key:
@@ -68,3 +74,21 @@ deploy:
     on:
       branch: main
       APPVEYOR_REPO_TAG: true
+
+deploy_script:
+  
+  # MyGet (dev, Python)
+  - ps: |
+      if ($Env:APPVEYOR_REPO_BRANCH -eq "dev") {
+        foreach ($artifact in $artifacts.Values) {
+          curl -k -X POST https://www.myget.org/F/apollo3zehn-dev/python/upload -H "Authorization: Bearer $Env:MYGET_API_KEY" -F "data=@$($artifact.path)"
+        }
+      }
+
+  # MyGet (dev, Python)
+  - ps: |
+      if ($Env:APPVEYOR_REPO_BRANCH -eq "main" -and $Env:APPVEYOR_REPO_TAG -eq "true") { 
+        foreach ($artifact in $artifacts.Values) {
+          python -m twine upload $artifact.path -u__token__ -p"$Env:PYPI_API_KEY"
+        }
+      }

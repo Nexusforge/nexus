@@ -9,6 +9,9 @@ namespace Nexus.ClientGenerator
 {
     public static class Program
     {
+        public const string NexusConfigurationHeaderKey = "Nexus-Configuration";
+        public const string AuthorizationHeaderKey = "Authorization";
+
         public static async Task Main(string[] args)
         {
             var solutionRoot = args.Length >= 1
@@ -57,9 +60,7 @@ namespace Nexus.ClientGenerator
                 Namespace: "Nexus.Client",
                 ClientName: "NexusClient",
                 OutputFileName: "NexusClient",
-                ExceptionType: "NexusException",
-                NexusConfigurationHeaderKey: "Nexus-Configuration",
-                AuthorizationHeaderKey: "Authorization");
+                ExceptionType: "NexusException");
 
             var csharpOutputPath = $"{solutionRoot}src/clients/cs-client/{csharpSettings.OutputFileName}.g.cs";
             var csharpGenerator = new CSharpGenerator();
@@ -69,12 +70,10 @@ namespace Nexus.ClientGenerator
 
             // generate Python client
             var pythonSettings = new GeneratorSettings(
-                Namespace: "Nexus.Client",
+                Namespace: default,
                 ClientName: "NexusClient",
-                OutputFileName: "NexusClient",
-                ExceptionType: "NexusException",
-                NexusConfigurationHeaderKey: "Nexus-Configuration",
-                AuthorizationHeaderKey: "Authorization");
+                OutputFileName: "nexusapi",
+                ExceptionType: "NexusException");
 
             var pythonOutputPath = $"{solutionRoot}src/clients/python-client/{pythonSettings.OutputFileName}.py";
             var pythonGenerator = new PythonGenerator();

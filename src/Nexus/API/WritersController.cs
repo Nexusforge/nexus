@@ -40,7 +40,7 @@ namespace Nexus.Controllers
         /// Gets the list of writers.
         /// </summary>
         [HttpGet("descriptions")]
-        public ExtensionDescription[] GetWriterDescriptions()
+        public ExtensionDescription[] GetDescriptions()
         {
             var result = GetExtensionDescriptions(_extensionHive.GetExtensions<IDataWriter>());
             return result;

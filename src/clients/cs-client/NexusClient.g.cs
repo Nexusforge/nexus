@@ -379,7 +379,7 @@ public interface IArtifactsClient
     /// </summary>
     /// <param name="artifactId">The artifact identifier.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<StreamResponse> DownloadArtifactAsync(string artifactId, CancellationToken cancellationToken = default);
+    Task<StreamResponse> DownloadAsync(string artifactId, CancellationToken cancellationToken = default);
 
 }
 
@@ -394,7 +394,7 @@ public class ArtifactsClient : IArtifactsClient
     }
 
     /// <inheritdoc />
-    public Task<StreamResponse> DownloadArtifactAsync(string artifactId, CancellationToken cancellationToken = default)
+    public Task<StreamResponse> DownloadAsync(string artifactId, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/artifacts/{artifactId}");
@@ -416,7 +416,7 @@ public interface ICatalogsClient
     /// </summary>
     /// <param name="catalogId">The catalog identifier.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<ResourceCatalog> GetCatalogAsync(string catalogId, CancellationToken cancellationToken = default);
+    Task<ResourceCatalog> GetAsync(string catalogId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets a list of child catalog identifiers for the provided parent catalog identifier.
@@ -439,7 +439,7 @@ public interface ICatalogsClient
     /// <param name="begin">Start date.</param>
     /// <param name="end">End date.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<CatalogAvailability> GetCatalogAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken = default);
+    Task<CatalogAvailability> GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets the specified attachment.
@@ -447,14 +447,14 @@ public interface ICatalogsClient
     /// <param name="catalogId">The catalog identifier.</param>
     /// <param name="attachmentId">The attachment identifier.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<StreamResponse> DownloadAttachementAsync(string catalogId, string attachmentId, CancellationToken cancellationToken = default);
+    Task<StreamResponse> GetAttachementStreamAsync(string catalogId, string attachmentId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets the catalog metadata.
     /// </summary>
     /// <param name="catalogId">The catalog identifier.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<CatalogMetadata> GetCatalogMetadataAsync(string catalogId, CancellationToken cancellationToken = default);
+    Task<CatalogMetadata> GetMetadataAsync(string catalogId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Puts the catalog metadata.
@@ -462,7 +462,7 @@ public interface ICatalogsClient
     /// <param name="catalogId">The catalog identifier.</param>
     /// <param name="catalogMetadata">The catalog metadata to put.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task PutCatalogMetadataAsync(string catalogId, CatalogMetadata catalogMetadata, CancellationToken cancellationToken = default);
+    Task PutMetadataAsync(string catalogId, CatalogMetadata catalogMetadata, CancellationToken cancellationToken = default);
 
 }
 
@@ -477,7 +477,7 @@ public class CatalogsClient : ICatalogsClient
     }
 
     /// <inheritdoc />
-    public Task<ResourceCatalog> GetCatalogAsync(string catalogId, CancellationToken cancellationToken = default)
+    public Task<ResourceCatalog> GetAsync(string catalogId, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/catalogs/{catalogId}");
@@ -510,7 +510,7 @@ public class CatalogsClient : ICatalogsClient
     }
 
     /// <inheritdoc />
-    public Task<CatalogAvailability> GetCatalogAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken = default)
+    public Task<CatalogAvailability> GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/catalogs/{catalogId}/availability");
@@ -530,7 +530,7 @@ public class CatalogsClient : ICatalogsClient
     }
 
     /// <inheritdoc />
-    public Task<StreamResponse> DownloadAttachementAsync(string catalogId, string attachmentId, CancellationToken cancellationToken = default)
+    public Task<StreamResponse> GetAttachementStreamAsync(string catalogId, string attachmentId, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/catalogs/{catalogId}/attachments/{attachmentId}/content");
@@ -542,7 +542,7 @@ public class CatalogsClient : ICatalogsClient
     }
 
     /// <inheritdoc />
-    public Task<CatalogMetadata> GetCatalogMetadataAsync(string catalogId, CancellationToken cancellationToken = default)
+    public Task<CatalogMetadata> GetMetadataAsync(string catalogId, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/catalogs/{catalogId}/metadata");
@@ -553,7 +553,7 @@ public class CatalogsClient : ICatalogsClient
     }
 
     /// <inheritdoc />
-    public Task PutCatalogMetadataAsync(string catalogId, CatalogMetadata catalogMetadata, CancellationToken cancellationToken = default)
+    public Task PutMetadataAsync(string catalogId, CatalogMetadata catalogMetadata, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/catalogs/{catalogId}/metadata");
@@ -730,7 +730,7 @@ public interface IPackageReferencesClient
     /// Gets the list of package references.
     /// </summary>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<IDictionary<string, PackageReference>> GetPackageReferencesAsync(CancellationToken cancellationToken = default);
+    Task<IDictionary<string, PackageReference>> GetAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Puts a package reference.
@@ -738,21 +738,21 @@ public interface IPackageReferencesClient
     /// <param name="packageReferenceId">The identifier of the package reference.</param>
     /// <param name="packageReference">The package reference to put.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task PutPackageReferencesAsync(Guid packageReferenceId, PackageReference packageReference, CancellationToken cancellationToken = default);
+    Task PutAsync(Guid packageReferenceId, PackageReference packageReference, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Deletes a package reference.
     /// </summary>
     /// <param name="packageReferenceId">The ID of the package reference.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task DeletePackageReferencesAsync(Guid packageReferenceId, CancellationToken cancellationToken = default);
+    Task DeleteAsync(Guid packageReferenceId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets package versions.
     /// </summary>
     /// <param name="packageReferenceId">The ID of the package reference.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<ICollection<string>> GetPackageVersionsAsync(Guid packageReferenceId, CancellationToken cancellationToken = default);
+    Task<ICollection<string>> GetVersionsAsync(Guid packageReferenceId, CancellationToken cancellationToken = default);
 
 }
 
@@ -767,7 +767,7 @@ public class PackageReferencesClient : IPackageReferencesClient
     }
 
     /// <inheritdoc />
-    public Task<IDictionary<string, PackageReference>> GetPackageReferencesAsync(CancellationToken cancellationToken = default)
+    public Task<IDictionary<string, PackageReference>> GetAsync(CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/packagereferences");
@@ -777,7 +777,7 @@ public class PackageReferencesClient : IPackageReferencesClient
     }
 
     /// <inheritdoc />
-    public Task PutPackageReferencesAsync(Guid packageReferenceId, PackageReference packageReference, CancellationToken cancellationToken = default)
+    public Task PutAsync(Guid packageReferenceId, PackageReference packageReference, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/packagereferences/{packageReferenceId}");
@@ -788,7 +788,7 @@ public class PackageReferencesClient : IPackageReferencesClient
     }
 
     /// <inheritdoc />
-    public Task DeletePackageReferencesAsync(Guid packageReferenceId, CancellationToken cancellationToken = default)
+    public Task DeleteAsync(Guid packageReferenceId, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/packagereferences/{packageReferenceId}");
@@ -799,7 +799,7 @@ public class PackageReferencesClient : IPackageReferencesClient
     }
 
     /// <inheritdoc />
-    public Task<ICollection<string>> GetPackageVersionsAsync(Guid packageReferenceId, CancellationToken cancellationToken = default)
+    public Task<ICollection<string>> GetVersionsAsync(Guid packageReferenceId, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/packagereferences/{packageReferenceId}/versions");
@@ -820,13 +820,13 @@ public interface ISourcesClient
     /// Gets the list of sources.
     /// </summary>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<ICollection<ExtensionDescription>> GetSourceDescriptionsAsync(CancellationToken cancellationToken = default);
+    Task<ICollection<ExtensionDescription>> GetDescriptionsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets the list of backend sources.
     /// </summary>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<IDictionary<string, DataSourceRegistration>> GetSourceRegistrationsAsync(CancellationToken cancellationToken = default);
+    Task<IDictionary<string, DataSourceRegistration>> GetRegistrationsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Puts a backend source.
@@ -834,14 +834,14 @@ public interface ISourcesClient
     /// <param name="registrationId">The identifier of the registration.</param>
     /// <param name="registration">The registration to put.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task PutSourceRegistrationAsync(Guid registrationId, DataSourceRegistration registration, CancellationToken cancellationToken = default);
+    Task PutRegistrationAsync(Guid registrationId, DataSourceRegistration registration, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Deletes a backend source.
     /// </summary>
     /// <param name="registrationId">The identifier of the registration.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task DeleteSourceRegistrationAsync(Guid registrationId, CancellationToken cancellationToken = default);
+    Task DeleteRegistrationAsync(Guid registrationId, CancellationToken cancellationToken = default);
 
 }
 
@@ -856,7 +856,7 @@ public class SourcesClient : ISourcesClient
     }
 
     /// <inheritdoc />
-    public Task<ICollection<ExtensionDescription>> GetSourceDescriptionsAsync(CancellationToken cancellationToken = default)
+    public Task<ICollection<ExtensionDescription>> GetDescriptionsAsync(CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/sources/descriptions");
@@ -866,7 +866,7 @@ public class SourcesClient : ISourcesClient
     }
 
     /// <inheritdoc />
-    public Task<IDictionary<string, DataSourceRegistration>> GetSourceRegistrationsAsync(CancellationToken cancellationToken = default)
+    public Task<IDictionary<string, DataSourceRegistration>> GetRegistrationsAsync(CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/sources/registrations");
@@ -876,7 +876,7 @@ public class SourcesClient : ISourcesClient
     }
 
     /// <inheritdoc />
-    public Task PutSourceRegistrationAsync(Guid registrationId, DataSourceRegistration registration, CancellationToken cancellationToken = default)
+    public Task PutRegistrationAsync(Guid registrationId, DataSourceRegistration registration, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/sources/registrations/{registrationId}");
@@ -887,7 +887,7 @@ public class SourcesClient : ISourcesClient
     }
 
     /// <inheritdoc />
-    public Task DeleteSourceRegistrationAsync(Guid registrationId, CancellationToken cancellationToken = default)
+    public Task DeleteRegistrationAsync(Guid registrationId, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/sources/registrations/{registrationId}");
@@ -1136,7 +1136,7 @@ public interface IWritersClient
     /// Gets the list of writers.
     /// </summary>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<ICollection<ExtensionDescription>> GetWriterDescriptionsAsync(CancellationToken cancellationToken = default);
+    Task<ICollection<ExtensionDescription>> GetDescriptionsAsync(CancellationToken cancellationToken = default);
 
 }
 
@@ -1151,7 +1151,7 @@ public class WritersClient : IWritersClient
     }
 
     /// <inheritdoc />
-    public Task<ICollection<ExtensionDescription>> GetWriterDescriptionsAsync(CancellationToken cancellationToken = default)
+    public Task<ICollection<ExtensionDescription>> GetDescriptionsAsync(CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/writers/descriptions");

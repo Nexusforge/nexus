@@ -233,9 +233,16 @@ class ResourceCatalog:
         properties: The map of properties.
         resources: The list of representations.
     """
+
     id: str
+    """The identifier."""
+
     properties: Optional[dict[str, str]]
+    """The map of properties."""
+
     resources: Optional[list[Resource]]
+    """The list of representations."""
+
 
 @dataclass
 class Resource:
@@ -247,9 +254,16 @@ class Resource:
         properties: The map of properties.
         representations: Tshe list of representations.
     """
+
     id: str
+    """The identifier."""
+
     properties: Optional[dict[str, str]]
+    """The map of properties."""
+
     representations: Optional[list[Representation]]
+    """Tshe list of representations."""
+
 
 @dataclass
 class Representation:
@@ -262,10 +276,19 @@ class Representation:
         detail: The detail.
         is_primary: A value which indicates the primary representation to be used for aggregations. The value of this property is only relevant for resources with multiple representations.
     """
+
     data_type: NexusDataType
+    """The data type."""
+
     sample_period: timedelta
+    """The sample period."""
+
     detail: Optional[str]
+    """The detail."""
+
     is_primary: bool
+    """A value which indicates the primary representation to be used for aggregations. The value of this property is only relevant for resources with multiple representations."""
+
 
 class NexusDataType(Enum):
     """Specifies the Nexus data type."""
@@ -310,8 +333,13 @@ class CatalogTimeRange:
         begin: The date/time of the first data in the catalog.
         end: The date/time of the last data in the catalog.
     """
+
     begin: datetime
+    """The date/time of the first data in the catalog."""
+
     end: datetime
+    """The date/time of the last data in the catalog."""
+
 
 @dataclass
 class CatalogAvailability:
@@ -321,7 +349,10 @@ class CatalogAvailability:
     Args:
         data: The actual availability data.
     """
+
     data: dict[str, float]
+    """The actual availability data."""
+
 
 @dataclass
 class CatalogMetadata:
@@ -334,10 +365,19 @@ class CatalogMetadata:
         group_memberships: A list of groups the catalog is part of.
         overrides: Overrides for the catalog.
     """
+
     contact: Optional[str]
+    """The contact."""
+
     is_hidden: bool
+    """A boolean which indicates if the catalog should be hidden."""
+
     group_memberships: Optional[list[str]]
+    """A list of groups the catalog is part of."""
+
     overrides: Optional[ResourceCatalog]
+    """Overrides for the catalog."""
+
 
 @dataclass
 class Job:
@@ -350,10 +390,19 @@ class Job:
         owner: test@nexus.localhost
         parameters: Job parameters.
     """
+
     id: UUID
+    """06f8eb30-5924-4a71-bdff-322f92343f5b"""
+
     type: str
+    """export"""
+
     owner: str
+    """test@nexus.localhost"""
+
     parameters: Optional[object]
+    """Job parameters."""
+
 
 @dataclass
 class ExportParameters:
@@ -368,12 +417,25 @@ class ExportParameters:
         resource_paths: ["/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean", "/IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean"]
         configuration: { "RowIndexFormat": "Index", "SignificantFigures": "4" }
     """
+
     begin: datetime
+    """2020-02-01T00:00:00Z"""
+
     end: datetime
+    """2020-02-02T00:00:00Z"""
+
     file_period: timedelta
+    """00:00:00"""
+
     type: str
+    """Nexus.Writers.Csv"""
+
     resource_paths: list[str]
+    """["/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean", "/IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean"]"""
+
     configuration: dict[str, str]
+    """{ "RowIndexFormat": "Index", "SignificantFigures": "4" }"""
+
 
 @dataclass
 class JobStatus:
@@ -387,11 +449,22 @@ class JobStatus:
         exception_message: An optional exception message.
         result: The optional result.
     """
+
     start: datetime
+    """The start date/time."""
+
     status: TaskStatus
+    """The status."""
+
     progress: float
+    """The progress from 0 to 1."""
+
     exception_message: Optional[str]
+    """An optional exception message."""
+
     result: Optional[object]
+    """The optional result."""
+
 
 class TaskStatus(Enum):
     """"""
@@ -430,8 +503,13 @@ class PackageReference:
         provider: The provider which loads the package.
         configuration: The configuration of the package reference.
     """
+
     provider: str
+    """The provider which loads the package."""
+
     configuration: dict[str, str]
+    """The configuration of the package reference."""
+
 
 @dataclass
 class ExtensionDescription:
@@ -442,8 +520,13 @@ class ExtensionDescription:
         type: The extension type.
         description: An optional description.
     """
+
     type: str
+    """The extension type."""
+
     description: Optional[str]
+    """An optional description."""
+
 
 @dataclass
 class DataSourceRegistration:
@@ -457,11 +540,22 @@ class DataSourceRegistration:
         publish: A boolean which indicates if the found catalogs should be available for everyone.
         disable: A boolean which indicates if this backend source should be ignored.
     """
+
     type: str
+    """The type of the backend source."""
+
     resource_locator: str
+    """An URL which points to the data."""
+
     configuration: dict[str, str]
+    """Configuration parameters for the instantiated source."""
+
     publish: bool
+    """A boolean which indicates if the found catalogs should be available for everyone."""
+
     disable: bool
+    """A boolean which indicates if this backend source should be ignored."""
+
 
 @dataclass
 class AuthenticationSchemeDescription:
@@ -472,8 +566,13 @@ class AuthenticationSchemeDescription:
         scheme: The scheme.
         display_name: The display name.
     """
+
     scheme: str
+    """The scheme."""
+
     display_name: str
+    """The display name."""
+
 
 @dataclass
 class TokenPair:
@@ -484,8 +583,13 @@ class TokenPair:
         access_token: The JWT token.
         refresh_token: The refresh token.
     """
+
     access_token: str
+    """The JWT token."""
+
     refresh_token: str
+    """The refresh token."""
+
 
 @dataclass
 class RefreshTokenRequest:
@@ -495,7 +599,10 @@ class RefreshTokenRequest:
     Args:
         refresh_token: The refresh token.
     """
+
     refresh_token: str
+    """The refresh token."""
+
 
 @dataclass
 class RevokeTokenRequest:
@@ -505,7 +612,10 @@ class RevokeTokenRequest:
     Args:
         token: The refresh token.
     """
+
     token: str
+    """The refresh token."""
+
 
 @dataclass
 class NexusUser:
@@ -518,10 +628,19 @@ class NexusUser:
         refresh_tokens: The list of refresh tokens.
         claims: The map of claims.
     """
+
     id: str
+    """The user identifier."""
+
     name: str
+    """The user name."""
+
     refresh_tokens: list[RefreshToken]
+    """The list of refresh tokens."""
+
     claims: dict[str, NexusClaim]
+    """The map of claims."""
+
 
 @dataclass
 class RefreshToken:
@@ -538,14 +657,31 @@ class RefreshToken:
         is_revoked: A boolean that indicates if the token has been revoked.
         is_active: A boolean that indicates if the token is active.
     """
+
     token: str
+    """The refresh token."""
+
     created: datetime
+    """The date/time when the token was created."""
+
     expires: datetime
+    """The date/time when the token expires."""
+
     revoked: Optional[datetime]
+    """The date/time when the token was revoked."""
+
     replaced_by_token: Optional[str]
+    """The token that replaced this one."""
+
     is_expired: bool
+    """A boolean that indicates if the token has expired."""
+
     is_revoked: bool
+    """A boolean that indicates if the token has been revoked."""
+
     is_active: bool
+    """A boolean that indicates if the token is active."""
+
 
 @dataclass
 class NexusClaim:
@@ -556,8 +692,13 @@ class NexusClaim:
         type: The claim type.
         value: The claim value.
     """
+
     type: str
+    """The claim type."""
+
     value: str
+    """The claim value."""
+
 
 
 class ArtifactsClient:
@@ -568,7 +709,7 @@ class ArtifactsClient:
     def __init__(self, client: NexusClient):
         self._client = client
 
-    def download_artifact_async(self, artifact_id: str) -> Awaitable[StreamResponse]:
+    def download_async(self, artifact_id: str) -> Awaitable[StreamResponse]:
         """
         Gets the specified artifact.
 
@@ -590,7 +731,7 @@ class CatalogsClient:
     def __init__(self, client: NexusClient):
         self._client = client
 
-    def get_catalog_async(self, catalog_id: str) -> Awaitable[ResourceCatalog]:
+    def get_async(self, catalog_id: str) -> Awaitable[ResourceCatalog]:
         """
         Gets the specified catalog.
 
@@ -629,7 +770,7 @@ class CatalogsClient:
 
         return self._client._invoke_async(CatalogTimeRange, "GET", url, "application/json", None)
 
-    def get_catalog_availability_async(self, catalog_id: str, begin: datetime, end: datetime) -> Awaitable[CatalogAvailability]:
+    def get_availability_async(self, catalog_id: str, begin: datetime, end: datetime) -> Awaitable[CatalogAvailability]:
         """
         Gets the specified catalog availability.
 
@@ -652,7 +793,7 @@ class CatalogsClient:
 
         return self._client._invoke_async(CatalogAvailability, "GET", url, "application/json", None)
 
-    def download_attachement_async(self, catalog_id: str, attachment_id: str) -> Awaitable[StreamResponse]:
+    def get_attachement_stream_async(self, catalog_id: str, attachment_id: str) -> Awaitable[StreamResponse]:
         """
         Gets the specified attachment.
 
@@ -667,7 +808,7 @@ class CatalogsClient:
 
         return self._client._invoke_async(StreamResponse, "GET", url, "application/octet-stream", None)
 
-    def get_catalog_metadata_async(self, catalog_id: str) -> Awaitable[CatalogMetadata]:
+    def get_metadata_async(self, catalog_id: str) -> Awaitable[CatalogMetadata]:
         """
         Gets the catalog metadata.
 
@@ -680,7 +821,7 @@ class CatalogsClient:
 
         return self._client._invoke_async(CatalogMetadata, "GET", url, "application/json", None)
 
-    def put_catalog_metadata_async(self, catalog_id: str, catalog_metadata: CatalogMetadata) -> Awaitable[None]:
+    def put_metadata_async(self, catalog_id: str, catalog_metadata: CatalogMetadata) -> Awaitable[None]:
         """
         Puts the catalog metadata.
 
@@ -806,7 +947,7 @@ class PackageReferencesClient:
     def __init__(self, client: NexusClient):
         self._client = client
 
-    def get_package_references_async(self) -> Awaitable[dict[str, PackageReference]]:
+    def get_async(self) -> Awaitable[dict[str, PackageReference]]:
         """
         Gets the list of package references.
 
@@ -817,7 +958,7 @@ class PackageReferencesClient:
 
         return self._client._invoke_async(dict[str, PackageReference], "GET", url, "application/json", None)
 
-    def put_package_references_async(self, package_reference_id: UUID, package_reference: PackageReference) -> Awaitable[None]:
+    def put_async(self, package_reference_id: UUID, package_reference: PackageReference) -> Awaitable[None]:
         """
         Puts a package reference.
 
@@ -830,7 +971,7 @@ class PackageReferencesClient:
 
         return self._client._invoke_async(type(None), "PUT", url, "", package_reference)
 
-    def delete_package_references_async(self, package_reference_id: UUID) -> Awaitable[None]:
+    def delete_async(self, package_reference_id: UUID) -> Awaitable[None]:
         """
         Deletes a package reference.
 
@@ -843,7 +984,7 @@ class PackageReferencesClient:
 
         return self._client._invoke_async(type(None), "DELETE", url, "", None)
 
-    def get_package_versions_async(self, package_reference_id: UUID) -> Awaitable[list[str]]:
+    def get_versions_async(self, package_reference_id: UUID) -> Awaitable[list[str]]:
         """
         Gets package versions.
 
@@ -865,7 +1006,7 @@ class SourcesClient:
     def __init__(self, client: NexusClient):
         self._client = client
 
-    def get_source_descriptions_async(self) -> Awaitable[list[ExtensionDescription]]:
+    def get_descriptions_async(self) -> Awaitable[list[ExtensionDescription]]:
         """
         Gets the list of sources.
 
@@ -876,7 +1017,7 @@ class SourcesClient:
 
         return self._client._invoke_async(list[ExtensionDescription], "GET", url, "application/json", None)
 
-    def get_source_registrations_async(self) -> Awaitable[dict[str, DataSourceRegistration]]:
+    def get_registrations_async(self) -> Awaitable[dict[str, DataSourceRegistration]]:
         """
         Gets the list of backend sources.
 
@@ -887,7 +1028,7 @@ class SourcesClient:
 
         return self._client._invoke_async(dict[str, DataSourceRegistration], "GET", url, "application/json", None)
 
-    def put_source_registration_async(self, registration_id: UUID, registration: DataSourceRegistration) -> Awaitable[None]:
+    def put_registration_async(self, registration_id: UUID, registration: DataSourceRegistration) -> Awaitable[None]:
         """
         Puts a backend source.
 
@@ -900,7 +1041,7 @@ class SourcesClient:
 
         return self._client._invoke_async(type(None), "PUT", url, "", registration)
 
-    def delete_source_registration_async(self, registration_id: UUID) -> Awaitable[None]:
+    def delete_registration_async(self, registration_id: UUID) -> Awaitable[None]:
         """
         Deletes a backend source.
 
@@ -1080,7 +1221,7 @@ class WritersClient:
     def __init__(self, client: NexusClient):
         self._client = client
 
-    def get_writer_descriptions_async(self) -> Awaitable[list[ExtensionDescription]]:
+    def get_descriptions_async(self) -> Awaitable[list[ExtensionDescription]]:
         """
         Gets the list of writers.
 
@@ -1116,19 +1257,22 @@ class NexusClient:
     _writers: WritersClient
 
 
-    # /// <param name="baseUrl">The base URL to connect to.</param>
-    # public NexusClient(Uri baseUrl) : this(new HttpClient() { BaseAddress = baseUrl })
-    # {
-    #     //
-    # }
+    @classmethod
+    def create(cls, base_url: str) -> NexusClient:
+        """
+        Initializes a new instance of the NexusClient
+        
+            Args:
+                base_url: The base URL to use.
+        """
+        return NexusClient(AsyncClient(base_url=base_url))
 
     def __init__(self, http_client: AsyncClient):
         """
         Initializes a new instance of the NexusClient
         
             Args:
-
-            http_client: The HTTP client to use.
+                http_client: The HTTP client to use.
         """
 
         if http_client.base_url is None:

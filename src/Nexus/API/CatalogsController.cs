@@ -58,7 +58,7 @@ namespace Nexus.Controllers
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpGet("{catalogId}")]
         public Task<ActionResult<ResourceCatalog>>
-            GetCatalogAsync(
+            GetAsync(
                 string catalogId,
                 CancellationToken cancellationToken)
         {
@@ -130,7 +130,7 @@ namespace Nexus.Controllers
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpGet("{catalogId}/availability")]
         public Task<ActionResult<CatalogAvailability>>
-            GetCatalogAvailabilityAsync(
+            GetAvailabilityAsync(
                 string catalogId,
                 DateTime begin,
                 DateTime end,
@@ -155,7 +155,7 @@ namespace Nexus.Controllers
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpGet("{catalogId}/attachments/{attachmentId}/content")]
         public Task<ActionResult>
-            DownloadAttachementAsync(
+            GetAttachementStreamAsync(
                 string catalogId,
                 string attachmentId,
                 CancellationToken cancellationToken)
@@ -188,7 +188,7 @@ namespace Nexus.Controllers
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpGet("{catalogId}/metadata")]
         public Task<ActionResult<CatalogMetadata>>
-            GetCatalogMetadataAsync(
+            GetMetadataAsync(
                 string catalogId,
                 CancellationToken cancellationToken)
         {
@@ -210,7 +210,7 @@ namespace Nexus.Controllers
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpPut("{catalogId}/metadata")]
         public Task
-            PutCatalogMetadataAsync(
+            PutMetadataAsync(
                 string catalogId,
                 [FromBody] CatalogMetadata catalogMetadata,
                 CancellationToken cancellationToken)

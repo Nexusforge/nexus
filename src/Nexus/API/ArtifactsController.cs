@@ -39,7 +39,7 @@ namespace Nexus.Controllers
         /// <param name="artifactId">The artifact identifier.</param>
         [HttpGet("{artifactId}")]
         public ActionResult
-            DownloadArtifact(
+            Download(
                 string artifactId)
         {
             if (_databaseManager.TryReadArtifact(artifactId, out var artifactStream))

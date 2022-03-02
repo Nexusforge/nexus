@@ -49,7 +49,7 @@ namespace Nexus.Controllers
         /// <returns></returns>
         [HttpGet]
         public IReadOnlyDictionary<Guid, PackageReference>
-            GetPackageReferences()
+            Get()
         {
             return _appState.Project.PackageReferences;
         }
@@ -61,7 +61,7 @@ namespace Nexus.Controllers
         /// <param name="packageReference">The package reference to put.</param>
         [HttpPut("{packageReferenceId}")]
         public Task
-            PutPackageReferencesAsync(
+            PutAsync(
             Guid packageReferenceId,
             [FromBody] PackageReference packageReference)
         {
@@ -74,7 +74,7 @@ namespace Nexus.Controllers
         /// <param name="packageReferenceId">The ID of the package reference.</param>
         [HttpDelete("{packageReferenceId}")]
         public Task
-            DeletePackageReferencesAsync(
+            DeleteAsync(
             Guid packageReferenceId)
         {
             return _appStateManager.DeletePackageReferenceAsync(packageReferenceId);
@@ -87,7 +87,7 @@ namespace Nexus.Controllers
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpGet("{packageReferenceId}/versions")]
         public async Task<ActionResult<string[]>>
-            GetPackageVersionsAsync(
+            GetVersionsAsync(
             Guid packageReferenceId,
             CancellationToken cancellationToken)
         {
