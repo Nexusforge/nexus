@@ -8,6 +8,7 @@ import os
 import re
 import tempfile
 import typing
+from array import array
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
@@ -184,19 +185,20 @@ class StreamResponse:
     """A stream response."""
 
     _response: Response
-    _stream: AsyncByteStream
 
-    def __init__(self, response: Response, stream: AsyncByteStream):
+    def __init__(self, response: Response):
         self._response = response
-        self._stream = stream
 
-    @property
-    def stream(self) -> AsyncByteStream:
-        """The stream."""
-        return self._stream
+    async def get_data(self) -> array[float]:
+        """Reads the data as an array of floats."""
+        
+        byteBuffer = await self._response.aread()
+        doubleBuffer = array('d', byteBuffer)
+
+        return doubleBuffer 
 
     def __aexit__(self, exc_type, exc_value, exc_traceback) -> Awaitable[None]: 
-        return self._stream.aclose()
+        return self._response.aclose()
 
 class NexusException(Exception):
     """A NexusException."""
@@ -1439,7 +1441,7 @@ class NexusAsyncClient:
                 return typing.cast(T, type(None))
 
             elif typeOfT is StreamResponse:
-                return typing.cast(T, StreamResponse(response, typing.cast(AsyncByteStream, response.stream)))
+                return typing.cast(T, StreamResponse(response))
 
             else:
 
@@ -1452,7 +1454,7 @@ class NexusAsyncClient:
                 return return_value
 
         finally:
-            if typeOfT is StreamResponse:
+            if typeOfT is not StreamResponse:
                 await response.aclose()
     
     def _build_request_message(self, method: str, relative_url: str, http_content: Any, accept_header_value: str) -> Request:

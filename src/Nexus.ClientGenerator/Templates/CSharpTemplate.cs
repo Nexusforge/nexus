@@ -12,10 +12,12 @@
 // 9 = Models
 // 10 = SubClientInterfaceProperties
 
+using System.Buffers;
 using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -209,8 +211,6 @@ public class {1} : IDisposable
 
         try
         {
-            var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-
             if (typeof(T) == typeof(object))
             {
                 return default!;
@@ -218,11 +218,12 @@ public class {1} : IDisposable
 
             else if (typeof(T) == typeof(StreamResponse))
             {
-                return (T)(object)(new StreamResponse(response, stream));
+                return (T)(object)(new StreamResponse(response));
             }
 
             else
             {
+                var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
                 var returnValue = await JsonSerializer.DeserializeAsync<T>(stream, _options);
 
                 if (returnValue is null)
@@ -289,29 +290,64 @@ public class {1} : IDisposable
     }
 }
 
-{7}/// <summary>
+{7}
+
+internal class CastMemoryManager<TFrom, TTo> : MemoryManager<TTo>
+     where TFrom : struct
+     where TTo : struct
+{
+    private readonly Memory<TFrom> _from;
+
+    public CastMemoryManager(Memory<TFrom> from) => _from = from;
+
+    public override Span<TTo> GetSpan() => MemoryMarshal.Cast<TFrom, TTo>(_from.Span);
+
+    protected override void Dispose(bool disposing)
+    {
+        //
+    }
+
+    public override MemoryHandle Pin(int elementIndex = 0) => throw new NotSupportedException();
+
+    public override void Unpin() => throw new NotSupportedException();
+}
+
+/// <summary>
 /// A stream response. 
 /// </summary>
 public class StreamResponse : IDisposable
 {
     HttpResponseMessage _response;
 
-    internal StreamResponse(HttpResponseMessage response, Stream stream)
+    internal StreamResponse(HttpResponseMessage response)
     {
         _response = response;
-
-        Stream = stream;
     }
 
     /// <summary>
-    /// The stream.
+    /// Reads the data as an array of doubles.
     /// </summary>
-    public Stream Stream { get; }
+    /// <param name="cancellationToken">A token to cancel to current operation.</param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
+    public async Task<double[]> ReadAsync(CancellationToken cancellationToken = default)
+    {
+        if (!_response.Headers.TryGetValues("Content-Length", out var values) || !values.Any() || int.TryParse(values.First(), out var contentLength))
+            throw new Exception("The content-length header is missing or invalid.");
+
+        var elementCount = contentLength / 8;
+        var doubleBuffer = new double[elementCount];
+        var byteBuffer = new CastMemoryManager<double, byte>(doubleBuffer).Memory;
+        var stream = await _response.Content.ReadAsStreamAsync(cancellationToken);
+
+        await stream.ReadAsync(byteBuffer, cancellationToken);
+
+        return doubleBuffer;
+    }
 
     /// <inheritdoc />
     public void Dispose()
     {
-        Stream.Dispose();
         _response.Dispose();
     }
 }
