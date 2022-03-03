@@ -3,6 +3,7 @@
     "src/clients/python-client",
     "tests/clients/python-client-tests"
   ],
+  "stubPath": "",
   "executionEnvironments":[
     {
       "root": ".",

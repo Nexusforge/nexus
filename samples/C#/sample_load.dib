@@ -1,8 +1,9 @@
 #!markdown
 
 # TODO
-- test F# plot sample
+- test and improve F# plot sample
 - get unit and other properties from Nexus more easily
+- using var seems to be broken (i.e. for the client and the stream response)
 
 #!markdown
 
@@ -12,7 +13,7 @@ Add package source
 
 // https://github.com/dotnet/interactive/issues/698
 #i "nuget: https://www.myget.org/F/apollo3zehn-dev/api/v3/index.json"
-#r "nuget: Nexus.Api, 1.0.0-beta.1.182"
+#r "nuget: Nexus.Api, 1.0.0-beta.1.188"
 
 #!markdown
 
@@ -26,7 +27,7 @@ var accessToken = "<access_token>";
 var refreshToken = "<refresh token>";
 
 var uri = new Uri("https://localhost:8443");
-var client = new NexusClient(uri); // using var seems to be broken
+var client = new NexusClient(uri);
 client.SignIn(new TokenPair(accessToken, refreshToken));
 
 #!markdown
@@ -49,17 +50,17 @@ using (var disposable = client.AttachConfiguration(
     ("seed", "1"), 
     ("offset", "-5")))
 {
-    var response = await client.Data
+    var response1 = await client.Data
         .GetStreamAsync("/IN_MEMORY/TEST/ACCESSIBLE", "T1", "1_s_mean", begin, end);
 
-    t1Data = response.Stream.AsSpan<double>().ToArray();
+    t1Data = await response1.ReadAsync();
 }
 
 // Get V1 data
-var response = await client.Data
+var response2 = await client.Data
     .GetStreamAsync("/IN_MEMORY/TEST/ACCESSIBLE", "V1", "1_s_mean", begin, end);
 
-var v1Data = response.Stream.AsSpan<double>().ToArray();
+var v1Data = await response2.ReadAsync();
 
 // timestamps
 var timestamps = Enumerable
