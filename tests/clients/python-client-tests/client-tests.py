@@ -3,7 +3,7 @@ import json
 
 import pytest
 from httpx import AsyncClient, MockTransport, Request, Response, codes
-from nexusapi import NexusClient, ResourceCatalog, TokenPair
+from nexusapi import NexusAsyncClient, ResourceCatalog, TokenPair
 
 nexus_configuration_header_key = "Nexus-Configuration"
 
@@ -46,11 +46,11 @@ async def can_authenticate_and_refresh_test():
     expected_catalog = ResourceCatalog(catalog_id, None, None)
     http_client = AsyncClient(base_url="http://localhost", transport=MockTransport(_handler1))
 
-    async with NexusClient(http_client) as client:
+    async with NexusAsyncClient(http_client) as client:
 
         # act
         client.sign_in(token_pair)
-        actual_catalog = await client.catalogs.get_async(catalog_id)
+        actual_catalog = await client.catalogs.get(catalog_id)
        
         # assert
         assert expected_catalog == actual_catalog
@@ -107,14 +107,14 @@ async def can_add_configuration_test():
 
     http_client = AsyncClient(base_url="http://localhost", transport=MockTransport(_handler2))
 
-    async with NexusClient(http_client) as client:
+    async with NexusAsyncClient(http_client) as client:
 
         # act
-        _ = await client.catalogs.get_async(catalog_id)
+        _ = await client.catalogs.get(catalog_id)
 
         with client.attach_configuration(configuration):
-            _ = await client.catalogs.get_async(catalog_id)
+            _ = await client.catalogs.get(catalog_id)
 
-        _ = await client.catalogs.get_async(catalog_id)
+        _ = await client.catalogs.get(catalog_id)
 
         # assert (already asserted in _handler2)

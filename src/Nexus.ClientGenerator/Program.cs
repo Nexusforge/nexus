@@ -71,7 +71,7 @@ namespace Nexus.ClientGenerator
             // generate Python client
             var pythonSettings = new GeneratorSettings(
                 Namespace: default,
-                ClientName: "NexusClient",
+                ClientName: "NexusAsyncClient",
                 OutputFileName: "nexusapi",
                 ExceptionType: "NexusException");
 

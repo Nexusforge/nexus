@@ -14,7 +14,7 @@ from enum import Enum
 from json import JSONEncoder
 from pathlib import Path
 from types import GenericAlias
-from typing import Any, Awaitable, Optional, Type, TypeVar
+from typing import Any, Awaitable, Optional, Tuple, Type, TypeVar
 from urllib.parse import quote
 from uuid import UUID
 
@@ -297,6 +297,8 @@ class {1}:
         self._token_pair = token_pair
 
     def attach_configuration(self, configuration: dict[str, str]) -> Any:
+        """Attaches configuration data to subsequent Nexus API requests."""
+
         encoded_json = base64.b64encode(json.dumps(configuration).encode("utf-8")).decode("utf-8")
 
         if self._nexus_configuration_header_key in self._http_client.headers:
@@ -428,9 +430,18 @@ class {1}:
 
         self._token_pair = None
 
+    # "disposable" methods
     async def __aenter__(self) -> {1}:
         return self
 
     async def __aexit__(self, exc_type, exc_value, exc_traceback) -> Optional[Awaitable[None]]:
         if (self._http_client is not None):
             return self._http_client.aclose()
+
+    # "extension" methods
+    def attach_configuration2(self, *configuration: Tuple[str, str]) -> Any:
+        """Attaches configuration data to subsequent Nexus API requests."""
+
+        dict_configuration = { key: value for key, value in configuration }
+        self.attach_configuration(dict_configuration)
+        

@@ -373,7 +373,7 @@ $@"    {propertyName}: {type}
                 throw new Exception("Only get, put, post or delete operations are supported.");
 
             var methodName = operation.OperationId.Split(new[] { '_' }, 2)[1];
-            var asyncMethodName = methodName + "Async";
+            var asyncMethodName = methodName; // + "Async";
 
             if (operation.Responses.Count() != 1)
                 throw new Exception("Only a single response is supported.");

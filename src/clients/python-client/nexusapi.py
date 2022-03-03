@@ -14,7 +14,7 @@ from enum import Enum
 from json import JSONEncoder
 from pathlib import Path
 from types import GenericAlias
-from typing import Any, Awaitable, Optional, Type, TypeVar
+from typing import Any, Awaitable, Optional, Tuple, Type, TypeVar
 from urllib.parse import quote
 from uuid import UUID
 
@@ -212,9 +212,9 @@ class NexusException(Exception):
     """The exception message."""
 
 class _DisposableConfiguration:
-    _client : NexusClient
+    _client : NexusAsyncClient
 
-    def __init__(self, client: NexusClient):
+    def __init__(self, client: NexusAsyncClient):
         self._client = client
 
     def __enter__(self):
@@ -704,12 +704,12 @@ class NexusClaim:
 class ArtifactsClient:
     """Provides methods to interact with artifacts."""
 
-    _client: NexusClient
+    _client: NexusAsyncClient
     
-    def __init__(self, client: NexusClient):
+    def __init__(self, client: NexusAsyncClient):
         self._client = client
 
-    def download_async(self, artifact_id: str) -> Awaitable[StreamResponse]:
+    def download(self, artifact_id: str) -> Awaitable[StreamResponse]:
         """
         Gets the specified artifact.
 
@@ -726,12 +726,12 @@ class ArtifactsClient:
 class CatalogsClient:
     """Provides methods to interact with catalogs."""
 
-    _client: NexusClient
+    _client: NexusAsyncClient
     
-    def __init__(self, client: NexusClient):
+    def __init__(self, client: NexusAsyncClient):
         self._client = client
 
-    def get_async(self, catalog_id: str) -> Awaitable[ResourceCatalog]:
+    def get(self, catalog_id: str) -> Awaitable[ResourceCatalog]:
         """
         Gets the specified catalog.
 
@@ -744,7 +744,7 @@ class CatalogsClient:
 
         return self._client._invoke_async(ResourceCatalog, "GET", url, "application/json", None)
 
-    def get_child_catalog_ids_async(self, catalog_id: str) -> Awaitable[list[str]]:
+    def get_child_catalog_ids(self, catalog_id: str) -> Awaitable[list[str]]:
         """
         Gets a list of child catalog identifiers for the provided parent catalog identifier.
 
@@ -757,7 +757,7 @@ class CatalogsClient:
 
         return self._client._invoke_async(list[str], "GET", url, "application/json", None)
 
-    def get_time_range_async(self, catalog_id: str) -> Awaitable[CatalogTimeRange]:
+    def get_time_range(self, catalog_id: str) -> Awaitable[CatalogTimeRange]:
         """
         Gets the specified catalog's time range.
 
@@ -770,7 +770,7 @@ class CatalogsClient:
 
         return self._client._invoke_async(CatalogTimeRange, "GET", url, "application/json", None)
 
-    def get_availability_async(self, catalog_id: str, begin: datetime, end: datetime) -> Awaitable[CatalogAvailability]:
+    def get_availability(self, catalog_id: str, begin: datetime, end: datetime) -> Awaitable[CatalogAvailability]:
         """
         Gets the specified catalog availability.
 
@@ -793,7 +793,7 @@ class CatalogsClient:
 
         return self._client._invoke_async(CatalogAvailability, "GET", url, "application/json", None)
 
-    def get_attachement_stream_async(self, catalog_id: str, attachment_id: str) -> Awaitable[StreamResponse]:
+    def get_attachement_stream(self, catalog_id: str, attachment_id: str) -> Awaitable[StreamResponse]:
         """
         Gets the specified attachment.
 
@@ -808,7 +808,7 @@ class CatalogsClient:
 
         return self._client._invoke_async(StreamResponse, "GET", url, "application/octet-stream", None)
 
-    def get_metadata_async(self, catalog_id: str) -> Awaitable[CatalogMetadata]:
+    def get_metadata(self, catalog_id: str) -> Awaitable[CatalogMetadata]:
         """
         Gets the catalog metadata.
 
@@ -821,7 +821,7 @@ class CatalogsClient:
 
         return self._client._invoke_async(CatalogMetadata, "GET", url, "application/json", None)
 
-    def put_metadata_async(self, catalog_id: str, catalog_metadata: CatalogMetadata) -> Awaitable[None]:
+    def put_metadata(self, catalog_id: str, catalog_metadata: CatalogMetadata) -> Awaitable[None]:
         """
         Puts the catalog metadata.
 
@@ -838,12 +838,12 @@ class CatalogsClient:
 class DataClient:
     """Provides methods to interact with data."""
 
-    _client: NexusClient
+    _client: NexusAsyncClient
     
-    def __init__(self, client: NexusClient):
+    def __init__(self, client: NexusAsyncClient):
         self._client = client
 
-    def get_stream_async(self, catalog_id: str, resource_id: str, representation_id: str, begin: datetime, end: datetime) -> Awaitable[StreamResponse]:
+    def get_stream(self, catalog_id: str, resource_id: str, representation_id: str, begin: datetime, end: datetime) -> Awaitable[StreamResponse]:
         """
         Gets the requested data.
 
@@ -874,12 +874,12 @@ class DataClient:
 class JobsClient:
     """Provides methods to interact with jobs."""
 
-    _client: NexusClient
+    _client: NexusAsyncClient
     
-    def __init__(self, client: NexusClient):
+    def __init__(self, client: NexusAsyncClient):
         self._client = client
 
-    def export_async(self, parameters: ExportParameters) -> Awaitable[Job]:
+    def export(self, parameters: ExportParameters) -> Awaitable[Job]:
         """
         Creates a new export job.
 
@@ -890,7 +890,7 @@ class JobsClient:
 
         return self._client._invoke_async(Job, "POST", url, "application/json", parameters)
 
-    def load_packages_async(self) -> Awaitable[Job]:
+    def load_packages(self) -> Awaitable[Job]:
         """
         Creates a new load packages job.
 
@@ -901,7 +901,7 @@ class JobsClient:
 
         return self._client._invoke_async(Job, "POST", url, "application/json", None)
 
-    def get_jobs_async(self) -> Awaitable[list[Job]]:
+    def get_jobs(self) -> Awaitable[list[Job]]:
         """
         Gets a list of jobs.
 
@@ -912,7 +912,7 @@ class JobsClient:
 
         return self._client._invoke_async(list[Job], "GET", url, "application/json", None)
 
-    def get_job_status_async(self, job_id: UUID) -> Awaitable[JobStatus]:
+    def get_job_status(self, job_id: UUID) -> Awaitable[JobStatus]:
         """
         Gets the status of the specified job.
 
@@ -925,7 +925,7 @@ class JobsClient:
 
         return self._client._invoke_async(JobStatus, "GET", url, "application/json", None)
 
-    def delete_job_async(self, job_id: UUID) -> Awaitable[StreamResponse]:
+    def delete_job(self, job_id: UUID) -> Awaitable[StreamResponse]:
         """
         Cancels the specified job.
 
@@ -942,12 +942,12 @@ class JobsClient:
 class PackageReferencesClient:
     """Provides methods to interact with package references."""
 
-    _client: NexusClient
+    _client: NexusAsyncClient
     
-    def __init__(self, client: NexusClient):
+    def __init__(self, client: NexusAsyncClient):
         self._client = client
 
-    def get_async(self) -> Awaitable[dict[str, PackageReference]]:
+    def get(self) -> Awaitable[dict[str, PackageReference]]:
         """
         Gets the list of package references.
 
@@ -958,7 +958,7 @@ class PackageReferencesClient:
 
         return self._client._invoke_async(dict[str, PackageReference], "GET", url, "application/json", None)
 
-    def put_async(self, package_reference_id: UUID, package_reference: PackageReference) -> Awaitable[None]:
+    def put(self, package_reference_id: UUID, package_reference: PackageReference) -> Awaitable[None]:
         """
         Puts a package reference.
 
@@ -971,7 +971,7 @@ class PackageReferencesClient:
 
         return self._client._invoke_async(type(None), "PUT", url, "", package_reference)
 
-    def delete_async(self, package_reference_id: UUID) -> Awaitable[None]:
+    def delete(self, package_reference_id: UUID) -> Awaitable[None]:
         """
         Deletes a package reference.
 
@@ -984,7 +984,7 @@ class PackageReferencesClient:
 
         return self._client._invoke_async(type(None), "DELETE", url, "", None)
 
-    def get_versions_async(self, package_reference_id: UUID) -> Awaitable[list[str]]:
+    def get_versions(self, package_reference_id: UUID) -> Awaitable[list[str]]:
         """
         Gets package versions.
 
@@ -1001,12 +1001,12 @@ class PackageReferencesClient:
 class SourcesClient:
     """Provides methods to interact with sources."""
 
-    _client: NexusClient
+    _client: NexusAsyncClient
     
-    def __init__(self, client: NexusClient):
+    def __init__(self, client: NexusAsyncClient):
         self._client = client
 
-    def get_descriptions_async(self) -> Awaitable[list[ExtensionDescription]]:
+    def get_descriptions(self) -> Awaitable[list[ExtensionDescription]]:
         """
         Gets the list of sources.
 
@@ -1017,7 +1017,7 @@ class SourcesClient:
 
         return self._client._invoke_async(list[ExtensionDescription], "GET", url, "application/json", None)
 
-    def get_registrations_async(self) -> Awaitable[dict[str, DataSourceRegistration]]:
+    def get_registrations(self) -> Awaitable[dict[str, DataSourceRegistration]]:
         """
         Gets the list of backend sources.
 
@@ -1028,7 +1028,7 @@ class SourcesClient:
 
         return self._client._invoke_async(dict[str, DataSourceRegistration], "GET", url, "application/json", None)
 
-    def put_registration_async(self, registration_id: UUID, registration: DataSourceRegistration) -> Awaitable[None]:
+    def put_registration(self, registration_id: UUID, registration: DataSourceRegistration) -> Awaitable[None]:
         """
         Puts a backend source.
 
@@ -1041,7 +1041,7 @@ class SourcesClient:
 
         return self._client._invoke_async(type(None), "PUT", url, "", registration)
 
-    def delete_registration_async(self, registration_id: UUID) -> Awaitable[None]:
+    def delete_registration(self, registration_id: UUID) -> Awaitable[None]:
         """
         Deletes a backend source.
 
@@ -1058,12 +1058,12 @@ class SourcesClient:
 class UsersClient:
     """Provides methods to interact with users."""
 
-    _client: NexusClient
+    _client: NexusAsyncClient
     
-    def __init__(self, client: NexusClient):
+    def __init__(self, client: NexusAsyncClient):
         self._client = client
 
-    def get_authentication_schemes_async(self) -> Awaitable[list[AuthenticationSchemeDescription]]:
+    def get_authentication_schemes(self) -> Awaitable[list[AuthenticationSchemeDescription]]:
         """
         Returns a list of available authentication schemes.
 
@@ -1074,7 +1074,7 @@ class UsersClient:
 
         return self._client._invoke_async(list[AuthenticationSchemeDescription], "GET", url, "application/json", None)
 
-    def authenticate_async(self, scheme: str, return_url: str) -> Awaitable[StreamResponse]:
+    def authenticate(self, scheme: str, return_url: str) -> Awaitable[StreamResponse]:
         """
         Authenticates the user.
 
@@ -1095,7 +1095,7 @@ class UsersClient:
 
         return self._client._invoke_async(StreamResponse, "GET", url, "application/octet-stream", None)
 
-    def sign_out_async(self, return_url: str) -> Awaitable[StreamResponse]:
+    def sign_out(self, return_url: str) -> Awaitable[StreamResponse]:
         """
         Logs out the user.
 
@@ -1114,7 +1114,7 @@ class UsersClient:
 
         return self._client._invoke_async(StreamResponse, "GET", url, "application/octet-stream", None)
 
-    def refresh_token_async(self, request: RefreshTokenRequest) -> Awaitable[TokenPair]:
+    def refresh_token(self, request: RefreshTokenRequest) -> Awaitable[TokenPair]:
         """
         Refreshes the JWT token.
 
@@ -1125,7 +1125,7 @@ class UsersClient:
 
         return self._client._invoke_async(TokenPair, "POST", url, "application/json", request)
 
-    def revoke_token_async(self, request: RevokeTokenRequest) -> Awaitable[StreamResponse]:
+    def revoke_token(self, request: RevokeTokenRequest) -> Awaitable[StreamResponse]:
         """
         Revokes a refresh token.
 
@@ -1136,7 +1136,7 @@ class UsersClient:
 
         return self._client._invoke_async(StreamResponse, "POST", url, "application/octet-stream", request)
 
-    def get_me_async(self) -> Awaitable[NexusUser]:
+    def get_me(self) -> Awaitable[NexusUser]:
         """
         Gets the current user.
 
@@ -1147,7 +1147,7 @@ class UsersClient:
 
         return self._client._invoke_async(NexusUser, "GET", url, "application/json", None)
 
-    def generate_tokens_async(self) -> Awaitable[TokenPair]:
+    def generate_tokens(self) -> Awaitable[TokenPair]:
         """
         Generates a set of tokens.
 
@@ -1158,7 +1158,7 @@ class UsersClient:
 
         return self._client._invoke_async(TokenPair, "POST", url, "application/json", None)
 
-    def get_users_async(self) -> Awaitable[list[NexusUser]]:
+    def get_users(self) -> Awaitable[list[NexusUser]]:
         """
         Gets a list of users.
 
@@ -1169,7 +1169,7 @@ class UsersClient:
 
         return self._client._invoke_async(list[NexusUser], "GET", url, "application/json", None)
 
-    def delete_user_async(self, user_id: str) -> Awaitable[StreamResponse]:
+    def delete_user(self, user_id: str) -> Awaitable[StreamResponse]:
         """
         Deletes a user.
 
@@ -1182,7 +1182,7 @@ class UsersClient:
 
         return self._client._invoke_async(StreamResponse, "DELETE", url, "application/octet-stream", None)
 
-    def put_claim_async(self, user_id: str, claim_id: UUID, claim: NexusClaim) -> Awaitable[StreamResponse]:
+    def put_claim(self, user_id: str, claim_id: UUID, claim: NexusClaim) -> Awaitable[StreamResponse]:
         """
         Puts a claim.
 
@@ -1197,7 +1197,7 @@ class UsersClient:
 
         return self._client._invoke_async(StreamResponse, "PUT", url, "application/octet-stream", claim)
 
-    def delete_claim_async(self, user_id: str, claim_id: UUID) -> Awaitable[StreamResponse]:
+    def delete_claim(self, user_id: str, claim_id: UUID) -> Awaitable[StreamResponse]:
         """
         Deletes a claim.
 
@@ -1216,12 +1216,12 @@ class UsersClient:
 class WritersClient:
     """Provides methods to interact with writers."""
 
-    _client: NexusClient
+    _client: NexusAsyncClient
     
-    def __init__(self, client: NexusClient):
+    def __init__(self, client: NexusAsyncClient):
         self._client = client
 
-    def get_descriptions_async(self) -> Awaitable[list[ExtensionDescription]]:
+    def get_descriptions(self) -> Awaitable[list[ExtensionDescription]]:
         """
         Gets the list of writers.
 
@@ -1235,7 +1235,7 @@ class WritersClient:
 
 
 
-class NexusClient:
+class NexusAsyncClient:
     """A client for the Nexus system."""
     
     _nexus_configuration_header_key: str = "Nexus-Configuration"
@@ -1258,18 +1258,18 @@ class NexusClient:
 
 
     @classmethod
-    def create(cls, base_url: str) -> NexusClient:
+    def create(cls, base_url: str) -> NexusAsyncClient:
         """
-        Initializes a new instance of the NexusClient
+        Initializes a new instance of the NexusAsyncClient
         
             Args:
                 base_url: The base URL to use.
         """
-        return NexusClient(AsyncClient(base_url=base_url))
+        return NexusAsyncClient(AsyncClient(base_url=base_url))
 
     def __init__(self, http_client: AsyncClient):
         """
-        Initializes a new instance of the NexusClient
+        Initializes a new instance of the NexusAsyncClient
         
             Args:
                 http_client: The HTTP client to use.
@@ -1362,6 +1362,8 @@ class NexusClient:
         self._token_pair = token_pair
 
     def attach_configuration(self, configuration: dict[str, str]) -> Any:
+        """Attaches configuration data to subsequent Nexus API requests."""
+
         encoded_json = base64.b64encode(json.dumps(configuration).encode("utf-8")).decode("utf-8")
 
         if self._nexus_configuration_header_key in self._http_client.headers:
@@ -1493,9 +1495,18 @@ class NexusClient:
 
         self._token_pair = None
 
-    async def __aenter__(self) -> NexusClient:
+    # "disposable" methods
+    async def __aenter__(self) -> NexusAsyncClient:
         return self
 
     async def __aexit__(self, exc_type, exc_value, exc_traceback) -> Optional[Awaitable[None]]:
         if (self._http_client is not None):
             return self._http_client.aclose()
+
+    # "extension" methods
+    def attach_configuration2(self, *configuration: Tuple[str, str]) -> Any:
+        """Attaches configuration data to subsequent Nexus API requests."""
+
+        dict_configuration = { key: value for key, value in configuration }
+        self.attach_configuration(dict_configuration)
+        
