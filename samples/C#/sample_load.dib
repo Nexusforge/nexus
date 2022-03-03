@@ -10,8 +10,6 @@ Add package source
 
 #!csharp
 
-#!csharp
-
 // https://github.com/dotnet/interactive/issues/698
 #i "nuget: https://www.myget.org/F/apollo3zehn-dev/api/v3/index.json"
 #r "nuget: Nexus.Api, 1.0.0-beta.1.182"
@@ -24,8 +22,8 @@ Create client and authenticate
 
 using Nexus.Api;
 
-var accessToken = "eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmOTIwOGY1MC1jZDU0LTQxNjUtODA0MS1iNWNkMTlhZjQ1YTRAbmV4dXMiLCJuYW1lIjoiU3RhciBMb3JkIiwiSXNBZG1pbiI6InRydWUiLCJleHAiOjE2NDYzMDI2NjQsIm5iZiI6MTY0NjMwMjM2NCwiaWF0IjoxNjQ2MzAyMzY0fQ.Q9cBKPJPCuWSp_fLZGNu0RXq1IQipmfCUsqUodcz56M";
-var refreshToken = "f9208f50-cd54-4165-8041-b5cd19af45a4%40nexus@H8kfwqltdLhUuwZ2YmcNFJRXqo3aRrroi/5I5v/nPtNyJbtWzBI9uEDxtISVj3apTjgT5CO4UEV0osi5ErtGEg==";
+var accessToken = "<access_token>";
+var refreshToken = "<refresh token>";
 
 var uri = new Uri("https://localhost:8443");
 var client = new NexusClient(uri); // using var seems to be broken
@@ -86,12 +84,10 @@ var v1Unit = v1Metadata.Properties["Unit"];
 
 #!share --from csharp t1Data
 
-
 #!fsharp
+
 #!share --from csharp t1Data
 t1Data.Display()
-
-#!csharp
 
 #!fsharp
 
@@ -102,9 +98,8 @@ t1Data.Display()
 
 Plot data
 
-#!csharp
-
 #!fsharp
+
 #!share --from csharp timestamps
 #!share --from csharp t1Data
 #!share --from csharp t1Description
