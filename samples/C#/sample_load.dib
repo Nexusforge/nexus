@@ -1,8 +1,8 @@
 #!markdown
 
 # TODO
-- add second y axis
-- get unit and other properties from Nexus automatically
+- test F# plot sample
+- get unit and other properties from Nexus more easily
 
 #!markdown
 
@@ -10,10 +10,11 @@ Add package source
 
 #!csharp
 
+#!csharp
+
 // https://github.com/dotnet/interactive/issues/698
 #i "nuget: https://www.myget.org/F/apollo3zehn-dev/api/v3/index.json"
-#r "nuget: Nexus.Api, 1.0.0-beta.1.179"
-#r "nuget: XPlot.Plotly.Interactive, 4.0.6"
+#r "nuget: Nexus.Api, 1.0.0-beta.1.182"
 
 #!markdown
 
@@ -23,10 +24,11 @@ Create client and authenticate
 
 using Nexus.Api;
 
-var accessToken = "<access token>";
-var refreshToken = "<refresh token>";
+var accessToken = "eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmOTIwOGY1MC1jZDU0LTQxNjUtODA0MS1iNWNkMTlhZjQ1YTRAbmV4dXMiLCJuYW1lIjoiU3RhciBMb3JkIiwiSXNBZG1pbiI6InRydWUiLCJleHAiOjE2NDYzMDI2NjQsIm5iZiI6MTY0NjMwMjM2NCwiaWF0IjoxNjQ2MzAyMzY0fQ.Q9cBKPJPCuWSp_fLZGNu0RXq1IQipmfCUsqUodcz56M";
+var refreshToken = "f9208f50-cd54-4165-8041-b5cd19af45a4%40nexus@H8kfwqltdLhUuwZ2YmcNFJRXqo3aRrroi/5I5v/nPtNyJbtWzBI9uEDxtISVj3apTjgT5CO4UEV0osi5ErtGEg==";
 
-using var client = new NexusClient(new Uri("https://localhost:8443"));
+var uri = new Uri("https://localhost:8443");
+var client = new NexusClient(uri); // using var seems to be broken
 client.SignIn(new TokenPair(accessToken, refreshToken));
 
 #!markdown
@@ -61,35 +63,83 @@ var response = await client.Data
 
 var v1Data = response.Stream.AsSpan<double>().ToArray();
 
+// timestamps
+var timestamps = Enumerable
+    .Range(0, t1Data.Length)
+    .Select(x => begin.AddSeconds(x))
+    .ToArray();
+
+#!csharp
+
+// metadata
+var metadata = await client.Catalogs.GetAsync("/IN_MEMORY/TEST/ACCESSIBLE");
+
+var t1Metadata = metadata.Resources.First(resource => resource.Id == "T1");
+var t1Description = t1Metadata.Properties["Description"];
+var t1Unit = t1Metadata.Properties["Unit"];
+
+var v1Metadata = metadata.Resources.First(resource => resource.Id == "V1");
+var v1Description = v1Metadata.Properties["Description"];
+var v1Unit = v1Metadata.Properties["Unit"];
+
+#!csharp
+
+#!share --from csharp t1Data
+
+
+#!fsharp
+#!share --from csharp t1Data
+t1Data.Display()
+
+#!csharp
+
+#!fsharp
+
+#r "nuget: Plotly.NET, 2.0.0-preview.17"
+#r "nuget: Plotly.NET.Interactive, 2.0.0-preview.17"
+
 #!markdown
 
 Plot data
 
 #!csharp
 
-using XPlot.Plotly;
+#!fsharp
+#!share --from csharp timestamps
+#!share --from csharp t1Data
+#!share --from csharp t1Description
+#!share --from csharp t1Unit
+#!share --from csharp v1Data
+#!share --from csharp v1Description
+#!share --from csharp v1Unit
 
-var timestamps = Enumerable
-    .Range(0, t1Data.Length)
-    .Select(x => begin.AddSeconds(x))
-    .ToArray();
+// wait for https://github.com/dotnet/interactive/issues/1848 to be solved
 
-var t1Scatter = new Scattergl{
-    name = "Temperature 1",
-    x = timestamps,
-    y = t1Data
-};
+open Plotly.NET
 
-var v1Scatter = new Scattergl{
-    name = "Wind speed 1",
-    x = timestamps,
-    y = v1Data,
-};
+let t1Chart =
+    Chart.Line(timestamps, t1Data, Name=t1Description)
+        |> Chart.withAxisAnchor(Y=1)
 
-var chart = Chart.Plot(new[] { t1Scatter, v1Scatter });
+let v1Chart =
+    Chart.Line(timestamps, v1Data, Name=v1Description)
+        |> Chart.withAxisAnchor(Y=2)
 
-chart.WithXTitle("date / time");
-chart.WithYTitle("temperature in °C, wind speed in m/s");
-chart.WithTitle("My chart");
-
-chart.Display();
+let twoXAxes = 
+    [
+        t1Chart
+        v1Chart
+    ]
+    |> Chart.combine
+    |> Chart.withYAxisStyle(
+        $"axis 1 / {t1Unit}",
+        Side=StyleParam.Side.Left,
+        Id=StyleParam.SubPlotId.YAxis 1
+    )
+    |> Chart.withYAxisStyle(
+        $"axis 2 / {v1Unit}",
+        Side=StyleParam.Side.Right,
+        Id=StyleParam.SubPlotId.YAxis 2,
+        Overlaying=StyleParam.LinearAxisId.Y 1
+    )
+    |> Chart.show

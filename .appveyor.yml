@@ -64,7 +64,7 @@ deploy:
     on:
       branch: dev
 
-# NuGet (master)
+# NuGet (master + release)
   - provider: NuGet
     server: https://www.nuget.org/api/v2/package
     api_key:
@@ -87,7 +87,7 @@ after_deploy:
         }
       }
 
-  # MyGet (dev, Python)
+  # MyPi (master + release, Python)
   - ps: |
       if ($Env:APPVEYOR_REPO_BRANCH -eq "main" -and $Env:APPVEYOR_REPO_TAG -eq "true") { 
         foreach ($artifact in $artifacts.Values) {

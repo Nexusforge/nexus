@@ -42,7 +42,8 @@ with open("../../../src/Directory.Build.props", "r") as fh:
     isFinalBuild = os.getenv("APPVEYOR_REPO_TAG") == "true"
 
     if isFinalBuild:
-        build = "final"
+        # "final": PEP440 does not support SemVer versioning (https://semver.org/#spec-item-9)
+        build = None
 
     version = f"{major}.{minor}.{revision}"
 
@@ -50,7 +51,8 @@ with open("../../../src/Directory.Build.props", "r") as fh:
         version = f"{version}-{version_suffix}"
 
         if build:
-            version = f"{version}.{build}"
+            # PEP440 does not support SemVer versioning (https://semver.org/#spec-item-9)
+            version = f"{version}{int(build):03d}"
 
     # others
     license = match.group("package_license_expression")
