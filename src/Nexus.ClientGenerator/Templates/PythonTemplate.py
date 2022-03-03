@@ -217,6 +217,7 @@ class _DisposableConfiguration:
     def __init__(self, client: {1}):
         self._client = client
 
+    # "disposable" methods
     def __enter__(self):
         pass
 
@@ -442,5 +443,5 @@ class {1}:
         """Attaches configuration data to subsequent Nexus API requests."""
 
         dict_configuration = { key: value for key, value in configuration }
-        self.attach_configuration(dict_configuration)
+        return self.attach_configuration(dict_configuration)
         
