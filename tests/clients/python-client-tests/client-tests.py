@@ -118,3 +118,5 @@ async def can_add_configuration_test():
         _ = await client.catalogs.get(catalog_id)
 
         # assert (already asserted in _handler2)
+
+    b = 1

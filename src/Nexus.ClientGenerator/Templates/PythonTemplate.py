@@ -406,7 +406,7 @@ class {1}:
             raise Exception("Refresh token is null. This should never happen.")
 
         refresh_request = RefreshTokenRequest(refresh_token=self._token_pair.refresh_token)
-        token_pair = await self.users.refresh_token_async(refresh_request)
+        token_pair = await self.users.refresh_token(refresh_request)
 
         if self._token_file_path is not None:
             Path(self._token_folder_path).mkdir(parents=True, exist_ok=True)
@@ -420,7 +420,6 @@ class {1}:
             del self._http_client.headers[self._authorization_header_key]
 
         self._http_client.headers[self._authorization_header_key] = authorizationHeaderValue
-
         self._token_pair = token_pair
 
     def sign_out(self) -> None:
@@ -434,9 +433,9 @@ class {1}:
     async def __aenter__(self) -> {1}:
         return self
 
-    async def __aexit__(self, exc_type, exc_value, exc_traceback) -> Optional[Awaitable[None]]:
+    async def __aexit__(self, exc_type, exc_value, exc_traceback):
         if (self._http_client is not None):
-            return self._http_client.aclose()
+            await self._http_client.aclose()
 
     # "extension" methods
     def attach_configuration2(self, *configuration: Tuple[str, str]) -> Any:
