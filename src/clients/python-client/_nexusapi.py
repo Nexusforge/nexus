@@ -14,12 +14,11 @@ from datetime import datetime, timedelta
 from enum import Enum
 from json import JSONEncoder
 from pathlib import Path
-from types import GenericAlias
-from typing import Any, Awaitable, Optional, Tuple, Type, TypeVar
+from typing import Any, Awaitable, Optional, Tuple, Type, TypeVar, Union
 from urllib.parse import quote
 from uuid import UUID
 
-from httpx import AsyncByteStream, AsyncClient, Request, Response, codes
+from httpx import AsyncClient, Request, Response, codes
 
 # 0 = Namespace
 # 1 = ClientName
@@ -35,7 +34,7 @@ from httpx import AsyncByteStream, AsyncClient, Request, Response, codes
 
 T = TypeVar("T")
 snake_case_pattern = re.compile('((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))')
-timespan_pattern = re.compile('^(?:([0-9]+)\\.)?([0-9]Nexus-Configuration):([0-9]Nexus-Configuration):([0-9]Nexus-Configuration)(?:\\.([0-9]+))?$')
+timespan_pattern = re.compile('^(?:([0-9]+)\\.)?([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\\.([0-9]+))?$')
 
 class _MyEncoder(JSONEncoder):
 
@@ -79,16 +78,24 @@ class _MyEncoder(JSONEncoder):
 
 def _decode(cls: Type[T], data: Any) -> T:
 
-    if (data is None):
+    if data is None:
         return typing.cast(T, None)
 
-    if isinstance(cls, GenericAlias):
+    origin = typing.cast(Type, typing.get_origin(cls))
+    args = typing.get_args(cls)
 
-        origin = typing.cast(Type, typing.get_origin(cls))
-        args = typing.get_args(cls)
+    if origin is not None:
+
+        # Optional
+        if origin is Union and type(None) in args:
+
+            baseType = args[0]
+            instance3 = _decode(baseType, data)
+
+            return typing.cast(T, instance3)
 
         # list
-        if (issubclass(origin, list)):
+        elif issubclass(origin, list):
 
             listType = args[0]
             instance1: list = list()
@@ -99,7 +106,7 @@ def _decode(cls: Type[T], data: Any) -> T:
             return typing.cast(T, instance1)
         
         # dict
-        elif (issubclass(origin, dict)):
+        elif issubclass(origin, dict):
 
             keyType = args[0]
             valueType = args[1]
@@ -112,12 +119,15 @@ def _decode(cls: Type[T], data: Any) -> T:
 
             return typing.cast(T, instance2)
 
+        # default
         else:
             raise Exception(f"Type {str(origin)} cannot be deserialized.")
 
+    # datetime
     elif issubclass(cls, datetime):
         return typing.cast(T, datetime.strptime(data[:-1], "%Y-%m-%dT%H:%M:%S.%f"))
 
+    # timedelta
     elif issubclass(cls, timedelta):
         # ^(?:([0-9]+)\.)?([0-9]Nexus-Configuration):([0-9]Nexus-Configuration):([0-9]Nexus-Configuration)(?:\.([0-9]+))?$
         # 12:08:07
@@ -138,9 +148,11 @@ def _decode(cls: Type[T], data: Any) -> T:
         else:
             raise Exception(f"Unable to deserialize {data} into value of type timedelta.")
 
+    # UUID
     elif issubclass(cls, UUID):
         return typing.cast(T, UUID(data))
        
+    # dataclass
     elif dataclasses.is_dataclass(cls):
 
         p = []
@@ -170,6 +182,7 @@ def _decode(cls: Type[T], data: Any) -> T:
 
         raise Exception("Dataclasses with more than 10 parameters cannot be deserialized.")
 
+    # default
     else:
         return data
 
@@ -197,8 +210,11 @@ class StreamResponse:
 
         return doubleBuffer 
 
-    def __aexit__(self, exc_type, exc_value, exc_traceback) -> Awaitable[None]: 
-        return self._response.aclose()
+    async def __aenter__(self) -> StreamResponse:
+        return self
+
+    async def __aexit__(self, exc_type, exc_value, exc_traceback): 
+        await self._response.aclose()
 
 class NexusException(Exception):
     """A NexusException."""

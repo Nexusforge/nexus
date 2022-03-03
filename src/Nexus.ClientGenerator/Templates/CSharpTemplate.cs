@@ -22,14 +22,14 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace {0};
+namespace {{0}};
 
 /// <summary>
 /// A client for the Nexus system.
 /// </summary>
-public interface I{1}
+public interface I{{1}}
 {
-{10}
+{{10}}
 
     /// <summary>
     /// Signs in the user.
@@ -51,10 +51,10 @@ public interface I{1}
 }
 
 /// <inheritdoc />
-public class {1} : IDisposable
+public class {{1}} : IDisposable
 {
-    private const string NexusConfigurationHeaderKey = "{2}";
-    private const string AuthorizationHeaderKey = "{3}";
+    private const string NexusConfigurationHeaderKey = "{{2}}";
+    private const string AuthorizationHeaderKey = "{{3}}";
 
     private static string _tokenFolderPath = Path.Combine(Path.GetTempPath(), "nexus", "tokens");
     private static JsonSerializerOptions _options;
@@ -63,8 +63,8 @@ public class {1} : IDisposable
     private HttpClient _httpClient;
     private string? _tokenFilePath;
 
-{4}
-    static {1}()
+{{4}}
+    static {{1}}()
     {
         _options = new JsonSerializerOptions()
         {
@@ -76,26 +76,26 @@ public class {1} : IDisposable
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="{1}"/>.
+    /// Initializes a new instance of the <see cref="{{1}}"/>.
     /// </summary>
     /// <param name="baseUrl">The base URL to connect to.</param>
-    public {1}(Uri baseUrl) : this(new HttpClient() { BaseAddress = baseUrl })
+    public {{1}}(Uri baseUrl) : this(new HttpClient() { BaseAddress = baseUrl })
     {
         //
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="{1}"/>.
+    /// Initializes a new instance of the <see cref="{{1}}"/>.
     /// </summary>
     /// <param name="httpClient">The HTTP client to use.</param>
-    public {1}(HttpClient httpClient)
+    public {{1}}(HttpClient httpClient)
     {
         if (httpClient.BaseAddress is null)
             throw new Exception("The base address of the HTTP client must be set.");
 
         _httpClient = httpClient;
 
-{5}
+{{5}}
     }
 
     /// <summary>
@@ -103,7 +103,7 @@ public class {1} : IDisposable
     /// </summary>
     public bool IsAuthenticated => _tokenPair is not null;
 
-{6}
+{{6}}
 
     /// <inheritdoc />
     public void SignIn(TokenPair tokenPair)
@@ -202,10 +202,10 @@ public class {1} : IDisposable
                 var statusCode = $"N00.{response.StatusCode}";
 
                 if (string.IsNullOrWhiteSpace(message))
-                    throw new {8}(statusCode, $"The HTTP request failed with status code {response.StatusCode}.");
+                    throw new {{8}}(statusCode, $"The HTTP request failed with status code {response.StatusCode}.");
 
                 else
-                    throw new {8}(statusCode, $"The HTTP request failed with status code {response.StatusCode}. The response message is: {message}");
+                    throw new {{8}}(statusCode, $"The HTTP request failed with status code {response.StatusCode}. The response message is: {message}");
             }
         }
 
@@ -227,7 +227,7 @@ public class {1} : IDisposable
                 var returnValue = await JsonSerializer.DeserializeAsync<T>(stream, _options);
 
                 if (returnValue is null)
-                    throw new {8}($"N01", "Response data could not be deserialized.");
+                    throw new {{8}}($"N01", "Response data could not be deserialized.");
 
                 return returnValue;
             }
@@ -290,7 +290,7 @@ public class {1} : IDisposable
     }
 }
 
-{7}
+{{7}}
 
 internal class CastMemoryManager<TFrom, TTo> : MemoryManager<TTo>
      where TFrom : struct
@@ -353,11 +353,11 @@ public class StreamResponse : IDisposable
 }
 
 /// <summary>
-/// A {8}.
+/// A {{8}}.
 /// </summary>
-public class {8} : Exception
+public class {{8}} : Exception
 {
-    internal {8}(string statusCode, string message) : base(message)
+    internal {{8}}(string statusCode, string message) : base(message)
     {
         StatusCode = statusCode;
     }
@@ -370,9 +370,9 @@ public class {8} : Exception
 
 internal class DisposableConfiguration : IDisposable
 {
-    private {1} _client;
+    private {{1}} _client;
 
-    public DisposableConfiguration({1} client)
+    public DisposableConfiguration({{1}} client)
     {
         _client = client;
     }
@@ -383,4 +383,4 @@ internal class DisposableConfiguration : IDisposable
     }
 }
 
-{9}
+{{9}}

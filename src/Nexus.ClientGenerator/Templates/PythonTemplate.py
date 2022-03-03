@@ -14,12 +14,11 @@ from datetime import datetime, timedelta
 from enum import Enum
 from json import JSONEncoder
 from pathlib import Path
-from types import GenericAlias
-from typing import Any, Awaitable, Optional, Tuple, Type, TypeVar
+from typing import Any, Awaitable, Optional, Tuple, Type, TypeVar, Union
 from urllib.parse import quote
 from uuid import UUID
 
-from httpx import AsyncByteStream, AsyncClient, Request, Response, codes
+from httpx import AsyncClient, Request, Response, codes
 
 # 0 = Namespace
 # 1 = ClientName
@@ -79,16 +78,24 @@ class _MyEncoder(JSONEncoder):
 
 def _decode(cls: Type[T], data: Any) -> T:
 
-    if (data is None):
+    if data is None:
         return typing.cast(T, None)
 
-    if isinstance(cls, GenericAlias):
+    origin = typing.cast(Type, typing.get_origin(cls))
+    args = typing.get_args(cls)
 
-        origin = typing.cast(Type, typing.get_origin(cls))
-        args = typing.get_args(cls)
+    if origin is not None:
+
+        # Optional
+        if origin is Union and type(None) in args:
+
+            baseType = args[0]
+            instance3 = _decode(baseType, data)
+
+            return typing.cast(T, instance3)
 
         # list
-        if (issubclass(origin, list)):
+        elif issubclass(origin, list):
 
             listType = args[0]
             instance1: list = list()
@@ -99,7 +106,7 @@ def _decode(cls: Type[T], data: Any) -> T:
             return typing.cast(T, instance1)
         
         # dict
-        elif (issubclass(origin, dict)):
+        elif issubclass(origin, dict):
 
             keyType = args[0]
             valueType = args[1]
@@ -112,14 +119,17 @@ def _decode(cls: Type[T], data: Any) -> T:
 
             return typing.cast(T, instance2)
 
+        # default
         else:
             raise Exception(f"Type {str(origin)} cannot be deserialized.")
 
+    # datetime
     elif issubclass(cls, datetime):
         return typing.cast(T, datetime.strptime(data[:-1], "%Y-%m-%dT%H:%M:%S.%f"))
 
+    # timedelta
     elif issubclass(cls, timedelta):
-        # ^(?:([0-9]+)\.)?([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\.([0-9]+))?$
+        # ^(?:([0-9]+)\.)?([0-9]Nexus-Configuration):([0-9]Nexus-Configuration):([0-9]Nexus-Configuration)(?:\.([0-9]+))?$
         # 12:08:07
         # 12:08:07.1250000
         # 3000.00:08:07
@@ -138,9 +148,11 @@ def _decode(cls: Type[T], data: Any) -> T:
         else:
             raise Exception(f"Unable to deserialize {data} into value of type timedelta.")
 
+    # UUID
     elif issubclass(cls, UUID):
         return typing.cast(T, UUID(data))
        
+    # dataclass
     elif dataclasses.is_dataclass(cls):
 
         p = []
@@ -170,6 +182,7 @@ def _decode(cls: Type[T], data: Any) -> T:
 
         raise Exception("Dataclasses with more than 10 parameters cannot be deserialized.")
 
+    # default
     else:
         return data
 
@@ -197,11 +210,14 @@ class StreamResponse:
 
         return doubleBuffer 
 
-    def __aexit__(self, exc_type, exc_value, exc_traceback) -> Awaitable[None]: 
-        return self._response.aclose()
+    async def __aenter__(self) -> StreamResponse:
+        return self
 
-class {8}(Exception):
-    """A {8}."""
+    async def __aexit__(self, exc_type, exc_value, exc_traceback): 
+        await self._response.aclose()
+
+class {{8}}(Exception):
+    """A {{8}}."""
 
     def __init__(self, status_code: str, message: str):
         self.status_code = status_code
@@ -214,9 +230,9 @@ class {8}(Exception):
     """The exception message."""
 
 class _DisposableConfiguration:
-    _client : {1}
+    _client : {{1}}
 
-    def __init__(self, client: {1}):
+    def __init__(self, client: {{1}}):
         self._client = client
 
     # "disposable" methods
@@ -226,14 +242,14 @@ class _DisposableConfiguration:
     def __exit__(self, exc_type, exc_value, exc_traceback):
         self._client.clear_configuration()
 
-{9}
-{7}
+{{9}}
+{{7}}
 
-class {1}:
+class {{1}}:
     """A client for the Nexus system."""
     
-    _nexus_configuration_header_key: str = "{2}"
-    _authorization_header_key: str = "{3}"
+    _nexus_configuration_header_key: str = "{{2}}"
+    _authorization_header_key: str = "{{3}}"
 
     _token_folder_path: str = os.path.join(tempfile.gettempdir(), "nexus", "tokens")
 
@@ -241,21 +257,21 @@ class {1}:
     _http_client: AsyncClient
     _token_file_path: Optional[str]
 
-{4}
+{{4}}
 
     @classmethod
-    def create(cls, base_url: str) -> {1}:
+    def create(cls, base_url: str) -> {{1}}:
         """
-        Initializes a new instance of the {1}
+        Initializes a new instance of the {{1}}
         
             Args:
                 base_url: The base URL to use.
         """
-        return {1}(AsyncClient(base_url=base_url))
+        return {{1}}(AsyncClient(base_url=base_url))
 
     def __init__(self, http_client: AsyncClient):
         """
-        Initializes a new instance of the {1}
+        Initializes a new instance of the {{1}}
         
             Args:
                 http_client: The HTTP client to use.
@@ -267,14 +283,14 @@ class {1}:
         self._http_client = http_client
         self._token_pair = None
 
-{5}
+{{5}}
 
     @property
     def is_authenticated(self) -> bool:
         """Gets a value which indicates if the user is authenticated."""
         return self._token_pair is not None
 
-{6}
+{{6}}
 
     def sign_in(self, token_pair: TokenPair) -> None:
         """Signs in the user.
@@ -433,7 +449,7 @@ class {1}:
         self._token_pair = None
 
     # "disposable" methods
-    async def __aenter__(self) -> {1}:
+    async def __aenter__(self) -> {{1}}:
         return self
 
     async def __aexit__(self, exc_type, exc_value, exc_traceback):

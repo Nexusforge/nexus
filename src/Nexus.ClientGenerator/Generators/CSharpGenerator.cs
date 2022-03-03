@@ -105,7 +105,7 @@ $@"    /// <summary>
                 .Replace("}", "}}");
 
             template = Regex
-                .Replace(template, "{{([0-9]+)}}", match => $"{{{match.Groups[1].Value}}}");
+                .Replace(template, "{{{{([0-9]+)}}}}", match => $"{{{match.Groups[1].Value}}}");
 
             return string.Format(
                 template,
