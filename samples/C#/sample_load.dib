@@ -9,7 +9,7 @@
 
 // https://github.com/dotnet/interactive/issues/698
 #i "nuget: https://www.myget.org/F/apollo3zehn-dev/api/v3/index.json"
-#r "nuget: Nexus.Api, 1.0.0-beta.1.193"
+#r "nuget: Nexus.Api, 1.0.0-beta.1.194"
 
 #!markdown
 
@@ -75,15 +75,6 @@ var t1Unit = t1Metadata.Properties["Unit"];
 var v1Metadata = metadata.Resources.First(resource => resource.Id == "V1");
 var v1Description = v1Metadata.Properties["Description"];
 var v1Unit = v1Metadata.Properties["Unit"];
-
-#!csharp
-
-#!share --from csharp t1Data
-
-#!fsharp
-
-#!share --from csharp t1Data
-t1Data.Display()
 
 #!fsharp
 
