@@ -967,20 +967,20 @@
         }
       }
     },
-    "/api/v1/users/generate-tokens": {
+    "/api/v1/users/generate-refresh-token": {
       "post": {
         "tags": [
           "Users"
         ],
-        "summary": "Generates a set of tokens.",
-        "operationId": "Users_GenerateTokens",
+        "summary": "Generates a refresh token.",
+        "operationId": "Users_GenerateRefreshToken",
         "responses": {
           "200": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/TokenPair"
+                  "type": "string"
                 }
               }
             }

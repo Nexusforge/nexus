@@ -13,7 +13,7 @@ Add package source
 
 // https://github.com/dotnet/interactive/issues/698
 #i "nuget: https://www.myget.org/F/apollo3zehn-dev/api/v3/index.json"
-#r "nuget: Nexus.Api, 1.0.0-beta.1.188"
+#r "nuget: Nexus.Api, 1.0.0-beta.1.189"
 
 #!markdown
 
@@ -23,12 +23,11 @@ Create client and authenticate
 
 using Nexus.Api;
 
-var accessToken = "<access_token>";
 var refreshToken = "<refresh token>";
 
 var uri = new Uri("https://localhost:8443");
 var client = new NexusClient(uri);
-client.SignIn(new TokenPair(accessToken, refreshToken));
+await client.SignInAsync(refreshToken);
 
 #!markdown
 

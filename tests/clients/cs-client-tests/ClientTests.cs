@@ -16,14 +16,35 @@ namespace Nexus.Api.Tests
         {
             // Arrange
             var messageHandlerMock = new Mock<HttpMessageHandler>();
+            var refreshToken = Guid.NewGuid().ToString();
 
-            var tokenPair = new TokenPair(
-                AccessToken: "123",
-                RefreshToken: "456"
+            // -> refresh token 1
+            var refreshTokenTryCount = 0;
+
+            var tokenPair1 = new TokenPair(
+                AccessToken: "111",
+                RefreshToken: "222"
             );
 
+            messageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.Is<HttpRequestMessage>(x => x.RequestUri!.ToString().EndsWith("refresh-token") && refreshTokenTryCount == 0),
+                    ItExpr.IsAny<CancellationToken>())
+                .Callback<HttpRequestMessage, CancellationToken>((requestMessage, cancellationToken) =>
+                {
+                    var refreshTokenRequest = JsonSerializer.Deserialize<RefreshTokenRequest>(requestMessage.Content!.ReadAsStream());
+                    Assert.Equal(refreshToken, refreshTokenRequest!.RefreshToken);
+                    refreshTokenTryCount++;
+                })
+                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(JsonSerializer.Serialize(tokenPair1), Encoding.UTF8, "application/json")
+                });
+
             // -> get catalogs (1st try)
-            var tryCount = 0;
+            var catalogTryCount = 0;
 
             var catalogsResponseMessage1 = new HttpResponseMessage()
             {
@@ -36,45 +57,38 @@ namespace Nexus.Api.Tests
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
-                    ItExpr.Is<HttpRequestMessage>(x => x.RequestUri!.ToString().Contains("catalogs") && tryCount == 0),
+                    ItExpr.Is<HttpRequestMessage>(x => x.RequestUri!.ToString().Contains("catalogs") && catalogTryCount == 0),
                     ItExpr.IsAny<CancellationToken>())
                 .Callback<HttpRequestMessage, CancellationToken>((requestMessage, cancellationToken) =>
                 {
                     var actual = requestMessage.Headers.Authorization!;
-                    Assert.Equal($"Bearer {tokenPair.AccessToken}", $"{actual.Scheme} {actual.Parameter}");
+                    Assert.Equal($"Bearer {tokenPair1.AccessToken}", $"{actual.Scheme} {actual.Parameter}");
                     catalogsResponseMessage1.RequestMessage = requestMessage;
-                    tryCount++;
+                    catalogTryCount++;
                 })
                 .ReturnsAsync(catalogsResponseMessage1);
 
-            // -> refresh token
-            var newTokenPair = new TokenPair(
-                AccessToken: "123",
-                RefreshToken: "456"
+            // -> refresh token 2
+            var tokenPair2 = new TokenPair(
+                AccessToken: "333",
+                RefreshToken: "444"
             );
-
-            var refreshTokenResponseJsonString = JsonSerializer.Serialize(newTokenPair);
-
-            var refreshTokenResponseMessage = new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(
-                    refreshTokenResponseJsonString,
-                    Encoding.UTF8, 
-                    "application/json")
-            };
 
             messageHandlerMock
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
-                    ItExpr.Is<HttpRequestMessage>(x => x.RequestUri!.ToString().EndsWith("refresh-token")),
+                    ItExpr.Is<HttpRequestMessage>(x => x.RequestUri!.ToString().EndsWith("refresh-token") && refreshTokenTryCount == 1),
                     ItExpr.IsAny<CancellationToken>())
                 .Callback<HttpRequestMessage, CancellationToken>((requestMessage, cancellationToken) =>
                 {
                     var refreshTokenRequest = JsonSerializer.Deserialize<RefreshTokenRequest>(requestMessage.Content!.ReadAsStream());
-                    Assert.Equal(tokenPair.RefreshToken, refreshTokenRequest!.RefreshToken);
+                    Assert.Equal(tokenPair1.RefreshToken, refreshTokenRequest!.RefreshToken);
                 })
-                .ReturnsAsync(refreshTokenResponseMessage);
+                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(JsonSerializer.Serialize(tokenPair2), Encoding.UTF8, "application/json")
+                });
 
             // -> get catalogs (2nd try)
             var catalogId = "my-catalog-id";
@@ -90,12 +104,12 @@ namespace Nexus.Api.Tests
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
-                    ItExpr.Is<HttpRequestMessage>(x => x.RequestUri!.ToString().Contains("catalogs") && tryCount == 1),
+                    ItExpr.Is<HttpRequestMessage>(x => x.RequestUri!.ToString().Contains("catalogs") && catalogTryCount == 1),
                     ItExpr.IsAny<CancellationToken>())
                 .Callback<HttpRequestMessage, CancellationToken>((requestMessage, cancellationToken) =>
                 {
                     var actual = requestMessage.Headers.Authorization!;
-                    Assert.Equal($"Bearer {newTokenPair.AccessToken}", $"{actual.Scheme} {actual.Parameter}");
+                    Assert.Equal($"Bearer {tokenPair2.AccessToken}", $"{actual.Scheme} {actual.Parameter}");
                 })
                 .ReturnsAsync(catalogsResponseMessage2);
 
@@ -109,7 +123,7 @@ namespace Nexus.Api.Tests
             var client = new NexusClient(httpClient);
 
             // Act
-            client.SignIn(tokenPair);
+            await client.SignInAsync(refreshToken);
             var actualCatalog = await client.Catalogs.GetAsync(catalogId);
 
             // Assert

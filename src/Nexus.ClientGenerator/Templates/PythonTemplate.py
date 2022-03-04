@@ -6,7 +6,6 @@ import dataclasses
 import json
 import os
 import re
-import tempfile
 import typing
 from array import array
 from dataclasses import dataclass
@@ -251,7 +250,7 @@ class {{1}}:
     _nexus_configuration_header_key: str = "{{2}}"
     _authorization_header_key: str = "{{3}}"
 
-    _token_folder_path: str = os.path.join(tempfile.gettempdir(), "nexus", "tokens")
+    _token_folder_path: str = os.path.join(str(Path.home()), ".nexusapi", "tokens")
 
     _token_pair: Optional[TokenPair]
     _http_client: AsyncClient
@@ -292,28 +291,30 @@ class {{1}}:
 
 {{6}}
 
-    def sign_in(self, token_pair: TokenPair) -> None:
+    async def sign_in(self, refresh_token: str):
         """Signs in the user.
 
         Args:
-            token_pair: A pair of access and refresh tokens.
+            token_pair: The refresh token.
         """
 
-        self._token_file_path = os.path.join(self._token_folder_path, quote(token_pair.refresh_token, safe="") + ".json")
+        actual_refresh_token: str
+
+        self._token_file_path = os.path.join(self._token_folder_path, quote(refresh_token, safe="") + ".json")
         
         if Path(self._token_file_path).is_file():
             with open(self._token_file_path) as json_file:
                 jsonObject = json.load(json_file)
-                token_pair = _decode(TokenPair, jsonObject)
+                actual_refresh_token = _decode(str, jsonObject)
 
         else:
             Path(self._token_folder_path).mkdir(parents=True, exist_ok=True)
 
             with open(self._token_file_path, "w") as json_file:
-                json.dump(token_pair, json_file, indent=4, cls=_MyEncoder)
+                json.dump(refresh_token, json_file, indent=4, cls=_MyEncoder)
+                actual_refresh_token = refresh_token
                 
-        self._http_client.headers[self._authorization_header_key] = f"Bearer {token_pair.access_token}"
-        self._token_pair = token_pair
+        await self._refresh_token_async(actual_refresh_token)
 
     def attach_configuration(self, configuration: dict[str, str]) -> Any:
         """Attaches configuration data to subsequent Nexus API requests."""
@@ -359,7 +360,7 @@ class {{1}}:
                     if "The token expired at" in www_authenticate_header:
 
                         try:
-                            await self._refresh_token_async()
+                            await self._refresh_token_async(self._token_pair.refresh_token)
 
                             new_request = self._build_request_message(method, relative_url, http_content, accept_header_value)
                             new_response = await self._http_client.send(new_request)
@@ -418,20 +419,17 @@ class {{1}}:
 
         return request_message
 
-    async def _refresh_token_async(self):
+    async def _refresh_token_async(self, refresh_token):
         # see https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/dev/src/Microsoft.IdentityModel.Tokens/Validators.cs#L390
 
-        if self._token_pair is None:
-            raise Exception("Refresh token is null. This should never happen.")
-
-        refresh_request = RefreshTokenRequest(refresh_token=self._token_pair.refresh_token)
+        refresh_request = RefreshTokenRequest(refresh_token)
         token_pair = await self.users.refresh_token(refresh_request)
 
         if self._token_file_path is not None:
             Path(self._token_folder_path).mkdir(parents=True, exist_ok=True)
             
             with open(self._token_file_path, "w") as json_file:
-                json.dump(token_pair, json_file, indent=4, cls=_MyEncoder)
+                json.dump(token_pair.refresh_token, json_file, indent=4, cls=_MyEncoder)
 
         authorizationHeaderValue = f"Bearer {token_pair.access_token}"
 

@@ -59,10 +59,9 @@ namespace Nexus.ClientGenerator
             var csharpSettings = new GeneratorSettings(
                 Namespace: "Nexus.Api",
                 ClientName: "NexusClient",
-                OutputFileName: "NexusClient",
                 ExceptionType: "NexusException");
 
-            var csharpOutputPath = $"{solutionRoot}src/clients/cs-client/{csharpSettings.OutputFileName}.g.cs";
+            var csharpOutputPath = $"{solutionRoot}src/clients/cs-client/NexusClient.g.cs";
             var csharpGenerator = new CSharpGenerator();
             var csharpCode = csharpGenerator.Generate(document, csharpSettings);
 
@@ -72,10 +71,9 @@ namespace Nexus.ClientGenerator
             var pythonSettings = new GeneratorSettings(
                 Namespace: default,
                 ClientName: "NexusAsyncClient",
-                OutputFileName: "_nexusapi",
                 ExceptionType: "NexusException");
 
-            var pythonOutputPath = $"{solutionRoot}src/clients/python-client/{pythonSettings.OutputFileName}.py";
+            var pythonOutputPath = $"{solutionRoot}src/clients/python-client/nexusapi/_nexusapi.py";
             var pythonGenerator = new PythonGenerator();
             var pythonCode = pythonGenerator.Generate(document, pythonSettings);
 

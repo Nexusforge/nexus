@@ -1,5 +1,6 @@
 import base64
 import json
+import uuid
 
 import pytest
 from httpx import AsyncClient, MockTransport, Request, Response, codes
@@ -7,33 +8,39 @@ from nexusapi import NexusAsyncClient, ResourceCatalog, TokenPair
 
 nexus_configuration_header_key = "Nexus-Configuration"
 
-try_count1: int = 0
-
-token_pair = TokenPair(
-    access_token="123",
-    refresh_token="456")
+refresh_token = str(uuid.uuid1())
+refresh_token_try_count: int = 0
+catalog_try_count: int = 0
 
 def _handler1(request: Request):
-    global try_count1
+    global refresh_token
+    global catalog_try_count
+    global refresh_token_try_count
 
     if "catalogs" in request.url.path:
-        try_count1 += 1
+        catalog_try_count += 1
+        actual = request.headers["Authorization"]
 
-        if try_count1 == 1:
-            actual = request.headers["Authorization"]
-            assert f"Bearer {token_pair.access_token}" == actual
+        if catalog_try_count == 1:
+            assert f"Bearer 111" == actual
             return Response(codes.UNAUTHORIZED, headers={"WWW-Authenticate" : "Bearer The token expired at ..."})
 
         else:
             catalog_json_string = '{"Id":"my-catalog-id","Properties":null,"Resources":null}'
+            assert f"Bearer 333" == actual
             return Response(codes.OK, content=catalog_json_string)
 
     elif "refresh-token" in request.url.path:
+        refresh_token_try_count += 1
         requestContent = request.content.decode("utf-8")
-        assert '{"refreshToken": "456"}' == requestContent
 
-        new_token_pair_json_string = '{ "accessToken": "123", "refreshToken": "456" }'
-        return Response(codes.OK, content=new_token_pair_json_string)
+        if refresh_token_try_count == 1:
+            assert f'{{"refreshToken": "{refresh_token}"}}' == requestContent
+            return Response(codes.OK, content='{ "accessToken": "111", "refreshToken": "222" }')
+
+        else:
+            assert '{"refreshToken": "222"}' == requestContent
+            return Response(codes.OK, content='{ "accessToken": "333", "refreshToken": "444" }')
 
     else:
         raise Exception("Unsupported path.")
@@ -49,7 +56,7 @@ async def can_authenticate_and_refresh_test():
     async with NexusAsyncClient(http_client) as client:
 
         # act
-        client.sign_in(token_pair)
+        await client.sign_in(refresh_token)
         actual_catalog = await client.catalogs.get(catalog_id)
        
         # assert

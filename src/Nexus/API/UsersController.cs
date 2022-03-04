@@ -193,11 +193,11 @@ namespace Nexus.Controllers
         }
 
         /// <summary>
-        /// Generates a set of tokens.
+        /// Generates a refresh token.
         /// </summary>
         [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
-        [HttpPost("generate-tokens")]
-        public async Task<ActionResult<TokenPair>> GenerateTokensAsync()
+        [HttpPost("generate-refresh-token")]
+        public async Task<ActionResult<string>> GenerateRefreshTokenAsync()
         {
             var userId = User.FindFirst(Claims.Subject)!.Value;
             var user = await _dbService.FindUserAsync(userId);
@@ -207,7 +207,7 @@ namespace Nexus.Controllers
 
             var tokenPair = await _authService.GenerateTokenPairAsync(user);
 
-            return tokenPair;
+            return tokenPair.RefreshToken;
         }
 
         #endregion

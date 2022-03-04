@@ -34,9 +34,9 @@ public interface I{{1}}
     /// <summary>
     /// Signs in the user.
     /// </summary>
-    /// <param name="tokenPair">A pair of access and refresh tokens.</param>
+    /// <param name="refreshToken">The refresh token.</param>
     /// <returns>A task.</returns>
-    void SignIn(TokenPair tokenPair);
+    Task SignInAsync(string refreshToken);
 
     /// <summary>
     /// Attaches configuration data to subsequent Nexus API requests.
@@ -56,7 +56,8 @@ public class {{1}} : IDisposable
     private const string NexusConfigurationHeaderKey = "{{2}}";
     private const string AuthorizationHeaderKey = "{{3}}";
 
-    private static string _tokenFolderPath = Path.Combine(Path.GetTempPath(), "nexus", "tokens");
+    private static string _tokenFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nexusapi", "tokens");
+
     private static JsonSerializerOptions _options;
 
     private TokenPair? _tokenPair;
@@ -106,25 +107,26 @@ public class {{1}} : IDisposable
 {{6}}
 
     /// <inheritdoc />
-    public void SignIn(TokenPair tokenPair)
+    public async Task SignInAsync(string refreshToken, CancellationToken cancellationToken = default)
     {
-        _tokenFilePath = Path.Combine(_tokenFolderPath, Uri.EscapeDataString(tokenPair.RefreshToken) + ".json");
+        string actualRefreshToken;
+
+        _tokenFilePath = Path.Combine(_tokenFolderPath, Uri.EscapeDataString(refreshToken) + ".json");
         
         if (File.Exists(_tokenFilePath))
         {
-            tokenPair = JsonSerializer.Deserialize<TokenPair>(File.ReadAllText(_tokenFilePath), _options)
-                ?? throw new Exception($"Unable to deserialize file {_tokenFilePath} into a token pair.");
+            actualRefreshToken = JsonSerializer.Deserialize<string>(File.ReadAllText(_tokenFilePath), _options)
+                ?? throw new Exception($"Unable to deserialize file {_tokenFilePath}.");
         }
 
         else
         {
             Directory.CreateDirectory(_tokenFolderPath);
-            File.WriteAllText(_tokenFilePath, JsonSerializer.Serialize(tokenPair, _options));
+            File.WriteAllText(_tokenFilePath, JsonSerializer.Serialize(refreshToken, _options));
+            actualRefreshToken = refreshToken;
         }
 
-        _httpClient.DefaultRequestHeaders.Add(AuthorizationHeaderKey, $"Bearer {tokenPair.AccessToken}");
-
-        _tokenPair = tokenPair;
+        await RefreshTokenAsync(actualRefreshToken, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -173,7 +175,7 @@ public class {{1}} : IDisposable
                     {
                         try
                         {
-                            await RefreshTokenAsync(cancellationToken);
+                            await RefreshTokenAsync(_tokenPair.RefreshToken, cancellationToken);
 
                             using var newRequest = BuildRequestMessage(method, relativeUrl, httpContent, acceptHeaderValue);
                             var newResponse = await _httpClient.SendAsync(newRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
@@ -254,20 +256,17 @@ public class {{1}} : IDisposable
         return requestMessage;
     }
 
-    private async Task RefreshTokenAsync(CancellationToken cancellationToken)
+    private async Task RefreshTokenAsync(string refreshToken, CancellationToken cancellationToken)
     {
         // see https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/dev/src/Microsoft.IdentityModel.Tokens/Validators.cs#L390
 
-        if (_tokenPair is null)
-            throw new Exception("Refresh token is null. This should never happen.");
-
-        var refreshRequest = new RefreshTokenRequest(RefreshToken: _tokenPair.RefreshToken);
+        var refreshRequest = new RefreshTokenRequest(refreshToken);
         var tokenPair = await Users.RefreshTokenAsync(refreshRequest, cancellationToken);
 
         if (_tokenFilePath is not null)
         {
             Directory.CreateDirectory(_tokenFolderPath);
-            File.WriteAllText(_tokenFilePath, JsonSerializer.Serialize(tokenPair, _options));
+            File.WriteAllText(_tokenFilePath, JsonSerializer.Serialize(tokenPair.RefreshToken, _options));
         }
 
         var authorizationHeaderValue = $"Bearer {tokenPair.AccessToken}";
