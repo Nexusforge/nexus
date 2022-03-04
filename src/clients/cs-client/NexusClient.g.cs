@@ -1204,7 +1204,7 @@ public class StreamResponse : IDisposable
     /// <exception cref="Exception"></exception>
     public async Task<double[]> ReadAsync(CancellationToken cancellationToken = default)
     {
-        if (!_response.Headers.TryGetValues("Content-Length", out var values) || !values.Any() || int.TryParse(values.First(), out var contentLength))
+        if (!_response.Content.Headers.TryGetValues("Content-Length", out var values) || !values.Any() || int.TryParse(values.First(), out var contentLength))
             throw new Exception("The content-length header is missing or invalid.");
 
         var elementCount = contentLength / 8;
