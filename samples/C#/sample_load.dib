@@ -5,15 +5,11 @@
 - get unit and other properties from Nexus more easily
 - using var seems to be broken (i.e. for the client and the stream response)
 
-#!markdown
-
-Add package source
-
 #!csharp
 
 // https://github.com/dotnet/interactive/issues/698
 #i "nuget: https://www.myget.org/F/apollo3zehn-dev/api/v3/index.json"
-#r "nuget: Nexus.Api, 1.0.0-beta.1.192"
+#r "nuget: Nexus.Api, 1.0.0-beta.1.193"
 
 #!markdown
 
@@ -23,7 +19,7 @@ Create client and authenticate
 
 using Nexus.Api;
 
-var refreshToken = "f9208f50-cd54-4165-8041-b5cd19af45a4%40nexus@a9RF1y8kb1bIscm0OuIzR83ANryd+L45hiEGFKK56BdQEptJJIneg0Pjdwq94wSamccad0hx0e70Ty8zU+UhAw==";
+var refreshToken = "f9208f50-cd54-4165-8041-b5cd19af45a4%40nexus@vJuk9QUgSWGrQbOsJKEji/RntxjQEgBMC/5yDYo+FyL+wJ/NPkOcU1TBoQuNaNckn928FN7Kc5TSIUiyj+r/Bg==";
 
 var uri = new Uri("https://localhost:8443");
 var client = new NexusClient(uri);

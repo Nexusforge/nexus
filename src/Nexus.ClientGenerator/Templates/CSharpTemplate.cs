@@ -316,7 +316,7 @@ internal class CastMemoryManager<TFrom, TTo> : MemoryManager<TTo>
 /// </summary>
 public class StreamResponse : IDisposable
 {
-    HttpResponseMessage _response;
+    private HttpResponseMessage _response;
 
     internal StreamResponse(HttpResponseMessage response)
     {
