@@ -4,7 +4,7 @@ from pathlib import Path
 
 import setuptools
 
-source_dir = os.path.join(os.getcwd(), "..", "python-client")
+source_dir = os.getcwd()
 
 build_dir = "../../../artifacts/obj/python-client"
 Path(build_dir).mkdir(parents=True, exist_ok=True)
@@ -90,7 +90,7 @@ setuptools.setup(
         "any"
     ],
     package_dir={
-        "nexusapi": source_dir
+        "nexusapi": os.path.join(source_dir, "nexusapi")
     },
     python_requires=">=3.9",
     install_requires=[

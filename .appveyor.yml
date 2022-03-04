@@ -30,7 +30,7 @@ install:
 
 build_script:
   - ps: dotnet publish -c $Env:CONFIGURATION -o app /p:Build=$Env:APPVEYOR_BUILD_NUMBER /p:IsFinalBuild=$Env:APPVEYOR_REPO_TAG /p:GeneratePackage=true src/Nexus/Nexus.csproj
-  - ps: python -m build --wheel --outdir artifacts/packages/python-client --no-isolation src/clients/python-client-build
+  - ps: python -m build --wheel --outdir artifacts/packages/python-client --no-isolation src/clients/python-client
 
 after_build:
   - ps: dotnet run --project src/Nexus.ClientGenerator/Nexus.ClientGenerator.csproj -- ./ openapi_new.json
