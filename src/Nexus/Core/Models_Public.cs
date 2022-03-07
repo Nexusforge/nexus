@@ -171,6 +171,15 @@ namespace Nexus.Core
         string RefreshToken);
 
     /// <summary>
+    /// Describes an OpenID connect provider.
+    /// </summary>
+    /// <param name="Scheme">The scheme.</param>
+    /// <param name="DisplayName">The display name.</param>
+    public record AuthenticationSchemeDescription(
+        string Scheme,
+        string DisplayName);
+
+    /// <summary>
     /// A package reference.
     /// </summary>
     /// <param name="Provider">The provider which loads the package.</param>
@@ -276,13 +285,4 @@ namespace Nexus.Core
         double Progress,
         string? ExceptionMessage,
         object? Result);
-
-    /// <summary>
-    /// Describes an OpenID connect provider.
-    /// </summary>
-    /// <param name="Scheme">The scheme.</param>
-    /// <param name="DisplayName">The display name.</param>
-    public record AuthenticationSchemeDescription(
-        string Scheme,
-        string DisplayName);
 }
