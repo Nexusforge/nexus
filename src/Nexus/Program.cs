@@ -189,7 +189,6 @@ void ConfigurePipeline(WebApplication app)
 
     // endpoints
     app.MapControllers();
-    app.MapFallbackToFile("index.html");
 }
 
 async Task InitializeAppAsync(

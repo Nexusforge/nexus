@@ -14,7 +14,7 @@ namespace Nexus.Services
 
     internal class DbService : IDBService
     {
-        UserDbContext _context;
+        private UserDbContext _context;
 
         public DbService(
             UserDbContext context)
