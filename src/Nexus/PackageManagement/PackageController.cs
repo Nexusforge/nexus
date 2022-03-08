@@ -168,7 +168,7 @@ namespace Nexus.PackageManagement
                 var folderName = Path.GetFileName(folderPath);
 
                 Directory.CreateDirectory(Path.Combine(target, folderName));
-                PackageController.CloneFolder(folderPath, Path.Combine(target, folderName));
+                CloneFolder(folderPath, Path.Combine(target, folderName));
             }
 
             foreach (var file in Directory.GetFiles(source))
@@ -177,7 +177,11 @@ namespace Nexus.PackageManagement
             }
         }
 
-        public static async Task DownloadAndExtractAsync(string assetName, string assetUrl, string targetPath, Dictionary<string, string> headers, CancellationToken cancellationToken)
+        private static async Task DownloadAndExtractAsync(
+            string assetName,
+            string assetUrl,
+            string targetPath,
+            Dictionary<string, string> headers)
         {
             // get download stream
             async Task<HttpResponseMessage> GetAssetResponseAsync()
@@ -271,7 +275,7 @@ namespace Nexus.PackageManagement
                 if (!Directory.Exists(targetPath) || !Directory.EnumerateFileSystemEntries(targetPath).Any())
                 {
                     _logger.LogDebug("Restore package from source {Source} to {Target}", sourcePath, targetPath);
-                    PackageController.CloneFolder(sourcePath, targetPath);
+                    CloneFolder(sourcePath, targetPath);
                 }
                 else
                 {
@@ -401,7 +405,7 @@ namespace Nexus.PackageManagement
                     headers["Accept"] = "application/octet-stream";
 
                     _logger.LogDebug("Restore package from source {Source} to {Target}", assetBrowserUrl, targetPath);
-                    await PackageController.DownloadAndExtractAsync(assetBrowserUrl, assetUrl, targetPath, headers, cancellationToken);
+                    await DownloadAndExtractAsync(assetBrowserUrl, assetUrl, targetPath, headers);
                 }
                 else
                 {
@@ -441,7 +445,7 @@ namespace Nexus.PackageManagement
             if (!string.IsNullOrWhiteSpace(token))
                 headers["PRIVATE-TOKEN"] = token;
 
-            await foreach (var gitlabPackage in PackageController.GetGitLabPackagesGenericAsync(server, projectPath, package, headers, cancellationToken))
+            await foreach (var gitlabPackage in GetGitLabPackagesGenericAsync(server, projectPath, package, headers, cancellationToken))
             {
                 var packageVersion = gitlabPackage.GetProperty("version").GetString() ?? throw new Exception("version is null");
                 result.Add(packageVersion);
@@ -529,7 +533,7 @@ namespace Nexus.PackageManagement
                     // download package file (https://docs.gitlab.com/ee/user/packages/generic_packages/index.html#download-package-file)
                     var assetUrl = $"{server}/api/v4/projects/{encodedProjectPath}/packages/generic/{package}/{version}/{fileName}";
                     _logger.LogDebug("Restore package from source {Source} to {Target}", assetUrl, targetPath);
-                    await PackageController.DownloadAndExtractAsync(fileName, assetUrl, targetPath, headers, cancellationToken);
+                    await DownloadAndExtractAsync(fileName, assetUrl, targetPath, headers);
                 }
                 else
                 {
@@ -715,7 +719,7 @@ namespace Nexus.PackageManagement
         //        {
         //            var assetUrl = new Uri(asset.GetProperty("direct_asset_url").GetString());
         //            _logger.LogDebug("Restore package from source {Source}", assetUrl);
-        //            await PackageController.DownloadAndExtractAsync(fileName, assetUrl, targetPath, headers, cancellationToken);
+        //            await DownloadAndExtractAsync(fileName, assetUrl, targetPath, headers, cancellationToken);
         //        }
         //        else
         //        {

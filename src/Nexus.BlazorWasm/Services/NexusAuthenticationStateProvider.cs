@@ -8,9 +8,9 @@ namespace Nexus.BlazorWasm.Services
     {
         private readonly NexusClient _client;
 
-        public NexusAuthenticationStateProvider(ClientProvider clientProvider)
+        public NexusAuthenticationStateProvider(NexusClient client)
         {
-            _client = clientProvider.Client;
+            _client = client;
         }
 
         public override async Task<AuthenticationState> GetAuthenticationStateAsync()

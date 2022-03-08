@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Nexus.Api;
 using Nexus.BlazorWasm;
 using Nexus.BlazorWasm.Services;
 
@@ -13,10 +14,11 @@ var httpClient = new HttpClient
     BaseAddress = new Uri(builder.HostEnvironment.BaseAddress)
 };
 
+var nexusClient = new NexusClient(httpClient);
+
 builder.Services
     .AddAuthorizationCore()
-    .AddScoped(sp => httpClient)
-    .AddScoped<ClientProvider>()
+    .AddSingleton(nexusClient)
     .AddScoped<AuthenticationStateProvider, NexusAuthenticationStateProvider>();
 
 await builder.Build().RunAsync();
