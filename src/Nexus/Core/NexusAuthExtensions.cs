@@ -2,12 +2,14 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using Nexus.Core;
 using System.Collections.ObjectModel;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net;
 using System.Security.Claims;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
@@ -26,9 +28,13 @@ namespace Microsoft.Extensions.DependencyInjection
 
         public static IServiceCollection AddNexusAuth(
             this IServiceCollection services,
+            PathsOptions pathsOptions,
             SecurityOptions securityOptions)
         {
             JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
+
+            services.AddDataProtection()
+                .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(pathsOptions.Config, "data-protection-keys")));
 
             var builder = services
 
@@ -37,7 +43,16 @@ namespace Microsoft.Extensions.DependencyInjection
                     options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                 })
 
-                .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme)
+                .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
+                {
+                    options.ExpireTimeSpan = securityOptions.CookieLifetime;
+                    options.SlidingExpiration = false;
+
+                    options.Events.OnRedirectToAccessDenied = context => {
+                        context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
+                        return Task.CompletedTask;
+                    };
+                })
 
                 .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
                 {

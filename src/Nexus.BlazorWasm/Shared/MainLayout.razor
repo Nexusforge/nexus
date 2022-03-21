@@ -1,4 +1,4 @@
-﻿@inject ClientProvider ClientProvider
+﻿@inject NexusClient Client
 @inject NavigationManager NavigationManager
 
 @inherits LayoutComponentBase
@@ -55,6 +55,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _authenticationSchemes = await ClientProvider.Client.Users.GetAuthenticationSchemesAsync();
+        _authenticationSchemes = await Client.Users.GetAuthenticationSchemesAsync();
     }
 }

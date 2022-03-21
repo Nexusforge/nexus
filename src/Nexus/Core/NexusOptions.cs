@@ -97,6 +97,7 @@ namespace Nexus.Core
         public const string DefaultSigningKey = "WOE6/wiy6E4UQJefC03ffOsBnilijFOjhFUw1eUtzhD/8/YNR7auSUeH+5VcGfXU4pki7ZLCulmvNq8c03S96g==";
 
         public string Base64JwtSigningKey { get; set; } = DefaultSigningKey;
+        public TimeSpan CookieLifetime { get; set; }
         public TimeSpan AccessTokenLifetime { get; set; }
         public TimeSpan RefreshTokenLifetime { get; set; }
         public TimeSpan TokenAbuseDetectionPeriod { get; set; }
