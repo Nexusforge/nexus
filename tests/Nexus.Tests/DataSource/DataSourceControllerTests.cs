@@ -146,8 +146,8 @@ namespace DataSource
             // combine
             var catalogItemPipeWriters = new CatalogItemPipeWriter[] 
             {
-                new CatalogItemPipeWriter(catalogItem1, dataWriter1, default),
-                new CatalogItemPipeWriter(catalogItem2, dataWriter2, default)
+                new CatalogItemPipeWriter(catalogItem1, dataWriter1),
+                new CatalogItemPipeWriter(catalogItem2, dataWriter2)
             };
 
             var readingGroups = new DataReadingGroup[] 

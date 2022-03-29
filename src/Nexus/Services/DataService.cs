@@ -159,7 +159,7 @@ namespace Nexus.Services
                 foreach (var catalogItem in entry.Value)
                 {
                     var pipe = new Pipe();
-                    catalogItemPipeWriters.Add(new CatalogItemPipeWriter(catalogItem, pipe.Writer, null));
+                    catalogItemPipeWriters.Add(new CatalogItemPipeWriter(catalogItem, pipe.Writer));
                     catalogItemPipeReaders.Add(new CatalogItemPipeReader(catalogItem, pipe.Reader));
                 }
 

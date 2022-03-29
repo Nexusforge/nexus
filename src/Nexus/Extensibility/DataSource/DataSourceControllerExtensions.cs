@@ -26,7 +26,6 @@ namespace Nexus.Extensibility
                 end,
                 catalogItem,
                 pipe.Writer,
-                statusWriter: default,
                 progress: default,
                 logger,
                 CancellationToken.None);
@@ -40,7 +39,6 @@ namespace Nexus.Extensibility
             DateTime end,
             CatalogItem catalogItem,
             PipeWriter dataWriter,
-            PipeWriter? statusWriter,
             IProgress<double>? progress,
             ILogger<DataSourceController> logger,
             CancellationToken cancellationToken)
@@ -49,7 +47,7 @@ namespace Nexus.Extensibility
 
             var readingGroup = new DataReadingGroup(controller, new CatalogItemPipeWriter[]
             {
-                new CatalogItemPipeWriter(catalogItem, dataWriter, statusWriter)
+                new CatalogItemPipeWriter(catalogItem, dataWriter)
             });
 
             return DataSourceController.ReadAsync(

@@ -5,8 +5,7 @@ namespace Nexus.Extensibility
 {
     internal record CatalogItemPipeWriter(
         CatalogItem CatalogItem, 
-        PipeWriter DataWriter, 
-        PipeWriter? StatusWriter);
+        PipeWriter DataWriter);
 
     internal record DataReadingGroup(
         IDataSourceController Controller,

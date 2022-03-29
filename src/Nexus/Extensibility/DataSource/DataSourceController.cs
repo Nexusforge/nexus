@@ -162,7 +162,7 @@ namespace Nexus.Extensibility
             /* prepare requests variable */
             var requests = catalogItemPipeWriters.Select(catalogItemPipeWriter =>
             {
-                var (catalogItem, dataWriter, statusWriter) = catalogItemPipeWriter;
+                var (catalogItem, dataWriter) = catalogItemPipeWriter;
                 Memory<byte> data;
                 Memory<byte> status;
 
@@ -170,44 +170,21 @@ namespace Nexus.Extensibility
                 var elementSize = catalogItem.Representation.ElementSize;
                 var dataLength = elementCount * elementSize;
 
-                if (statusWriter is null)
-                {
-                    /* data memory */
-                    var dataOwner = MemoryPool<byte>.Shared.Rent(dataLength);
-                    var dataMemory = dataOwner.Memory.Slice(0, dataLength);
-                    dataMemory.Span.Clear();
-                    memoryOwners.Add(dataOwner);
+                /* data memory */
+                var dataOwner = MemoryPool<byte>.Shared.Rent(dataLength);
+                var dataMemory = dataOwner.Memory.Slice(0, dataLength);
+                dataMemory.Span.Clear();
+                memoryOwners.Add(dataOwner);
 
-                    /* status memory */
-                    var statusOwner = MemoryPool<byte>.Shared.Rent(elementCount);
-                    var statusMemory = statusOwner.Memory.Slice(0, elementCount);
-                    memoryOwners.Add(statusOwner);
-                    statusMemory.Span.Clear();
+                /* status memory */
+                var statusOwner = MemoryPool<byte>.Shared.Rent(elementCount);
+                var statusMemory = statusOwner.Memory.Slice(0, elementCount);
+                memoryOwners.Add(statusOwner);
+                statusMemory.Span.Clear();
 
-                    /* get data */
-                    data = dataMemory;
-                    status = statusMemory;
-                }
-                else
-                {
-                    /* data memory */
-                    var dataMemory = dataWriter
-                        .GetMemory(dataLength)
-                        .Slice(0, dataLength);
-
-                    dataMemory.Span.Clear(); // I think this is required, but found no clear evidence in the docs.
-
-                    /* status memory */
-                    var statusMemory = statusWriter
-                        .GetMemory(elementCount)
-                        .Slice(0, elementCount);
-
-                    statusMemory.Span.Clear(); // I think this is required, but found no clear evidence in the docs.
-
-                    /* get data */
-                    data = dataMemory;
-                    status = statusMemory;
-                }
+                /* get data */
+                data = dataMemory;
+                status = statusMemory;
 
                 /* _catalogMap is guaranteed to contain the current catalog 
                  * because GetCatalogAsync is called before ReadAsync */
@@ -238,55 +215,37 @@ namespace Nexus.Extensibility
                 /* start all tasks */
                 foreach (var (catalogItemPipeWriter, readRequest) in catalogItemPipeWriters.Zip(requests))
                 {
-                    var (catalogItem, dataWriter, statusWriter) = catalogItemPipeWriter;
+                    var (catalogItem, dataWriter) = catalogItemPipeWriter;
 
                     using var scope = Logger.BeginScope(new Dictionary<string, object>()
                     {
                         ["ResourcePath"] = catalogItem.ToPath()
                     });
 
-                    if (statusWriter is null)
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
+                    cancellationToken.ThrowIfCancellationRequested();
 
-                        /* sizes */
-                        var elementSize = sizeof(double);
-                        var dataLength = elementCount * elementSize;
+                    /* sizes */
+                    var elementSize = sizeof(double);
+                    var dataLength = elementCount * elementSize;
 
-                        /* apply status */
-                        var buffer = dataWriter
-                            .GetMemory(dataLength)
-                            .Slice(0, dataLength);
+                    /* apply status */
+                    var buffer = dataWriter
+                        .GetMemory(dataLength)
+                        .Slice(0, dataLength);
 
-                        Logger.LogTrace("Merge status buffer and data buffer");
+                    Logger.LogTrace("Merge status buffer and data buffer");
 
 #warning this is blocking
-                        BufferUtilities.ApplyRepresentationStatusByDataType(
-                            catalogItem.Representation.DataType,
-                            readRequest.Data,
-                            readRequest.Status,
-                            target: new CastMemoryManager<byte, double>(buffer).Memory);
+                    BufferUtilities.ApplyRepresentationStatusByDataType(
+                        catalogItem.Representation.DataType,
+                        readRequest.Data,
+                        readRequest.Status,
+                        target: new CastMemoryManager<byte, double>(buffer).Memory);
 
-                        /* update progress */
-                        Logger.LogTrace("Advance data pipe writer by {DataLength} bytes", dataLength);
-                        dataWriter.Advance(dataLength);
-                        dataTasks.Add(dataWriter.FlushAsync());
-                    }
-                    else
-                    {
-                        /* sizes */
-                        var elementSize = catalogItem.Representation.ElementSize;
-                        var dataLength = elementCount * elementSize;
-
-                        /* update progress */
-                        Logger.LogTrace("Advance data pipe writer by {DataLength} bytes", dataLength);
-                        dataWriter.Advance(dataLength);
-                        dataTasks.Add(dataWriter.FlushAsync());
-
-                        Logger.LogTrace("Advance status pipe writer by {StatusLength} bytes", elementCount);
-                        statusWriter.Advance(elementCount);
-                        statusTasks.Add(statusWriter.FlushAsync());
-                    }
+                    /* update progress */
+                    Logger.LogTrace("Advance data pipe writer by {DataLength} bytes", dataLength);
+                    dataWriter.Advance(dataLength);
+                    dataTasks.Add(dataWriter.FlushAsync());
                 }
 
                 /* wait for tasks to finish */
@@ -420,9 +379,6 @@ namespace Nexus.Extensibility
                 foreach (var catalogItemPipeWriter in readingGroup.CatalogItemPipeWriters)
                 {
                     await catalogItemPipeWriter.DataWriter.CompleteAsync();
-
-                    if (catalogItemPipeWriter.StatusWriter is not null)
-                        await catalogItemPipeWriter.StatusWriter.CompleteAsync();
                 }
             }
         }
