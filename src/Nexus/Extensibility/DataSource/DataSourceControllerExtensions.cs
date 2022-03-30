@@ -1,4 +1,5 @@
-﻿using Nexus.DataModel;
+﻿using Nexus.Core;
+using Nexus.DataModel;
 using Nexus.Utilities;
 using System.IO.Pipelines;
 
@@ -11,6 +12,7 @@ namespace Nexus.Extensibility
             DateTime begin,
             DateTime end,
             CatalogItem catalogItem,
+            GeneralOptions generalOptions,
             ILogger<DataSourceController> logger)
         {
             // DataSourceDoubleStream is only required to enable the browser to determine the download progress.
@@ -26,6 +28,7 @@ namespace Nexus.Extensibility
                 end,
                 catalogItem,
                 pipe.Writer,
+                generalOptions,
                 progress: default,
                 logger,
                 CancellationToken.None);
@@ -39,6 +42,7 @@ namespace Nexus.Extensibility
             DateTime end,
             CatalogItem catalogItem,
             PipeWriter dataWriter,
+            GeneralOptions generalOptions,
             IProgress<double>? progress,
             ILogger<DataSourceController> logger,
             CancellationToken cancellationToken)
@@ -55,6 +59,7 @@ namespace Nexus.Extensibility
                 end,
                 samplePeriod,
                 new DataReadingGroup[] { readingGroup },
+                generalOptions,
                 progress,
                 logger,
                 cancellationToken);

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using Nexus.Core;
 using Nexus.DataModel;
@@ -121,7 +122,12 @@ namespace Services
                 Configuration: new Dictionary<string, string>());
 
             // data service
-            var dataService = new DataService(dataControllerService, databaseManager, logger, loggerFactory);
+            var dataService = new DataService(
+                dataControllerService, 
+                databaseManager,
+                Options.Create(new GeneralOptions()),
+                logger, 
+                loggerFactory);
 
             // act
             try

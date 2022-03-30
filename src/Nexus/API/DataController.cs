@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.Extensions.Options;
 using Nexus.Core;
 using Nexus.Extensibility;
 using Nexus.Services;
@@ -21,6 +22,7 @@ namespace Nexus.Controllers
     {
         #region Fields
 
+        private GeneralOptions _generalOptions;
         private AppState _appState;
         private IDataControllerService _dataControllerService;
         private ILoggerFactory _loggerFactory;
@@ -31,10 +33,12 @@ namespace Nexus.Controllers
 
         public DataController(
             AppState appState,
+            IOptions<GeneralOptions> generalOptions,
             IDataControllerService dataControllerService,
             ILoggerFactory loggerFactory)
         {
             _appState = appState;
+            _generalOptions = generalOptions.Value;
             _dataControllerService = dataControllerService;
             _loggerFactory = loggerFactory;
         }
@@ -72,9 +76,8 @@ namespace Nexus.Controllers
             {
                 // find representation
                 var root = _appState.CatalogState.Root;
-
                 var resourcePath = $"{catalogId}/{resourceId}/{representationId}";
-
+                
                 var (catalogContainer, catalogItem) = await root.TryFindAsync(resourcePath, cancellationToken);
 
                 if (catalogContainer is null || catalogItem is null)
@@ -92,7 +95,7 @@ namespace Nexus.Controllers
                     cancellationToken);
 
                 // read data
-                var stream = controller.ReadAsStream(begin, end, catalogItem, _loggerFactory.CreateLogger<DataSourceController>());
+                var stream = controller.ReadAsStream(begin, end, catalogItem, _generalOptions, _loggerFactory.CreateLogger<DataSourceController>());
 
                 Response.Headers.ContentLength = stream.Length;
                 return File(stream, "application/octet-stream", "data.bin");

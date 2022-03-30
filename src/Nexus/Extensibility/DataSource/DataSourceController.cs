@@ -34,8 +34,6 @@ namespace Nexus.Extensibility
 
         #region Properties
 
-        internal static uint ChunkSize { get; set; } = NexusConstants.DefaultChunkSize;
-
         private IDataSource DataSource { get; }
 
         private DataSourceRegistration DataSourceRegistration { get; }
@@ -270,6 +268,7 @@ namespace Nexus.Extensibility
             DateTime end,
             TimeSpan samplePeriod,
             DataReadingGroup[] readingGroups,
+            GeneralOptions generalOptions,
             IProgress<double>? progress,
             ILogger<DataSourceController> logger,
             CancellationToken cancellationToken)
@@ -294,7 +293,7 @@ namespace Nexus.Extensibility
 
             logger.LogTrace("A single row has a size of {BytesPerRow} bytes", bytesPerRow);
 
-            var chunkSize = Math.Max(bytesPerRow, DataSourceController.ChunkSize);
+            var chunkSize = Math.Max(bytesPerRow, generalOptions.ReadChunkSize);
             logger.LogTrace("The chunk size is {ChunkSize} bytes", chunkSize);
 
             var rows = chunkSize / bytesPerRow;

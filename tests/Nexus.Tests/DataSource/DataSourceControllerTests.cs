@@ -186,14 +186,13 @@ namespace DataSource
                 }
             });
 
-            DataSourceController.ChunkSize = 20000;
-
             var reading = DataSourceController.ReadAsync(
                 begin,
                 end, 
                 samplePeriod,
                 readingGroups,
-                progress: default, 
+                new GeneralOptions() { ReadChunkSize = 20000 },
+                progress: default,
                 NullLogger<DataSourceController>.Instance,
                 CancellationToken.None);
 
@@ -225,8 +224,12 @@ namespace DataSource
             var resourcePath = "/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean";
             var catalogItem = (await controller.GetCatalogAsync(InMemory.AccessibleCatalogId, CancellationToken.None)).Find(resourcePath);
 
-            DataSourceController.ChunkSize = 10000;
-            var stream = controller.ReadAsStream(begin, end, catalogItem, NullLogger<DataSourceController>.Instance);
+            var stream = controller.ReadAsStream(
+                begin,
+                end,
+                catalogItem,
+                new GeneralOptions() { ReadChunkSize = 10000 },
+                NullLogger<DataSourceController>.Instance);
 
             double[] result = new double[86401];
 

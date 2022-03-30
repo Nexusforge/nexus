@@ -1,4 +1,5 @@
-﻿using Nexus.Core;
+﻿using Microsoft.Extensions.Options;
+using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using System.ComponentModel.DataAnnotations;
@@ -19,6 +20,7 @@ namespace Nexus.Services
     {
         #region Fields
 
+        private GeneralOptions _generalOptions;
         private ILogger _logger;
         private ILoggerFactory _loggerFactory;
         private IDatabaseManager _databaseManager;
@@ -31,11 +33,13 @@ namespace Nexus.Services
         public DataService(
             IDataControllerService dataControllerService,
             IDatabaseManager databaseManager,
+            IOptions<GeneralOptions> generalOptions,
             ILogger<DataService> logger,
             ILoggerFactory loggerFactory)
         {
             _dataControllerService = dataControllerService;
             _databaseManager = databaseManager;
+            _generalOptions = generalOptions.Value;
             _logger = logger;
             _loggerFactory = loggerFactory;
 
@@ -179,6 +183,7 @@ namespace Nexus.Services
                 exportParameters.End,
                 exportContext.SamplePeriod,
                 readingGroups.ToArray(),
+                _generalOptions,
                 ReadProgress,
                 logger,
                 cts.Token);
