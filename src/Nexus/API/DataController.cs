@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Options;
 using Nexus.Core;
+using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Services;
 using Nexus.Utilities;
@@ -51,6 +52,7 @@ namespace Nexus.Controllers
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="resourceId">The resource identifier.</param>
         /// <param name="representationId">The representation identifier.</param>
+        /// <param name="kind">The representation kind.</param>
         /// <param name="begin">Start date/time.</param>
         /// <param name="end">End date/time.</param>
         /// <param name="cancellationToken">A cancellation token.</param>
@@ -78,16 +80,16 @@ namespace Nexus.Controllers
                 var root = _appState.CatalogState.Root;
                 var resourcePath = $"{catalogId}/{resourceId}/{representationId}";
                 
-                var (catalogContainer, catalogItem) = await root.TryFindAsync(resourcePath, cancellationToken);
+                var catalogItemRequest = await root.TryFindAsync(resourcePath, cancellationToken);
 
-                if (catalogContainer is null || catalogItem is null)
+                if (catalogItemRequest is null)
                     return NotFound($"Could not find resource path {resourcePath}.");
 
-                var catalog = catalogItem.Catalog;
+                var catalogContainer = catalogItemRequest.Container;
 
                 // security check
                 if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, User))
-                    return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to access the catalog {catalog.Id}.");
+                    return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to access the catalog {catalogContainer.Id}.");
 
                 // controller
                 using var controller = await _dataControllerService.GetDataSourceControllerAsync(
@@ -95,7 +97,12 @@ namespace Nexus.Controllers
                     cancellationToken);
 
                 // read data
-                var stream = controller.ReadAsStream(begin, end, catalogItem, _generalOptions, _loggerFactory.CreateLogger<DataSourceController>());
+                var stream = controller.ReadAsStream(
+                    begin, 
+                    end,
+                    catalogItemRequest, 
+                    _generalOptions,
+                    _loggerFactory.CreateLogger<DataSourceController>());
 
                 Response.Headers.ContentLength = stream.Length;
                 return File(stream, "application/octet-stream", "data.bin");

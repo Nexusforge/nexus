@@ -99,8 +99,7 @@ namespace Nexus.Extensibility.Tests
             // representations
             Representation0_V0 = new Representation(
                 dataType: NexusDataType.FLOAT32,
-                samplePeriod: TimeSpan.FromMinutes(10),
-                isPrimary: true);
+                samplePeriod: TimeSpan.FromMinutes(10));
 
             Representation0_V1 = Representation0_V0;
 

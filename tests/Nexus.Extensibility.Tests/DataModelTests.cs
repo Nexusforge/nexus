@@ -60,23 +60,6 @@ namespace Nexus.Extensibility.Tests
                 Assert.Throws<ArgumentException>(() => new Resource(id: id));
         }
 
-        [Fact]
-        public void CanValidateResourceHaveSinglePrimaryRepresentation()
-        {
-            Action action = () => new Resource("a", representations: new[]
-            {
-                 new Representation(
-                    dataType: NexusDataType.FLOAT64,
-                    samplePeriod: TimeSpan.FromSeconds(1)),
-
-                 new Representation(
-                    dataType: NexusDataType.FLOAT32,
-                    samplePeriod: TimeSpan.FromSeconds(2))
-            });
-
-            Assert.Throws<ArgumentException>(action);
-        }
-
         [Theory]
         [InlineData("00:01:00", true)]
         [InlineData("00:00:00", false)]
@@ -87,45 +70,12 @@ namespace Nexus.Extensibility.Tests
             if (isValid)
                 new Representation(
                     dataType: NexusDataType.FLOAT64,
-                    samplePeriod: samplePeriod,
-                    detail: "mean");
+                    samplePeriod: samplePeriod);
 
             else
                 Assert.Throws<ArgumentException>(() => new Representation(
                     dataType: NexusDataType.FLOAT64,
-                    samplePeriod: samplePeriod,
-                    detail: "mean"));
-        }
-
-        [Theory]
-
-        // valid
-        [InlineData("", true)]
-        [InlineData("mean", true)]
-        [InlineData("Mean", true)]
-        [InlineData("mean_polar", true)]
-
-        // invalid
-        [InlineData("_mean", false)]
-        [InlineData("1mean", false)]
-        [InlineData("meaßn", false)]
-        [InlineData("ª♫", false)]
-        [InlineData("mea n", false)]
-        [InlineData("mea-n", false)]
-        [InlineData("mea*n", false)]
-        public void CanValidateRepresentationDetail(string detail, bool isValid)
-        {
-            if (isValid)
-                new Representation(
-                    dataType: NexusDataType.FLOAT64,
-                    samplePeriod: TimeSpan.FromSeconds(1),
-                    detail: detail);
-
-            else
-                Assert.Throws<ArgumentException>(() => new Representation(
-                    dataType: NexusDataType.FLOAT64,
-                    samplePeriod: TimeSpan.FromSeconds(1),
-                    detail: detail));
+                    samplePeriod: samplePeriod));
         }
 
         [Theory]
@@ -137,27 +87,23 @@ namespace Nexus.Extensibility.Tests
             if (isValid)
                 new Representation(
                      dataType: dataType,
-                     samplePeriod: TimeSpan.FromSeconds(1),
-                     detail: "mean");
+                     samplePeriod: TimeSpan.FromSeconds(1));
 
             else
                 Assert.Throws<ArgumentException>(() => new Representation(
                      dataType: dataType,
-                     samplePeriod: TimeSpan.FromSeconds(1),
-                     detail: "mean"));
+                     samplePeriod: TimeSpan.FromSeconds(1)));
         }
 
         [Theory]
-        [InlineData("00:00:01", "mean", "1_s_mean")]
-        [InlineData("00:00:01", "", "1_s")]
-        public void CanInferRepresentationId(string smaplePeriodString, string name, string expected)
+        [InlineData("00:00:01", "1_s")]
+        public void CanInferRepresentationId(string smaplePeriodString, string expected)
         {
             var samplePeriod = TimeSpan.Parse(smaplePeriodString);
 
             var representation = new Representation(
                 dataType: NexusDataType.FLOAT32,
-                samplePeriod: samplePeriod,
-                detail: name);
+                samplePeriod: samplePeriod);
 
             var actual = representation.Id;
 
@@ -279,16 +225,16 @@ namespace Nexus.Extensibility.Tests
                 id: "myresource",
                 representations: new List<Representation>() 
                 { 
-                    new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(1), detail: "RP1") 
+                    new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(1)) 
                 });
 
             var resource2 = new Resource(
                 id: "myresource",
                 representations: new List<Representation>()
                 {
-                    new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(1), detail: "RP1", isPrimary: true),
-                    new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(1), detail: "RP2"),
-                    new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(1), detail: "RP3")
+                    new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(1)),
+                    new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(2)),
+                    new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(3))
                 });
 
             // Act
@@ -317,17 +263,14 @@ namespace Nexus.Extensibility.Tests
         {
             var representation = new Representation(
                 dataType: NexusDataType.FLOAT32,
-                samplePeriod: TimeSpan.FromSeconds(1),
-                detail: "mean");
+                samplePeriod: TimeSpan.FromSeconds(1));
 
             var resource = new Resource(id: "Resource1", representations: new List<Representation>() { representation });
             var catalog = new ResourceCatalog(id: "/A/B/C", resources: new List<Resource>() { resource });
             var catalogItem = new CatalogItem(catalog, resource, representation);
             var foundCatalogItem = catalog.Find(catalogItem.ToPath());
-            var foundCatalogItemByName = catalog.Find($"{catalogItem.Catalog.Id}/{catalogItem.Resource.Id}/{catalogItem.Representation.Id}");
 
             Assert.Equal(catalogItem, foundCatalogItem);
-            Assert.Equal(catalogItem, foundCatalogItemByName);
         }
 
         [Fact]
@@ -335,8 +278,7 @@ namespace Nexus.Extensibility.Tests
         {
             var representation = new Representation(
                 dataType: NexusDataType.FLOAT32,
-                samplePeriod: TimeSpan.FromSeconds(1),
-                detail: "mean");
+                samplePeriod: TimeSpan.FromSeconds(1));
 
             var resource = new Resource(id: "Resource1", representations: new List<Representation>() { representation });
             var catalog = new ResourceCatalog(id: "/A/B/C", resources: new List<Resource>() { resource });
@@ -355,8 +297,7 @@ namespace Nexus.Extensibility.Tests
         {
             var representation = new Representation(
                dataType: NexusDataType.FLOAT32,
-               samplePeriod: TimeSpan.FromSeconds(1),
-               detail: "mean");
+               samplePeriod: TimeSpan.FromSeconds(1));
 
             var resource = new Resource(id: "Resource1", representations: new List<Representation>() { representation });
             var catalog = new ResourceCatalog(id: "/A/B/C", resources: new List<Resource>() { resource });

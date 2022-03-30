@@ -36,9 +36,9 @@ namespace DataWriter
                 .Select(catalogItem => new Pipe())
                 .ToArray();
 
-            var catalogItemPipeReaders = catalogItems
+            var catalogItemRequestPipeReaders = catalogItems
                 .Zip(pipes)
-                .Select((value) => new CatalogItemPipeReader(value.First, value.Second.Reader))
+                .Select((value) => new CatalogItemRequestPipeReader(value.First, value.Second.Reader))
                 .ToArray();
 
             var random = new Random(Seed: 1);
@@ -128,7 +128,7 @@ namespace DataWriter
             });
 
             // write data
-            var writing = controller.WriteAsync(begin, end, samplePeriod, filePeriod, catalogItemPipeReaders, default, CancellationToken.None);
+            var writing = controller.WriteAsync(begin, end, samplePeriod, filePeriod, catalogItemRequestPipeReaders, default, CancellationToken.None);
 
             // wait for completion
             await Task.WhenAll(writing, reading);

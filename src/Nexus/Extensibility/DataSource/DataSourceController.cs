@@ -149,18 +149,20 @@ namespace Nexus.Extensibility
             DateTime begin,
             DateTime end,
             TimeSpan samplePeriod,
-            CatalogItemPipeWriter[] catalogItemPipeWriters,
+            CatalogItemRequestPipeWriter[] catalogItemRequestPipeWriters,
             IProgress<double> progress,
             CancellationToken cancellationToken)
         {
-            var count = catalogItemPipeWriters.Length;
+            var count = catalogItemRequestPipeWriters.Length;
             var elementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, samplePeriod);
             var memoryOwners = new List<IMemoryOwner<byte>>();
 
             /* prepare requests variable */
-            var requests = catalogItemPipeWriters.Select(catalogItemPipeWriter =>
+            var requests = catalogItemRequestPipeWriters.Select(catalogItemRequestPipeWriter =>
             {
-                var (catalogItem, dataWriter) = catalogItemPipeWriter;
+                var (catalogItemRequest, dataWriter) = catalogItemRequestPipeWriter;
+                var catalogItem = catalogItemRequest.Item;
+
                 Memory<byte> data;
                 Memory<byte> status;
 
@@ -191,6 +193,7 @@ namespace Nexus.Extensibility
                     var originalCatalogItem = catalog.Find(catalogItem.ToPath());
                     return new ReadRequest(originalCatalogItem, data, status);
                 }
+
                 else
                 {
                     throw new Exception($"Cannot find cataog {catalogItem.Catalog.Id}.");
@@ -207,17 +210,17 @@ namespace Nexus.Extensibility
                     progress,
                     cancellationToken);
 
-                var dataTasks = new List<ValueTask<FlushResult>>(capacity: catalogItemPipeWriters.Length);
-                var statusTasks = new List<ValueTask<FlushResult>>(capacity: catalogItemPipeWriters.Length);
+                var dataTasks = new List<ValueTask<FlushResult>>(capacity: catalogItemRequestPipeWriters.Length);
+                var statusTasks = new List<ValueTask<FlushResult>>(capacity: catalogItemRequestPipeWriters.Length);
 
                 /* start all tasks */
-                foreach (var (catalogItemPipeWriter, readRequest) in catalogItemPipeWriters.Zip(requests))
+                foreach (var (catalogItemRequestPipeWriter, readRequest) in catalogItemRequestPipeWriters.Zip(requests))
                 {
-                    var (catalogItem, dataWriter) = catalogItemPipeWriter;
+                    var (catalogItemRequest, dataWriter) = catalogItemRequestPipeWriter;
 
                     using var scope = Logger.BeginScope(new Dictionary<string, object>()
                     {
-                        ["ResourcePath"] = catalogItem.ToPath()
+                        ["ResourcePath"] = catalogItemRequest.Item.ToPath()
                     });
 
                     cancellationToken.ThrowIfCancellationRequested();
@@ -235,7 +238,7 @@ namespace Nexus.Extensibility
 
 #warning this is blocking
                     BufferUtilities.ApplyRepresentationStatusByDataType(
-                        catalogItem.Representation.DataType,
+                        catalogItemRequest.Item.Representation.DataType,
                         readRequest.Data,
                         readRequest.Status,
                         target: new CastMemoryManager<byte, double>(buffer).Memory);
@@ -274,22 +277,26 @@ namespace Nexus.Extensibility
             CancellationToken cancellationToken)
         {
             /* validation */
-            var catalogItemPipeWriters = readingGroups.SelectMany(readingGroup => readingGroup.CatalogItemPipeWriters);
+            var catalogItemRequestPipeWriters = readingGroups.SelectMany(readingGroup => readingGroup.CatalogItemRequestPipeWriters);
 
-            if (!catalogItemPipeWriters.Any())
+            if (!catalogItemRequestPipeWriters.Any())
                 return;
 
-            foreach (var catalogItemPipeWriter in catalogItemPipeWriters)
+            foreach (var catalogItemRequestPipeWriter in catalogItemRequestPipeWriters)
             {
-                if (catalogItemPipeWriter.CatalogItem.Representation.SamplePeriod != samplePeriod)
+                var currentSamplePeriod = catalogItemRequestPipeWriter.Request.Item.Representation.SamplePeriod;
+
+                if (currentSamplePeriod < samplePeriod)
+//#error
+                    if (catalogItemRequestPipeWriter.Request.Item.Representation.SamplePeriod != samplePeriod)
                     throw new ValidationException("All representations must be based on the same sample period.");
             }
 
             DataSourceController.ValidateParameters(begin, end, samplePeriod);
 
             /* pre-calculation */
-            var bytesPerRow = catalogItemPipeWriters
-                .Sum(catalogItemPipeWriter => catalogItemPipeWriter.CatalogItem.Representation.ElementSize);
+            var bytesPerRow = catalogItemRequestPipeWriters
+                .Sum(catalogItemRequestPipeWriter => catalogItemRequestPipeWriter.Request.Item.Representation.ElementSize);
 
             logger.LogTrace("A single row has a size of {BytesPerRow} bytes", bytesPerRow);
 
@@ -298,6 +305,8 @@ namespace Nexus.Extensibility
 
             var rows = chunkSize / bytesPerRow;
             logger.LogTrace("{RowCount} rows will be processed per chunk", rows);
+
+#warning Check if # of rows is 0 and throw an exception in this case
 
             var maxPeriodPerRequest = TimeSpan.FromTicks(samplePeriod.Ticks * rows);
             logger.LogTrace("The maximum period per request is {MaxPeriodPerRequest}", maxPeriodPerRequest);
@@ -326,7 +335,7 @@ namespace Nexus.Extensibility
 
                 var readingTasks = readingGroups.Select(async readingGroup =>
                 {
-                    var (controller, catalogItemPipeWriters) = readingGroup;
+                    var (controller, catalogItemRequestPipeWriters) = readingGroup;
 
                     try
                     {
@@ -352,7 +361,7 @@ namespace Nexus.Extensibility
                             currentBegin,
                             currentEnd,
                             samplePeriod,
-                            catalogItemPipeWriters,
+                            catalogItemRequestPipeWriters,
                             dataSourceProgress,
                             cancellationToken);
                     }
@@ -375,9 +384,9 @@ namespace Nexus.Extensibility
             /* complete */
             foreach (var readingGroup in readingGroups)
             {
-                foreach (var catalogItemPipeWriter in readingGroup.CatalogItemPipeWriters)
+                foreach (var catalogItemRequestPipeWriter in readingGroup.CatalogItemRequestPipeWriters)
                 {
-                    await catalogItemPipeWriter.DataWriter.CompleteAsync();
+                    await catalogItemRequestPipeWriter.DataWriter.CompleteAsync();
                 }
             }
         }

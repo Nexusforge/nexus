@@ -53,17 +53,17 @@ namespace Nexus.Extensibility
             DateTime end,
             TimeSpan samplePeriod,
             TimeSpan filePeriod,
-            CatalogItemPipeReader[] catalogItemPipeReaders,
+            CatalogItemRequestPipeReader[] catalogItemRequestPipeReaders,
             IProgress<double>? progress,
             CancellationToken cancellationToken)
         {
             /* validation */
-            if (!catalogItemPipeReaders.Any())
+            if (!catalogItemRequestPipeReaders.Any())
                 return;
 
-            foreach (var catalogItemPipeReader in catalogItemPipeReaders)
+            foreach (var catalogItemRequestPipeReader in catalogItemRequestPipeReaders)
             {
-                if (catalogItemPipeReader.CatalogItem.Representation.SamplePeriod != samplePeriod)
+                if (catalogItemRequestPipeReader.Request.Item.Representation.SamplePeriod != samplePeriod)
                     throw new ValidationException("All representations must be of the same sample period.");
             }
 
@@ -90,8 +90,8 @@ namespace Nexus.Extensibility
             };
 
             /* catalog items */
-            var catalogItems = catalogItemPipeReaders
-                .Select(catalogItemPipeReader => catalogItemPipeReader.CatalogItem)
+            var catalogItems = catalogItemRequestPipeReaders
+                .Select(catalogItemRequestPipeReader => catalogItemRequestPipeReader.Request.Item)
                 .ToArray();
 
             /* go */
@@ -139,8 +139,8 @@ namespace Nexus.Extensibility
                 while (remainingPeriod > TimeSpan.Zero)
                 {
                     /* read */
-                    var readResultTasks = catalogItemPipeReaders
-                        .Select(catalogItemPipeReader => catalogItemPipeReader.DataReader.ReadAsync(cancellationToken))
+                    var readResultTasks = catalogItemRequestPipeReaders
+                        .Select(catalogItemRequestPipeReader => catalogItemRequestPipeReader.DataReader.ReadAsync(cancellationToken))
                         .ToArray();
 
                     var readResults = await NexusCoreUtilities.WhenAll(readResultTasks);
@@ -153,12 +153,12 @@ namespace Nexus.Extensibility
                     currentPeriod = new TimeSpan(Math.Min(remainingPeriod.Ticks, bufferPeriod.Ticks));
                     var currentLength = (int)(currentPeriod.Ticks / samplePeriod.Ticks);
 
-                    var requests = catalogItemPipeReaders.Zip(readResults).Select(zipped =>
+                    var requests = catalogItemRequestPipeReaders.Zip(readResults).Select(zipped =>
                     {
-                        var (catalogItemPipeReader, readResult) = zipped;
+                        var (catalogItemRequestPipeReader, readResult) = zipped;
 
                         var writeRequest = new WriteRequest(
-                            catalogItemPipeReader.CatalogItem,
+                            catalogItemRequestPipeReader.Request.Item,
                             readResult.Buffer.First.Cast<byte, double>().Slice(0, currentLength));
 
                         return writeRequest;
@@ -171,7 +171,7 @@ namespace Nexus.Extensibility
                         cancellationToken);
 
                     /* advance */
-                    foreach (var ((_, dataReader), readResult) in catalogItemPipeReaders.Zip(readResults))
+                    foreach (var ((_, dataReader), readResult) in catalogItemRequestPipeReaders.Zip(readResults))
                     {
                         dataReader.AdvanceTo(readResult.Buffer.GetPosition(currentLength * sizeof(double)));
                     }
@@ -188,7 +188,7 @@ namespace Nexus.Extensibility
             /* close */
             await DataWriter.CloseAsync(cancellationToken);
 
-            foreach (var (_, dataReader) in catalogItemPipeReaders)
+            foreach (var (_, dataReader) in catalogItemRequestPipeReaders)
             {
                 await dataReader.CompleteAsync();
             }

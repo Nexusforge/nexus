@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics;
 using System.Text.Json.Serialization;
-using System.Text.RegularExpressions;
 
 namespace Nexus.DataModel
 {
@@ -12,7 +11,6 @@ namespace Nexus.DataModel
     {
         #region Fields
 
-        private static Regex _detailValidator = new Regex(@"^(?:[a-zA-Z][a-zA-Z0-9_]*)?$");
         private static HashSet<NexusDataType> _nexusDataTypeValues = new HashSet<NexusDataType>(Enum.GetValues<NexusDataType>());
 
         #endregion
@@ -24,10 +22,8 @@ namespace Nexus.DataModel
         /// </summary>
         /// <param name="dataType">The <see cref="NexusDataType"/>.</param>
         /// <param name="samplePeriod">The sample period.</param>
-        /// <param name="detail">A more detailed identifier like "min", "max", "mean" or "std".</param>
-        /// <param name="isPrimary">Indicates the primary representation to be used for aggregations, which is only relevant for resources with multiple representations.</param>
         /// <exception cref="ArgumentException">Thrown when the resource identifier, the sample period or the detail values are not valid.</exception>
-        public Representation(NexusDataType dataType, TimeSpan samplePeriod, string? detail = null, bool isPrimary = false)
+        internal Representation(NexusDataType dataType, TimeSpan samplePeriod)
         {
             if (!_nexusDataTypeValues.Contains(dataType))
                 throw new ArgumentException($"The identifier {dataType} is not valid.");
@@ -38,12 +34,7 @@ namespace Nexus.DataModel
                 throw new ArgumentException($"The sample period {samplePeriod} is not valid.");
 
             SamplePeriod = samplePeriod;
-
-            if (detail is not null && !_detailValidator.IsMatch(detail))
-                throw new ArgumentException($"The representation detail {detail} is not valid.");
-
-            Detail = detail;
-            IsPrimary = isPrimary;
+            Id = SamplePeriod.ToUnitString();
         }
 
         #endregion
@@ -51,18 +42,10 @@ namespace Nexus.DataModel
         #region Properties
 
         /// <summary>
-        /// The identifer of the representation. It is constructed using the sample period and the optional detail.
+        /// The identifer of the representation. It is constructed using the sample period.
         /// </summary>
         [JsonIgnore]
-        public string Id
-        {
-            get
-            {
-                return string.IsNullOrWhiteSpace(Detail)
-                    ? $"{SamplePeriod.ToUnitString()}"
-                    : $"{SamplePeriod.ToUnitString()}_{Detail}";
-            }
-        }
+        public string Id { get; }
 
         /// <summary>
         /// The data type.
@@ -73,16 +56,6 @@ namespace Nexus.DataModel
         /// The sample period.
         /// </summary>
         public TimeSpan SamplePeriod { get; }
-
-        /// <summary>
-        /// The detail.
-        /// </summary>
-        public string? Detail { get; }
-
-        /// <summary>
-        /// A value which indicates the primary representation to be used for aggregations. The value of this property is only relevant for resources with multiple representations.
-        /// </summary>
-        public bool IsPrimary { get; }
 
         /// <summary>
         /// The number of bits per element.

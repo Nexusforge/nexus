@@ -144,15 +144,15 @@ namespace DataSource
             var dataWriter2 = pipe2.Writer;
 
             // combine
-            var catalogItemPipeWriters = new CatalogItemPipeWriter[] 
+            var catalogItemRequestPipeWriters = new CatalogItemRequestPipeWriter[] 
             {
-                new CatalogItemPipeWriter(catalogItem1, dataWriter1),
-                new CatalogItemPipeWriter(catalogItem2, dataWriter2)
+                new CatalogItemRequestPipeWriter(catalogItem1, dataWriter1),
+                new CatalogItemRequestPipeWriter(catalogItem2, dataWriter2)
             };
 
             var readingGroups = new DataReadingGroup[] 
             { 
-                new DataReadingGroup(controller, catalogItemPipeWriters) 
+                new DataReadingGroup(controller, catalogItemRequestPipeWriters) 
             };
 
             double[] result1 = new double[86401];

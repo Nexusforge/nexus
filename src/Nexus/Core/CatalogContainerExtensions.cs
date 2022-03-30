@@ -1,29 +1,45 @@
-﻿using Nexus.DataModel;
+﻿using System.Text.RegularExpressions;
 
 namespace Nexus.Core
 {
-    internal static class CatalogContainersExtensions
+    internal static class CatalogContainerExtensions
     {
-        public static async Task<(CatalogContainer, CatalogItem)> FindAsync(
+        private static Regex _resourcePathEvaluator = new Regex(@"(.*)\/([0-9]+_[a-zA-Z]+)(?:_(.+))?", RegexOptions.Compiled);
+
+        public static async Task<CatalogItemRequest> FindAsync(
             this CatalogContainer parent, 
             string resourcePath,
             CancellationToken cancellationToken)
         {
-            var (catalogContainer, catalogItem) = await parent.TryFindAsync(resourcePath, cancellationToken);
+            var request = await parent.TryFindAsync(resourcePath, cancellationToken);
 
-            if (catalogContainer is null || catalogItem is null)
+            if (request is null)
                 throw new Exception($"The resource path {resourcePath} could not be found.");
 
-            return (catalogContainer, catalogItem);
+            return request;
         }
 
-        public static async Task<(CatalogContainer?, CatalogItem?)> TryFindAsync(
+        public static async Task<CatalogItemRequest?> TryFindAsync(
             this CatalogContainer parent,
             string resourcePath,
             CancellationToken cancellationToken)
         {
-            var pathParts = resourcePath.Split('/');
-            var catalogId = string.Join('/', pathParts[..^2]);
+            var match = _resourcePathEvaluator.Match(resourcePath);
+
+            if (!match.Success)
+                return default;
+
+            var kind = RepresentationKind.Original;
+
+            if (match.Groups.Count == 4)
+            {
+                var rawValue = match.Groups[3].Value;
+
+                if (!Enum.TryParse(rawValue, out kind))
+                    return default;
+            }
+
+            var catalogId = match.Groups[1].Value;
             var catalogContainer = await parent.TryFindCatalogContainerAsync(catalogId, cancellationToken);
 
             if (catalogContainer is null)
@@ -31,16 +47,15 @@ namespace Nexus.Core
 
             var catalogInfo = await catalogContainer.GetCatalogInfoAsync(cancellationToken);
 
-            if (catalogInfo is not null)
-            {
-                _ = catalogInfo.Catalog.TryFind(resourcePath, out var catalogItem);
-                return (catalogContainer, catalogItem);
-            }
-
-            else
-            {
+            if (catalogInfo is null)
                 return default;
-            }
+
+            var actualResourcePath = $"{match.Groups[1].Value}/{match.Groups[2].Value}";
+
+            if (!catalogInfo.Catalog.TryFind(actualResourcePath, out var catalogItem))
+                return default;
+
+            return new CatalogItemRequest(catalogItem, catalogContainer, kind);
         }
 
         public static async Task<CatalogContainer?> TryFindCatalogContainerAsync(

@@ -24,6 +24,7 @@ namespace Nexus.Controllers
         private IServiceProvider _serviceProvider;
         private Serilog.IDiagnosticContext _diagnosticContext;
         private IJobService _jobService;
+        private Dictionary<CatalogContainer, IEnumerable<CatalogItemRequest>> catalogItemRequestMap;
 
         #endregion
 
@@ -68,19 +69,19 @@ namespace Nexus.Controllers
 
             var root = _appStateManager.AppState.CatalogState.Root;
 
-            // translate resource paths to representations
-            (CatalogContainer Container, CatalogItem Item)[] catalogContainsAndItems;
+            // translate resource paths to catalog item requests
+            CatalogItemRequest[] catalogItemRequests;
 
             try
             {
-                catalogContainsAndItems = await Task.WhenAll(parameters.ResourcePaths.Select(async resourcePath =>
+                catalogItemRequests = await Task.WhenAll(parameters.ResourcePaths.Select(async resourcePath =>
                 {
-                    var (catalogContainer, catalogItem) = await root.TryFindAsync(resourcePath, cancellationToken);
+                    var catalogItemRequest = await root.TryFindAsync(resourcePath, cancellationToken);
 
-                    if (catalogContainer is null || catalogItem is null)
+                    if (catalogItemRequest is null)
                         throw new ValidationException($"Could not find resource path {resourcePath}.");
 
-                    return (catalogContainer, catalogItem);
+                    return catalogItemRequest;
                 }));
             }
             catch (ValidationException ex)
@@ -89,28 +90,19 @@ namespace Nexus.Controllers
             }
 
             // check that there is anything to export
-            if (!catalogContainsAndItems.Any())
+            if (!catalogItemRequests.Any())
                 return BadRequest("The list of resource paths is empty.");
 
             // build up catalog items map and authorize
-            Dictionary<CatalogContainer, IEnumerable<CatalogItem>> catalogItemsMap;
-
             try
             {
-                catalogItemsMap = catalogContainsAndItems
-                    .GroupBy(current => current.Container.Id)
-                    .ToDictionary(
-                        group =>
-                        {
-                            var catalogContainer = group.First().Container;
+                foreach (var group in catalogItemRequests.GroupBy(current => current.Container.Id))
+                {
+                    var catalogContainer = group.First().Container;
 
-                            if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, HttpContext.User))
-                                throw new UnauthorizedAccessException($"The current user is not permitted to access catalog {catalogContainer.Id}.");
-
-                            return catalogContainer;
-                        },
-                        group => group.Select(entry => entry.Item));
-
+                    if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, HttpContext.User))
+                        throw new UnauthorizedAccessException($"The current user is not permitted to access catalog {catalogContainer.Id}.");
+                }
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -130,7 +122,7 @@ namespace Nexus.Controllers
             {
                 var jobControl = _jobService.AddJob(job, dataService.WriteProgress, async (jobControl, cts) =>
                 {
-                    var result = await dataService.ExportAsync(parameters, catalogItemsMap, job.Id, cts.Token);
+                    var result = await dataService.ExportAsync(parameters, catalogItemRequests, job.Id, cts.Token);
                     return result;
                 });
 

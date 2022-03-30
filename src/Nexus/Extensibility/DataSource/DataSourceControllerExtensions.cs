@@ -11,14 +11,14 @@ namespace Nexus.Extensibility
             this IDataSourceController controller,
             DateTime begin,
             DateTime end,
-            CatalogItem catalogItem,
+            CatalogItemRequest request,
             GeneralOptions generalOptions,
             ILogger<DataSourceController> logger)
         {
             // DataSourceDoubleStream is only required to enable the browser to determine the download progress.
             // Otherwise the PipeReader.AsStream() would be sufficient.
 
-            var samplePeriod = catalogItem.Representation.SamplePeriod;
+            var samplePeriod = request.Item.Representation.SamplePeriod;
             var elementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, samplePeriod);
             var totalLength = elementCount * NexusCoreUtilities.SizeOf(NexusDataType.FLOAT64);
             var pipe = new Pipe();
@@ -26,7 +26,7 @@ namespace Nexus.Extensibility
             _ = controller.ReadSingleAsync(
                 begin,
                 end,
-                catalogItem,
+                request,
                 pipe.Writer,
                 generalOptions,
                 progress: default,
@@ -40,18 +40,18 @@ namespace Nexus.Extensibility
             this IDataSourceController controller,
             DateTime begin,
             DateTime end,
-            CatalogItem catalogItem,
+            CatalogItemRequest request,
             PipeWriter dataWriter,
             GeneralOptions generalOptions,
             IProgress<double>? progress,
             ILogger<DataSourceController> logger,
             CancellationToken cancellationToken)
         {
-            var samplePeriod = catalogItem.Representation.SamplePeriod;
+            var samplePeriod = request.Item.Representation.SamplePeriod;
 
-            var readingGroup = new DataReadingGroup(controller, new CatalogItemPipeWriter[]
+            var readingGroup = new DataReadingGroup(controller, new CatalogItemRequestPipeWriter[]
             {
-                new CatalogItemPipeWriter(catalogItem, dataWriter)
+                new CatalogItemRequestPipeWriter(request, dataWriter)
             });
 
             return DataSourceController.ReadAsync(

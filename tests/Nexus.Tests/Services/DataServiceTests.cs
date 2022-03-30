@@ -38,13 +38,13 @@ namespace Services
             Uri tmpUri = null!;
 
             Mock.Get(dataWriterController)
-               .Setup(s => s.WriteAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<TimeSpan>(), It.IsAny<CatalogItemPipeReader[]>(), It.IsAny<IProgress<double>>(), It.IsAny<CancellationToken>()))
-               .Callback<DateTime, DateTime, TimeSpan, TimeSpan, CatalogItemPipeReader[], IProgress<double>, CancellationToken>(
-                (begin, end, samplePeriod, filePeriod, catalogItemPipeReaders, progress, cancellationToken) =>
+               .Setup(s => s.WriteAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<TimeSpan>(), It.IsAny<CatalogItemRequestPipeReader[]>(), It.IsAny<IProgress<double>>(), It.IsAny<CancellationToken>()))
+               .Callback<DateTime, DateTime, TimeSpan, TimeSpan, CatalogItemRequestPipeReader[], IProgress<double>, CancellationToken>(
+                (begin, end, samplePeriod, filePeriod, catalogItemRequestPipeReaders, progress, cancellationToken) =>
                 {
-                    foreach (var catalogItemPipeReaderGroup in catalogItemPipeReaders.GroupBy(x => x.CatalogItem.Catalog))
+                    foreach (var catalogItemRequestPipeReaderGroup in catalogItemRequestPipeReaders.GroupBy(x => x.CatalogItem.Catalog))
                     {
-                        var prefix = catalogItemPipeReaderGroup.Key.Id.TrimStart('/').Replace('/', '_');
+                        var prefix = catalogItemRequestPipeReaderGroup.Key.Id.TrimStart('/').Replace('/', '_');
                         var filePath = Path.Combine(tmpUri.LocalPath, $"{prefix}.dat");
                         File.Create(filePath).Dispose();
                     }

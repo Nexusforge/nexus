@@ -70,8 +70,7 @@ namespace Nexus.Extensibility.Tests
         {
             var representation = new Representation(
                     dataType: NexusDataType.INT64,
-                    samplePeriod: TimeSpan.FromSeconds(1),
-                    detail: "mean");
+                    samplePeriod: TimeSpan.FromSeconds(1));
 
             var resource = new Resource(id: "Resource1", representations: new List<Representation>() { representation });
             var catalog = new ResourceCatalog(id: "/A/B/C", resources: new List<Resource>() { resource });

@@ -12,6 +12,6 @@ namespace Nexus.Extensibility
         Task<CatalogAvailability> GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken);
         Task<CatalogTimeRange> GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken);
         Task<bool> IsDataOfDayAvailableAsync(string catalogId, DateTime day, CancellationToken cancellationToken);
-        Task ReadAsync(DateTime begin, DateTime end, TimeSpan samplePeriod, CatalogItemPipeWriter[] catalogItemPipeWriters, IProgress<double> progress, CancellationToken cancellationToken);
+        Task ReadAsync(DateTime begin, DateTime end, TimeSpan samplePeriod, CatalogItemRequestPipeWriter[] catalogItemRequestPipeWriters, IProgress<double> progress, CancellationToken cancellationToken);
     }
 }
