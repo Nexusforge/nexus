@@ -34,6 +34,5 @@ namespace Nexus.ClientGenerator
         {
             return Regex.Replace(input, "(?<=[a-z])([A-Z])", "_$1").Trim().ToLower();
         }
-
     }
 }

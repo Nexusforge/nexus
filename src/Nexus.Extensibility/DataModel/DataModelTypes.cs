@@ -1,6 +1,67 @@
 ﻿namespace Nexus.DataModel
 {
     /// <summary>
+    /// Specifies the representation kind.
+    /// </summary>
+    public enum RepresentationKind
+    {
+        /// <summary>
+        /// Represents the original dataset.
+        /// </summary>
+        Original = 0,
+
+        /// <summary>
+        /// Represents the resampled original dataset.
+        /// </summary>
+        Resampled = 10,
+
+        /// <summary>
+        /// Represents the arithmetic mean of the original dataset.
+        /// </summary>
+        Mean = 20,
+
+        /// <summary>
+        /// Represents the polar mean of the original dataset.
+        /// </summary>
+        MeanPolar = 30,
+
+        /// <summary>
+        /// Represents the minimum of the original dataset.
+        /// </summary>
+        Min = 40,
+
+        /// <summary>
+        /// Represents the maximum of the original dataset.
+        /// </summary>
+        Max = 50,
+
+        /// <summary>
+        /// Represents the standard deviation of the original dataset.
+        /// </summary>
+        Std = 60,
+
+        /// <summary>
+        /// Represents the root-mean-square of the original dataset.
+        /// </summary>
+        Rms = 70,
+
+        /// <summary>
+        /// Represents the bitwise-calculated minimum of the original dataset.
+        /// </summary>
+        MinBitwise = 80,
+
+        /// <summary>
+        /// Represents the bitwise-calculated maximum of the original dataset.
+        /// </summary>
+        MaxBitwise = 90,
+
+        /// <summary>
+        /// Represents the sum of the original dataset.
+        /// </summary>
+        Sum = 100
+    }
+
+    /// <summary>
     /// Specifies the Nexus data type.
     /// </summary>
     public enum NexusDataType : ushort

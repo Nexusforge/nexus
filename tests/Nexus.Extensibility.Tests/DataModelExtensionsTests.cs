@@ -3,7 +3,7 @@ using Xunit;
 
 namespace Nexus.Extensibility.Tests
 {
-    public class DateModelExtensionsTests
+    public class DataModelExtensionsTests
     {
         [Theory]
         [InlineData("00:00:00.0000001", "100_ns")]
@@ -30,6 +30,36 @@ namespace Nexus.Extensibility.Tests
             var actual = TimeSpan
                 .Parse(period)
                 .ToUnitString();
+
+            Assert.Equal(expected, actual);
+        }
+
+        [Theory]
+        [InlineData("100_ns", "00:00:00.0000001")]
+        [InlineData("200_ns", "00:00:00.0000002")]
+        [InlineData("1500_ns", "00:00:00.0000015")]
+
+        [InlineData("1_us", "00:00:00.0000010")]
+        [InlineData("10_us", "00:00:00.0000100")]
+        [InlineData("100_us", "00:00:00.0001000")]
+        [InlineData("1500_us", "00:00:00.0015000")]
+
+        [InlineData("1_ms", "00:00:00.0010000")]
+        [InlineData("10_ms", "00:00:00.0100000")]
+        [InlineData("100_ms", "00:00:00.1000000")]
+        [InlineData("1500_ms", "00:00:01.5000000")]
+
+        [InlineData("1_s", "00:00:01.0000000")]
+        [InlineData("15_s", "00:00:15.0000000")]
+
+        [InlineData("1_min", "00:01:00.0000000")]
+        [InlineData("15_min", "00:15:00.0000000")]
+        public void CanParseUnitStrings(string unitString, string expectedPeriodString)
+        {
+            var expected = TimeSpan
+                .Parse(expectedPeriodString);
+
+            var actual = DataModelExtensions.ToSamplePeriod(unitString);
 
             Assert.Equal(expected, actual);
         }

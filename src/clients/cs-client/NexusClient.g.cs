@@ -573,13 +573,11 @@ public interface IDataClient
     /// <summary>
     /// Gets the requested data.
     /// </summary>
-    /// <param name="catalogId">The catalog identifier.</param>
-    /// <param name="resourceId">The resource identifier.</param>
-    /// <param name="representationId">The representation identifier.</param>
+    /// <param name="resourcePath">The path to the resource data to stream.</param>
     /// <param name="begin">Start date/time.</param>
     /// <param name="end">End date/time.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<StreamResponse> GetStreamAsync(string catalogId, string resourceId, string representationId, DateTime begin, DateTime end, CancellationToken cancellationToken = default);
+    Task<StreamResponse> GetStreamAsync(string resourcePath, DateTime begin, DateTime end, CancellationToken cancellationToken = default);
 
 }
 
@@ -594,16 +592,14 @@ public class DataClient : IDataClient
     }
 
     /// <inheritdoc />
-    public Task<StreamResponse> GetStreamAsync(string catalogId, string resourceId, string representationId, DateTime begin, DateTime end, CancellationToken cancellationToken = default)
+    public Task<StreamResponse> GetStreamAsync(string resourcePath, DateTime begin, DateTime end, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/data");
 
         var queryValues = new Dictionary<string, string>()
         {
-            ["catalogId"] = Uri.EscapeDataString(Convert.ToString(catalogId, CultureInfo.InvariantCulture)),
-            ["resourceId"] = Uri.EscapeDataString(Convert.ToString(resourceId, CultureInfo.InvariantCulture)),
-            ["representationId"] = Uri.EscapeDataString(Convert.ToString(representationId, CultureInfo.InvariantCulture)),
+            ["resourcePath"] = Uri.EscapeDataString(Convert.ToString(resourcePath, CultureInfo.InvariantCulture)),
             ["begin"] = Uri.EscapeDataString(Convert.ToString(begin, CultureInfo.InvariantCulture)),
             ["end"] = Uri.EscapeDataString(Convert.ToString(end, CultureInfo.InvariantCulture)),
         };
@@ -1268,7 +1264,7 @@ public record ResourceCatalog(string Id, IDictionary<string, string>? Properties
 /// </summary>
 /// <param name="Id">The identifier.</param>
 /// <param name="Properties">The map of properties.</param>
-/// <param name="Representations">Tshe list of representations.</param>
+/// <param name="Representations">The list of representations.</param>
 public record Resource(string Id, IDictionary<string, string>? Properties, ICollection<Representation>? Representations);
 
 /// <summary>
@@ -1276,9 +1272,8 @@ public record Resource(string Id, IDictionary<string, string>? Properties, IColl
 /// </summary>
 /// <param name="DataType">The data type.</param>
 /// <param name="SamplePeriod">The sample period.</param>
-/// <param name="Detail">The detail.</param>
-/// <param name="IsPrimary">A value which indicates the primary representation to be used for aggregations. The value of this property is only relevant for resources with multiple representations.</param>
-public record Representation(NexusDataType DataType, TimeSpan SamplePeriod, string? Detail, bool IsPrimary);
+/// <param name="Kind">The representation kind.</param>
+public record Representation(NexusDataType DataType, TimeSpan SamplePeriod, RepresentationKind Kind);
 
 /// <summary>
 /// Specifies the Nexus data type.
@@ -1334,6 +1329,68 @@ public enum NexusDataType
     /// FLOAT64
     /// </summary>
     FLOAT64
+}
+
+
+/// <summary>
+/// Specifies the representation kind.
+/// </summary>
+public enum RepresentationKind
+{
+    /// <summary>
+    /// Original
+    /// </summary>
+    Original,
+
+    /// <summary>
+    /// Resampled
+    /// </summary>
+    Resampled,
+
+    /// <summary>
+    /// Mean
+    /// </summary>
+    Mean,
+
+    /// <summary>
+    /// MeanPolar
+    /// </summary>
+    MeanPolar,
+
+    /// <summary>
+    /// Min
+    /// </summary>
+    Min,
+
+    /// <summary>
+    /// Max
+    /// </summary>
+    Max,
+
+    /// <summary>
+    /// Std
+    /// </summary>
+    Std,
+
+    /// <summary>
+    /// Rms
+    /// </summary>
+    Rms,
+
+    /// <summary>
+    /// MinBitwise
+    /// </summary>
+    MinBitwise,
+
+    /// <summary>
+    /// MaxBitwise
+    /// </summary>
+    MaxBitwise,
+
+    /// <summary>
+    /// Sum
+    /// </summary>
+    Sum
 }
 
 

@@ -324,34 +324,14 @@
         "operationId": "Data_GetStream",
         "parameters": [
           {
-            "name": "catalogId",
+            "name": "resourcePath",
             "in": "query",
             "required": true,
-            "description": "The catalog identifier.",
+            "description": "The path to the resource data to stream.",
             "schema": {
               "type": "string"
             },
             "x-position": 1
-          },
-          {
-            "name": "resourceId",
-            "in": "query",
-            "required": true,
-            "description": "The resource identifier.",
-            "schema": {
-              "type": "string"
-            },
-            "x-position": 2
-          },
-          {
-            "name": "representationId",
-            "in": "query",
-            "required": true,
-            "description": "The representation identifier.",
-            "schema": {
-              "type": "string"
-            },
-            "x-position": 3
           },
           {
             "name": "begin",
@@ -362,7 +342,7 @@
               "type": "string",
               "format": "date-time"
             },
-            "x-position": 4
+            "x-position": 2
           },
           {
             "name": "end",
@@ -373,7 +353,7 @@
               "type": "string",
               "format": "date-time"
             },
-            "x-position": 5
+            "x-position": 3
           }
         ],
         "responses": {
@@ -1220,7 +1200,7 @@
           },
           "representations": {
             "type": "array",
-            "description": "Tshe list of representations.",
+            "description": "The list of representations.",
             "nullable": true,
             "items": {
               "$ref": "#/components/schemas/Representation"
@@ -1246,14 +1226,13 @@
             "description": "The sample period.",
             "format": "duration"
           },
-          "detail": {
-            "type": "string",
-            "description": "The detail.",
-            "nullable": true
-          },
-          "isPrimary": {
-            "type": "boolean",
-            "description": "A value which indicates the primary representation to be used for aggregations. The value of this property is only relevant for resources with multiple representations."
+          "kind": {
+            "description": "The representation kind.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RepresentationKind"
+              }
+            ]
           }
         }
       },
@@ -1283,6 +1262,36 @@
           "INT64",
           "FLOAT32",
           "FLOAT64"
+        ]
+      },
+      "RepresentationKind": {
+        "type": "string",
+        "description": "Specifies the representation kind.",
+        "x-enumNames": [
+          "Original",
+          "Resampled",
+          "Mean",
+          "MeanPolar",
+          "Min",
+          "Max",
+          "Std",
+          "Rms",
+          "MinBitwise",
+          "MaxBitwise",
+          "Sum"
+        ],
+        "enum": [
+          "Original",
+          "Resampled",
+          "Mean",
+          "MeanPolar",
+          "Min",
+          "Max",
+          "Std",
+          "Rms",
+          "MinBitwise",
+          "MaxBitwise",
+          "Sum"
         ]
       },
       "CatalogTimeRange": {

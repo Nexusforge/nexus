@@ -146,7 +146,6 @@ namespace Nexus.Sources
             var representation2 = new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromSeconds(1));
             var representation3 = new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromMilliseconds(40));
             var representation4 = new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromSeconds(1));
-            var representation5 = new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromSeconds(1));
 
             var resourceBuilderA = new ResourceBuilder(id: "T1")
                 .WithUnit("°C")
@@ -168,7 +167,7 @@ namespace Nexus.Sources
             var resourceBuilderD = new ResourceBuilder(id: "unix_time2")
                 .WithDescription("Test Resource D")
                 .WithGroups("Group 2")
-                .AddRepresentations(representation4, representation5);
+                .AddRepresentations(representation4);
 
             var catalogBuilder = new ResourceCatalogBuilder(catalogId);
 

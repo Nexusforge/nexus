@@ -130,15 +130,17 @@ namespace DataSource
             var samplePeriod = TimeSpan.FromSeconds(1);
 
             // resource 1
-            var resourcePath1 = $"{InMemory.AccessibleCatalogId}/V1/1_s_mean";
+            var resourcePath1 = $"{InMemory.AccessibleCatalogId}/V1/1_s";
             var catalogItem1 = (await controller.GetCatalogAsync(InMemory.AccessibleCatalogId, CancellationToken.None)).Find(resourcePath1);
+            var catalogItemRequest1 = new CatalogItemRequest(catalogItem1, default, default!);
 
             var pipe1 = new Pipe();
             var dataWriter1 = pipe1.Writer;
 
             // resource 2
-            var resourcePath2 = $"{InMemory.AccessibleCatalogId}/T1/1_s_mean";
+            var resourcePath2 = $"{InMemory.AccessibleCatalogId}/T1/1_s";
             var catalogItem2 = (await controller.GetCatalogAsync(InMemory.AccessibleCatalogId, CancellationToken.None)).Find(resourcePath2);
+            var catalogItemRequest2 = new CatalogItemRequest(catalogItem2, default, default!);
 
             var pipe2 = new Pipe();
             var dataWriter2 = pipe2.Writer;
@@ -146,8 +148,8 @@ namespace DataSource
             // combine
             var catalogItemRequestPipeWriters = new CatalogItemRequestPipeWriter[] 
             {
-                new CatalogItemRequestPipeWriter(catalogItem1, dataWriter1),
-                new CatalogItemRequestPipeWriter(catalogItem2, dataWriter2)
+                new CatalogItemRequestPipeWriter(catalogItemRequest1, dataWriter1),
+                new CatalogItemRequestPipeWriter(catalogItemRequest2, dataWriter2)
             };
 
             var readingGroups = new DataReadingGroup[] 
@@ -221,13 +223,14 @@ namespace DataSource
 
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 02, 0, 0, 1, DateTimeKind.Utc);
-            var resourcePath = "/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean";
+            var resourcePath = "/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s";
             var catalogItem = (await controller.GetCatalogAsync(InMemory.AccessibleCatalogId, CancellationToken.None)).Find(resourcePath);
+            var catalogItemRequest = new CatalogItemRequest(catalogItem, default, default!);
 
             var stream = controller.ReadAsStream(
                 begin,
                 end,
-                catalogItem,
+                catalogItemRequest,
                 new GeneralOptions() { ReadChunkSize = 10000 },
                 NullLogger<DataSourceController>.Instance);
 

@@ -11,8 +11,8 @@ namespace DataWriter
             // catalog 1
             var representations1 = new List<Representation>()
             {
-                new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(1), detail: "mean", isPrimary: true),
-                new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromSeconds(1), detail: "max"),
+                new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(1)),
+                new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromSeconds(10)),
             };
 
             var resourceBuilder1 = new ResourceBuilder(id: "resource1")
@@ -26,7 +26,7 @@ namespace DataWriter
                 .AddResource(resourceBuilder1.Build());
 
             // catalog 2
-            var representation2 = new Representation(dataType: NexusDataType.INT64, samplePeriod: TimeSpan.FromSeconds(1), detail: "std");
+            var representation2 = new Representation(dataType: NexusDataType.INT64, samplePeriod: TimeSpan.FromSeconds(1));
 
             var resourceBuilder2 = new ResourceBuilder(id: "resource3")
                 .WithUnit("m/s")

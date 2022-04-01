@@ -79,6 +79,26 @@ namespace Nexus.Extensibility.Tests
         }
 
         [Theory]
+        [InlineData(30, true)]
+        [InlineData(-1, false)]
+        public void CanValidateRepresentationKind(int numericalKind, bool isValid)
+        {
+            var kind = (RepresentationKind)numericalKind;
+
+            if (isValid)
+                new Representation(
+                    dataType: NexusDataType.FLOAT64,
+                    samplePeriod: TimeSpan.FromSeconds(1),
+                    kind: kind);
+
+            else
+                Assert.Throws<ArgumentException>(() => new Representation(
+                    dataType: NexusDataType.FLOAT64,
+                    samplePeriod: TimeSpan.FromSeconds(1),
+                    kind: kind));
+        }
+
+        [Theory]
         [InlineData(NexusDataType.FLOAT32, true)]
         [InlineData((NexusDataType)0, false)]
         [InlineData((NexusDataType)9999, false)]
@@ -96,14 +116,15 @@ namespace Nexus.Extensibility.Tests
         }
 
         [Theory]
-        [InlineData("00:00:01", "1_s")]
-        public void CanInferRepresentationId(string smaplePeriodString, string expected)
+        [InlineData("00:00:01", RepresentationKind.MeanPolar, "1_s_mean_polar")]
+        public void CanInferRepresentationId(string samplePeriodString, RepresentationKind kind, string expected)
         {
-            var samplePeriod = TimeSpan.Parse(smaplePeriodString);
+            var samplePeriod = TimeSpan.Parse(samplePeriodString);
 
             var representation = new Representation(
                 dataType: NexusDataType.FLOAT32,
-                samplePeriod: samplePeriod);
+                samplePeriod: samplePeriod,
+                kind: kind);
 
             var actual = representation.Id;
 
@@ -290,6 +311,7 @@ namespace Nexus.Extensibility.Tests
         }
 
         [Theory]
+        [InlineData("/A/B/C", "Resource1", "1_s")]
         [InlineData("/A/B/C", "Resource1", "1_s_max")]
         [InlineData("/A/B/C", "Resource2", "1_s_mean")]
         [InlineData("/A/B/D", "Resource1", "1_s_max")]
@@ -297,7 +319,8 @@ namespace Nexus.Extensibility.Tests
         {
             var representation = new Representation(
                dataType: NexusDataType.FLOAT32,
-               samplePeriod: TimeSpan.FromSeconds(1));
+               samplePeriod: TimeSpan.FromSeconds(1),
+               kind: RepresentationKind.Mean);
 
             var resource = new Resource(id: "Resource1", representations: new List<Representation>() { representation });
             var catalog = new ResourceCatalog(id: "/A/B/C", resources: new List<Resource>() { resource });

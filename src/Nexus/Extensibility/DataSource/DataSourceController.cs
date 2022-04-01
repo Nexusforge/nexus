@@ -8,6 +8,45 @@ using System.IO.Pipelines;
 
 namespace Nexus.Extensibility
 {
+    internal interface IDataSourceController : IDisposable
+    {
+        Task InitializeAsync(
+            ConcurrentDictionary<string, ResourceCatalog> catalogs,
+            ILogger logger,
+            CancellationToken cancellationToken);
+
+        Task<CatalogRegistration[]> GetCatalogRegistrationsAsync(
+            string path,
+            CancellationToken cancellationToken);
+
+        Task<ResourceCatalog> GetCatalogAsync(
+            string catalogId,
+            CancellationToken cancellationToken);
+
+        Task<CatalogAvailability> GetAvailabilityAsync(
+            string catalogId, 
+            DateTime begin,
+            DateTime end,
+            CancellationToken cancellationToken);
+
+        Task<CatalogTimeRange> GetTimeRangeAsync(
+            string catalogId,
+            CancellationToken cancellationToken);
+
+        Task<bool> IsDataOfDayAvailableAsync(
+            string catalogId,
+            DateTime day, 
+            CancellationToken cancellationToken);
+
+        Task ReadAsync(
+            DateTime begin,
+            DateTime end,
+            TimeSpan samplePeriod, 
+            CatalogItemRequestPipeWriter[] catalogItemRequestPipeWriters,
+            IProgress<double> progress, 
+            CancellationToken cancellationToken);
+    }
+
     internal class DataSourceController : IDataSourceController
     {
         #region Fields
@@ -46,7 +85,10 @@ namespace Nexus.Extensibility
 
         #region Methods
 
-        public async Task InitializeAsync(ConcurrentDictionary<string, ResourceCatalog> catalogCache, ILogger logger, CancellationToken cancellationToken)
+        public async Task InitializeAsync(
+            ConcurrentDictionary<string, ResourceCatalog> catalogCache,
+            ILogger logger,
+            CancellationToken cancellationToken)
         {
             _catalogCache = catalogCache;
 
@@ -66,8 +108,9 @@ namespace Nexus.Extensibility
             await DataSource.SetContextAsync(context, cancellationToken);
         }
 
-        public async Task<CatalogRegistration[]>
-           GetCatalogRegistrationsAsync(string path, CancellationToken cancellationToken)
+        public async Task<CatalogRegistration[]> GetCatalogRegistrationsAsync(
+            string path,
+            CancellationToken cancellationToken)
         {
             var catalogRegistrations = await DataSource
                 .GetCatalogRegistrationsAsync(path, cancellationToken);
@@ -96,8 +139,9 @@ namespace Nexus.Extensibility
             return catalogRegistrations;
         }
 
-        public async Task<ResourceCatalog>
-            GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
+        public async Task<ResourceCatalog> GetCatalogAsync(
+            string catalogId,
+            CancellationToken cancellationToken)
         {
             Logger.LogDebug("Load catalog {CatalogId}", catalogId);
 
@@ -109,8 +153,11 @@ namespace Nexus.Extensibility
             return catalog;
         }
 
-        public async Task<CatalogAvailability>
-            GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken)
+        public async Task<CatalogAvailability> GetAvailabilityAsync(
+            string catalogId, 
+            DateTime begin, 
+            DateTime end, 
+            CancellationToken cancellationToken)
         {
             var dateBegin = begin.Date;
             var dateEnd = end.Date;
@@ -130,8 +177,9 @@ namespace Nexus.Extensibility
                 Data: aggregatedData.ToDictionary(entry => entry.Key, entry => entry.Value));
         }
 
-        public async Task<CatalogTimeRange>
-            GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
+        public async Task<CatalogTimeRange> GetTimeRangeAsync(
+            string catalogId,
+            CancellationToken cancellationToken)
         {
             (var begin, var end) = await DataSource.GetTimeRangeAsync(catalogId, cancellationToken);
 
@@ -140,7 +188,10 @@ namespace Nexus.Extensibility
                 End: end);
         }
 
-        public async Task<bool> IsDataOfDayAvailableAsync(string catalogId, DateTime day, CancellationToken cancellationToken)
+        public async Task<bool> IsDataOfDayAvailableAsync(
+            string catalogId,
+            DateTime day,
+            CancellationToken cancellationToken)
         {
             return (await DataSource.GetAvailabilityAsync(catalogId, day, day.AddDays(1), cancellationToken)) > 0;
         }
@@ -277,6 +328,8 @@ namespace Nexus.Extensibility
             CancellationToken cancellationToken)
         {
             /* validation */
+            DataSourceController.ValidateParameters(begin, end, samplePeriod);
+
             var catalogItemRequestPipeWriters = readingGroups.SelectMany(readingGroup => readingGroup.CatalogItemRequestPipeWriters);
 
             if (!catalogItemRequestPipeWriters.Any())
@@ -284,31 +337,49 @@ namespace Nexus.Extensibility
 
             foreach (var catalogItemRequestPipeWriter in catalogItemRequestPipeWriters)
             {
-                var currentSamplePeriod = catalogItemRequestPipeWriter.Request.Item.Representation.SamplePeriod;
+                var request = catalogItemRequestPipeWriter.Request;
 
-                if (currentSamplePeriod < samplePeriod)
-//#error
-                    if (catalogItemRequestPipeWriter.Request.Item.Representation.SamplePeriod != samplePeriod)
+                if (request.Item.Representation.SamplePeriod != samplePeriod)
                     throw new ValidationException("All representations must be based on the same sample period.");
+
+                // if item kind is aggregation
+                if (request.Item.Representation.Kind != RepresentationKind.Original &&
+                    request.Item.Representation.Kind != RepresentationKind.Resampled)
+                {
+                    if (request.Item.Representation.SamplePeriod < request.BaseItem!.Representation.SamplePeriod)
+                        throw new ValidationException("Unable to aggregate data if requested sample period is lower than the base sample period.");
+                }
             }
 
-            DataSourceController.ValidateParameters(begin, end, samplePeriod);
-
             /* pre-calculation */
-            var bytesPerRow = catalogItemRequestPipeWriters
-                .Sum(catalogItemRequestPipeWriter => catalogItemRequestPipeWriter.Request.Item.Representation.ElementSize);
+            var bytesPerRow = catalogItemRequestPipeWriters.Sum(catalogItemRequestPipeWriter =>
+            {
+                var request = catalogItemRequestPipeWriter.Request;
+                var elementSize = catalogItemRequestPipeWriter.Request.Item.Representation.ElementSize;
+                var elementCount = 1L;
+
+                if (request.BaseItem != null)
+                {
+                    elementCount = 
+                        request.BaseItem.Representation.SamplePeriod.Ticks / 
+                        request.Item.Representation.SamplePeriod.Ticks;
+                }
+
+                return Math.Max(1, elementCount) * elementSize;
+            });
 
             logger.LogTrace("A single row has a size of {BytesPerRow} bytes", bytesPerRow);
 
             var chunkSize = Math.Max(bytesPerRow, generalOptions.ReadChunkSize);
             logger.LogTrace("The chunk size is {ChunkSize} bytes", chunkSize);
 
-            var rows = chunkSize / bytesPerRow;
-            logger.LogTrace("{RowCount} rows will be processed per chunk", rows);
+            var rowCount = chunkSize / bytesPerRow;
+            logger.LogTrace("{RowCount} rows will be processed per chunk", rowCount);
 
-#warning Check if # of rows is 0 and throw an exception in this case
+            if (rowCount == 0)
+                throw new ValidationException("Unable to load the requested data because the available chunk size is too low.");
 
-            var maxPeriodPerRequest = TimeSpan.FromTicks(samplePeriod.Ticks * rows);
+            var maxPeriodPerRequest = TimeSpan.FromTicks(samplePeriod.Ticks * rowCount);
             logger.LogTrace("The maximum period per request is {MaxPeriodPerRequest}", maxPeriodPerRequest);
 
             /* periods */
@@ -391,7 +462,10 @@ namespace Nexus.Extensibility
             }
         }
 
-        private static void ValidateParameters(DateTime begin, DateTime end, TimeSpan samplePeriod)
+        private static void ValidateParameters(
+            DateTime begin, 
+            DateTime end, 
+            TimeSpan samplePeriod)
         {
             /* When the user requests two time series of the same frequency, they will be aligned to the sample
              * period. With the current implementation, it simply not possible for one data source to provide an 

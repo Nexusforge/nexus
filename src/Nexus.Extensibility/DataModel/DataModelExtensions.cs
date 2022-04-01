@@ -1,4 +1,6 @@
-﻿namespace Nexus.DataModel
+﻿using System.Text.RegularExpressions;
+
+namespace Nexus.DataModel
 {
     /// <summary>
     /// Contains extension methods to make life easier working with the data model types.
@@ -11,6 +13,7 @@
         internal const string Warning = "Warning";
         internal const string Unit = "Unit";
         internal const string Groups = "Groups";
+        internal const string BasePath = "BasePath";
 
         /// <summary>
         /// Adds a description.
@@ -91,8 +94,10 @@
         #region Misc
 
         private const int NS_PER_TICK = 100;
+        private static long[] _nanoseconds = new[] { (long)1e0, (long)1e3, (long)1e6, (long)1e9, (long)60e9 };
         private static int[] _quotients = new[] { 1000, 1000, 1000, 60, 1 };
         private static string[] _postFixes = new[] { "ns", "us", "ms", "s", "min" };
+        private static Regex _unitStringEvaluator = new Regex(@"^([0-9]+)_([a-z]+)$", RegexOptions.Compiled);
 
         /// <summary>
         /// Converts a url into a local file path.
@@ -134,6 +139,29 @@
             }
 
             return $"{(int)currentValue}_{_postFixes.Last()}";
+        }
+
+        // this method is placed here because it requires access to _postFixes and _nanoseconds
+        internal static TimeSpan ToSamplePeriod(string unitString)
+        {
+            var match = _unitStringEvaluator.Match(unitString);
+
+            if (!match.Success)
+                throw new Exception("The provided unit string is invalid.");
+
+            var unitIndex = Array.IndexOf(_postFixes, match.Groups[2].Value);
+
+            if (unitIndex == -1)
+                throw new Exception("The provided unit is invalid.");
+
+            var totalNanoSeconds = long.Parse(match.Groups[1].Value) * _nanoseconds[unitIndex];
+
+            if (totalNanoSeconds % NS_PER_TICK != 0)
+                throw new Exception("The sample period must be a multiple of 100 ns.");
+
+            var ticks = totalNanoSeconds / NS_PER_TICK;
+
+            return new TimeSpan(ticks);
         }
 
         #endregion

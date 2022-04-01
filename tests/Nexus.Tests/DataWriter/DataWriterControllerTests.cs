@@ -27,16 +27,20 @@ namespace DataWriter
             var filePeriod = TimeSpan.FromMinutes(30);
 
             var catalogItems = _fixture.Catalogs
-                .SelectMany(catalog => catalog.Resources
-                .SelectMany(resource => resource.Representations
-                .Select(representation => new CatalogItem(catalog, resource, new Representation(representation.DataType, samplePeriod: TimeSpan.FromMinutes(10), detail: "mean")))))
+               .SelectMany(catalog => catalog.Resources
+               .SelectMany(resource => resource.Representations
+               .Select(representation => new CatalogItem(catalog, resource, new Representation(representation.DataType, samplePeriod: TimeSpan.FromMinutes(10))))))
+               .ToArray();
+
+            var catalogItemRequests = catalogItems
+                .Select(catalogItem => new CatalogItemRequest(catalogItem, default, default!))
                 .ToArray();
 
-            var pipes = catalogItems
-                .Select(catalogItem => new Pipe())
+            var pipes = catalogItemRequests
+                .Select(catalogItemRequest => new Pipe())
                 .ToArray();
 
-            var catalogItemRequestPipeReaders = catalogItems
+            var catalogItemRequestPipeReaders = catalogItemRequests
                 .Zip(pipes)
                 .Select((value) => new CatalogItemRequestPipeReader(value.First, value.Second.Reader))
                 .ToArray();

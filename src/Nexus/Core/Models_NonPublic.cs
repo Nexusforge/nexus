@@ -2,26 +2,10 @@ using Nexus.DataModel;
 
 namespace Nexus.Core
 {
-    internal enum RepresentationKind
-    {
-        /* Warning: Do not simply rename because raw strings get parsed into this enum. */
-        Original = 0,
-        Resampled = 10,
-        Mean = 20,
-        MeanPolar = 30,
-        Min = 40,
-        Max = 50,
-        Std = 60,
-        Rms = 70,
-        MinBitwise = 80,
-        MaxBitwise = 90,
-        Sum = 100
-    }
-
     internal record CatalogItemRequest(
-        CatalogItem Item, 
-        CatalogContainer Container,
-        RepresentationKind Kind);
+        CatalogItem Item,
+        CatalogItem? BaseItem,
+        CatalogContainer Container);
 
     internal record NexusProject(
         IReadOnlyDictionary<Guid, PackageReference> PackageReferences,

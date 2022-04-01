@@ -270,7 +270,7 @@ class Resource:
     Args:
         id: The identifier.
         properties: The map of properties.
-        representations: Tshe list of representations.
+        representations: The list of representations.
     """
 
     id: str
@@ -280,7 +280,7 @@ class Resource:
     """The map of properties."""
 
     representations: Optional[list[Representation]]
-    """Tshe list of representations."""
+    """The list of representations."""
 
 
 @dataclass
@@ -291,8 +291,7 @@ class Representation:
     Args:
         data_type: The data type.
         sample_period: The sample period.
-        detail: The detail.
-        is_primary: A value which indicates the primary representation to be used for aggregations. The value of this property is only relevant for resources with multiple representations.
+        kind: The representation kind.
     """
 
     data_type: NexusDataType
@@ -301,11 +300,8 @@ class Representation:
     sample_period: timedelta
     """The sample period."""
 
-    detail: Optional[str]
-    """The detail."""
-
-    is_primary: bool
-    """A value which indicates the primary representation to be used for aggregations. The value of this property is only relevant for resources with multiple representations."""
+    kind: RepresentationKind
+    """The representation kind."""
 
 
 class NexusDataType(Enum):
@@ -340,6 +336,43 @@ class NexusDataType(Enum):
 
     FLOAT64 = "FLOAT64"
     """FLOAT64"""
+
+
+class RepresentationKind(Enum):
+    """Specifies the representation kind."""
+
+    ORIGINAL = "ORIGINAL"
+    """Original""",
+
+    RESAMPLED = "RESAMPLED"
+    """Resampled""",
+
+    MEAN = "MEAN"
+    """Mean""",
+
+    MEAN_POLAR = "MEAN_POLAR"
+    """MeanPolar""",
+
+    MIN = "MIN"
+    """Min""",
+
+    MAX = "MAX"
+    """Max""",
+
+    STD = "STD"
+    """Std""",
+
+    RMS = "RMS"
+    """Rms""",
+
+    MIN_BITWISE = "MIN_BITWISE"
+    """MinBitwise""",
+
+    MAX_BITWISE = "MAX_BITWISE"
+    """MaxBitwise""",
+
+    SUM = "SUM"
+    """Sum"""
 
 
 @dataclass
@@ -861,14 +894,12 @@ class DataClient:
     def __init__(self, client: NexusAsyncClient):
         self._client = client
 
-    def get_stream(self, catalog_id: str, resource_id: str, representation_id: str, begin: datetime, end: datetime) -> Awaitable[StreamResponse]:
+    def get_stream(self, resource_path: str, begin: datetime, end: datetime) -> Awaitable[StreamResponse]:
         """
         Gets the requested data.
 
         Args:
-            catalog_id: The catalog identifier.
-            resource_id: The resource identifier.
-            representation_id: The representation identifier.
+            resource_path: The path to the resource data to stream.
             begin: Start date/time.
             end: End date/time.
         """
@@ -876,9 +907,7 @@ class DataClient:
         url = "/api/v1/data"
 
         queryValues: dict[str, str] = {
-            "catalogId": quote(_to_string(catalog_id), safe=""),
-            "resourceId": quote(_to_string(resource_id), safe=""),
-            "representationId": quote(_to_string(representation_id), safe=""),
+            "resourcePath": quote(_to_string(resource_path), safe=""),
             "begin": quote(_to_string(begin), safe=""),
             "end": quote(_to_string(end), safe=""),
         }

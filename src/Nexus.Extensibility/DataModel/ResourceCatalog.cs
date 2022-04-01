@@ -193,7 +193,9 @@ namespace Nexus.DataModel
             if (resource is null)
                 return false;
 
-            var representation = resource.Representations?.FirstOrDefault(representation => representation.Id == representationId);
+            var representation = string.IsNullOrEmpty(representationId)
+                ? resource.Representations?.FirstOrDefault()
+                : resource.Representations?.FirstOrDefault(representation => representation.Id == representationId);
 
             if (representation is null)
                 return false;

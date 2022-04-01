@@ -63,7 +63,7 @@ namespace Nexus.DataModel
         }
 
         /// <summary>
-        /// Tshe list of representations.
+        /// The list of representations.
         /// </summary>
         public IReadOnlyList<Representation>? Representations
         {

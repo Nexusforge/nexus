@@ -42,7 +42,7 @@ namespace Services
                .Callback<DateTime, DateTime, TimeSpan, TimeSpan, CatalogItemRequestPipeReader[], IProgress<double>, CancellationToken>(
                 (begin, end, samplePeriod, filePeriod, catalogItemRequestPipeReaders, progress, cancellationToken) =>
                 {
-                    foreach (var catalogItemRequestPipeReaderGroup in catalogItemRequestPipeReaders.GroupBy(x => x.CatalogItem.Catalog))
+                    foreach (var catalogItemRequestPipeReaderGroup in catalogItemRequestPipeReaders.GroupBy(x => x.Request.Item.Catalog))
                     {
                         var prefix = catalogItemRequestPipeReaderGroup.Key.Id.TrimStart('/').Replace('/', '_');
                         var filePath = Path.Combine(tmpUri.LocalPath, $"{prefix}.dat");
@@ -102,15 +102,17 @@ namespace Services
                 .Returns(logger2);
 
             // catalog items
-            var representation1 = new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: samplePeriod, detail: "E");
+            var representation1 = new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: samplePeriod);
             var resource1 = new Resource(id: "Resource1");
             var catalog1 = new ResourceCatalog(id: "/A/B/C");
             var catalogItem1 = new CatalogItem(catalog1, resource1, representation1);
+            var catalogContainer1 = new CatalogContainer(new CatalogRegistration(catalog1.Id), default!, registration1, default!, default!, default!, default!);
 
-            var representation2 = new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: samplePeriod, detail: "J");
+            var representation2 = new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: samplePeriod);
             var resource2 = new Resource(id: "Resource2");
             var catalog2 = new ResourceCatalog(id: "/F/G/H");
             var catalogItem2 = new CatalogItem(catalog2, resource2, representation2);
+            var catalogContainer2 = new CatalogContainer(new CatalogRegistration(catalog2.Id), default!, registration2, default!, default!, default!, default!);
 
             // export parameters
             var exportParameters = new ExportParameters(
@@ -132,14 +134,14 @@ namespace Services
             // act
             try
             {
-                var catalogItemsMap = new Dictionary<CatalogContainer, IEnumerable<CatalogItem>>()
+                var catalogItemRequests = new[]
                 {
-                    [new CatalogContainer(new CatalogRegistration(catalog1.Id), default!, registration1, default!, default!, default!, default!)] = new[] { catalogItem1 },
-                    [new CatalogContainer(new CatalogRegistration(catalog2.Id), default!, registration2, default!, default!, default!, default!)] = new[] { catalogItem2 }
+                    new CatalogItemRequest(catalogItem1, default, catalogContainer1),
+                    new CatalogItemRequest(catalogItem2, default, catalogContainer2)
                 };
 
                 var relativeDownloadUrl = await dataService
-                    .ExportAsync(exportParameters, catalogItemsMap, Guid.NewGuid(), CancellationToken.None);
+                    .ExportAsync(exportParameters, catalogItemRequests, Guid.NewGuid(), CancellationToken.None);
 
                 // assert
                 var zipFile = Path.Combine(root, relativeDownloadUrl.Split('/').Last());

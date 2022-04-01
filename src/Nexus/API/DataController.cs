@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Options;
 using Nexus.Core;
-using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Services;
 using Nexus.Utilities;
@@ -49,10 +48,7 @@ namespace Nexus.Controllers
         /// <summary>
         /// Gets the requested data.
         /// </summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="resourceId">The resource identifier.</param>
-        /// <param name="representationId">The representation identifier.</param>
-        /// <param name="kind">The representation kind.</param>
+        /// <param name="resourcePath">The path to the resource data to stream.</param>
         /// <param name="begin">Start date/time.</param>
         /// <param name="end">End date/time.</param>
         /// <param name="cancellationToken">A cancellation token.</param>
@@ -60,17 +56,12 @@ namespace Nexus.Controllers
 
         [HttpGet]
         public async Task<IActionResult> GetStreamAsync(
-            [BindRequired] string catalogId,
-            [BindRequired] string resourceId,
-            [BindRequired] string representationId,
+            [BindRequired] string resourcePath,
             [BindRequired] DateTime begin,
             [BindRequired] DateTime end,
             [BindRequired] CancellationToken cancellationToken)
         {
-            catalogId = WebUtility.UrlDecode(catalogId);
-            resourceId = WebUtility.UrlDecode(resourceId);
-            representationId = WebUtility.UrlDecode(representationId);
-
+            resourcePath = WebUtility.UrlDecode(resourcePath);
             begin = DateTime.SpecifyKind(begin, DateTimeKind.Utc);
             end = DateTime.SpecifyKind(end, DateTimeKind.Utc);
 
@@ -78,8 +69,6 @@ namespace Nexus.Controllers
             {
                 // find representation
                 var root = _appState.CatalogState.Root;
-                var resourcePath = $"{catalogId}/{resourceId}/{representationId}";
-                
                 var catalogItemRequest = await root.TryFindAsync(resourcePath, cancellationToken);
 
                 if (catalogItemRequest is null)

@@ -1,45 +1,59 @@
-﻿using System.Text.RegularExpressions;
+﻿using Nexus.DataModel;
+using System.Text.RegularExpressions;
 
 namespace Nexus.Core
 {
     internal static class CatalogContainerExtensions
     {
-        private static Regex _resourcePathEvaluator = new Regex(@"(.*)\/([0-9]+_[a-zA-Z]+)(?:_(.+))?", RegexOptions.Compiled);
+        /* Example resource paths:
+         * 
+         * /a/b/c/T1/10_ms
+         * /a/b/c/T1/100_ms
+         * /a/b/c/T1/600_s_mean_polar
+         * /a/b/c/T1/600_s_mean_polar#base=100_ms
+         */
 
-        public static async Task<CatalogItemRequest> FindAsync(
-            this CatalogContainer parent, 
-            string resourcePath,
-            CancellationToken cancellationToken)
-        {
-            var request = await parent.TryFindAsync(resourcePath, cancellationToken);
-
-            if (request is null)
-                throw new Exception($"The resource path {resourcePath} could not be found.");
-
-            return request;
-        }
+        private static Regex _resourcePathEvaluator = new Regex(@"(.*)\/(.*)\/([0-9]+_[a-zA-Z]+)(?:_(.+))?", RegexOptions.Compiled);
+        private static Regex _resourcePathFragmentEvaluator = new Regex(@"base=(.*)", RegexOptions.Compiled);
 
         public static async Task<CatalogItemRequest?> TryFindAsync(
             this CatalogContainer parent,
             string resourcePath,
             CancellationToken cancellationToken)
         {
-            var match = _resourcePathEvaluator.Match(resourcePath);
+            var parts = resourcePath.Split('#', count: 2);
 
-            if (!match.Success)
+            // path
+            var pathMatch = _resourcePathEvaluator.Match(parts[0]);
+
+            if (!pathMatch.Success)
                 return default;
 
             var kind = RepresentationKind.Original;
 
-            if (match.Groups.Count == 4)
+            if (pathMatch.Groups.Count == 4)
             {
-                var rawValue = match.Groups[3].Value;
+                var rawValue = pathMatch.Groups[4].Value;
 
-                if (!Enum.TryParse(rawValue, out kind))
+                if (!Enum.TryParse(ToPascalCase(rawValue), out kind))
                     return default;
             }
 
-            var catalogId = match.Groups[1].Value;
+            // fragment
+            var baseResourceId = default(string);
+
+            if (parts.Length == 2)
+            {
+                var fragmentMatch = _resourcePathFragmentEvaluator.Match(parts[1]);
+
+                if (!fragmentMatch.Success)
+                    return default;
+
+                baseResourceId = fragmentMatch.Groups[1].Value;
+            }
+
+            // find catalog
+            var catalogId = pathMatch.Groups[1].Value;
             var catalogContainer = await parent.TryFindCatalogContainerAsync(catalogId, cancellationToken);
 
             if (catalogContainer is null)
@@ -50,12 +64,34 @@ namespace Nexus.Core
             if (catalogInfo is null)
                 return default;
 
-            var actualResourcePath = $"{match.Groups[1].Value}/{match.Groups[2].Value}";
+            // find base item
+            CatalogItem? catalogItem;
+            CatalogItem? baseCatalogItem = default;
 
-            if (!catalogInfo.Catalog.TryFind(actualResourcePath, out var catalogItem))
-                return default;
+            if (kind is RepresentationKind.Original)
+            {
+                if (!catalogInfo.Catalog.TryFind(parts[0], out catalogItem))
+                    return default;
+            }
 
-            return new CatalogItemRequest(catalogItem, catalogContainer, kind);
+            else
+            {
+                var resourceId = baseResourceId ?? "";
+                var actualResourcePath = $"{pathMatch.Groups[1].Value}/{pathMatch.Groups[2].Value}/{resourceId}";
+
+                if (!catalogInfo.Catalog.TryFind(actualResourcePath, out baseCatalogItem))
+                    return default;
+
+                var samplePeriod = DataModelExtensions.ToSamplePeriod(pathMatch.Groups[3].Value);
+                var representation = new Representation(NexusDataType.FLOAT64, samplePeriod, kind);
+
+                catalogItem = baseCatalogItem with 
+                { 
+                    Representation = representation
+                };
+            }
+
+            return new CatalogItemRequest(catalogItem, baseCatalogItem, catalogContainer);
         }
 
         public static async Task<CatalogContainer?> TryFindCatalogContainerAsync(
@@ -76,6 +112,14 @@ namespace Nexus.Core
 
             else
                 return await catalogContainer.TryFindCatalogContainerAsync(catalogId, cancellationToken);
+        }
+
+        public static string ToPascalCase(string input)
+        {
+            var camelCase = Regex.Replace(input, "_.", match => match.Value.Substring(1).ToUpper());
+            var pascalCase = string.Concat(camelCase[0].ToString().ToUpper(), camelCase.AsSpan(1));
+
+            return pascalCase;
         }
     }
 }

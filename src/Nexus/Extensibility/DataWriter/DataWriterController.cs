@@ -1,9 +1,26 @@
 ﻿using Nexus.Core;
+using Nexus.DataModel;
 using Nexus.Utilities;
 using System.ComponentModel.DataAnnotations;
 
 namespace Nexus.Extensibility
 {
+    internal interface IDataWriterController : IDisposable
+    {
+        Task InitializeAsync(
+            ILogger logger,
+            CancellationToken cancellationToken);
+
+        Task WriteAsync(
+            DateTime begin,
+            DateTime end, 
+            TimeSpan samplePeriod, 
+            TimeSpan filePeriod, 
+            CatalogItemRequestPipeReader[] catalogItemRequestPipeReaders,
+            IProgress<double> progress,
+            CancellationToken cancellationToken);
+    }
+
 #warning Add "CheckFileSize" method (e.g. for Famos).
 
     internal class DataWriterController : IDataWriterController
@@ -38,7 +55,9 @@ namespace Nexus.Extensibility
 
         #region Methods
 
-        public async Task InitializeAsync(ILogger logger, CancellationToken cancellationToken)
+        public async Task InitializeAsync(
+            ILogger logger,
+            CancellationToken cancellationToken)
         {
             var context = new DataWriterContext(
                 ResourceLocator: ResourceLocator,
@@ -157,8 +176,27 @@ namespace Nexus.Extensibility
                     {
                         var (catalogItemRequestPipeReader, readResult) = zipped;
 
+                        var request = catalogItemRequestPipeReader.Request;
+                        var catalogItem = request.Item;
+
+                        if (request.BaseItem != null)
+                        {
+                            var originalResource = request.Item.Resource;
+
+                            var newResource = new ResourceBuilder(originalResource.Id)
+                                .WithProperty(DataModelExtensions.BasePath, request.BaseItem.ToPath())
+                                .Build();
+
+                            var augmentedResource = originalResource.Merge(newResource, MergeMode.ExclusiveOr);
+
+                            catalogItem = request.Item with
+                            {
+                                Resource = augmentedResource
+                            };
+                        }
+
                         var writeRequest = new WriteRequest(
-                            catalogItemRequestPipeReader.Request.Item,
+                            catalogItem,
                             readResult.Buffer.First.Cast<byte, double>().Slice(0, currentLength));
 
                         return writeRequest;
@@ -194,7 +232,10 @@ namespace Nexus.Extensibility
             }
         }
 
-        private static void ValidateParameters(DateTime begin, TimeSpan samplePeriod, TimeSpan filePeriod)
+        private static void ValidateParameters(
+            DateTime begin,
+            TimeSpan samplePeriod,
+            TimeSpan filePeriod)
         {
             if (begin.Ticks % samplePeriod.Ticks != 0)
                 throw new ValidationException("The begin parameter must be a multiple of the sample period.");
