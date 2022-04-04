@@ -31,7 +31,7 @@ namespace Nexus.Core
 
             var kind = RepresentationKind.Original;
 
-            if (pathMatch.Groups.Count == 4)
+            if (!string.IsNullOrWhiteSpace(pathMatch.Groups[4].Value))
             {
                 var rawValue = pathMatch.Groups[4].Value;
 

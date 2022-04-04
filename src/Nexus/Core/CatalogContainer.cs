@@ -125,20 +125,20 @@ namespace Nexus.Core
                 var catalog = await controller.GetCatalogAsync(Id, cancellationToken);
 
                 // get begin and end of project
-                var timeRangeResult = await controller.GetTimeRangeAsync(catalog.Id, cancellationToken);
+                var catalogTimeRange = await controller.GetTimeRangeAsync(catalog.Id, cancellationToken);
 
                 // merge time range
                 if (catalogBegin == DateTime.MinValue)
-                    catalogBegin = timeRangeResult.Begin;
+                    catalogBegin = catalogTimeRange.Begin;
 
                 else
-                    catalogBegin = new DateTime(Math.Min(catalogBegin.Ticks, timeRangeResult.Begin.Ticks));
+                    catalogBegin = new DateTime(Math.Min(catalogBegin.Ticks, catalogTimeRange.Begin.Ticks));
 
                 if (catalogEnd == DateTime.MinValue)
-                    catalogEnd = timeRangeResult.End;
+                    catalogEnd = catalogTimeRange.End;
 
                 else
-                    catalogEnd = new DateTime(Math.Max(catalogEnd.Ticks, timeRangeResult.End.Ticks));
+                    catalogEnd = new DateTime(Math.Max(catalogEnd.Ticks, catalogTimeRange.End.Ticks));
 
                 // merge catalog
                 if (Metadata?.Overrides is not null)
