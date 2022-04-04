@@ -68,7 +68,7 @@ namespace Nexus.Services
                 var builtinDataSourceRegistrations = new DataSourceRegistration[]
                 {
                     new DataSourceRegistration(
-                        Type: typeof(InMemory).FullName ?? throw new Exception("full name is null"),
+                        Type: typeof(Sample).FullName ?? throw new Exception("full name is null"),
                         ResourceLocator: new Uri("memory://localhost"),
                         Configuration: new Dictionary<string, string>(),
                         Publish: true),

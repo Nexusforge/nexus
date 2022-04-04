@@ -27,7 +27,7 @@ await client.SignInAsync(refreshToken);
 
 #!markdown
 
-Get data from sample catalog `/IN_MEMORY/TEST/ACCESSIBLE`
+Get data from sample catalog `/SAMPLE/ACCESSIBLE` and `/SAMPLE/FORWARDED`
 
 #!csharp
 
@@ -38,22 +38,22 @@ var end = new DateTime(2020, 02, 02, 0, 0, 0, DateTimeKind.Utc);
 
 // Get T1 data
 
-/* Example: Transmit additional configuration which is understood only by the inmemory data source. */
+/* Example: Transmit additional configuration which is understood only by the sample data source. */
 double[] t1Data;
 
 using (var disposable = client.AttachConfiguration(
-    ("seed", "1"), 
-    ("offset", "-5")))
+    ("user", "test"), 
+    ("password", "1234")))
 {
     var response1 = await client.Data
-        .GetStreamAsync("/IN_MEMORY/TEST/ACCESSIBLE", "T1", "1_s_mean", begin, end);
+        .GetStreamAsync("/SAMPLE/FORWARDED", "T1", "1_s", begin, end);
 
     t1Data = await response1.ReadAsync();
 }
 
 // Get V1 data
 var response2 = await client.Data
-    .GetStreamAsync("/IN_MEMORY/TEST/ACCESSIBLE", "V1", "1_s_mean", begin, end);
+    .GetStreamAsync("/SAMPLE/ACCESSIBLE", "V1", "1_s", begin, end);
 
 var v1Data = await response2.ReadAsync();
 
@@ -66,13 +66,13 @@ var timestamps = Enumerable
 #!csharp
 
 // metadata
-var metadata = await client.Catalogs.GetAsync("/IN_MEMORY/TEST/ACCESSIBLE");
-
-var t1Metadata = metadata.Resources.First(resource => resource.Id == "T1");
+var metadata1 = await client.Catalogs.GetAsync("/SAMPLE/FOWARDED");
+var t1Metadata = metadata1.Resources.First(resource => resource.Id == "T1");
 var t1Description = t1Metadata.Properties["Description"];
 var t1Unit = t1Metadata.Properties["Unit"];
 
-var v1Metadata = metadata.Resources.First(resource => resource.Id == "V1");
+var metadata2 = await client.Catalogs.GetAsync("/SAMPLE/ACCESSIBLE");
+var v1Metadata = metadata2.Resources.First(resource => resource.Id == "V1");
 var v1Description = v1Metadata.Properties["Description"];
 var v1Unit = v1Metadata.Properties["Unit"];
 

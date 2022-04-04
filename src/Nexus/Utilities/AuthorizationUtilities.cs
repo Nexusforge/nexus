@@ -26,8 +26,7 @@ namespace Nexus.Utilities
                     claim => claim.Type == NexusClaims.CAN_ACCESS_GROUP &&
                     catalogMetadata.GroupMemberships.Any(group => Regex.IsMatch(group, claim.Value)));
 
-                var inMemoryDataSourceFullName = typeof(InMemory).FullName ?? throw new Exception("full name is null");
-                var implicitAccess = catalogId == inMemoryDataSourceFullName;
+                var implicitAccess = catalogId == Sample.AccessibleCatalogId || catalogId == Sample.ForwardedCatalogId;
 
                 return isAdmin || canAccessCatalog || canAccessGroup || implicitAccess;
             }

@@ -131,6 +131,7 @@ void AddServices(
     services.AddSingleton<IJobService, JobService>();
     services.AddSingleton<IDataControllerService, DataControllerService>();
     services.AddSingleton<ICatalogManager, CatalogManager>();
+    services.AddSingleton<IAggregationService, AggregationService>();
     services.AddSingleton<IDatabaseManager, DatabaseManager>();
     services.AddSingleton<IExtensionHive, ExtensionHive>();
     services.AddSingleton<IUserManagerWrapper, UserManagerWrapper>();

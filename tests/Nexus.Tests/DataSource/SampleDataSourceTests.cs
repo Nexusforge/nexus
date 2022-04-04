@@ -7,13 +7,13 @@ using Xunit;
 
 namespace DataSource
 {
-    public class InMemoryDataSourceTests
+    public class SampleDataSourceTests
     {
         [Fact]
         public async Task ProvidesCatalog()
         {
             // arrange
-            var dataSource = new InMemory() as IDataSource;
+            var dataSource = new Sample() as IDataSource;
 
             var context = new DataSourceContext(
                 ResourceLocator: new Uri("memory://localhost"),
@@ -23,7 +23,7 @@ namespace DataSource
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
             // act
-            var actual = await dataSource.GetCatalogAsync(InMemory.AccessibleCatalogId, CancellationToken.None);
+            var actual = await dataSource.GetCatalogAsync(Sample.AccessibleCatalogId, CancellationToken.None);
 
             // assert
             var actualIds = actual.Resources!.Select(resource => resource.Id).ToList();
@@ -46,7 +46,7 @@ namespace DataSource
         [Fact]
         public async Task CanProvideTimeRange()
         {
-            var dataSource = new InMemory() as IDataSource;
+            var dataSource = new Sample() as IDataSource;
 
             var context = new DataSourceContext(
                 ResourceLocator: new Uri("memory://localhost"),
@@ -64,7 +64,7 @@ namespace DataSource
         [Fact]
         public async Task CanProvideAvailability()
         {
-            var dataSource = new InMemory() as IDataSource;
+            var dataSource = new Sample() as IDataSource;
 
             var context = new DataSourceContext(
                 ResourceLocator: new Uri("memory://localhost"),
@@ -84,7 +84,7 @@ namespace DataSource
         [Fact]
         public async Task CanReadFullDay()
         {
-            var dataSource = new InMemory() as IDataSource;
+            var dataSource = new Sample() as IDataSource;
 
             var context = new DataSourceContext(
                 ResourceLocator: new Uri("memory://localhost"),
@@ -93,7 +93,7 @@ namespace DataSource
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
-            var catalog = await dataSource.GetCatalogAsync(InMemory.AccessibleCatalogId, CancellationToken.None);
+            var catalog = await dataSource.GetCatalogAsync(Sample.AccessibleCatalogId, CancellationToken.None);
             var resource = catalog.Resources!.First();
             var representation = resource.Representations!.First();
             var catalogItem = new CatalogItem(catalog, resource, representation);
@@ -106,9 +106,9 @@ namespace DataSource
             await dataSource.ReadAsync(begin, end, new[] { request }, new Progress<double>(), CancellationToken.None);
             var doubleData = data.Cast<byte, double>();
 
-            Assert.Equal(-0.059998, doubleData.Span[0], precision: 6);
-            Assert.Equal(0.427089, doubleData.Span[29], precision: 6);
-            Assert.Equal(0.607610, doubleData.Span[54], precision: 6);
+            Assert.Equal(6.5, doubleData.Span[0], precision: 1);
+            Assert.Equal(7.9, doubleData.Span[29], precision: 1);
+            Assert.Equal(6.0, doubleData.Span[54], precision: 1);
         }
     }
 }

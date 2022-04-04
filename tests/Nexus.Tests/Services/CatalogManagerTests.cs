@@ -48,7 +48,7 @@ namespace Services
                                 ("A", "/A/") => Task.FromResult(new CatalogRegistration[] { new CatalogRegistration("/A/B"), new CatalogRegistration("/A/B/C"), new CatalogRegistration("/A/C/A") }),
                                 ("B", "/") => Task.FromResult(new CatalogRegistration[] { new CatalogRegistration("/A"), new CatalogRegistration("/B/B"), new CatalogRegistration("/B/B2") }),
                                 ("C", "/") => Task.FromResult(new CatalogRegistration[] { new CatalogRegistration("/C/A") }),
-                                ("Nexus.Sources." + nameof(InMemory), "/") => Task.FromResult(new CatalogRegistration[0]),
+                                ("Nexus.Sources." + nameof(Sample), "/") => Task.FromResult(new CatalogRegistration[0]),
                                 _ => throw new Exception("Unsupported combination.")
                             };
                         });

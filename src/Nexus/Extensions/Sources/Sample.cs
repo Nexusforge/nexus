@@ -5,13 +5,28 @@ using System.Runtime.InteropServices;
 
 namespace Nexus.Sources
 {
-    [ExtensionDescription("Provides an in-memory database.")]
-    internal class InMemory : IDataSource
+    [ExtensionDescription("Provides a sample database.")]
+    internal class Sample : IDataSource
     {
         #region Fields
 
-        public const string AccessibleCatalogId = "/IN_MEMORY/TEST/ACCESSIBLE";
-        public const string RestrictedCatalogId = "/IN_MEMORY/TEST/RESTRICTED";
+        private static double[] DATA = new double[]
+        {
+            6.5, 6.7, 7.9, 8.1, 7.5, 7.6, 7.0, 6.5, 6.0, 5.9,
+            5.8, 5.2, 4.6, 5.0, 5.1, 4.9, 5.3, 5.8, 5.9, 6.1,
+            5.9, 6.3, 6.5, 6.9, 7.1, 6.9, 7.1, 7.2, 7.6, 7.9, 
+            8.2, 8.1, 8.2, 8.0, 7.5, 7.7, 7.6, 8.0, 7.5, 7.2,
+            6.8, 6.5, 6.6, 6.6, 6.7, 6.2, 5.9, 5.7, 5.9, 6.3,
+            6.6, 6.7, 6.9, 6.5, 6.0, 5.8, 5.3, 5.8, 6.1, 6.8
+        };
+
+        public const string ParentCatalogId = "/SAMPLE";
+        public const string AccessibleCatalogId = "/SAMPLE/ACCESSIBLE";
+        public const string ForwardedCatalogId = "/SAMPLE/FORWARDED";
+        public const string RestrictedCatalogId = "/SAMPLE/RESTRICTED";
+
+        public const string ForwardedUsername = "test";
+        public const string ForwardedPassword = "1234";
 
         #endregion
 
@@ -34,7 +49,14 @@ namespace Nexus.Sources
             if (path == "/")
                 return Task.FromResult(new CatalogRegistration[] 
                     {
+                        new CatalogRegistration(ParentCatalogId),
+                    });
+
+            else if (path == ParentCatalogId)
+                return Task.FromResult(new CatalogRegistration[]
+                    {
                         new CatalogRegistration(AccessibleCatalogId),
+                        new CatalogRegistration(ForwardedCatalogId),
                         new CatalogRegistration(RestrictedCatalogId)
                     });
 
@@ -44,7 +66,11 @@ namespace Nexus.Sources
 
         public Task<ResourceCatalog> GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
         {
-            return Task.FromResult(InMemory.LoadCatalog(catalogId));
+            if (catalogId == ParentCatalogId)
+                return Task.FromResult(new ResourceCatalog(catalogId));
+
+            else
+                return Task.FromResult(Sample.LoadCatalog(catalogId));
         }
 
         public Task<(DateTime Begin, DateTime End)> GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
@@ -69,6 +95,14 @@ namespace Nexus.Sources
 
                     var (catalog, resource, representation) = catalogItem;
 
+                    // check credentials
+                    if (catalog.Id == ForwardedCatalogId)
+                    {
+                        if ((Context.Configuration.TryGetValue("user", out var user) && user != ForwardedUsername) ||
+                            (Context.Configuration.TryGetValue("password", out var password) && password != ForwardedPassword))
+                            throw new Exception("The provided credentials are invalid.");
+                    }
+
                     double[] dataDouble;
 
                     var beginTime = begin.ToUnixTimeStamp();
@@ -77,41 +111,23 @@ namespace Nexus.Sources
                     var elementCount = data.Length / representation.ElementSize;
                     var dt = representation.SamplePeriod.TotalSeconds;
 
+                    // unit time
                     if (resource.Id.Contains("unix_time"))
                     {
                         dataDouble = Enumerable.Range(0, elementCount).Select(i => i * dt + beginTime).ToArray();
                     }
 
-                    else // temperature or wind speed
+                    // temperature or wind speed
+                    else
                     {
-                        int seedValue = (int)begin.Ticks;
-
-                        if (Context.Configuration.TryGetValue("seed", out var seed))
-                            int.TryParse(seed, out seedValue);
-
-                        var kernelSize = 1000;
-                        var movingAverage = new double[kernelSize];
-                        var random = new Random(seedValue);
-                        var mean = 15;
+                        var offset = (long)beginTime;
+                        var dataLength = DATA.Length;
 
                         dataDouble = new double[elementCount];
 
                         for (int i = 0; i < elementCount; i++)
                         {
-                            movingAverage[i % kernelSize] = (random.NextDouble() - 0.5) * mean * 10 + mean;
-                            dataDouble[i] = movingAverage.Sum() / kernelSize;
-                        }
-                    }
-
-                    // offset
-                    if (Context.Configuration.TryGetValue("offset", out var offsetString))
-                    {
-                        if (double.TryParse(offsetString, out var offset))
-                        {
-                            for (int i = 0; i < dataDouble.Length; i++)
-                            {
-                                dataDouble[i] += offset;
-                            }
+                            dataDouble[i] = DATA[(offset + i) % dataLength];
                         }
                     }
 
@@ -142,32 +158,27 @@ namespace Nexus.Sources
 
         internal static ResourceCatalog LoadCatalog(string catalogId)
         {
-            var representation1 = new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromSeconds(1));
-            var representation2 = new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromSeconds(1));
-            var representation3 = new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromMilliseconds(40));
-            var representation4 = new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromSeconds(1));
-
             var resourceBuilderA = new ResourceBuilder(id: "T1")
                 .WithUnit("°C")
                 .WithDescription("Test Resource A")
                 .WithGroups("Group 1")
-                .AddRepresentation(representation1);
+                .AddRepresentation(new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromSeconds(1)));
 
             var resourceBuilderB = new ResourceBuilder(id: "V1")
                 .WithUnit("m/s")
                 .WithDescription("Test Resource B")
                 .WithGroups("Group 1")
-                .AddRepresentation(representation2);
+                .AddRepresentation(new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromSeconds(1)));
 
             var resourceBuilderC = new ResourceBuilder(id: "unix_time1")
                 .WithDescription("Test Resource C")
                 .WithGroups("Group 2")
-                .AddRepresentation(representation3);
+                .AddRepresentation(new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromMilliseconds(40)));
 
             var resourceBuilderD = new ResourceBuilder(id: "unix_time2")
                 .WithDescription("Test Resource D")
                 .WithGroups("Group 2")
-                .AddRepresentations(representation4);
+                .AddRepresentation(new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromSeconds(1)));
 
             var catalogBuilder = new ResourceCatalogBuilder(catalogId);
 

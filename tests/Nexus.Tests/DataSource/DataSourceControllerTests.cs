@@ -53,6 +53,7 @@ namespace DataSource
                 dataSource,
                 registration,
                 userConfiguration,
+                default!,
                 NullLogger<DataSourceController>.Instance);
 
             var expectedConfiguration = new Dictionary<string, string>()
@@ -78,7 +79,7 @@ namespace DataSource
             var controller = _fixture.Controller;
             await controller.InitializeAsync(default!, default!, CancellationToken.None);
 
-            var catalogId = InMemory.AccessibleCatalogId;
+            var catalogId = Sample.AccessibleCatalogId;
             var begin= new DateTime(2020, 01, 01, 00, 00, 00, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 03, 00, 00, 00, DateTimeKind.Utc);
             var actual = await controller.GetAvailabilityAsync(catalogId, begin, end, CancellationToken.None);
@@ -99,7 +100,7 @@ namespace DataSource
             var controller = _fixture.Controller;
             await controller.InitializeAsync(default!, default!, CancellationToken.None);
 
-            var catalogId = InMemory.AccessibleCatalogId;
+            var catalogId = Sample.AccessibleCatalogId;
             var actual = await controller.GetTimeRangeAsync(catalogId, CancellationToken.None);
 
             Assert.Equal(DateTime.MinValue, actual.Begin);
@@ -113,7 +114,7 @@ namespace DataSource
             await controller.InitializeAsync(default!, default!, CancellationToken.None);
 
             var day = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
-            var catalogId = InMemory.AccessibleCatalogId;
+            var catalogId = Sample.AccessibleCatalogId;
             var actual = await controller.IsDataOfDayAvailableAsync(catalogId, day, CancellationToken.None);
 
             Assert.True(actual);
@@ -130,16 +131,16 @@ namespace DataSource
             var samplePeriod = TimeSpan.FromSeconds(1);
 
             // resource 1
-            var resourcePath1 = $"{InMemory.AccessibleCatalogId}/V1/1_s";
-            var catalogItem1 = (await controller.GetCatalogAsync(InMemory.AccessibleCatalogId, CancellationToken.None)).Find(resourcePath1);
+            var resourcePath1 = $"{Sample.AccessibleCatalogId}/V1/1_s";
+            var catalogItem1 = (await controller.GetCatalogAsync(Sample.AccessibleCatalogId, CancellationToken.None)).Find(resourcePath1);
             var catalogItemRequest1 = new CatalogItemRequest(catalogItem1, default, default!);
 
             var pipe1 = new Pipe();
             var dataWriter1 = pipe1.Writer;
 
             // resource 2
-            var resourcePath2 = $"{InMemory.AccessibleCatalogId}/T1/1_s";
-            var catalogItem2 = (await controller.GetCatalogAsync(InMemory.AccessibleCatalogId, CancellationToken.None)).Find(resourcePath2);
+            var resourcePath2 = $"{Sample.AccessibleCatalogId}/T1/1_s";
+            var catalogItem2 = (await controller.GetCatalogAsync(Sample.AccessibleCatalogId, CancellationToken.None)).Find(resourcePath2);
             var catalogItemRequest2 = new CatalogItemRequest(catalogItem2, default, default!);
 
             var pipe2 = new Pipe();
@@ -200,19 +201,19 @@ namespace DataSource
 
             await Task.WhenAll(writing, reading);
 
-            // /IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean
-            Assert.Equal(-0.059998, result1[0], precision: 6);
-            Assert.Equal(8.191772, result1[10 * 60], precision: 6);
-            Assert.Equal(16.290592, result1[01 * 60 * 60], precision: 6);
-            Assert.Equal(15.046221, result1[02 * 60 * 60], precision: 6);
-            Assert.Equal(15.274073, result1[10 * 60 * 60], precision: 6);
+            // /SAMPLE/ACCESSIBLE/V1/1_s
+            Assert.Equal(6.5, result1[0], precision: 1);
+            Assert.Equal(6.7, result1[10 * 60 + 1], precision: 1);
+            Assert.Equal(7.9, result1[01 * 60 * 60 + 2], precision: 1);
+            Assert.Equal(8.1, result1[02 * 60 * 60 + 3], precision: 1);
+            Assert.Equal(7.5, result1[10 * 60 * 60 + 4], precision: 1);
 
-            // /IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean
-            Assert.Equal(-0.059998, result2[0], precision: 6);
-            Assert.Equal( 8.191772, result2[10 * 60], precision: 6);
-            Assert.Equal(16.290592, result2[01 * 60 * 60], precision: 6);
-            Assert.Equal(15.046221, result2[02 * 60 * 60], precision: 6);
-            Assert.Equal(15.274073, result2[10 * 60 * 60], precision: 6);      
+            // /SAMPLE/ACCESSIBLE/T1/1_s
+            Assert.Equal(6.5, result2[0], precision: 1);
+            Assert.Equal(6.7, result2[10 * 60 + 1], precision: 1);
+            Assert.Equal(7.9, result2[01 * 60 * 60 + 2], precision: 1);
+            Assert.Equal(8.1, result2[02 * 60 * 60 + 3], precision: 1);
+            Assert.Equal(7.5, result2[10 * 60 * 60 + 4], precision: 1);      
         }
 
         [Fact]
@@ -223,8 +224,8 @@ namespace DataSource
 
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 02, 0, 0, 1, DateTimeKind.Utc);
-            var resourcePath = "/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s";
-            var catalogItem = (await controller.GetCatalogAsync(InMemory.AccessibleCatalogId, CancellationToken.None)).Find(resourcePath);
+            var resourcePath = "/SAMPLE/ACCESSIBLE/T1/1_s";
+            var catalogItem = (await controller.GetCatalogAsync(Sample.AccessibleCatalogId, CancellationToken.None)).Find(resourcePath);
             var catalogItemRequest = new CatalogItemRequest(catalogItem, default, default!);
 
             var stream = controller.ReadAsStream(
@@ -252,11 +253,11 @@ namespace DataSource
             });
 
             Assert.Equal(86401 * sizeof(double), stream.Length);
-            Assert.Equal(-0.059998, result[0], precision: 6);
-            Assert.Equal(8.191772, result[10 * 60], precision: 6);
-            Assert.Equal(16.290592, result[01 * 60 * 60], precision: 6);
-            Assert.Equal(15.046221, result[02 * 60 * 60], precision: 6);
-            Assert.Equal(15.274073, result[10 * 60 * 60], precision: 6);
+            Assert.Equal(6.5, result[0], precision: 1);
+            Assert.Equal(6.7, result[10 * 60 + 1], precision: 1);
+            Assert.Equal(7.9, result[01 * 60 * 60 + 2], precision: 1);
+            Assert.Equal(8.1, result[02 * 60 * 60 + 3], precision: 1);
+            Assert.Equal(7.5, result[10 * 60 * 60 + 4], precision: 1);
         }
     }
 }

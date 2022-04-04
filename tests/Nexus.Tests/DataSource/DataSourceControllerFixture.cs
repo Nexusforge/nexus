@@ -9,10 +9,10 @@ namespace DataSource
     {
         public DataSourceControllerFixture()
         {
-            var dataSource = new InMemory();
+            var dataSource = new Sample();
 
             var registration = new DataSourceRegistration(
-                Type: typeof(InMemory).FullName!, 
+                Type: typeof(Sample).FullName!, 
                 ResourceLocator: new Uri("memory://localhost"),
                 Configuration: new Dictionary<string, string>(),
                 Publish: true);
@@ -23,6 +23,7 @@ namespace DataSource
                 dataSource,
                 registration,
                 userConfiguration,
+                default!,
                 NullLogger<DataSourceController>.Instance);
         }
 

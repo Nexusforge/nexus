@@ -22,7 +22,7 @@ namespace Services
 
             Mock.Get(extensionHive)
               .Setup(extensionHive => extensionHive.GetInstance<IDataSource>(It.IsAny<string>()))
-              .Returns(new InMemory());
+              .Returns(new Sample());
 
             var registration = new DataSourceRegistration(
                 Type: default!, 
@@ -30,7 +30,7 @@ namespace Services
                 Configuration: new Dictionary<string, string>(),
                 Publish: true);
 
-            var expectedCatalog = InMemory.LoadCatalog("/A/B/C");
+            var expectedCatalog = Sample.LoadCatalog("/A/B/C");
 
             var catalogState = new CatalogState(
                 Root: default!,
@@ -66,7 +66,8 @@ namespace Services
                 appState, 
                 httpContextAccessor,
                 extensionHive,
-                default!, 
+                default!,
+                default!,
                 loggerFactory);
 
             // Act
@@ -99,7 +100,14 @@ namespace Services
             var exportParameters = new ExportParameters(default, default, default, default!, default!, default!);
 
             // Act
-            var dataControllerService = new DataControllerService(new AppState(), default!, extensionHive, default!, loggerFactory);
+            var dataControllerService = new DataControllerService(
+                new AppState(), 
+                default!,
+                extensionHive,
+                default!,
+                default!,
+                loggerFactory);
+
             var actual = await dataControllerService.GetDataWriterControllerAsync(resourceLocator, exportParameters, CancellationToken.None);
 
             // Assert

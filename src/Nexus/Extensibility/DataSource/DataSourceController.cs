@@ -1,5 +1,6 @@
 using Nexus.Core;
 using Nexus.DataModel;
+using Nexus.Services;
 using Nexus.Utilities;
 using System.Buffers;
 using System.Collections.Concurrent;
@@ -51,7 +52,8 @@ namespace Nexus.Extensibility
     {
         #region Fields
 
-        public ConcurrentDictionary<string, ResourceCatalog> _catalogCache = null!;
+        private IAggregationService _aggregationService;
+        private ConcurrentDictionary<string, ResourceCatalog> _catalogCache = null!;
 
         #endregion
 
@@ -61,12 +63,15 @@ namespace Nexus.Extensibility
             IDataSource dataSource, 
             DataSourceRegistration registration,
             IReadOnlyDictionary<string, string> userConfiguration,
+            IAggregationService aggregationService,
             ILogger<DataSourceController> logger)
         {
             DataSource = dataSource;
             DataSourceRegistration = registration;
             UserConfiguration = userConfiguration;
             Logger = logger;
+
+            _aggregationService = aggregationService;
         }
 
         #endregion
