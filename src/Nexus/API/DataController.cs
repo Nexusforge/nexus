@@ -22,7 +22,7 @@ namespace Nexus.Controllers
     {
         #region Fields
 
-        private GeneralOptions _generalOptions;
+        private DataOptions _dataOptions;
         private AppState _appState;
         private IDataControllerService _dataControllerService;
         private ILoggerFactory _loggerFactory;
@@ -33,12 +33,12 @@ namespace Nexus.Controllers
 
         public DataController(
             AppState appState,
-            IOptions<GeneralOptions> generalOptions,
+            IOptions<DataOptions> dataOptions,
             IDataControllerService dataControllerService,
             ILoggerFactory loggerFactory)
         {
             _appState = appState;
-            _generalOptions = generalOptions.Value;
+            _dataOptions = dataOptions.Value;
             _dataControllerService = dataControllerService;
             _loggerFactory = loggerFactory;
         }
@@ -89,8 +89,8 @@ namespace Nexus.Controllers
                 var stream = controller.ReadAsStream(
                     begin, 
                     end,
-                    catalogItemRequest, 
-                    _generalOptions,
+                    catalogItemRequest,
+                    _dataOptions,
                     _loggerFactory.CreateLogger<DataSourceController>());
 
                 Response.Headers.ContentLength = stream.Length;

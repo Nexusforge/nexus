@@ -24,7 +24,7 @@ namespace Nexus.Services
     {
         #region Fields
 
-        private GeneralOptions _generalOptions;
+        private DataOptions _dataOptions;
         private ILogger _logger;
         private ILoggerFactory _loggerFactory;
         private IDatabaseManager _databaseManager;
@@ -37,13 +37,13 @@ namespace Nexus.Services
         public DataService(
             IDataControllerService dataControllerService,
             IDatabaseManager databaseManager,
-            IOptions<GeneralOptions> generalOptions,
+            IOptions<DataOptions> dataOptions,
             ILogger<DataService> logger,
             ILoggerFactory loggerFactory)
         {
             _dataControllerService = dataControllerService;
             _databaseManager = databaseManager;
-            _generalOptions = generalOptions.Value;
+            _dataOptions = dataOptions.Value;
             _logger = logger;
             _loggerFactory = loggerFactory;
 
@@ -189,7 +189,7 @@ namespace Nexus.Services
                 exportParameters.End,
                 exportContext.SamplePeriod,
                 readingGroups.ToArray(),
-                _generalOptions,
+                _dataOptions,
                 ReadProgress,
                 logger,
                 cts.Token);

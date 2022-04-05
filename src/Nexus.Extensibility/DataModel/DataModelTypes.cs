@@ -21,9 +21,9 @@
         Mean = 20,
 
         /// <summary>
-        /// Represents the polar mean of the original dataset.
+        /// Represents the polar mean of the original dataset using the maximum angle of 360 degrees.
         /// </summary>
-        MeanPolar = 30,
+        Mean360 = 30,
 
         /// <summary>
         /// Represents the minimum of the original dataset.

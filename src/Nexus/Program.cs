@@ -131,12 +131,13 @@ void AddServices(
     services.AddSingleton<IJobService, JobService>();
     services.AddSingleton<IDataControllerService, DataControllerService>();
     services.AddSingleton<ICatalogManager, CatalogManager>();
-    services.AddSingleton<IAggregationService, AggregationService>();
+    services.AddSingleton<IProcessingService, ProcessingService>();
     services.AddSingleton<IDatabaseManager, DatabaseManager>();
     services.AddSingleton<IExtensionHive, ExtensionHive>();
     services.AddSingleton<IUserManagerWrapper, UserManagerWrapper>();
 
     services.Configure<GeneralOptions>(configuration.GetSection(GeneralOptions.Section));
+    services.Configure<DataOptions>(configuration.GetSection(DataOptions.Section));
     services.Configure<PathsOptions>(configuration.GetSection(PathsOptions.Section));
     services.Configure<SecurityOptions>(configuration.GetSection(SecurityOptions.Section));
     services.Configure<ServerOptions>(configuration.GetSection(ServerOptions.Section));

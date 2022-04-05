@@ -116,7 +116,7 @@ namespace Nexus.Extensibility.Tests
         }
 
         [Theory]
-        [InlineData("00:00:01", RepresentationKind.MeanPolar, "1_s_mean_polar")]
+        [InlineData("00:00:01", RepresentationKind.Mean360Deg, "1_s_mean_polar")]
         public void CanInferRepresentationId(string samplePeriodString, RepresentationKind kind, string expected)
         {
             var samplePeriod = TimeSpan.Parse(samplePeriodString);

@@ -179,7 +179,7 @@ namespace Nexus.Extensibility
                         var request = catalogItemRequestPipeReader.Request;
                         var catalogItem = request.Item;
 
-                        if (request.BaseItem != null)
+                        if (request.BaseItem is not null)
                         {
                             var originalResource = request.Item.Resource;
 

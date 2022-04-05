@@ -127,7 +127,7 @@ namespace Services
             var dataService = new DataService(
                 dataControllerService, 
                 databaseManager,
-                Options.Create(new GeneralOptions()),
+                Options.Create(new DataOptions()),
                 logger, 
                 loggerFactory);
 

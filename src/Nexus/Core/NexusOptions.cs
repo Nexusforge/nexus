@@ -44,7 +44,13 @@ namespace Nexus.Core
     {
         public const string Section = "General";
         public string? ApplicationName { get; set; }
+    }
+
+    internal record DataOptions() : NexusOptionsBase
+    {
+        public const string Section = "Data";
         public uint ReadChunkSize { get; set; }
+        public double AggregationNaNThreshold { get; set; }
     }
 
     internal record ServerOptions() : NexusOptionsBase

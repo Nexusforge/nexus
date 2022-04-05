@@ -58,7 +58,7 @@ namespace Nexus.Core
         /// <summary>
         /// A boolean that indicates if the token has been revoked.
         /// </summary>
-        public bool IsRevoked => Revoked != null;
+        public bool IsRevoked => Revoked is not null;
 
         /// <summary>
         /// A boolean that indicates if the token is active.

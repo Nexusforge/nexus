@@ -25,7 +25,7 @@ namespace Nexus.Services
         private AppState _appState;
         private IHttpContextAccessor _httpContextAccessor;
         private IExtensionHive _extensionHive;
-        private IAggregationService _aggregationService;
+        private IProcessingService _processingService;
         private ILogger _logger;
         private ILoggerFactory _loggerFactory;
         private Dictionary<string, string> _defaultUserConfiguration = new Dictionary<string, string>();
@@ -34,14 +34,14 @@ namespace Nexus.Services
             AppState appState,
             IHttpContextAccessor httpContextAccessor,
             IExtensionHive extensionHive,
-            IAggregationService aggregationService,
+            IProcessingService processingService,
             ILogger<DataControllerService> logger,
             ILoggerFactory loggerFactory)
         {
             _appState = appState;
             _httpContextAccessor = httpContextAccessor;
             _extensionHive = extensionHive;
-            _aggregationService = aggregationService;
+            _processingService = processingService;
             _logger = logger;
             _loggerFactory = loggerFactory;
         }
@@ -54,7 +54,7 @@ namespace Nexus.Services
             var logger2 = _loggerFactory.CreateLogger($"{registration.Type} - {registration.ResourceLocator}");
             var dataSource = _extensionHive.GetInstance<IDataSource>(registration.Type);
             var userConfiguration = GetUserConfiguration();
-            var controller = new DataSourceController(dataSource, registration, userConfiguration, _aggregationService, logger1);
+            var controller = new DataSourceController(dataSource, registration, userConfiguration, _processingService, logger1);
 
             var actualCatalogCache = _appState.CatalogState.Cache.GetOrAdd(
                 registration,

@@ -6,19 +6,18 @@ namespace Nexus.Utilities
 {
     internal static class BufferUtilities
     {
-        public static void ApplyRepresentationStatusByDataType(NexusDataType dataType, Memory<byte> data, Memory<byte> status, Memory<double> target)
+        public static void ApplyRepresentationStatusByDataType(NexusDataType dataType, ReadOnlyMemory<byte> data, ReadOnlyMemory<byte> status, Memory<double> target)
         {
             var targetType = NexusCoreUtilities.GetTypeFromNexusDataType(dataType);
 
             var method = typeof(BufferUtilities)
-                .GetMethod(nameof(BufferUtilities.InternalApplyRepresentationStatusByDataType), BindingFlags.NonPublic | BindingFlags.Static)?
+                .GetMethod(nameof(BufferUtilities.InternalApplyRepresentationStatusByDataType), BindingFlags.NonPublic | BindingFlags.Static)!
                 .MakeGenericMethod(targetType);
 
-            if (method is not null)
-                method.Invoke(null, new object[] { data, status, target });
+            method.Invoke(null, new object[] { data, status, target });
         }
 
-        private static void InternalApplyRepresentationStatusByDataType<T>(Memory<byte> data, Memory<byte> status, Memory<double> target)
+        private static void InternalApplyRepresentationStatusByDataType<T>(ReadOnlyMemory<byte> data, ReadOnlyMemory<byte> status, Memory<double> target)
             where T : unmanaged
         {
             BufferUtilities.ApplyRepresentationStatus<T>(data.Cast<byte, T>(), status, target);

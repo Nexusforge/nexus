@@ -32,3 +32,18 @@ Not all combination of base sample period and target sample period are possible.
 |---------------|-----------|--------------|--------------|
 | Aggregation   | ✓         | ✓            | x           |
 | Resampling    | ✓         | ✓            | ✓           |
+
+# Caching
+
+TBD
+
+All frequencies are required to be multiples of each other, namely these are:
+
+- begin
+- end
+- item -> representation -> sample period
+- base item -> representation -> sample period
+ 
+This makes aggregation and caching much easier. A drawback of this approach is that for a user who selects e.g. a 10-minute value that should be resampled to 1 s, it is required to also choose the begin and end parameters to be a multiple of 10-minutes. Selecting a time period < 10 minutes is not possible.
+
+*Note:* For the cache mechanism to work reliably it is required that the data of the base dataset remains unchanged, i.e. existing data should not be modified afterwards. In case a modification cannot be avoided, the cache for the affected datasets should be cleared. Due to this, there should be no random number generator data source added to Nexus. In future it might be worth to think about adding a `bool disableCache` parameter to the representation's constructor to gain more fine-grained control over caching.

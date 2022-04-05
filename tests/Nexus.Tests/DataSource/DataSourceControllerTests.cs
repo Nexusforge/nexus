@@ -194,7 +194,7 @@ namespace DataSource
                 end, 
                 samplePeriod,
                 readingGroups,
-                new GeneralOptions() { ReadChunkSize = 20000 },
+                new DataOptions() { ReadChunkSize = 20000 },
                 progress: default,
                 NullLogger<DataSourceController>.Instance,
                 CancellationToken.None);
@@ -232,7 +232,7 @@ namespace DataSource
                 begin,
                 end,
                 catalogItemRequest,
-                new GeneralOptions() { ReadChunkSize = 10000 },
+                new DataOptions() { ReadChunkSize = 10000 },
                 NullLogger<DataSourceController>.Instance);
 
             double[] result = new double[86401];

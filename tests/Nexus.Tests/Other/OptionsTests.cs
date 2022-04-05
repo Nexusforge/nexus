@@ -9,6 +9,7 @@ namespace Other
         private static object _lock = new object();
 
         [InlineData(GeneralOptions.Section, typeof(GeneralOptions))]
+        [InlineData(DataOptions.Section, typeof(DataOptions))]
         [InlineData(ServerOptions.Section, typeof(ServerOptions))]
         [InlineData(PathsOptions.Section, typeof(PathsOptions))]
         [InlineData(SecurityOptions.Section, typeof(SecurityOptions))]
