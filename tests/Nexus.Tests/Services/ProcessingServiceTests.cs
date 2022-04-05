@@ -19,8 +19,8 @@ namespace Services
         [InlineData(RepresentationKind.Mean,        0.90, new int[] { 0, 1, 2, 3, -4, 5, 6, 7, 0, 2, 97, 13 },  new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, 12)]
         [InlineData(RepresentationKind.Mean,        0.99, new int[] { 0, 1, 2, 3, -4, 5, 6, 7, 0, 2, 97, 13 },  new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, double.NaN)]
 
-        [InlineData(RepresentationKind.Mean360,     0.90, new int[] { 0, 1, 2, 3, -4, 5, 6, 7, 0, 2, 97, 13 },  new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, 9.25)]
-        [InlineData(RepresentationKind.Mean360,     0.99, new int[] { 0, 1, 2, 3, -4, 5, 6, 7, 0, 2, 97, 13 },  new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, double.NaN)]
+        [InlineData(RepresentationKind.MeanPolarDeg,     0.90, new int[] { 0, 1, 2, 3, -4, 5, 6, 7, 0, 2, 97, 13 },  new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, 9.25)]
+        [InlineData(RepresentationKind.MeanPolarDeg,     0.99, new int[] { 0, 1, 2, 3, -4, 5, 6, 7, 0, 2, 97, 13 },  new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, double.NaN)]
 
         [InlineData(RepresentationKind.Sum,         0.90, new int[] { 0, 1, 2, 3, -4, 5, 6, 7, 0, 2, 97, 13 },  new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, 132)]
         [InlineData(RepresentationKind.Sum,         0.99, new int[] { 0, 1, 2, 3, -4, 5, 6, 7, 0, 2, 97, 13 },  new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, double.NaN)]
@@ -32,7 +32,7 @@ namespace Services
         [InlineData(RepresentationKind.MaxBitwise,  0.99, new int[] { 2, 2, 2, 3, 2, 3, 65, 2, 98, 14 },        new byte[] { 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, double.NaN)]
 
         [Theory]
-        public void CanAggregate(RepresentationKind kind, double nanThreshold, int[] data, byte[] status, double expected)
+        public void CanAggregateSingle(RepresentationKind kind, double nanThreshold, int[] data, byte[] status, double expected)
         {
             // Arrange
             var options = Options.Create(new DataOptions() { AggregationNaNThreshold = nanThreshold });
@@ -46,6 +46,36 @@ namespace Services
 
             // Assert
             Assert.Equal(expected, actual[0], precision: 2);
+        }
+
+        [Fact]
+        public void CanAggregateMultiple()
+        {
+            // Arrange
+            var data = new int[]
+            {
+                0, 1, 2, 3, -4, 5, 6, 7, 0, 2, 97, 13,
+                0, 1, 2, 3, -4, 5, 6, 7, 3, 2, 87, 12
+            };
+
+            var status = new byte[]
+            {
+                1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1,
+                1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+            };
+
+            var expected = new double[] { 132, 123 };
+            var options = Options.Create(new DataOptions());
+            var processingService = new ProcessingService(options);
+            var blockSize = data.Length / 2;
+            var actual = new double[2];
+            var byteData = MemoryMarshal.AsBytes<int>(data).ToArray();
+
+            // Act
+            processingService.Aggregate(NexusDataType.INT32, RepresentationKind.Sum, byteData, status, targetBuffer: actual, blockSize);
+
+            // Assert
+            Assert.True(expected.SequenceEqual(actual));
         }
     }
 }

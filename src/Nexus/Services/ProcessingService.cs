@@ -58,7 +58,7 @@ namespace Nexus.Services
             switch (kind)
             {
                 case RepresentationKind.Mean:
-                case RepresentationKind.Mean360:
+                case RepresentationKind.MeanPolarDeg:
                 case RepresentationKind.Min:
                 case RepresentationKind.Max:
                 case RepresentationKind.Std:
@@ -108,7 +108,7 @@ namespace Nexus.Services
 
                     break;
 
-                case RepresentationKind.Mean360:
+                case RepresentationKind.MeanPolarDeg:
 
                     var sin = new double[targetBuffer.Length];
                     var cos = new double[targetBuffer.Length];

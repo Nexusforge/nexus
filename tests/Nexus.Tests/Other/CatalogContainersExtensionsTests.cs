@@ -130,7 +130,7 @@ namespace Other
             var request1 = await root.TryFindAsync("/A/B/C/T1/1_ms", CancellationToken.None);
             var request2 = await root.TryFindAsync("/A/B/C/T1/10_ms", CancellationToken.None);
             var request3 = await root.TryFindAsync("/A/B/C/T1/100_ms", CancellationToken.None);
-            var request4 = await root.TryFindAsync("/A/B/C/T1/1_s_mean_polar", CancellationToken.None);
+            var request4 = await root.TryFindAsync("/A/B/C/T1/1_s_mean_polar_deg", CancellationToken.None);
             var request5 = await root.TryFindAsync("/A/B/C/T1/1_s_min_bitwise#base=1_ms", CancellationToken.None);
             var request6 = await root.TryFindAsync("/A/B/C/T1/1_s_max_bitwise#base=100_ms", CancellationToken.None);
 
@@ -150,7 +150,7 @@ namespace Other
 
             Assert.Equal("/A/B/C/T1/1_ms", request1.Item.ToPath());
             Assert.Equal("/A/B/C/T1/100_ms", request3.Item.ToPath());
-            Assert.Equal("/A/B/C/T1/1_s_mean_polar", request4.Item.ToPath());
+            Assert.Equal("/A/B/C/T1/1_s_mean_polar_deg", request4.Item.ToPath());
             Assert.Equal("/A/B/C/T1/1_s_min_bitwise", request5.Item.ToPath());
             Assert.Equal("/A/B/C/T1/1_s_max_bitwise", request6.Item.ToPath());
 

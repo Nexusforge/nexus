@@ -23,7 +23,7 @@
         /// <summary>
         /// Represents the polar mean of the original dataset using the maximum angle of 360 degrees.
         /// </summary>
-        Mean360 = 30,
+        MeanPolarDeg = 30,
 
         /// <summary>
         /// Represents the minimum of the original dataset.
