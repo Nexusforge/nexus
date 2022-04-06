@@ -5,7 +5,6 @@ using Nexus.Utilities;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.ComponentModel.DataAnnotations;
-using System.IO.Pipelines;
 
 namespace Nexus.Extensibility
 {
@@ -53,6 +52,7 @@ namespace Nexus.Extensibility
         #region Fields
 
         private IProcessingService _processingService;
+        private ICacheService _cacheService;
         private ConcurrentDictionary<string, ResourceCatalog> _catalogCache = null!;
 
         #endregion
@@ -64,6 +64,7 @@ namespace Nexus.Extensibility
             DataSourceRegistration registration,
             IReadOnlyDictionary<string, string> userConfiguration,
             IProcessingService processingService,
+            ICacheService cacheService,
             ILogger<DataSourceController> logger)
         {
             DataSource = dataSource;
@@ -72,6 +73,7 @@ namespace Nexus.Extensibility
             Logger = logger;
 
             _processingService = processingService;
+            _cacheService = cacheService;
         }
 
         #endregion
@@ -201,11 +203,6 @@ namespace Nexus.Extensibility
             return (await DataSource.GetAvailabilityAsync(catalogId, day, day.AddDays(1), cancellationToken)) > 0;
         }
 
-        public record ReadUnit(
-            ReadRequest ReadRequest,
-            CatalogItemRequest CatalogItemRequest,
-            PipeWriter DataWriter);
-
         public async Task ReadAsync(
             DateTime begin,
             DateTime end,
@@ -214,63 +211,66 @@ namespace Nexus.Extensibility
             IProgress<double> progress,
             CancellationToken cancellationToken)
         {
-            var count = catalogItemRequestPipeWriters.Length;
             var memoryOwners = new List<IMemoryOwner<byte>>();
-
-            /* prepare requests variable */
-            var readUnits = catalogItemRequestPipeWriters.Select(catalogItemRequestPipeWriter =>
-            {
-                var (catalogItemRequest, dataWriter) = catalogItemRequestPipeWriter;
-                var item = catalogItemRequest.BaseItem is null ? catalogItemRequest.Item : catalogItemRequest.BaseItem;
-
-                /* buffers */
-                var elementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, item.Representation.SamplePeriod);
-                var (dataOwner, dataMemory, statusOwner, statusMemory) = PrepareBuffers(elementCount, item.Representation.ElementSize);
-
-                memoryOwners.Add(dataOwner);
-                memoryOwners.Add(statusOwner);
-
-                /* read request */
-
-                /* _catalogMap is guaranteed to contain the current catalog 
-                 * because GetCatalogAsync is called before ReadAsync */
-                if (_catalogCache.TryGetValue(item.Catalog.Id, out var catalog))
-                {
-                    var originalCatalogItem = catalog.Find(item.ToPath());
-                    var readRequest = new ReadRequest(originalCatalogItem, dataMemory, statusMemory);
-
-                    return new ReadUnit(readRequest, catalogItemRequest, dataWriter);
-                }
-
-                else
-                {
-                    throw new Exception($"Cannot find catalog {item.Catalog.Id}.");
-                }
-                
-            }).ToArray();
 
             try
             {
-                /* read data */
-                var requests = readUnits
+                /* 1. prepare read units */
+                var (originalUnits, processingUnits) = await PrepareReadUnitsAsync(
+                    begin,
+                    end, 
+                    catalogItemRequestPipeWriters, 
+                    memoryOwners);
+
+                /* 2. read data from sources */
+                
+                /* 2.1 original data */
+                var readRequests = originalUnits
                     .Select(readUnit => readUnit.ReadRequest)
                     .ToArray();
 
                 await DataSource.ReadAsync(
                     begin,
                     end,
-                    requests,
+                    readRequests,
                     progress,
                     cancellationToken);
 
-                /* write data to pipe */
+                /* 2.2 processing data */
+                foreach (var readUnit in processingUnits)
+                {
+                    var slices = readUnit.Slices!
+                        .Where(slice => !slice.FromCache)
+                        .ToArray();
+
+                    foreach (var slice in slices)
+                    {
+                        var readRequest = readUnit.ReadRequest;
+                        var elementSize = readRequest.CatalogItem.Representation.ElementSize;
+
+                        var slicedReadRequest = readRequest with
+                        {
+                            Data = readRequest.Data.Slice(slice.Offset * elementSize, slice.Length * elementSize),
+                            Status = readRequest.Status.Slice(slice.Offset, slice.Length),
+                        };
+
+                        await DataSource.ReadAsync(
+                            slice.Begin,
+                            slice.End,
+                            new[] { slicedReadRequest },
+                            progress,
+                            cancellationToken);
+                    }
+                }
+
+                /* 3. write data to pipes */
                 var targetElementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, samplePeriod);
                 var targetByteCount = sizeof(double) * targetElementCount;
-                var dataTasks = new List<ValueTask<FlushResult>>(capacity: catalogItemRequestPipeWriters.Length);
-                var statusTasks = new List<ValueTask<FlushResult>>(capacity: catalogItemRequestPipeWriters.Length);
+                var readingTasks = new List<Task>(capacity: catalogItemRequestPipeWriters.Length);
 
-                foreach (var (readRequest, catalogItemRequest, dataWriter) in readUnits)
+                foreach (var readUnit in originalUnits.Concat(processingUnits))
                 {
+                    var (readRequest, catalogItemRequest, dataWriter) = readUnit;
                     var (_, data, status) = readRequest;
 
                     using var scope = Logger.BeginScope(new Dictionary<string, object>()
@@ -286,67 +286,68 @@ namespace Nexus.Extensibility
 
                     var targetBuffer = new CastMemoryManager<byte, double>(buffer).Memory;
 
-#warning this is blocking
-
-                    /* raw data */
-                    if (catalogItemRequest.BaseItem is null)
+                    readingTasks.Add(Task.Run(async () =>
                     {
-                        /* apply status */
-                        Logger.LogTrace("Merge status buffer and data buffer");
-
-                        BufferUtilities.ApplyRepresentationStatusByDataType(
-                            catalogItemRequest.Item.Representation.DataType,
-                            data,
-                            status,
-                            target: targetBuffer);
-                    }
-
-                    /* post processing */
-                    else
-                    {
-                        /* resample */
-                        if (catalogItemRequest.Item.Representation.Kind == RepresentationKind.Resampled)
+                        /* 3.1 original data */
+                        if (catalogItemRequest.BaseItem is null)
                         {
-                            Logger.LogTrace("Resample data");
-
-                            //var (dataOwner, dataMemory, statusOwner, statusMemory) = PrepareBuffers(targetElementCount, sizeof(double));
-
-                            //memoryOwners.Add(dataOwner);
-                            //memoryOwners.Add(statusOwner);
-
-                            throw new NotImplementedException();
+                            BufferUtilities.ApplyRepresentationStatusByDataType(
+                                catalogItemRequest.Item.Representation.DataType,
+                                data,
+                                status,
+                                target: targetBuffer);
                         }
 
-                        /* aggregate */
+                        /* 3.2 processing data */
                         else
                         {
-                            Logger.LogTrace("Aggregate data");
+                            Logger.LogTrace("Process data");
 
                             var baseItem = catalogItemRequest.BaseItem;
+                            var elementSize = baseItem.Representation.ElementSize;
                             var item = catalogItemRequest.Item;
                             var sourceSamplePeriod = baseItem.Representation.SamplePeriod;
                             var targetSamplePeriod = item.Representation.SamplePeriod;
                             var blockSize = (int)(targetSamplePeriod.Ticks / sourceSamplePeriod.Ticks);
 
-                            _processingService.Aggregate(
-                                item.Representation.DataType,
-                                item.Representation.Kind,
-                                readRequest.Data,
-                                readRequest.Status,
-                                targetBuffer: targetBuffer,
-                                blockSize);
-                        }
-                    }
+                            foreach (var slice in readUnit.Slices!)
+                            {
+                                var offset = (int)((slice.Begin - begin).Ticks / samplePeriod.Ticks);
+                                var length = (int)((slice.End - slice.Begin).Ticks / samplePeriod.Ticks);
+                                var slicedTargetBuffer = targetBuffer.Slice(offset, length);
 
-                    /* update progress */
-                    Logger.LogTrace("Advance data pipe writer by {DataLength} bytes", targetByteCount);
-                    dataWriter.Advance(targetByteCount);
-                    dataTasks.Add(dataWriter.FlushAsync());
+                                /* 3.2.1 load from cache */
+                                if (slice.FromCache)
+                                {
+                                    await _cacheService.LoadAsync(slicedTargetBuffer);
+                                }
+
+                                /* 3.2.2 calculate from loaded data */
+                                else
+                                {
+                                    _processingService.Process(
+                                        item.Representation.DataType,
+                                        item.Representation.Kind,
+                                        readRequest.Data.Slice(slice.Offset * elementSize, slice.Length * elementSize),
+                                        readRequest.Status.Slice(slice.Offset, slice.Length),
+                                        targetBuffer: slicedTargetBuffer,
+                                        blockSize);
+
+#warning _cacheService.SaveAsync
+                                }
+                            }
+                        }
+
+                        /* update progress */
+                        Logger.LogTrace("Advance data pipe writer by {DataLength} bytes", targetByteCount);
+                        dataWriter.Advance(targetByteCount);
+                        await dataWriter.FlushAsync();
+                    }));
                 }
 
                 /* wait for tasks to finish */
-                await NexusCoreUtilities.WhenAll(dataTasks.ToArray());
-                await NexusCoreUtilities.WhenAll(statusTasks.ToArray());
+#warning fail fast?
+                await Task.WhenAll(readingTasks);
             }
             finally
             {
@@ -355,6 +356,67 @@ namespace Nexus.Extensibility
                     memoryOwner.Dispose();
                 }
             }
+        }
+
+        private async Task<(ReadUnit[] OriginalUnits, ReadUnit[] ProcessingUnits)> PrepareReadUnitsAsync(
+            DateTime begin,
+            DateTime end,
+            CatalogItemRequestPipeWriter[] catalogItemRequestPipeWriters, 
+            List<IMemoryOwner<byte>> memoryOwners)
+        {
+            var originalUnits = new List<ReadUnit>();
+            var processingUnits = new List<ReadUnit>();
+
+            foreach (var catalogItemRequestPipeWriter in catalogItemRequestPipeWriters)
+            {
+                var (catalogItemRequest, dataWriter) = catalogItemRequestPipeWriter;
+
+                var item = catalogItemRequest.BaseItem is null
+                    ? catalogItemRequest.Item 
+                    : catalogItemRequest.BaseItem;
+
+                /* buffers */
+                var elementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, item.Representation.SamplePeriod);
+                var (dataOwner, dataMemory, statusOwner, statusMemory) = PrepareBuffers(elementCount, item.Representation.ElementSize);
+
+                memoryOwners.Add(dataOwner);
+                memoryOwners.Add(statusOwner);
+
+                /* catalog */
+
+                /* _catalogMap is guaranteed to contain the current catalog 
+                 * because GetCatalogAsync is called before ReadAsync */
+                if (_catalogCache.TryGetValue(item.Catalog.Id, out var catalog))
+                {
+                    var originalCatalogItem = catalog.Find(item.ToPath());
+                    var readRequest = new ReadRequest(originalCatalogItem, dataMemory, statusMemory);
+                    var readUnit = new ReadUnit(readRequest, catalogItemRequest, dataWriter);
+
+                    /* original data */
+                    if (readUnit.CatalogItemRequest.BaseItem is null ||
+                        readUnit.CatalogItemRequest.Item.Representation.Kind == RepresentationKind.Resampled)
+                    {
+                        originalUnits.Add(readUnit);
+                    }
+
+                    /* post processing */
+                    else
+                    {
+                        var currentSamplePeriod = readUnit.ReadRequest.CatalogItem.Representation.SamplePeriod;
+                        var slices = await NexusCoreUtilities.CalculateSlicesAsync(begin, end, currentSamplePeriod, _cacheService);
+
+                        readUnit.Slices = slices;
+                        processingUnits.Add(readUnit);
+                    }
+                }
+
+                else
+                {
+                    throw new Exception($"Cannot find catalog {item.Catalog.Id}.");
+                }
+            }
+
+            return (originalUnits.ToArray(), processingUnits.ToArray());
         }
 
         #endregion
@@ -405,11 +467,18 @@ namespace Nexus.Extensibility
                     var baseItemSamplePeriod = request.BaseItem.Representation.SamplePeriod;
                     DataSourceController.ValidateParameters(begin, end, baseItemSamplePeriod);
 
-                    // aggregation is only possible if sample period >= base sample period
-                    if (request.Item.Representation.Kind != RepresentationKind.Resampled)
+                    // resampling is only possible if base sample period <= sample period
+                    if (request.Item.Representation.Kind == RepresentationKind.Resampled)
+                    {
+                        if (baseItemSamplePeriod < samplePeriod)
+                            throw new ValidationException("Unable to resample data if the base sample period is <= the sample period.");
+                    }
+
+                    // aggregation is only possible if sample period > base sample period
+                    else
                     {
                         if (samplePeriod < baseItemSamplePeriod)
-                            throw new ValidationException("Unable to aggregate data if requested sample period is lower than the base sample period.");
+                            throw new ValidationException("Unable to aggregate data if the sample period is <= the base sample period.");
                     }
                 }
             }

@@ -11,7 +11,7 @@ namespace Nexus.Services
 {
     internal interface IProcessingService
     {
-        void Aggregate(
+        void Process(
             NexusDataType dataType,
             RepresentationKind kind,
             ReadOnlyMemory<byte> data,
@@ -29,7 +29,7 @@ namespace Nexus.Services
             _nanThreshold = dataOptions.Value.AggregationNaNThreshold;
         }
 
-        public void Aggregate(
+        public void Process(
             NexusDataType dataType,
             RepresentationKind kind,
             ReadOnlyMemory<byte> data,
@@ -40,13 +40,13 @@ namespace Nexus.Services
             var targetType = NexusCoreUtilities.GetTypeFromNexusDataType(dataType);
 
             var method = typeof(ProcessingService)
-                .GetMethod(nameof(ProcessingService.GenericAggregate), BindingFlags.Instance | BindingFlags.NonPublic)!
+                .GetMethod(nameof(ProcessingService.GenericProcess), BindingFlags.Instance | BindingFlags.NonPublic)!
                 .MakeGenericMethod(targetType);
 
-            method.Invoke(this, new object[] { kind, data, status, targetBuffer, blockSize});
+            method.Invoke(this, new object[] { kind, data, status, targetBuffer, blockSize });
         }
 
-        private void GenericAggregate<T>(
+        private void GenericProcess<T>(
             RepresentationKind kind,
             ReadOnlyMemory<byte> data,
             ReadOnlyMemory<byte> status,
@@ -57,6 +57,21 @@ namespace Nexus.Services
 
             switch (kind)
             {
+                case RepresentationKind.Resampled:
+
+                    var doubleData1 = new double[Tdata.Length];
+
+                    BufferUtilities.ApplyRepresentationStatus<T>(Tdata, status, target: doubleData1);
+
+                    var span = targetBuffer.Span;
+
+                    for (int i = 0; i < targetBuffer.Length; i++)
+                    {
+                        span[i] = doubleData1[i / blockSize];
+                    }
+
+                    break;
+
                 case RepresentationKind.Mean:
                 case RepresentationKind.MeanPolarDeg:
                 case RepresentationKind.Min:
@@ -65,10 +80,10 @@ namespace Nexus.Services
                 case RepresentationKind.Rms:
                 case RepresentationKind.Sum:
 
-                    var doubleData = new double[Tdata.Length];
+                    var doubleData2 = new double[Tdata.Length];
 
-                    BufferUtilities.ApplyRepresentationStatus<T>(Tdata, status, target: doubleData);
-                    ApplyAggregationFunction(kind, blockSize, doubleData, targetBuffer);
+                    BufferUtilities.ApplyRepresentationStatus<T>(Tdata, status, target: doubleData2);
+                    ApplyAggregationFunction(kind, blockSize, doubleData2, targetBuffer);
 
                     break;
 

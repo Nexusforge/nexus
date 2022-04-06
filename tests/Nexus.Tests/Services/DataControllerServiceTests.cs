@@ -68,6 +68,7 @@ namespace Services
                 extensionHive,
                 default!,
                 default!,
+                default!,
                 loggerFactory);
 
             // Act
@@ -104,6 +105,7 @@ namespace Services
                 new AppState(), 
                 default!,
                 extensionHive,
+                default!,
                 default!,
                 default!,
                 loggerFactory);

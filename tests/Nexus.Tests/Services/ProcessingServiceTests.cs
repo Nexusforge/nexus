@@ -2,7 +2,6 @@
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Services;
-using Nexus.Utilities;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -42,7 +41,7 @@ namespace Services
             var byteData = MemoryMarshal.AsBytes<int>(data).ToArray();
 
             // Act
-            processingService.Aggregate(NexusDataType.INT32, kind, byteData, status, targetBuffer: actual, blockSize);
+            processingService.Process(NexusDataType.INT32, kind, byteData, status, targetBuffer: actual, blockSize);
 
             // Assert
             Assert.Equal(expected, actual[0], precision: 2);
@@ -68,11 +67,39 @@ namespace Services
             var options = Options.Create(new DataOptions());
             var processingService = new ProcessingService(options);
             var blockSize = data.Length / 2;
-            var actual = new double[2];
+            var actual = new double[expected.Length];
             var byteData = MemoryMarshal.AsBytes<int>(data).ToArray();
 
             // Act
-            processingService.Aggregate(NexusDataType.INT32, RepresentationKind.Sum, byteData, status, targetBuffer: actual, blockSize);
+            processingService.Process(NexusDataType.INT32, RepresentationKind.Sum, byteData, status, targetBuffer: actual, blockSize);
+
+            // Assert
+            Assert.True(expected.SequenceEqual(actual));
+        }
+
+        [Fact]
+        public void CanResample()
+        {
+            // Arrange
+            var data = new float[]
+            {
+                0, 1, 2, 3
+            };
+
+            var status = new byte[]
+            {
+                1, 1, 0, 1
+            };
+
+            var expected = new double[] { 0, 0, 0, 0, 1, 1, 1, 1, double.NaN, double.NaN, double.NaN, double.NaN, 3, 3, 3, 3};
+            var options = Options.Create(new DataOptions());
+            var processingService = new ProcessingService(options);
+            var blockSize = 4;
+            var actual = new double[expected.Length];
+            var byteData = MemoryMarshal.AsBytes<float>(data).ToArray();
+
+            // Act
+            processingService.Process(NexusDataType.FLOAT32, RepresentationKind.Resampled, byteData, status, targetBuffer: actual, blockSize);
 
             // Assert
             Assert.True(expected.SequenceEqual(actual));

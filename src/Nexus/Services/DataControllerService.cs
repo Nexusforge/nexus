@@ -26,6 +26,7 @@ namespace Nexus.Services
         private IHttpContextAccessor _httpContextAccessor;
         private IExtensionHive _extensionHive;
         private IProcessingService _processingService;
+        private ICacheService _cacheService;
         private ILogger _logger;
         private ILoggerFactory _loggerFactory;
         private Dictionary<string, string> _defaultUserConfiguration = new Dictionary<string, string>();
@@ -35,6 +36,7 @@ namespace Nexus.Services
             IHttpContextAccessor httpContextAccessor,
             IExtensionHive extensionHive,
             IProcessingService processingService,
+            ICacheService cacheService,
             ILogger<DataControllerService> logger,
             ILoggerFactory loggerFactory)
         {
@@ -42,6 +44,7 @@ namespace Nexus.Services
             _httpContextAccessor = httpContextAccessor;
             _extensionHive = extensionHive;
             _processingService = processingService;
+            _cacheService = cacheService;
             _logger = logger;
             _loggerFactory = loggerFactory;
         }
@@ -54,7 +57,7 @@ namespace Nexus.Services
             var logger2 = _loggerFactory.CreateLogger($"{registration.Type} - {registration.ResourceLocator}");
             var dataSource = _extensionHive.GetInstance<IDataSource>(registration.Type);
             var userConfiguration = GetUserConfiguration();
-            var controller = new DataSourceController(dataSource, registration, userConfiguration, _processingService, logger1);
+            var controller = new DataSourceController(dataSource, registration, userConfiguration, _processingService, _cacheService, logger1);
 
             var actualCatalogCache = _appState.CatalogState.Cache.GetOrAdd(
                 registration,

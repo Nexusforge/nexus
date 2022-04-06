@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Nexus.Core;
-using Nexus.DataModel;
 using Nexus.Services;
 using Nexus.Utilities;
 using System.ComponentModel.DataAnnotations;
