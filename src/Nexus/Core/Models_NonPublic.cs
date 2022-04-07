@@ -4,20 +4,14 @@ using System.IO.Pipelines;
 
 namespace Nexus.Core
 {
-    internal record struct ReadUnitSlice(
+    internal record struct Interval(
         DateTime Begin,
-        DateTime End,
-        int Offset,
-        int Length,
-        bool FromCache);
+        DateTime End);
 
     internal record ReadUnit(
         ReadRequest ReadRequest,
         CatalogItemRequest CatalogItemRequest,
-        PipeWriter DataWriter)
-    {
-        public ReadUnitSlice[]? Slices { get; set; }
-    }
+        PipeWriter DataWriter);
 
     internal record CatalogItemRequest(
         CatalogItem Item,

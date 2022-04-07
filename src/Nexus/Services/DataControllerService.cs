@@ -1,4 +1,5 @@
-﻿using Nexus.Core;
+﻿using Microsoft.Extensions.Options;
+using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using System.Collections.Concurrent;
@@ -23,6 +24,7 @@ namespace Nexus.Services
         public const string NexusConfigurationHeaderKey = "Nexus-Configuration";
 
         private AppState _appState;
+        private DataOptions _dataOptions;
         private IHttpContextAccessor _httpContextAccessor;
         private IExtensionHive _extensionHive;
         private IProcessingService _processingService;
@@ -37,6 +39,7 @@ namespace Nexus.Services
             IExtensionHive extensionHive,
             IProcessingService processingService,
             ICacheService cacheService,
+            IOptions<DataOptions> dataOptions,
             ILogger<DataControllerService> logger,
             ILoggerFactory loggerFactory)
         {
@@ -45,6 +48,7 @@ namespace Nexus.Services
             _extensionHive = extensionHive;
             _processingService = processingService;
             _cacheService = cacheService;
+            _dataOptions = dataOptions.Value;
             _logger = logger;
             _loggerFactory = loggerFactory;
         }
@@ -57,7 +61,15 @@ namespace Nexus.Services
             var logger2 = _loggerFactory.CreateLogger($"{registration.Type} - {registration.ResourceLocator}");
             var dataSource = _extensionHive.GetInstance<IDataSource>(registration.Type);
             var userConfiguration = GetUserConfiguration();
-            var controller = new DataSourceController(dataSource, registration, userConfiguration, _processingService, _cacheService, logger1);
+
+            var controller = new DataSourceController(
+                dataSource, 
+                registration, 
+                userConfiguration,
+                _processingService,
+                _cacheService,
+                _dataOptions,
+                logger1);
 
             var actualCatalogCache = _appState.CatalogState.Cache.GetOrAdd(
                 registration,

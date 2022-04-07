@@ -97,7 +97,7 @@ namespace DataWriter
                     return rowIndexFormat switch
                     {
                         "Index" => ("index", "1999", string.Format(nfi, "{0:N0}", value)),
-                        "Unix" => ("Unix time", "1577838799.00000", string.Format(nfi, "{0:N5}", (begin.AddSeconds(value) - new DateTime(1970, 01, 01)).TotalSeconds)),
+                        "Unix" => ("Unix time", "1577838799.00000", string.Format(nfi, "{0:N5}", (begin.AddSeconds(value) - new DateTime(1970, 01, 01, DateTimeKind.Utc)).TotalSeconds)),
                         "Excel" => ("Excel time", "43831.023136574", string.Format(nfi, "{0:N9}", begin.AddSeconds(value).ToOADate())),
                         "ISO 8601" => ("ISO 8601 time", "2020-01-01T00:33:19.0000000Z", begin.AddSeconds(value).ToString("o")),
                         _ => throw new Exception($"Row index format {rowIndexFormat} is not supported.")

@@ -74,10 +74,10 @@ namespace Services
                     return Task.FromResult(dataWriterController);
                 });
 
-            var databaseManager = Mock.Of<IDatabaseManager>();
+            var databaseService = Mock.Of<IDatabaseService>();
 
-            Mock.Get(databaseManager)
-                .Setup(databaseManager => databaseManager.TryReadFirstAttachment(
+            Mock.Get(databaseService)
+                .Setup(databaseService => databaseService.TryReadFirstAttachment(
                     It.IsAny<string>(),
                     It.IsAny<string>(),
                     It.IsAny<EnumerationOptions>(), 
@@ -88,8 +88,8 @@ namespace Services
                 }))
                 .Returns(true);
 
-            Mock.Get(databaseManager)
-                .Setup(databaseManager => databaseManager.WriteArtifact(It.IsAny<string>()))
+            Mock.Get(databaseService)
+                .Setup(databaseService => databaseService.WriteArtifact(It.IsAny<string>()))
                 .Returns<string>((fileName) => File.OpenWrite(Path.Combine(root, fileName)));
 
             var logger = Mock.Of<ILogger<DataService>>();
@@ -126,7 +126,7 @@ namespace Services
             // data service
             var dataService = new DataService(
                 dataControllerService, 
-                databaseManager,
+                databaseService,
                 Options.Create(new DataOptions()),
                 logger, 
                 loggerFactory);

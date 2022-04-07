@@ -1,12 +1,15 @@
 ﻿using Nexus.Core;
 using Nexus.DataModel;
-using Nexus.Services;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace Nexus.Utilities
 {
-    internal static class NexusCoreUtilities
+    internal static class NexusUtilities
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int Scale(TimeSpan value, TimeSpan samplePeriod) => (int)(value.Ticks / samplePeriod.Ticks);
+
         public static List<T> GetEnumValues<T>() where T : Enum
         {
             return Enum.GetValues(typeof(T)).Cast<T>().ToList();
@@ -44,56 +47,6 @@ namespace Nexus.Utilities
                 currentBegin += duration;
                 remainingPeriod -= duration;
             }
-        }
-
-        public static async Task<ReadUnitSlice[]> CalculateSlicesAsync(
-            DateTime begin,
-            DateTime end,
-            TimeSpan samplePeriod,
-            ICacheService cacheService)
-        {
-            var rawSlices = new List<(DateTime Begin, bool FromCache)>();
-            var currentBegin = begin;
-            var isFirstRound = true;
-
-            while (currentBegin < end)
-            {
-                var isCachePeriod = rawSlices.LastOrDefault().Item2;
-                var currentEnd = currentBegin.Date.AddDays(1);
-
-                if (await cacheService.IsInCacheAsync(currentBegin, currentEnd))
-                {
-                    if (isFirstRound || !isCachePeriod)
-                        rawSlices.Add((currentBegin, true));
-                }
-
-                else
-                {
-                    if (isFirstRound || isCachePeriod)
-                        rawSlices.Add((currentBegin, false));
-                }
-
-                isFirstRound = false;
-                currentBegin = currentBegin.Date.AddDays(1);
-            }
-
-            var slices = new ReadUnitSlice[rawSlices.Count];
-
-            for (int i = 0; i < rawSlices.Count; i++)
-            {
-                var sliceBegin = rawSlices[i].Begin;
-
-                var sliceEnd = i == rawSlices.Count - 1
-                    ? end
-                    : rawSlices[i + 1].Begin;
-
-                var offset = (int)((sliceBegin - begin).Ticks / samplePeriod.Ticks);
-                var length = (int)((sliceEnd - sliceBegin).Ticks / samplePeriod.Ticks);
-
-                slices[i] = new ReadUnitSlice(sliceBegin, sliceEnd, offset, length, rawSlices[i].FromCache);
-            }
-
-            return slices;
         }
 
 #pragma warning disable VSTHRD200 // Verwenden Sie das Suffix "Async" für asynchrone Methoden
@@ -165,7 +118,7 @@ namespace Nexus.Utilities
             if (instance is null)
                 throw new ArgumentNullException(nameof(instance));
 
-            return NexusCoreUtilities.InvokeGenericMethod(typeof(T), instance, methodName, bindingFlags, genericType, parameters);
+            return NexusUtilities.InvokeGenericMethod(typeof(T), instance, methodName, bindingFlags, genericType, parameters);
         }
 
         public static object? InvokeGenericMethod(Type methodParent, object instance, string methodName, BindingFlags bindingFlags, Type genericType, object[] parameters)

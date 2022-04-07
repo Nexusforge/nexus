@@ -26,7 +26,7 @@ namespace Nexus.Services
 
         private AppState _appState;
         private IDataControllerService _dataControllerService;
-        private IDatabaseManager _databaseManager;
+        private IDatabaseService _databaseService;
         private IUserManagerWrapper _userManagerWrapper;
         private SecurityOptions _securityOptions;
         private ILogger<CatalogManager> _logger;
@@ -38,14 +38,14 @@ namespace Nexus.Services
         public CatalogManager(
             AppState appState,
             IDataControllerService dataControllerService, 
-            IDatabaseManager databaseManager,
+            IDatabaseService databaseService,
             IUserManagerWrapper userManagerWrapper,
             IOptions<SecurityOptions> securityOptions,
             ILogger<CatalogManager> logger)
         {
             _appState = appState;
             _dataControllerService = dataControllerService;
-            _databaseManager = databaseManager;
+            _databaseService = databaseService;
             _userManagerWrapper = userManagerWrapper;
             _securityOptions = securityOptions.Value;
             _logger = logger;
@@ -148,7 +148,7 @@ namespace Nexus.Services
                 /* create catalog metadata */
                 CatalogMetadata catalogMetadata;
 
-                if (_databaseManager.TryReadCatalogMetadata(prototype.Registration.Path, out var jsonString2))
+                if (_databaseService.TryReadCatalogMetadata(prototype.Registration.Path, out var jsonString2))
                     catalogMetadata = JsonSerializer.Deserialize<CatalogMetadata>(jsonString2) ?? throw new Exception("catalogMetadata is null");
 
                 else
@@ -161,7 +161,7 @@ namespace Nexus.Services
                     prototype.DataSourceRegistration,
                     catalogMetadata,
                     this,
-                    _databaseManager,
+                    _databaseService,
                     _dataControllerService);
 
                 return catalogContainer;

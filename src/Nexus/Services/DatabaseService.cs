@@ -1,10 +1,11 @@
 ﻿using Microsoft.Extensions.Options;
 using Nexus.Core;
+using Nexus.DataModel;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Nexus.Services
 {
-    internal interface IDatabaseManager
+    internal interface IDatabaseService
     {
         /* /config/catalogs/catalog_id.json */
         bool TryReadCatalogMetadata(string catalogId, [NotNullWhen(true)] out string? catalogMetadata);
@@ -22,9 +23,13 @@ namespace Nexus.Services
         /* /artifacts */
         bool TryReadArtifact(string artifactId, [NotNullWhen(true)] out Stream? artifact);
         Stream WriteArtifact(string fileName);
+
+        /* /cache */
+        bool TryReadCacheEntry(CatalogItem catalogItem, DateTime begin, [NotNullWhen(true)] out Stream? cacheEntry);
+        bool TryWriteCacheEntry(CatalogItem catalogItem, DateTime begin, [NotNullWhen(true)] out Stream? cacheEntry);
     }
 
-    internal class DatabaseManager : IDatabaseManager
+    internal class DatabaseService : IDatabaseService
     {
         // generated, small files:
         //
@@ -42,7 +47,7 @@ namespace Nexus.Services
 
         private PathsOptions _pathsOptions;
 
-        public DatabaseManager(IOptions<PathsOptions> pathsOptions)
+        public DatabaseService(IOptions<PathsOptions> pathsOptions)
         {
             _pathsOptions = pathsOptions.Value;
         }
@@ -164,17 +169,12 @@ namespace Nexus.Services
         {
             artifact = null;
 
-            var artifactFolder = Path.Combine(_pathsOptions.Catalogs, artifactId);
+            var attachmentFile = Path.Combine(_pathsOptions.Artifacts, artifactId);
 
-            if (Directory.Exists(artifactFolder))
+            if (File.Exists(attachmentFile))
             {
-                var attachmentFile = Path.Combine(artifactFolder, artifactId);
-
-                if (File.Exists(attachmentFile))
-                {
-                    artifact = File.OpenRead(attachmentFile);
-                    return true;
-                }
+                artifact = File.OpenRead(attachmentFile);
+                return true;
             }
 
             return false;
@@ -187,6 +187,46 @@ namespace Nexus.Services
             var filePath = Path.Combine(_pathsOptions.Artifacts, fileName);
 
             return File.Open(filePath, FileMode.Create, FileAccess.Write);
+        }
+
+        /* /cache */
+        private string GetCacheEntryId(CatalogItem catalogItem, DateTime begin)
+            => $"{catalogItem.Catalog.Id.TrimStart('/').Replace("/", "_")}/{begin.ToString("yyyy-MM")}/{begin.ToString("dd")}/{begin.ToString("yyyy-MM-ddTHH-mm-ss-fffffff")}_{catalogItem.Resource.Id}_{catalogItem.Representation.Id}.cache";
+
+        public bool TryReadCacheEntry(CatalogItem catalogItem, DateTime begin, [NotNullWhen(true)] out Stream? cacheEntry)
+        {
+            cacheEntry = null;
+
+            var cacheEntryFilePath = Path.Combine(_pathsOptions.Artifacts, GetCacheEntryId(catalogItem, begin));
+
+            try
+            {
+                cacheEntry = File.Open(cacheEntryFilePath, FileMode.Open, FileAccess.Read, FileShare.None);
+                return true;
+
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public bool TryWriteCacheEntry(CatalogItem catalogItem, DateTime begin, [NotNullWhen(true)] out Stream? cacheEntry)
+        {
+            cacheEntry = null;
+
+            var cacheEntryFilePath = Path.Combine(_pathsOptions.Artifacts, GetCacheEntryId(catalogItem, begin));
+
+            try
+            {
+                cacheEntry = File.Open(cacheEntryFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+                return true;
+
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

@@ -57,6 +57,7 @@ namespace DataSource
                 userConfiguration,
                 default!,
                 default!,
+                default!,
                 NullLogger<DataSourceController>.Instance);
 
             var expectedConfiguration = new Dictionary<string, string>()
@@ -383,26 +384,27 @@ namespace DataSource
             var cacheService = Mock.Of<ICacheService>();
 
             Mock.Get(cacheService)
-                .Setup(cacheService => cacheService.IsInCacheAsync(
-                   It.IsAny<DateTime>(),
-                   It.IsAny<DateTime>())
-                )
-                .Returns<DateTime, DateTime>((begin, end) =>
-                {
-                    return Task.FromResult(
-                        begin == new DateTime(2020, 01, 02, 0, 0, 0, DateTimeKind.Utc) &&
-                        end == new DateTime(2020, 01, 03, 0, 0, 0, DateTimeKind.Utc));
-                });
-
-            Mock.Get(cacheService)
                 .Setup(cacheService => cacheService.LoadAsync(
-                   It.IsAny<Memory<double>>())
+                   It.IsAny<DateTime>(),
+                   It.IsAny<DateTime>(),
+                   It.IsAny<CatalogItem>(),
+                   It.IsAny<Memory<double>>(),
+                   It.IsAny<CancellationToken>())
                 )
-                .Callback<Memory<double>>(targetBuffer =>
+                .Callback<DateTime, DateTime, CatalogItem, Memory<double>, CancellationToken>((begin, end, item, targetBuffer, cancellationToken) =>
                 {
-                    targetBuffer.Span.Fill(-1);
+                    var offset = 1;
+                    var length = 24;
+                    targetBuffer.Span.Slice(offset, length).Fill(-1);
                 })
-                .Returns(Task.CompletedTask);
+                .Returns(() =>
+                {
+                    return Task.FromResult(new Interval[] 
+                    {
+                        new Interval(begin, new DateTime(2020, 01, 02, 0, 0, 0, DateTimeKind.Utc)),
+                        new Interval(new DateTime(2020, 01, 03, 0, 0, 0, DateTimeKind.Utc), end)
+                    });
+                });
 
             /* DataSourceController */
             var registration = new DataSourceRegistration("a", new Uri("http://xyz"), new Dictionary<string, string>(), default);
@@ -413,6 +415,7 @@ namespace DataSource
                 new Dictionary<string, string>(),
                 processingService,
                 cacheService,
+                new DataOptions(),
                 NullLogger<DataSourceController>.Instance);
 
             var catalogCache = new ConcurrentDictionary<string, ResourceCatalog>() { [catalog.Id] = catalog };

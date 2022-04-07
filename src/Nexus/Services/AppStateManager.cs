@@ -10,7 +10,7 @@ namespace Nexus.Services
 
         private IExtensionHive _extensionHive;
         private ICatalogManager _catalogManager;
-        private IDatabaseManager _databaseManager;
+        private IDatabaseService _databaseService;
         private ILogger<AppStateManager> _logger;
         private SemaphoreSlim _reloadPackagesSemaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
         private SemaphoreSlim _projectSemaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
@@ -23,13 +23,13 @@ namespace Nexus.Services
             AppState appState,
             IExtensionHive extensionHive,
             ICatalogManager catalogManager,
-            IDatabaseManager databaseManager,
+            IDatabaseService databaseService,
             ILogger<AppStateManager> logger)
         {
             AppState = appState;
             _extensionHive = extensionHive;
             _catalogManager = catalogManager;
-            _databaseManager = databaseManager;
+            _databaseService = databaseService;
             _logger = logger;
         }
 
@@ -57,7 +57,7 @@ namespace Nexus.Services
                 {
                     /* create fresh app state */
                     AppState.CatalogState = new CatalogState(
-                        Root: CatalogContainer.CreateRoot(_catalogManager, _databaseManager),
+                        Root: CatalogContainer.CreateRoot(_catalogManager, _databaseService),
                         Cache: new CatalogCache()
                     );
 
@@ -253,7 +253,7 @@ namespace Nexus.Services
 
         private Task SaveProjectAsync(NexusProject project)
         {
-            using var stream = _databaseManager.WriteProject();
+            using var stream = _databaseService.WriteProject();
             return JsonSerializerHelper.SerializeIntendedAsync(stream, project);
         }
 

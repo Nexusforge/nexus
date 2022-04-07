@@ -30,7 +30,7 @@ namespace Nexus.Controllers
         #region Fields
 
         private AppState _appState;
-        private IDatabaseManager _databaseManager;
+        private IDatabaseService _databaseService;
         private IDataControllerService _dataControllerService;
 
         #endregion
@@ -39,11 +39,11 @@ namespace Nexus.Controllers
 
         public CatalogsController(
             AppState appState,
-            IDatabaseManager databaseManager,
+            IDatabaseService databaseService,
             IDataControllerService dataControllerService)
         {
             _appState = appState;
-            _databaseManager = databaseManager;
+            _databaseService = databaseService;
             _dataControllerService = dataControllerService;
         }
 
@@ -165,7 +165,7 @@ namespace Nexus.Controllers
 
             var response = ProcessCatalogIdNonGenericAsync(catalogId, catalog =>
             {
-                if (_databaseManager.TryReadAttachment(catalogId, attachmentId, out var attachementStream))
+                if (_databaseService.TryReadAttachment(catalogId, attachmentId, out var attachementStream))
                 {
                     Response.Headers.ContentLength = attachementStream.Length;
                     return Task.FromResult((ActionResult)

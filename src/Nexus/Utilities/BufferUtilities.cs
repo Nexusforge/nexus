@@ -8,7 +8,7 @@ namespace Nexus.Utilities
     {
         public static void ApplyRepresentationStatusByDataType(NexusDataType dataType, ReadOnlyMemory<byte> data, ReadOnlyMemory<byte> status, Memory<double> target)
         {
-            var targetType = NexusCoreUtilities.GetTypeFromNexusDataType(dataType);
+            var targetType = NexusUtilities.GetTypeFromNexusDataType(dataType);
 
             var method = typeof(BufferUtilities)
                 .GetMethod(nameof(BufferUtilities.InternalApplyRepresentationStatusByDataType), BindingFlags.NonPublic | BindingFlags.Static)!

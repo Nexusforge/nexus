@@ -25,6 +25,7 @@ namespace DataSource
                 userConfiguration,
                 default!,
                 default!,
+                default!,
                 NullLogger<DataSourceController>.Instance);
         }
 

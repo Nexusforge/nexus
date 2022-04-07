@@ -27,7 +27,7 @@ namespace Nexus.Services
         private DataOptions _dataOptions;
         private ILogger _logger;
         private ILoggerFactory _loggerFactory;
-        private IDatabaseManager _databaseManager;
+        private IDatabaseService _databaseService;
         private IDataControllerService _dataControllerService;
 
         #endregion
@@ -36,13 +36,13 @@ namespace Nexus.Services
 
         public DataService(
             IDataControllerService dataControllerService,
-            IDatabaseManager databaseManager,
+            IDatabaseService databaseService,
             IOptions<DataOptions> dataOptions,
             ILogger<DataService> logger,
             ILoggerFactory loggerFactory)
         {
             _dataControllerService = dataControllerService;
-            _databaseManager = databaseManager;
+            _databaseService = databaseService;
             _dataOptions = dataOptions.Value;
             _logger = logger;
             _loggerFactory = loggerFactory;
@@ -89,7 +89,7 @@ namespace Nexus.Services
 
             // start
             var zipFileName = $"Nexus_{exportParameters.Begin.ToString("yyyy-MM-ddTHH-mm-ss")}_{samplePeriod.ToUnitString()}_{exportId.ToString().Substring(0, 8)}.zip";
-            var zipArchiveStream = _databaseManager.WriteArtifact(zipFileName);
+            var zipArchiveStream = _databaseService.WriteArtifact(zipFileName);
             using var zipArchive = new ZipArchive(zipArchiveStream, ZipArchiveMode.Create);
 
             // create tmp/target directory
@@ -131,7 +131,7 @@ namespace Nexus.Services
         {
             var enumeratonOptions = new EnumerationOptions() { MatchCasing = MatchCasing.CaseInsensitive };
 
-            if (_databaseManager.TryReadFirstAttachment(catalogId, "license.md", enumeratonOptions, out var licenseStream))
+            if (_databaseService.TryReadFirstAttachment(catalogId, "license.md", enumeratonOptions, out var licenseStream))
             {
                 try
                 {

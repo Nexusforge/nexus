@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Options;
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Services;
@@ -53,6 +54,7 @@ namespace Nexus.Extensibility
 
         private IProcessingService _processingService;
         private ICacheService _cacheService;
+        private DataOptions _dataOptions;
         private ConcurrentDictionary<string, ResourceCatalog> _catalogCache = null!;
 
         #endregion
@@ -65,6 +67,7 @@ namespace Nexus.Extensibility
             IReadOnlyDictionary<string, string> userConfiguration,
             IProcessingService processingService,
             ICacheService cacheService,
+            DataOptions dataOptions,
             ILogger<DataSourceController> logger)
         {
             DataSource = dataSource;
@@ -74,6 +77,7 @@ namespace Nexus.Extensibility
 
             _processingService = processingService;
             _cacheService = cacheService;
+            _dataOptions = dataOptions;
         }
 
         #endregion
@@ -228,134 +232,49 @@ namespace Nexus.Extensibility
 
             try
             {
-                /* 1. prepare read units */
-                var (originalUnits, processingUnits) = await PrepareReadUnitsAsync(
+                /* preparation */
+                var readUnits = PrepareReadUnits(
                     begin,
                     end, 
                     catalogItemRequestPipeWriters, 
                     memoryOwners);
 
-                /* 2. read data from sources */
-                
-                /* 2.1 original data */
-                var readRequests = originalUnits
-                    .Select(readUnit => readUnit.ReadRequest)
+                var readingTasks = new List<Task>(capacity: readUnits.Length);
+
+                /* original data */
+                var originalReadUnits = readUnits
+                    .Where(readUnit => readUnit.CatalogItemRequest.BaseItem is null)
                     .ToArray();
 
-                await DataSource.ReadAsync(
-                    begin,
-                    end,
-                    readRequests,
-                    progress,
+                Logger.LogTrace("Load {RepresentationCount} original representations", originalReadUnits.Length);
+
+                var originalTask = this.ReadOriginalAsync(
+                    begin, 
+                    end, 
+                    samplePeriod,
+                    originalReadUnits,
+                    progress, 
                     cancellationToken);
 
-                /* 2.2 processing data */
-                foreach (var readUnit in processingUnits)
+                readingTasks.Add(originalTask);
+
+                /* processing data */
+                var processingReadUnits = readUnits
+                    .Where(readUnit => readUnit.CatalogItemRequest.BaseItem is not null)
+                    .ToArray();
+
+                Logger.LogTrace("Load {RepresentationCount} processing representations", processingReadUnits.Length);
+
+                foreach (var processingReadUnit in processingReadUnits)
                 {
-                    var slices = readUnit.Slices!
-                        .Where(slice => !slice.FromCache)
-                        .ToArray();
+                    var processingTask = this.ReadProcessingAsync(
+                        begin, 
+                        end, 
+                        processingReadUnit,
+                        progress,
+                        cancellationToken);
 
-                    foreach (var slice in slices)
-                    {
-                        var readRequest = readUnit.ReadRequest;
-                        var elementSize = readRequest.CatalogItem.Representation.ElementSize;
-
-                        var slicedReadRequest = readRequest with
-                        {
-                            Data = readRequest.Data.Slice(slice.Offset * elementSize, slice.Length * elementSize),
-                            Status = readRequest.Status.Slice(slice.Offset, slice.Length),
-                        };
-
-                        await DataSource.ReadAsync(
-                            slice.Begin,
-                            slice.End,
-                            new[] { slicedReadRequest },
-                            progress,
-                            cancellationToken);
-                    }
-                }
-
-                /* 3. write data to pipes */
-                var targetElementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, samplePeriod);
-                var targetByteCount = sizeof(double) * targetElementCount;
-                var readingTasks = new List<Task>(capacity: catalogItemRequestPipeWriters.Length);
-
-                foreach (var readUnit in originalUnits.Concat(processingUnits))
-                {
-                    var (readRequest, catalogItemRequest, dataWriter) = readUnit;
-                    var (_, data, status) = readRequest;
-
-                    using var scope = Logger.BeginScope(new Dictionary<string, object>()
-                    {
-                        ["ResourcePath"] = catalogItemRequest.Item.ToPath()
-                    });
-
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    var buffer = dataWriter
-                        .GetMemory(targetByteCount)
-                        .Slice(0, targetByteCount);
-
-                    var targetBuffer = new CastMemoryManager<byte, double>(buffer).Memory;
-
-                    readingTasks.Add(Task.Run(async () =>
-                    {
-                        /* 3.1 original data */
-                        if (catalogItemRequest.BaseItem is null)
-                        {
-                            BufferUtilities.ApplyRepresentationStatusByDataType(
-                                catalogItemRequest.Item.Representation.DataType,
-                                data,
-                                status,
-                                target: targetBuffer);
-                        }
-
-                        /* 3.2 processing data */
-                        else
-                        {
-                            Logger.LogTrace("Process data");
-
-                            var baseItem = catalogItemRequest.BaseItem;
-                            var elementSize = baseItem.Representation.ElementSize;
-                            var item = catalogItemRequest.Item;
-                            var sourceSamplePeriod = baseItem.Representation.SamplePeriod;
-                            var targetSamplePeriod = item.Representation.SamplePeriod;
-                            var blockSize = (int)(targetSamplePeriod.Ticks / sourceSamplePeriod.Ticks);
-
-                            foreach (var slice in readUnit.Slices!)
-                            {
-                                var offset = (int)((slice.Begin - begin).Ticks / samplePeriod.Ticks);
-                                var length = (int)((slice.End - slice.Begin).Ticks / samplePeriod.Ticks);
-                                var slicedTargetBuffer = targetBuffer.Slice(offset, length);
-
-                                /* 3.2.1 load from cache */
-                                if (slice.FromCache)
-                                {
-                                    await _cacheService.LoadAsync(slicedTargetBuffer);
-                                }
-
-                                /* 3.2.2 calculate from loaded data */
-                                else
-                                {
-                                    _processingService.Process(
-                                        item.Representation.DataType,
-                                        item.Representation.Kind,
-                                        readRequest.Data.Slice(slice.Offset * elementSize, slice.Length * elementSize),
-                                        readRequest.Status.Slice(slice.Offset, slice.Length),
-                                        targetBuffer: slicedTargetBuffer,
-                                        blockSize);
-
-#warning _cacheService.SaveAsync
-                                }
-                            }
-                        }
-
-                        /* update progress */
-                        Logger.LogTrace("Advance data pipe writer by {DataLength} bytes", targetByteCount);
-                        dataWriter.Advance(targetByteCount);
-                        await dataWriter.FlushAsync();
-                    }));
+                    readingTasks.Add(processingTask);
                 }
 
                 /* wait for tasks to finish */
@@ -371,14 +290,176 @@ namespace Nexus.Extensibility
             }
         }
 
-        private async Task<(ReadUnit[] OriginalUnits, ReadUnit[] ProcessingUnits)> PrepareReadUnitsAsync(
+        private async Task ReadOriginalAsync(
+            DateTime begin,
+            DateTime end, 
+            TimeSpan samplePeriod,
+            ReadUnit[] originalUnits,
+            IProgress<double> progress,
+            CancellationToken cancellationToken)
+        {
+            var readRequests = originalUnits
+                    .Select(readUnit => readUnit.ReadRequest)
+                    .ToArray();
+
+            await DataSource.ReadAsync(
+                begin,
+                end,
+                readRequests,
+                progress,
+                cancellationToken);
+
+            var targetElementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, samplePeriod);
+            var targetByteCount = sizeof(double) * targetElementCount;
+            var readingTasks = new List<Task>(capacity: originalUnits.Length);
+
+            foreach (var readUnit in originalUnits)
+            {
+                var (readRequest, catalogItemRequest, dataWriter) = readUnit;
+                var (_, data, status) = readRequest;
+
+                using var scope = Logger.BeginScope(new Dictionary<string, object>()
+                {
+                    ["ResourcePath"] = catalogItemRequest.Item.ToPath()
+                });
+
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var buffer = dataWriter
+                    .GetMemory(targetByteCount)
+                    .Slice(0, targetByteCount);
+
+                var targetBuffer = new CastMemoryManager<byte, double>(buffer).Memory;
+
+                readingTasks.Add(Task.Run(async () =>
+                {
+                    BufferUtilities.ApplyRepresentationStatusByDataType(
+                        catalogItemRequest.Item.Representation.DataType,
+                        data,
+                        status,
+                        target: targetBuffer);
+
+                    /* update progress */
+                    Logger.LogTrace("Advance data pipe writer by {DataLength} bytes", targetByteCount);
+                    dataWriter.Advance(targetByteCount);
+                    await dataWriter.FlushAsync();
+                }));
+            }
+
+            /* wait for tasks to finish */
+#warning fail fast?
+            await Task.WhenAll(readingTasks);
+        }
+
+        private async Task ReadProcessingAsync(
+           DateTime begin,
+           DateTime end,
+           ReadUnit readUnit,
+           IProgress<double> progress,
+           CancellationToken cancellationToken)
+        {
+            var item = readUnit.CatalogItemRequest.Item;
+            var baseItem = readUnit.CatalogItemRequest.BaseItem!;
+
+            /* target buffer */
+            var targetElementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, item.Representation.SamplePeriod);
+            var targetByteCount = sizeof(double) * targetElementCount;
+
+            var buffer = readUnit.DataWriter
+               .GetMemory(targetByteCount)
+               .Slice(0, targetByteCount);
+
+            var targetBuffer = new CastMemoryManager<byte, double>(buffer).Memory;
+
+            /* load data from cache */
+            Logger.LogTrace("Load data from cache");
+
+            List<Interval> uncachedIntervals;
+
+            if (_dataOptions.DisableCache)
+            {
+                uncachedIntervals = new List<Interval> { new Interval(begin, end) };
+            }
+            else
+            {
+                uncachedIntervals = await _cacheService.ReadAsync(
+                    readUnit.CatalogItemRequest.Item,
+                    begin,
+                    end,
+                    targetBuffer,
+                    cancellationToken);
+            }
+
+            /* load and process remaining data from source */
+            Logger.LogTrace("Load and process {PeriodCount} uncached periods from source", uncachedIntervals.Count);
+
+            var readRequest = readUnit.ReadRequest;
+            var elementSize = baseItem.Representation.ElementSize;
+            var sourceSamplePeriod = baseItem.Representation.SamplePeriod;
+            var targetSamplePeriod = item.Representation.SamplePeriod;
+            var blockSize = (int)(targetSamplePeriod.Ticks / sourceSamplePeriod.Ticks);
+
+            foreach (var period in uncachedIntervals)
+            {
+                var samplePeriod = item.Representation.SamplePeriod;
+                var baseSamplePeriod = baseItem.Representation.SamplePeriod;
+
+                var offset = period.Begin - begin;
+                var length = period.End - period.Begin;
+
+                var slicedTargetBuffer = targetBuffer.Slice(
+                    start: NexusUtilities.Scale(offset, samplePeriod),
+                    length: NexusUtilities.Scale(length, samplePeriod));
+
+                var slicedReadRequest = readRequest with
+                {
+                    Data = readRequest.Data.Slice(
+                        start: NexusUtilities.Scale(offset, baseSamplePeriod) * elementSize, 
+                        length: NexusUtilities.Scale(length, baseSamplePeriod) * elementSize),
+
+                    Status = readRequest.Status.Slice(
+                        start: NexusUtilities.Scale(offset, baseSamplePeriod), 
+                        length: NexusUtilities.Scale(length, baseSamplePeriod)),
+                };
+
+                /* read */
+                await DataSource.ReadAsync(
+                    period.Begin,
+                    period.End,
+                    new[] { slicedReadRequest },
+                    progress,
+                    cancellationToken);
+
+                /* process */
+                _processingService.Process(
+                    baseItem.Representation.DataType,
+                    item.Representation.Kind,
+                    slicedReadRequest.Data,
+                    slicedReadRequest.Status,
+                    targetBuffer: slicedTargetBuffer,
+                    blockSize);
+            }
+
+            /* update cache */
+            await _cacheService.UpdateAsync(
+                readUnit.CatalogItemRequest.Item,
+                targetBuffer,
+                uncachedIntervals,
+                cancellationToken);
+
+            /* update progress */
+            Logger.LogTrace("Advance data pipe writer by {DataLength} bytes", targetByteCount);
+            readUnit.DataWriter.Advance(targetByteCount);
+            await readUnit.DataWriter.FlushAsync();
+        }
+
+        private ReadUnit[] PrepareReadUnits(
             DateTime begin,
             DateTime end,
             CatalogItemRequestPipeWriter[] catalogItemRequestPipeWriters, 
             List<IMemoryOwner<byte>> memoryOwners)
         {
-            var originalUnits = new List<ReadUnit>();
-            var processingUnits = new List<ReadUnit>();
+            var readUnits = new List<ReadUnit>();
 
             foreach (var catalogItemRequestPipeWriter in catalogItemRequestPipeWriters)
             {
@@ -405,22 +486,7 @@ namespace Nexus.Extensibility
                     var readRequest = new ReadRequest(originalCatalogItem, dataMemory, statusMemory);
                     var readUnit = new ReadUnit(readRequest, catalogItemRequest, dataWriter);
 
-                    /* original data */
-                    if (readUnit.CatalogItemRequest.BaseItem is null ||
-                        readUnit.CatalogItemRequest.Item.Representation.Kind == RepresentationKind.Resampled)
-                    {
-                        originalUnits.Add(readUnit);
-                    }
-
-                    /* post processing */
-                    else
-                    {
-                        var currentSamplePeriod = readUnit.ReadRequest.CatalogItem.Representation.SamplePeriod;
-                        var slices = await NexusCoreUtilities.CalculateSlicesAsync(begin, end, currentSamplePeriod, _cacheService);
-
-                        readUnit.Slices = slices;
-                        processingUnits.Add(readUnit);
-                    }
+                    readUnits.Add(readUnit);
                 }
 
                 else
@@ -429,7 +495,7 @@ namespace Nexus.Extensibility
                 }
             }
 
-            return (originalUnits.ToArray(), processingUnits.ToArray());
+            return readUnits.ToArray();
         }
 
         #endregion

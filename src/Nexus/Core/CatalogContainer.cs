@@ -13,7 +13,7 @@ namespace Nexus.Core
         private CatalogInfo? _catalogInfo;
         private CatalogContainer[]? _childCatalogContainers;
         private ICatalogManager _catalogManager;
-        private IDatabaseManager _databaseManager;
+        private IDatabaseService _databaseService;
         private IDataControllerService _dataControllerService;
 
         public CatalogContainer(
@@ -22,7 +22,7 @@ namespace Nexus.Core
             DataSourceRegistration dataSourceRegistration,
             CatalogMetadata metadata,
             ICatalogManager catalogManager,
-            IDatabaseManager databaseManager,
+            IDatabaseService databaseService,
             IDataControllerService dataControllerService)
         {
             Id = catalogRegistration.Path;
@@ -32,7 +32,7 @@ namespace Nexus.Core
             Metadata = metadata;
 
             _catalogManager = catalogManager;
-            _databaseManager = databaseManager;
+            _databaseService = databaseService;
             _dataControllerService = dataControllerService;
         }
 
@@ -48,9 +48,9 @@ namespace Nexus.Core
 
         public CatalogMetadata Metadata { get; internal set; }
 
-        public static CatalogContainer CreateRoot(ICatalogManager catalogManager, IDatabaseManager databaseManager)
+        public static CatalogContainer CreateRoot(ICatalogManager catalogManager, IDatabaseService databaseService)
         {
-            return new CatalogContainer(new CatalogRegistration("/"), null!, null!, null!, catalogManager, databaseManager, null!);
+            return new CatalogContainer(new CatalogRegistration("/"), null!, null!, null!, catalogManager, databaseService, null!);
         }
 
         public async Task<IEnumerable<CatalogContainer>> GetChildCatalogContainersAsync(
@@ -99,7 +99,7 @@ namespace Nexus.Core
             try
             {
                 // persist
-                using var stream = _databaseManager.WriteCatalogMetadata(Id);
+                using var stream = _databaseService.WriteCatalogMetadata(Id);
                 await JsonSerializerHelper.SerializeIntendedAsync(stream, metadata);
 
                 // assign
@@ -132,13 +132,13 @@ namespace Nexus.Core
                     catalogBegin = catalogTimeRange.Begin;
 
                 else
-                    catalogBegin = new DateTime(Math.Min(catalogBegin.Ticks, catalogTimeRange.Begin.Ticks));
+                    catalogBegin = new DateTime(Math.Min(catalogBegin.Ticks, catalogTimeRange.Begin.Ticks), DateTimeKind.Utc);
 
                 if (catalogEnd == DateTime.MinValue)
                     catalogEnd = catalogTimeRange.End;
 
                 else
-                    catalogEnd = new DateTime(Math.Max(catalogEnd.Ticks, catalogTimeRange.End.Ticks));
+                    catalogEnd = new DateTime(Math.Max(catalogEnd.Ticks, catalogTimeRange.End.Ticks), DateTimeKind.Utc);
 
                 // merge catalog
                 if (Metadata?.Overrides is not null)

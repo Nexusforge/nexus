@@ -252,66 +252,14 @@ namespace Other
         public void CanDetermineSizeOfNexusDataType()
         {
             // Arrange
-            var values = NexusCoreUtilities.GetEnumValues<NexusDataType>();
+            var values = NexusUtilities.GetEnumValues<NexusDataType>();
             var expected = new[] { 1, 2, 4, 8, 1, 2, 4, 8, 4, 8 };
 
             // Act
-            var actual = values.Select(value => NexusCoreUtilities.SizeOf(value));
+            var actual = values.Select(value => NexusUtilities.SizeOf(value));
 
             // Assert
             Assert.Equal(expected, actual);
-        }
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task CanCalculateReadUnitSlices(bool invert)
-        {
-            var TRUE = !invert;
-            var FALSE = invert;
-
-            // Arrange
-            var samplePeriod = TimeSpan.FromSeconds(1);
-
-            var expected = new[]
-            {
-                new ReadUnitSlice(new DateTime(2020, 01, 01, 15, 0, 0, DateTimeKind.Utc), new DateTime(2020, 01, 02, 00, 0, 0, DateTimeKind.Utc), 0, 32400, TRUE),
-                new ReadUnitSlice(new DateTime(2020, 01, 02, 00, 0, 0, DateTimeKind.Utc), new DateTime(2020, 01, 04, 00, 0, 0, DateTimeKind.Utc), 32400, 172800, FALSE),
-                new ReadUnitSlice(new DateTime(2020, 01, 04, 00, 0, 0, DateTimeKind.Utc), new DateTime(2020, 01, 05, 00, 0, 0, DateTimeKind.Utc), 205200, 86400, TRUE),
-                new ReadUnitSlice(new DateTime(2020, 01, 05, 00, 0, 0, DateTimeKind.Utc), new DateTime(2020, 01, 06, 15, 0, 0, DateTimeKind.Utc), 291600, 140400, FALSE)
-            };
-
-            var begin = new DateTime(2020, 01, 01, 15, 0, 0, DateTimeKind.Utc);
-            var end = new DateTime(2020, 01, 06, 15, 0, 0, DateTimeKind.Utc);
-            var cacheService = Mock.Of<ICacheService>();
-
-            Mock.Get(cacheService)
-               .Setup(cacheService => cacheService.IsInCacheAsync(
-                   It.IsAny<DateTime>(),
-                   It.IsAny<DateTime>()))
-               .Returns<DateTime, DateTime>((begin, end) =>
-               {
-                   if (begin == new DateTime(2020, 01, 01, 15, 0, 0, DateTimeKind.Utc) &&
-                         end == new DateTime(2020, 01, 02, 00, 0, 0, DateTimeKind.Utc))
-                       return Task.FromResult(TRUE);
-
-                   else if (begin == new DateTime(2020, 01, 04, 00, 0, 0, DateTimeKind.Utc) &&
-                              end == new DateTime(2020, 01, 05, 00, 0, 0, DateTimeKind.Utc))
-                       return Task.FromResult(TRUE);
-
-                   else
-                       return Task.FromResult(FALSE);
-               });
-
-            // Act
-            var actual = await NexusCoreUtilities.CalculateSlicesAsync(begin, end, samplePeriod, cacheService);
-
-            // Assert
-            Assert.Collection(actual,
-                actual0 => actual0.Equals(expected[0]),
-                actual1 => actual1.Equals(expected[1]),
-                actual2 => actual2.Equals(expected[2]),
-                actual3 => actual3.Equals(expected[3]));
         }
     }
 }

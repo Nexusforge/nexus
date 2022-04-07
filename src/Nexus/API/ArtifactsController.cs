@@ -17,16 +17,16 @@ namespace Nexus.Controllers
 
         #region Fields
 
-        public IDatabaseManager _databaseManager;
+        public IDatabaseService _databaseService;
 
         #endregion
 
         #region Constructors
 
         public ArtifactsController(
-            IDatabaseManager databaseManager)
+            IDatabaseService databaseService)
         {
-            _databaseManager = databaseManager;
+            _databaseService = databaseService;
         }
 
         #endregion
@@ -42,7 +42,7 @@ namespace Nexus.Controllers
             Download(
                 string artifactId)
         {
-            if (_databaseManager.TryReadArtifact(artifactId, out var artifactStream))
+            if (_databaseService.TryReadArtifact(artifactId, out var artifactStream))
             {
                 Response.Headers.ContentLength = artifactStream.Length;
                 return File(artifactStream, "application/octet-stream", artifactId);

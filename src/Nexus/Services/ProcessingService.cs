@@ -37,7 +37,7 @@ namespace Nexus.Services
             Memory<double> targetBuffer,
             int blockSize)
         {
-            var targetType = NexusCoreUtilities.GetTypeFromNexusDataType(dataType);
+            var targetType = NexusUtilities.GetTypeFromNexusDataType(dataType);
 
             var method = typeof(ProcessingService)
                 .GetMethod(nameof(ProcessingService.GenericProcess), BindingFlags.Instance | BindingFlags.NonPublic)!

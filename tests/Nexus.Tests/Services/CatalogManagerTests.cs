@@ -77,11 +77,11 @@ namespace Services
                 })
             };
 
-            // databaseManager
-            var databaseManager = Mock.Of<IDatabaseManager>();
+            // databaseService
+            var databaseService = Mock.Of<IDatabaseService>();
 
-            Mock.Get(databaseManager)
-               .Setup(databaseManager => databaseManager.TryReadCatalogMetadata(
+            Mock.Get(databaseService)
+               .Setup(databaseService => databaseService.TryReadCatalogMetadata(
                    It.IsAny<string>(),
                    out It.Ref<string?>.IsAny))
                .Returns(new GobbleReturns((string catalogId, out string catalogMetadataString) =>
@@ -135,7 +135,7 @@ namespace Services
             var catalogManager = new CatalogManager(
                 appState,
                 dataControllerService,
-                databaseManager,
+                databaseService,
                 userManagerWrapper,
                 securityOptions,
                 NullLogger<CatalogManager>.Instance);

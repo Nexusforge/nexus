@@ -49,6 +49,7 @@ namespace Nexus.Core
     internal record DataOptions() : NexusOptionsBase
     {
         public const string Section = "Data";
+        public bool DisableCache { get; set; }
         public uint ReadChunkSize { get; set; }
         public double AggregationNaNThreshold { get; set; }
     }

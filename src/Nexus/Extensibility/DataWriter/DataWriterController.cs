@@ -116,7 +116,7 @@ namespace Nexus.Extensibility
             /* go */
             var lastFileBegin = default(DateTime);
 
-            await NexusCoreUtilities.FileLoopAsync(begin, end, filePeriod,
+            await NexusUtilities.FileLoopAsync(begin, end, filePeriod,
                 async (fileBegin, fileOffset, duration) =>
             {
                 /* Concept: It never happens that the data of a read operation is spreaded over 
@@ -162,7 +162,7 @@ namespace Nexus.Extensibility
                         .Select(catalogItemRequestPipeReader => catalogItemRequestPipeReader.DataReader.ReadAsync(cancellationToken))
                         .ToArray();
 
-                    var readResults = await NexusCoreUtilities.WhenAll(readResultTasks);
+                    var readResults = await NexusUtilities.WhenAll(readResultTasks);
                     var bufferPeriod = readResults.Min(readResult => readResult.Buffer.First.Cast<byte, double>().Length) * samplePeriod;
 
                     if (bufferPeriod == default)

@@ -20,7 +20,7 @@ namespace Nexus.Extensibility
 
             var samplePeriod = request.Item.Representation.SamplePeriod;
             var elementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, samplePeriod);
-            var totalLength = elementCount * NexusCoreUtilities.SizeOf(NexusDataType.FLOAT64);
+            var totalLength = elementCount * NexusUtilities.SizeOf(NexusDataType.FLOAT64);
             var pipe = new Pipe();
 
             _ = controller.ReadSingleAsync(
