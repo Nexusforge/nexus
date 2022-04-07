@@ -211,6 +211,19 @@ namespace Nexus.Extensibility
             IProgress<double> progress,
             CancellationToken cancellationToken)
         {
+            /* This method reads data from the data source or from the cache and optionally
+             * processes the data (aggregation, resampling).
+             * 
+             * Normally, all data would be loaded at once using a single call to 
+             * DataSource.ReadAsync(). But with caching involved, it is not uncommon
+             * to have only parts of the requested data available in cache. The rest needs to
+             * be loaded and processed as usual. This leads to fragmented read periods and thus
+             * often more than a single call to DataSource.ReadAsync() is necessary.
+             * 
+             * However, during the first request the cache is filled and subsequent identical
+             * requests will from now on be served from the cache only.
+             */
+
             var memoryOwners = new List<IMemoryOwner<byte>>();
 
             try
