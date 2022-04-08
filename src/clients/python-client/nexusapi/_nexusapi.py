@@ -350,8 +350,8 @@ class RepresentationKind(Enum):
     MEAN = "MEAN"
     """Mean""",
 
-    MEAN_POLAR = "MEAN_POLAR"
-    """MeanPolar""",
+    MEAN_POLAR_DEG = "MEAN_POLAR_DEG"
+    """MeanPolarDeg""",
 
     MIN = "MIN"
     """Min""",

@@ -241,6 +241,9 @@ namespace Nexus.Extensibility
 
                 var readingTasks = new List<Task>(capacity: readUnits.Length);
 
+#warning access to totalProgress (see below) is not thread safe
+                var totalProgress = 0.0;
+
                 /* original data */
                 var originalReadUnits = readUnits
                     .Where(readUnit => readUnit.CatalogItemRequest.BaseItem is null)
@@ -248,12 +251,24 @@ namespace Nexus.Extensibility
 
                 Logger.LogTrace("Load {RepresentationCount} original representations", originalReadUnits.Length);
 
+                var originalProgress = new Progress<double>();
+                var originalProgressFactor = originalReadUnits.Length / (double)readUnits.Length;
+                var originalProgress_old = 0.0;
+
+                originalProgress.ProgressChanged += (sender, progressValue) =>
+                {
+                    var actualProgress = progressValue - originalProgress_old;
+                    originalProgress_old = progressValue;
+                    totalProgress += actualProgress;
+                    progress.Report(totalProgress);
+                };
+
                 var originalTask = this.ReadOriginalAsync(
                     begin, 
                     end, 
                     samplePeriod,
                     originalReadUnits,
-                    progress, 
+                    originalProgress, 
                     cancellationToken);
 
                 readingTasks.Add(originalTask);
@@ -265,13 +280,26 @@ namespace Nexus.Extensibility
 
                 Logger.LogTrace("Load {RepresentationCount} processing representations", processingReadUnits.Length);
 
+                var processingProgressFactor = 1 / (double)readUnits.Length;
+
                 foreach (var processingReadUnit in processingReadUnits)
                 {
+                    var processingProgress = new Progress<double>();
+                    var processingProgress_old = 0.0;
+
+                    processingProgress.ProgressChanged += (sender, progressValue) =>
+                    {
+                        var actualProgress = progressValue - processingProgress_old;
+                        processingProgress_old = progressValue;
+                        totalProgress += actualProgress;
+                        progress.Report(totalProgress);
+                    };
+
                     var processingTask = this.ReadProcessingAsync(
                         begin, 
                         end, 
                         processingReadUnit,
-                        progress,
+                        processingProgress,
                         cancellationToken);
 
                     readingTasks.Add(processingTask);
@@ -360,6 +388,7 @@ namespace Nexus.Extensibility
         {
             var item = readUnit.CatalogItemRequest.Item;
             var baseItem = readUnit.CatalogItemRequest.BaseItem!;
+            var ignoreCache = _dataOptions.DisableCache || item.Representation.Kind == RepresentationKind.Resampled;
 
             /* target buffer */
             var targetElementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, item.Representation.SamplePeriod);
@@ -376,10 +405,11 @@ namespace Nexus.Extensibility
 
             List<Interval> uncachedIntervals;
 
-            if (_dataOptions.DisableCache)
+            if (ignoreCache)
             {
                 uncachedIntervals = new List<Interval> { new Interval(begin, end) };
             }
+
             else
             {
                 uncachedIntervals = await _cacheService.ReadAsync(
@@ -440,12 +470,15 @@ namespace Nexus.Extensibility
             }
 
             /* update cache */
-            await _cacheService.UpdateAsync(
-                readUnit.CatalogItemRequest.Item,
-                begin,
-                targetBuffer,
-                uncachedIntervals,
-                cancellationToken);
+            if (!ignoreCache)
+            {
+                await _cacheService.UpdateAsync(
+                    readUnit.CatalogItemRequest.Item,
+                    begin,
+                    targetBuffer,
+                    uncachedIntervals,
+                    cancellationToken);
+            }
 
             /* update progress */
             Logger.LogTrace("Advance data pipe writer by {DataLength} bytes", targetByteCount);
@@ -628,9 +661,9 @@ namespace Nexus.Extensibility
                         {
                             if (progressValue <= 1)
                             {
+                                // https://stackoverflow.com/a/62768272 (currentDataSourceProgress)
                                 currentDataSourceProgress.AddOrUpdate(controller, progressValue, (_, _) => progressValue);
 
-                                // https://stackoverflow.com/a/62768272 (currentDataSourceProgress)
                                 var baseProgress = consumedPeriod.Ticks / (double)totalPeriod.Ticks;
                                 var relativeProgressFactor = currentPeriod.Ticks / (double)totalPeriod.Ticks;
                                 var relativeProgress = currentDataSourceProgress.Sum(entry => entry.Value) * relativeProgressFactor;
