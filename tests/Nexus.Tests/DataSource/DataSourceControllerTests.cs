@@ -387,11 +387,10 @@ namespace DataSource
                 .Setup(cacheService => cacheService.ReadAsync(
                    It.IsAny<CatalogItem>(),
                    It.IsAny<DateTime>(),
-                   It.IsAny<DateTime>(),
                    It.IsAny<Memory<double>>(),
                    It.IsAny<CancellationToken>())
                 )
-                .Callback<CatalogItem, DateTime, DateTime, Memory<double>, CancellationToken>((item, begin, end, targetBuffer, cancellationToken) =>
+                .Callback<CatalogItem, DateTime, Memory<double>, CancellationToken>((item, begin, targetBuffer, cancellationToken) =>
                 {
                     var offset = 1;
                     var length = 24;

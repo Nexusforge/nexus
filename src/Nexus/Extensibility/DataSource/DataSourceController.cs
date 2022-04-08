@@ -385,7 +385,6 @@ namespace Nexus.Extensibility
                 uncachedIntervals = await _cacheService.ReadAsync(
                     readUnit.CatalogItemRequest.Item,
                     begin,
-                    end,
                     targetBuffer,
                     cancellationToken);
             }

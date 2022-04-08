@@ -9,7 +9,6 @@ namespace Nexus.Services
         Task<List<Interval>> ReadAsync(
             CatalogItem catalogItem,
             DateTime begin,
-            DateTime end,
             Memory<double> targetBuffer,
             CancellationToken cancellationToken);
 
@@ -34,11 +33,11 @@ namespace Nexus.Services
         public async Task<List<Interval>> ReadAsync(
             CatalogItem catalogItem,
             DateTime begin,
-            DateTime end,
             Memory<double> targetBuffer,
             CancellationToken cancellationToken)
         {
             var samplePeriod = catalogItem.Representation.SamplePeriod;
+            var end = begin + samplePeriod * targetBuffer.Length;
             var filePeriod = GetFilePeriod(samplePeriod);
             var uncachedIntervals = new List<Interval>();
 
@@ -51,7 +50,7 @@ namespace Nexus.Services
                 if (_databaseService.TryReadCacheEntry(catalogItem, fileBegin, out var cacheEntry))
                 {
                     var slicedTargetBuffer = targetBuffer.Slice(
-                       start: NexusUtilities.Scale(fileOffset, samplePeriod),
+                       start: NexusUtilities.Scale(actualBegin - begin, samplePeriod),
                        length: NexusUtilities.Scale(duration, samplePeriod));
 
                     try
@@ -139,7 +138,7 @@ namespace Nexus.Services
 
         private TimeSpan GetFilePeriod(TimeSpan samplePeriod)
         {
-            if (samplePeriod > _largestSamplePeriod || TimeSpan.FromDays(1).Ticks % samplePeriod.Ticks <= 0)
+            if (samplePeriod > _largestSamplePeriod || TimeSpan.FromDays(1).Ticks % samplePeriod.Ticks != 0)
                 throw new Exception("Caching is only supported for sample periods fit exactly into a single day.");
 
             return samplePeriod switch
