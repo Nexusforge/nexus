@@ -111,11 +111,10 @@ namespace Nexus.Services
                 await NexusUtilities.FileLoopAsync(period.Begin, period.End, filePeriod, async (fileBegin, fileOffset, duration) =>
                 {
                     var actualBegin = fileBegin + fileOffset;
-                    var actualEnd = actualBegin + duration;
 
                     if (_databaseService.TryWriteCacheEntry(catalogItem, fileBegin, out var cacheEntry))
                     {
-                        var slicedTargetBuffer = targetBuffer.Slice(
+                        var slicedSourceBuffer = targetBuffer.Slice(
                            start: NexusUtilities.Scale(fileOffset, samplePeriod),
                            length: NexusUtilities.Scale(duration, samplePeriod));
 
@@ -126,8 +125,7 @@ namespace Nexus.Services
 
                             await cacheEntryWrapper.WriteAsync(
                                 actualBegin, 
-                                actualEnd,
-                                slicedTargetBuffer, 
+                                slicedSourceBuffer, 
                                 cancellationToken);
                         }
                         catch

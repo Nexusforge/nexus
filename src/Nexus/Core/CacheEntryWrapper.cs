@@ -29,7 +29,7 @@ namespace Nexus.Core
 
             // read cached periods
             _stream.Seek(_dataSectionLength, SeekOrigin.Begin);
-            _cachedIntervals = ReadCachedIntervals();
+            _cachedIntervals = ReadCachedIntervals(_stream);
         }
 
         public async Task<Interval[]> ReadAsync(
@@ -63,8 +63,8 @@ namespace Nexus.Core
             var currentBegin = begin;
             var uncachedIntervals = new List<Interval>();
 
-            var isCache = false;
-            var isFirst = true;
+            var isCachePeriod = false;
+            var isFirstIteration = true;
 
             while (currentBegin < end)
             {
@@ -74,6 +74,7 @@ namespace Nexus.Core
 
                 DateTime currentEnd;
 
+                /* cached */
                 if (cachedInterval.Begin <= currentBegin && currentBegin < cachedInterval.End)
                 {
                     currentEnd = new DateTime(Math.Min(cachedInterval.End.Ticks, end.Ticks), DateTimeKind.Utc);
@@ -85,29 +86,30 @@ namespace Nexus.Core
                     var slicedTargetBuffer = targetBuffer.Slice(targetBufferOffset, length);
                     var slicedByteTargetBuffer = new CastMemoryManager<double, byte>(slicedTargetBuffer).Memory;
 
-                    _stream.Seek(cacheOffset, SeekOrigin.Begin);
+                    _stream.Seek(cacheOffset * sizeof(double), SeekOrigin.Begin);
                     await _stream.ReadAsync(slicedByteTargetBuffer, cancellationToken);
 
                     if (currentEnd >= cachedInterval.End)
                         index++;
 
-                    if (!(isFirst || isCache))
+                    if (!(isFirstIteration || isCachePeriod))
                         uncachedIntervals[^1] = uncachedIntervals[^1] with { End = currentBegin };
 
-                    isCache = true;
+                    isCachePeriod = true;
                 }
 
+                /* uncached */
                 else
                 {
                     currentEnd = new DateTime(Math.Min(cachedInterval.Begin.Ticks, end.Ticks), DateTimeKind.Utc);
 
-                    if (isFirst || isCache)
+                    if (isFirstIteration || isCachePeriod)
                         uncachedIntervals.Add(new Interval(currentBegin, end));
 
-                    isCache = false;
+                    isCachePeriod = false;
                 } 
 
-                isFirst = false;
+                isFirstIteration = false;
                 currentBegin = currentEnd;
             }
 
@@ -121,25 +123,34 @@ namespace Nexus.Core
         {
             public int Compare(Interval x, Interval y)
             {
+                long result;
+
                 if (x.Begin == y.Begin)
-                    return unchecked((int)(x.End.Ticks - y.End.Ticks));
+                    result = x.End.Ticks - y.End.Ticks;
 
                 else
-                    return unchecked((int)(x.Begin.Ticks - y.Begin.Ticks));
+                    result = x.Begin.Ticks - y.Begin.Ticks;
+
+                return result switch
+                {
+                    < 0 => -1,
+                    > 0 => +1,
+                    _ => 0
+                };
             }
         }
 
         public async Task WriteAsync(
             DateTime begin,
-            DateTime end,
-            Memory<double> targetBuffer, 
+            Memory<double> sourceBuffer, 
             CancellationToken cancellationToken)
         {
+            var end = begin + _samplePeriod * sourceBuffer.Length;
             var cacheOffset = NexusUtilities.Scale(begin - _fileBegin, _samplePeriod);
-            var byteTargetBuffer = new CastMemoryManager<double, byte>(targetBuffer).Memory;
+            var byteSourceBuffer = new CastMemoryManager<double, byte>(sourceBuffer).Memory;
 
-            _stream.Seek(cacheOffset, SeekOrigin.Begin);
-            await _stream.WriteAsync(byteTargetBuffer, cancellationToken);
+            _stream.Seek(cacheOffset * sizeof(double), SeekOrigin.Begin);
+            await _stream.WriteAsync(byteSourceBuffer, cancellationToken);
 
             /* update the list of cached intervals */
             var cachedIntervals = _cachedIntervals
@@ -179,10 +190,11 @@ namespace Nexus.Core
                 }
 
                 _cachedIntervals = cachedIntervals
-                    .Take(index)
+                    .Take(index + 1)
                     .ToArray();
 
-                WritecachedIntervals(cachedIntervals);
+                _stream.Seek(_dataSectionLength, SeekOrigin.Begin);
+                WriteCachedIntervals(_stream, _cachedIntervals);
             }
         }
 
@@ -191,19 +203,19 @@ namespace Nexus.Core
             _stream.Dispose();
         }
 
-        private Interval[] ReadCachedIntervals()
+        public static Interval[] ReadCachedIntervals(Stream stream)
         {
-            var cachedPeriodCount = _stream.ReadByte();
+            var cachedPeriodCount = stream.ReadByte();
             var cachedIntervals = new Interval[cachedPeriodCount];
 
             Span<byte> buffer = stackalloc byte[8];
 
             for (int i = 0; i < cachedPeriodCount; i++)
             {
-                _stream.Read(buffer);
+                stream.Read(buffer);
                 var beginTicks = BitConverter.ToInt64(buffer);
 
-                _stream.Read(buffer);
+                stream.Read(buffer);
                 var endTicks = BitConverter.ToInt64(buffer);
 
                 cachedIntervals[i] = new Interval(
@@ -214,23 +226,22 @@ namespace Nexus.Core
             return cachedIntervals;
         }
 
-        private void WritecachedIntervals(Interval[] cachedIntervals)
+        public static void WriteCachedIntervals(Stream stream, Interval[] cachedIntervals)
         {
             if (cachedIntervals.Length > byte.MaxValue)
                 throw new Exception("Only 256 cache periods per file are supported.");
 
-            _stream.Seek(_dataSectionLength, SeekOrigin.Begin);
-            _stream.WriteByte((byte)cachedIntervals.Length);
+            stream.WriteByte((byte)cachedIntervals.Length);
 
             Span<byte> buffer = stackalloc byte[8];
 
             foreach (var cachedPeriod in cachedIntervals)
             {
                 BitConverter.TryWriteBytes(buffer, cachedPeriod.Begin.Ticks);
-                _stream.Write(buffer);
+                stream.Write(buffer);
 
                 BitConverter.TryWriteBytes(buffer, cachedPeriod.End.Ticks);
-                _stream.Write(buffer);
+                stream.Write(buffer);
             }
         }
     }
