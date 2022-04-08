@@ -38,7 +38,6 @@ namespace Nexus.Services
             Memory<double> targetBuffer,
             CancellationToken cancellationToken)
         {
-            var elementSize = catalogItem.Representation.ElementSize;
             var samplePeriod = catalogItem.Representation.SamplePeriod;
             var filePeriod = GetFilePeriod(samplePeriod);
             var uncachedIntervals = new List<Interval>();
@@ -58,7 +57,7 @@ namespace Nexus.Services
                     try
                     {
                         using var cacheEntryWrapper = new CacheEntryWrapper(
-                            fileBegin, filePeriod, samplePeriod, elementSize, cacheEntry);
+                            fileBegin, filePeriod, samplePeriod, cacheEntry);
 
                         var moreUncachedIntervals = await cacheEntryWrapper.ReadAsync(
                             actualBegin, 
@@ -101,7 +100,6 @@ namespace Nexus.Services
             List<Interval> uncachedIntervals,
             CancellationToken cancellationToken)
         {
-            var elementSize = catalogItem.Representation.ElementSize;
             var begin = uncachedIntervals.First().Begin;
             var end = uncachedIntervals.Last().End;
             var samplePeriod = catalogItem.Representation.SamplePeriod;
@@ -124,7 +122,7 @@ namespace Nexus.Services
                         try
                         {
                             using var cacheEntryWrapper = new CacheEntryWrapper(
-                                fileBegin, filePeriod, samplePeriod, elementSize, cacheEntry);
+                                fileBegin, filePeriod, samplePeriod, cacheEntry);
 
                             await cacheEntryWrapper.WriteAsync(
                                 actualBegin, 

@@ -7,23 +7,21 @@ namespace Nexus.Core
         private DateTime _fileBegin;
         private TimeSpan _filePeriod;
         private TimeSpan _samplePeriod;
-        private int _elementSize;
         private Stream _stream;
 
         private long _dataSectionLength;
 
         private Interval[] _cachedIntervals;
 
-        public CacheEntryWrapper(DateTime fileBegin, TimeSpan filePeriod, TimeSpan samplePeriod, int elementSize, Stream stream)
+        public CacheEntryWrapper(DateTime fileBegin, TimeSpan filePeriod, TimeSpan samplePeriod, Stream stream)
         {
             _fileBegin = fileBegin;
             _filePeriod = filePeriod;
             _samplePeriod = samplePeriod;
-            _elementSize = elementSize;
             _stream = stream;
 
             var elementCount = filePeriod.Ticks / samplePeriod.Ticks;
-            _dataSectionLength = elementCount * elementSize;
+            _dataSectionLength = elementCount * sizeof(double);
 
             // ensure a minimum length of data section + 1 x PeriodOfTime entry
             if (_stream.Length == 0)
@@ -31,7 +29,7 @@ namespace Nexus.Core
 
             // read cached periods
             _stream.Seek(_dataSectionLength, SeekOrigin.Begin);
-            _cachedIntervals = ReadcachedIntervals();
+            _cachedIntervals = ReadCachedIntervals();
         }
 
         public async Task<Interval[]> ReadAsync(
@@ -63,23 +61,23 @@ namespace Nexus.Core
 
             var index = 0;
             var currentBegin = begin;
-            var remaining = end - begin;
-
-            var uncachedIntervals = new List<Interval>() { new Interval(begin, end) };
+            var uncachedIntervals = new List<Interval>();
 
             var isCache = false;
             var isFirst = true;
 
-            while (remaining > TimeSpan.Zero)
+            while (currentBegin < end)
             {
-                var cachedPeriod = index < _cachedIntervals.Length 
+                var cachedInterval = index < _cachedIntervals.Length 
                     ? _cachedIntervals[index]
-                    : default;
+                    : new Interval(DateTime.MaxValue, DateTime.MaxValue);
 
-                if (cachedPeriod.Begin <= currentBegin && currentBegin < cachedPeriod.End)
+                DateTime currentEnd;
+
+                if (cachedInterval.Begin <= currentBegin && currentBegin < cachedInterval.End)
                 {
-                    var currentEnd = new DateTime(Math.Min(cachedPeriod.End.Ticks, end.Ticks), DateTimeKind.Utc);
-                    
+                    currentEnd = new DateTime(Math.Min(cachedInterval.End.Ticks, end.Ticks), DateTimeKind.Utc);
+
                     var cacheOffset = NexusUtilities.Scale(currentBegin - _fileBegin, _samplePeriod);
                     var targetBufferOffset = NexusUtilities.Scale(currentBegin - begin, _samplePeriod);
                     var length = NexusUtilities.Scale(currentEnd - currentBegin, _samplePeriod);
@@ -90,28 +88,31 @@ namespace Nexus.Core
                     _stream.Seek(cacheOffset, SeekOrigin.Begin);
                     await _stream.ReadAsync(slicedByteTargetBuffer, cancellationToken);
 
-                    if (currentEnd >= _fileBegin + _filePeriod)
+                    if (currentEnd >= cachedInterval.End)
                         index++;
 
-                    if (isFirst || !isCache)
-                        uncachedIntervals[^-1] = uncachedIntervals[^-1] with { End = currentBegin };
+                    if (!(isFirst || isCache))
+                        uncachedIntervals[^1] = uncachedIntervals[^1] with { End = currentBegin };
 
                     isCache = true;
                 }
 
                 else
                 {
+                    currentEnd = new DateTime(Math.Min(cachedInterval.Begin.Ticks, end.Ticks), DateTimeKind.Utc);
+
                     if (isFirst || isCache)
-                        uncachedIntervals.Add(new Interval(begin, end));
+                        uncachedIntervals.Add(new Interval(currentBegin, end));
 
                     isCache = false;
-                }
+                } 
 
                 isFirst = false;
+                currentBegin = currentEnd;
             }
 
             return uncachedIntervals
-                .Where(period => (period.End - period.Begin) <= TimeSpan.Zero)
+                .Where(period => (period.End - period.Begin) > TimeSpan.Zero)
                 .ToArray();
         }
 
@@ -190,7 +191,7 @@ namespace Nexus.Core
             _stream.Dispose();
         }
 
-        private Interval[] ReadcachedIntervals()
+        private Interval[] ReadCachedIntervals()
         {
             var cachedPeriodCount = _stream.ReadByte();
             var cachedIntervals = new Interval[cachedPeriodCount];

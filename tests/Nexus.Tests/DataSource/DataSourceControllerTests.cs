@@ -384,14 +384,14 @@ namespace DataSource
             var cacheService = Mock.Of<ICacheService>();
 
             Mock.Get(cacheService)
-                .Setup(cacheService => cacheService.LoadAsync(
-                   It.IsAny<DateTime>(),
-                   It.IsAny<DateTime>(),
+                .Setup(cacheService => cacheService.ReadAsync(
                    It.IsAny<CatalogItem>(),
+                   It.IsAny<DateTime>(),
+                   It.IsAny<DateTime>(),
                    It.IsAny<Memory<double>>(),
                    It.IsAny<CancellationToken>())
                 )
-                .Callback<DateTime, DateTime, CatalogItem, Memory<double>, CancellationToken>((begin, end, item, targetBuffer, cancellationToken) =>
+                .Callback<CatalogItem, DateTime, DateTime, Memory<double>, CancellationToken>((item, begin, end, targetBuffer, cancellationToken) =>
                 {
                     var offset = 1;
                     var length = 24;

@@ -12,8 +12,8 @@ namespace Services
         {
             // Arrange
 
-            var options = Options.Create(new PathsOptions());
-            var cacheService = new CacheService(options);
+            //var options = Options.Create(new PathsOptions());
+            //var cacheService = new CacheService(options);
 
             // Act
             
