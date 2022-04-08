@@ -197,7 +197,7 @@ namespace Nexus.Services
         {
             cacheEntry = null;
 
-            var cacheEntryFilePath = Path.Combine(_pathsOptions.Artifacts, GetCacheEntryId(catalogItem, begin));
+            var cacheEntryFilePath = Path.Combine(_pathsOptions.Cache, GetCacheEntryId(catalogItem, begin));
 
             try
             {
@@ -215,7 +215,13 @@ namespace Nexus.Services
         {
             cacheEntry = null;
 
-            var cacheEntryFilePath = Path.Combine(_pathsOptions.Artifacts, GetCacheEntryId(catalogItem, begin));
+            var cacheEntryFilePath = Path.Combine(_pathsOptions.Cache, GetCacheEntryId(catalogItem, begin));
+            var cacheEntryDirectoryPath = Path.GetDirectoryName(cacheEntryFilePath);
+
+            if (cacheEntryDirectoryPath is null)
+                return false;
+
+            Directory.CreateDirectory(cacheEntryDirectoryPath);
 
             try
             {

@@ -52,7 +52,7 @@ namespace Nexus.Sources
                         new CatalogRegistration(ParentCatalogId),
                     });
 
-            else if (path == ParentCatalogId)
+            else if (path == ParentCatalogId + "/")
                 return Task.FromResult(new CatalogRegistration[]
                     {
                         new CatalogRegistration(AccessibleCatalogId),

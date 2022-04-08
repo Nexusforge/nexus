@@ -157,6 +157,7 @@ namespace Nexus.Core
                 .Concat(new[] { new Interval(begin, end) })
                 .ToArray();
 
+            /* merge list of intervals */
             if (cachedIntervals.Length > 1)
             {
                 /* sort list of intervals */
@@ -192,10 +193,15 @@ namespace Nexus.Core
                 _cachedIntervals = cachedIntervals
                     .Take(index + 1)
                     .ToArray();
-
-                _stream.Seek(_dataSectionLength, SeekOrigin.Begin);
-                WriteCachedIntervals(_stream, _cachedIntervals);
             }
+
+            else
+            {
+                _cachedIntervals = cachedIntervals;
+            }
+
+            _stream.Seek(_dataSectionLength, SeekOrigin.Begin);
+            WriteCachedIntervals(_stream, _cachedIntervals);
         }
 
         public void Dispose()
