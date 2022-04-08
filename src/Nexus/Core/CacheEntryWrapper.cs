@@ -25,7 +25,7 @@ namespace Nexus.Core
 
             // ensure a minimum length of data section + 1 x PeriodOfTime entry
             if (_stream.Length == 0)
-                _stream.SetLength(_dataSectionLength + 1 + 2 * 4);
+                _stream.SetLength(_dataSectionLength + 1 + 2 * sizeof(long));
 
             // read cached periods
             _stream.Seek(_dataSectionLength, SeekOrigin.Begin);

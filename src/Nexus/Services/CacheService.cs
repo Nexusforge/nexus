@@ -14,7 +14,8 @@ namespace Nexus.Services
 
         Task UpdateAsync(
             CatalogItem catalogItem,
-            Memory<double> targetBuffer, 
+            DateTime begin,
+            Memory<double> sourceBuffer, 
             List<Interval> uncachedIntervals,
             CancellationToken cancellationToken);
     }
@@ -78,44 +79,43 @@ namespace Nexus.Services
                 }
             });
 
-            /* consolidate periods */
-            var consolidatedPeriods = new List<Interval>() { uncachedIntervals[0] };
+            /* consolidate intervals */
+            var consolidatedIntervals = new List<Interval>() { uncachedIntervals[0] };
 
             for (int i = 1; i < uncachedIntervals.Count; i++)
             {
-                if (consolidatedPeriods[^1].End == uncachedIntervals[i].Begin)
-                    consolidatedPeriods[^1] = consolidatedPeriods[^1] with { End = uncachedIntervals[i].End };
+                if (consolidatedIntervals[^1].End == uncachedIntervals[i].Begin)
+                    consolidatedIntervals[^1] = consolidatedIntervals[^1] with { End = uncachedIntervals[i].End };
 
                 else
-                    consolidatedPeriods.Add(uncachedIntervals[i]);
+                    consolidatedIntervals.Add(uncachedIntervals[i]);
             }
 
-            return consolidatedPeriods;
+            return consolidatedIntervals;
         }
 
         public async Task UpdateAsync(
             CatalogItem catalogItem,
-            Memory<double> targetBuffer,
+            DateTime begin,
+            Memory<double> sourceBuffer,
             List<Interval> uncachedIntervals,
             CancellationToken cancellationToken)
         {
-            var begin = uncachedIntervals.First().Begin;
-            var end = uncachedIntervals.Last().End;
             var samplePeriod = catalogItem.Representation.SamplePeriod;
             var filePeriod = GetFilePeriod(samplePeriod);
 
             /* try write data to cache */
-            foreach (var period in uncachedIntervals)
+            foreach (var interval in uncachedIntervals)
             {
-                await NexusUtilities.FileLoopAsync(period.Begin, period.End, filePeriod, async (fileBegin, fileOffset, duration) =>
+                await NexusUtilities.FileLoopAsync(interval.Begin, interval.End, filePeriod, async (fileBegin, fileOffset, duration) =>
                 {
                     var actualBegin = fileBegin + fileOffset;
 
                     if (_databaseService.TryWriteCacheEntry(catalogItem, fileBegin, out var cacheEntry))
                     {
-                        var slicedSourceBuffer = targetBuffer.Slice(
-                           start: NexusUtilities.Scale(fileOffset, samplePeriod),
-                           length: NexusUtilities.Scale(duration, samplePeriod));
+                        var slicedSourceBuffer = sourceBuffer.Slice(
+                            start: NexusUtilities.Scale(actualBegin - begin, samplePeriod),
+                            length: NexusUtilities.Scale(duration, samplePeriod));
 
                         try
                         {
@@ -124,7 +124,7 @@ namespace Nexus.Services
 
                             await cacheEntryWrapper.WriteAsync(
                                 actualBegin, 
-                                slicedSourceBuffer, 
+                                slicedSourceBuffer,
                                 cancellationToken);
                         }
                         catch

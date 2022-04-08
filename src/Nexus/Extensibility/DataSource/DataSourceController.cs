@@ -442,6 +442,7 @@ namespace Nexus.Extensibility
             /* update cache */
             await _cacheService.UpdateAsync(
                 readUnit.CatalogItemRequest.Item,
+                begin,
                 targetBuffer,
                 uncachedIntervals,
                 cancellationToken);

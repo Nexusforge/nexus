@@ -381,9 +381,15 @@ namespace DataSource
                 });
 
             /* IProcessingService */
-            var cacheService = Mock.Of<ICacheService>();
+            var cacheService = new Mock<ICacheService>();
 
-            Mock.Get(cacheService)
+            var uncachedIntervals = new List<Interval>
+            {
+                new Interval(begin, new DateTime(2020, 01, 02, 0, 0, 0, DateTimeKind.Utc)),
+                new Interval(new DateTime(2020, 01, 03, 0, 0, 0, DateTimeKind.Utc), end)
+            };
+
+            cacheService
                 .Setup(cacheService => cacheService.ReadAsync(
                    It.IsAny<CatalogItem>(),
                    It.IsAny<DateTime>(),
@@ -396,14 +402,7 @@ namespace DataSource
                     var length = 24;
                     targetBuffer.Span.Slice(offset, length).Fill(-1);
                 })
-                .Returns(() =>
-                {
-                    return Task.FromResult(new Interval[] 
-                    {
-                        new Interval(begin, new DateTime(2020, 01, 02, 0, 0, 0, DateTimeKind.Utc)),
-                        new Interval(new DateTime(2020, 01, 03, 0, 0, 0, DateTimeKind.Utc), end)
-                    });
-                });
+                .Returns(Task.FromResult(uncachedIntervals));
 
             /* DataSourceController */
             var registration = new DataSourceRegistration("a", new Uri("http://xyz"), new Dictionary<string, string>(), default);
@@ -413,7 +412,7 @@ namespace DataSource
                 registration,
                 new Dictionary<string, string>(),
                 processingService,
-                cacheService,
+                cacheService.Object,
                 new DataOptions(),
                 NullLogger<DataSourceController>.Instance);
 
@@ -436,6 +435,14 @@ namespace DataSource
 
             Assert.True(expected1.SequenceEqual(actual1));
             Assert.True(expected2.SequenceEqual(actual2));
+
+            cacheService
+                .Verify(cacheService => cacheService.UpdateAsync(
+                   catalogItem1,
+                   new DateTime(2020, 01, 01, 23, 0, 0, DateTimeKind.Utc),
+                   It.IsAny<Memory<double>>(),
+                   uncachedIntervals,
+                   It.IsAny<CancellationToken>()), Times.Once());
         }
     }
 }

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Moq;
 using Nexus.Core;
 using Nexus.Extensibility;
@@ -68,7 +69,7 @@ namespace Services
                 extensionHive,
                 default!,
                 default!,
-                default!,
+                Options.Create(new DataOptions()),
                 default!,
                 loggerFactory);
 
@@ -108,7 +109,7 @@ namespace Services
                 extensionHive,
                 default!,
                 default!,
-                default!,
+                Options.Create(new DataOptions()),
                 default!,
                 loggerFactory);
 
