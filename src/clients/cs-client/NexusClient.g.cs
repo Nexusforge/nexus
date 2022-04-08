@@ -1353,9 +1353,9 @@ public enum RepresentationKind
     Mean,
 
     /// <summary>
-    /// MeanPolar
+    /// MeanPolarDeg
     /// </summary>
-    MeanPolar,
+    MeanPolarDeg,
 
     /// <summary>
     /// Min
