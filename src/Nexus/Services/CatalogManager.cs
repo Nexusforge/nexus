@@ -124,6 +124,11 @@ namespace Nexus.Services
                 using var controller = await _dataControllerService
                     .GetDataSourceControllerAsync(parent.DataSourceRegistration, cancellationToken);
 
+                /* Why trailing slash? 
+                 * Because we want the "directory content" (see the "ls /home/karl/" example here:
+                 * https://stackoverflow.com/questions/980255/should-a-directory-path-variable-end-with-a-trailing-slash)
+                 */
+
                 var catalogRegistrations = await controller
                     .GetCatalogRegistrationsAsync(parent.Id + "/", cancellationToken);
 

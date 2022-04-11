@@ -6,9 +6,11 @@ namespace Nexus.Extensibility
     {
         #region Fields
 
+        private CancellationTokenSource _cts = new CancellationTokenSource();
         private long _position;
         private long _length;
-        private Stream _reader;
+        private PipeReader _reader;
+        private Stream _stream;
 
         #endregion
 
@@ -17,7 +19,8 @@ namespace Nexus.Extensibility
         public DataSourceDoubleStream(long length, PipeReader reader)
         {
             _length = length;
-            _reader = reader.AsStream();
+            _reader = reader;
+            _stream = reader.AsStream();
         }
 
         #endregion
@@ -48,6 +51,11 @@ namespace Nexus.Extensibility
 
         #region Methods
 
+        public void Cancel()
+        {
+            _reader.CancelPendingRead();
+        }
+
         public override void Flush()
         {
             throw new NotImplementedException();
@@ -65,33 +73,30 @@ namespace Nexus.Extensibility
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
-            return _reader.BeginRead(buffer, offset, count, callback, state);
+            throw new NotImplementedException();
         }
 
         public override int EndRead(IAsyncResult asyncResult)
         {
-            var readCount = _reader.EndRead(asyncResult);
-            _position += readCount;
-            return readCount;
+            throw new NotImplementedException();
         }
 
-        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            var readCount = await _reader.ReadAsync(buffer, offset, count, cancellationToken);
-            _position += readCount;
-            return readCount;
+            throw new NotImplementedException();
         }
 
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            var readCount = await _reader.ReadAsync(buffer, cancellationToken);
+            var readCount = await _stream.ReadAsync(buffer, _cts.Token);
             _position += readCount;
+
             return readCount;
         }
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
-            return _reader.CopyToAsync(destination, bufferSize, cancellationToken);
+            throw new NotImplementedException();
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -111,7 +116,7 @@ namespace Nexus.Extensibility
 
         protected override void Dispose(bool disposing)
         {
-            _reader.Dispose();
+            _stream.Dispose();
         }
 
         #endregion

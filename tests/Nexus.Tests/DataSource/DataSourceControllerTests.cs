@@ -80,7 +80,15 @@ namespace DataSource
         [Fact]
         internal async Task CanGetAvailability()
         {
-            var controller = _fixture.Controller;
+            using var controller = new DataSourceController(
+                _fixture.DataSource,
+                _fixture.Registration,
+                _fixture.UserConfiguration,
+                default!,
+                default!,
+                default!,
+                NullLogger<DataSourceController>.Instance);
+
             await controller.InitializeAsync(default!, default!, CancellationToken.None);
 
             var catalogId = Sample.AccessibleCatalogId;
@@ -101,7 +109,15 @@ namespace DataSource
         [Fact]
         public async Task CanGetTimeRange()
         {
-            var controller = _fixture.Controller;
+            using var controller = new DataSourceController(
+                _fixture.DataSource,
+                _fixture.Registration,
+                _fixture.UserConfiguration,
+                default!,
+                default!,
+                default!,
+                NullLogger<DataSourceController>.Instance);
+
             await controller.InitializeAsync(default!, default!, CancellationToken.None);
 
             var catalogId = Sample.AccessibleCatalogId;
@@ -114,7 +130,15 @@ namespace DataSource
         [Fact]
         public async Task CanCheckIsDataOfDayAvailable()
         {
-            var controller = _fixture.Controller;
+            using var controller = new DataSourceController(
+                _fixture.DataSource,
+                _fixture.Registration,
+                _fixture.UserConfiguration,
+                default!,
+                default!,
+                default!,
+                NullLogger<DataSourceController>.Instance);
+
             await controller.InitializeAsync(default!, default!, CancellationToken.None);
 
             var day = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
@@ -127,7 +151,15 @@ namespace DataSource
         [Fact]
         public async Task CanRead()
         {
-            var controller = _fixture.Controller;
+            using var controller = new DataSourceController(
+                _fixture.DataSource,
+                _fixture.Registration,
+                _fixture.UserConfiguration,
+                default!,
+                default!,
+                default!,
+                NullLogger<DataSourceController>.Instance);
+
             await controller.InitializeAsync(new ConcurrentDictionary<string, ResourceCatalog>(), default!, CancellationToken.None);
 
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
@@ -223,7 +255,15 @@ namespace DataSource
         [Fact]
         public async Task CanReadAsStream()
         {
-            var controller = _fixture.Controller;
+            using var controller = new DataSourceController(
+                _fixture.DataSource,
+                _fixture.Registration,
+                _fixture.UserConfiguration,
+                default!,
+                default!,
+                default!,
+                NullLogger<DataSourceController>.Instance);
+
             await controller.InitializeAsync(new ConcurrentDictionary<string, ResourceCatalog>(), default!, CancellationToken.None);
 
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
@@ -250,7 +290,7 @@ namespace DataSource
                     var readBytes = await stream.ReadAsync(resultBuffer);
 
                     if (readBytes == 0)
-                        throw new Exception("The stream stopped early.");
+                        throw new Exception("This should never happen.");
 
                     resultBuffer = resultBuffer.Slice(readBytes);
                 }
@@ -262,6 +302,57 @@ namespace DataSource
             Assert.Equal(7.9, result[01 * 60 * 60 + 2], precision: 1);
             Assert.Equal(8.1, result[02 * 60 * 60 + 3], precision: 1);
             Assert.Equal(7.5, result[10 * 60 * 60 + 4], precision: 1);
+        }
+
+        [Fact]
+        public async Task CanReadResampled()
+        {
+            // Arrange
+            var processingService = new Mock<IProcessingService>();
+
+            using var controller = new DataSourceController(
+                _fixture.DataSource,
+                _fixture.Registration,
+                _fixture.UserConfiguration,
+                processingService.Object,
+                default!,
+                new DataOptions(),
+                NullLogger<DataSourceController>.Instance);
+
+            await controller.InitializeAsync(new ConcurrentDictionary<string, ResourceCatalog>(), default!, CancellationToken.None);
+
+            var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
+            var end = new DateTime(2020, 01, 01, 0, 0, 2, DateTimeKind.Utc);
+            var pipe = new Pipe();
+            var baseItem = (await controller.GetCatalogAsync(Sample.AccessibleCatalogId, CancellationToken.None)).Find("/SAMPLE/ACCESSIBLE/T1/1_s");
+
+            var item = baseItem with
+            {
+                Representation = new Representation(NexusDataType.FLOAT64, TimeSpan.FromMilliseconds(100), RepresentationKind.Resampled)
+            };
+
+            var catalogItemRequest = new CatalogItemRequest(item, baseItem, default!);
+
+            // Act
+            await controller.ReadSingleAsync(
+                begin,
+                end,
+                catalogItemRequest,
+                pipe.Writer,
+                new DataOptions(),
+                new Progress<double>(),
+                NullLogger<DataSourceController>.Instance,
+                CancellationToken.None);
+
+            // Assert
+            processingService
+                .Verify(processingService => processingService.Process(
+                   It.IsAny<NexusDataType>(),
+                   RepresentationKind.Resampled,
+                   It.IsAny<Memory<byte>>(),
+                   It.IsAny<ReadOnlyMemory<byte>>(),
+                   It.IsAny<Memory<double>>(),
+                   10), Times.Exactly(1));
         }
 
         [Fact]
@@ -363,11 +454,11 @@ namespace DataSource
                 .Setup(processingService => processingService.Process(
                    It.IsAny<NexusDataType>(),
                    It.IsAny<RepresentationKind>(),
-                   It.IsAny<ReadOnlyMemory<byte>>(),
+                   It.IsAny<Memory<byte>>(),
                    It.IsAny<ReadOnlyMemory<byte>>(),
                    It.IsAny<Memory<double>>(),
                    It.IsAny<int>()))
-                .Callback<NexusDataType, RepresentationKind, ReadOnlyMemory<byte>, ReadOnlyMemory<byte>, Memory<double>, int>(
+                .Callback<NexusDataType, RepresentationKind, Memory<byte>, ReadOnlyMemory<byte>, Memory<double>, int>(
                 (dataType, kind, data, status, targetBuffer, blockSize) =>
                 {
                    Assert.Equal(NexusDataType.INT32, dataType);
@@ -381,13 +472,13 @@ namespace DataSource
                 });
 
             /* IProcessingService */
-            var cacheService = new Mock<ICacheService>();
-
             var uncachedIntervals = new List<Interval>
             {
                 new Interval(begin, new DateTime(2020, 01, 02, 0, 0, 0, DateTimeKind.Utc)),
                 new Interval(new DateTime(2020, 01, 03, 0, 0, 0, DateTimeKind.Utc), end)
             };
+
+            var cacheService = new Mock<ICacheService>();
 
             cacheService
                 .Setup(cacheService => cacheService.ReadAsync(

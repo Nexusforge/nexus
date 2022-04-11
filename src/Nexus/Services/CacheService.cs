@@ -61,7 +61,7 @@ namespace Nexus.Services
 
                         var moreUncachedIntervals = await cacheEntryWrapper.ReadAsync(
                             actualBegin, 
-                            actualEnd, 
+                            actualEnd,
                             slicedTargetBuffer,
                             cancellationToken);
 
@@ -79,17 +79,22 @@ namespace Nexus.Services
                 }
             });
 
+            var consolidatedIntervals = new List<Interval>();
+
             /* consolidate intervals */
-            var consolidatedIntervals = new List<Interval>() { uncachedIntervals[0] };
-
-            for (int i = 1; i < uncachedIntervals.Count; i++)
+            if (uncachedIntervals.Count >= 1)
             {
-                if (consolidatedIntervals[^1].End == uncachedIntervals[i].Begin)
-                    consolidatedIntervals[^1] = consolidatedIntervals[^1] with { End = uncachedIntervals[i].End };
+                consolidatedIntervals.Add(uncachedIntervals[0]);
 
-                else
-                    consolidatedIntervals.Add(uncachedIntervals[i]);
-            }
+                for (int i = 1; i < uncachedIntervals.Count; i++)
+                {
+                    if (consolidatedIntervals[^1].End == uncachedIntervals[i].Begin)
+                        consolidatedIntervals[^1] = consolidatedIntervals[^1] with { End = uncachedIntervals[i].End };
+
+                    else
+                        consolidatedIntervals.Add(uncachedIntervals[i]);
+                }
+            }          
 
             return consolidatedIntervals;
         }

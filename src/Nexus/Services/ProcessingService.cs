@@ -5,7 +5,6 @@ using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Utilities;
 using System.Reflection;
-using System.Runtime.InteropServices;
 
 namespace Nexus.Services
 {
@@ -14,7 +13,7 @@ namespace Nexus.Services
         void Process(
             NexusDataType dataType,
             RepresentationKind kind,
-            ReadOnlyMemory<byte> data,
+            Memory<byte> data,
             ReadOnlyMemory<byte> status,
             Memory<double> targetBuffer,
             int blockSize);
@@ -32,7 +31,7 @@ namespace Nexus.Services
         public void Process(
             NexusDataType dataType,
             RepresentationKind kind,
-            ReadOnlyMemory<byte> data,
+            Memory<byte> data,
             ReadOnlyMemory<byte> status,
             Memory<double> targetBuffer,
             int blockSize)
@@ -48,7 +47,7 @@ namespace Nexus.Services
 
         private void GenericProcess<T>(
             RepresentationKind kind,
-            ReadOnlyMemory<byte> data,
+            Memory<byte> data,
             ReadOnlyMemory<byte> status,
             Memory<double> targetBuffer,
             int blockSize) where T : unmanaged
@@ -63,11 +62,12 @@ namespace Nexus.Services
 
                     BufferUtilities.ApplyRepresentationStatus<T>(Tdata, status, target: doubleData1);
 
-                    var span = targetBuffer.Span;
+                    var targetBufferSpan = targetBuffer.Span;
+                    var length = targetBuffer.Length;
 
-                    for (int i = 0; i < targetBuffer.Length; i++)
+                    for (int i = 0; i < length; i++)
                     {
-                        span[i] = doubleData1[i / blockSize];
+                        targetBufferSpan[i] = doubleData1[i / blockSize];
                     }
 
                     break;
@@ -102,7 +102,7 @@ namespace Nexus.Services
         private void ApplyAggregationFunction(
             RepresentationKind kind,
             int blockSize,
-            ReadOnlyMemory<double> data,
+            Memory<double> data,
             Memory<double> targetBuffer)
         {
             switch (kind)
@@ -111,7 +111,7 @@ namespace Nexus.Services
 
                     Parallel.For(0, targetBuffer.Length, x =>
                     {
-                        var chunkData = GetNaNFreeData(data, x, blockSize);
+                        var chunkData = GetNaNFreeData(data.Slice(x * blockSize, blockSize)).ToArray();
                         var isHighQuality = (chunkData.Length / (double)blockSize) >= _nanThreshold;
 
                         if (isHighQuality)
@@ -132,7 +132,7 @@ namespace Nexus.Services
 
                     Parallel.For(0, targetBuffer.Length, x =>
                     {
-                        var chunkData = GetNaNFreeData(data, x, blockSize);
+                        var chunkData = GetNaNFreeData(data.Slice(x * blockSize, blockSize)).ToArray();
                         var length = chunkData.Length;
                         var isHighQuality = (length / (double)blockSize) >= _nanThreshold;
 
@@ -161,7 +161,7 @@ namespace Nexus.Services
 
                     Parallel.For(0, targetBuffer.Length, x =>
                     {
-                        var chunkData = GetNaNFreeData(data, x, blockSize);
+                        var chunkData = GetNaNFreeData(data.Slice(x * blockSize, blockSize)).ToArray();
                         var isHighQuality = (chunkData.Length / (double)blockSize) >= _nanThreshold;
 
                         if (isHighQuality)
@@ -177,7 +177,7 @@ namespace Nexus.Services
 
                     Parallel.For(0, targetBuffer.Length, x =>
                     {
-                        var chunkData = GetNaNFreeData(data, x, blockSize);
+                        var chunkData = GetNaNFreeData(data.Slice(x * blockSize, blockSize)).ToArray();
                         var isHighQuality = (chunkData.Length / (double)blockSize) >= _nanThreshold;
 
                         if (isHighQuality)
@@ -193,7 +193,7 @@ namespace Nexus.Services
 
                     Parallel.For(0, targetBuffer.Length, x =>
                     {
-                        var chunkData = GetNaNFreeData(data, x, blockSize);
+                        var chunkData = GetNaNFreeData(data.Slice(x * blockSize, blockSize)).ToArray();
                         var isHighQuality = (chunkData.Length / (double)blockSize) >= _nanThreshold;
 
                         if (isHighQuality)
@@ -209,7 +209,7 @@ namespace Nexus.Services
 
                     Parallel.For(0, targetBuffer.Length, x =>
                     {
-                        var chunkData = GetNaNFreeData(data, x, blockSize);
+                        var chunkData = GetNaNFreeData(data.Slice(x * blockSize, blockSize)).ToArray();
                         var isHighQuality = (chunkData.Length / (double)blockSize) >= _nanThreshold;
 
                         if (isHighQuality)
@@ -225,7 +225,7 @@ namespace Nexus.Services
 
                     Parallel.For(0, targetBuffer.Length, x =>
                     {
-                        var chunkData = GetNaNFreeData(data, x, blockSize);
+                        var chunkData = GetNaNFreeData(data.Slice(x * blockSize, blockSize)).ToArray();
                         var isHighQuality = (chunkData.Length / (double)blockSize) >= _nanThreshold;
 
                         if (isHighQuality)
@@ -246,7 +246,7 @@ namespace Nexus.Services
         private void ApplyAggregationFunction<T>(
             RepresentationKind kind,
             int blockSize,
-            ReadOnlyMemory<T> data,
+            Memory<T> data,
             ReadOnlyMemory<byte> status,
             Memory<double> targetBuffer) where T : unmanaged
         {
@@ -258,7 +258,11 @@ namespace Nexus.Services
 
                     Parallel.For(0, targetBuffer.Length, x =>
                     {
-                        var chunkData = GetNaNFreeData(data.Span, status.Span, x, blockSize);
+                        var chunkData = GetNaNFreeData(
+                            data.Slice(x * blockSize, blockSize), 
+                            status.Slice(x * blockSize, blockSize)).Span;
+
+                        var targetBufferSpan = targetBuffer.Span;
                         var length = chunkData.Length;
                         var isHighQuality = (length / (double)blockSize) >= _nanThreshold;
 
@@ -268,12 +272,14 @@ namespace Nexus.Services
                             {
                                 if (i == 0)
                                     bitField_and[x] = GenericBitOr<T>.BitOr(bitField_and[x], chunkData[i]);
+
                                 else
                                     bitField_and[x] = GenericBitAnd<T>.BitAnd(bitField_and[x], chunkData[i]);
                             }
 
                             targetBuffer.Span[x] = Convert.ToDouble(bitField_and[x]);
                         }
+
                         else
                         {
                             targetBuffer.Span[x] = double.NaN;
@@ -288,7 +294,10 @@ namespace Nexus.Services
 
                     Parallel.For(0, targetBuffer.Length, x =>
                     {
-                        var chunkData = GetNaNFreeData(data.Span, status.Span, x, blockSize);
+                        var chunkData = GetNaNFreeData(data
+                            .Slice(x * blockSize, blockSize), status
+                            .Slice(x * blockSize, blockSize)).Span;
+
                         var length = chunkData.Length;
                         var isHighQuality = (length / (double)blockSize) >= _nanThreshold;
 
@@ -301,6 +310,7 @@ namespace Nexus.Services
 
                             targetBuffer.Span[x] = Convert.ToDouble(bitField_or[x]);
                         }
+
                         else
                         {
                             targetBuffer.Span[x] = double.NaN;
@@ -315,30 +325,43 @@ namespace Nexus.Services
             }
         }
 
-        private unsafe T[] GetNaNFreeData<T>(ReadOnlySpan<T> data, ReadOnlySpan<byte> status, int index, int kernelSize) where T : unmanaged
+        private Memory<T> GetNaNFreeData<T>(Memory<T> data, ReadOnlyMemory<byte> status) where T : unmanaged
         {
-            var sourceIndex = index * kernelSize;
-            var length = data.Length;
-            var chunkData = new List<T>();
+            var targetLength = 0;
+            var sourceLength = data.Length;
+            var spanData = data.Span;
+            var spanStatus = status.Span;
 
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < sourceLength; i++)
             {
-                if (status[sourceIndex + i] == 1)
-                    chunkData.Add(data[sourceIndex + i]);
+                if (spanStatus[i] == 1)
+                {
+                    spanData[targetLength] = spanData[i];
+                    targetLength++;
+                }
             }
 
-            return chunkData.ToArray();
+            return data.Slice(0, targetLength);
         }
 
-        private double[] GetNaNFreeData(ReadOnlyMemory<double> data, int index, int kernelSize)
+        private Memory<double> GetNaNFreeData(Memory<double> data)
         {
-            var sourceIndex = index * kernelSize;
+            var targetLength = 0;
+            var sourceLength = data.Length;
+            var spanData = data.Span;
 
-            return MemoryMarshal.ToEnumerable<double>(data)
-                .Skip(sourceIndex)
-                .Take(kernelSize)
-                .Where(value => !double.IsNaN(value))
-                .ToArray();
+            for (int i = 0; i < sourceLength; i++)
+            {
+                var value = spanData[i];
+
+                if (!double.IsNaN(value))
+                {
+                    spanData[targetLength] = value;
+                    targetLength++;
+                }
+            }
+
+            return data.Slice(0, targetLength);
         }
     }
 }

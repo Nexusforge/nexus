@@ -1,46 +1,26 @@
-﻿using Microsoft.Extensions.Logging.Abstractions;
-using Nexus.Core;
+﻿using Nexus.Core;
 using Nexus.Extensibility;
 using Nexus.Sources;
 
 namespace DataSource
 {
-    public class DataSourceControllerFixture : IDisposable
+    public class DataSourceControllerFixture
     {
         public DataSourceControllerFixture()
         {
-            var dataSource = new Sample();
+            DataSource = new Sample();
 
-            var registration = new DataSourceRegistration(
+            Registration = new DataSourceRegistration(
                 Type: typeof(Sample).FullName!, 
                 ResourceLocator: new Uri("memory://localhost"),
                 Configuration: new Dictionary<string, string>(),
                 Publish: true);
 
-            var userConfiguration = new Dictionary<string, string>();
-
-            Controller = new DataSourceController(
-                dataSource,
-                registration,
-                userConfiguration,
-                default!,
-                default!,
-                default!,
-                NullLogger<DataSourceController>.Instance);
+            UserConfiguration = new Dictionary<string, string>();
         }
 
-        internal DataSourceController Controller { get; }
-
-        public void Dispose()
-        {
-            try
-            {
-                Controller.Dispose();
-            }
-            catch
-            {
-                //
-            }
-        }       
+        internal IDataSource DataSource { get; }
+        internal DataSourceRegistration Registration { get; }
+        internal Dictionary<string, string> UserConfiguration { get; }  
     }
 }

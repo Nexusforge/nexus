@@ -426,7 +426,10 @@ namespace Nexus.Extensibility
             var elementSize = baseItem.Representation.ElementSize;
             var sourceSamplePeriod = baseItem.Representation.SamplePeriod;
             var targetSamplePeriod = item.Representation.SamplePeriod;
-            var blockSize = (int)(targetSamplePeriod.Ticks / sourceSamplePeriod.Ticks);
+
+            var blockSize = item.Representation.Kind == RepresentationKind.Resampled
+                ? (int)(sourceSamplePeriod.Ticks / targetSamplePeriod.Ticks)
+                : (int)(targetSamplePeriod.Ticks / sourceSamplePeriod.Ticks);
 
             foreach (var period in uncachedIntervals)
             {
@@ -535,7 +538,7 @@ namespace Nexus.Extensibility
 
         #region Static Methods
 
-        public static async Task ReadAsync(
+        public static Task ReadAsync(
             DateTime begin,
             DateTime end,
             TimeSpan samplePeriod,
@@ -551,7 +554,7 @@ namespace Nexus.Extensibility
             var catalogItemRequestPipeWriters = readingGroups.SelectMany(readingGroup => readingGroup.CatalogItemRequestPipeWriters);
 
             if (!catalogItemRequestPipeWriters.Any())
-                return;
+                return Task.CompletedTask; 
 
             foreach (var catalogItemRequestPipeWriter in catalogItemRequestPipeWriters)
             {
@@ -563,15 +566,15 @@ namespace Nexus.Extensibility
                  * - base item -> representation -> sample period
                  * 
                  * This makes aggregation and caching much easier. A drawback of this approach
-                 * is that for a user who selects e.g. a 10-minute value that should be resampled 
-                 * to 1 s, it is required to also choose the begin and end parameters to be a 
+                 * is that a user who selects e.g. a 10-minute value that should be resampled 
+                 * to 1 s, is required to also choose the begin and end parameters to be a 
                  * multiple of 10-minutes. Selecting a time period < 10 minutes is not possible.
-                 * 
                  */
 
                 var request = catalogItemRequestPipeWriter.Request;
+                var itemSamplePeriod = request.Item.Representation.SamplePeriod;
 
-                if (request.Item.Representation.SamplePeriod != samplePeriod)
+                if (itemSamplePeriod != samplePeriod)
                     throw new ValidationException("All representations must be based on the same sample period.");
 
                 if (request.BaseItem is not null)
@@ -579,11 +582,14 @@ namespace Nexus.Extensibility
                     var baseItemSamplePeriod = request.BaseItem.Representation.SamplePeriod;
                     DataSourceController.ValidateParameters(begin, end, baseItemSamplePeriod);
 
-                    // resampling is only possible if base sample period <= sample period
+                    // resampling is only possible if base sample period < sample period
                     if (request.Item.Representation.Kind == RepresentationKind.Resampled)
                     {
                         if (baseItemSamplePeriod < samplePeriod)
                             throw new ValidationException("Unable to resample data if the base sample period is <= the sample period.");
+
+                        if (baseItemSamplePeriod.Ticks % itemSamplePeriod.Ticks != 0)
+                            throw new ValidationException("For resampling, the base sample period must be a multiple of the sample period.");
                     }
 
                     // aggregation is only possible if sample period > base sample period
@@ -591,26 +597,45 @@ namespace Nexus.Extensibility
                     {
                         if (samplePeriod < baseItemSamplePeriod)
                             throw new ValidationException("Unable to aggregate data if the sample period is <= the base sample period.");
+
+                        if (itemSamplePeriod.Ticks % baseItemSamplePeriod.Ticks != 0)
+                            throw new ValidationException("For aggregation, the sample period must be a multiple of the base sample period.");
                     }
                 }
             }
 
             /* pre-calculation */
-            var bytesPerRow = catalogItemRequestPipeWriters.Sum(catalogItemRequestPipeWriter =>
+            var bytesPerRow = 0L;
+            var largestSamplePeriod = samplePeriod;
+
+            foreach (var catalogItemRequestPipeWriter in catalogItemRequestPipeWriters)
             {
                 var request = catalogItemRequestPipeWriter.Request;
-                var elementSize = catalogItemRequestPipeWriter.Request.Item.Representation.ElementSize;
+
+                var elementSize = request.Item.Representation.ElementSize;
                 var elementCount = 1L;
 
                 if (request.BaseItem is not null)
                 {
-                    elementCount = 
-                        request.BaseItem.Representation.SamplePeriod.Ticks / 
-                        request.Item.Representation.SamplePeriod.Ticks;
+                    var baseItemSamplePeriod = request.BaseItem.Representation.SamplePeriod;
+                    var itemSamplePeriod = request.Item.Representation.SamplePeriod;
+
+                    if (request.Item.Representation.Kind == RepresentationKind.Resampled)
+                    {
+                        if (largestSamplePeriod < baseItemSamplePeriod)
+                            largestSamplePeriod = baseItemSamplePeriod;
+                    }
+
+                    else
+                    {
+                        elementCount =
+                            baseItemSamplePeriod.Ticks /
+                            itemSamplePeriod.Ticks;
+                    }
                 }
 
-                return Math.Max(1, elementCount) * elementSize;
-            });
+                bytesPerRow += Math.Max(1, elementCount) * elementSize;
+            }
 
             logger.LogTrace("A single row has a size of {BytesPerRow} bytes", bytesPerRow);
 
@@ -618,12 +643,15 @@ namespace Nexus.Extensibility
             logger.LogTrace("The chunk size is {ChunkSize} bytes", chunkSize);
 
             var rowCount = chunkSize / bytesPerRow;
-            logger.LogTrace("{RowCount} rows will be processed per chunk", rowCount);
+            logger.LogTrace("{RowCount} rows can be processed per chunk", rowCount);
 
-            if (rowCount == 0)
+            var maxPeriodPerRequest = TimeSpan
+                .FromTicks(samplePeriod.Ticks * rowCount)
+                .RoundDown(largestSamplePeriod);
+
+            if (maxPeriodPerRequest == TimeSpan.Zero)
                 throw new ValidationException("Unable to load the requested data because the available chunk size is too low.");
 
-            var maxPeriodPerRequest = TimeSpan.FromTicks(samplePeriod.Ticks * rowCount);
             logger.LogTrace("The maximum period per request is {MaxPeriodPerRequest}", maxPeriodPerRequest);
 
             /* periods */
@@ -638,72 +666,75 @@ namespace Nexus.Extensibility
             var currentDataSourceProgress = new ConcurrentDictionary<IDataSourceController, double>();
 
             /* go */
-            while (consumedPeriod < totalPeriod)
+            return Task.Run(async () =>
             {
-                currentDataSourceProgress.Clear();
-                currentPeriod = TimeSpan.FromTicks(Math.Min(remainingPeriod.Ticks, maxPeriodPerRequest.Ticks));
-
-                var currentBegin = begin + consumedPeriod;
-                var currentEnd = currentBegin + currentPeriod;
-
-                logger.LogTrace("Process period {CurrentBegin} to {CurrentEnd}", currentBegin, currentEnd);
-
-                var readingTasks = readingGroups.Select(async readingGroup =>
+                while (consumedPeriod < totalPeriod)
                 {
-                    var (controller, catalogItemRequestPipeWriters) = readingGroup;
+                    currentDataSourceProgress.Clear();
+                    currentPeriod = TimeSpan.FromTicks(Math.Min(remainingPeriod.Ticks, maxPeriodPerRequest.Ticks));
 
-                    try
+                    var currentBegin = begin + consumedPeriod;
+                    var currentEnd = currentBegin + currentPeriod;
+
+                    logger.LogTrace("Process period {CurrentBegin} to {CurrentEnd}", currentBegin, currentEnd);
+
+                    var readingTasks = readingGroups.Select(async readingGroup =>
                     {
-                        /* no need to remove handler because of short lifetime of IDataSource */
-                        var dataSourceProgress = new Progress<double>();
+                        var (controller, catalogItemRequestPipeWriters) = readingGroup;
 
-                        dataSourceProgress.ProgressChanged += (sender, progressValue) =>
+                        try
                         {
-                            if (progressValue <= 1)
+                            /* no need to remove handler because of short lifetime of IDataSource */
+                            var dataSourceProgress = new Progress<double>();
+
+                            dataSourceProgress.ProgressChanged += (sender, progressValue) =>
                             {
-                                // https://stackoverflow.com/a/62768272 (currentDataSourceProgress)
-                                currentDataSourceProgress.AddOrUpdate(controller, progressValue, (_, _) => progressValue);
+                                if (progressValue <= 1)
+                                {
+                                    // https://stackoverflow.com/a/62768272 (currentDataSourceProgress)
+                                    currentDataSourceProgress.AddOrUpdate(controller, progressValue, (_, _) => progressValue);
 
-                                var baseProgress = consumedPeriod.Ticks / (double)totalPeriod.Ticks;
-                                var relativeProgressFactor = currentPeriod.Ticks / (double)totalPeriod.Ticks;
-                                var relativeProgress = currentDataSourceProgress.Sum(entry => entry.Value) * relativeProgressFactor;
+                                    var baseProgress = consumedPeriod.Ticks / (double)totalPeriod.Ticks;
+                                    var relativeProgressFactor = currentPeriod.Ticks / (double)totalPeriod.Ticks;
+                                    var relativeProgress = currentDataSourceProgress.Sum(entry => entry.Value) * relativeProgressFactor;
 
-                                progress?.Report(baseProgress + relativeProgress);
-                            }
-                        };
+                                    progress?.Report(baseProgress + relativeProgress);
+                                }
+                            };
 
-                        await controller.ReadAsync(
-                            currentBegin,
-                            currentEnd,
-                            samplePeriod,
-                            catalogItemRequestPipeWriters,
-                            dataSourceProgress,
-                            cancellationToken);
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.LogError(ex, "Process period {Begin} to {End} failed", currentBegin, currentEnd);
-                    }
-                });
+                            await controller.ReadAsync(
+                                currentBegin,
+                                currentEnd,
+                                samplePeriod,
+                                catalogItemRequestPipeWriters,
+                                dataSourceProgress,
+                                cancellationToken);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogError(ex, "Process period {Begin} to {End} failed", currentBegin, currentEnd);
+                        }
+                    });
 
 #warning fail fast?
-                await Task.WhenAll(readingTasks);
+                    await Task.WhenAll(readingTasks);
 
-                /* continue in time */
-                consumedPeriod += currentPeriod;
-                remainingPeriod -= currentPeriod;
+                    /* continue in time */
+                    consumedPeriod += currentPeriod;
+                    remainingPeriod -= currentPeriod;
 
-                progress?.Report(consumedPeriod.Ticks / (double)totalPeriod.Ticks);
-            }
-
-            /* complete */
-            foreach (var readingGroup in readingGroups)
-            {
-                foreach (var catalogItemRequestPipeWriter in readingGroup.CatalogItemRequestPipeWriters)
-                {
-                    await catalogItemRequestPipeWriter.DataWriter.CompleteAsync();
+                    progress?.Report(consumedPeriod.Ticks / (double)totalPeriod.Ticks);
                 }
-            }
+
+                /* complete */
+                foreach (var readingGroup in readingGroups)
+                {
+                    foreach (var catalogItemRequestPipeWriter in readingGroup.CatalogItemRequestPipeWriters)
+                    {
+                        await catalogItemRequestPipeWriter.DataWriter.CompleteAsync();
+                    }
+                }
+            });
         }
 
         private static (IMemoryOwner<byte>, Memory<byte>, IMemoryOwner<byte>, Memory<byte>) PrepareBuffers(int elementCount, int elementSize)

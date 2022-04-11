@@ -64,7 +64,7 @@ namespace Services
             };
 
             var expected = new double[] { 132, 123 };
-            var options = Options.Create(new DataOptions());
+            var options = Options.Create(new DataOptions() { AggregationNaNThreshold = 0.9 });
             var processingService = new ProcessingService(options);
             var blockSize = data.Length / 2;
             var actual = new double[expected.Length];

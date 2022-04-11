@@ -338,8 +338,17 @@ public class StreamResponse : IDisposable
         var doubleBuffer = new double[elementCount];
         var byteBuffer = new CastMemoryManager<double, byte>(doubleBuffer).Memory;
         var stream = await _response.Content.ReadAsStreamAsync(cancellationToken);
+        var remainingBuffer = byteBuffer;
 
-        await stream.ReadAsync(byteBuffer, cancellationToken);
+        while (!remainingBuffer.IsEmpty)
+        {
+            var bytesRead = await stream.ReadAsync(remainingBuffer, cancellationToken);
+
+            if (bytesRead == 0)
+                throw new Exception("The stream ended early.");
+
+            remainingBuffer = remainingBuffer.Slice(bytesRead);
+        }
 
         return doubleBuffer;
     }

@@ -43,23 +43,23 @@ namespace Nexus.Core
     internal record GeneralOptions() : NexusOptionsBase
     {
         public const string Section = "General";
-        public string? ApplicationName { get; set; }
+        public string? ApplicationName { get; set; } = "Nexus";
     }
 
     internal record DataOptions() : NexusOptionsBase
     {
         public const string Section = "Data";
         public bool DisableCache { get; set; }
-        public uint ReadChunkSize { get; set; }
-        public double AggregationNaNThreshold { get; set; }
+        public uint ReadChunkSize { get; set; } = 209_715_200;
+        public double AggregationNaNThreshold { get; set; } = 0.99;
     }
 
     internal record ServerOptions() : NexusOptionsBase
     {
         public const string Section = "Server";
-        public string? HttpScheme { get; set; }
-        public string? HttpAddress { get; set; }
-        public int HttpPort { get; set; }
+        public string? HttpScheme { get; set; } = "https";
+        public string? HttpAddress { get; set; } = "0.0.0.0";
+        public int HttpPort { get; set; } = 8443;
     }
 
     internal record PathsOptions() : NexusOptionsBase
@@ -105,10 +105,10 @@ namespace Nexus.Core
         public const string DefaultSigningKey = "WOE6/wiy6E4UQJefC03ffOsBnilijFOjhFUw1eUtzhD/8/YNR7auSUeH+5VcGfXU4pki7ZLCulmvNq8c03S96g==";
 
         public string Base64JwtSigningKey { get; set; } = DefaultSigningKey;
-        public TimeSpan CookieLifetime { get; set; }
-        public TimeSpan AccessTokenLifetime { get; set; }
-        public TimeSpan RefreshTokenLifetime { get; set; }
-        public TimeSpan TokenAbuseDetectionPeriod { get; set; }
+        public TimeSpan CookieLifetime { get; set; } = TimeSpan.FromDays(30);
+        public TimeSpan AccessTokenLifetime { get; set; } = TimeSpan.FromHours(1);
+        public TimeSpan RefreshTokenLifetime { get; set; } = TimeSpan.FromDays(30);
+        public TimeSpan TokenAbuseDetectionPeriod { get; set; } = TimeSpan.FromDays(7);
         public List<OpenIdConnectProvider> OidcProviders { get; set; } = new();
     }
 }

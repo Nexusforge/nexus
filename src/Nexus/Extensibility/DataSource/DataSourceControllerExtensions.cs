@@ -2,6 +2,7 @@
 using Nexus.DataModel;
 using Nexus.Utilities;
 using System.IO.Pipelines;
+using System.Runtime.InteropServices;
 
 namespace Nexus.Extensibility
 {
@@ -22,8 +23,9 @@ namespace Nexus.Extensibility
             var elementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, samplePeriod);
             var totalLength = elementCount * NexusUtilities.SizeOf(NexusDataType.FLOAT64);
             var pipe = new Pipe();
+            var stream = new DataSourceDoubleStream(totalLength, pipe.Reader);
 
-            _ = controller.ReadSingleAsync(
+            var task = controller.ReadSingleAsync(
                 begin,
                 end,
                 request,
@@ -33,7 +35,22 @@ namespace Nexus.Extensibility
                 logger,
                 CancellationToken.None);
 
-            return new DataSourceDoubleStream(totalLength, pipe.Reader);
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+#pragma warning disable VSTHRD003 // Vermeiden Sie das Warten auf fremde Aufgaben
+                    await task;
+#pragma warning restore VSTHRD003 // Vermeiden Sie das Warten auf fremde Aufgaben
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Streaming failed");
+                    stream.Cancel();
+                }
+            });
+
+            return stream;
         }
 
         public static Task ReadSingleAsync(

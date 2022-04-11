@@ -60,5 +60,10 @@ namespace Nexus.Core
         {
             return new DateTime(dateTime.Ticks - (dateTime.Ticks % timeSpan.Ticks), dateTime.Kind);
         }
+
+        public static TimeSpan RoundDown(this TimeSpan timeSpan1, TimeSpan timeSpan2)
+        {
+            return new TimeSpan(timeSpan1.Ticks - (timeSpan1.Ticks % timeSpan2.Ticks));
+        }
     }
 }
