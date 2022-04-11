@@ -9,7 +9,7 @@
 
 // https://github.com/dotnet/interactive/issues/698
 #i "nuget: https://www.myget.org/F/apollo3zehn-dev/api/v3/index.json"
-#r "nuget: Nexus.Api, 1.0.0-beta.1.215"
+#r "nuget: Nexus.Api, 1.0.0-beta.1.216"
 
 #!markdown
 
@@ -19,7 +19,7 @@ Create client and authenticate
 
 using Nexus.Api;
 
-var refreshToken = "f9208f50-cd54-4165-8041-b5cd19af45a4%40nexus@vJuk9QUgSWGrQbOsJKEji/RntxjQEgBMC/5yDYo+FyL+wJ/NPkOcU1TBoQuNaNckn928FN7Kc5TSIUiyj+r/Bg==";
+var refreshToken = "<refresh-token>";
 
 var uri = new Uri("https://localhost:8443");
 var client = new NexusClient(uri);
@@ -34,7 +34,7 @@ Get data from sample catalog `/SAMPLE/ACCESSIBLE` and `/SAMPLE/FORWARDED`
 using System.IO;
 
 var begin = new DateTime(2020, 02, 01, 0, 0, 0, DateTimeKind.Utc);
-var end = new DateTime(2020, 02, 02, 0, 0, 0, DateTimeKind.Utc);
+var end = new DateTime(2020, 02, 01, 0, 2, 0, DateTimeKind.Utc);
 
 // Get T1 data
 
@@ -46,16 +46,16 @@ using (var disposable = client.AttachConfiguration(
     ("password", "1234")))
 {
     var response1 = await client.Data
-        .GetStreamAsync("/SAMPLE/FORWARDED", "T1", "1_s", begin, end);
+        .GetStreamAsync("/SAMPLE/FORWARDED/T1/1_s", begin, end);
 
     t1Data = await response1.ReadAsync();
 }
 
-// Get V1 data
-var response2 = await client.Data
-    .GetStreamAsync("/SAMPLE/ACCESSIBLE", "V1", "1_s", begin, end);
+// Get T1 average data
+var response3 = await client.Data
+    .GetStreamAsync("/SAMPLE/ACCESSIBLE/T1/5_s_mean", begin, end);
 
-var v1Data = await response2.ReadAsync();
+var t1MeanData = await response3.ReadAsync();
 
 // timestamps
 var timestamps = Enumerable
@@ -63,18 +63,18 @@ var timestamps = Enumerable
     .Select(x => begin.AddSeconds(x))
     .ToArray();
 
+var timestamps_mean = Enumerable
+    .Range(0, t1MeanData.Length)
+    .Select(x => begin.AddSeconds(5*x))
+    .ToArray();
+
 #!csharp
 
 // metadata
-var metadata1 = await client.Catalogs.GetAsync("/SAMPLE/FOWARDED");
-var t1Metadata = metadata1.Resources.First(resource => resource.Id == "T1");
+var metadata = await client.Catalogs.GetAsync("/SAMPLE/FORWARDED");
+var t1Metadata = metadata.Resources.First(resource => resource.Id == "T1");
 var t1Description = t1Metadata.Properties["Description"];
 var t1Unit = t1Metadata.Properties["Unit"];
-
-var metadata2 = await client.Catalogs.GetAsync("/SAMPLE/ACCESSIBLE");
-var v1Metadata = metadata2.Resources.First(resource => resource.Id == "V1");
-var v1Description = v1Metadata.Properties["Description"];
-var v1Unit = v1Metadata.Properties["Unit"];
 
 #!fsharp
 
@@ -88,12 +88,11 @@ Plot data
 #!fsharp
 
 #!share --from csharp timestamps
+#!share --from csharp timestamps_mean
 #!share --from csharp t1Data
+#!share --from csharp t1MeanData
 #!share --from csharp t1Description
 #!share --from csharp t1Unit
-#!share --from csharp v1Data
-#!share --from csharp v1Description
-#!share --from csharp v1Unit
 
 // wait for https://github.com/dotnet/interactive/issues/1848 to be solved
 
@@ -101,16 +100,16 @@ open Plotly.NET
 
 let t1Chart =
     Chart.Line(timestamps, t1Data, Name=t1Description)
-        |> Chart.withAxisAnchor(Y=1)
+        |> Chart.withAxisAnchor(Y=2)
 
-let v1Chart =
-    Chart.Line(timestamps, v1Data, Name=v1Description)
+let t1_meanChart =
+    Chart.Line(timestamps_mean, t1MeanData, Name=t1Description)
         |> Chart.withAxisAnchor(Y=2)
 
 let twoXAxes = 
     [
         t1Chart
-        v1Chart
+        t1_meanChart
     ]
     |> Chart.combine
     |> Chart.withYAxisStyle(
@@ -119,7 +118,7 @@ let twoXAxes =
         Id=StyleParam.SubPlotId.YAxis 1
     )
     |> Chart.withYAxisStyle(
-        $"axis 2 / {v1Unit}",
+        $"axis 2 / {t1Unit}",
         Side=StyleParam.Side.Right,
         Id=StyleParam.SubPlotId.YAxis 2,
         Overlaying=StyleParam.LinearAxisId.Y 1

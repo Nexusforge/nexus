@@ -18,6 +18,13 @@ namespace Nexus.Services
             Memory<double> sourceBuffer, 
             List<Interval> uncachedIntervals,
             CancellationToken cancellationToken);
+
+        Task ClearAsync(
+            string catalogId,
+            DateTime begin, 
+            DateTime end,
+            Progress<double> progress,
+            CancellationToken cancellationToken);
     }
 
     internal class CacheService : ICacheService
@@ -139,6 +146,16 @@ namespace Nexus.Services
                     }
                 });
             }
+        }
+
+        public Task ClearAsync(
+            string catalogId,
+            DateTime begin,
+            DateTime end, 
+            Progress<double> progress,
+            CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
         }
 
         private TimeSpan GetFilePeriod(TimeSpan samplePeriod)

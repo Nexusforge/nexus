@@ -35,7 +35,7 @@ Not all combination of base sample period and target sample period are possible.
 
 # Caching
 
-TBD
+All aggregation requests are cached by default to speed up subsequent requests. Whenever aggregated data is requested, the cache is consulted first. If there is a cache file that (partially) covers the requested period, it will be returned for further processing. Cache files do not necessarily have to be complete; i.e. there may be intervals within a cache file that contain no cached data. These files keep track of all valid/invalid cache intervals. When the data is read from a cached file, a list of "uncached intervals" is returned to the calling method along with the data itself. After that, all these intervals are processed as if there was no cache at all to fill the gaps and the result is written back to the cache.
 
 All frequencies are required to be multiples of each other, namely these are:
 

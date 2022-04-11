@@ -209,8 +209,8 @@ namespace Nexus.Services
                             var currentCatalogId = current.Registration.Path + '/';
                             var prototypeCatalogId = catalogPrototype.Registration.Path + '/';
 
-                            return currentCatalogId.StartsWith(prototypeCatalogId) ||
-                                   prototypeCatalogId.StartsWith(currentCatalogId);
+                            return currentCatalogId.StartsWith(prototypeCatalogId, StringComparison.OrdinalIgnoreCase) ||
+                                   prototypeCatalogId.StartsWith(currentCatalogId, StringComparison.OrdinalIgnoreCase);
                         });
 
                 /* nothing found */

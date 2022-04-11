@@ -20,6 +20,8 @@ namespace Nexus.Controllers
     [Route("api/v{version:apiVersion}/[controller]")]
     internal class DataController : ControllerBase
     {
+        // GET      /api/data
+
         #region Fields
 
         private DataOptions _dataOptions;

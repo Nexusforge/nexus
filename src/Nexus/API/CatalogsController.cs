@@ -125,8 +125,8 @@ namespace Nexus.Controllers
         /// Gets the specified catalog availability.
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="begin">Start date.</param>
-        /// <param name="end">End date.</param>
+        /// <param name="begin">Start date/time.</param>
+        /// <param name="end">End date/time.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpGet("{catalogId}/availability")]
         public Task<ActionResult<CatalogAvailability>>
@@ -219,7 +219,7 @@ namespace Nexus.Controllers
 
             var response = ProcessCatalogIdAsync<object>(catalogId, async catalogContainer =>
             {
-                var canEdit = User.HasClaim(NexusClaims.CAN_EDIT_CATALOG, "true");
+                var canEdit = AuthorizationUtilities.IsCatalogEditable(User, catalogId);
 
                 if (!canEdit)
                     return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to modify the catalog {catalogId}.");

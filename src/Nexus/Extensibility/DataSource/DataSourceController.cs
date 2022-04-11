@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Options;
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Services;
@@ -431,13 +430,13 @@ namespace Nexus.Extensibility
                 ? (int)(sourceSamplePeriod.Ticks / targetSamplePeriod.Ticks)
                 : (int)(targetSamplePeriod.Ticks / sourceSamplePeriod.Ticks);
 
-            foreach (var period in uncachedIntervals)
+            foreach (var interval in uncachedIntervals)
             {
                 var samplePeriod = item.Representation.SamplePeriod;
                 var baseSamplePeriod = baseItem.Representation.SamplePeriod;
 
-                var offset = period.Begin - begin;
-                var length = period.End - period.Begin;
+                var offset = interval.Begin - begin;
+                var length = interval.End - interval.Begin;
 
                 var slicedTargetBuffer = targetBuffer.Slice(
                     start: NexusUtilities.Scale(offset, samplePeriod),
@@ -456,8 +455,8 @@ namespace Nexus.Extensibility
 
                 /* read */
                 await DataSource.ReadAsync(
-                    period.Begin,
-                    period.End,
+                    interval.Begin,
+                    interval.End,
                     new[] { slicedReadRequest },
                     progress,
                     cancellationToken);

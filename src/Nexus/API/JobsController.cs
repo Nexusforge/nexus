@@ -23,7 +23,6 @@ namespace Nexus.Controllers
         private IServiceProvider _serviceProvider;
         private Serilog.IDiagnosticContext _diagnosticContext;
         private IJobService _jobService;
-        private Dictionary<CatalogContainer, IEnumerable<CatalogItemRequest>> catalogItemRequestMap;
 
         #endregion
 
@@ -159,6 +158,50 @@ namespace Nexus.Controllers
 
             var response = (ActionResult<Job>)Accepted(GetAcceptUrl(job.Id), job);
             return response;
+        }
+
+        /// <summary>
+        /// Clears the catalog cache for the specified period of time.
+        /// </summary>
+        /// <param name="catalogId">The catalog identifier.</param>
+        /// <param name="begin">Start date/time.</param>
+        /// <param name="end">End date/time.</param>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
+        public ActionResult<Job> ClearCache(
+                string catalogId,
+                DateTime begin,
+                DateTime end,
+                CancellationToken cancellationToken)
+        {
+            var username = User.Identity?.Name;
+
+            if (username is null)
+                throw new Exception("This should never happen.");
+
+            var job = new Job(Guid.NewGuid(), "clear-cache", username, default);
+
+            var canEdit = AuthorizationUtilities.IsCatalogEditable(User, catalogId);
+
+            if (!canEdit)
+                return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to modify the catalog {catalogId}.");
+
+            var progress = new Progress<double>();
+            var cacheService = _serviceProvider.GetRequiredService<ICacheService>();
+
+            try
+            {
+                var jobControl = _jobService.AddJob(job, progress, async (jobControl, cts) =>
+                {
+                    await cacheService.ClearAsync(catalogId, begin, end, progress, cts.Token);
+                    return null;
+                });
+
+                return Accepted(GetAcceptUrl(job.Id), job);
+            }
+            catch (ValidationException ex)
+            {
+                return UnprocessableEntity(ex.Message);
+            }
         }
 
         /// <summary>
