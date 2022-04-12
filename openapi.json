@@ -169,7 +169,7 @@
           {
             "name": "begin",
             "in": "query",
-            "description": "Start date.",
+            "description": "Start date/time.",
             "schema": {
               "type": "string",
               "format": "date-time"
@@ -179,7 +179,7 @@
           {
             "name": "end",
             "in": "query",
-            "description": "End date.",
+            "description": "End date/time.",
             "schema": {
               "type": "string",
               "format": "date-time"
@@ -412,6 +412,61 @@
         ],
         "summary": "Creates a new load packages job.",
         "operationId": "Jobs_LoadPackages",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/clear-cache": {
+      "post": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Clears the catalog cache for the specified period of time.",
+        "operationId": "Jobs_ClearCache",
+        "parameters": [
+          {
+            "name": "catalogId",
+            "in": "query",
+            "required": true,
+            "description": "The catalog identifier.",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "begin",
+            "in": "query",
+            "required": true,
+            "description": "Start date/time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "x-position": 2
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": true,
+            "description": "End date/time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "x-position": 3
+          }
+        ],
         "responses": {
           "200": {
             "description": "",

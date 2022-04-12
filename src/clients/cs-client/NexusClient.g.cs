@@ -436,8 +436,8 @@ public interface ICatalogsClient
     /// Gets the specified catalog availability.
     /// </summary>
     /// <param name="catalogId">The catalog identifier.</param>
-    /// <param name="begin">Start date.</param>
-    /// <param name="end">End date.</param>
+    /// <param name="begin">Start date/time.</param>
+    /// <param name="end">End date/time.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
     Task<CatalogAvailability> GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken = default);
 
@@ -632,6 +632,15 @@ public interface IJobsClient
     Task<Job> LoadPackagesAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Clears the catalog cache for the specified period of time.
+    /// </summary>
+    /// <param name="catalogId">The catalog identifier.</param>
+    /// <param name="begin">Start date/time.</param>
+    /// <param name="end">End date/time.</param>
+    /// <param name="cancellationToken">The token to cancel the current operation.</param>
+    Task<Job> ClearCacheAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets a list of jobs.
     /// </summary>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
@@ -678,6 +687,26 @@ public class JobsClient : IJobsClient
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/jobs/load-packages");
+
+        var url = urlBuilder.ToString();
+        return _client.InvokeAsync<Job>("POST", url, "application/json", default, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<Job> ClearCacheAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken = default)
+    {
+        var urlBuilder = new StringBuilder();
+        urlBuilder.Append("/api/v1/jobs/clear-cache");
+
+        var queryValues = new Dictionary<string, string>()
+        {
+            ["catalogId"] = Uri.EscapeDataString(Convert.ToString(catalogId, CultureInfo.InvariantCulture)),
+            ["begin"] = Uri.EscapeDataString(Convert.ToString(begin, CultureInfo.InvariantCulture)),
+            ["end"] = Uri.EscapeDataString(Convert.ToString(end, CultureInfo.InvariantCulture)),
+        };
+
+        var query = "?" + string.Join('&', queryValues.Select(entry => $"{entry.Key}={entry.Value}"));
+        urlBuilder.Append(query);
 
         var url = urlBuilder.ToString();
         return _client.InvokeAsync<Job>("POST", url, "application/json", default, cancellationToken);

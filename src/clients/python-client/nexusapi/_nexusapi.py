@@ -827,8 +827,8 @@ class CatalogsClient:
 
         Args:
             catalog_id: The catalog identifier.
-            begin: Start date.
-            end: End date.
+            begin: Start date/time.
+            end: End date/time.
         """
 
         url = "/api/v1/catalogs/{catalogId}/availability"
@@ -945,6 +945,29 @@ class JobsClient:
         """
 
         url = "/api/v1/jobs/load-packages"
+
+        return self._client._invoke_async(Job, "POST", url, "application/json", None)
+
+    def clear_cache(self, catalog_id: str, begin: datetime, end: datetime) -> Awaitable[Job]:
+        """
+        Clears the catalog cache for the specified period of time.
+
+        Args:
+            catalog_id: The catalog identifier.
+            begin: Start date/time.
+            end: End date/time.
+        """
+
+        url = "/api/v1/jobs/clear-cache"
+
+        queryValues: dict[str, str] = {
+            "catalogId": quote(_to_string(catalog_id), safe=""),
+            "begin": quote(_to_string(begin), safe=""),
+            "end": quote(_to_string(end), safe=""),
+        }
+
+        query: str = "?" + "&".join(f"{key}={value}" for (key, value) in queryValues.items())
+        url += query
 
         return self._client._invoke_async(Job, "POST", url, "application/json", None)
 
