@@ -1,6 +1,7 @@
 ﻿using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Utilities;
+using System.Globalization;
 
 namespace Nexus.Services
 {
@@ -23,7 +24,7 @@ namespace Nexus.Services
             string catalogId,
             DateTime begin, 
             DateTime end,
-            Progress<double> progress,
+            IProgress<double> progress,
             CancellationToken cancellationToken);
     }
 
@@ -148,14 +149,45 @@ namespace Nexus.Services
             }
         }
 
-        public Task ClearAsync(
+        public async Task ClearAsync(
             string catalogId,
             DateTime begin,
             DateTime end, 
-            Progress<double> progress,
+            IProgress<double> progress,
             CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            var currentProgress = 0.0;
+            var totalPeriod = end - begin;
+            var folderPeriod = TimeSpan.FromDays(1);
+            var timeout = TimeSpan.FromMinutes(1);
+
+            await NexusUtilities.FileLoopAsync(begin, end, folderPeriod, async (folderBegin, folderOffset, duration) =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var dateOnly = DateOnly.FromDateTime(folderBegin.Date);
+
+                /* partial day */
+                if (duration != folderPeriod)
+                    await _databaseService.ClearCacheEntriesAsync(catalogId, dateOnly, timeout, cacheEntryId =>
+                    {
+                        var dateTimeString = Path
+                            .GetFileName(cacheEntryId).Substring(0, 27);
+
+                        var cacheEntryDateTime = DateTime
+                            .ParseExact(dateTimeString, "yyyy-MM-ddTHH-mm-ss-fffffff", CultureInfo.InvariantCulture);
+
+                        return begin <= cacheEntryDateTime && cacheEntryDateTime < end;
+                    });
+
+                /* full day */
+                else
+                    await _databaseService.ClearCacheEntriesAsync(catalogId, dateOnly, timeout, cacheEntryId => true);
+
+                var currentEnd = folderBegin + folderOffset + duration;
+                currentProgress += currentEnd.Ticks / (double)totalPeriod.Ticks;
+                progress.Report(currentProgress);
+            });
         }
 
         private TimeSpan GetFilePeriod(TimeSpan samplePeriod)

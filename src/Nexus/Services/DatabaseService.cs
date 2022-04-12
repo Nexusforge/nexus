@@ -27,6 +27,7 @@ namespace Nexus.Services
         /* /cache */
         bool TryReadCacheEntry(CatalogItem catalogItem, DateTime begin, [NotNullWhen(true)] out Stream? cacheEntry);
         bool TryWriteCacheEntry(CatalogItem catalogItem, DateTime begin, [NotNullWhen(true)] out Stream? cacheEntry);
+        Task ClearCacheEntriesAsync(string catalogId, DateOnly day, TimeSpan timeout, Predicate<string> predicate);
     }
 
     internal class DatabaseService : IDatabaseService
@@ -190,8 +191,11 @@ namespace Nexus.Services
         }
 
         /* /cache */
+        private string GetCacheEntryDirectoryPath(string catalogId, DateOnly day)
+            => $"{catalogId.TrimStart('/').Replace("/", "_")}/{day.ToString("yyyy-MM")}/{day.ToString("dd")}";
+
         private string GetCacheEntryId(CatalogItem catalogItem, DateTime begin)
-            => $"{catalogItem.Catalog.Id.TrimStart('/').Replace("/", "_")}/{begin.ToString("yyyy-MM")}/{begin.ToString("dd")}/{begin.ToString("yyyy-MM-ddTHH-mm-ss-fffffff")}_{catalogItem.Resource.Id}_{catalogItem.Representation.Id}.cache";
+            => $"{GetCacheEntryDirectoryPath(catalogItem.Catalog.Id, DateOnly.FromDateTime(begin))}/{begin.ToString("yyyy-MM-ddTHH-mm-ss-fffffff")}_{catalogItem.Resource.Id}_{catalogItem.Representation.Id}.cache";
 
         public bool TryReadCacheEntry(CatalogItem catalogItem, DateTime begin, [NotNullWhen(true)] out Stream? cacheEntry)
         {
@@ -233,6 +237,60 @@ namespace Nexus.Services
             {
                 return false;
             }
+        }
+
+        public async Task ClearCacheEntriesAsync(string catalogId, DateOnly day, TimeSpan timeout, Predicate<string> predicate)
+        {
+            var cacheEntryDirectoryPath = GetCacheEntryDirectoryPath(catalogId, day);
+
+            if (Directory.Exists(cacheEntryDirectoryPath))
+            {
+                var deleteTasks = new List<Task>();
+
+                foreach (var cacheEntry in Directory.EnumerateFiles(cacheEntryDirectoryPath))
+                {
+                    /* if file should be deleted */
+                    if (predicate(cacheEntry))
+                    {
+                        /* try direct delete */
+                        try
+                        {
+                            File.Delete(cacheEntry);
+                        }
+
+                        /* otherwise try asynchronously for a minute */
+                        catch (IOException)
+                        {
+                            deleteTasks.Add(DeleteCacheEntryAsync(cacheEntry, timeout));
+                        }
+                    }
+                }
+
+                await Task.WhenAll(deleteTasks);
+            }
+        }
+
+        private async Task DeleteCacheEntryAsync(string cacheEntry, TimeSpan timeout)
+        {
+            var end = DateTime.UtcNow + timeout;
+
+            while (DateTime.UtcNow < end)
+            {
+                try
+                {
+                    File.Delete(cacheEntry);
+                    break;
+                }
+                catch (IOException)
+                {
+                    // file is still in use
+                }
+
+                await Task.Delay(5);
+            }
+
+            if (File.Exists(cacheEntry))
+                throw new Exception($"Cannot delete cache entry {cacheEntry}.");
         }
     }
 }

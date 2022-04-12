@@ -174,5 +174,45 @@ namespace Services
             var actualData2 = MemoryMarshal.Cast<byte, double>(actualStreams[1].GetBuffer().AsSpan()).Slice(0, 8).ToArray();
             Assert.True(expectedData2.SequenceEqual(actualData2));
         }
+
+        [Fact]
+        public async Task CanClearCache()
+        {
+            // Arrange
+            var databaseService = Mock.Of<IDatabaseService>();
+            var catalogId = "foo";
+            var begin = new DateTime(2020, 01, 01, 23, 0, 0, DateTimeKind.Utc);
+            var end = new DateTime(2020, 01, 03, 01, 0, 0, DateTimeKind.Utc);
+            var cacheService = new CacheService(databaseService);
+
+            // Act
+            await cacheService
+                .ClearAsync(catalogId, begin, end, new Progress<double>(), CancellationToken.None);
+
+            // Assert
+            Mock.Get(databaseService).Verify(databaseService 
+                => databaseService.ClearCacheEntriesAsync(
+                    catalogId, 
+                    new DateOnly(2020, 01, 01),
+                    It.IsAny<TimeSpan>(),
+                    It.Is<Predicate<string>>(arg => !arg("2020-01-01T00-00-00-0000000") && arg("2020-01-01T23-00-00-0000000"))),
+                    Times.Once);
+
+            Mock.Get(databaseService).Verify(databaseService
+                => databaseService.ClearCacheEntriesAsync(
+                    catalogId, 
+                    new DateOnly(2020, 01, 02), 
+                    It.IsAny<TimeSpan>(), 
+                    It.Is<Predicate<string>>(arg => arg("2020-01-02T00-00-00-0000000") && arg("bar"))),
+                    Times.Once);
+
+            Mock.Get(databaseService).Verify(databaseService
+                => databaseService.ClearCacheEntriesAsync(
+                    catalogId, 
+                    new DateOnly(2020, 01, 03), 
+                    It.IsAny<TimeSpan>(),
+                    It.Is<Predicate<string>>(arg => arg("2020-01-03T00-00-00-0000000") && !arg("2020-01-03T01-00-00-0000000"))), 
+                    Times.Once);
+        }
     }
 }
