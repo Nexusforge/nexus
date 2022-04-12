@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Nexus.Core;
 using Nexus.Services;
 using Nexus.Utilities;
@@ -108,11 +109,7 @@ namespace Nexus.Controllers
             }
 
             //
-            var username = User.Identity?.Name;
-
-            if (username is null)
-                throw new Exception("This should never happen.");
-
+            var username = User.Identity?.Name!;
             var job = new Job(Guid.NewGuid(), "export", username, parameters);
             var dataService = _serviceProvider.GetRequiredService<IDataService>();
 
@@ -135,24 +132,18 @@ namespace Nexus.Controllers
         /// <summary>
         /// Creates a new load packages job.
         /// </summary>
-        /// <param name="cancellationToken">The token to cancel the current operation.</param>
         [Authorize(Policy = Policies.RequireAdmin)]
-
         [HttpPost("load-packages")]
-        public ActionResult<Job> LoadPackages(
-            CancellationToken cancellationToken)
+        public ActionResult<Job> LoadPackages()
         {
-            var username = User.Identity?.Name;
-
-            if (username is null)
-                throw new Exception("This should never happen.");
+            var username = User.Identity?.Name!;
 
             var job = new Job(Guid.NewGuid(), "load-packages", username, default);
             var progress = new Progress<double>();
 
             var jobControl = _jobService.AddJob(job, progress, async (jobControl, cts) =>
             {
-                await _appStateManager.LoadPackagesAsync(progress, cancellationToken);
+                await _appStateManager.LoadPackagesAsync(progress, cts.Token);
                 return null;
             });
 
@@ -166,18 +157,13 @@ namespace Nexus.Controllers
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="begin">Start date/time.</param>
         /// <param name="end">End date/time.</param>
-        /// <param name="cancellationToken">A token to cancel the current operation.</param>
+        [HttpPost("clear-cache")]
         public ActionResult<Job> ClearCache(
-                string catalogId,
-                DateTime begin,
-                DateTime end,
-                CancellationToken cancellationToken)
+            [BindRequired] string catalogId,
+            [BindRequired] DateTime begin,
+            [BindRequired] DateTime end)
         {
-            var username = User.Identity?.Name;
-
-            if (username is null)
-                throw new Exception("This should never happen.");
-
+            var username = User.Identity?.Name!;
             var job = new Job(Guid.NewGuid(), "clear-cache", username, default);
 
             var canEdit = AuthorizationUtilities.IsCatalogEditable(User, catalogId);
@@ -188,20 +174,13 @@ namespace Nexus.Controllers
             var progress = new Progress<double>();
             var cacheService = _serviceProvider.GetRequiredService<ICacheService>();
 
-            try
+            var jobControl = _jobService.AddJob(job, progress, async (jobControl, cts) =>
             {
-                var jobControl = _jobService.AddJob(job, progress, async (jobControl, cts) =>
-                {
-                    await cacheService.ClearAsync(catalogId, begin, end, progress, cts.Token);
-                    return null;
-                });
+                await cacheService.ClearAsync(catalogId, begin, end, progress, cts.Token);
+                return null;
+            });
 
-                return Accepted(GetAcceptUrl(job.Id), job);
-            }
-            catch (ValidationException ex)
-            {
-                return UnprocessableEntity(ex.Message);
-            }
+            return Accepted(GetAcceptUrl(job.Id), job);
         }
 
         /// <summary>
