@@ -40,7 +40,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestExtensionProject", "tes
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "cs-client", "src\clients\cs-client\cs-client.csproj", "{FD8E5EA0-674B-492D-8D1E-1D0B8374B71D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nexus.BlazorWasm", "src\Nexus.BlazorWasm\Nexus.BlazorWasm.csproj", "{121840FD-19CC-4C48-86DE-AF0B6C70A089}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nexus.UI", "src\Nexus.UI\Nexus.UI.csproj", "{121840FD-19CC-4C48-86DE-AF0B6C70A089}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "cs-client-tests", "tests\clients\cs-client-tests\cs-client-tests.csproj", "{AFCE2F13-F54D-439A-B796-DC3F32E1A12B}"
 EndProject

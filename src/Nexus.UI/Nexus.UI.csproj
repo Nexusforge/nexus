@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>$(TargetFrameworkVersion)</TargetFramework>
+  </PropertyGroup>
+	
+  <PropertyGroup>
+	<GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+	
+  <ItemGroup>
+    <None Remove="Resources\Courier New Bold.ttf" />
+    <None Remove="Resources\Courier New Regular.ttf" />
+  </ItemGroup>
+	
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Courier New Bold.ttf" />
+    <EmbeddedResource Include="Resources\Courier New Regular.ttf" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="6.0.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="6.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="6.0.0" PrivateAssets="all" />
+    <PackageReference Include="SkiaSharp" Version="2.88.0-preview.232" />
+    <PackageReference Include="SkiaSharp.Views.Blazor" Version="2.88.0-preview.232" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\clients\cs-client\cs-client.csproj" />
+  </ItemGroup>
+
+</Project>

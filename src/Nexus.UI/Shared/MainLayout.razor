@@ -1,0 +1,47 @@
+﻿@inherits LayoutComponentBase
+@inject NexusClient Client
+@inject NavigationManager NavigationManager
+
+<AuthorizeView>
+
+    <Authorized>
+        <Navbar />
+
+        <div class="flex flex-1">
+            <Sidebar />
+
+            <div class="flex-1 bg-gray-100">
+                @Body
+            </div>
+        </div>
+    </Authorized>
+
+    <NotAuthorized>
+        @if (_authenticationSchemes is null)
+        {
+            <span>Loading authentication schemes ...</span>
+        }
+        else
+        {
+            @foreach (var scheme in _authenticationSchemes)
+            {
+                <form action="/api/v1/users/authenticate">
+                    <input type="hidden" name="scheme" value="@scheme.Scheme" /> 
+                    <input type="hidden" name="returnUrl" value="@NavigationManager.Uri" /> 
+                    <input type="submit" value="Login via @scheme.DisplayName" />
+                </form>
+            }
+        }
+    </NotAuthorized>
+
+</AuthorizeView>
+
+@code {
+
+    private ICollection<AuthenticationSchemeDescription> _authenticationSchemes { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _authenticationSchemes = await Client.Users.GetAuthenticationSchemesAsync();
+    }
+}

@@ -34,7 +34,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Nexus.BlazorWasm\Nexus.BlazorWasm.csproj" />
+    <ProjectReference Include="..\Nexus.UI\Nexus.UI.csproj" />
     <ProjectReference Include="..\Nexus.Extensibility\Nexus.Extensibility.csproj" />
 	  
     <!-- 
