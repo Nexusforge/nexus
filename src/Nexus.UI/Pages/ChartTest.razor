@@ -2,8 +2,18 @@
 @using SkiaSharp.Views.Blazor
 <PageTitle>Chart Test Page</PageTitle>
 
-<div style="width: 450px">
+<div class="canvas-container">
+
     <SKGLView
-        OnPaintSurface="PaintSurface" EnableRenderLoop=true>
+        OnPaintSurface="PaintSurface" 
+        EnableRenderLoop=true>
     </SKGLView>
+
+    <div class="overlay"
+        @onmousemove="MouseMove"
+        @onmouseleave="MouseLeave">
+        <div id="crosshairs-x" style="display: none;"></div>
+        <div id="crosshairs-y" style="display: none;"></div>
+    </div>
+
 </div>

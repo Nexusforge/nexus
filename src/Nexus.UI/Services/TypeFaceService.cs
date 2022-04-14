@@ -3,13 +3,14 @@ using System.Reflection;
 
 namespace Nexus.UI.Services
 {
+    // https://github.com/mono/SkiaSharp/issues/1902
     // https://fontsgeek.com/fonts/Courier-New-Regular
 
-    public static class TypeFaceService
+    public class TypeFaceService
     {
-        private static Dictionary<string, SKTypeface> _typeFaces = new();
+        private Dictionary<string, SKTypeface> _typeFaces = new();
 
-        public static SKTypeface GetTTF(string ttfName)
+        public SKTypeface GetTTF(string ttfName)
         {
             if (_typeFaces.ContainsKey(ttfName))
                 return _typeFaces[ttfName];
@@ -20,7 +21,7 @@ namespace Nexus.UI.Services
             return SKTypeface.Default;
         }
 
-        private static bool LoadTypeFace(string ttfName)
+        private bool LoadTypeFace(string ttfName)
         {
             var assembly = Assembly.GetExecutingAssembly();
 

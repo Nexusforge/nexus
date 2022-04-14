@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Microsoft.JSInterop;
 using Nexus.Api;
 using Nexus.UI;
 using Nexus.UI.Services;
@@ -19,6 +20,8 @@ var nexusClient = new NexusClient(httpClient);
 builder.Services
     .AddAuthorizationCore()
     .AddSingleton(nexusClient)
+    .AddSingleton<TypeFaceService>()
+    .AddSingleton(serviceProvider => (IJSInProcessRuntime)serviceProvider.GetRequiredService<IJSRuntime>())
     .AddScoped<AuthenticationStateProvider, NexusAuthenticationStateProvider>();
 
 await builder.Build().RunAsync();
