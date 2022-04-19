@@ -9,11 +9,6 @@
   </PropertyGroup>
 	
   <ItemGroup>
-    <None Remove="Resources\Courier New Bold.ttf" />
-    <None Remove="Resources\Courier New Regular.ttf" />
-  </ItemGroup>
-	
-  <ItemGroup>
     <EmbeddedResource Include="Resources\Courier New Bold.ttf" />
     <EmbeddedResource Include="Resources\Courier New Regular.ttf" />
   </ItemGroup>

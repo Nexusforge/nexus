@@ -1,0 +1,36 @@
+﻿@using SkiaSharp.Views.Blazor
+
+<div class="chart-container">
+
+    <div id="chart">
+
+        <SKGLView
+            OnPaintSurface="PaintSurface">
+        </SKGLView>
+
+        <div id="overlay" 
+            @onmousemove="OnMouseMove"
+            @onmouseleave="OnMouseLeave">
+            <div id="crosshairs-x" style="display: none;"></div>
+            <div id="crosshairs-y" style="display: none;"></div>
+            
+            @foreach (var series in LineSeries)
+            {
+               <div 
+                id="pointer_@series.Id"
+                class="pointer"
+                style="display: none; background: rgb(@series.Color.Red, @series.Color.Green, @series.Color.Blue)"></div>
+            }
+        </div>
+    </div>
+
+    <div class="legend">
+        @foreach (var series in LineSeries)
+        {
+            <div class="mx-3" class="legend-item">
+                <div class="color-box" style="border-color: rgb(@series.Color.Red, @series.Color.Green, @series.Color.Blue)"></div>
+                <div id="text_@series.Id">@series.Name</div>
+            </div>
+        }
+    </div>
+</div>
