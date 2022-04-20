@@ -19,7 +19,7 @@
     </PackageReference>
     <PackageReference Include="NSwag.AspNetCore" Version="13.15.10" />
     <PackageReference Include="OpenIddict" Version="3.1.1" />
-	<PackageReference Include="OpenIddict.AspNetCore" Version="3.1.1" />
+	  <PackageReference Include="OpenIddict.AspNetCore" Version="3.1.1" />
     <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="3.1.1" />
     <PackageReference Include="Serilog.AspNetCore" Version="5.0.0" />
     <PackageReference Include="Serilog.Enrichers.ClientInfo" Version="1.1.4" />

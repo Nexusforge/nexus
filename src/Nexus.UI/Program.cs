@@ -5,6 +5,10 @@ using Microsoft.JSInterop;
 using Nexus.Api;
 using Nexus.UI;
 using Nexus.UI.Services;
+using System.Globalization;
+
+CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");

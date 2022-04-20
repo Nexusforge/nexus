@@ -2,34 +2,44 @@
 
 <div class="chart-container">
 
-    <div id="chart">
+    <div id="chart_@(_chartId)" class="chart">
 
-        <SKGLView
+        <SKGLView @ref="_skiaView"
             OnPaintSurface="PaintSurface">
         </SKGLView>
 
-        <div id="overlay" 
+        <div id="overlay_@(_chartId)" class="overlay" 
+            @onmousedown="OnMouseDown"
             @onmousemove="OnMouseMove"
-            @onmouseleave="OnMouseLeave">
-            <div id="crosshairs-x" style="display: none;"></div>
-            <div id="crosshairs-y" style="display: none;"></div>
+            @onmouseleave="OnMouseLeave"
+            @ondblclick="OnDoubleClick">
+
+            <div id="crosshairs-x_@(_chartId)" class="crosshairs-x" style="display: none;"></div>
+            <div id="crosshairs-y_@(_chartId)" class="crosshairs-y" style="display: none;"></div>
+            <div id="selection_@(_chartId)" class="selection"></div>
             
             @foreach (var series in LineSeries)
             {
                <div 
-                id="pointer_@series.Id"
-                class="pointer"
-                style="display: none; background: rgb(@series.Color.Red, @series.Color.Green, @series.Color.Blue)"></div>
+                    id="pointer_@(series.Id)_@(_chartId)"
+                    class="pointer"
+                    style="display: none; background: rgb(@series.Color.Red, @series.Color.Green, @series.Color.Blue)"></div>
             }
         </div>
     </div>
 
     <div class="legend">
+        <div class="legend-item">
+            <div id="name_datetime_@(_chartId)" class="name">Time:</div>
+            <div id="value_datetime_@(_chartId)">--</div>
+        </div>
+
         @foreach (var series in LineSeries)
         {
-            <div class="mx-3" class="legend-item">
+            <div class="legend-item">
                 <div class="color-box" style="border-color: rgb(@series.Color.Red, @series.Color.Green, @series.Color.Blue)"></div>
-                <div id="text_@series.Id">@series.Name</div>
+                <div id="name_@(series.Id)_@(_chartId)" class="name">@(string.IsNullOrWhiteSpace(series.Unit) ? series.Name : $"{series.Name} ({@series.Unit})"):</div>
+                <div id="value_@(series.Id)_@(_chartId)">--</div>
             </div>
         }
     </div>

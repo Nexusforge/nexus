@@ -8,65 +8,20 @@ using System.Globalization;
 
 namespace Nexus.UI.Shared
 {
-    public record LineSeries(
-        string Name,
-        string Unit,
-        DateTime Begin,
-        TimeSpan SamplePeriod,
-        double[] Data)
-    {
-        public string Id { get; } = Guid.NewGuid().ToString();
-        public SKColor Color { get; set; }
-    }
-
-    internal record struct RelativePosition(
-        float X,
-        float Y);
-
-    internal record AxisInfo(
-        string Unit,
-        float OriginalMin,
-        float OriginalMax)
-    {
-        public float Min { get; set; }
-        public float Max { get; set; }
-    };
-
-    internal record TimeAxisConfig(
-
-        /* The tick interval */
-        TimeSpan TickInterval,
-
-        /* Ticks where the TriggerPeriod changes will have a slow tick label attached */
-        TriggerPeriod Trigger,
-
-        /* The standard tick label format */
-        string FastTickLabelFormat,
-
-        /* The slow tick format */
-        string SlowTickLabelFormat);
-
-    internal enum TriggerPeriod
-    {
-        Second,
-        Minute,
-        Hour,
-        Day,
-        Month,
-        Year
-    }
-
-    // https://stackoverflow.com/questions/63265941/blazor-3-1-nested-onmouseover-events
-    [EventHandler("onmouseleave", typeof(MouseEventArgs), enableStopPropagation: true, enablePreventDefault: true)]
-    public static class EventHandlers
-    {
-    }
-
-    public partial class Chart
+    public partial class Chart : IDisposable
     {
         #region Fields
 
-        private Dictionary<AxisInfo, LineSeries[]> _axesMap = null!;
+        private SKGLView _skiaView = null!;
+        private string _chartId = Guid.NewGuid().ToString();
+        private Dictionary<AxisInfo, LineSeries[]>? _axesMap;
+
+        /* zoom */
+        private bool _isDragging;
+        private DotNetObjectReference<Chart>? _dotNetHelper;
+
+        private SKRect _oldZoomBox;
+        private SKRect _zoomBox;
 
         /* Common */
         private const float TICK_SIZE = 10;
@@ -96,6 +51,9 @@ namespace Nexus.UI.Shared
 
         public Chart()
         {
+            ResetZoom();
+            _dotNetHelper = DotNetObjectReference.Create(this);
+
             _timeAxisConfigs = new[]
             {
                 /* nanoseconds */
@@ -107,6 +65,7 @@ namespace Nexus.UI.Shared
                 new TimeAxisConfig(TimeSpan.FromSeconds(10e-6), TriggerPeriod.Second, ".ffffff", "yyyy-MM-ddTHH:mm.ss"),
                 new TimeAxisConfig(TimeSpan.FromSeconds(50e-6), TriggerPeriod.Second, ".ffffff", "yyyy-MM-ddTHH:mm.ss"),
                 new TimeAxisConfig(TimeSpan.FromSeconds(100e-6), TriggerPeriod.Second, ".ffffff", "yyyy-MM-ddTHH:mm.ss"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(500e-6), TriggerPeriod.Second, ".ffffff", "yyyy-MM-ddTHH:mm.ss"),
 
                 /* milliseconds */
                 new TimeAxisConfig(TimeSpan.FromSeconds(1e-3), TriggerPeriod.Minute, ":ss.fff", "yyyy-MM-ddTHH:mm"),
@@ -114,6 +73,7 @@ namespace Nexus.UI.Shared
                 new TimeAxisConfig(TimeSpan.FromSeconds(10e-3), TriggerPeriod.Minute, ":ss.fff", "yyyy-MM-ddTHH:mm"),
                 new TimeAxisConfig(TimeSpan.FromSeconds(50e-3), TriggerPeriod.Minute, ":ss.fff", "yyyy-MM-ddTHH:mm"),
                 new TimeAxisConfig(TimeSpan.FromSeconds(100e-3), TriggerPeriod.Minute, ":ss.fff", "yyyy-MM-ddTHH:mm"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(500e-3), TriggerPeriod.Minute, ":ss.fff", "yyyy-MM-ddTHH:mm"),
 
                 /* seconds */
                 new TimeAxisConfig(TimeSpan.FromSeconds(1), TriggerPeriod.Hour, "mm:ss", "yyyy-MM-ddTHH"),
@@ -159,10 +119,10 @@ namespace Nexus.UI.Shared
         #region Properties
 
         [Inject]
-        public TypeFaceService TypeFaceService { get; set; }
+        public TypeFaceService TypeFaceService { get; set; } = null!;
 
         [Inject]
-        public IJSInProcessRuntime JSInProcessRuntime { get; set; }
+        public IJSInProcessRuntime JSInProcessRuntime { get; set; } = null!;
 
         [Parameter]
         public DateTime Begin { get; set; }
@@ -171,7 +131,7 @@ namespace Nexus.UI.Shared
         public DateTime End { get; set; }
 
         [Parameter]
-        public LineSeries[] LineSeries { get; set; }
+        public LineSeries[] LineSeries { get; set; } = null!;
 
         #endregion
 
@@ -184,19 +144,52 @@ namespace Nexus.UI.Shared
                 var color = _colors[i % _colors.Length];
                 LineSeries[i].Color = color;
             }
+        }
 
-            _axesMap = LineSeries
-                .GroupBy(lineSeries => lineSeries.Unit)
-                .ToDictionary(group => GetAxisInfo(group.Key, group), group => group.ToArray());
+        private void OnMouseDown(MouseEventArgs e)
+        {
+            var position = JSInProcessRuntime.Invoke<Position>("nexus.chart.toRelative", _chartId, e.ClientX, e.ClientY);
+            _zoomBox = new SKRect(position.X, 0, position.X, 1);
+
+            JSInProcessRuntime.InvokeVoid("nexus.chart.addMouseUpEvent", _dotNetHelper);
+
+            _isDragging = true;
+        }
+
+        [JSInvokable]
+        public void OnMouseUp()
+        {
+            _isDragging = false;
+
+            JSInProcessRuntime.InvokeVoid("nexus.chart.resize", _chartId, "selection", 0, 1, 0, 0);
+
+            if (_zoomBox.Width > 0 &&
+                _zoomBox.Height > 0)
+            {
+                CombineZoom();
+                _skiaView.Invalidate();
+            }
         }
 
         private void OnMouseMove(MouseEventArgs e)
         {
-            var relativePosition = JSInProcessRuntime.Invoke<RelativePosition>("nexus.chart.toRelative", e.ClientX, e.ClientY);
+            if (_axesMap is null)
+                return;
 
-            JSInProcessRuntime.InvokeVoid("nexus.chart.translate", "crosshairs-x", 0, relativePosition.Y);
-            JSInProcessRuntime.InvokeVoid("nexus.chart.translate", "crosshairs-y", relativePosition.X, 0);
+            var relativePosition = JSInProcessRuntime.Invoke<Position>("nexus.chart.toRelative", _chartId, e.ClientX, e.ClientY);
 
+            // datetime
+            var timeRange = End - Begin;
+            var currentTimeBegin = Begin + timeRange * relativePosition.X;
+            var currentTimeBeginString = currentTimeBegin.ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
+
+            JSInProcessRuntime.InvokeVoid("nexus.chart.setTextContent", _chartId, $"value_datetime", currentTimeBeginString);
+
+            // crosshairs
+            JSInProcessRuntime.InvokeVoid("nexus.chart.translate", _chartId, "crosshairs-x", 0, relativePosition.Y);
+            JSInProcessRuntime.InvokeVoid("nexus.chart.translate", _chartId, "crosshairs-y", relativePosition.X, 0);
+
+            // points
             foreach (var axesEntry in _axesMap)
             {
                 var axisInfo = axesEntry.Key;
@@ -204,30 +197,57 @@ namespace Nexus.UI.Shared
 
                 foreach (var series in lineSeries)
                 {
-                    var position = (End - Begin - series.SamplePeriod).Ticks * relativePosition.X / series.SamplePeriod.Ticks;
-                    var snappedPosition = (int)Math.Round(position, MidpointRounding.AwayFromZero);
-
-                    var x = snappedPosition / ((float)series.Data.Length - 1);
-                    var y = ((float)series.Data[snappedPosition] - axisInfo.Min) / (axisInfo.Max - axisInfo.Min);
+                    var zoomInfo = series.ZoomInfo;
+                    var indexRange = zoomInfo.IndexRight - zoomInfo.IndexLeft;
+                    var index = zoomInfo.IndexLeft + relativePosition.X * indexRange;
+                    var snappedIndex = (int)Math.Round(index, MidpointRounding.AwayFromZero);
+                    var x = (snappedIndex - zoomInfo.IndexLeft) / indexRange;
+                    var value = (float)series.Data[snappedIndex];
+                    var y = (value - axisInfo.Min) / (axisInfo.Max - axisInfo.Min);
 
                     if (float.IsFinite(x) && float.IsFinite(y))
-                        JSInProcessRuntime.InvokeVoid("nexus.chart.translate", $"pointer_{series.Id}", x, 1 - y);
+                        JSInProcessRuntime.InvokeVoid("nexus.chart.translate", _chartId, $"pointer_{series.Id}", x, 1 - y);
 
                     else
-                        JSInProcessRuntime.InvokeVoid("nexus.chart.hide", $"pointer_{series.Id}");
+                        JSInProcessRuntime.InvokeVoid("nexus.chart.hide", _chartId, $"pointer_{series.Id}");
+
+                    var valueString = value.ToString("G4");
+                    JSInProcessRuntime.InvokeVoid("nexus.chart.setTextContent", _chartId, $"value_{series.Id}", valueString);
                 }   
+            }
+
+            // selection
+            if (_isDragging)
+            {
+                _zoomBox = ExpandZoom(_zoomBox, relativePosition);
+
+                JSInProcessRuntime.InvokeVoid(
+                    "nexus.chart.resize",
+                    _chartId,
+                    "selection",
+                    _zoomBox.Left,
+                    _zoomBox.Top,
+                    _zoomBox.Right,
+                    _zoomBox.Bottom);
             }
         }
 
         private void OnMouseLeave(MouseEventArgs e)
         {
-            JSInProcessRuntime.InvokeVoid("nexus.chart.hide", "crosshairs-x");
-            JSInProcessRuntime.InvokeVoid("nexus.chart.hide", "crosshairs-y");
+            JSInProcessRuntime.InvokeVoid("nexus.chart.hide", _chartId, "crosshairs-x");
+            JSInProcessRuntime.InvokeVoid("nexus.chart.hide", _chartId, "crosshairs-y");
 
             foreach (var series in LineSeries)
             {
-                JSInProcessRuntime.InvokeVoid("nexus.chart.hide", $"pointer_{series.Id}");
+                JSInProcessRuntime.InvokeVoid("nexus.chart.hide", _chartId, $"pointer_{series.Id}");
+                JSInProcessRuntime.InvokeVoid("nexus.chart.setTextContent", _chartId, $"value_{series.Id}", "--");
             }
+        }
+
+        private void OnDoubleClick(MouseEventArgs e)
+        {
+            ResetZoom();
+            _skiaView.Invalidate();
         }
 
         #endregion
@@ -241,6 +261,10 @@ namespace Nexus.UI.Shared
             var surfaceSize = e.BackendRenderTarget.Size;
 
             /* axes info */
+            _axesMap = LineSeries
+                .GroupBy(lineSeries => lineSeries.Unit)
+                .ToDictionary(group => GetAxisInfo(group.Key, group), group => group.ToArray());
+
             var yMin = Y_PADDING_TOP;
             var yMax = surfaceSize.Height - Y_PADDING_Bottom;
             var xMin = 0.0f;
@@ -251,24 +275,44 @@ namespace Nexus.UI.Shared
             yMin += Y_UNIT_OFFSET;
 
             /* time-axis */
-            DrawTimeAxis(canvas, xMin, yMin, xMax, yMax, Begin, End);
+            var timeRange = End - Begin;
+            var zoomedTimeBegin = Begin + timeRange * _zoomBox.Left;
+            var zoomedTimeEnd = Begin + timeRange * _zoomBox.Right;
+            DrawTimeAxis(canvas, xMin, yMin, xMax, yMax, zoomedTimeBegin, zoomedTimeEnd);
 
             /* series */
-            var dataArea = new SKRect(xMin, yMin, xMax, yMax);
+            var dataBox = new SKRect(xMin, yMin, xMax, yMax);
 
             using (var canvasRestore = new SKAutoCanvasRestore(canvas))
             {
-                canvas.ClipRect(dataArea);
-                DrawSeries(canvas, xMin, yMin, xMax, yMax, _axesMap);
+                canvas.ClipRect(dataBox);
+
+                /* for each axis */
+                foreach (var axesEntry in _axesMap)
+                {
+                    var axisInfo = axesEntry.Key;
+                    var lineSeries = axesEntry.Value;
+
+                    /* for each dataset */
+                    foreach (var series in lineSeries)
+                    {
+                        var zoomInfo = GetZoomInfo(dataBox, _zoomBox, series.Data);
+
+                        series.ZoomInfo = zoomInfo;
+                        DrawSeries(canvas, zoomInfo.DataBox, zoomInfo.Data.Span, series, axisInfo);
+                    }
+                }
             }
 
             /* overlay */
             JSInProcessRuntime.InvokeVoid(
                 "nexus.chart.resize",
-                dataArea.Left / surfaceSize.Width,
-                dataArea.Top / surfaceSize.Height,
-                dataArea.Right / surfaceSize.Width,
-                dataArea.Bottom / surfaceSize.Height);
+                _chartId,
+                "overlay",
+                dataBox.Left / surfaceSize.Width,
+                dataBox.Top / surfaceSize.Height,
+                dataBox.Right / surfaceSize.Width,
+                dataBox.Bottom / surfaceSize.Height);
         }
 
         private AxisInfo GetAxisInfo(string unit, IEnumerable<LineSeries> lineDatasets)
@@ -307,6 +351,62 @@ namespace Nexus.UI.Shared
 
         #endregion
 
+        #region Zoom
+
+        private ZoomInfo GetZoomInfo(SKRect dataBox, SKRect zoomBox, double[] data)
+        {
+            /* zoom x */
+            var indexLeft = zoomBox.Left * (data.Length - 1);
+            var indexRight = zoomBox.Right * (data.Length - 1);
+            var indexRange = indexRight - indexLeft;
+
+            var indexLeftRounded = (int)Math.Floor(indexLeft);
+            var indexLeftShift = (indexLeft - indexLeftRounded) / indexRange;
+            var zoomedLeft = dataBox.Left - dataBox.Width * indexLeftShift;
+
+            var indexRightRounded = (int)Math.Ceiling(indexRight);
+            var indexRightShift = (indexRightRounded - indexRight) / indexRange;
+            var zoomedRight = dataBox.Right + dataBox.Width * indexRightShift;
+
+            var zoomedData = data[indexLeftRounded..(indexRightRounded + 1)];
+            var zoomedDataBox = new SKRect(zoomedLeft, dataBox.Top, zoomedRight, dataBox.Bottom);
+
+            return new ZoomInfo(indexLeft, indexRight, zoomedData, zoomedDataBox);
+        }
+
+        private SKRect ExpandZoom(SKRect zoomBox, Position relativePosition)
+        {
+            var left = Math.Min(zoomBox.Left, relativePosition.X);
+            var right = Math.Max(zoomBox.Right, relativePosition.X);
+            var top = Math.Min(zoomBox.Top, relativePosition.Y);
+            var bottom = Math.Max(zoomBox.Bottom, relativePosition.Y);
+
+            return new SKRect(left, top, right, bottom);
+        }
+
+        private void CombineZoom()
+        {
+            var oldXRange = _oldZoomBox.Right - _oldZoomBox.Left;
+            var oldYRange = _oldZoomBox.Bottom - _oldZoomBox.Top;
+
+            var zoomBox = new SKRect(
+                left: _oldZoomBox.Left + oldXRange * _zoomBox.Left, 
+                top: _oldZoomBox.Top + oldYRange * _zoomBox.Top,
+                right: _oldZoomBox.Left + oldXRange * _zoomBox.Right,
+                bottom: _oldZoomBox.Top + oldYRange * _zoomBox.Bottom);
+
+            _oldZoomBox = zoomBox;
+            _zoomBox = zoomBox;
+        }
+
+        private void ResetZoom()
+        {
+            _oldZoomBox = new SKRect(0, 0, 1, 1);
+            _zoomBox = new SKRect(0, 0, 1, 1);
+        }
+
+        #endregion
+
         #region Y axis
 
         private float DrawYAxes(SKCanvas canvas, float yMin, float yMax, Dictionary<AxisInfo, LineSeries[]> axesMap)
@@ -325,7 +425,7 @@ namespace Nexus.UI.Shared
 
             var currentOffset = 0.0f;
             var canvasRange = yMax - yMin;
-            var maxTickCount = (int)Math.Round(canvasRange / 50, MidpointRounding.AwayFromZero);
+            var maxTickCount = Math.Max(1, (int)Math.Round(canvasRange / 50, MidpointRounding.AwayFromZero));
             var widthPerCharacter = axisLabelPaint.MeasureText(" ");
 
             foreach (var axesEntry in axesMap)
@@ -456,7 +556,7 @@ namespace Nexus.UI.Shared
             };
 
             var canvasRange = xMax - xMin;
-            var maxTickCount = (int)Math.Round(canvasRange / 130, MidpointRounding.AwayFromZero);
+            var maxTickCount = Math.Max(1, (int)Math.Round(canvasRange / 130, MidpointRounding.AwayFromZero));
             var (config, ticks) = GetTimeTicks(begin, end, maxTickCount);
             var timeRange = (end - begin).Ticks;
             var scalingFactor = canvasRange / timeRange;
@@ -469,7 +569,7 @@ namespace Nexus.UI.Shared
                 canvas.DrawLine(x, yMin, x, yMax + TICK_SIZE, axisTickPaint);
 
                 /* fast tick */
-                var tickLabel = tick.ToString(config.FastTickLabelFormat, CultureInfo.InvariantCulture);
+                var tickLabel = tick.ToString(config.FastTickLabelFormat);
                 canvas.DrawText(tickLabel, x, yMax + TICK_SIZE + TIME_AXIS_MARGIN_TOP, axisLabelPaint);
 
                 /* slow tick */
@@ -477,7 +577,7 @@ namespace Nexus.UI.Shared
 
                 if (addSlowTick)
                 {
-                    var slowTickLabel = tick.ToString(config.SlowTickLabelFormat, CultureInfo.InvariantCulture);
+                    var slowTickLabel = tick.ToString(config.SlowTickLabelFormat);
                     canvas.DrawText(slowTickLabel, x, yMax + TICK_SIZE + TIME_AXIS_MARGIN_TOP + TIME_FAST_LABEL_OFFSET, axisLabelPaint);
                 }
 
@@ -567,53 +667,28 @@ namespace Nexus.UI.Shared
 
         #region Series
 
-        private void DrawSeries(SKCanvas canvas, float xMin, float yMin, float xMax, float yMax, Dictionary<AxisInfo, LineSeries[]> axesMap)
+        private void DrawSeries(SKCanvas canvas, SKRect dataBox, Span<double> data, LineSeries series, AxisInfo axisInfo)
         {
-            var xCanvasRange = xMax - xMin;
-            var yCanvasRange = yMax - yMin;
-            var index = 0;
+            /* get y scale factor */
+            var dataRange = axisInfo.Max - axisInfo.Min;
+            var yScaleFactor = dataBox.Height / dataRange;
 
-            /* for each axis */
-            foreach (var axesEntry in axesMap)
-            {
-                var axisInfo = axesEntry.Key;
-                var lineSeries = axesEntry.Value;
+            /* get dx */
+            var timeRange = data.Length * series.SamplePeriod;
+            var relativeTickWidth = series.SamplePeriod.Ticks / (float)(timeRange.Ticks - series.SamplePeriod.Ticks);
+            var dx = dataBox.Width * relativeTickWidth;
 
-                /* get y scale factor */
-                var tickRange = axisInfo.Max - axisInfo.Min;
-                var yScaleFactor = yCanvasRange / tickRange;
-
-                /* for each dataset */
-                foreach (var series in lineSeries)
-                {
-                    var data = series.Data;
-                    var firstTick = axisInfo.Min;
-
-                    if (!data.Any())
-                        continue;
-
-                    /* get dx */
-                    var timeRange = series.Data.Length * series.SamplePeriod;
-                    var xScaleFactor = xCanvasRange / (timeRange.Ticks - series.SamplePeriod.Ticks);
-                    var dx = series.SamplePeriod.Ticks * xScaleFactor;
-
-                    /* draw */
-                    DrawPath(canvas, axisInfo.Min, dx, xMin, yMax, yScaleFactor, data, series.Color);
-                    //DrawCircles(canvas, axisInfo.Min, dx, xMin, yMax, yScaleFactor, data, series.Color); /* must be drawn after path because of circle fill color */
-                    
-                    index++;
-                }
-            }
+            /* draw */
+            DrawPath(canvas, axisInfo.Min, dataBox, dx, yScaleFactor, data, series.Color);
         }
 
         private void DrawPath(
             SKCanvas canvas,
-            float min,
+            float dataMin,
+            SKRect dataArea,
             float dx,
-            float xMin,
-            float yMax,
             float yScaleFactor,
-            double[] data,
+            Span<double> data,
             SKColor color)
         {
             using var strokePaint = new SKPaint
@@ -630,16 +705,15 @@ namespace Nexus.UI.Shared
             };
 
             var consumed = 0;
-            var firstTick = min;
             var length = data.Length;
-            var zeroHeight = yMax - (0 - firstTick) * yScaleFactor;
+            var zeroHeight = dataArea.Bottom - (0 - dataMin) * yScaleFactor;
 
             while (consumed < length)
             {
                 /* create path */
                 var stroke_path = new SKPath();
                 var fill_path = new SKPath();
-                var x = xMin + dx * consumed;
+                var x = dataArea.Left + dx * consumed;
 
                 stroke_path.MoveTo(x, zeroHeight);
                 fill_path.MoveTo(x, zeroHeight);
@@ -654,7 +728,7 @@ namespace Nexus.UI.Shared
                     if (float.IsNaN(value))
                         break;
 
-                    var y = yMax - (value - firstTick) * yScaleFactor;
+                    var y = dataArea.Bottom - (value - dataMin) * yScaleFactor;
 
                     stroke_path.LineTo(currentX, y);
                     fill_path.LineTo(currentX, y);
@@ -664,7 +738,7 @@ namespace Nexus.UI.Shared
                     consumed++;
                 }
 
-                x = xMin + dx * consumed - dx;
+                x = dataArea.Left + dx * consumed - dx;
                 stroke_path.LineTo(x, zeroHeight);
 
                 fill_path.LineTo(x, zeroHeight);
@@ -687,53 +761,6 @@ namespace Nexus.UI.Shared
                 }
             }
         }
-
-        //private void DrawCircles(
-        //    SKCanvas canvas, 
-        //    float min,
-        //    float dx,
-        //    float xMin,
-        //    float yMax,
-        //    float yScaleFactor, 
-        //    double[] data,
-        //    SKColor color)
-        //{
-        //    using var circlePaintStroke = new SKPaint
-        //    {
-        //        Style = SKPaintStyle.Stroke,
-        //        Color = color
-        //    };
-
-        //    using var circlePaintFill = new SKPaint
-        //    {
-        //        Style = SKPaintStyle.Fill,
-        //        Color = SKColors.White
-        //    };
-
-        //    var consumed = 0;
-        //    var firstTick = min;
-        //    var length = data.Length;
-        //    var lastValue = 0.0f;
-        //    var currentX = xMin;
-
-        //    for (int i = consumed; i < length; i++)
-        //    {
-        //        var value = (float)data[i];
-
-        //        if (!float.IsNaN(value))
-        //        {
-        //            var y = yMax - (value - firstTick) * yScaleFactor;
-
-        //            /* draw circle */
-        //            canvas.DrawCircle(currentX, y, radius: 2, circlePaintFill);
-        //            canvas.DrawCircle(currentX, y, radius: 2, circlePaintStroke);
-        //        }
-
-        //        currentX += dx;
-        //        lastValue = value;
-        //        consumed++;
-        //    }
-        //}
 
         #endregion
 
@@ -758,7 +785,7 @@ namespace Nexus.UI.Shared
                 _ => "#.###e0"
             };
 
-            return value.ToString(pattern, CultureInfo.InvariantCulture);
+            return value.ToString(pattern);
         }
 
         private DateTime RoundUp(DateTime value, TimeSpan roundTo)
@@ -780,6 +807,15 @@ namespace Nexus.UI.Shared
         private double RoundUp(double number, int decimalPlaces)
         {
             return Math.Ceiling(number * Math.Pow(10, decimalPlaces)) / Math.Pow(10, decimalPlaces);
+        }
+
+        #endregion
+
+        #region IDisposable
+
+        public void Dispose()
+        {
+            _dotNetHelper?.Dispose();
         }
 
         #endregion

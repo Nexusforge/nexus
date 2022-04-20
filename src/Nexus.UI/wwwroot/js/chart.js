@@ -1,44 +1,42 @@
 var nexus = {};
 nexus.chart = {};
+nexus.chart.charts = {};
 
-nexus.chart.resize = function (left, top, right, bottom) {
+nexus.chart.resize = function (chartId, elementId, left, top, right, bottom) {
 
-    let rect = document
-        .getElementById("chart")
-        .getBoundingClientRect();
+    let element = document
+        .getElementById(`${elementId}_${chartId}`);
 
-    let overlay = document
-        .getElementById("overlay");
-
-    let left_new = rect.width * left;
-    let top_new = rect.height * top;
-    let right_new = rect.width * right;
-    let bottom_new = rect.height * bottom;
-
-    overlay.style.left = `${left_new}px`;
-    overlay.style.top = `${top_new}px`;
-    overlay.style.width = `${right_new - left_new}px`;
-    overlay.style.height = `${bottom_new - top_new}px`;
+    element.style.left = `${left * 100}%`;
+    element.style.top = `${top * 100}%`;
+    element.style.width = `${(right - left) * 100}%`;
+    element.style.height = `${(bottom - top) * 100}%`;
 };
 
-nexus.chart.translate = function (elementId, left, top) {
+nexus.chart.setTextContent = function (chartId, elementId, text) {
 
-    let element = document.getElementById(elementId);
+    let element = document.getElementById(`${elementId}_${chartId}`);
+    element.textContent = text;
+};
+
+nexus.chart.translate = function (chartId, elementId, left, top) {
+
+    let element = document.getElementById(`${elementId}_${chartId}`);
     element.style.removeProperty("display")
     element.style.left = `${left * 100}%`;
     element.style.top = `${top * 100}%`;
 };
 
-nexus.chart.hide = function (elementId) {
+nexus.chart.hide = function (chartId, elementId) {
 
-    let element = document.getElementById(elementId);
+    let element = document.getElementById(`${elementId}_${chartId}`);
     element.style.display = "none"
 };
 
-nexus.chart.toRelative = function (clientX, clientY) {
+nexus.chart.toRelative = function (chartId, clientX, clientY) {
 
     let overlay = document
-        .getElementById("overlay");
+        .getElementById(`overlay_${chartId}`);
 
     let rect = overlay
         .getBoundingClientRect();
@@ -50,4 +48,11 @@ nexus.chart.toRelative = function (clientX, clientY) {
         "x": x,
         "y": y
     };
+}
+
+nexus.chart.addMouseUpEvent = function (dotNetHelper) {
+
+    window.addEventListener("mouseup", e => dotNetHelper.invokeMethodAsync("OnMouseUp"), {
+        once: true
+    });
 }

@@ -7,7 +7,7 @@
   <PropertyGroup>
 	<GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
-	
+		
   <ItemGroup>
     <EmbeddedResource Include="Resources\Courier New Bold.ttf" />
     <EmbeddedResource Include="Resources\Courier New Regular.ttf" />
