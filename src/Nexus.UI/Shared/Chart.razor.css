@@ -18,7 +18,13 @@
         margin-right: 0.7rem;
         align-items: center;
         font-size: 0.9rem;
+        cursor: pointer;
+        user-select: none;
     }
+
+        .legend-item.inactive {
+            opacity: 0.3;
+        }
 
     .color-box {
         width: 1em;

@@ -4,7 +4,6 @@ using Microsoft.JSInterop;
 using Nexus.UI.Services;
 using SkiaSharp;
 using SkiaSharp.Views.Blazor;
-using System.Globalization;
 
 namespace Nexus.UI.Shared
 {
@@ -14,7 +13,7 @@ namespace Nexus.UI.Shared
 
         private SKGLView _skiaView = null!;
         private string _chartId = Guid.NewGuid().ToString();
-        private Dictionary<AxisInfo, LineSeries[]>? _axesMap;
+        private Dictionary<AxisInfo, LineSeries[]> _axesMap = null!;
 
         /* zoom */
         private bool _isDragging;
@@ -22,6 +21,11 @@ namespace Nexus.UI.Shared
 
         private SKRect _oldZoomBox;
         private SKRect _zoomBox;
+        private Position _zoomStart;
+        private Position _zoomEnd;
+
+        private DateTime _zoomedBegin;
+        private DateTime _zoomedEnd;
 
         /* Common */
         private const float TICK_SIZE = 10;
@@ -40,6 +44,7 @@ namespace Nexus.UI.Shared
         /* Time-Axis */
         private const float TIME_AXIS_MARGIN_TOP = 15;
         private const float TIME_FAST_LABEL_OFFSET = 15;
+        private TimeAxisConfig _timeAxisConfig;
         private TimeAxisConfig[] _timeAxisConfigs;
 
         /* Others */
@@ -51,57 +56,58 @@ namespace Nexus.UI.Shared
 
         public Chart()
         {
-            ResetZoom();
             _dotNetHelper = DotNetObjectReference.Create(this);
 
             _timeAxisConfigs = new[]
             {
                 /* nanoseconds */
-                new TimeAxisConfig(TimeSpan.FromSeconds(100e-9), TriggerPeriod.Second, ".fffffff", "yyyy-MM-dd HH:mm.ss"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(100e-9), ".fffffff", TriggerPeriod.Second, "yyyy-MM-dd HH:mm.ss", "yyyy-MM-ddTHH:mm:ss.fffffff"),
 
                 /* microseconds */
-                new TimeAxisConfig(TimeSpan.FromSeconds(1e-6), TriggerPeriod.Second, ".ffffff", "yyyy-MM-ddTHH:mm.ss"),
-                new TimeAxisConfig(TimeSpan.FromSeconds(5e-6), TriggerPeriod.Second, ".ffffff", "yyyy-MM-ddTHH:mm.ss"),
-                new TimeAxisConfig(TimeSpan.FromSeconds(10e-6), TriggerPeriod.Second, ".ffffff", "yyyy-MM-ddTHH:mm.ss"),
-                new TimeAxisConfig(TimeSpan.FromSeconds(50e-6), TriggerPeriod.Second, ".ffffff", "yyyy-MM-ddTHH:mm.ss"),
-                new TimeAxisConfig(TimeSpan.FromSeconds(100e-6), TriggerPeriod.Second, ".ffffff", "yyyy-MM-ddTHH:mm.ss"),
-                new TimeAxisConfig(TimeSpan.FromSeconds(500e-6), TriggerPeriod.Second, ".ffffff", "yyyy-MM-ddTHH:mm.ss"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(1e-6), ".ffffff", TriggerPeriod.Second, "yyyy-MM-ddTHH:mm.ss", "yyyy-MM-ddTHH:mm:ss.fffffff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(5e-6), ".ffffff", TriggerPeriod.Second, "yyyy-MM-ddTHH:mm.ss", "yyyy-MM-ddTHH:mm:ss.fffffff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(10e-6), ".ffffff", TriggerPeriod.Second, "yyyy-MM-ddTHH:mm.ss", "yyyy-MM-ddTHH:mm:ss.fffffff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(50e-6), ".ffffff", TriggerPeriod.Second, "yyyy-MM-ddTHH:mm.ss", "yyyy-MM-ddTHH:mm:ss.fffffff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(100e-6), ".ffffff", TriggerPeriod.Second, "yyyy-MM-ddTHH:mm.ss", "yyyy-MM-ddTHH:mm:ss.fffffff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(500e-6), ".ffffff", TriggerPeriod.Second, "yyyy-MM-ddTHH:mm.ss", "yyyy-MM-ddTHH:mm:ss.fffffff"),
 
                 /* milliseconds */
-                new TimeAxisConfig(TimeSpan.FromSeconds(1e-3), TriggerPeriod.Minute, ":ss.fff", "yyyy-MM-ddTHH:mm"),
-                new TimeAxisConfig(TimeSpan.FromSeconds(5e-3), TriggerPeriod.Minute, ":ss.fff", "yyyy-MM-ddTHH:mm"),
-                new TimeAxisConfig(TimeSpan.FromSeconds(10e-3), TriggerPeriod.Minute, ":ss.fff", "yyyy-MM-ddTHH:mm"),
-                new TimeAxisConfig(TimeSpan.FromSeconds(50e-3), TriggerPeriod.Minute, ":ss.fff", "yyyy-MM-ddTHH:mm"),
-                new TimeAxisConfig(TimeSpan.FromSeconds(100e-3), TriggerPeriod.Minute, ":ss.fff", "yyyy-MM-ddTHH:mm"),
-                new TimeAxisConfig(TimeSpan.FromSeconds(500e-3), TriggerPeriod.Minute, ":ss.fff", "yyyy-MM-ddTHH:mm"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(1e-3), ":ss.fff", TriggerPeriod.Minute, "yyyy-MM-ddTHH:mm", "yyyy-MM-ddTHH:mm:ss.ffffff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(5e-3), ":ss.fff", TriggerPeriod.Minute, "yyyy-MM-ddTHH:mm", "yyyy-MM-ddTHH:mm:ss.ffffff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(10e-3), ":ss.fff", TriggerPeriod.Minute, "yyyy-MM-ddTHH:mm", "yyyy-MM-ddTHH:mm:ss.fffff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(50e-3), ":ss.fff", TriggerPeriod.Minute, "yyyy-MM-ddTHH:mm", "yyyy-MM-ddTHH:mm:ss.fffff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(100e-3), ":ss.fff", TriggerPeriod.Minute, "yyyy-MM-ddTHH:mm", "yyyy-MM-ddTHH:mm:ss.ffff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(500e-3), ":ss.fff", TriggerPeriod.Minute, "yyyy-MM-ddTHH:mm", "yyyy-MM-ddTHH:mm:ss.ffff"),
 
                 /* seconds */
-                new TimeAxisConfig(TimeSpan.FromSeconds(1), TriggerPeriod.Hour, "mm:ss", "yyyy-MM-ddTHH"),
-                new TimeAxisConfig(TimeSpan.FromSeconds(5), TriggerPeriod.Hour, "mm:ss", "yyyy-MM-ddTHH"),
-                new TimeAxisConfig(TimeSpan.FromSeconds(10), TriggerPeriod.Hour, "mm:ss", "yyyy-MM-ddTHH"),
-                new TimeAxisConfig(TimeSpan.FromSeconds(30), TriggerPeriod.Hour, "mm:ss", "yyyy-MM-ddTHH"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(1), ":mm:ss", TriggerPeriod.Hour, "yyyy-MM-ddTHH", "yyyy-MM-ddTHH:mm:ss.fff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(5), ":mm:ss", TriggerPeriod.Hour, "yyyy-MM-ddTHH", "yyyy-MM-ddTHH:mm:ss.fff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(10), ":mm:ss", TriggerPeriod.Hour, "yyyy-MM-ddTHH", "yyyy-MM-ddTHH:mm:ss.fff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(30), ":mm:ss", TriggerPeriod.Hour, "yyyy-MM-ddTHH", "yyyy-MM-ddTHH:mm:ss.fff"),
 
                 /* minutes */
-                new TimeAxisConfig(TimeSpan.FromMinutes(1), TriggerPeriod.Day, "HH:mm", "yyyy-MM-dd"),
-                new TimeAxisConfig(TimeSpan.FromMinutes(5), TriggerPeriod.Day, "HH:mm", "yyyy-MM-dd"),
-                new TimeAxisConfig(TimeSpan.FromMinutes(10), TriggerPeriod.Day, "HH:mm", "yyyy-MM-dd"),
-                new TimeAxisConfig(TimeSpan.FromMinutes(30), TriggerPeriod.Day, "HH:mm", "yyyy-MM-dd"),
+                new TimeAxisConfig(TimeSpan.FromMinutes(1), "HH:mm", TriggerPeriod.Day, "yyyy-MM-dd", "yyyy-MM-ddTHH:mm:ss"),
+                new TimeAxisConfig(TimeSpan.FromMinutes(5), "HH:mm", TriggerPeriod.Day, "yyyy-MM-dd", "yyyy-MM-ddTHH:mm:ss"),
+                new TimeAxisConfig(TimeSpan.FromMinutes(10), "HH:mm", TriggerPeriod.Day, "yyyy-MM-dd", "yyyy-MM-ddTHH:mm:ss"),
+                new TimeAxisConfig(TimeSpan.FromMinutes(30), "HH:mm", TriggerPeriod.Day, "yyyy-MM-dd", "yyyy-MM-ddTHH:mm:ss"),
 
                 /* hours */
-                new TimeAxisConfig(TimeSpan.FromHours(1), TriggerPeriod.Day, "HH", "yyyy-MM-dd"),
-                new TimeAxisConfig(TimeSpan.FromHours(3), TriggerPeriod.Day, "HH", "yyyy-MM-dd"),
-                new TimeAxisConfig(TimeSpan.FromHours(6), TriggerPeriod.Day, "HH", "yyyy-MM-dd"),
-                new TimeAxisConfig(TimeSpan.FromHours(12), TriggerPeriod.Day, "HH", "yyyy-MM-dd"),
+                new TimeAxisConfig(TimeSpan.FromHours(1), "HH", TriggerPeriod.Day, "yyyy-MM-dd", "yyyy-MM-ddTHH:mm"),
+                new TimeAxisConfig(TimeSpan.FromHours(3), "HH", TriggerPeriod.Day, "yyyy-MM-dd", "yyyy-MM-ddTHH:mm"),
+                new TimeAxisConfig(TimeSpan.FromHours(6), "HH", TriggerPeriod.Day, "yyyy-MM-dd", "yyyy-MM-ddTHH:mm"),
+                new TimeAxisConfig(TimeSpan.FromHours(12), "HH", TriggerPeriod.Day, "yyyy-MM-dd", "yyyy-MM-ddTHH:mm"),
 
                 /* days */
-                new TimeAxisConfig(TimeSpan.FromDays(1), TriggerPeriod.Month, "dd", "yyyy-MM"),
-                new TimeAxisConfig(TimeSpan.FromDays(10), TriggerPeriod.Month, "dd", "yyyy-MM"),
-                new TimeAxisConfig(TimeSpan.FromDays(30), TriggerPeriod.Month, "dd", "yyyy-MM"),
-                new TimeAxisConfig(TimeSpan.FromDays(90), TriggerPeriod.Month, "dd", "yyyy-MM"),
+                new TimeAxisConfig(TimeSpan.FromDays(1), "dd", TriggerPeriod.Month, "yyyy-MM", "yyyy-MM-ddTHH:mm"),
+                new TimeAxisConfig(TimeSpan.FromDays(10), "dd", TriggerPeriod.Month, "yyyy-MM", "yyyy-MM-ddTHH"),
+                new TimeAxisConfig(TimeSpan.FromDays(30), "dd", TriggerPeriod.Month, "yyyy-MM", "yyyy-MM-ddTHH"),
+                new TimeAxisConfig(TimeSpan.FromDays(90), "dd", TriggerPeriod.Month, "yyyy-MM", "yyyy-MM-ddTHH"),
 
                 /* years */
-                new TimeAxisConfig(TimeSpan.FromDays(365), TriggerPeriod.Year, "yyyy", ""),
+                new TimeAxisConfig(TimeSpan.FromDays(365), "yyyy", TriggerPeriod.Year, "", "yyyy-MM-dd"),
             };
+
+            _timeAxisConfig = _timeAxisConfigs.First();
 
             _colors = new[] {
                 new SKColor(0, 114, 189),
@@ -133,23 +139,36 @@ namespace Nexus.UI.Shared
         [Parameter]
         public LineSeries[] LineSeries { get; set; } = null!;
 
+        [Parameter]
+        public bool BeginAtZero { get; set; }
+
         #endregion
 
-        #region Events
+        #region Callbacks
 
         protected override void OnInitialized()
         {
+            /* line series color */
             for (int i = 0; i < LineSeries.Length; i++)
             {
                 var color = _colors[i % _colors.Length];
                 LineSeries[i].Color = color;
             }
+
+            /* axes info */
+            _axesMap = LineSeries
+                .GroupBy(lineSeries => lineSeries.Unit)
+                .ToDictionary(group => GetAxisInfo(group.Key, group), group => group.ToArray());
+
+            /* zoom */
+            ResetZoom();
         }
 
         private void OnMouseDown(MouseEventArgs e)
         {
             var position = JSInProcessRuntime.Invoke<Position>("nexus.chart.toRelative", _chartId, e.ClientX, e.ClientY);
-            _zoomBox = new SKRect(position.X, 0, position.X, 1);
+            _zoomStart = position;
+            _zoomEnd = position;
 
             JSInProcessRuntime.InvokeVoid("nexus.chart.addMouseUpEvent", _dotNetHelper);
 
@@ -163,73 +182,20 @@ namespace Nexus.UI.Shared
 
             JSInProcessRuntime.InvokeVoid("nexus.chart.resize", _chartId, "selection", 0, 1, 0, 0);
 
-            if (_zoomBox.Width > 0 &&
-                _zoomBox.Height > 0)
+            var zoomBox = CreateZoomBox(_zoomStart, _zoomEnd);
+
+            if (zoomBox.Width > 0 && 
+                zoomBox.Height > 0)
             {
-                CombineZoom();
+                ApplyZoom(zoomBox);
                 _skiaView.Invalidate();
             }
         }
 
         private void OnMouseMove(MouseEventArgs e)
         {
-            if (_axesMap is null)
-                return;
-
             var relativePosition = JSInProcessRuntime.Invoke<Position>("nexus.chart.toRelative", _chartId, e.ClientX, e.ClientY);
-
-            // datetime
-            var timeRange = End - Begin;
-            var currentTimeBegin = Begin + timeRange * relativePosition.X;
-            var currentTimeBeginString = currentTimeBegin.ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
-
-            JSInProcessRuntime.InvokeVoid("nexus.chart.setTextContent", _chartId, $"value_datetime", currentTimeBeginString);
-
-            // crosshairs
-            JSInProcessRuntime.InvokeVoid("nexus.chart.translate", _chartId, "crosshairs-x", 0, relativePosition.Y);
-            JSInProcessRuntime.InvokeVoid("nexus.chart.translate", _chartId, "crosshairs-y", relativePosition.X, 0);
-
-            // points
-            foreach (var axesEntry in _axesMap)
-            {
-                var axisInfo = axesEntry.Key;
-                var lineSeries = axesEntry.Value;
-
-                foreach (var series in lineSeries)
-                {
-                    var zoomInfo = series.ZoomInfo;
-                    var indexRange = zoomInfo.IndexRight - zoomInfo.IndexLeft;
-                    var index = zoomInfo.IndexLeft + relativePosition.X * indexRange;
-                    var snappedIndex = (int)Math.Round(index, MidpointRounding.AwayFromZero);
-                    var x = (snappedIndex - zoomInfo.IndexLeft) / indexRange;
-                    var value = (float)series.Data[snappedIndex];
-                    var y = (value - axisInfo.Min) / (axisInfo.Max - axisInfo.Min);
-
-                    if (float.IsFinite(x) && float.IsFinite(y))
-                        JSInProcessRuntime.InvokeVoid("nexus.chart.translate", _chartId, $"pointer_{series.Id}", x, 1 - y);
-
-                    else
-                        JSInProcessRuntime.InvokeVoid("nexus.chart.hide", _chartId, $"pointer_{series.Id}");
-
-                    var valueString = value.ToString("G4");
-                    JSInProcessRuntime.InvokeVoid("nexus.chart.setTextContent", _chartId, $"value_{series.Id}", valueString);
-                }   
-            }
-
-            // selection
-            if (_isDragging)
-            {
-                _zoomBox = ExpandZoom(_zoomBox, relativePosition);
-
-                JSInProcessRuntime.InvokeVoid(
-                    "nexus.chart.resize",
-                    _chartId,
-                    "selection",
-                    _zoomBox.Left,
-                    _zoomBox.Top,
-                    _zoomBox.Right,
-                    _zoomBox.Bottom);
-            }
+            this.DrawAuxiliary(relativePosition);
         }
 
         private void OnMouseLeave(MouseEventArgs e)
@@ -250,6 +216,42 @@ namespace Nexus.UI.Shared
             _skiaView.Invalidate();
         }
 
+        private void OnWheel(WheelEventArgs e)
+        {
+            const float FACTOR = 0.25f;
+
+            var relativePosition = JSInProcessRuntime.Invoke<Position>("nexus.chart.toRelative", _chartId, e.ClientX, e.ClientY);
+
+            var zoomBox = new SKRect();
+
+            zoomBox.Left = relativePosition.X * (e.DeltaY < 0
+                ? + FACTOR          // +0.25
+                : - FACTOR);        // -0.25
+
+            zoomBox.Top = relativePosition.Y * (e.DeltaY < 0
+                ? + FACTOR          // +0.25
+                : - FACTOR);        // -0.25
+
+            zoomBox.Right = relativePosition.X + (1 - relativePosition.X) * (e.DeltaY < 0
+                ? (1 - FACTOR)      // +0.75
+                : (1 + FACTOR));    // +1.25
+
+            zoomBox.Bottom = relativePosition.Y + (1 - relativePosition.Y) * (e.DeltaY < 0
+                ? (1 - FACTOR)      // +0.75
+                : (1 + FACTOR));    // +1.25
+
+
+            ApplyZoom(zoomBox);
+            _skiaView.Invalidate();
+            DrawAuxiliary(relativePosition);       
+        }
+
+        private void ToggleSeriesEnabled(LineSeries series)
+        {
+            series.Show = !series.Show;
+            _skiaView.Invalidate();
+        }
+
         #endregion
 
         #region Draw
@@ -259,11 +261,6 @@ namespace Nexus.UI.Shared
             /* sizes */
             var canvas = e.Surface.Canvas;
             var surfaceSize = e.BackendRenderTarget.Size;
-
-            /* axes info */
-            _axesMap = LineSeries
-                .GroupBy(lineSeries => lineSeries.Unit)
-                .ToDictionary(group => GetAxisInfo(group.Key, group), group => group.ToArray());
 
             var yMin = Y_PADDING_TOP;
             var yMax = surfaceSize.Height - Y_PADDING_Bottom;
@@ -275,10 +272,7 @@ namespace Nexus.UI.Shared
             yMin += Y_UNIT_OFFSET;
 
             /* time-axis */
-            var timeRange = End - Begin;
-            var zoomedTimeBegin = Begin + timeRange * _zoomBox.Left;
-            var zoomedTimeEnd = Begin + timeRange * _zoomBox.Right;
-            DrawTimeAxis(canvas, xMin, yMin, xMax, yMax, zoomedTimeBegin, zoomedTimeEnd);
+            DrawTimeAxis(canvas, xMin, yMin, xMax, yMax, _zoomedBegin, _zoomedEnd);
 
             /* series */
             var dataBox = new SKRect(xMin, yMin, xMax, yMax);
@@ -297,8 +291,6 @@ namespace Nexus.UI.Shared
                     foreach (var series in lineSeries)
                     {
                         var zoomInfo = GetZoomInfo(dataBox, _zoomBox, series.Data);
-
-                        series.ZoomInfo = zoomInfo;
                         DrawSeries(canvas, zoomInfo.DataBox, zoomInfo.Data.Span, series, axisInfo);
                     }
                 }
@@ -313,6 +305,71 @@ namespace Nexus.UI.Shared
                 dataBox.Top / surfaceSize.Height,
                 dataBox.Right / surfaceSize.Width,
                 dataBox.Bottom / surfaceSize.Height);
+        }
+
+        private void DrawAuxiliary(Position relativePosition)
+        {
+            // datetime
+            var zoomedTimeRange = _zoomedEnd - _zoomedBegin;
+            var currentTimeBegin = _zoomedBegin + zoomedTimeRange * relativePosition.X;
+            var currentTimeBeginString = currentTimeBegin.ToString(_timeAxisConfig.CursorLabelFormat);
+
+            JSInProcessRuntime.InvokeVoid("nexus.chart.setTextContent", _chartId, $"value_datetime", currentTimeBeginString);
+
+            // crosshairs
+            JSInProcessRuntime.InvokeVoid("nexus.chart.translate", _chartId, "crosshairs-x", 0, relativePosition.Y);
+            JSInProcessRuntime.InvokeVoid("nexus.chart.translate", _chartId, "crosshairs-y", relativePosition.X, 0);
+
+            // points
+            foreach (var axesEntry in _axesMap)
+            {
+                var axisInfo = axesEntry.Key;
+                var lineSeries = axesEntry.Value;
+                var dataRange = axisInfo.Max - axisInfo.Min;
+                var decimalDigits = Math.Max(0, -(int)Math.Round(Math.Log10(dataRange), MidpointRounding.AwayFromZero) + 2);
+                var formatString = $"F{decimalDigits}";
+
+                foreach (var series in lineSeries)
+                {
+                    var indexLeft = _zoomBox.Left * (series.Data.Length - 1);
+                    var indexRight = _zoomBox.Right * (series.Data.Length - 1);
+                    var indexRange = indexRight - indexLeft;
+                    var index = indexLeft + relativePosition.X * indexRange;
+                    var snappedIndex = (int)Math.Round(index, MidpointRounding.AwayFromZero);
+                    var x = (snappedIndex - indexLeft) / indexRange;
+                    var value = (float)series.Data[snappedIndex];
+                    var y = (value - axisInfo.Min) / (axisInfo.Max - axisInfo.Min);
+
+                    if (float.IsFinite(x) && 0 <= x && x <= 1 &&
+                        float.IsFinite(y) && 0 <= y && y <= 1)
+                        JSInProcessRuntime.InvokeVoid("nexus.chart.translate", _chartId, $"pointer_{series.Id}", x, 1 - y);
+
+                    else
+                        JSInProcessRuntime.InvokeVoid("nexus.chart.hide", _chartId, $"pointer_{series.Id}");
+
+                    var valueString = string.IsNullOrWhiteSpace(series.Unit)
+                        ? value.ToString(formatString) 
+                        : $"{value.ToString(formatString)} {@series.Unit}";
+
+                    JSInProcessRuntime.InvokeVoid("nexus.chart.setTextContent", _chartId, $"value_{series.Id}", valueString);
+                }
+            }
+
+            // selection
+            if (_isDragging)
+            {
+                _zoomEnd = relativePosition;
+                var zoomBox = CreateZoomBox(_zoomStart, _zoomEnd);
+
+                JSInProcessRuntime.InvokeVoid(
+                    "nexus.chart.resize",
+                    _chartId,
+                    "selection",
+                    zoomBox.Left,
+                    zoomBox.Top,
+                    zoomBox.Right,
+                    zoomBox.Bottom);
+            }
         }
 
         private AxisInfo GetAxisInfo(string unit, IEnumerable<LineSeries> lineDatasets)
@@ -346,7 +403,24 @@ namespace Nexus.UI.Shared
                 max = 0;
             }
 
-            return new AxisInfo(unit, min, max);
+            if (BeginAtZero)
+            {
+                if (min > 0)
+                    min = 0;
+
+                if (max < 0)
+                    max = 0;
+            }
+
+            GetYLimits(min, max, out var minLimit, out var maxLimit, out var _);
+
+            var axisInfo = new AxisInfo(unit, minLimit, maxLimit)
+            {
+                Min = minLimit,
+                Max = maxLimit
+            };
+
+            return axisInfo;
         }
 
         #endregion
@@ -371,38 +445,71 @@ namespace Nexus.UI.Shared
             var zoomedData = data[indexLeftRounded..(indexRightRounded + 1)];
             var zoomedDataBox = new SKRect(zoomedLeft, dataBox.Top, zoomedRight, dataBox.Bottom);
 
-            return new ZoomInfo(indexLeft, indexRight, zoomedData, zoomedDataBox);
+            return new ZoomInfo(zoomedData, zoomedDataBox);
         }
 
-        private SKRect ExpandZoom(SKRect zoomBox, Position relativePosition)
+        private SKRect CreateZoomBox(Position start, Position end)
         {
-            var left = Math.Min(zoomBox.Left, relativePosition.X);
-            var right = Math.Max(zoomBox.Right, relativePosition.X);
-            var top = Math.Min(zoomBox.Top, relativePosition.Y);
-            var bottom = Math.Max(zoomBox.Bottom, relativePosition.Y);
+            var left = Math.Min(start.X, end.X);
+            var top = 0;
+            var right = Math.Max(start.X, end.X);
+            var bottom = 1;
 
             return new SKRect(left, top, right, bottom);
         }
 
-        private void CombineZoom()
+        private void ApplyZoom(SKRect zoomBox)
         {
+            /* zoom box */
             var oldXRange = _oldZoomBox.Right - _oldZoomBox.Left;
             var oldYRange = _oldZoomBox.Bottom - _oldZoomBox.Top;
 
-            var zoomBox = new SKRect(
-                left: _oldZoomBox.Left + oldXRange * _zoomBox.Left, 
-                top: _oldZoomBox.Top + oldYRange * _zoomBox.Top,
-                right: _oldZoomBox.Left + oldXRange * _zoomBox.Right,
-                bottom: _oldZoomBox.Top + oldYRange * _zoomBox.Bottom);
+            var newZoomBox = new SKRect(
+                left: Math.Max(0, _oldZoomBox.Left + oldXRange * zoomBox.Left),
+                top: Math.Max(0, _oldZoomBox.Top + oldYRange * zoomBox.Top),
+                right: Math.Min(1, _oldZoomBox.Left + oldXRange * zoomBox.Right),
+                bottom: Math.Min(1, _oldZoomBox.Top + oldYRange * zoomBox.Bottom));
 
-            _oldZoomBox = zoomBox;
-            _zoomBox = zoomBox;
+            if (newZoomBox.Width < 1e-6 || newZoomBox.Height < 1e-6)
+                return;
+
+            /* time range */
+            var timeRange = End - Begin;
+            _zoomedBegin = Begin + timeRange * _zoomBox.Left;
+            _zoomedEnd = Begin + timeRange * _zoomBox.Right;
+
+            /* data range */
+            foreach (var axesEntry in _axesMap)
+            {
+                var axisInfo = axesEntry.Key;
+                var originalDataRange = axisInfo.OriginalMax - axisInfo.OriginalMin;
+
+                axisInfo.Min = axisInfo.OriginalMin + (1 - newZoomBox.Bottom) * originalDataRange;
+                axisInfo.Max = axisInfo.OriginalMax - newZoomBox.Top * originalDataRange;
+            }
+
+            _oldZoomBox = newZoomBox;
+            _zoomBox = newZoomBox;
         }
 
         private void ResetZoom()
         {
+            /* zoom box */
             _oldZoomBox = new SKRect(0, 0, 1, 1);
             _zoomBox = new SKRect(0, 0, 1, 1);
+
+            /* time range */
+            _zoomedBegin = Begin;
+            _zoomedEnd = End;
+
+            /* data range */
+            foreach (var axesEntry in _axesMap)
+            {
+                var axisInfo = axesEntry.Key;
+
+                axisInfo.Min = axisInfo.OriginalMin;
+                axisInfo.Max = axisInfo.OriginalMax;
+            }
         }
 
         #endregion
@@ -433,15 +540,12 @@ namespace Nexus.UI.Shared
                 var axisInfo = axesEntry.Key;
 
                 /* get ticks */
-                var ticks = GetYTicks(axisInfo.OriginalMin, axisInfo.OriginalMax, maxTickCount);
-                axisInfo.Min = ticks[0];
-                axisInfo.Max = ticks[^1];
-
-                var tickRange = axisInfo.Max - axisInfo.Min;
+                var ticks = GetYTicks(axisInfo.Min, axisInfo.Max, maxTickCount);
+                var dataRange = axisInfo.Max - axisInfo.Min;
 
                 /* get labels */
                 var maxChars = axisInfo.Unit.Length;
-
+                
                 var labels = ticks
                     .Select(tick =>
                     {
@@ -451,28 +555,36 @@ namespace Nexus.UI.Shared
                     })
                     .ToArray();
 
-                /* draw unit */
-                var localUnitOffset = maxChars - axisInfo.Unit.Length;
-                var xUnit = currentOffset + localUnitOffset * widthPerCharacter;
-                var yUnit = yMin;
-                canvas.DrawText(axisInfo.Unit, new SKPoint(xUnit, yUnit), axisLabelPaint);
-
-                /* draw labels and ticks */
                 var textWidth = widthPerCharacter * maxChars;
+                var skipDraw = !axesEntry.Value.Any(lineSeries => lineSeries.Show);
 
-                for (int i = 0; i < ticks.Length; i++)
+                if (!skipDraw)
                 {
-                    var tick = ticks[i];
-                    var label = labels[i];
-                    var scaleFactor = (canvasRange - Y_UNIT_OFFSET) / tickRange;
-                    var localLabelOffset = maxChars - label.Length;
-                    var x = currentOffset + localLabelOffset * widthPerCharacter;
-                    var y = yMax - (tick - axisInfo.Min) * scaleFactor;
+                    /* draw unit */
+                    var localUnitOffset = maxChars - axisInfo.Unit.Length;
+                    var xUnit = currentOffset + localUnitOffset * widthPerCharacter;
+                    var yUnit = yMin;
+                    canvas.DrawText(axisInfo.Unit, new SKPoint(xUnit, yUnit), axisLabelPaint);
 
-                    canvas.DrawText(label, new SKPoint(x, y + HALF_LINE_HEIGHT), axisLabelPaint);
+                    /* draw labels and ticks */
+                    for (int i = 0; i < ticks.Length; i++)
+                    {
+                        var tick = ticks[i];
 
-                    var tickX = currentOffset + textWidth + TICK_MARGIN_LEFT;
-                    canvas.DrawLine(tickX, y, tickX + TICK_SIZE, y, axisTickPaint);
+                        if (axisInfo.Min <= tick && tick <= axisInfo.Max)
+                        {
+                            var label = labels[i];
+                            var scaleFactor = (canvasRange - Y_UNIT_OFFSET) / dataRange;
+                            var localLabelOffset = maxChars - label.Length;
+                            var x = currentOffset + localLabelOffset * widthPerCharacter;
+                            var y = yMax - (tick - axisInfo.Min) * scaleFactor;
+
+                            canvas.DrawText(label, new SKPoint(x, y + HALF_LINE_HEIGHT), axisLabelPaint);
+
+                            var tickX = currentOffset + textWidth + TICK_MARGIN_LEFT;
+                            canvas.DrawLine(tickX, y, tickX + TICK_SIZE, y, axisTickPaint);
+                        }
+                    }
                 }
 
                 /* update offset */
@@ -482,7 +594,7 @@ namespace Nexus.UI.Shared
             return currentOffset - AXIS_MARGIN_RIGHT;
         }
 
-        private float[] GetYTicks(double min, double max, int maxTickCount)
+        private void GetYLimits(double min, double max, out float minLimit, out float maxLimit, out float step)
         {
             /* There are a minimum of 10 ticks and a maximum of 40 ticks with the following approach:
              * 
@@ -496,16 +608,22 @@ namespace Nexus.UI.Shared
              */
 
             /* range and position of first significant digit */
-            var originalRange = max - min;
-            var significant = (int)Math.Round(Math.Log10(originalRange), MidpointRounding.AwayFromZero);
+            var range = max - min;
+            var significant = (int)Math.Round(Math.Log10(range), MidpointRounding.AwayFromZero);
 
             /* get limits */
-            var min_limit = RoundDown(min, decimalPlaces: -significant);
-            var max_limit = RoundUp(max, decimalPlaces: -significant);
-            var range = max_limit - min_limit;
+            minLimit = (float)RoundDown(min, decimalPlaces: -significant);
+            maxLimit = (float)RoundUp(max, decimalPlaces: -significant);
 
-            /* get tick step and count */
-            var step = Math.Pow(10, significant - 1);
+            /* get tick step */
+            step = (float)Math.Pow(10, significant - 1);
+        }
+
+        private float[] GetYTicks(float min, float max, int maxTickCount)
+        {
+            GetYLimits(min, max, out var minLimit, out var maxLimit, out var step);
+
+            var range = maxLimit - minLimit;
             var tickCount = (int)Math.Ceiling((range / step) + 1);
 
             /* ensure there are not too many ticks */
@@ -518,7 +636,7 @@ namespace Nexus.UI.Shared
                 {
                     var factor = _factors[i];
 
-                    tickCount = (int)Math.Ceiling(originalTickCount / (double)factor);
+                    tickCount = (int)Math.Ceiling(originalTickCount / (float)factor);
                     step = originalStep * factor;
 
                     if (tickCount <= maxTickCount)
@@ -532,7 +650,7 @@ namespace Nexus.UI.Shared
             /* calculate actual steps */
             return Enumerable
                 .Range(0, tickCount)
-                .Select(tickNumber => (float)(min_limit + tickNumber * step))
+                .Select(tickNumber => (float)(minLimit + tickNumber * step))
                 .ToArray();
         }
 
@@ -557,7 +675,10 @@ namespace Nexus.UI.Shared
 
             var canvasRange = xMax - xMin;
             var maxTickCount = Math.Max(1, (int)Math.Round(canvasRange / 130, MidpointRounding.AwayFromZero));
+
             var (config, ticks) = GetTimeTicks(begin, end, maxTickCount);
+            _timeAxisConfig = config;
+
             var timeRange = (end - begin).Ticks;
             var scalingFactor = canvasRange / timeRange;
             var previousTick = DateTime.MinValue;
@@ -573,7 +694,7 @@ namespace Nexus.UI.Shared
                 canvas.DrawText(tickLabel, x, yMax + TICK_SIZE + TIME_AXIS_MARGIN_TOP, axisLabelPaint);
 
                 /* slow tick */
-                var addSlowTick = IsSlowTickRequired(previousTick, tick, config.Trigger);
+                var addSlowTick = IsSlowTickRequired(previousTick, tick, config.SlowTickTrigger);
 
                 if (addSlowTick)
                 {
@@ -679,7 +800,8 @@ namespace Nexus.UI.Shared
             var dx = dataBox.Width * relativeTickWidth;
 
             /* draw */
-            DrawPath(canvas, axisInfo.Min, dataBox, dx, yScaleFactor, data, series.Color);
+            if (series.Show)
+                DrawPath(canvas, axisInfo.Min, dataBox, dx, yScaleFactor, data, series.Color);
         }
 
         private void DrawPath(

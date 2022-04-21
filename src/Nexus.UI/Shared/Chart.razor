@@ -12,7 +12,8 @@
             @onmousedown="OnMouseDown"
             @onmousemove="OnMouseMove"
             @onmouseleave="OnMouseLeave"
-            @ondblclick="OnDoubleClick">
+            @ondblclick="OnDoubleClick"
+            @onwheel="OnWheel">
 
             <div id="crosshairs-x_@(_chartId)" class="crosshairs-x" style="display: none;"></div>
             <div id="crosshairs-y_@(_chartId)" class="crosshairs-y" style="display: none;"></div>
@@ -36,9 +37,9 @@
 
         @foreach (var series in LineSeries)
         {
-            <div class="legend-item">
+            <div class="legend-item @(series.Show ? "" : "inactive")" @onclick="() => ToggleSeriesEnabled(series)">
                 <div class="color-box" style="border-color: rgb(@series.Color.Red, @series.Color.Green, @series.Color.Blue)"></div>
-                <div id="name_@(series.Id)_@(_chartId)" class="name">@(string.IsNullOrWhiteSpace(series.Unit) ? series.Name : $"{series.Name} ({@series.Unit})"):</div>
+                <div id="name_@(series.Id)_@(_chartId)" class="name">@series.Name:</div>
                 <div id="value_@(series.Id)_@(_chartId)">--</div>
             </div>
         }

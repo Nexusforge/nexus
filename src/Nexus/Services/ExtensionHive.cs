@@ -72,10 +72,10 @@ namespace Nexus.Services
             CancellationToken cancellationToken)
         {
             // clean up
-            _logger.LogDebug("Unload previously loaded packages");
-
             if (_packageControllerMap is not null)
             {
+                _logger.LogDebug("Unload previously loaded packages");
+
                 foreach (var (controller, _) in _packageControllerMap)
                 {
                     controller.Unload();

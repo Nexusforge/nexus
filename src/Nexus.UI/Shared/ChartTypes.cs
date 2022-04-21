@@ -11,14 +11,12 @@ namespace Nexus.UI.Shared
         TimeSpan SamplePeriod,
         double[] Data)
     {
+        public bool Show { get; set; } = true;
         internal string Id { get; } = Guid.NewGuid().ToString();
         internal SKColor Color { get; set; }
-        internal ZoomInfo ZoomInfo { get; set; }
     }
 
     internal record struct ZoomInfo(
-        float IndexLeft,
-        float IndexRight,
         Memory<double> Data,
         SKRect DataBox);
 
@@ -40,14 +38,17 @@ namespace Nexus.UI.Shared
         /* The tick interval */
         TimeSpan TickInterval,
 
-        /* Ticks where the TriggerPeriod changes will have a slow tick label attached */
-        TriggerPeriod Trigger,
-
         /* The standard tick label format */
         string FastTickLabelFormat,
 
+        /* Ticks where the TriggerPeriod changes will have a slow tick label attached */
+        TriggerPeriod SlowTickTrigger,
+
         /* The slow tick format */
-        string SlowTickLabelFormat);
+        string SlowTickLabelFormat,
+        
+        /* The cursor label format*/
+        string CursorLabelFormat);
 
     internal enum TriggerPeriod
     {
