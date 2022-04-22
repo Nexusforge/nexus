@@ -1,0 +1,51 @@
+﻿<div class="mb-7 pt-3 pb-2 px-3 relative @(_hasFocus ? "border-b-2 border-cyan-400" : "border-b border-white") hover:border-cyan-400">
+
+    <label class="absolute bottom-8 text-xs @(string.IsNullOrWhiteSpace(Value) ? "text-transparent" : (_hasFocus ? "text-cyan-400" : "text-gray-300"))">@Label</label>
+
+    <input @bind="Value" @bind:event="oninput" @onfocus="() => _hasFocus = true" @onblur="() => _hasFocus = false"
+        class="w-full pt-2 focus:outline-none text-gray-200 placeholder-gray-300 bg-transparent" 
+        type="text" 
+        placeholder="@Label"
+        list="@Label">
+
+    <datalist id="@Label">
+        @foreach (var item in Items)
+        {
+            <option>@item</option>
+        }
+    </datalist>
+
+</div>
+
+@code {
+
+    private bool _hasFocus;
+
+    private string _value = null!;
+
+    [Parameter]
+    public string Value
+    {
+        get => _value;
+        set
+        {
+            if (value != _value) {
+                _value = value;
+
+                if (ValueChanged.HasDelegate)
+                    ValueChanged.InvokeAsync(value);
+
+                StateHasChanged();
+            }
+        }
+    }
+
+    [Parameter]
+    public EventCallback<string> ValueChanged { get; set; }
+
+    [Parameter]
+    public List<string> Items { get; set; } = null!;
+
+    [Parameter]
+    public string? Label { get; set; }
+}

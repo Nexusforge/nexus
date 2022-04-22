@@ -1,26 +1,32 @@
-﻿<div class="w-12 md:w-52 bg-slate-800">
+﻿<div class="w-64 bg-cyan-900 flex-col p-3">
 
-    <ul>
-        
-        <li>
-            <NavLink 
-                class="nav-link flex items-center text-sm py-4 px-3 text-white text-ellipsis hover:text-gray-900 hover:bg-gray-100 transition duration-300 ease-in-out"
-                Match=NavLinkMatch.All
-                href="">
-                <i class="mdi mdi-home pr-5"></i>
-                <span class="invisible md:visible">Home</span>
-            </NavLink>
-        </li>
+    <UISelect Label="From (UTC)" Items="_items">
+    </UISelect>
 
-        <li class="border-b border-gray-400"></li>
+    <UISelect Label="To (UTC)" Items="_items">
+    </UISelect>
 
-        <li>
-            <NavLink class="nav-link flex items-center text-sm py-4 px-3 text-white text-ellipsis hover:text-gray-900 hover:bg-gray-100 transition duration-300 ease-in-out" href="catalogs/awesome">
-                <i class="mdi mdi-pencil pr-5"></i>
-                <span class="invisible md:visible">Catalogs</span>
-            </NavLink>
-        </li>
+    <UISelect Label="File Granularity" Items="_items">
+    </UISelect>
 
-    </ul>
+    <UISelect Label="File Type" Items="_items">
+    </UISelect>
+
+    <UISelect Label="Row index format" Items="_items">
+    </UISelect>
+
+    <UISelect Label="Significant figures" Items="_items">
+    </UISelect>
+
+    <UISelect Label="Sample rate" Items="_items">
+    </UISelect>
+
+    <UICheckbox Label="Begin at zero">
+
+    </UICheckbox>
 
 </div>
+
+@code {
+    private List<string> _items = new List<string>(){ "20.04.2022 00:00", "21.04.2022 00:00", "Single file", "Comma-separated (*.csv)", "Index-based", "4" };
+}
