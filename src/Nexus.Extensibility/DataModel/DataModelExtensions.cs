@@ -5,7 +5,7 @@ namespace Nexus.DataModel
     /// <summary>
     /// Contains extension methods to make life easier working with the data model types.
     /// </summary>
-    public static partial class DataModelExtensions
+    public static class DataModelExtensions
     {
         #region Fluent API
 
