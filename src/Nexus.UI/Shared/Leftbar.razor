@@ -1,0 +1,46 @@
+﻿@inject IAppState AppState
+
+<div class="bg-cyan-900 hidden xl:flex flex-col justify-between p-3 @CssClass">
+
+    <div>
+        <UIDatePicker Label="From (UTC)" Value="AppState.ExportParameters.Begin">
+        </UIDatePicker>
+
+        <UIDatePicker Label="To (UTC)" Value="AppState.ExportParameters.End">
+        </UIDatePicker>
+
+        <UITextBox Label="Sample Period" Value="SamplePeriod">
+        </UITextBox>
+
+        <UICheckbox Label="Begin at zero">
+        </UICheckbox>
+    </div>
+
+    <div class="flex justify-between text-gray-200 p-3">
+        <div class="rounded-full flex flex-col justify-center items-center hover:text-orange-500 cursor-pointer">
+            <span class="text-2xl mdi mdi-folder-open mb-1"></span>
+            <span class="text-sm">Load</span>
+        </div>
+        <div class="rounded-full flex flex-col justify-center items-center hover:text-orange-500 cursor-pointer">
+            <span class="text-2xl mdi mdi-file-download mb-1"></span>
+            <span class="text-sm">Save</span>
+        </div>
+        <div class="rounded-full flex flex-col justify-center items-center hover:text-orange-500 cursor-pointer">
+            <span class="text-2xl mdi mdi-chart-areaspline mb-1"></span>
+            <span class="text-sm">Visualize</span>
+        </div>
+    </div>
+
+</div>
+
+@code {
+
+    [Parameter]
+    public string CssClass { get; set; }
+
+    private SamplePeriod SamplePeriod 
+    {
+        get => new SamplePeriod(AppState.SamplePeriod);
+        set => AppState.SamplePeriod = value.Value;
+    }
+}

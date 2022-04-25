@@ -1,9 +1,11 @@
-﻿<div class="mb-7 pt-3 pb-2 px-3 relative @(_hasFocus ? "border-b-2 border-cyan-400" : "border-b border-white") hover:border-cyan-400">
+﻿@typeparam T
 
-    <label class="absolute bottom-8 text-xs @(string.IsNullOrWhiteSpace(Value) ? "text-transparent" : (_hasFocus ? "text-cyan-400" : "text-gray-300"))">@Label</label>
+<div class="mb-7 pt-3 pb-2 px-3 relative @(_hasFocus ? "border-b-2 border-orange-500" : "border-b border-white") hover:border-orange-500">
 
-    <input @bind="Value" @bind:event="oninput" @onfocus="() => _hasFocus = true" @onblur="() => _hasFocus = false"
-        class="w-full pt-2 focus:outline-none text-gray-200 placeholder-gray-300 bg-transparent" 
+    <label class="absolute bottom-8 text-xs @(string.IsNullOrWhiteSpace(Value.ToString()) ? "text-transparent" : (_hasFocus ? "text-orange-500" : "text-gray-300"))">@Label</label>
+
+    <input @bind="Value" @onfocus="() => _hasFocus = true" @onblur="() => _hasFocus = false"
+        class="w-full pt-2 focus:outline-none text-gray-200 placeholder-gray-400 bg-transparent" 
         type="text" 
         placeholder="@Label">
 
@@ -13,15 +15,15 @@
 
     private bool _hasFocus;
 
-    private string _value = null!;
+    private T _value = default!;
 
     [Parameter]
-    public string Value
+    public T Value
     {
         get => _value;
         set
         {
-            if (value != _value) {
+            if (!value.Equals(_value)) {
                 _value = value;
 
                 if (ValueChanged.HasDelegate)
@@ -33,8 +35,8 @@
     }
 
     [Parameter]
-    public EventCallback<string> ValueChanged { get; set; }
+    public EventCallback<T> ValueChanged { get; set; }
 
     [Parameter]
-    public string? Label { get; set; }
+    public string Label { get; set; } = null!;
 }

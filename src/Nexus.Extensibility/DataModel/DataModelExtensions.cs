@@ -5,7 +5,7 @@ namespace Nexus.DataModel
     /// <summary>
     /// Contains extension methods to make life easier working with the data model types.
     /// </summary>
-    public static class DataModelExtensions
+    public static partial class DataModelExtensions
     {
         #region Fluent API
 
@@ -93,12 +93,6 @@ namespace Nexus.DataModel
 
         #region Misc
 
-        private const int NS_PER_TICK = 100;
-        private static long[] _nanoseconds = new[] { (long)1e0, (long)1e3, (long)1e6, (long)1e9, (long)60e9 };
-        private static int[] _quotients = new[] { 1000, 1000, 1000, 60, 1 };
-        private static string[] _postFixes = new[] { "ns", "us", "ms", "s", "min" };
-        private static Regex _unitStringEvaluator = new Regex(@"^([0-9]+)_([a-z]+)$", RegexOptions.Compiled);
-
         /// <summary>
         /// Converts a url into a local file path.
         /// </summary>
@@ -117,6 +111,12 @@ namespace Nexus.DataModel
             else
                 throw new Exception("Only a file URI can be converted to a path.");
         }
+
+        private const int NS_PER_TICK = 100;
+        private static long[] _nanoseconds = new[] { (long)1e0, (long)1e3, (long)1e6, (long)1e9, (long)60e9 };
+        private static int[] _quotients = new[] { 1000, 1000, 1000, 60, 1 };
+        private static string[] _postFixes = new[] { "ns", "us", "ms", "s", "min" };
+        private static Regex _unitStringEvaluator = new Regex(@"^([0-9]+)_([a-z]+)$", RegexOptions.Compiled);
 
         /// <summary>
         /// Converts period into a human readable number string with unit.

@@ -1,0 +1,24 @@
+﻿<div class="text-gray-200 cursor-pointer hover:bg-cyan-800 p-2 rounded" @onclick="OnClick" @ondblclick="OnDoubleClick">
+    <div class="flex justify-between">
+        <span class="text-sm overflow-hidden text-ellipsis">@CatalogItemSelection.Resource.Id</span>
+        <span class="ml-2 text-xs font-semibold px-2.5 py-0.5 rounded bg-teal-600 text-gray-300">@CatalogItemSelection.Representation.Kind</span>
+    </div>
+    <p class="text-xs text-gray-400 overflow-hidden text-ellipsis my-0.5">@Utilities.ToSpaceFilledCatalogId(CatalogItemSelection.Catalog.Id)</p>
+</div>
+
+@code {
+
+    [Parameter]
+    public EventCallback<MouseEventArgs> OnClick { get; set; }
+
+    [Parameter]
+    public EventCallback<MouseEventArgs> OnDoubleClick { get; set; }
+
+    [Parameter]
+    public CatalogItemSelection CatalogItemSelection { get; set; } = null!;
+
+    private string GetId()
+    {
+        return $"{@CatalogItemSelection.Catalog.Id}/{@CatalogItemSelection.Resource.Id}";
+    }
+}

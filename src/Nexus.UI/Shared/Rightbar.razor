@@ -1,0 +1,43 @@
+﻿@inject IAppState AppState
+@inject NexusClient Client
+
+<div class="bg-cyan-900 hidden xl:flex flex-col  p-3 @CssClass">
+
+    <div>
+        <UISelect Label="File Period" Items="_items">
+        </UISelect>
+
+        <UISelect Label="File Type" Items="_items">
+        </UISelect>
+
+        <UISelect Label="Row index format" Items="_items">
+        </UISelect>
+
+        <UISelect Label="Significant figures" Items="_items">
+        </UISelect>
+        
+    </div>
+
+    <div class="flex-1">
+        @foreach (var selection in AppState.SelectedCatalogItems)
+        {
+            <CatalogItemSelectionView CatalogItemSelection="selection" OnDoubleClick="() => AppState.SelectedCatalogItems.Remove(selection)" />
+        }
+    </div>
+
+    <UIButton Icon="download-outline" Label="Export" OnClick="ExportAsync"></UIButton>
+
+</div>
+
+@code {
+
+    [Parameter]
+    public string CssClass { get; set; }
+
+    public Task ExportAsync()
+    {
+        return Client.Jobs.ExportAsync(AppState.ExportParameters, CancellationToken.None);
+    }
+
+    private List<string> _items = new List<string>(){ "20.04.2022 00:00", "21.04.2022 00:00", "Single file", "Comma-separated (*.csv)", "Index-based", "4" };
+}
