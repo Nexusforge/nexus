@@ -410,7 +410,7 @@ $@"    /// <summary>
                     ("string", "duration", _) => "TimeSpan",
                     ("string", "date-time", _) => "DateTime",
                     ("string", _, _) => "string",
-                    ("array", _, _) => $"ICollection<{GetType(schema.Items)}>",
+                    ("array", _, _) => $"IList<{GetType(schema.Items)}>",
                     ("object", _, true) => $"IDictionary<string, {GetType(schema.AdditionalProperties)}>",
                     (_, _, _) => throw new Exception($"The schema type {schema.Type} (or one of its formats) is not supported.")
                 };

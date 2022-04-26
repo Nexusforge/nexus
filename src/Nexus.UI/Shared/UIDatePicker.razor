@@ -1,6 +1,6 @@
 ﻿<div class="mb-7 pt-3 pb-2 px-3 relative @(_hasFocus ? "border-b-2 border-orange-500" : "border-b border-white") hover:border-orange-500">
 
-    <label class="absolute bottom-8 text-xs @(Value == default ? "text-transparent" : (_hasFocus ? "text-orange-500" : "text-gray-300"))">@Label</label>
+    <label class="absolute bottom-8 text-xs @(Value == default ? "text-transparent" : "text-gray-300")">@Label</label>
 
     <input @bind="Value" @bind:event="oninput" @onfocus="() => _hasFocus = true" @onblur="() => _hasFocus = false" style="color-scheme: dark;"
         class="w-full pt-2 focus:outline-none text-gray-200 placeholder-gray-400 bg-transparent" 

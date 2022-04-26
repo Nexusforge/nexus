@@ -4,18 +4,20 @@
 <div class="bg-cyan-900 hidden xl:flex flex-col  p-3 @CssClass">
 
     <div>
-        <UISelect Label="File Period" Items="_items">
-        </UISelect>
 
-        <UISelect Label="File Type" Items="_items">
-        </UISelect>
+        <UITextBox Label="File Period" Value="FilePeriod">
+        </UITextBox>
 
-        <UISelect Label="Row index format" Items="_items">
-        </UISelect>
+        @if (_extensionDescriptions is not null)
+        {
+            <UISelect 
+                Label="File Type" 
+                Items="_items"
+                Values="_values"
+                Value="@AppState.ExportParameters.Type">
+            </UISelect>
+        }
 
-        <UISelect Label="Significant figures" Items="_items">
-        </UISelect>
-        
     </div>
 
     <div class="flex-1">
@@ -32,12 +34,48 @@
 @code {
 
     [Parameter]
-    public string CssClass { get; set; }
+    public string? CssClass { get; set; }
+
+    private IList<ExtensionDescription>? _extensionDescriptions;
+    private List<string> _values = new List<string>();
+    private List<string> _items = new List<string>();
+
+    private Period FilePeriod 
+    {
+        get => new Period(AppState.ExportParameters.FilePeriod);
+        set => AppState.ExportParameters = AppState.ExportParameters with { FilePeriod = value.Value };
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        const string FORMAT_NAME_KEY = "UI:FormatName";
+
+        _extensionDescriptions = (await Client.Writers
+            .GetDescriptionsAsync(CancellationToken.None))
+            .Where(description => 
+                description.AdditionalInfo is not null && 
+                description.AdditionalInfo.ContainsKey(FORMAT_NAME_KEY))
+            .ToList();
+
+        if (_extensionDescriptions.Any())
+        {
+            AppState.ExportParameters = AppState.ExportParameters with
+            { 
+                Type = _extensionDescriptions.First().Type 
+            };
+        }
+
+        foreach (var description in _extensionDescriptions)
+        {
+            var item = description.AdditionalInfo![FORMAT_NAME_KEY];
+
+            _items.Add(item);
+            _values.Add(description.Type);
+        }
+    }
 
     public Task ExportAsync()
     {
         return Client.Jobs.ExportAsync(AppState.ExportParameters, CancellationToken.None);
     }
-
-    private List<string> _items = new List<string>(){ "20.04.2022 00:00", "21.04.2022 00:00", "Single file", "Comma-separated (*.csv)", "Index-based", "4" };
 }

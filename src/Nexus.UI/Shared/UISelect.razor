@@ -1,35 +1,51 @@
-﻿<div class="mb-7 pt-3 pb-2 px-3 relative @(_hasFocus ? "border-b-2 border-orange-500" : "border-b border-white") hover:border-orange-500">
+﻿@typeparam T
 
-    <label class="absolute bottom-8 text-xs @(string.IsNullOrWhiteSpace(Value) ? "text-transparent" : (_hasFocus ? "text-orange-500" : "text-gray-300"))">@Label</label>
+<div class="mb-7 pt-3 pb-2 relative text-gray-200 select-none border-b border-white hover:border-orange-500 cursor-pointer">
 
-    <input @bind="Value" @bind:event="oninput" @onfocus="() => _hasFocus = true" @onblur="() => _hasFocus = false"
-        class="w-full pt-2 focus:outline-none text-gray-200 placeholder-gray-400 bg-transparent" 
-        type="text" 
-        placeholder="@Label"
-        list="@Label">
+    <label class="absolute left-3 bottom-8 text-xs @(string.IsNullOrWhiteSpace(Value.ToString()) ? "text-transparent" : "text-gray-300")">@Label</label>
 
-    <datalist id="@Label">
-        @foreach (var item in Items)
-        {
-            <option>@item</option>
-        }
-    </datalist>
+    <select @bind="Value" class="w-full hidden"></select>
+
+    <div class="px-3" @onmouseup="ToggleIsOpen" onclick="event.stopPropagation()">
+        @GetItem(Value)
+    </div>
+
+    @if (_isOpen)
+    {
+        <div class="top-11 absolute border border-orange-500 bg-cyan-900 w-full">
+            @foreach (var i in Enumerable.Range(0, Math.Min(Items.Count, Values.Count)))
+            {
+                <div class="px-3 py-2 text-gray-200 hover:bg-cyan-800 @(Values[i].Equals(Value) ? "bg-cyan-800" : "")"
+                    @onclick="() => Value = Values[i]">
+                    @Items[i]
+                </div>
+            }
+        </div>
+    }
 
 </div>
 
 @code {
 
-    private bool _hasFocus;
+    private DotNetObjectReference<UISelect<T>> _dotNetHelper;
+    private bool _isOpen;
+    private T _value = default!;
 
-    private string _value = null!;
+    public UISelect()
+    {
+        _dotNetHelper = DotNetObjectReference.Create(this);
+    }
+
+    [Inject]
+    public IJSInProcessRuntime JSInProcessRuntime { get; set; } = null!;
 
     [Parameter]
-    public string Value
+    public T Value
     {
         get => _value;
         set
         {
-            if (value != _value) {
+            if (!value.Equals(_value)) {
                 _value = value;
 
                 if (ValueChanged.HasDelegate)
@@ -41,11 +57,39 @@
     }
 
     [Parameter]
-    public EventCallback<string> ValueChanged { get; set; }
-
-    [Parameter]
-    public List<string> Items { get; set; } = null!;
-
-    [Parameter]
     public string Label { get; set; } = null!;
+
+    [Parameter]
+    public EventCallback<T> ValueChanged { get; set; }
+
+    [Parameter]
+    public IList<string> Items { get; set; } = null!;
+
+    [Parameter]
+    public IList<T> Values { get; set; } = null!;
+
+    [JSInvokable]
+    public void OnClick()
+    {
+        _isOpen = false;
+        this.StateHasChanged();
+    }
+
+    private string GetItem(T value)
+    {
+        var index = Values.IndexOf(value);
+
+        if (index > -1)
+            return Items[index];
+        else
+            return string.Empty;
+    }
+
+    private void ToggleIsOpen()
+    {
+        _isOpen = !_isOpen;
+
+        if (_isOpen)
+            JSInProcessRuntime.InvokeVoid("workaround.addClickEvent", _dotNetHelper);
+    }
 }

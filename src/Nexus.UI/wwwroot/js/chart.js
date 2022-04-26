@@ -49,10 +49,3 @@ nexus.chart.toRelative = function (chartId, clientX, clientY) {
         "y": y
     };
 }
-
-nexus.chart.addMouseUpEvent = function (dotNetHelper) {
-
-    window.addEventListener("mouseup", e => dotNetHelper.invokeMethodAsync("OnMouseUp"), {
-        once: true
-    });
-}

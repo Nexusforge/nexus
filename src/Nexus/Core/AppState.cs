@@ -33,7 +33,7 @@ namespace Nexus.Core
 
         public CatalogState CatalogState { get; set; } = null!;
 
-        public Dictionary<string, (string FormatName, OptionAttribute[] Options)> DataWriterInfoMap { get; set; } = null!;
+        public List<ExtensionDescription> DataWriterDescriptions { get; set; } = null!;
 
         #endregion
     }

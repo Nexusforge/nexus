@@ -34,7 +34,7 @@ public static class Utilities
         return $"{(int)currentValue} {_postFixes.Last()}";
     }
 
-    public static TimeSpan ToSamplePeriod(string unitString)
+    public static TimeSpan ToPeriod(string unitString)
     {
         var match = _unitStringEvaluator.Match(unitString);
 

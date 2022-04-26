@@ -16,16 +16,16 @@
         </UICheckbox>
     </div>
 
-    <div class="flex justify-between text-gray-200 p-3">
-        <div class="rounded-full flex flex-col justify-center items-center hover:text-orange-500 cursor-pointer">
+    <div class="flex justify-between text-gray-200">
+        <div class="p-4 flex flex-col justify-center items-center hover:text-orange-500 cursor-pointer">
             <span class="text-2xl mdi mdi-folder-open mb-1"></span>
             <span class="text-sm">Load</span>
         </div>
-        <div class="rounded-full flex flex-col justify-center items-center hover:text-orange-500 cursor-pointer">
+        <div class="p-4 flex flex-col justify-center items-center hover:text-orange-500 cursor-pointer">
             <span class="text-2xl mdi mdi-file-download mb-1"></span>
             <span class="text-sm">Save</span>
         </div>
-        <div class="rounded-full flex flex-col justify-center items-center hover:text-orange-500 cursor-pointer">
+        <div class="p-4 flex flex-col justify-center items-center hover:text-orange-500 cursor-pointer">
             <span class="text-2xl mdi mdi-chart-areaspline mb-1"></span>
             <span class="text-sm">Visualize</span>
         </div>
@@ -38,9 +38,11 @@
     [Parameter]
     public string CssClass { get; set; }
 
-    private SamplePeriod SamplePeriod 
+    private Period SamplePeriod 
     {
-        get => new SamplePeriod(AppState.SamplePeriod);
-        set => AppState.SamplePeriod = value.Value;
+        get => new Period(AppState.SamplePeriod);
+        set => AppState.SamplePeriod = value.Value == default 
+            ? TimeSpan.FromSeconds(1) 
+            : value.Value;
     }
 }

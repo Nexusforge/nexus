@@ -423,7 +423,7 @@ public interface ICatalogsClient
     /// </summary>
     /// <param name="catalogId">The parent catalog identifier.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<ICollection<string>> GetChildCatalogIdsAsync(string catalogId, CancellationToken cancellationToken = default);
+    Task<IList<string>> GetChildCatalogIdsAsync(string catalogId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets the specified catalog's time range.
@@ -488,14 +488,14 @@ public class CatalogsClient : ICatalogsClient
     }
 
     /// <inheritdoc />
-    public Task<ICollection<string>> GetChildCatalogIdsAsync(string catalogId, CancellationToken cancellationToken = default)
+    public Task<IList<string>> GetChildCatalogIdsAsync(string catalogId, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/catalogs/{catalogId}/child-catalog-ids");
         urlBuilder.Replace("{catalogId}", Uri.EscapeDataString(Convert.ToString(catalogId, CultureInfo.InvariantCulture)!));
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<ICollection<string>>("GET", url, "application/json", default, cancellationToken);
+        return _client.InvokeAsync<IList<string>>("GET", url, "application/json", default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -644,7 +644,7 @@ public interface IJobsClient
     /// Gets a list of jobs.
     /// </summary>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<ICollection<Job>> GetJobsAsync(CancellationToken cancellationToken = default);
+    Task<IList<Job>> GetJobsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets the status of the specified job.
@@ -713,13 +713,13 @@ public class JobsClient : IJobsClient
     }
 
     /// <inheritdoc />
-    public Task<ICollection<Job>> GetJobsAsync(CancellationToken cancellationToken = default)
+    public Task<IList<Job>> GetJobsAsync(CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/jobs");
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<ICollection<Job>>("GET", url, "application/json", default, cancellationToken);
+        return _client.InvokeAsync<IList<Job>>("GET", url, "application/json", default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -777,7 +777,7 @@ public interface IPackageReferencesClient
     /// </summary>
     /// <param name="packageReferenceId">The ID of the package reference.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<ICollection<string>> GetVersionsAsync(Guid packageReferenceId, CancellationToken cancellationToken = default);
+    Task<IList<string>> GetVersionsAsync(Guid packageReferenceId, CancellationToken cancellationToken = default);
 
 }
 
@@ -824,14 +824,14 @@ public class PackageReferencesClient : IPackageReferencesClient
     }
 
     /// <inheritdoc />
-    public Task<ICollection<string>> GetVersionsAsync(Guid packageReferenceId, CancellationToken cancellationToken = default)
+    public Task<IList<string>> GetVersionsAsync(Guid packageReferenceId, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/packagereferences/{packageReferenceId}/versions");
         urlBuilder.Replace("{packageReferenceId}", Uri.EscapeDataString(Convert.ToString(packageReferenceId, CultureInfo.InvariantCulture)!));
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<ICollection<string>>("GET", url, "application/json", default, cancellationToken);
+        return _client.InvokeAsync<IList<string>>("GET", url, "application/json", default, cancellationToken);
     }
 
 }
@@ -845,7 +845,7 @@ public interface ISourcesClient
     /// Gets the list of sources.
     /// </summary>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<ICollection<ExtensionDescription>> GetDescriptionsAsync(CancellationToken cancellationToken = default);
+    Task<IList<ExtensionDescription>> GetDescriptionsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets the list of backend sources.
@@ -881,13 +881,13 @@ public class SourcesClient : ISourcesClient
     }
 
     /// <inheritdoc />
-    public Task<ICollection<ExtensionDescription>> GetDescriptionsAsync(CancellationToken cancellationToken = default)
+    public Task<IList<ExtensionDescription>> GetDescriptionsAsync(CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/sources/descriptions");
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<ICollection<ExtensionDescription>>("GET", url, "application/json", default, cancellationToken);
+        return _client.InvokeAsync<IList<ExtensionDescription>>("GET", url, "application/json", default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -933,7 +933,7 @@ public interface IUsersClient
     /// Returns a list of available authentication schemes.
     /// </summary>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<ICollection<AuthenticationSchemeDescription>> GetAuthenticationSchemesAsync(CancellationToken cancellationToken = default);
+    Task<IList<AuthenticationSchemeDescription>> GetAuthenticationSchemesAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Authenticates the user.
@@ -980,7 +980,7 @@ public interface IUsersClient
     /// Gets a list of users.
     /// </summary>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<ICollection<NexusUser>> GetUsersAsync(CancellationToken cancellationToken = default);
+    Task<IList<NexusUser>> GetUsersAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Deletes a user.
@@ -1019,13 +1019,13 @@ public class UsersClient : IUsersClient
     }
 
     /// <inheritdoc />
-    public Task<ICollection<AuthenticationSchemeDescription>> GetAuthenticationSchemesAsync(CancellationToken cancellationToken = default)
+    public Task<IList<AuthenticationSchemeDescription>> GetAuthenticationSchemesAsync(CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/users/authentication-schemes");
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<ICollection<AuthenticationSchemeDescription>>("GET", url, "application/json", default, cancellationToken);
+        return _client.InvokeAsync<IList<AuthenticationSchemeDescription>>("GET", url, "application/json", default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -1106,13 +1106,13 @@ public class UsersClient : IUsersClient
     }
 
     /// <inheritdoc />
-    public Task<ICollection<NexusUser>> GetUsersAsync(CancellationToken cancellationToken = default)
+    public Task<IList<NexusUser>> GetUsersAsync(CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/users");
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<ICollection<NexusUser>>("GET", url, "application/json", default, cancellationToken);
+        return _client.InvokeAsync<IList<NexusUser>>("GET", url, "application/json", default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -1161,7 +1161,7 @@ public interface IWritersClient
     /// Gets the list of writers.
     /// </summary>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<ICollection<ExtensionDescription>> GetDescriptionsAsync(CancellationToken cancellationToken = default);
+    Task<IList<ExtensionDescription>> GetDescriptionsAsync(CancellationToken cancellationToken = default);
 
 }
 
@@ -1176,13 +1176,13 @@ public class WritersClient : IWritersClient
     }
 
     /// <inheritdoc />
-    public Task<ICollection<ExtensionDescription>> GetDescriptionsAsync(CancellationToken cancellationToken = default)
+    public Task<IList<ExtensionDescription>> GetDescriptionsAsync(CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/writers/descriptions");
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<ICollection<ExtensionDescription>>("GET", url, "application/json", default, cancellationToken);
+        return _client.InvokeAsync<IList<ExtensionDescription>>("GET", url, "application/json", default, cancellationToken);
     }
 
 }
@@ -1295,7 +1295,7 @@ internal class DisposableConfiguration : IDisposable
 /// <param name="Id">The identifier.</param>
 /// <param name="Properties">The map of properties.</param>
 /// <param name="Resources">The list of representations.</param>
-public record ResourceCatalog(string Id, IDictionary<string, string>? Properties, ICollection<Resource>? Resources);
+public record ResourceCatalog(string Id, IDictionary<string, string>? Properties, IList<Resource>? Resources);
 
 /// <summary>
 /// A resource is part of a resource catalog and holds a list of representations.
@@ -1303,7 +1303,7 @@ public record ResourceCatalog(string Id, IDictionary<string, string>? Properties
 /// <param name="Id">The identifier.</param>
 /// <param name="Properties">The map of properties.</param>
 /// <param name="Representations">The list of representations.</param>
-public record Resource(string Id, IDictionary<string, string>? Properties, ICollection<Representation>? Representations);
+public record Resource(string Id, IDictionary<string, string>? Properties, IList<Representation>? Representations);
 
 /// <summary>
 /// A representation is part of a resource.
@@ -1452,7 +1452,7 @@ public record CatalogAvailability(IDictionary<string, double> Data);
 /// <param name="IsHidden">A boolean which indicates if the catalog should be hidden.</param>
 /// <param name="GroupMemberships">A list of groups the catalog is part of.</param>
 /// <param name="Overrides">Overrides for the catalog.</param>
-public record CatalogMetadata(string? Contact, bool IsHidden, ICollection<string>? GroupMemberships, ResourceCatalog? Overrides);
+public record CatalogMetadata(string? Contact, bool IsHidden, IList<string>? GroupMemberships, ResourceCatalog? Overrides);
 
 /// <summary>
 /// Description of a job.
@@ -1472,7 +1472,7 @@ public record Job(Guid Id, string Type, string Owner, object? Parameters);
 /// <param name="Type">Nexus.Writers.Csv</param>
 /// <param name="ResourcePaths">["/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean", "/IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean"]</param>
 /// <param name="Configuration">{ "RowIndexFormat": "Index", "SignificantFigures": "4" }</param>
-public record ExportParameters(DateTime Begin, DateTime End, TimeSpan FilePeriod, string Type, ICollection<string> ResourcePaths, IDictionary<string, string> Configuration);
+public record ExportParameters(DateTime Begin, DateTime End, TimeSpan FilePeriod, string Type, IList<string> ResourcePaths, IDictionary<string, string> Configuration);
 
 /// <summary>
 /// Describes the status of the job.
@@ -1543,7 +1543,8 @@ public record PackageReference(string Provider, IDictionary<string, string> Conf
 /// </summary>
 /// <param name="Type">The extension type.</param>
 /// <param name="Description">An optional description.</param>
-public record ExtensionDescription(string Type, string? Description);
+/// <param name="AdditionalInfo">An optional dictionary with additional information.</param>
+public record ExtensionDescription(string Type, string? Description, IDictionary<string, string>? AdditionalInfo);
 
 /// <summary>
 /// A backend source.
@@ -1588,7 +1589,7 @@ public record RevokeTokenRequest(string Token);
 /// <param name="Name">The user name.</param>
 /// <param name="RefreshTokens">The list of refresh tokens.</param>
 /// <param name="Claims">The map of claims.</param>
-public record NexusUser(string Id, string Name, ICollection<RefreshToken> RefreshTokens, IDictionary<string, NexusClaim> Claims);
+public record NexusUser(string Id, string Name, IList<RefreshToken> RefreshTokens, IDictionary<string, NexusClaim> Claims);
 
 /// <summary>
 /// A refresh token.

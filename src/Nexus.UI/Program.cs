@@ -20,13 +20,16 @@ var httpClient = new HttpClient
     BaseAddress = new Uri(builder.HostEnvironment.BaseAddress)
 };
 
-var nexusClient = new NexusClient(httpClient);
+var client = new NexusClient(httpClient);
+var appState = new AppState();
+
+appState.AuthenticationSchemes = await client.Users.GetAuthenticationSchemesAsync();
 
 builder.Services
     .AddAuthorizationCore()
-    .AddSingleton(nexusClient)
+    .AddSingleton(client)
     .AddSingleton(serviceProvider => (IJSInProcessRuntime)serviceProvider.GetRequiredService<IJSRuntime>())
-    .AddSingleton<IAppState, AppState>()
+    .AddSingleton<IAppState>(appState)
     .AddSingleton<TypeFaceService>()
     .AddScoped<AuthenticationStateProvider, NexusAuthenticationStateProvider>();
 

@@ -210,9 +210,11 @@ namespace Nexus.Core
     /// </summary>
     /// <param name="Type">The extension type.</param>
     /// <param name="Description">An optional description.</param>
+    /// <param name="AdditionalInfo">An optional dictionary with additional information.</param>
     public record ExtensionDescription(
         string Type, 
-        string? Description);
+        string? Description,
+        Dictionary<string, string>? AdditionalInfo);
 
     /// <summary>
     /// A structure for catalog metadata.

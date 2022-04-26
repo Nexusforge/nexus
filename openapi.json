@@ -1567,6 +1567,14 @@
             "type": "string",
             "description": "An optional description.",
             "nullable": true
+          },
+          "additionalInfo": {
+            "type": "object",
+            "description": "An optional dictionary with additional information.",
+            "nullable": true,
+            "additionalProperties": {
+              "type": "string"
+            }
           }
         }
       },

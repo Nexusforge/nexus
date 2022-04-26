@@ -570,6 +570,7 @@ class ExtensionDescription:
     Args:
         type: The extension type.
         description: An optional description.
+        additional_info: An optional dictionary with additional information.
     """
 
     type: str
@@ -577,6 +578,9 @@ class ExtensionDescription:
 
     description: Optional[str]
     """An optional description."""
+
+    additional_info: Optional[dict[str, str]]
+    """An optional dictionary with additional information."""
 
 
 @dataclass

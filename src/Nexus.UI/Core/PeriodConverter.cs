@@ -3,10 +3,10 @@ using System.Globalization;
 
 namespace Nexus.UI.Core;
 
-[TypeConverter(typeof(SamplePeriodConverter))]
-public class SamplePeriod
+[TypeConverter(typeof(PeriodConverter))]
+public class Period
 {
-    public SamplePeriod(TimeSpan value)
+    public Period(TimeSpan value)
     {
         Value = value;
     }
@@ -19,7 +19,7 @@ public class SamplePeriod
     }
 }
 
-public class SamplePeriodConverter : TypeConverter
+public class PeriodConverter : TypeConverter
 {
     public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
     {
@@ -32,12 +32,12 @@ public class SamplePeriodConverter : TypeConverter
         {
             try
             {
-                return new SamplePeriod(Utilities.ToSamplePeriod(input));
+                return new Period(Utilities.ToPeriod(input));
             }
 
             catch
             {
-                return new SamplePeriod(TimeSpan.FromSeconds(1));
+                return new Period(default);
             }
             
         }

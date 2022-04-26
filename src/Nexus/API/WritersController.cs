@@ -20,16 +20,16 @@ namespace Nexus.Controllers
 
         #region Fields
 
-        private IExtensionHive _extensionHive;
+        private AppState _appState;
 
         #endregion
 
         #region Constructors
 
         public WritersController(
-            IExtensionHive extensionHive)
+            AppState appState)
         {
-            _extensionHive = extensionHive;
+            _appState = appState;
         }
 
         #endregion
@@ -40,25 +40,9 @@ namespace Nexus.Controllers
         /// Gets the list of writers.
         /// </summary>
         [HttpGet("descriptions")]
-        public ExtensionDescription[] GetDescriptions()
+        public List<ExtensionDescription> GetDescriptions()
         {
-            var result = GetExtensionDescriptions(_extensionHive.GetExtensions<IDataWriter>());
-            return result;
-        }
-
-        private ExtensionDescription[] GetExtensionDescriptions(IEnumerable<Type> extensions)
-        {
-            return extensions.Select(type =>
-            {
-                var attribute = type.GetCustomAttribute<ExtensionDescriptionAttribute>(inherit: false);
-
-                var description = attribute is null
-                    ? null
-                    : attribute.Description;
-
-                return new ExtensionDescription(type.FullName ?? throw new Exception("fullname is null"), description);
-            })
-            .ToArray();
+            return _appState.DataWriterDescriptions;
         }
 
         #endregion

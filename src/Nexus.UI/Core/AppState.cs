@@ -1,6 +1,5 @@
 using Nexus.Api;
 
-
 namespace Nexus.UI.Core;
 
 public interface IAppState
@@ -10,6 +9,8 @@ public interface IAppState
     List<ResourceCatalog> Catalogs { get; set; }
     List<CatalogItemSelection> SelectedCatalogItems { get; set; }
     ExportParameters ExportParameters { get; set; }
+    IList<AuthenticationSchemeDescription> AuthenticationSchemes { get; set; }
+    IList<ExtensionDescription> ExtensionDescriptions { get; set; }
 
     void SelectCatalog(string? catalogId);
 }
@@ -65,10 +66,10 @@ public class AppState : IAppState
         ExportParameters = new ExportParameters(
             Begin: DateTime.UtcNow.Date.AddDays(-2),
             End: DateTime.UtcNow.Date.AddDays(-1),
-            TimeSpan.Zero,
-            "Nexus.Writers.Csv",
-            new List<string>(),
-            new Dictionary<string, string>()
+            FilePeriod: default,
+            Type: string.Empty,
+            ResourcePaths: new List<string>(),
+            Configuration: new Dictionary<string, string>()
         );
     }
 
@@ -86,9 +87,13 @@ public class AppState : IAppState
 
     public ExportParameters ExportParameters { get; set; }
 
+    public IList<AuthenticationSchemeDescription> AuthenticationSchemes { get; set; }
+
+    public IList<ExtensionDescription> ExtensionDescriptions { get; set; } = default!;
+
     #endregion
 
-    #region
+    #region Methods
 
     public void SelectCatalog(string? catalogId)
     {

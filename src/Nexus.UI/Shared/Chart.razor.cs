@@ -17,7 +17,7 @@ namespace Nexus.UI.Shared
 
         /* zoom */
         private bool _isDragging;
-        private DotNetObjectReference<Chart>? _dotNetHelper;
+        private DotNetObjectReference<Chart> _dotNetHelper;
 
         private SKRect _oldZoomBox;
         private SKRect _zoomBox;
@@ -170,7 +170,7 @@ namespace Nexus.UI.Shared
             _zoomStart = position;
             _zoomEnd = position;
 
-            JSInProcessRuntime.InvokeVoid("nexus.chart.addMouseUpEvent", _dotNetHelper);
+            JSInProcessRuntime.InvokeVoid("workaround.addMouseUpEvent", _dotNetHelper);
 
             _isDragging = true;
         }

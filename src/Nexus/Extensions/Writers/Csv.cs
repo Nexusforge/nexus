@@ -16,7 +16,7 @@ using System.Text.Json.Serialization;
 
 namespace Nexus.Writers
 {
-    [DataWriterFormatName("CSV with Table Schema (*.csv)")]
+    [DataWriterFormatName("CSV + Schema (*.csv)")]
     [DataWriterSelectOption("RowIndexFormat", "Row index format", "Excel", new string[] { "Excel", "Index", "Unix", "ISO 8601" }, new string[] { "Excel time", "Index-based", "Unix time" })]
     [DataWriterIntegerNumberInputOption("SignificantFigures", "Significant figures", 4, 0, int.MaxValue)]
     [ExtensionDescription("Writes data into CSV files.")]

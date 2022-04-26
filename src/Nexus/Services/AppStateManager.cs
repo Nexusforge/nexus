@@ -1,6 +1,7 @@
 ﻿using Nexus.Core;
 using Nexus.Extensibility;
 using Nexus.Utilities;
+using System.Reflection;
 
 namespace Nexus.Services
 {
@@ -223,17 +224,28 @@ namespace Nexus.Services
 
         private void LoadDataWriters()
         {
-            var dataWriterInfoMap = new Dictionary<string, (string FormatName, OptionAttribute[] Options)>();
+            const string TYPE_KEY = "Type";
+            const string FORMAT_NAME_KEY = "UI:FormatName";
 
+            var dataWriterDescriptions = new List<ExtensionDescription>();
+
+            /* for each data writer */
             foreach (var dataWriterType in _extensionHive.GetExtensions<IDataWriter>())
             {
                 var fullName = dataWriterType.FullName ?? throw new Exception("full name is null");
+                var additionalInfo = new Dictionary<string, string>();
 
-                string formatName;
+                /* description */
+                var attribute = dataWriterType.GetCustomAttribute<ExtensionDescriptionAttribute>(inherit: false);
 
+                var description = attribute is null
+                    ? null
+                    : attribute.Description;
+
+                /* format name */
                 try
                 {
-                    formatName = dataWriterType.GetFirstAttribute<DataWriterFormatNameAttribute>().FormatName;
+                    additionalInfo[FORMAT_NAME_KEY] = dataWriterType.GetFirstAttribute<DataWriterFormatNameAttribute>().FormatName;
                 }
                 catch
                 {
@@ -241,14 +253,42 @@ namespace Nexus.Services
                     continue;
                 }
 
-                var options = dataWriterType
-                    .GetCustomAttributes<OptionAttribute>()
-                    .ToArray();
+                var counter = 0;
 
-                dataWriterInfoMap[fullName] = (formatName, options);
+                /* for each option */
+                foreach (var option in dataWriterType.GetCustomAttributes<OptionAttribute>())
+                {
+                    additionalInfo[$"UIOptions:{counter}:{nameof(option.ConfigurationKey)}"] = option.ConfigurationKey;
+
+                    if (option is DataWriterIntegerNumberInputOptionAttribute integerNumberInput)
+                    {
+                        additionalInfo[$"UI:Options:{counter}:{TYPE_KEY}"] = "IntegerNumberInput";
+                        additionalInfo[$"UI:Options:{counter}:{nameof(integerNumberInput.DefaultValue)}"] = integerNumberInput.DefaultValue.ToString();
+                        additionalInfo[$"UI:Options:{counter}:{nameof(integerNumberInput.Minmum)}"] = integerNumberInput.Minmum.ToString();
+                        additionalInfo[$"UI:Options:{counter}:{nameof(integerNumberInput.Maximum)}"] = integerNumberInput.Maximum.ToString();
+                    }
+
+                    else if (option is DataWriterSelectOptionAttribute select)
+                    {
+                        additionalInfo[$"UI:Options:{counter}:{TYPE_KEY}"] = "Select";
+                        additionalInfo[$"UI:Options:{counter}:{nameof(select.DefaultValue)}"] = select.DefaultValue.ToString();
+
+                        var counter2 = 0;
+
+                        foreach (var entry in select.KeyValueMap)
+                        {
+                            additionalInfo[$"UI:Options:{counter}:{nameof(select.KeyValueMap)}:{counter2}:{entry.Key}"] = entry.Value;
+                            counter2++;
+                        }
+                    }
+
+                    counter++;
+                }
+
+                dataWriterDescriptions.Add(new ExtensionDescription(fullName, description, additionalInfo));
             }
 
-            AppState.DataWriterInfoMap = dataWriterInfoMap;
+            AppState.DataWriterDescriptions = dataWriterDescriptions;
         }
 
         private Task SaveProjectAsync(NexusProject project)

@@ -47,7 +47,7 @@ namespace Nexus.Controllers
         /// Gets the list of sources.
         /// </summary>
         [HttpGet("descriptions")]
-        public ExtensionDescription[] GetDescriptions()
+        public List<ExtensionDescription> GetDescriptions()
         {
             var result = GetExtensionDescriptions(_extensionHive.GetExtensions<IDataSource>());
             return result;
@@ -101,7 +101,7 @@ namespace Nexus.Controllers
             return _appStateManager.DeleteDataSourceRegistrationAsync(username, registrationId);
         }
 
-        private ExtensionDescription[] GetExtensionDescriptions(IEnumerable<Type> extensions)
+        private List<ExtensionDescription> GetExtensionDescriptions(IEnumerable<Type> extensions)
         {
             return extensions.Select(type =>
             {
@@ -111,9 +111,9 @@ namespace Nexus.Controllers
                     ? null
                     : attribute.Description;
 
-                return new ExtensionDescription(type.FullName ?? throw new Exception("fullname is null"), description);
+                return new ExtensionDescription(type.FullName ?? throw new Exception("fullname is null"), description, default);
             })
-            .ToArray();
+            .ToList();
         }
     }
 }
