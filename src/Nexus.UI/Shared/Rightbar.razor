@@ -13,9 +13,49 @@
             <UISelect 
                 Label="File Type" 
                 Items="_items"
-                Values="_values"
-                Value="@AppState.ExportParameters.Type">
+                @bind-SelectedItem="FileType">
             </UISelect>
+
+            @if (_options is not null)
+            {
+                @foreach (var entry in _options)
+                {
+                    @if (entry.Key == "IntegerNumberInput" &&
+                        entry.Value.TryGetValue("ConfigurationKey", out var configurationKey) &&
+                        entry.Value.TryGetValue("Label", out var label) &&
+                        entry.Value.TryGetValue("DefaultValue", out var defaultValueString) &&
+                        entry.Value.TryGetValue("Minmum", out var minmumString) &&
+                        entry.Value.TryGetValue("Maximum", out var maximumString) &&
+                        int.TryParse(defaultValueString, out var defaultValue) &&
+                        int.TryParse(minmumString, out var minimum) &&
+                        int.TryParse(maximumString, out var maximum))
+                    {
+                        <UIOption Key="@configurationKey" DefaultValue="defaultValue" Store="AppState.ExportParameters.Configuration">
+                            <ChildContent>
+                                <UINumericTextBox 
+                                    @bind-Value="@context.Value"
+                                    Label="@label"
+                                    Minimum="minimum"
+                                    Maximum="maximum">
+                                </UINumericTextBox>
+                            </ChildContent>
+                        </UIOption>
+                    }
+                    else if (entry.Key == "Select" &&
+                        entry.Value.TryGetValue("ConfigurationKey", out var configurationKey2) &&
+                        entry.Value.TryGetValue("Label", out var label2) &&
+                        entry.Value.TryGetValue("DefaultValue", out var defaultValue2))
+                    {
+                        <UIOption Key="@configurationKey2" DefaultValue="defaultValue2" Store="AppState.ExportParameters.Configuration">
+                            <UISelect 
+                                @bind-SelectedItem="@context.Value"
+                                Items="GetOptionItems(entry.Value)"
+                                Label="@label2">
+                            </UISelect>
+                        </UIOption>
+                    }
+                }
+            }
         }
 
     </div>
@@ -33,12 +73,16 @@
 
 @code {
 
+    private const string OPTIONS_KEY = "UI:Options";
+    private const string FORMAT_NAME_KEY = "UI:FormatName";
+    private const string TYPE_KEY = "Type";
+
     [Parameter]
     public string? CssClass { get; set; }
 
     private IList<ExtensionDescription>? _extensionDescriptions;
-    private List<string> _values = new List<string>();
-    private List<string> _items = new List<string>();
+    private Dictionary<string, string> _items = null!;
+    private Dictionary<string, Dictionary<string, string>>? _options;
 
     private Period FilePeriod 
     {
@@ -46,36 +90,70 @@
         set => AppState.ExportParameters = AppState.ExportParameters with { FilePeriod = value.Value };
     }
 
+    private string FileType
+    {
+        get 
+        {
+            return AppState.ExportParameters.Type;
+        }
+        set
+        {
+            AppState.ExportParameters = AppState.ExportParameters with { Type = value };           
+            PrepareOptions();
+        }
+    }
+    
     protected override async Task OnInitializedAsync()
     {
-        const string FORMAT_NAME_KEY = "UI:FormatName";
-
-        _extensionDescriptions = (await Client.Writers
+        var extensionDescriptions = (await Client.Writers
             .GetDescriptionsAsync(CancellationToken.None))
             .Where(description => 
                 description.AdditionalInfo is not null && 
                 description.AdditionalInfo.ContainsKey(FORMAT_NAME_KEY))
             .ToList();
 
-        if (_extensionDescriptions.Any())
+        if (extensionDescriptions.Any())
         {
             AppState.ExportParameters = AppState.ExportParameters with
             { 
-                Type = _extensionDescriptions.First().Type 
+                Type = extensionDescriptions.First().Type 
             };
         }
 
-        foreach (var description in _extensionDescriptions)
-        {
-            var item = description.AdditionalInfo![FORMAT_NAME_KEY];
+        _items = extensionDescriptions.ToDictionary(
+            description => description.Type,
+            description => description.AdditionalInfo![FORMAT_NAME_KEY]);
 
-            _items.Add(item);
-            _values.Add(description.Type);
-        }
+        _extensionDescriptions = extensionDescriptions;
+
+        PrepareOptions();
     }
 
     public Task ExportAsync()
     {
         return Client.Jobs.ExportAsync(AppState.ExportParameters, CancellationToken.None);
+    }
+
+    private void PrepareOptions()
+    {
+        if (_extensionDescriptions is null || !_extensionDescriptions.Any())
+            return;
+
+        var description = _extensionDescriptions!
+            .First(description => description.Type == FileType);
+
+        _options = description.AdditionalInfo!
+            .Where(entry => entry.Key.StartsWith(OPTIONS_KEY))
+            .GroupBy(entry => entry.Key.Split(":")[2])
+            .ToDictionary(
+                group => group.First(entry => entry.Key.EndsWith(TYPE_KEY)).Value, 
+                group => group.ToDictionary(entry => string.Join(':', entry.Key.Split(':').Skip(3)), entry => entry.Value));
+    }
+
+    private Dictionary<string, string> GetOptionItems(Dictionary<string, string> items)
+    {
+        return items
+            .Where(entry => entry.Key.StartsWith("KeyValueMap"))
+            .ToDictionary(entry => string.Join(':', entry.Key.Split(':').Skip(2)), entry => entry.Value);
     }
 }

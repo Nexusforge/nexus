@@ -27,6 +27,7 @@ init:
 install:
   - ps: npm install -g pyright
   - ps: python -m pip install frictionless build httpx pytest pytest-asyncio
+  - ps: dotnet workload install wasm-tools
 
 build_script:
   - ps: dotnet publish -c $Env:CONFIGURATION -o app /p:Build=$Env:APPVEYOR_BUILD_NUMBER /p:IsFinalBuild=$Env:APPVEYOR_REPO_TAG /p:GeneratePackage=true src/Nexus/Nexus.csproj

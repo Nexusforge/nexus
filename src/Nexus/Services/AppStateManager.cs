@@ -224,8 +224,9 @@ namespace Nexus.Services
 
         private void LoadDataWriters()
         {
-            const string TYPE_KEY = "Type";
+            const string OPTIONS_KEY = "UI:Options";
             const string FORMAT_NAME_KEY = "UI:FormatName";
+            const string TYPE_KEY = "Type";
 
             var dataWriterDescriptions = new List<ExtensionDescription>();
 
@@ -258,26 +259,27 @@ namespace Nexus.Services
                 /* for each option */
                 foreach (var option in dataWriterType.GetCustomAttributes<OptionAttribute>())
                 {
-                    additionalInfo[$"UIOptions:{counter}:{nameof(option.ConfigurationKey)}"] = option.ConfigurationKey;
+                    additionalInfo[$"{OPTIONS_KEY}:{counter}:{nameof(option.ConfigurationKey)}"] = option.ConfigurationKey;
+                    additionalInfo[$"{OPTIONS_KEY}:{counter}:{nameof(option.Label)}"] = option.Label;
 
                     if (option is DataWriterIntegerNumberInputOptionAttribute integerNumberInput)
                     {
-                        additionalInfo[$"UI:Options:{counter}:{TYPE_KEY}"] = "IntegerNumberInput";
-                        additionalInfo[$"UI:Options:{counter}:{nameof(integerNumberInput.DefaultValue)}"] = integerNumberInput.DefaultValue.ToString();
-                        additionalInfo[$"UI:Options:{counter}:{nameof(integerNumberInput.Minmum)}"] = integerNumberInput.Minmum.ToString();
-                        additionalInfo[$"UI:Options:{counter}:{nameof(integerNumberInput.Maximum)}"] = integerNumberInput.Maximum.ToString();
+                        additionalInfo[$"{OPTIONS_KEY}:{counter}:{TYPE_KEY}"] = "IntegerNumberInput";
+                        additionalInfo[$"{OPTIONS_KEY}:{counter}:{nameof(integerNumberInput.DefaultValue)}"] = integerNumberInput.DefaultValue.ToString();
+                        additionalInfo[$"{OPTIONS_KEY}:{counter}:{nameof(integerNumberInput.Minmum)}"] = integerNumberInput.Minmum.ToString();
+                        additionalInfo[$"{OPTIONS_KEY}:{counter}:{nameof(integerNumberInput.Maximum)}"] = integerNumberInput.Maximum.ToString();
                     }
 
                     else if (option is DataWriterSelectOptionAttribute select)
                     {
-                        additionalInfo[$"UI:Options:{counter}:{TYPE_KEY}"] = "Select";
-                        additionalInfo[$"UI:Options:{counter}:{nameof(select.DefaultValue)}"] = select.DefaultValue.ToString();
+                        additionalInfo[$"{OPTIONS_KEY}:{counter}:{TYPE_KEY}"] = "Select";
+                        additionalInfo[$"{OPTIONS_KEY}:{counter}:{nameof(select.DefaultValue)}"] = select.DefaultValue.ToString();
 
                         var counter2 = 0;
 
                         foreach (var entry in select.KeyValueMap)
                         {
-                            additionalInfo[$"UI:Options:{counter}:{nameof(select.KeyValueMap)}:{counter2}:{entry.Key}"] = entry.Value;
+                            additionalInfo[$"{OPTIONS_KEY}:{counter}:{nameof(select.KeyValueMap)}:{counter2}:{entry.Key}"] = entry.Value;
                             counter2++;
                         }
                     }
