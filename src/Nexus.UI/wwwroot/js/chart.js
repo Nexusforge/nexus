@@ -1,4 +1,3 @@
-var nexus = {};
 nexus.chart = {};
 nexus.chart.charts = {};
 

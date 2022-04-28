@@ -6,9 +6,9 @@ namespace Nexus.UI.Services
 {
     public class NexusAuthenticationStateProvider : AuthenticationStateProvider
     {
-        private readonly NexusClient _client;
+        private readonly INexusClient _client;
 
-        public NexusAuthenticationStateProvider(NexusClient client)
+        public NexusAuthenticationStateProvider(INexusClient client)
         {
             _client = client;
         }

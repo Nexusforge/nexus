@@ -60,7 +60,7 @@ namespace Nexus.Writers
 
         #region Properties
 
-        private DataWriterContext Context { get; set; } = null!;
+        private DataWriterContext Context { get; set; } = default!;
 
         #endregion
 

@@ -49,7 +49,7 @@ namespace Nexus.Core
 
         public double Progress { get; private set; }
 
-        public Task<object?> Task { get; set; } = null!;
+        public Task<object?> Task { get; set; } = default!;
 
         public void OnProgressUpdated(double e)
         {

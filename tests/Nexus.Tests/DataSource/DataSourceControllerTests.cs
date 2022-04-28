@@ -25,7 +25,7 @@ namespace DataSource
         internal async Task CanMergeConfiguration()
         {
             // Arrange
-            DataSourceContext dataSourceContext = null!;
+            DataSourceContext dataSourceContext = default!;
 
             var dataSource = Mock.Of<IDataSource>();
 

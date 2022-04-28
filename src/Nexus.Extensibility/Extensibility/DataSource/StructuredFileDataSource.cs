@@ -49,11 +49,11 @@ namespace Nexus.Extensibility
         /// <summary>
         /// Gets the root path of the database.
         /// </summary>
-        protected string Root { get; private set; } = null!;
+        protected string Root { get; private set; } = default!;
 
-        private DataSourceContext Context { get; set; } = null!;
+        private DataSourceContext Context { get; set; } = default!;
 
-        private FileSourceProvider FileSourceProvider { get; set; } = null!;
+        private FileSourceProvider FileSourceProvider { get; set; } = default!;
 
         #endregion
 

@@ -1,0 +1,56 @@
+﻿@if (Catalog.Id == ResourceCatalogViewModel.ROOT_CATALOG_ID)
+{
+
+    @if (Catalog.Children is not null)
+    {
+        @foreach (var child in Catalog.Children)
+        {
+            <ResourceCatalogView Catalog="@child" />
+        }
+    }
+
+}
+else
+{
+
+    @if (Catalog.IsSelected)
+    {
+        <a class="cursor-pointer hover:bg-gray-300 rounded p-1 font-bold text-cyan-700">
+            @Utilities.ToSpaceFilledCatalogId(Catalog.Id)
+        </a>
+    }
+    else
+    {
+        <a class="cursor-pointer hover:bg-gray-300 rounded p-1" href="@Utilities.EscapeDataString(Catalog.Id)">
+            @Utilities.ToSpaceFilledCatalogId(Catalog.Id)
+        </a>
+    }
+
+    @if (Catalog.IsOpen)
+    {
+        @if (Catalog.Children is not null)
+        {
+            @foreach (var child in Catalog.Children)
+            {
+                <ResourceCatalogView Catalog="@child" />
+            }
+        }
+    }
+}
+
+@code {
+
+    private bool _isSelected = false;
+
+    [Parameter]
+    public ResourceCatalogViewModel Catalog { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        Catalog.PropertyChanged += (sender, e) => StateHasChanged();
+    }
+
+}
+
+
+

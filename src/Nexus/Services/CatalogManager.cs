@@ -62,7 +62,7 @@ namespace Nexus.Services
             CatalogContainer[] catalogContainers;
 
             /* special case: root */
-            if (parent.Id == "/")
+            if (parent.Id == CatalogContainer.RootCatalogId)
             {
                 /* load builtin backend source */
                 var builtinDataSourceRegistrations = new DataSourceRegistration[]
@@ -75,7 +75,7 @@ namespace Nexus.Services
                 };
 
                 /* load all catalog identifiers */
-                var path = "/";
+                var path = CatalogContainer.RootCatalogId;
                 var catalogPrototypes = new List<CatalogPrototype>();
 
                 /* => for the built-in backend sources */

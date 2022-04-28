@@ -32,42 +32,42 @@ public interface INexusClient
     /// <summary>
     /// Gets the <see cref="IArtifactsClient"/>.
     /// </summary>
-    IArtifactsClient Artifacts { get; set; }
+    IArtifactsClient Artifacts { get; }
 
     /// <summary>
     /// Gets the <see cref="ICatalogsClient"/>.
     /// </summary>
-    ICatalogsClient Catalogs { get; set; }
+    ICatalogsClient Catalogs { get; }
 
     /// <summary>
     /// Gets the <see cref="IDataClient"/>.
     /// </summary>
-    IDataClient Data { get; set; }
+    IDataClient Data { get; }
 
     /// <summary>
     /// Gets the <see cref="IJobsClient"/>.
     /// </summary>
-    IJobsClient Jobs { get; set; }
+    IJobsClient Jobs { get; }
 
     /// <summary>
     /// Gets the <see cref="IPackageReferencesClient"/>.
     /// </summary>
-    IPackageReferencesClient PackageReferences { get; set; }
+    IPackageReferencesClient PackageReferences { get; }
 
     /// <summary>
     /// Gets the <see cref="ISourcesClient"/>.
     /// </summary>
-    ISourcesClient Sources { get; set; }
+    ISourcesClient Sources { get; }
 
     /// <summary>
     /// Gets the <see cref="IUsersClient"/>.
     /// </summary>
-    IUsersClient Users { get; set; }
+    IUsersClient Users { get; }
 
     /// <summary>
     /// Gets the <see cref="IWritersClient"/>.
     /// </summary>
-    IWritersClient Writers { get; set; }
+    IWritersClient Writers { get; }
 
 
 
@@ -75,8 +75,9 @@ public interface INexusClient
     /// Signs in the user.
     /// </summary>
     /// <param name="refreshToken">The refresh token.</param>
+    /// <param name="cancellationToken">A token to cancel the current operation.</param>
     /// <returns>A task.</returns>
-    Task SignInAsync(string refreshToken);
+    Task SignInAsync(string refreshToken, CancellationToken cancellationToken);
 
     /// <summary>
     /// Attaches configuration data to subsequent Nexus API requests.
@@ -91,7 +92,7 @@ public interface INexusClient
 }
 
 /// <inheritdoc />
-public class NexusClient : IDisposable
+public class NexusClient : INexusClient, IDisposable
 {
     private const string NexusConfigurationHeaderKey = "Nexus-Configuration";
     private const string AuthorizationHeaderKey = "Authorization";

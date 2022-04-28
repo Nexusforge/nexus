@@ -35,7 +35,7 @@ namespace Services
             var dataSourceController2 = Mock.Of<IDataSourceController>();
 
             var dataWriterController = Mock.Of<IDataWriterController>();
-            Uri tmpUri = null!;
+            Uri tmpUri = default!;
 
             Mock.Get(dataWriterController)
                .Setup(s => s.WriteAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<TimeSpan>(), It.IsAny<CatalogItemRequestPipeReader[]>(), It.IsAny<IProgress<double>>(), It.IsAny<CancellationToken>()))

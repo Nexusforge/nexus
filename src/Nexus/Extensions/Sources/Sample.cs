@@ -32,7 +32,7 @@ namespace Nexus.Sources
 
         #region Properties
 
-        private DataSourceContext Context { get; set; } = null!;
+        private DataSourceContext Context { get; set; } = default!;
 
         #endregion
 

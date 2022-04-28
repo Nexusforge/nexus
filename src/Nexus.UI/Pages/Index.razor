@@ -8,21 +8,7 @@
 <div class="h-full p-4">
     <div class="flex h-1/3">
         <div class="flex flex-col flex-1">
-            @foreach (var catalog in AppState.Catalogs)
-            {
-                @if (catalog == AppState.SelectedCatalog)
-                {
-                    <a class="cursor-pointer hover:bg-gray-300 rounded p-1 font-bold text-cyan-700">
-                        @Utilities.ToSpaceFilledCatalogId(catalog.Id)
-                    </a>
-                }
-                else
-                {
-                    <a class="cursor-pointer hover:bg-gray-300 rounded p-1" href="@Utilities.EscapeDataString(catalog.Id)">
-                        @Utilities.ToSpaceFilledCatalogId(catalog.Id)
-                    </a>
-                }
-            }
+            <ResourceCatalogView Catalog="AppState.RootCatalog" />
         </div>
         <div class="flex-1">
             @if (AppState.SelectedCatalog is not null)
@@ -38,9 +24,9 @@
 
 @code {
 
-    protected override void OnParametersSet()
+    protected override Task OnParametersSetAsync()
     {
-        AppState.SelectCatalog(CatalogId);
+        return AppState.SelectCatalogAsync(CatalogId);
     }
 
     [Parameter]

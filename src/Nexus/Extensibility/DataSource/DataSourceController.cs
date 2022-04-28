@@ -54,7 +54,7 @@ namespace Nexus.Extensibility
         private IProcessingService _processingService;
         private ICacheService _cacheService;
         private DataOptions _dataOptions;
-        private ConcurrentDictionary<string, ResourceCatalog> _catalogCache = null!;
+        private ConcurrentDictionary<string, ResourceCatalog> _catalogCache = default!;
 
         #endregion
 

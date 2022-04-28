@@ -38,7 +38,7 @@ namespace Nexus.Services
         private ILoggerFactory _loggerFactory;
         private PathsOptions _pathsOptions;
 
-        private Dictionary<PackageController, ReadOnlyCollection<Type>>? _packageControllerMap = null!;
+        private Dictionary<PackageController, ReadOnlyCollection<Type>>? _packageControllerMap = default!;
 
         private ReadOnlyCollection<Type> _builtinExtensions;
 

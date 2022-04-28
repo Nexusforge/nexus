@@ -29,9 +29,9 @@ namespace Nexus.Extensibility.Tests
 
         #region Properties
 
-        public Dictionary<string, CatalogDescription> Config { get; private set; } = null!;
+        public Dictionary<string, CatalogDescription> Config { get; private set; } = default!;
 
-        private DataSourceContext Context { get; set; } = null!;
+        private DataSourceContext Context { get; set; } = default!;
 
         #endregion
 

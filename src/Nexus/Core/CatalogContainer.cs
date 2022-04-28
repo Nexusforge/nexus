@@ -9,6 +9,8 @@ namespace Nexus.Core
     [DebuggerDisplay("{Id,nq}")]
     internal class CatalogContainer
     {
+        public const string RootCatalogId = "/";
+
         private SemaphoreSlim _semaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
         private CatalogInfo? _catalogInfo;
         private CatalogContainer[]? _childCatalogContainers;
@@ -50,7 +52,7 @@ namespace Nexus.Core
 
         public static CatalogContainer CreateRoot(ICatalogManager catalogManager, IDatabaseService databaseService)
         {
-            return new CatalogContainer(new CatalogRegistration("/"), null!, null!, null!, catalogManager, databaseService, null!);
+            return new CatalogContainer(new CatalogRegistration(RootCatalogId), default!, default!, default!, catalogManager, databaseService, default!);
         }
 
         public async Task<IEnumerable<CatalogContainer>> GetChildCatalogContainersAsync(

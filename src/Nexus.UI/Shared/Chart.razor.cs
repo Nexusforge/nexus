@@ -11,9 +11,9 @@ namespace Nexus.UI.Shared
     {
         #region Fields
 
-        private SKGLView _skiaView = null!;
+        private SKGLView _skiaView = default!;
         private string _chartId = Guid.NewGuid().ToString();
-        private Dictionary<AxisInfo, LineSeries[]> _axesMap = null!;
+        private Dictionary<AxisInfo, LineSeries[]> _axesMap = default!;
 
         /* zoom */
         private bool _isDragging;
@@ -125,10 +125,10 @@ namespace Nexus.UI.Shared
         #region Properties
 
         [Inject]
-        public TypeFaceService TypeFaceService { get; set; } = null!;
+        public TypeFaceService TypeFaceService { get; set; } = default!;
 
         [Inject]
-        public IJSInProcessRuntime JSInProcessRuntime { get; set; } = null!;
+        public IJSInProcessRuntime JSInProcessRuntime { get; set; } = default!;
 
         [Parameter]
         public DateTime Begin { get; set; }
@@ -137,7 +137,7 @@ namespace Nexus.UI.Shared
         public DateTime End { get; set; }
 
         [Parameter]
-        public LineSeries[] LineSeries { get; set; } = null!;
+        public LineSeries[] LineSeries { get; set; } = default!;
 
         [Parameter]
         public bool BeginAtZero { get; set; }
@@ -170,7 +170,7 @@ namespace Nexus.UI.Shared
             _zoomStart = position;
             _zoomEnd = position;
 
-            JSInProcessRuntime.InvokeVoid("workaround.addMouseUpEvent", _dotNetHelper);
+            JSInProcessRuntime.InvokeVoid("nexus.util.addMouseUpEvent", _dotNetHelper);
 
             _isDragging = true;
         }

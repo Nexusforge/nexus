@@ -7,17 +7,17 @@
         private T _value = default!;
 
         [Parameter]
-        public string Key { get; set; } = null!;
+        public string Key { get; set; } = default!;
 
         [Parameter]
 
         public T DefaultValue { get; set; } = default!;
 
         [Parameter]
-        public IDictionary<string, string> Store { get; set; } = null!;
+        public IDictionary<string, string> Store { get; set; } = default!;
 
         [Parameter]
-        public RenderFragment<UIOption<T>> ChildContent { get; set; } = null!;
+        public RenderFragment<UIOption<T>> ChildContent { get; set; } = default!;
 
         public T Value
         {

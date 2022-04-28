@@ -59,7 +59,7 @@ namespace Nexus.ClientGenerator
 $@"    /// <summary>
     /// Gets the <see cref=""I{subClient}Client""/>.
     /// </summary>");
-                sourceTextBuilder.AppendLine($"    I{subClient}Client {subClient} {{ get; set; }}");
+                sourceTextBuilder.AppendLine($"    I{subClient}Client {subClient} {{ get; }}");
                 sourceTextBuilder.AppendLine();
             }
 

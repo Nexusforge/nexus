@@ -2,13 +2,15 @@
 
     <label class="absolute bottom-8 text-xs @(Value == default ? "text-transparent" : "text-gray-300")">@Label</label>
 
-    <input @bind="Value" @bind:event="oninput" @onfocus="() => _hasFocus = true" @onblur="() => _hasFocus = false" style="color-scheme: dark;"
+    <input @bind="Value" @bind:event="oninput" @onfocus="() => _hasFocus = true" @onblur="() => _hasFocus = false"
         class="w-full pt-2 focus:outline-none text-gray-200 placeholder-gray-400 bg-transparent" 
         type="datetime-local"
         placeholder="@Label"
         step="1"
         max="@(DateTime.UtcNow.Date.ToString("yyyy-MM-dd"))"
         list="@Label">
+
+    <span class="right-2 top-4 text-2xl font-bold absolute mdi mdi-calendar-month-outline text-gray-200 bg-cyan-900 pointer-events-none"></span>
 
 </div>
 
@@ -29,8 +31,6 @@
 
                 if (ValueChanged.HasDelegate)
                     ValueChanged.InvokeAsync(value);
-
-                StateHasChanged();
             }
         }
     }
@@ -39,5 +39,5 @@
     public EventCallback<DateTime> ValueChanged { get; set; }
 
     [Parameter]
-    public string Label { get; set; } = null!;
+    public string Label { get; set; } = default!;
 }

@@ -1,24 +1,22 @@
-﻿@inject NexusClient Client
-
-<div class="z-0 w-full bg-white py-3 pr-3 flex justify-between items-center text-slate-500 bg-gray-200 shadow-md">
+﻿<div class="z-0 w-full bg-white py-3 pr-3 flex justify-between items-center text-slate-500 bg-gray-200 shadow-md">
     <img class="ml-6" src="text.svg" />
 
     <div class="flex items-center">
         <a class="text-sm text-gray-400 mx-5 hover:text-orange-500" href="api" target="_blank">API</a>
-        <div class="w-9 h-9 flex justify-center items-center rounded-full bg-cyan-900 text-white">@GetInitials(AuthenticationState.User.Identity!.Name!)</div>   
+        <div class="w-9 h-9 flex justify-center items-center rounded-full bg-cyan-900 text-white">@GetInitials(_authenticationState.User.Identity!.Name!)</div>   
     </div>
 </div>
 
 @code {
 
     [CascadingParameter]
-    public Task<AuthenticationState> GetAuthenticationStateTask { get; set; }
+    public Task<AuthenticationState> GetAuthenticationStateTask { get; set; } = default!;
 
-    private AuthenticationState AuthenticationState;
+    private AuthenticationState _authenticationState = default!;
 
     protected override async Task OnInitializedAsync()
     {
-        AuthenticationState = await GetAuthenticationStateTask;
+        _authenticationState = await GetAuthenticationStateTask;
     }
 
     private string GetInitials(string name)

@@ -70,7 +70,7 @@ namespace Nexus.Core
         /// </summary>
         [Required]
         [JsonIgnore]
-        public NexusUser Owner { get; set; } = null!;
+        public NexusUser Owner { get; set; } = default!;
     }
 
     /// <summary>

@@ -4,7 +4,7 @@ using System.Globalization;
 namespace Nexus.UI.Core;
 
 [TypeConverter(typeof(PeriodConverter))]
-public class Period
+public record Period
 {
     public Period(TimeSpan value)
     {

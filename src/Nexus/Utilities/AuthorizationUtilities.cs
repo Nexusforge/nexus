@@ -16,6 +16,9 @@ namespace Nexus.Utilities
 
             if (identity is not null && identity.IsAuthenticated)
             {
+                if (catalogId == CatalogContainer.RootCatalogId)
+                    return true;
+
                 var isAdmin = principal.HasClaim(claim => claim.Type == NexusClaims.IS_ADMIN && claim.Value == "true");
 
                 var canAccessCatalog = principal.HasClaim(

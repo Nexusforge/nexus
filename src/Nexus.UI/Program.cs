@@ -21,13 +21,13 @@ var httpClient = new HttpClient
 };
 
 var client = new NexusClient(httpClient);
-var appState = new AppState();
+var appState = new AppState((INexusClient)client);
 
 appState.AuthenticationSchemes = await client.Users.GetAuthenticationSchemesAsync();
 
 builder.Services
     .AddAuthorizationCore()
-    .AddSingleton(client)
+    .AddSingleton<INexusClient>(client)
     .AddSingleton(serviceProvider => (IJSInProcessRuntime)serviceProvider.GetRequiredService<IJSRuntime>())
     .AddSingleton<IAppState>(appState)
     .AddSingleton<TypeFaceService>()

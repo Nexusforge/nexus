@@ -35,8 +35,9 @@ public interface I{{1}}
     /// Signs in the user.
     /// </summary>
     /// <param name="refreshToken">The refresh token.</param>
+    /// <param name="cancellationToken">A token to cancel the current operation.</param>
     /// <returns>A task.</returns>
-    Task SignInAsync(string refreshToken);
+    Task SignInAsync(string refreshToken, CancellationToken cancellationToken);
 
     /// <summary>
     /// Attaches configuration data to subsequent Nexus API requests.
@@ -51,7 +52,7 @@ public interface I{{1}}
 }
 
 /// <inheritdoc />
-public class {{1}} : IDisposable
+public class {{1}} : I{{1}}, IDisposable
 {
     private const string NexusConfigurationHeaderKey = "{{2}}";
     private const string AuthorizationHeaderKey = "{{3}}";

@@ -37,7 +37,7 @@
     }
 
     [Inject]
-    public IJSInProcessRuntime JSInProcessRuntime { get; set; } = null!;
+    public IJSInProcessRuntime JSInProcessRuntime { get; set; } = default!;
 
     [Parameter]
     public T SelectedItem
@@ -50,20 +50,18 @@
 
                 if (SelectedItemChanged.HasDelegate)
                     SelectedItemChanged.InvokeAsync(value);
-
-                StateHasChanged();
             }
         }
     }
 
     [Parameter]
-    public string Label { get; set; } = null!;
+    public string Label { get; set; } = default!;
 
     [Parameter]
     public EventCallback<T> SelectedItemChanged { get; set; }
 
     [Parameter]
-    public IDictionary<T, string> Items { get; set; } = null!;
+    public IDictionary<T, string> Items { get; set; } = default!;
 
     [JSInvokable]
     public void OnClick()
@@ -77,6 +75,6 @@
         _isOpen = !_isOpen;
 
         if (_isOpen)
-            JSInProcessRuntime.InvokeVoid("workaround.addClickEvent", _dotNetHelper);
+            JSInProcessRuntime.InvokeVoid("nexus.util.addClickEvent", _dotNetHelper);
     }
 }

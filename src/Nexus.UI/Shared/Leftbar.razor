@@ -3,13 +3,13 @@
 <div class="bg-cyan-900 hidden xl:flex flex-col justify-between p-3 @CssClass">
 
     <div>
-        <UIDatePicker Label="From (UTC)" Value="AppState.ExportParameters.Begin">
+        <UIDatePicker Label="From (UTC)" @bind-Value="Begin">
         </UIDatePicker>
 
-        <UIDatePicker Label="To (UTC)" Value="AppState.ExportParameters.End">
+        <UIDatePicker Label="To (UTC)" @bind-Value="End">
         </UIDatePicker>
 
-        <UITextBox Label="Sample Period" Value="SamplePeriod">
+        <UITextBox Label="Sample Period" @bind-Value="SamplePeriod">
         </UITextBox>
 
         <UICheckbox Label="Begin at zero">
@@ -36,8 +36,37 @@
 @code {
 
     [Parameter]
-    public string CssClass { get; set; }
+    public string? CssClass { get; set; }
 
+    private DateTime Begin
+    {
+        get
+        {
+            return AppState.ExportParameters.Begin;
+        }
+        set
+        {
+            AppState.ExportParameters = AppState.ExportParameters with { Begin = DateTime.SpecifyKind(value, DateTimeKind.Utc) };
+
+            if (AppState.ExportParameters.Begin >= AppState.ExportParameters.End)
+                AppState.ExportParameters = AppState.ExportParameters with { End = AppState.ExportParameters.Begin };
+        }
+    }
+
+    private DateTime End
+    {
+        get
+        {
+            return AppState.ExportParameters.End;
+        }
+        set
+        {
+            AppState.ExportParameters = AppState.ExportParameters with { End = DateTime.SpecifyKind(value, DateTimeKind.Utc) };
+
+            if (AppState.ExportParameters.End <= AppState.ExportParameters.Begin)
+                AppState.ExportParameters = AppState.ExportParameters with { Begin = AppState.ExportParameters.End };
+        }
+    }
 
     private Period SamplePeriod 
     {

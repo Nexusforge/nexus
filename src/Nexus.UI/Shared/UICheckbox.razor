@@ -22,8 +22,6 @@
 
                 if (IsCheckedChanged.HasDelegate)
                     IsCheckedChanged.InvokeAsync(value);
-
-                StateHasChanged();
             }
         }
     }
@@ -32,5 +30,5 @@
     public EventCallback<bool> IsCheckedChanged { get; set; }
 
     [Parameter]
-    public string Label { get; set; } = null!;
+    public string Label { get; set; } = default!;
 }
