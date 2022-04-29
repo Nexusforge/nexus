@@ -16,7 +16,7 @@ namespace Nexus.Services
         Stream WriteProject();
 
         /* /catalogs/catalog_id/... */
-        IEnumerable<string> EnumerateAttachements(string catalogId);
+        IEnumerable<string> EnumerateAttachments(string catalogId);
         bool TryReadAttachment(string catalogId, string attachmentId, [NotNullWhen(true)] out Stream? attachment);
         bool TryReadFirstAttachment(string catalogId, string searchPattern, EnumerationOptions enumerationOptions, [NotNullWhen(true)] out Stream? attachment);
 
@@ -58,7 +58,7 @@ namespace Nexus.Services
         {
             var physicalId = catalogId.TrimStart('/').Replace("/", "_");
             var catalogMetadataFileName = $"{physicalId}.json";
-            var filePath = Path.Combine(_pathsOptions.Config, "catalogs", catalogMetadataFileName);
+            var filePath = SafePathCombine(_pathsOptions.Config, Path.Combine("catalogs", catalogMetadataFileName));
 
             catalogMetadata = null;
 
@@ -79,7 +79,7 @@ namespace Nexus.Services
 
             Directory.CreateDirectory(folderPath);
 
-            var filePath = Path.Combine(folderPath, catalogMetadataFileName);
+            var filePath = SafePathCombine(folderPath, catalogMetadataFileName);
 
             return File.Open(filePath, FileMode.Create, FileAccess.Write);
         }
@@ -109,13 +109,15 @@ namespace Nexus.Services
         }
 
         /* /catalogs/catalog_id/... */
-        public IEnumerable<string> EnumerateAttachements(string catalogId)
+        public IEnumerable<string> EnumerateAttachments(string catalogId)
         {
             var physicalId = catalogId.TrimStart('/').Replace("/", "_");
-            var attachementFolder = Path.Combine(_pathsOptions.Catalogs, physicalId);
+            var attachmentFolder = SafePathCombine(_pathsOptions.Catalogs, physicalId);
 
-            if (Directory.Exists(attachementFolder))
-                return Directory.EnumerateFiles(attachementFolder);
+            if (Directory.Exists(attachmentFolder))
+                return Directory
+                    .EnumerateFiles(attachmentFolder, "*", SearchOption.AllDirectories)
+                    .Select(attachmentFilePath => attachmentFilePath.Substring(attachmentFolder.Length + 1));
 
             else
                 return Enumerable.Empty<string>();
@@ -126,11 +128,11 @@ namespace Nexus.Services
             attachment = null;
 
             var physicalId = catalogId.TrimStart('/').Replace("/", "_");
-            var attachementFolder = Path.Combine(_pathsOptions.Catalogs, physicalId);
+            var attachmentFolder = Path.Combine(_pathsOptions.Catalogs, physicalId);
 
-            if (Directory.Exists(attachementFolder))
+            if (Directory.Exists(attachmentFolder))
             {
-                var attachmentFile = Path.Combine(attachementFolder, attachmentId);
+                var attachmentFile = SafePathCombine(attachmentFolder, attachmentId);
 
                 if (File.Exists(attachmentFile))
                 {
@@ -147,12 +149,12 @@ namespace Nexus.Services
             attachment = null;
 
             var physicalId = catalogId.TrimStart('/').Replace("/", "_");
-            var attachementFolder = Path.Combine(_pathsOptions.Catalogs, physicalId);
+            var attachmentFolder = SafePathCombine(_pathsOptions.Catalogs, physicalId);
 
-            if (Directory.Exists(attachementFolder))
+            if (Directory.Exists(attachmentFolder))
             {
                 var attachmentFile = Directory
-                    .EnumerateFiles(attachementFolder, searchPattern, enumerationOptions)
+                    .EnumerateFiles(attachmentFolder, searchPattern, enumerationOptions)
                     .FirstOrDefault();
 
                 if (attachmentFile is not null)
@@ -170,7 +172,7 @@ namespace Nexus.Services
         {
             artifact = null;
 
-            var attachmentFile = Path.Combine(_pathsOptions.Artifacts, artifactId);
+            var attachmentFile = SafePathCombine(_pathsOptions.Artifacts, artifactId);
 
             if (File.Exists(attachmentFile))
             {
@@ -291,6 +293,16 @@ namespace Nexus.Services
 
             if (File.Exists(cacheEntry))
                 throw new Exception($"Cannot delete cache entry {cacheEntry}.");
+        }
+
+        private string SafePathCombine(string basePath, string relativePath)
+        {
+            var filePath = Path.GetFullPath(Path.Combine(basePath, relativePath));
+
+            if (!filePath.StartsWith(basePath))
+                throw new Exception("Invalid path.");
+
+            return filePath;
         }
     }
 }

@@ -6,6 +6,7 @@ using Nexus.Services;
 using Nexus.Utilities;
 using System.Data;
 using System.Net;
+using System.Security;
 
 namespace Nexus.Controllers
 {
@@ -22,6 +23,7 @@ namespace Nexus.Controllers
         // GET      /api/catalogs/{catalogId}/child-catalog-ids
         // GET      /api/catalogs/{catalogId}/timerange
         // GET      /api/catalogs/{catalogId}/availability
+        // GET      /api/catalogs/{catalogId}/attachments
         // GET      /api/catalogs/{catalogId}/attachments/{attachmentId}/content
 
         // GET      /api/catalogs/{catalogId}/metadata
@@ -148,6 +150,35 @@ namespace Nexus.Controllers
         }
 
         /// <summary>
+        /// Gets all attachments for the specified catalog.
+        /// </summary>
+        /// <param name="catalogId">The catalog identifier.</param>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
+        [HttpGet("{catalogId}/attachments")]
+        public Task<ActionResult<string[]>>
+            GetAttachmentsAsync(
+                string catalogId,
+                CancellationToken cancellationToken)
+        {
+            catalogId = WebUtility.UrlDecode(catalogId);
+
+            try
+            {
+                var response = ProcessCatalogIdAsync<string[]>(catalogId, catalog =>
+                {
+                    return Task.FromResult((ActionResult<string[]>)_databaseService.EnumerateAttachments(catalogId).ToArray());
+                }, cancellationToken);
+
+                return response;
+            }
+            catch (Exception ex)
+            {
+                return Task.FromResult((ActionResult<string[]>)
+                    UnprocessableEntity(ex.Message));
+            }
+        }
+
+        /// <summary>
         /// Gets the specified attachment.
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
@@ -155,7 +186,7 @@ namespace Nexus.Controllers
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpGet("{catalogId}/attachments/{attachmentId}/content")]
         public Task<ActionResult>
-            GetAttachementStreamAsync(
+            GetAttachmentStreamAsync(
                 string catalogId,
                 string attachmentId,
                 CancellationToken cancellationToken)
@@ -165,16 +196,24 @@ namespace Nexus.Controllers
 
             var response = ProcessCatalogIdNonGenericAsync(catalogId, catalog =>
             {
-                if (_databaseService.TryReadAttachment(catalogId, attachmentId, out var attachementStream))
+                try
                 {
-                    Response.Headers.ContentLength = attachementStream.Length;
-                    return Task.FromResult((ActionResult)
-                        File(attachementStream, "application/octet-stream", attachmentId));
+                    if (_databaseService.TryReadAttachment(catalogId, attachmentId, out var attachmentStream))
+                    {
+                        Response.Headers.ContentLength = attachmentStream.Length;
+                        return Task.FromResult((ActionResult)
+                            File(attachmentStream, "application/octet-stream", attachmentId));
+                    }
+                    else
+                    {
+                        return Task.FromResult((ActionResult)
+                            NotFound($"Could not find attachment {attachmentId} for catalog {catalogId}."));
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
                     return Task.FromResult((ActionResult)
-                        NotFound($"Could not find attachment {attachmentId} for catalog {catalogId}."));
+                        UnprocessableEntity(ex.Message));
                 }
             }, cancellationToken);
 

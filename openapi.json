@@ -201,13 +201,49 @@
         }
       }
     },
+    "/api/v1/catalogs/{catalogId}/attachments": {
+      "get": {
+        "tags": [
+          "Catalogs"
+        ],
+        "summary": "Gets all attachments for the specified catalog.",
+        "operationId": "Catalogs_GetAttachments",
+        "parameters": [
+          {
+            "name": "catalogId",
+            "in": "path",
+            "required": true,
+            "description": "The catalog identifier.",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/catalogs/{catalogId}/attachments/{attachmentId}/content": {
       "get": {
         "tags": [
           "Catalogs"
         ],
         "summary": "Gets the specified attachment.",
-        "operationId": "Catalogs_GetAttachementStream",
+        "operationId": "Catalogs_GetAttachmentStream",
         "parameters": [
           {
             "name": "catalogId",

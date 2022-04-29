@@ -443,12 +443,19 @@ public interface ICatalogsClient
     Task<CatalogAvailability> GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets all attachments for the specified catalog.
+    /// </summary>
+    /// <param name="catalogId">The catalog identifier.</param>
+    /// <param name="cancellationToken">The token to cancel the current operation.</param>
+    Task<IList<string>> GetAttachmentsAsync(string catalogId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets the specified attachment.
     /// </summary>
     /// <param name="catalogId">The catalog identifier.</param>
     /// <param name="attachmentId">The attachment identifier.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<StreamResponse> GetAttachementStreamAsync(string catalogId, string attachmentId, CancellationToken cancellationToken = default);
+    Task<StreamResponse> GetAttachmentStreamAsync(string catalogId, string attachmentId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets the catalog metadata.
@@ -531,7 +538,18 @@ public class CatalogsClient : ICatalogsClient
     }
 
     /// <inheritdoc />
-    public Task<StreamResponse> GetAttachementStreamAsync(string catalogId, string attachmentId, CancellationToken cancellationToken = default)
+    public Task<IList<string>> GetAttachmentsAsync(string catalogId, CancellationToken cancellationToken = default)
+    {
+        var urlBuilder = new StringBuilder();
+        urlBuilder.Append("/api/v1/catalogs/{catalogId}/attachments");
+        urlBuilder.Replace("{catalogId}", Uri.EscapeDataString(Convert.ToString(catalogId, CultureInfo.InvariantCulture)!));
+
+        var url = urlBuilder.ToString();
+        return _client.InvokeAsync<IList<string>>("GET", url, "application/json", default, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<StreamResponse> GetAttachmentStreamAsync(string catalogId, string attachmentId, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/catalogs/{catalogId}/attachments/{attachmentId}/content");

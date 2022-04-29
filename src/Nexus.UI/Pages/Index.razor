@@ -5,19 +5,23 @@
 
 <PageTitle>Nexus</PageTitle>
 
-<div class="min-h-full p-4">
-    <div class="flex flex-wrap">
-        <div class="w-full h-72 sm:w-1/2 flex flex-col overflow-y-auto">
-            <ResourceCatalogView Catalog="AppState.RootCatalog" />
-        </div>
-        <div class="w-full sm:w-1/2 flex-1">
-            @if (AppState.SelectedCatalog is not null)
-            {
-                <h1 class="text-2xl">@Utilities.ToSpaceFilledCatalogId(AppState.SelectedCatalog.Id)</h1>
-            }
-        </div>
+<div class="min-h-full p-4 flex flex-wrap">
+    <div class="w-full h-72 sm:w-1/2 flex flex-col overflow-y-auto pr-0 sm:pr-2">
+        <ResourceCatalogView Catalog="AppState.RootCatalog" />
     </div>
-    <div>
+    <div class="w-full h-72 sm:w-1/2 pl-0 sm:pl-2">
+        @if (AppState.SelectedCatalog is null || AppState.SelectedCatalog.GetType() == typeof(FakeResourceCatalogViewModel))
+        {
+            <div class="flex w-full h-full justify-center">
+                <h1 class="text-xl text-gray-400">no data available</h1>
+            </div>
+        }
+        else
+        {
+            <SelectedResourceCatalogView Catalog="AppState.SelectedCatalog" />
+        }
+    </div>
+    <div class="w-full sm:w-1/2">
         Test 2
     </div>
 </div>

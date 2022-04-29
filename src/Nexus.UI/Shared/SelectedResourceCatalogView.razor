@@ -1,0 +1,111 @@
+﻿@using System.Net
+<div class="flex flex-col h-full w-full">
+    <h1 class="font-bold text-cyan-700 flex-1">@Utilities.ToSpaceFilledCatalogId(Catalog.Id)</h1>
+
+    <div class="flex justify-between items-center flex-wrap text-gray-500">
+        <div>
+            @if (_timeRange is not null)
+            {
+                <span class="font-bold">Start:</span>
+                <span class="mr-4">@_timeRange.Begin.ToString("yyyy-MM-dd")</span>
+                <span class="font-bold">End:</span>
+                <span class="">@_timeRange.End.ToString("yyyy-MM-dd")</span>
+            }
+        </div>
+        <div>
+            @if (_attachments is not null && _attachments.Any())
+            {
+                <div class="flex justify-center items-center rounded-full w-12 h-12 hover:bg-gray-200 cursor-pointer"
+                    @onclick="() => _isAttachementModalOpen = true">
+                    <span class="text-2xl mdi mdi-paperclip"></span>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="top-0 left-0 flex justify-center items-center fixed w-full z-50 h-full @(_isAttachementModalOpen ? "" : "hidden")" 
+    @onclick="() => _isAttachementModalOpen = false">
+    
+    <div class="absolute top-0 left-0 w-full h-full bg-black opacity-50"></div>
+
+    <div class="absolute rounded-xl w-11/12 sm:w-96 h-3/4 bg-white flex flex-col">
+
+        <div class="h-16 flex justify-center items-center border-b border-gray-300">
+            <h1 class="text-xl font-bold uppercase text-cyan-700">Attachments</h1>
+        </div>
+
+        <div class="flex flex-col flex-1 p-3 overflow-y-auto">
+            @if (_attachments is not null)
+            {
+                @foreach (var attachment in _attachments)
+                {
+                    <a class="flex items-center hover:bg-gray-300 rounded-lg p-0.5" href="@GetHref(attachment)">
+                        <span class="text-2xl mr-1 mdi mdi-@(GetIcon(attachment))"></span>
+                        <span>@attachment</span>
+                    </a>
+                }
+            }
+        </div>
+
+        <div class="h-16 flex justify-end items-center border-t border-gray-300 px-5">
+            <div
+                class="w-20 p-1 rounded bg-cyan-700 flex justify-center items-center text-gray-200 cursor-pointer hover:bg-cyan-600"
+                onclick="event.stopPropagation()"
+                @onmousedown="() => _isAttachementModalOpen = false">
+                Close
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public ResourceCatalogViewModel Catalog { get; set; } = default!;
+
+    private bool _isAttachementModalOpen;
+    private CatalogTimeRange? _timeRange;
+    private IList<string>? _attachments;
+
+    protected override void OnParametersSet()
+    {
+        _ = Task.Run(async () =>
+        {
+            _timeRange = await Catalog.TimeRangeTask.Value;
+            this.StateHasChanged();
+        });
+
+        _ = Task.Run(async () =>
+        {
+            _attachments = await Catalog.AttachmentsTask.Value;
+            this.StateHasChanged();
+        });
+    }
+
+    private string GetIcon(string attachmendId)
+    {
+        var extension = Path.GetExtension(attachmendId);
+
+        return extension switch
+        {
+            ".docx" => "file-word",
+            ".xlsx" => "file-excel",
+            ".pptx" => "file-powerpoint",
+            ".pdf" => "file-pdf-box",
+            ".jpg" => "file-image",
+            ".jpeg" => "file-image",
+            ".png" => "file-image",
+            ".tiff" => "file-image",
+            _ => "file"
+        };
+    }
+
+    public string GetHref(string attachmentId)
+    {
+        return $"api/v1/catalogs/{WebUtility.UrlEncode(Catalog.Id)}/attachments/{WebUtility.UrlEncode(Path.GetFileName(attachmentId))}/content";
+    }
+}
+
+
+

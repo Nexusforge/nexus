@@ -27,11 +27,13 @@ public abstract class ResourceCatalogViewModel
 
     public List<ResourceCatalogViewModel>? Children { get; private set; }
 
-    protected Lazy<Task<List<ResourceCatalogViewModel>>> ChildrenTask { get; set; }
+    protected Lazy<Task<List<ResourceCatalogViewModel>>> ChildrenTask { get; set; } = default!;
 
     protected Lazy<Task<ResourceCatalog>> CatalogTask { get; set; } = default!;
 
-    protected Lazy<Task<CatalogTimeRange>> TimeRangeTask { get; set; } = default!;
+    public Lazy<Task<CatalogTimeRange>> TimeRangeTask { get; set; } = default!;
+
+    public Lazy<Task<IList<string>>> AttachmentsTask { get; set; } = default!;
 
     public async Task SelectCatalogAsync(string catalogId)
     {

@@ -848,7 +848,20 @@ class CatalogsClient:
 
         return self._client._invoke_async(CatalogAvailability, "GET", url, "application/json", None)
 
-    def get_attachement_stream(self, catalog_id: str, attachment_id: str) -> Awaitable[StreamResponse]:
+    def get_attachments(self, catalog_id: str) -> Awaitable[list[str]]:
+        """
+        Gets all attachments for the specified catalog.
+
+        Args:
+            catalog_id: The catalog identifier.
+        """
+
+        url = "/api/v1/catalogs/{catalogId}/attachments"
+        url = url.replace("{catalogId}", quote(str(catalog_id), safe=""))
+
+        return self._client._invoke_async(list[str], "GET", url, "application/json", None)
+
+    def get_attachment_stream(self, catalog_id: str, attachment_id: str) -> Awaitable[StreamResponse]:
         """
         Gets the specified attachment.
 
