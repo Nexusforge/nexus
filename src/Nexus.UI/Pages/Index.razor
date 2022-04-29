@@ -5,19 +5,19 @@
 
 <PageTitle>Nexus</PageTitle>
 
-<div class="h-full p-4">
-    <div class="flex h-1/3">
-        <div class="flex flex-col flex-1">
+<div class="min-h-full p-4">
+    <div class="flex flex-wrap">
+        <div class="w-full h-72 sm:w-1/2 flex flex-col overflow-y-auto">
             <ResourceCatalogView Catalog="AppState.RootCatalog" />
         </div>
-        <div class="flex-1">
+        <div class="w-full sm:w-1/2 flex-1">
             @if (AppState.SelectedCatalog is not null)
             {
                 <h1 class="text-2xl">@Utilities.ToSpaceFilledCatalogId(AppState.SelectedCatalog.Id)</h1>
             }
         </div>
     </div>
-    <div class="h-2/3">
+    <div>
         Test 2
     </div>
 </div>

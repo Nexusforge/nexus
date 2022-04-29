@@ -49,7 +49,7 @@ When this header is available, the instantiated `IDataSource` gets a merged conf
 
 **Package Reference Duplicates**
 
-There might be duplicate package references. This is not issue because all extensions are loaded into a separate load context.
+There might be duplicate package references. This is not an issue because all extensions are loaded into a separate load context.
 
 **Backend Source Duplicates**
 

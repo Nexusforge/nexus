@@ -1,93 +1,37 @@
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using Nexus.Api;
 using Nexus.UI.Core;
 
 namespace Nexus.UI.ViewModels;
 
-public class ResourceCatalogViewModel : INotifyPropertyChanged
+public abstract class ResourceCatalogViewModel
 {
-    public event PropertyChangedEventHandler? PropertyChanged;
-
     public const string ROOT_CATALOG_ID = "/";
 
-    private List<ResourceCatalogViewModel>? _children;
-    private bool _isSelected;
-    private bool _isOpen;
     private IAppState _appState;
-    private Lazy<Task<List<ResourceCatalogViewModel>>> _childrenTask;
 
-    public ResourceCatalogViewModel(string id, INexusClient client, IAppState appState)
+    public ResourceCatalogViewModel(string id, string parentId, IAppState appState)
     {
         Id = id;
+        DisplayName = Utilities.ToSpaceFilledCatalogId(id.Substring(parentId.Length));
+
         _appState = appState;
-
-        Func<Task<List<ResourceCatalogViewModel>>> func = async () => 
-        {
-            var childIds = await client.Catalogs.GetChildCatalogIdsAsync(id, CancellationToken.None);
-            return childIds.Select(childId => new ResourceCatalogViewModel(childId, client, appState)).ToList();
-        };
-
-        _childrenTask = new Lazy<Task<List<ResourceCatalogViewModel>>>(func);
-        CatalogTask = new Lazy<Task<ResourceCatalog>>(() => client.Catalogs.GetAsync(id, CancellationToken.None));
-        TimeRangeTask = new Lazy<Task<CatalogTimeRange>>(() => client.Catalogs.GetTimeRangeAsync(id, CancellationToken.None));
     }
 
     public string Id { get; }
 
-    public bool IsSelected
-    {  
-        get
-        {  
-            return _isSelected;
-        }  
+    public string DisplayName { get; }
 
-        set
-        {  
-            if (value != _isSelected)
-            {  
-                _isSelected = value;
-                // OnPropertyChanged();
-            }
-        }
-    }
+    public bool IsSelected { get; private set; }
 
-    public bool IsOpen
-    {  
-        get
-        {  
-            return _isOpen;
-        }  
+    public bool IsOpen { get; set; }
 
-        set
-        {  
-            if (value != _isOpen)
-            {  
-                _isOpen = value;
-                // OnPropertyChanged();
-            }
-        }
-    }
+    public List<ResourceCatalogViewModel>? Children { get; private set; }
 
-    public List<ResourceCatalogViewModel>? Children
-    {  
-        get
-        {
-            return _children;
-        }
+    protected Lazy<Task<List<ResourceCatalogViewModel>>> ChildrenTask { get; set; }
 
-        set
-        {
-            if (value != _children)
-            {
-                _children = value;
-                // OnPropertyChanged();
-            }
-        }
-    }
+    protected Lazy<Task<ResourceCatalog>> CatalogTask { get; set; } = default!;
 
-    public Lazy<Task<ResourceCatalog>> CatalogTask { get; set; }
-    public Lazy<Task<CatalogTimeRange>> TimeRangeTask { get; set; }
+    protected Lazy<Task<CatalogTimeRange>> TimeRangeTask { get; set; } = default!;
 
     public async Task SelectCatalogAsync(string catalogId)
     {
@@ -97,31 +41,23 @@ public class ResourceCatalogViewModel : INotifyPropertyChanged
 
         if (IsSelected)
         {
-            Children = await _childrenTask.Value;
-            isOpen = true;
+            Children = await ChildrenTask.Value;
+            isOpen = !IsOpen;
             _appState.SelectedCatalog = this;
         }
 
         if (Children is null && catalogId.StartsWith(Id))
-            Children = await _childrenTask.Value;
+            Children = await ChildrenTask.Value;
 
         if (Children is not null)
         {
             foreach (var child in Children)
             {
-                if (catalogId.StartsWith(child.Id))
-                {
-                    await child.SelectCatalogAsync(catalogId);
+                await child.SelectCatalogAsync(catalogId);
                     isOpen |= child.IsOpen;
-                }
             }
         }
         
         IsOpen = isOpen;
-    }
-
-    private void OnPropertyChanged([CallerMemberName] String propertyName = "")
-    {  
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }

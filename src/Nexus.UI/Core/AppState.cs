@@ -22,7 +22,9 @@ public class AppState : IAppState
 
     public AppState(INexusClient client)
     {
-        RootCatalog = new ResourceCatalogViewModel(ResourceCatalogViewModel.ROOT_CATALOG_ID, client, this);
+        var childCatalogIdsTask = client.Catalogs.GetChildCatalogIdsAsync(ResourceCatalogViewModel.ROOT_CATALOG_ID, CancellationToken.None);
+
+        RootCatalog = new FakeResourceCatalogViewModel(ResourceCatalogViewModel.ROOT_CATALOG_ID, "", client, this, childCatalogIdsTask);
 
         // export parameters
         ExportParameters = new ExportParameters(
@@ -60,10 +62,9 @@ public class AppState : IAppState
     public async Task SelectCatalogAsync(string? catalogId)
     {
         if (catalogId is null)
-            SelectedCatalog = null;
+            catalogId = ResourceCatalogViewModel.ROOT_CATALOG_ID;
 
-        else
-            await RootCatalog.SelectCatalogAsync(catalogId);
+        await RootCatalog.SelectCatalogAsync(catalogId);
     }
 
     #endregion

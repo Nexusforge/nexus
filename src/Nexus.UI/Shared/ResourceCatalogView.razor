@@ -1,33 +1,6 @@
 ﻿@if (Catalog.Id == ResourceCatalogViewModel.ROOT_CATALOG_ID)
 {
-
-    @if (Catalog.Children is not null)
-    {
-        @foreach (var child in Catalog.Children)
-        {
-            <ResourceCatalogView Catalog="@child" />
-        }
-    }
-
-}
-else
-{
-
-    @if (Catalog.IsSelected)
-    {
-        <a class="cursor-pointer hover:bg-gray-300 rounded p-1 font-bold text-cyan-700">
-            @Utilities.ToSpaceFilledCatalogId(Catalog.Id)
-        </a>
-    }
-    else
-    {
-        <a class="cursor-pointer hover:bg-gray-300 rounded p-1" href="@Utilities.EscapeDataString(Catalog.Id)">
-            @Utilities.ToSpaceFilledCatalogId(Catalog.Id)
-        </a>
-    }
-
-    @if (Catalog.IsOpen)
-    {
+    <div id="@Catalog.Id">
         @if (Catalog.Children is not null)
         {
             @foreach (var child in Catalog.Children)
@@ -35,21 +8,69 @@ else
                 <ResourceCatalogView Catalog="@child" />
             }
         }
-    }
+    </div>
+}
+else
+{
+    <div id="@Catalog.Id" class="flex flex-col cursor-pointer select-none">
+
+        @if (Catalog.IsSelected)
+        {
+            <a class="flex hover:bg-gray-300 rounded p-0.5 items-center" @onclick="() => Catalog.IsOpen = !Catalog.IsOpen">
+                <span class="
+                    text-xl 
+                    mdi mr-1
+                    @(Catalog.IsOpen 
+                        ? "mdi-chevron-down"
+                        : "mdi-chevron-right")
+                    @(Catalog.Children is not null && !Catalog.Children.Any()
+                        ? "invisible"
+                        : "")">
+                </span>
+
+                <span class="font-bold text-cyan-700">
+                    @Catalog.DisplayName
+                </span>
+            </a>
+        }
+        else
+        {
+            <a class="flex hover:bg-gray-300 rounded p-0.5 items-center" href="@Utilities.EscapeDataString(Catalog.Id)">
+                <span class="
+                    text-xl 
+                    mdi mr-1
+                    @(Catalog.IsOpen
+                        ? "mdi-chevron-down"
+                        : "mdi-chevron-right")
+                    @(Catalog.Children is not null && !Catalog.Children.Any()
+                        ? "invisible"
+                        : "")">
+                </span>
+
+                <span>
+                    @Catalog.DisplayName
+                </span>
+            </a>
+        }
+
+        @if (Catalog.IsOpen)
+        {
+            <div class="ml-3 flex flex-col">
+                @if (Catalog.Children is not null)
+                {
+                    @foreach (var child in Catalog.Children)
+                    {
+                        <ResourceCatalogView Catalog="@child" />
+                    }
+                }
+            </div>
+        }
+    </div>
 }
 
 @code {
-
-    private bool _isSelected = false;
-
     [Parameter]
     public ResourceCatalogViewModel Catalog { get; set; } = default!;
-
-    protected override void OnInitialized()
-    {
-        Catalog.PropertyChanged += (sender, e) => StateHasChanged();
-    }
-
 }
 
 
