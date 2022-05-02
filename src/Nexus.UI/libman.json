@@ -3,6 +3,11 @@
   "defaultProvider": "jsdelivr",
   "libraries": [
     {
+      "provider": "cdnjs",
+      "library": "marked@4.0.2",
+      "destination": "wwwroot/lib/marked/"
+    },
+    {
       "provider": "jsdelivr",
       "library": "@mdi/font@6.5.95",
       "destination": "wwwroot/lib/mdi/font/",

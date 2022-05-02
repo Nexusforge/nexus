@@ -3,8 +3,10 @@ using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.EntityFrameworkCore;
 using Nexus.Core;
 using Nexus.Services;
+using Nexus.Sources;
 using Serilog;
 using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
@@ -210,6 +212,16 @@ async Task InitializeAppAsync(
     var userContext = scope.ServiceProvider.GetRequiredService<UserDbContext>();
 
     await userContext.Database.EnsureCreatedAsync();
+
+    // sample data
+    using var stream1 = databaseService.WriteAttachment(Sample.AccessibleCatalogId, "README.md");
+    stream1.Write(Encoding.UTF8.GetBytes(Sample.AccessibleCatalogReadme));
+
+    using var stream2 = databaseService.WriteAttachment(Sample.RemoteCatalogId, "README.md");
+    stream2.Write(Encoding.UTF8.GetBytes(Sample.RemoteCatalogReadme));
+
+    using var stream3 = databaseService.WriteAttachment(Sample.RestrictedCatalogId, "README.md");
+    stream3.Write(Encoding.UTF8.GetBytes(Sample.RestrictedCatalogReadme));
 
     // project
     if (databaseService.TryReadProject(out var project))

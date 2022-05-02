@@ -19,6 +19,14 @@ public class RealResourceCatalogViewModel : ResourceCatalogViewModel
         ChildrenTask = new Lazy<Task<List<ResourceCatalogViewModel>>>(func);
         CatalogTask = new Lazy<Task<ResourceCatalog>>(() => client.Catalogs.GetAsync(id, CancellationToken.None));
         TimeRangeTask = new Lazy<Task<CatalogTimeRange>>(() => client.Catalogs.GetTimeRangeAsync(id, CancellationToken.None));
-        AttachmentsTask = new Lazy<Task<IList<string>>>(() => client.Catalogs.GetAttachmentsAsync(id, CancellationToken.None));
+
+        ReadmeTask = new Lazy<Task<string>>(async () =>
+        {
+            var streamResponse = await client.Catalogs.GetAttachmentStreamAsync(id, "README.md", CancellationToken.None);
+            var stream = await streamResponse.GetStreamAsync(CancellationToken.None);
+
+            return new StreamReader(stream)
+                .ReadToEnd();
+        });
     }
 }

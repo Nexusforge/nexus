@@ -328,9 +328,7 @@ public class StreamResponse : IDisposable
     /// Reads the data as an array of doubles.
     /// </summary>
     /// <param name="cancellationToken">A token to cancel to current operation.</param>
-    /// <returns></returns>
-    /// <exception cref="Exception"></exception>
-    public async Task<double[]> ReadAsync(CancellationToken cancellationToken = default)
+    public async Task<double[]> ReadAsDoubleAsync(CancellationToken cancellationToken = default)
     {
         if (!_response.Content.Headers.TryGetValues("Content-Length", out var values) || !values.Any() || !int.TryParse(values.First(), out var contentLength))
             throw new Exception("The content-length header is missing or invalid.");
@@ -352,6 +350,15 @@ public class StreamResponse : IDisposable
         }
 
         return doubleBuffer;
+    }
+
+    /// <summary>
+    /// Returns the underlying stream.
+    /// </summary>
+    /// <param name="cancellationToken">A token to cancel to current operation.</param>
+    public Task<Stream> GetStreamAsync(CancellationToken cancellationToken = default)
+    {
+        return _response.Content.ReadAsStreamAsync(cancellationToken);
     }
 
     /// <inheritdoc />

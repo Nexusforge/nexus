@@ -9,3 +9,12 @@
     display: flex;
     flex-direction: column;
 }
+
+:root {
+    --color-text-link: rgb(14, 116, 144);
+    --pre-code-foreground: rgb(43, 43, 43);
+    --code-foreground: rgb(215, 186, 125);
+    --code-background: rgba(153, 153, 153, 0.2);
+    --table-header: rgba(0, 0, 0, 0.69);
+    --border: rgb(156 163 175);
+}

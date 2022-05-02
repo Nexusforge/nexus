@@ -22,8 +22,17 @@ namespace Nexus.Sources
 
         public const string ParentCatalogId = "/SAMPLE";
         public const string AccessibleCatalogId = "/SAMPLE/ACCESSIBLE";
-        public const string ForwardedCatalogId = "/SAMPLE/FORWARDED";
+        public const string RemoteCatalogId = "/SAMPLE/REMOTE";
         public const string RestrictedCatalogId = "/SAMPLE/RESTRICTED";
+
+        public const string AccessibleCatalogReadme = 
+@"This is a sample catalog with in-memory generated data. The catalog is accessible to every user.";
+
+        public const string RemoteCatalogReadme =
+@"This is a sample catalog with in-memory generated data. This catalog simulates a remotely accessed catalog (e.g. from another Nexus system) and requires the user provide additional credentials.";
+
+        public const string RestrictedCatalogReadme =
+@"This is a sample catalog with in-memory generated data. This catalog requires the user to accept a license.";
 
         public const string ForwardedUsername = "test";
         public const string ForwardedPassword = "1234";
@@ -56,7 +65,7 @@ namespace Nexus.Sources
                 return Task.FromResult(new CatalogRegistration[]
                     {
                         new CatalogRegistration(AccessibleCatalogId),
-                        new CatalogRegistration(ForwardedCatalogId),
+                        new CatalogRegistration(RemoteCatalogId),
                         new CatalogRegistration(RestrictedCatalogId)
                     });
 
@@ -96,7 +105,7 @@ namespace Nexus.Sources
                     var (catalog, resource, representation) = catalogItem;
 
                     // check credentials
-                    if (catalog.Id == ForwardedCatalogId)
+                    if (catalog.Id == RemoteCatalogId)
                     {
                         if ((Context.Configuration.TryGetValue("user", out var user) && user != ForwardedUsername) ||
                             (Context.Configuration.TryGetValue("password", out var password) && password != ForwardedPassword))

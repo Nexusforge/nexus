@@ -201,13 +201,18 @@ class StreamResponse:
     def __init__(self, response: Response):
         self._response = response
 
-    async def get_data(self) -> array[float]:
+    async def read_as_double(self) -> array[float]:
         """Reads the data as an array of floats."""
         
         byteBuffer = await self._response.aread()
         doubleBuffer = array('d', byteBuffer)
 
         return doubleBuffer 
+
+    @property
+    def response(self) -> Response:
+        """Gets the underlying response."""
+        return _response
 
     async def __aenter__(self) -> StreamResponse:
         return self

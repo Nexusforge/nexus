@@ -29,7 +29,7 @@ namespace Nexus.Utilities
                     claim => claim.Type == NexusClaims.CAN_ACCESS_GROUP &&
                     catalogMetadata.GroupMemberships.Any(group => Regex.IsMatch(group, claim.Value)));
 
-                var implicitAccess = catalogId == Sample.AccessibleCatalogId || catalogId == Sample.ForwardedCatalogId;
+                var implicitAccess = catalogId == Sample.AccessibleCatalogId || catalogId == Sample.RemoteCatalogId;
 
                 return isAdmin || canAccessCatalog || canAccessGroup || implicitAccess;
             }

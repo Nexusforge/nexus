@@ -27,7 +27,7 @@ await client.SignInAsync(refreshToken);
 
 #!markdown
 
-Get data from sample catalog `/SAMPLE/ACCESSIBLE` and `/SAMPLE/FORWARDED`
+Get data from sample catalog `/SAMPLE/ACCESSIBLE` and `/SAMPLE/REMOTE`
 
 #!csharp
 
@@ -46,16 +46,16 @@ using (var disposable = client.AttachConfiguration(
     ("password", "1234")))
 {
     var response1 = await client.Data
-        .GetStreamAsync("/SAMPLE/FORWARDED/T1/1_s", begin, end);
+        .GetStreamAsync("/SAMPLE/REMOTE/T1/1_s", begin, end);
 
-    t1Data = await response1.ReadAsync();
+    t1Data = await response1.ReadAsDoubleAsync();
 }
 
 // Get T1 average data
 var response3 = await client.Data
     .GetStreamAsync("/SAMPLE/ACCESSIBLE/T1/5_s_mean", begin, end);
 
-var t1MeanData = await response3.ReadAsync();
+var t1MeanData = await response3.ReadAsDoubleAsync();
 
 // timestamps
 var timestamps = Enumerable
@@ -71,7 +71,7 @@ var timestamps_mean = Enumerable
 #!csharp
 
 // metadata
-var metadata = await client.Catalogs.GetAsync("/SAMPLE/FORWARDED");
+var metadata = await client.Catalogs.GetAsync("/SAMPLE/REMOTE");
 var t1Metadata = metadata.Resources.First(resource => resource.Id == "T1");
 var t1Description = t1Metadata.Properties["Description"];
 var t1Unit = t1Metadata.Properties["Unit"];

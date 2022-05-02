@@ -33,7 +33,7 @@ public abstract class ResourceCatalogViewModel
 
     public Lazy<Task<CatalogTimeRange>> TimeRangeTask { get; set; } = default!;
 
-    public Lazy<Task<IList<string>>> AttachmentsTask { get; set; } = default!;
+    public Lazy<Task<string>> ReadmeTask { get; set; } = default!;
 
     public async Task SelectCatalogAsync(string catalogId)
     {
