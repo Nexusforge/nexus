@@ -1,6 +1,6 @@
 ﻿.markdown {
-    font-size: 0.8rem;
-    line-height: 1.2rem;
+    font-size: 0.8em;
+    line-height: 1.2em;
     word-wrap: break-word;
     height: 100%;
 }
@@ -10,15 +10,15 @@
  */
 
     .markdown ::deep h1 {
-        font-size: 1.1rem;
+        font-size: 1.1em;
     }
 
     .markdown ::deep h2 {
-        font-size: 1.0rem;
+        font-size: 1.0em;
     }
 
     .markdown ::deep h3 {
-        font-size: 0.9rem;
+        font-size: 0.9em;
     }
 
     /* Reset margin top for elements */
@@ -54,7 +54,7 @@
     }
 
     .markdown ::deep a {
-        color: var(--color-text-link);
+        color: var(--md-color-text-link);
         text-decoration: none;
     }
 
@@ -124,13 +124,13 @@
     }
 
     .markdown ::deep code {
-        font-family: var(--vscode-editor-font-family, "SF Mono", Monaco, Menlo, Consolas, "Ubuntu Mono", "Liberation Mono", "DejaVu Sans Mono", "Courier New", monospace);
+        font-family: var(--md-vscode-editor-font-family, "SF Mono", Monaco, Menlo, Consolas, "Ubuntu Mono", "Liberation Mono", "DejaVu Sans Mono", "Courier New", monospace);
         font-size: 1em;
         line-height: 1.357em;
     }
 
     .markdown ::deep code {
-        color: var(--code-foreground);
+        color: var(--md-code-foreground);
     }
 
     .markdown ::deep body.wordWrap pre {
@@ -145,22 +145,22 @@
     }
 
     .markdown ::deep pre code {
-        color: var(--pre-code-foreground);
+        color: var(--md-pre-code-foreground);
         tab-size: 4;
     }
 
     /* Theming */
 
     .markdown ::deep pre {
-        background-color: var(--code-background);
+        background-color: var(--md-code-background);
     }
 
     .markdown ::deep th {
-        border-color: var(--table-header);
+        border-color: var(--md-table-header);
     }
 
     .markdown ::deep h1,
     .markdown ::deep hr,
     .markdown ::deep td {
-        border-color: var(--border);
+        border-color: var(--md-border);
     }

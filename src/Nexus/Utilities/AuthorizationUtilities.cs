@@ -37,7 +37,7 @@ namespace Nexus.Utilities
             return false;
         }
 
-        public static bool IsCatalogEditable(ClaimsPrincipal principal, string catalogId)
+        public static bool IsCatalogEditable(string catalogId, ClaimsPrincipal principal)
         {
             if (principal is null)
                 return false;
@@ -55,23 +55,6 @@ namespace Nexus.Utilities
             }
 
             return false;
-        }
-
-        public static bool IsCatalogVisible(ClaimsPrincipal principal, CatalogMetadata catalogMetadata)
-        {
-            var identity = principal.Identity;
-
-            // 1. catalog is visible if user is admin
-            if (identity is not null && identity.IsAuthenticated)
-            {
-                var isAdmin = principal.HasClaim(claim => claim.Type == NexusClaims.IS_ADMIN && claim.Value == "true");
-
-                if (isAdmin)
-                    return true; // not "return isAdmin"!!
-            }
-
-            // 2. other catalogs
-            return !catalogMetadata.IsHidden;
         }
     }
 }

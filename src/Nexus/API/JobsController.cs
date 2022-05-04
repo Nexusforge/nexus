@@ -166,7 +166,7 @@ namespace Nexus.Controllers
             var username = User.Identity?.Name!;
             var job = new Job(Guid.NewGuid(), "clear-cache", username, default);
 
-            var canEdit = AuthorizationUtilities.IsCatalogEditable(User, catalogId);
+            var canEdit = AuthorizationUtilities.IsCatalogEditable(catalogId, User);
 
             if (!canEdit)
                 return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to modify the catalog {catalogId}.");

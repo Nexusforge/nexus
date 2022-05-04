@@ -14,44 +14,33 @@ else
 {
     <div id="@Catalog.Id" class="flex flex-col cursor-pointer select-none">
 
-        @if (Catalog.IsSelected)
-        {
-            <a class="flex hover:bg-gray-300 rounded p-0.5 items-center" @onclick="() => Catalog.IsOpen = !Catalog.IsOpen">
-                <span class="
-                    text-xl 
-                    mdi mr-1
-                    @(Catalog.IsOpen 
-                        ? "mdi-chevron-down"
-                        : "mdi-chevron-right")
-                    @(Catalog.Children is not null && !Catalog.Children.Any()
-                        ? "invisible"
-                        : "")">
-                </span>
+        <a class="flex @(Catalog.IsSelected ? "bg-gray-300" : "") border border-transparent hover:border-cyan-600 p-0.5 items-center"
+            href="@(Catalog.IsSelected ? default! : Utilities.EscapeDataString(Catalog.Id))"
+            @onclick="Catalog.IsSelected ? () => Catalog.IsOpen = !Catalog.IsOpen : default!">
+            <span class="
+                text-xl 
+                mdi mr-1
+                @(Catalog.IsOpen 
+                    ? "mdi-chevron-down"
+                    : "mdi-chevron-right")
+                @(Catalog.Children is not null && !Catalog.Children.Any()
+                    ? "invisible"
+                    : "")">
+            </span>
 
-                <span class="font-bold text-cyan-700">
+            <div>
+                <span class="font-bold @(Catalog.Info.IsAccessible ? "text-cyan-700" : "text-gray-500")">
                     @Catalog.DisplayName
                 </span>
-            </a>
-        }
-        else
-        {
-            <a class="flex hover:bg-gray-300 rounded p-0.5 items-center" href="@Utilities.EscapeDataString(Catalog.Id)">
-                <span class="
-                    text-xl 
-                    mdi mr-1
-                    @(Catalog.IsOpen
-                        ? "mdi-chevron-down"
-                        : "mdi-chevron-right")
-                    @(Catalog.Children is not null && !Catalog.Children.Any()
-                        ? "invisible"
-                        : "")">
+                @if (!Catalog.Info.IsAccessible)
+                {
+                    <span class="mdi mdi-lock mx-1"></span>
+                }
+                <span class="ml-2 text-sm text-gray-500">
+                    @Catalog.Info.Title
                 </span>
-
-                <span>
-                    @Catalog.DisplayName
-                </span>
-            </a>
-        }
+            </div>
+        </a>       
 
         @if (Catalog.IsOpen)
         {

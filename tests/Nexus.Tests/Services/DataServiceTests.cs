@@ -106,13 +106,13 @@ namespace Services
             var resource1 = new Resource(id: "Resource1");
             var catalog1 = new ResourceCatalog(id: "/A/B/C");
             var catalogItem1 = new CatalogItem(catalog1, resource1, representation1);
-            var catalogContainer1 = new CatalogContainer(new CatalogRegistration(catalog1.Id), default!, registration1, default!, default!, default!, default!);
+            var catalogContainer1 = new CatalogContainer(new CatalogRegistration(catalog1.Id, string.Empty), default!, registration1, default!, default!, default!, default!);
 
             var representation2 = new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: samplePeriod);
             var resource2 = new Resource(id: "Resource2");
             var catalog2 = new ResourceCatalog(id: "/F/G/H");
             var catalogItem2 = new CatalogItem(catalog2, resource2, representation2);
-            var catalogContainer2 = new CatalogContainer(new CatalogRegistration(catalog2.Id), default!, registration2, default!, default!, default!, default!);
+            var catalogContainer2 = new CatalogContainer(new CatalogRegistration(catalog2.Id, string.Empty), default!, registration2, default!, default!, default!, default!);
 
             // export parameters
             var exportParameters = new ExportParameters(

@@ -59,9 +59,9 @@ namespace Nexus.Core
             if (catalogContainer is null)
                 return default;
 
-            var catalogInfo = await catalogContainer.GetCatalogInfoAsync(cancellationToken);
+            var lazyCatalogInfo = await catalogContainer.GetLazyCatalogInfoAsync(cancellationToken);
 
-            if (catalogInfo is null)
+            if (lazyCatalogInfo is null)
                 return default;
 
             // find base item
@@ -70,7 +70,7 @@ namespace Nexus.Core
 
             if (kind is RepresentationKind.Original)
             {
-                if (!catalogInfo.Catalog.TryFind(parts[0], out catalogItem))
+                if (!lazyCatalogInfo.Catalog.TryFind(parts[0], out catalogItem))
                     return default;
             }
 
@@ -79,7 +79,7 @@ namespace Nexus.Core
                 var resourceId = baseResourceId ?? "";
                 var actualResourcePath = $"{pathMatch.Groups[1].Value}/{pathMatch.Groups[2].Value}/{resourceId}";
 
-                if (!catalogInfo.Catalog.TryFind(actualResourcePath, out baseCatalogItem))
+                if (!lazyCatalogInfo.Catalog.TryFind(actualResourcePath, out baseCatalogItem))
                     return default;
 
                 var samplePeriod = DataModelExtensions.ToSamplePeriod(pathMatch.Groups[3].Value);

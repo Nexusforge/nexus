@@ -79,13 +79,13 @@
         }
       }
     },
-    "/api/v1/catalogs/{catalogId}/child-catalog-ids": {
+    "/api/v1/catalogs/{catalogId}/child-catalog-infos": {
       "get": {
         "tags": [
           "Catalogs"
         ],
-        "summary": "Gets a list of child catalog identifiers for the provided parent catalog identifier.",
-        "operationId": "Catalogs_GetChildCatalogIds",
+        "summary": "Gets a list of child catalog info for the provided parent catalog identifier.",
+        "operationId": "Catalogs_GetChildCatalogInfos",
         "parameters": [
           {
             "name": "catalogId",
@@ -106,7 +106,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "string"
+                    "$ref": "#/components/schemas/CatalogInfo"
                   }
                 }
               }
@@ -1059,6 +1059,40 @@
         }
       }
     },
+    "/api/v1/users/accept-license": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Accepts the license of the specified catalog.",
+        "operationId": "Users_AcceptLicense",
+        "parameters": [
+          {
+            "name": "catalogId",
+            "in": "query",
+            "required": true,
+            "description": "The catalog identifier.",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/users": {
       "get": {
         "tags": [
@@ -1385,6 +1419,39 @@
           "Sum"
         ]
       },
+      "CatalogInfo": {
+        "type": "object",
+        "description": "A structure for catalog information.",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The identifier."
+          },
+          "title": {
+            "type": "string",
+            "description": "The title."
+          },
+          "contact": {
+            "type": "string",
+            "description": "The contact.",
+            "nullable": true
+          },
+          "license": {
+            "type": "string",
+            "description": "The license.",
+            "nullable": true
+          },
+          "isAccessible": {
+            "type": "boolean",
+            "description": "A boolean which indicates if the catalog is accessible."
+          },
+          "isEditable": {
+            "type": "boolean",
+            "description": "A boolean which indicates if the catalog is editable."
+          }
+        }
+      },
       "CatalogTimeRange": {
         "type": "object",
         "description": "A catalog time range.",
@@ -1426,10 +1493,6 @@
             "type": "string",
             "description": "The contact.",
             "nullable": true
-          },
-          "isHidden": {
-            "type": "boolean",
-            "description": "A boolean which indicates if the catalog should be hidden."
           },
           "groupMemberships": {
             "type": "array",

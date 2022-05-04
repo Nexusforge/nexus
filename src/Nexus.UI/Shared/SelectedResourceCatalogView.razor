@@ -2,67 +2,65 @@
 <div class="flex flex-col h-full w-full">
     <h1 class="font-bold text-cyan-700">@Utilities.ToSpaceFilledCatalogId(Catalog.Id)</h1>
 
-    <div class="flex-1 overflow-y-scroll">
+    <div class="flex-1 overflow-y-auto text-gray-500">
         @if (_readme is not null)
         {
             <MarkdownRenderer MarkdownString="@_readme"></MarkdownRenderer>
         }
+        else
+        {
+            <span class="text-sm">@Catalog.Info.Title</span>
+        }
     </div>
 
-    <div class="flex justify-between items-center flex-wrap text-gray-500">
-        <div>
-            @if (_timeRange is not null)
-            {
-                <span class="font-bold">Start:</span>
-                <span class="mr-4">@_timeRange.Begin.ToString("yyyy-MM-dd")</span>
-                <span class="font-bold">End:</span>
-                <span class="">@_timeRange.End.ToString("yyyy-MM-dd")</span>
-            }
-        </div>
-        <div>
-            <div class="flex justify-center items-center rounded-full w-12 h-12 hover:bg-gray-200 cursor-pointer"
-                @onclick="OpenAttachmentModal">
-                <span class="text-2xl mdi mdi-paperclip"></span>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="top-0 left-0 flex justify-center items-center fixed w-full z-50 h-full @(_isAttachmentModalOpen ? "" : "hidden")" 
-    @onclick="() => _isAttachmentModalOpen = false">
-    
-    <div class="absolute top-0 left-0 w-full h-full bg-black opacity-50"></div>
-
-    <div class="absolute rounded-xl w-11/12 sm:w-96 h-3/4 bg-white flex flex-col">
-
-        <div class="h-16 flex justify-center items-center border-b border-gray-300">
-            <h1 class="text-xl font-bold uppercase text-cyan-700">Attachments</h1>
-        </div>
-
-        <div class="flex flex-col flex-1 p-3 overflow-y-auto">
-            @if (_attachments is not null)
-            {
-                @foreach (var attachment in _attachments)
+    @if (Catalog is RealResourceCatalogViewModel && !Catalog.Info.IsAccessible)
+    {
+        <div class="flex justify-between items-center flex-wrap text-gray-500">
+            <div class="text-sm">
+                @if (_timeRange is not null)
                 {
-                    <a class="flex items-center hover:bg-gray-300 rounded-lg p-0.5" href="@GetHref(attachment)">
-                        <span class="text-2xl mr-1 mdi mdi-@(GetIcon(attachment))"></span>
-                        <span>@attachment</span>
-                    </a>
+                    <span class="font-bold">Start:</span>
+                    <span class="mr-4">@_timeRange.Begin.ToString("yyyy-MM-dd")</span>
+                    <span class="font-bold">End:</span>
+                    <span class="">@_timeRange.End.ToString("yyyy-MM-dd")</span>
                 }
-            }
-        </div>
-
-        <div class="h-16 flex justify-end items-center border-t border-gray-300 px-5">
-            <div
-                class="w-20 p-1 rounded bg-cyan-700 flex justify-center items-center text-gray-200 cursor-pointer hover:bg-cyan-600"
-                onclick="event.stopPropagation()"
-                @onmousedown="() => _isAttachmentModalOpen = false">
-                Close
+            </div>
+            <div class="flex">
+                @if (Catalog.Info.License is not null)
+                {
+                    <div class="flex justify-center items-center rounded-full w-12 h-12 hover:bg-gray-200 cursor-pointer"
+                        @onclick="OpenLicenseModal">
+                        <span class="text-xl mdi mdi-format-section"></span>
+                    </div>
+                }
+                <div class="flex justify-center items-center rounded-full w-12 h-12 hover:bg-gray-200 cursor-pointer"
+                    @onclick="OpenAttachmentModal">
+                    <span class="text-xl mdi mdi-paperclip"></span>
+                </div>
             </div>
         </div>
-
-    </div>
+    }
 </div>
+
+<Modal @bind-IsOpen="_isLicenseModalOpen" Title="License" Width="600px">
+    @if (Catalog.Info.License is not null)
+    {
+        <MarkdownRenderer MarkdownString="@Catalog.Info.License"></MarkdownRenderer>
+    }
+</Modal>
+
+<Modal @bind-IsOpen="_isAttachmentModalOpen" Title="Attachments" Width="400px">
+    @if (_attachments is not null)
+    {
+        @foreach (var attachment in _attachments)
+        {
+            <a class="flex items-center hover:bg-gray-300 rounded-lg p-0.5" href="@GetHref(attachment)">
+                <span class="text-2xl mr-1 mdi mdi-@(GetIcon(attachment))"></span>
+                <span>@attachment</span>
+            </a>
+        }
+    }
+</Modal>
 
 @code {
     [Parameter]
@@ -71,31 +69,41 @@
     [Inject]
     public INexusClient Client { get; set; } = default!;
 
+    private bool _isLicenseModalOpen;
     private bool _isAttachmentModalOpen;
     private CatalogTimeRange? _timeRange;
     private IList<string>? _attachments;
+
     private string? _readme;
 
     protected override void OnParametersSet()
     {
-        _ = Task.Run(async () =>
+        if (Catalog.Info.IsAccessible)
         {
-            _timeRange = await Catalog.TimeRangeTask.Value;
-            this.StateHasChanged();
-        });
-
-        _ = Task.Run(async () =>
-        {
-            try
+            _ = Task.Run(async () =>
             {
-                _readme = await Catalog.ReadmeTask.Value;
+                _timeRange = await Catalog.TimeRangeTask.Value;
                 this.StateHasChanged();
-            }
-            catch
+            });
+
+            _ = Task.Run(async () =>
             {
-                //
-            }
-        });
+                try
+                {
+                    _readme = await Catalog.ReadmeTask.Value;
+                    this.StateHasChanged();
+                }
+                catch
+                {
+                    //
+                }
+            });
+        }
+    }
+
+    private void OpenLicenseModal()
+    {
+        _isLicenseModalOpen = true;
     }
 
     private void OpenAttachmentModal()

@@ -63,7 +63,7 @@ namespace Nexus.Extensibility.Tests
 
         protected override Task<CatalogRegistration[]> GetCatalogRegistrationsAsync(string path, CancellationToken cancellationToken)
         {
-            return Task.FromResult(new CatalogRegistration[] { new CatalogRegistration("/A/B/C") });
+            return Task.FromResult(new CatalogRegistration[] { new CatalogRegistration("/A/B/C", string.Empty) });
         }
 
         protected override Task<ResourceCatalog> GetCatalogAsync(string catalogId, CancellationToken cancellationToken)

@@ -420,11 +420,11 @@ public interface ICatalogsClient
     Task<ResourceCatalog> GetAsync(string catalogId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets a list of child catalog identifiers for the provided parent catalog identifier.
+    /// Gets a list of child catalog info for the provided parent catalog identifier.
     /// </summary>
     /// <param name="catalogId">The parent catalog identifier.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<IList<string>> GetChildCatalogIdsAsync(string catalogId, CancellationToken cancellationToken = default);
+    Task<IList<CatalogInfo>> GetChildCatalogInfosAsync(string catalogId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets the specified catalog's time range.
@@ -496,14 +496,14 @@ public class CatalogsClient : ICatalogsClient
     }
 
     /// <inheritdoc />
-    public Task<IList<string>> GetChildCatalogIdsAsync(string catalogId, CancellationToken cancellationToken = default)
+    public Task<IList<CatalogInfo>> GetChildCatalogInfosAsync(string catalogId, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/catalogs/{catalogId}/child-catalog-ids");
+        urlBuilder.Append("/api/v1/catalogs/{catalogId}/child-catalog-infos");
         urlBuilder.Replace("{catalogId}", Uri.EscapeDataString(Convert.ToString(catalogId, CultureInfo.InvariantCulture)!));
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<IList<string>>("GET", url, "application/json", default, cancellationToken);
+        return _client.InvokeAsync<IList<CatalogInfo>>("GET", url, "application/json", default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -996,6 +996,13 @@ public interface IUsersClient
     Task<string> GenerateRefreshTokenAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Accepts the license of the specified catalog.
+    /// </summary>
+    /// <param name="catalogId">The catalog identifier.</param>
+    /// <param name="cancellationToken">The token to cancel the current operation.</param>
+    Task<StreamResponse> AcceptLicenseAsync(string catalogId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets a list of users.
     /// </summary>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
@@ -1122,6 +1129,24 @@ public class UsersClient : IUsersClient
 
         var url = urlBuilder.ToString();
         return _client.InvokeAsync<string>("POST", url, "application/json", default, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<StreamResponse> AcceptLicenseAsync(string catalogId, CancellationToken cancellationToken = default)
+    {
+        var urlBuilder = new StringBuilder();
+        urlBuilder.Append("/api/v1/users/accept-license");
+
+        var queryValues = new Dictionary<string, string>()
+        {
+            ["catalogId"] = Uri.EscapeDataString(Convert.ToString(catalogId, CultureInfo.InvariantCulture)),
+        };
+
+        var query = "?" + string.Join('&', queryValues.Select(entry => $"{entry.Key}={entry.Value}"));
+        urlBuilder.Append(query);
+
+        var url = urlBuilder.ToString();
+        return _client.InvokeAsync<StreamResponse>("GET", url, "application/octet-stream", default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -1459,6 +1484,17 @@ public enum RepresentationKind
 
 
 /// <summary>
+/// A structure for catalog information.
+/// </summary>
+/// <param name="Id">The identifier.</param>
+/// <param name="Title">The title.</param>
+/// <param name="Contact">The contact.</param>
+/// <param name="License">The license.</param>
+/// <param name="IsAccessible">A boolean which indicates if the catalog is accessible.</param>
+/// <param name="IsEditable">A boolean which indicates if the catalog is editable.</param>
+public record CatalogInfo(string Id, string Title, string? Contact, string? License, bool IsAccessible, bool IsEditable);
+
+/// <summary>
 /// A catalog time range.
 /// </summary>
 /// <param name="Begin">The date/time of the first data in the catalog.</param>
@@ -1475,10 +1511,9 @@ public record CatalogAvailability(IDictionary<string, double> Data);
 /// A structure for catalog metadata.
 /// </summary>
 /// <param name="Contact">The contact.</param>
-/// <param name="IsHidden">A boolean which indicates if the catalog should be hidden.</param>
 /// <param name="GroupMemberships">A list of groups the catalog is part of.</param>
 /// <param name="Overrides">Overrides for the catalog.</param>
-public record CatalogMetadata(string? Contact, bool IsHidden, IList<string>? GroupMemberships, ResourceCatalog? Overrides);
+public record CatalogMetadata(string? Contact, IList<string>? GroupMemberships, ResourceCatalog? Overrides);
 
 /// <summary>
 /// Description of a job.

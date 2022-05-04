@@ -25,14 +25,10 @@ namespace Nexus.Sources
         public const string RemoteCatalogId = "/SAMPLE/REMOTE";
         public const string RestrictedCatalogId = "/SAMPLE/RESTRICTED";
 
-        public const string AccessibleCatalogReadme = 
-@"This is a sample catalog with in-memory generated data. The catalog is accessible to every user.";
-
-        public const string RemoteCatalogReadme =
-@"This is a sample catalog with in-memory generated data. This catalog simulates a remotely accessed catalog (e.g. from another Nexus system) and requires the user provide additional credentials.";
-
-        public const string RestrictedCatalogReadme =
-@"This is a sample catalog with in-memory generated data. This catalog requires the user to accept a license.";
+        private const string SampleCatalogTitle = "Sample catalogs with in-memory generated data";
+        private const string AccessibleCatalogTitle = "Accessible to every user";
+        private const string RemoteCatalogTitle = "Requires the user provide additional credentials";
+        private const string RestrictedCatalogTitle = "Requires the user to accept a license";
 
         public const string ForwardedUsername = "test";
         public const string ForwardedPassword = "1234";
@@ -58,15 +54,15 @@ namespace Nexus.Sources
             if (path == "/")
                 return Task.FromResult(new CatalogRegistration[] 
                     {
-                        new CatalogRegistration(ParentCatalogId),
+                        new CatalogRegistration(ParentCatalogId, "Sample catalogs with in-memory generated data"),
                     });
 
             else if (path.TrimEnd('/') == ParentCatalogId)
                 return Task.FromResult(new CatalogRegistration[]
                     {
-                        new CatalogRegistration(AccessibleCatalogId),
-                        new CatalogRegistration(RemoteCatalogId),
-                        new CatalogRegistration(RestrictedCatalogId)
+                        new CatalogRegistration(AccessibleCatalogId, AccessibleCatalogTitle),
+                        new CatalogRegistration(RemoteCatalogId, RemoteCatalogTitle),
+                        new CatalogRegistration(RestrictedCatalogId, RestrictedCatalogTitle)
                     });
 
             else

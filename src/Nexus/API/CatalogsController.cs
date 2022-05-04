@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Services;
+using Nexus.Sources;
 using Nexus.Utilities;
 using System.Data;
 using System.Net;
@@ -19,7 +20,7 @@ namespace Nexus.Controllers
     internal class CatalogsController : ControllerBase
     {
         // GET      /api/catalogs/{catalogId}
-        // GET      /api/catalogs/{catalogId}/child-catalog-ids
+        // GET      /api/catalogs/{catalogId}/child-catalog-infos
         // GET      /api/catalogs/{catalogId}/timerange
         // GET      /api/catalogs/{catalogId}/availability
         // GET      /api/catalogs/{catalogId}/attachments
@@ -67,33 +68,58 @@ namespace Nexus.Controllers
 
             var response = ProcessCatalogIdAsync<ResourceCatalog>(catalogId, async catalogContainer =>
             {
-                var catalogInfo = await catalogContainer.GetCatalogInfoAsync(cancellationToken);
-                return catalogInfo.Catalog;
+                var lazyCatalogInfo = await catalogContainer.GetLazyCatalogInfoAsync(cancellationToken);
+                return lazyCatalogInfo.Catalog;
             }, cancellationToken);
 
             return response;
         }
 
         /// <summary>
-        /// Gets a list of child catalog identifiers for the provided parent catalog identifier.
+        /// Gets a list of child catalog info for the provided parent catalog identifier.
         /// </summary>
         /// <param name="catalogId">The parent catalog identifier.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
-        [HttpGet("{catalogId}/child-catalog-ids")]
-        public async Task<ActionResult<string[]>>
-            GetChildCatalogIdsAsync(
+        [HttpGet("{catalogId}/child-catalog-infos")]
+        public async Task<ActionResult<CatalogInfo[]>>
+            GetChildCatalogInfosAsync(
             string catalogId, 
             CancellationToken cancellationToken)
         {
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            var response = await ProcessCatalogIdAsync<string[]>(catalogId, async catalogContainer =>
+            var response = await ProcessCatalogIdAsync<CatalogInfo[]>(catalogId, async catalogContainer =>
             {
-                var catalogContainers = await catalogContainer.GetChildCatalogContainersAsync(cancellationToken);
+                var childContainers = await catalogContainer.GetChildCatalogContainersAsync(cancellationToken);
 
-                return catalogContainers
-                    .Where(catalogContainer => AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, User))
-                    .Select(catalogContainer => catalogContainer.Id)
+                return childContainers
+                    .Select(childContainer =>
+                    {
+                        var id = childContainer.Id;
+                        var title = childContainer.Title;
+                        var contact = childContainer.Metadata.Contact;
+                        var isAccessible = AuthorizationUtilities.IsCatalogAccessible(childContainer.Id, childContainer.Metadata, User);
+                        var isEditable = AuthorizationUtilities.IsCatalogEditable(childContainer.Id, User);
+
+                        string? license = default!;
+
+                        if (_databaseService.TryReadAttachment(childContainer.Id, "LICENSE.md", out var attachement))
+                            license = new StreamReader(attachement).ReadToEnd();
+
+                        if (id == Sample.RestrictedCatalogId)
+                        {
+                            isAccessible = false;
+                        }
+
+                        return new CatalogInfo(
+                            id,
+                            title,
+                            contact,
+                            license,
+                            isAccessible,
+                            isEditable
+                        );
+                    })
                     .ToArray();
             }, cancellationToken);
 
@@ -257,7 +283,7 @@ namespace Nexus.Controllers
 
             var response = ProcessCatalogIdAsync<object>(catalogId, async catalogContainer =>
             {
-                var canEdit = AuthorizationUtilities.IsCatalogEditable(User, catalogId);
+                var canEdit = AuthorizationUtilities.IsCatalogEditable(catalogId, User);
 
                 if (!canEdit)
                     return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to modify the catalog {catalogId}.");

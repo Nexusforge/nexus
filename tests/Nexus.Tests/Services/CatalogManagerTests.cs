@@ -44,10 +44,10 @@ namespace Services
 
                             return (type, path) switch
                             {
-                                ("A", "/") => Task.FromResult(new CatalogRegistration[] { new CatalogRegistration("/A"), new CatalogRegistration("/B/A") }),
-                                ("A", "/A/") => Task.FromResult(new CatalogRegistration[] { new CatalogRegistration("/A/B"), new CatalogRegistration("/A/B/C"), new CatalogRegistration("/A/C/A") }),
-                                ("B", "/") => Task.FromResult(new CatalogRegistration[] { new CatalogRegistration("/A"), new CatalogRegistration("/B/B"), new CatalogRegistration("/B/B2") }),
-                                ("C", "/") => Task.FromResult(new CatalogRegistration[] { new CatalogRegistration("/C/A") }),
+                                ("A", "/") => Task.FromResult(new CatalogRegistration[] { new CatalogRegistration("/A", string.Empty), new CatalogRegistration("/B/A", string.Empty) }),
+                                ("A", "/A/") => Task.FromResult(new CatalogRegistration[] { new CatalogRegistration("/A/B", string.Empty), new CatalogRegistration("/A/B/C", string.Empty), new CatalogRegistration("/A/C/A", string.Empty) }),
+                                ("B", "/") => Task.FromResult(new CatalogRegistration[] { new CatalogRegistration("/A", string.Empty), new CatalogRegistration("/B/B", string.Empty), new CatalogRegistration("/B/B2", string.Empty) }),
+                                ("C", "/") => Task.FromResult(new CatalogRegistration[] { new CatalogRegistration("/C/A", string.Empty) }),
                                 ("Nexus.Sources." + nameof(Sample), "/") => Task.FromResult(new CatalogRegistration[0]),
                                 _ => throw new Exception("Unsupported combination.")
                             };
@@ -181,7 +181,7 @@ namespace Services
         }
 
         [Fact]
-        public async Task CanLoadCatalogInfos()
+        public async Task CanLoadLazyCatalogInfos()
         {
             // Arrange
 
@@ -217,7 +217,6 @@ namespace Services
             /* catalog metadata */
             var catalogMetadata = new CatalogMetadata(
                 default, 
-                default, 
                 default,
                 Overrides: new ResourceCatalogBuilder(id: "/A")
                     .WithDescription("v2")
@@ -232,7 +231,7 @@ namespace Services
 
             /* catalog container */
             var catalogContainer = new CatalogContainer(
-                new CatalogRegistration("/A"),
+                new CatalogRegistration("/A", string.Empty),
                 default!, 
                 registration,
                 catalogMetadata, 
@@ -241,15 +240,15 @@ namespace Services
                 dataControllerService);
 
             // Act
-            var catalogInfo = await catalogContainer.GetCatalogInfoAsync(CancellationToken.None);
+            var lazyCatalogInfo = await catalogContainer.GetLazyCatalogInfoAsync(CancellationToken.None);
 
             // Assert
-            var actualJsonString = JsonSerializerHelper.SerializeIntended(catalogInfo.Catalog);
+            var actualJsonString = JsonSerializerHelper.SerializeIntended(lazyCatalogInfo.Catalog);
             var expectedJsonString = JsonSerializerHelper.SerializeIntended(expectedCatalog);
 
             Assert.Equal(actualJsonString, expectedJsonString);
-            Assert.Equal(new DateTime(2020, 01, 01), catalogInfo.Begin);
-            Assert.Equal(new DateTime(2020, 01, 02), catalogInfo.End);
+            Assert.Equal(new DateTime(2020, 01, 01), lazyCatalogInfo.Begin);
+            Assert.Equal(new DateTime(2020, 01, 02), lazyCatalogInfo.End);
         }
     }
 }

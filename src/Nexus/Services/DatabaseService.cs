@@ -16,6 +16,7 @@ namespace Nexus.Services
         Stream WriteProject();
 
         /* /catalogs/catalog_id/... */
+        bool AttachmentExists(string catalogId, string attachmentId);
         IEnumerable<string> EnumerateAttachments(string catalogId);
         bool TryReadAttachment(string catalogId, string attachmentId, [NotNullWhen(true)] out Stream? attachment);
         bool TryReadFirstAttachment(string catalogId, string searchPattern, EnumerationOptions enumerationOptions, [NotNullWhen(true)] out Stream? attachment);
@@ -110,6 +111,15 @@ namespace Nexus.Services
         }
 
         /* /catalogs/catalog_id/... */
+
+        public bool AttachmentExists(string catalogId, string attachmentId)
+        {
+            var physicalId = catalogId.TrimStart('/').Replace("/", "_");
+            var attachmentFile = SafePathCombine(Path.Combine(_pathsOptions.Catalogs, physicalId), attachmentId);
+
+            return File.Exists(attachmentFile);
+        }
+
         public IEnumerable<string> EnumerateAttachments(string catalogId)
         {
             var physicalId = catalogId.TrimStart('/').Replace("/", "_");

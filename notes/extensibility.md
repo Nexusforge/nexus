@@ -61,7 +61,7 @@ Recreate `CatalogState`.
 
 **Add / Remove Backend Source**
 
-Recreate `CatalogState` but reuse `CatalogInfo`.
+Recreate `CatalogState` but reuse `LazyCatalogInfo`.
 
 **Loading Child Catalogs**
 

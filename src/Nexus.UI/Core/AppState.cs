@@ -22,9 +22,10 @@ public class AppState : IAppState
 
     public AppState(INexusClient client)
     {
-        var childCatalogIdsTask = client.Catalogs.GetChildCatalogIdsAsync(ResourceCatalogViewModel.ROOT_CATALOG_ID, CancellationToken.None);
+        var childCatalogInfosTask = client.Catalogs.GetChildCatalogInfosAsync(ResourceCatalogViewModel.ROOT_CATALOG_ID, CancellationToken.None);
 
-        RootCatalog = new FakeResourceCatalogViewModel(ResourceCatalogViewModel.ROOT_CATALOG_ID, "", client, this, childCatalogIdsTask);
+        var rootInfo = new CatalogInfo(ResourceCatalogViewModel.ROOT_CATALOG_ID, default!, default, default, true, false);
+        RootCatalog = new FakeResourceCatalogViewModel(rootInfo, "", client, this, childCatalogInfosTask);
 
         // export parameters
         ExportParameters = new ExportParameters(

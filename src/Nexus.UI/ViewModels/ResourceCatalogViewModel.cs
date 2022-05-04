@@ -9,15 +9,18 @@ public abstract class ResourceCatalogViewModel
 
     private IAppState _appState;
 
-    public ResourceCatalogViewModel(string id, string parentId, IAppState appState)
+    public ResourceCatalogViewModel(CatalogInfo info, string parentId, IAppState appState)
     {
-        Id = id;
-        DisplayName = Utilities.ToSpaceFilledCatalogId(id.Substring(parentId.Length));
+        Info = info;
+        Id = info.Id;
+        DisplayName = Utilities.ToSpaceFilledCatalogId(Id.Substring(parentId.Length));
 
         _appState = appState;
     }
 
     public string Id { get; }
+
+    public CatalogInfo Info { get; }
 
     public string DisplayName { get; }
 

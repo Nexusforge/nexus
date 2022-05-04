@@ -5,13 +5,15 @@ namespace Nexus.UI.ViewModels;
 
 public class FakeResourceCatalogViewModel : ResourceCatalogViewModel
 {
-    public FakeResourceCatalogViewModel(string id, string parentId, INexusClient client, IAppState appState, Task<IList<string>> childCatalogIdsTask)
-        : base(id, parentId, appState)
+    public FakeResourceCatalogViewModel(CatalogInfo info, string parentId, INexusClient client, IAppState appState, Task<IList<CatalogInfo>> childCatalogInfosTask)
+        : base(info, parentId, appState)
     {
+        var id = Id;
+
         Func<Task<List<ResourceCatalogViewModel>>> func = async () => 
         {
-            var childCatalogIds = await childCatalogIdsTask;
-            return PrepareChildCatalogs(childCatalogIds, id, client, appState);
+            var childCatalogInfo = await childCatalogInfosTask;
+            return PrepareChildCatalogs(childCatalogInfo, id, client, appState);
         };
 
         ChildrenTask = new Lazy<Task<List<ResourceCatalogViewModel>>>(func);
@@ -20,8 +22,7 @@ public class FakeResourceCatalogViewModel : ResourceCatalogViewModel
     }
 
     private List<ResourceCatalogViewModel> PrepareChildCatalogs(
-        IList<string> 
-        childCatalogIds,
+        IList<CatalogInfo> childCatalogInfos,
         string id,
         INexusClient client,
         IAppState appState)
@@ -38,21 +39,22 @@ public class FakeResourceCatalogViewModel : ResourceCatalogViewModel
         id = id == "/" ? "" : id;
 
         var result = new List<ResourceCatalogViewModel>();
-        var groupedIds = childCatalogIds.GroupBy(childId => childId.Substring(id.Length).Split('/', count: 3)[1]);
+        var groupedInfos = childCatalogInfos.GroupBy(childInfo => childInfo.Id.Substring(id.Length).Split('/', count: 3)[1]);
 
-        foreach (var group in groupedIds)
+        foreach (var group in groupedInfos)
         {
             if (group.Count() == 1)
             {
-                var childId = group.First();
-                result.Add(new RealResourceCatalogViewModel(childId, id, client, appState));
+                var childInfo = group.First();
+                result.Add(new RealResourceCatalogViewModel(childInfo, id, client, appState));
             }
 
             else
             {
                 var childId = id + "/" + group.Key;
-                var childCatalogIdsTask = Task.FromResult((IList<string>)group.ToList());
-                result.Add(new FakeResourceCatalogViewModel(childId, id, client, appState, childCatalogIdsTask));
+                var childInfo = new CatalogInfo(childId, default!, default, default, true, false);
+                var childCatalogInfosTask = Task.FromResult((IList<CatalogInfo>)group.ToList());
+                result.Add(new FakeResourceCatalogViewModel(childInfo, id, client, appState, childCatalogInfosTask));
             }
         }
 

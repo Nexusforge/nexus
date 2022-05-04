@@ -12,7 +12,7 @@ namespace Nexus.Core
         public const string RootCatalogId = "/";
 
         private SemaphoreSlim _semaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
-        private CatalogInfo? _catalogInfo;
+        private LazyCatalogInfo? _lazyCatalogInfo;
         private CatalogContainer[]? _childCatalogContainers;
         private ICatalogManager _catalogManager;
         private IDatabaseService _databaseService;
@@ -28,6 +28,7 @@ namespace Nexus.Core
             IDataControllerService dataControllerService)
         {
             Id = catalogRegistration.Path;
+            Title = catalogRegistration.Title;
             IsTransient = catalogRegistration.IsTransient;
             Owner = owner;
             DataSourceRegistration = dataSourceRegistration;
@@ -39,7 +40,7 @@ namespace Nexus.Core
         }
 
         public string Id { get; }
-
+        public string Title { get; }
         public bool IsTransient { get; }
 
         public ClaimsPrincipal? Owner { get; }
@@ -52,7 +53,7 @@ namespace Nexus.Core
 
         public static CatalogContainer CreateRoot(ICatalogManager catalogManager, IDatabaseService databaseService)
         {
-            return new CatalogContainer(new CatalogRegistration(RootCatalogId), default!, default!, default!, catalogManager, databaseService, default!);
+            return new CatalogContainer(new CatalogRegistration(RootCatalogId, string.Empty), default!, default!, default!, catalogManager, databaseService, default!);
         }
 
         public async Task<IEnumerable<CatalogContainer>> GetChildCatalogContainersAsync(
@@ -73,20 +74,21 @@ namespace Nexus.Core
             }
         }
 
-        public async Task<CatalogInfo> GetCatalogInfoAsync(CancellationToken cancellationToken)
+#warning Use Lazy instead?
+        public async Task<LazyCatalogInfo> GetLazyCatalogInfoAsync(CancellationToken cancellationToken)
         {
             await _semaphore.WaitAsync();
 
             try
             {
-                await EnsureCatalogInfoAsync(cancellationToken);
+                await EnsureLazyCatalogInfoAsync(cancellationToken);
 
-                var catalogInfo = _catalogInfo;
+                var lazyCatalogInfo = _lazyCatalogInfo;
 
-                if (catalogInfo is null)
+                if (lazyCatalogInfo is null)
                     throw new Exception("this should never happen");
 
-                return catalogInfo;
+                return lazyCatalogInfo;
             }
             finally
             {
@@ -108,7 +110,7 @@ namespace Nexus.Core
                 Metadata = metadata;
 
                 // trigger merging of catalog and catalog overrides
-                _catalogInfo = null;
+                _lazyCatalogInfo = null;
             }
             finally
             {
@@ -116,9 +118,9 @@ namespace Nexus.Core
             }
         }
 
-        private async Task EnsureCatalogInfoAsync(CancellationToken cancellationToken)
+        private async Task EnsureLazyCatalogInfoAsync(CancellationToken cancellationToken)
         {
-            if (IsTransient || _catalogInfo is null)
+            if (IsTransient || _lazyCatalogInfo is null)
             {
                 var catalogBegin = default(DateTime);
                 var catalogEnd = default(DateTime);
@@ -146,7 +148,7 @@ namespace Nexus.Core
                 if (Metadata?.Overrides is not null)
                     catalog = catalog.Merge(Metadata.Overrides, MergeMode.NewWins);
 
-                _catalogInfo = new CatalogInfo(catalogBegin, catalogEnd, catalog);
+                _lazyCatalogInfo = new LazyCatalogInfo(catalogBegin, catalogEnd, catalog);
             }
         }
     }

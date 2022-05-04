@@ -7,10 +7,10 @@
     <Authorized>
         <Navbar />
 
-        <div class="flex flex-1">
+        <div class="flex flex-1 max-w-full overflow-y-auto">
             <Leftbar CssClass="w-64" />
 
-            <div class="flex-1 bg-gray-100 max-w-full">
+            <div class="flex-1 bg-gray-100 min-w-0"> <!-- min-w-0: if license is wider than screen => https://stackoverflow.com/a/66689926 -->
                 @Body
             </div>
 

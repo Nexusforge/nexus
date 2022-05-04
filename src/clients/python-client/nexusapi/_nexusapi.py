@@ -381,6 +381,39 @@ class RepresentationKind(Enum):
 
 
 @dataclass
+class CatalogInfo:
+    """
+    A structure for catalog information.
+
+    Args:
+        id: The identifier.
+        title: The title.
+        contact: The contact.
+        license: The license.
+        is_accessible: A boolean which indicates if the catalog is accessible.
+        is_editable: A boolean which indicates if the catalog is editable.
+    """
+
+    id: str
+    """The identifier."""
+
+    title: str
+    """The title."""
+
+    contact: Optional[str]
+    """The contact."""
+
+    license: Optional[str]
+    """The license."""
+
+    is_accessible: bool
+    """A boolean which indicates if the catalog is accessible."""
+
+    is_editable: bool
+    """A boolean which indicates if the catalog is editable."""
+
+
+@dataclass
 class CatalogTimeRange:
     """
     A catalog time range.
@@ -417,16 +450,12 @@ class CatalogMetadata:
 
     Args:
         contact: The contact.
-        is_hidden: A boolean which indicates if the catalog should be hidden.
         group_memberships: A list of groups the catalog is part of.
         overrides: Overrides for the catalog.
     """
 
     contact: Optional[str]
     """The contact."""
-
-    is_hidden: bool
-    """A boolean which indicates if the catalog should be hidden."""
 
     group_memberships: Optional[list[str]]
     """A list of groups the catalog is part of."""
@@ -804,18 +833,18 @@ class CatalogsClient:
 
         return self._client._invoke_async(ResourceCatalog, "GET", url, "application/json", None)
 
-    def get_child_catalog_ids(self, catalog_id: str) -> Awaitable[list[str]]:
+    def get_child_catalog_infos(self, catalog_id: str) -> Awaitable[list[CatalogInfo]]:
         """
-        Gets a list of child catalog identifiers for the provided parent catalog identifier.
+        Gets a list of child catalog info for the provided parent catalog identifier.
 
         Args:
             catalog_id: The parent catalog identifier.
         """
 
-        url = "/api/v1/catalogs/{catalogId}/child-catalog-ids"
+        url = "/api/v1/catalogs/{catalogId}/child-catalog-infos"
         url = url.replace("{catalogId}", quote(str(catalog_id), safe=""))
 
-        return self._client._invoke_async(list[str], "GET", url, "application/json", None)
+        return self._client._invoke_async(list[CatalogInfo], "GET", url, "application/json", None)
 
     def get_time_range(self, catalog_id: str) -> Awaitable[CatalogTimeRange]:
         """
@@ -1249,6 +1278,25 @@ class UsersClient:
         url = "/api/v1/users/generate-refresh-token"
 
         return self._client._invoke_async(str, "POST", url, "application/json", None)
+
+    def accept_license(self, catalog_id: str) -> Awaitable[StreamResponse]:
+        """
+        Accepts the license of the specified catalog.
+
+        Args:
+            catalog_id: The catalog identifier.
+        """
+
+        url = "/api/v1/users/accept-license"
+
+        queryValues: dict[str, str] = {
+            "catalogId": quote(_to_string(catalog_id), safe=""),
+        }
+
+        query: str = "?" + "&".join(f"{key}={value}" for (key, value) in queryValues.items())
+        url += query
+
+        return self._client._invoke_async(StreamResponse, "GET", url, "application/octet-stream", None)
 
     def get_users(self) -> Awaitable[list[NexusUser]]:
         """

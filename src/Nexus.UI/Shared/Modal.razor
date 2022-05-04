@@ -1,0 +1,47 @@
+﻿<div class="top-0 left-0 flex justify-center items-center fixed w-full z-50 h-full @(IsOpen ? "" : "hidden")" 
+    @onclick="CloseAsync">
+    
+    <div class="absolute top-0 left-0 w-full h-full bg-black opacity-50"></div>
+
+    <div class="absolute rounded-xl w-11/12 sm:w-[@Width] h-3/4 bg-white flex flex-col" onclick="event.stopPropagation()">
+
+        <div class="h-16 flex justify-center items-center border-b border-gray-300">
+            <h1 class="text-xl font-bold uppercase text-cyan-700">@Title</h1>
+        </div>
+
+        <div class="flex flex-col flex-1 p-3 overflow-y-auto">
+            @ChildContent
+        </div>
+
+        <div class="h-16 flex justify-end items-center border-t border-gray-300 px-5">
+            <div
+                class="w-20 p-1 rounded bg-cyan-700 flex justify-center items-center text-gray-200 cursor-pointer hover:bg-cyan-600"
+                @onmousedown="CloseAsync">
+                Close
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@code {
+    [Parameter] 
+    public bool IsOpen { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> IsOpenChanged { get; set; }
+
+    [Parameter]
+    public string Width { get; set; } = default!;
+
+    [Parameter] 
+    public string Title { get; set; } = default!;
+
+    [Parameter]
+    public RenderFragment ChildContent { get; set; } = default!;
+
+    private async Task CloseAsync()
+    {
+        await IsOpenChanged.InvokeAsync(false);
+    }
+}

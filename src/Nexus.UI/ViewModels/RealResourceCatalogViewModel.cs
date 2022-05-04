@@ -5,15 +5,17 @@ namespace Nexus.UI.ViewModels;
 
 public class RealResourceCatalogViewModel : ResourceCatalogViewModel
 {
-    public RealResourceCatalogViewModel(string id, string parentId, INexusClient client, IAppState appState)
-        : base(id, parentId, appState)
+    public RealResourceCatalogViewModel(CatalogInfo info, string parentId, INexusClient client, IAppState appState)
+        : base(info, parentId, appState)
     {
+        var id = Id;
+
         Func<Task<List<ResourceCatalogViewModel>>> func = async () => 
         {
-            var childCatalogIds = await client.Catalogs.GetChildCatalogIdsAsync(id, CancellationToken.None);
+            var childCatalogInfos = await client.Catalogs.GetChildCatalogInfosAsync(id, CancellationToken.None);
 
-            return childCatalogIds
-                .Select(childId => (ResourceCatalogViewModel)new RealResourceCatalogViewModel(childId, id, client, appState)).ToList();
+            return childCatalogInfos
+                .Select(childInfo => (ResourceCatalogViewModel)new RealResourceCatalogViewModel(childInfo, id, client, appState)).ToList();
         };
 
         ChildrenTask = new Lazy<Task<List<ResourceCatalogViewModel>>>(func);

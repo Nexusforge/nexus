@@ -7,7 +7,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Nexus.Core;
 using Nexus.Services;
+using OpenIddict.Server.AspNetCore;
 using System.Collections.ObjectModel;
+using System.Net;
+using System.Security.Claims;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Nexus.Controllers
@@ -31,6 +34,7 @@ namespace Nexus.Controllers
         // [authenticated]
         // GET      /api/users/me
         // POST     /api/users/generate-tokens
+        // POST     /api/users/accept-license?catalogId=X
 
         // [privileged]
         // GET      /api/users
@@ -183,7 +187,7 @@ namespace Nexus.Controllers
         [HttpGet("me")]
         public async Task<ActionResult<NexusUser>> GetMeAsync()
         {
-            var userId = User.FindFirst(Claims.Subject)!.Value;          
+            var userId = User.FindFirst(Claims.Subject)!.Value;
             var user = await _dbService.FindUserAsync(userId);
 
             if (user is null)
@@ -208,6 +212,41 @@ namespace Nexus.Controllers
             var tokenPair = await _authService.GenerateTokenPairAsync(user);
 
             return tokenPair.RefreshToken;
+        }
+
+        /// <summary>
+        /// Accepts the license of the specified catalog.
+        /// </summary>
+        /// <param name="catalogId">The catalog identifier.</param>
+        [HttpGet("accept-license")]
+        public async Task<IActionResult>
+            AcceptLicense(
+                [BindRequired] string catalogId)
+        {
+    #warning Is this thread safe? Maybe yes, because of scoped EF context.
+            catalogId = WebUtility.UrlDecode(catalogId);
+
+            var userId = User.FindFirst(Claims.Subject)!.Value;
+            var user = await _dbService.FindUserAsync(userId);
+
+            if (user is null)
+                return NotFound($"Could not find user {userId}.");
+
+            var newClaims = user.Claims
+                .ToDictionary(current => current.Key, current => current.Value);
+
+            var claimId = Guid.NewGuid();
+            newClaims[claimId] = new NexusClaim(NexusClaims.CAN_ACCESS_CATALOG, catalogId);
+            user.Claims = new ReadOnlyDictionary<Guid, NexusClaim>(newClaims);
+
+            await _dbService.UpdateUserAsync(user);
+
+            var properties = new AuthenticationProperties()
+            {
+                RedirectUri = "/"
+            };
+
+            return Challenge(properties, CookieAuthenticationDefaults.AuthenticationScheme);
         }
 
         #endregion
@@ -251,7 +290,7 @@ namespace Nexus.Controllers
         [HttpPut("{userId}/{claimId}")]
         public async Task<ActionResult> PutClaimAsync(
             string userId,
-            Guid claimId, 
+            Guid claimId,
             [FromBody] NexusClaim claim)
         {
 #warning Is this thread safe? Maybe yes, because of scoped EF context.

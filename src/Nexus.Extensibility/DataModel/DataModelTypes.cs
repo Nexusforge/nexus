@@ -155,6 +155,10 @@
     /// A catalog registration.
     /// </summary>
     /// <param name="Path">The absolute or relative path of the catalog.</param>
+    /// <param name="Title">The catalog title.</param>
     /// <param name="IsTransient">A boolean which indicates if the catalog and its children should be reloaded on each request.</param>
-    public record CatalogRegistration(string Path, bool IsTransient = false);
+    public record CatalogRegistration(
+        string Path,
+        string Title,
+        bool IsTransient = false);
 }

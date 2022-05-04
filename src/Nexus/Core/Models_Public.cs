@@ -217,15 +217,30 @@ namespace Nexus.Core
         Dictionary<string, string>? AdditionalInfo);
 
     /// <summary>
+    /// A structure for catalog information.
+    /// </summary>
+    /// <param name="Id">The identifier.</param>
+    /// <param name="Title">The title.</param>
+    /// <param name="Contact">The contact.</param>
+    /// <param name="License">The license.</param>
+    /// <param name="IsAccessible">A boolean which indicates if the catalog is accessible.</param>
+    /// <param name="IsEditable">A boolean which indicates if the catalog is editable.</param>
+    public record CatalogInfo(
+        string Id,
+        string Title,
+        string? Contact,
+        string? License,
+        bool IsAccessible,
+        bool IsEditable);
+
+    /// <summary>
     /// A structure for catalog metadata.
     /// </summary>
     /// <param name="Contact">The contact.</param>
-    /// <param name="IsHidden">A boolean which indicates if the catalog should be hidden.</param>
     /// <param name="GroupMemberships">A list of groups the catalog is part of.</param>
     /// <param name="Overrides">Overrides for the catalog.</param>
     public record CatalogMetadata(
         string? Contact,
-        bool IsHidden,
         string[]? GroupMemberships,
         ResourceCatalog? Overrides);
 

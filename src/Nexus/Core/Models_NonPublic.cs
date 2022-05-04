@@ -29,7 +29,7 @@ namespace Nexus.Core
         CatalogContainer Root,
         CatalogCache Cache);
 
-    internal record CatalogInfo(
+    internal record LazyCatalogInfo(
         DateTime Begin,
         DateTime End, 
         ResourceCatalog Catalog);
