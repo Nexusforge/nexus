@@ -220,7 +220,7 @@ namespace Nexus.Controllers
         /// <param name="catalogId">The catalog identifier.</param>
         [HttpGet("accept-license")]
         public async Task<IActionResult>
-            AcceptLicense(
+            AcceptLicenseAsync(
                 [BindRequired] string catalogId)
         {
     #warning Is this thread safe? Maybe yes, because of scoped EF context.
@@ -241,12 +241,17 @@ namespace Nexus.Controllers
 
             await _dbService.UpdateUserAsync(user);
 
-            var properties = new AuthenticationProperties()
+            foreach (var identity in User.Identities)
             {
-                RedirectUri = "/"
-            };
+                if (identity is not null)
+                    identity.AddClaim(new Claim(NexusClaims.CAN_ACCESS_CATALOG, catalogId));
+            }
 
-            return Challenge(properties, CookieAuthenticationDefaults.AuthenticationScheme);
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, User);
+
+            var redirectUrl = "/" + WebUtility.UrlEncode(catalogId);
+
+            return Redirect(redirectUrl);
         }
 
         #endregion

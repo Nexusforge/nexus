@@ -7,20 +7,20 @@
 
         <UITextBox 
             Label="File Period" 
-            @bind-Value="FilePeriod">
+            @bind-Value="AppState.Settings.FilePeriod">
         </UITextBox>
 
-        @if (_extensionDescriptions is not null)
+        @if (AppState.Settings.ExtensionDescriptions is not null)
         {
             <UISelect 
                 Label="File Type" 
-                Items="_items"
-                @bind-SelectedItem="FileType">
+                Items="AppState.Settings.Items"
+                @bind-SelectedItem="AppState.Settings.FileType">
             </UISelect>
 
-            @if (_options is not null)
+            @if (AppState.Settings.Options is not null)
             {
-                @foreach (var entry in _options)
+                @foreach (var entry in AppState.Settings.Options)
                 {
                     @if (entry.Key == "IntegerNumberInput" &&
                         entry.Value.TryGetValue("ConfigurationKey", out var configurationKey) &&
@@ -51,7 +51,7 @@
                         <UIOption Key="@configurationKey2" DefaultValue="defaultValue2" Store="AppState.ExportParameters.Configuration">
                             <UISelect 
                                 @bind-SelectedItem="@context.Value"
-                                Items="GetOptionItems(entry.Value)"
+                                Items="AppState.Settings.GetOptionItems(entry.Value)"
                                 Label="@label2">
                             </UISelect>
                         </UIOption>
@@ -71,104 +71,16 @@
         }
     </div>
 
-    <UIButton Icon="download-outline" Label="Export" OnClick="ExportAsync"></UIButton>
+    <UIButton Icon="download-outline" Label="Export" OnClick="AppState.Settings.ExportAsync"></UIButton>
 
 </div>
 
 @code {
-
-    private const string OPTIONS_KEY = "UI:Options";
-    private const string FORMAT_NAME_KEY = "UI:FormatName";
-    private const string TYPE_KEY = "Type";
-
     [Parameter]
     public string? CssClass { get; set; }
 
-    [Inject]
-    public IJSInProcessRuntime JSInProcessRuntime { get; set; } = default!;
-
-    private IList<ExtensionDescription>? _extensionDescriptions;
-    private Dictionary<string, string> _items = default!;
-    private Dictionary<string, Dictionary<string, string>>? _options;
-
-    private Period FilePeriod 
+    protected override Task OnInitializedAsync()
     {
-        get => new Period(AppState.ExportParameters.FilePeriod);
-        set => AppState.ExportParameters = AppState.ExportParameters with { FilePeriod = value.Value };
-    }
-
-    private string FileType
-    {
-        get 
-        {
-            return AppState.ExportParameters.Type;
-        }
-        set
-        {
-            AppState.ExportParameters = AppState.ExportParameters with { Type = value };
-            JSInProcessRuntime.InvokeVoid("nexus.util.saveSetting", "nexus.ui.file-type", value);
-            PrepareOptions();
-        }
-    }
-    
-    protected override async Task OnInitializedAsync()
-    {
-        var extensionDescriptions = (await Client.Writers
-            .GetDescriptionsAsync(CancellationToken.None))
-            .Where(description => 
-                description.AdditionalInfo is not null && 
-                description.AdditionalInfo.ContainsKey(FORMAT_NAME_KEY))
-            .ToList();
-
-        if (extensionDescriptions.Any())
-        {
-            var fileType = JSInProcessRuntime.Invoke<string?>("nexus.util.loadSetting", "nexus.ui.file-type");
-    
-            AppState.ExportParameters = AppState.ExportParameters with
-            { 
-                Type = !string.IsNullOrWhiteSpace(fileType) && extensionDescriptions.Any(extensionDescription => extensionDescription.Type == fileType)
-                    ? fileType
-                    : extensionDescriptions.First().Type 
-            };
-        }
-
-        _items = extensionDescriptions.ToDictionary(
-            description => description.Type,
-            description => description.AdditionalInfo![FORMAT_NAME_KEY]);
-
-        _extensionDescriptions = extensionDescriptions;
-
-        PrepareOptions();
-    }
-
-    public Task ExportAsync()
-    {
-        Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(AppState.ExportParameters));
-        return Task.CompletedTask;
-
-        @* return Client.Jobs.ExportAsync(AppState.ExportParameters, CancellationToken.None); *@
-    }
-
-    private void PrepareOptions()
-    {
-        if (_extensionDescriptions is null || !_extensionDescriptions.Any())
-            return;
-
-        var description = _extensionDescriptions!
-            .First(description => description.Type == FileType);
-
-        _options = description.AdditionalInfo!
-            .Where(entry => entry.Key.StartsWith(OPTIONS_KEY))
-            .GroupBy(entry => entry.Key.Split(":")[2])
-            .ToDictionary(
-                group => group.First(entry => entry.Key.EndsWith(TYPE_KEY)).Value, 
-                group => group.ToDictionary(entry => string.Join(':', entry.Key.Split(':').Skip(3)), entry => entry.Value));
-    }
-
-    private Dictionary<string, string> GetOptionItems(Dictionary<string, string> items)
-    {
-        return items
-            .Where(entry => entry.Key.StartsWith("KeyValueMap"))
-            .ToDictionary(entry => string.Join(':', entry.Key.Split(':').Skip(2)), entry => entry.Value);
+        return AppState.Settings.InitializeTask.Value;
     }
 }

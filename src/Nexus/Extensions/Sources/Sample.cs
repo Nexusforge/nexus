@@ -20,18 +20,16 @@ namespace Nexus.Sources
             6.6, 6.7, 6.9, 6.5, 6.0, 5.8, 5.3, 5.8, 6.1, 6.8
         };
 
-        public const string ParentCatalogId = "/SAMPLE";
-        public const string AccessibleCatalogId = "/SAMPLE/ACCESSIBLE";
+        public const string SampleCatalogId = "/SAMPLE";
+        public const string LocalCatalogId = "/SAMPLE/LOCAL";
         public const string RemoteCatalogId = "/SAMPLE/REMOTE";
-        public const string RestrictedCatalogId = "/SAMPLE/RESTRICTED";
 
         private const string SampleCatalogTitle = "Sample catalogs with in-memory generated data";
-        private const string AccessibleCatalogTitle = "Accessible to every user";
-        private const string RemoteCatalogTitle = "Requires the user provide additional credentials";
-        private const string RestrictedCatalogTitle = "Requires the user to accept a license";
+        private const string LocalCatalogTitle = "Simulates a local catalog";
+        private const string RemoteCatalogTitle = "Simulates a remote catalog";
 
-        public const string ForwardedUsername = "test";
-        public const string ForwardedPassword = "1234";
+        public const string RemoteUsername = "test";
+        public const string RemotePassword = "1234";
 
         #endregion
 
@@ -54,15 +52,14 @@ namespace Nexus.Sources
             if (path == "/")
                 return Task.FromResult(new CatalogRegistration[] 
                     {
-                        new CatalogRegistration(ParentCatalogId, "Sample catalogs with in-memory generated data"),
+                        new CatalogRegistration(SampleCatalogId, SampleCatalogTitle),
                     });
 
-            else if (path.TrimEnd('/') == ParentCatalogId)
+            else if (path.TrimEnd('/') == SampleCatalogId)
                 return Task.FromResult(new CatalogRegistration[]
                     {
-                        new CatalogRegistration(AccessibleCatalogId, AccessibleCatalogTitle),
+                        new CatalogRegistration(LocalCatalogId, LocalCatalogTitle),
                         new CatalogRegistration(RemoteCatalogId, RemoteCatalogTitle),
-                        new CatalogRegistration(RestrictedCatalogId, RestrictedCatalogTitle)
                     });
 
             else
@@ -71,7 +68,7 @@ namespace Nexus.Sources
 
         public Task<ResourceCatalog> GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
         {
-            if (catalogId == ParentCatalogId)
+            if (catalogId == SampleCatalogId)
                 return Task.FromResult(new ResourceCatalog(catalogId));
 
             else
@@ -103,8 +100,8 @@ namespace Nexus.Sources
                     // check credentials
                     if (catalog.Id == RemoteCatalogId)
                     {
-                        if ((Context.Configuration.TryGetValue("user", out var user) && user != ForwardedUsername) ||
-                            (Context.Configuration.TryGetValue("password", out var password) && password != ForwardedPassword))
+                        if ((Context.Configuration.TryGetValue("user", out var user) && user != RemoteUsername) ||
+                            (Context.Configuration.TryGetValue("password", out var password) && password != RemotePassword))
                             throw new Exception("The provided credentials are invalid.");
                     }
 

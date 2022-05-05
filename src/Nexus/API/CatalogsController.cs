@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Services;
-using Nexus.Sources;
 using Nexus.Utilities;
 using System.Data;
 using System.Net;
@@ -66,7 +65,7 @@ namespace Nexus.Controllers
         {
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            var response = ProcessCatalogIdAsync<ResourceCatalog>(catalogId, async catalogContainer =>
+            var response = ProcessCatalogIdAsync<ResourceCatalog>(catalogId, checkAccess: true, async catalogContainer =>
             {
                 var lazyCatalogInfo = await catalogContainer.GetLazyCatalogInfoAsync(cancellationToken);
                 return lazyCatalogInfo.Catalog;
@@ -88,7 +87,7 @@ namespace Nexus.Controllers
         {
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            var response = await ProcessCatalogIdAsync<CatalogInfo[]>(catalogId, async catalogContainer =>
+            var response = await ProcessCatalogIdAsync<CatalogInfo[]>(catalogId, checkAccess: false, async catalogContainer =>
             {
                 var childContainers = await catalogContainer.GetChildCatalogContainersAsync(cancellationToken);
 
@@ -105,11 +104,6 @@ namespace Nexus.Controllers
 
                         if (_databaseService.TryReadAttachment(childContainer.Id, "LICENSE.md", out var attachement))
                             license = new StreamReader(attachement).ReadToEnd();
-
-                        if (id == Sample.RestrictedCatalogId)
-                        {
-                            isAccessible = false;
-                        }
 
                         return new CatalogInfo(
                             id,
@@ -139,7 +133,7 @@ namespace Nexus.Controllers
         {
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            var response = ProcessCatalogIdAsync<CatalogTimeRange>(catalogId, async catalogContainer =>
+            var response = ProcessCatalogIdAsync<CatalogTimeRange>(catalogId, checkAccess: true, async catalogContainer =>
             {
                 using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(catalogContainer.DataSourceRegistration, cancellationToken);
                 return await dataSource.GetTimeRangeAsync(catalogContainer.Id, cancellationToken);
@@ -165,7 +159,7 @@ namespace Nexus.Controllers
         {
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            var response = ProcessCatalogIdAsync<CatalogAvailability>(catalogId, async catalogContainer =>
+            var response = ProcessCatalogIdAsync<CatalogAvailability>(catalogId, checkAccess: true, async catalogContainer =>
             {
                 using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(catalogContainer.DataSourceRegistration, cancellationToken);
                 return await dataSource.GetAvailabilityAsync(catalogContainer.Id, begin, end, cancellationToken);
@@ -189,7 +183,7 @@ namespace Nexus.Controllers
 
             try
             {
-                var response = ProcessCatalogIdAsync<string[]>(catalogId, catalog =>
+                var response = ProcessCatalogIdAsync<string[]>(catalogId, checkAccess: true, catalog =>
                 {
                     return Task.FromResult((ActionResult<string[]>)_databaseService.EnumerateAttachments(catalogId).ToArray());
                 }, cancellationToken);
@@ -258,7 +252,7 @@ namespace Nexus.Controllers
         {
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            var response = ProcessCatalogIdAsync<CatalogMetadata>(catalogId, async catalogContainer =>
+            var response = ProcessCatalogIdAsync<CatalogMetadata>(catalogId, checkAccess: true, async catalogContainer =>
             {
                 return await Task.FromResult(catalogContainer.Metadata);
             }, cancellationToken);
@@ -281,7 +275,7 @@ namespace Nexus.Controllers
         {
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            var response = ProcessCatalogIdAsync<object>(catalogId, async catalogContainer =>
+            var response = ProcessCatalogIdAsync<object>(catalogId, checkAccess: true, async catalogContainer =>
             {
                 var canEdit = AuthorizationUtilities.IsCatalogEditable(catalogId, User);
 
@@ -299,6 +293,7 @@ namespace Nexus.Controllers
 
         private async Task<ActionResult<T>> ProcessCatalogIdAsync<T>(
             string catalogId,
+            bool checkAccess,
             Func<CatalogContainer, Task<ActionResult<T>>> action,
             CancellationToken cancellationToken)
         {
@@ -310,7 +305,7 @@ namespace Nexus.Controllers
 
             if (catalogContainer is not null)
             {
-                if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, User))
+                if (checkAccess && !AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, User))
                     return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to access the catalog {catalogId}.");
 
                 return await action.Invoke(catalogContainer);

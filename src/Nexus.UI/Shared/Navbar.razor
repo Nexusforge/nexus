@@ -1,9 +1,21 @@
-﻿<div class="z-0 w-full bg-white py-3 pr-3 flex justify-between items-center text-slate-500 bg-gray-200 shadow-md">
-    <img class="ml-6" src="text.svg" />
+﻿@using System.Security.Claims
+<div class="z-0 w-full bg-white py-3 pr-3 flex justify-between items-center text-slate-500 bg-gray-200 shadow-md">
+
+    <img class="ml-6 w-16 sm:w-28" src="text.svg" />
 
     <div class="flex items-center">
-        <a class="text-sm text-gray-400 mx-5 hover:text-orange-500" href="api" target="_blank">API</a>
-        <div class="w-9 h-9 flex justify-center items-center rounded-full bg-cyan-900 text-white">@GetInitials(_authenticationState.User.Identity!.Name!)</div>   
+        <a class="mx-3 text-sm font-semibold px-2.5 py-0.5 rounded text-cyan-700 hover:text-orange-500" href="api" target="_blank">API</a>
+        @if (_authenticationState is not null)
+        {
+            @if (IsAdmin(_authenticationState.User))
+            {
+                <span class="mx-3 text-xs font-semibold px-2.5 py-0.5 rounded bg-orange-500 text-gray-100">admin</span>
+            }
+            <div class="mx-3 w-9 h-9 flex justify-center items-center rounded-full bg-cyan-900 text-white">@GetInitials(_authenticationState.User.Identity!.Name!)</div>   
+        }
+        <span class="mx-3 w-9 h-9 flex justify-center items-center text-2xl mdi mdi-menu xl:hidden cursor-pointer hover:text-orange-500"
+            @onclick="OpenHamburgerMenu">
+        </span>
     </div>
 </div>
 
@@ -12,11 +24,20 @@
     [CascadingParameter]
     public Task<AuthenticationState> GetAuthenticationStateTask { get; set; } = default!;
 
+    [Parameter]
+    public Action OpenHamburgerMenu { get; set; } = default!;
+
     private AuthenticationState _authenticationState = default!;
 
     protected override async Task OnInitializedAsync()
     {
         _authenticationState = await GetAuthenticationStateTask;
+    }
+
+    private bool IsAdmin(ClaimsPrincipal user)
+    {
+        return user
+            .HasClaim(claim => claim.Type == "IsAdmin" && claim.Value == "true");
     }
 
     private string GetInitials(string name)

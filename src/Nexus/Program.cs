@@ -1,13 +1,10 @@
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.EntityFrameworkCore;
 using Nexus.Core;
 using Nexus.Services;
-using Nexus.Sources;
 using Serilog;
 using System.Globalization;
-using System.Text;
 using System.Text.Json;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 

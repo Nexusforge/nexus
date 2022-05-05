@@ -1,0 +1,127 @@
+﻿@inject IAppState AppState
+
+<div class="top-0 left-0 flex justify-end items-center fixed w-full z-50 h-full @(IsOpen ? "" : "hidden")" 
+    @onclick="CloseAsync">
+    
+    <div class="absolute top-0 left-0 w-full h-full bg-black opacity-50"></div>
+
+    <div class="absolute @Width h-full bg-cyan-900 flex flex-col p-3 overflow-y-auto" onclick="event.stopPropagation()">
+
+        <div class="flex justify-between text-gray-200">
+            <div class="p-4 flex flex-col justify-center items-center hover:text-orange-500 cursor-pointer">
+                <span class="text-2xl mdi mdi-folder-open mb-1"></span>
+                <span class="text-sm">Load</span>
+            </div>
+            <div class="p-4 flex flex-col justify-center items-center hover:text-orange-500 cursor-pointer">
+                <span class="text-2xl mdi mdi-file-download mb-1"></span>
+                <span class="text-sm">Save</span>
+            </div>
+            <div class="p-4 flex flex-col justify-center items-center hover:text-orange-500 cursor-pointer">
+                <span class="text-2xl mdi mdi-chart-areaspline mb-1"></span>
+                <span class="text-sm">Visualize</span>
+            </div>
+        </div>
+
+        <div>
+            <UIDatePicker Label="From (UTC)" @bind-Value="AppState.Settings.Begin">
+            </UIDatePicker>
+
+            <UIDatePicker Label="To (UTC)" @bind-Value="AppState.Settings.End">
+            </UIDatePicker>
+
+            <UITextBox Label="Sample Period" @bind-Value="AppState.Settings.SamplePeriod">
+            </UITextBox>
+        </div>
+
+        <div>
+
+            <UITextBox 
+                Label="File Period" 
+                @bind-Value="AppState.Settings.FilePeriod">
+            </UITextBox>
+
+            @if (AppState.Settings.ExtensionDescriptions is not null)
+            {
+                <UISelect 
+                    Label="File Type" 
+                    Items="AppState.Settings.Items"
+                    @bind-SelectedItem="AppState.Settings.FileType">
+                </UISelect>
+
+                @if (AppState.Settings.Options is not null)
+                {
+                    @foreach (var entry in AppState.Settings.Options)
+                    {
+                        @if (entry.Key == "IntegerNumberInput" &&
+                            entry.Value.TryGetValue("ConfigurationKey", out var configurationKey) &&
+                            entry.Value.TryGetValue("Label", out var label) &&
+                            entry.Value.TryGetValue("DefaultValue", out var defaultValueString) &&
+                            entry.Value.TryGetValue("Minmum", out var minmumString) &&
+                            entry.Value.TryGetValue("Maximum", out var maximumString) &&
+                            int.TryParse(defaultValueString, out var defaultValue) &&
+                            int.TryParse(minmumString, out var minimum) &&
+                            int.TryParse(maximumString, out var maximum))
+                        {
+                            <UIOption Key="@configurationKey" DefaultValue="defaultValue" Store="AppState.ExportParameters.Configuration">
+                                <ChildContent>
+                                    <UINumericTextBox 
+                                        @bind-Value="@context.Value"
+                                        Label="@label"
+                                        Minimum="minimum"
+                                        Maximum="maximum">
+                                    </UINumericTextBox>
+                                </ChildContent>
+                            </UIOption>
+                        }
+                        else if (entry.Key == "Select" &&
+                            entry.Value.TryGetValue("ConfigurationKey", out var configurationKey2) &&
+                            entry.Value.TryGetValue("Label", out var label2) &&
+                            entry.Value.TryGetValue("DefaultValue", out var defaultValue2))
+                        {
+                            <UIOption Key="@configurationKey2" DefaultValue="defaultValue2" Store="AppState.ExportParameters.Configuration">
+                                <UISelect 
+                                    @bind-SelectedItem="@context.Value"
+                                    Items="AppState.Settings.GetOptionItems(entry.Value)"
+                                    Label="@label2">
+                                </UISelect>
+                            </UIOption>
+                        }
+                    }
+                }
+            }
+
+        </div>
+
+        <div class="flex-1">
+            @foreach (var selection in AppState.SelectedCatalogItems)
+            {
+                <CatalogItemSelectionView 
+                    CatalogItemSelection="selection" 
+                    OnDoubleClick="() => AppState.SelectedCatalogItems.Remove(selection)" />
+            }
+        </div>
+
+        <UIButton Icon="download-outline" Label="Export" OnClick="AppState.Settings.ExportAsync"></UIButton>
+    </div>
+</div>
+
+@code {
+    [Parameter] 
+    public bool IsOpen { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> IsOpenChanged { get; set; }
+
+    [Parameter]
+    public string Width { get; set; } = default!;
+
+    private async Task CloseAsync()
+    {
+        await IsOpenChanged.InvokeAsync(false);
+    }
+
+    protected override Task OnInitializedAsync()
+    {
+        return AppState.Settings.InitializeTask.Value;
+    }
+}

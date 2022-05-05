@@ -13,7 +13,7 @@
         }
     </div>
 
-    @if (Catalog is RealResourceCatalogViewModel && !Catalog.Info.IsAccessible)
+    @if (Catalog is RealResourceCatalogViewModel && Catalog.Info.IsAccessible)
     {
         <div class="flex justify-between items-center flex-wrap text-gray-500">
             <div class="text-sm">

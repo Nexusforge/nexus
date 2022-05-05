@@ -21,15 +21,19 @@ var httpClient = new HttpClient
 };
 
 var client = new NexusClient(httpClient);
-var appState = new AppState((INexusClient)client);
-
-appState.AuthenticationSchemes = await client.Users.GetAuthenticationSchemesAsync();
+var authenticationSchemes = await client.Users.GetAuthenticationSchemesAsync();
 
 builder.Services
     .AddAuthorizationCore()
     .AddSingleton<INexusClient>(client)
-    .AddSingleton(serviceProvider => (IJSInProcessRuntime)serviceProvider.GetRequiredService<IJSRuntime>())
-    .AddSingleton<IAppState>(appState)
+    .AddSingleton<IJSInProcessRuntime>(serviceProvider => (IJSInProcessRuntime)serviceProvider.GetRequiredService<IJSRuntime>())
+    .AddSingleton<IAppState>(serviceProvider => 
+    {
+        var jSInProcessRuntime = serviceProvider.GetRequiredService<IJSInProcessRuntime>();
+        var appState = new AppState(authenticationSchemes, (INexusClient)client, jSInProcessRuntime);
+
+        return appState;
+    })
     .AddSingleton<TypeFaceService>()
     .AddScoped<AuthenticationStateProvider, NexusAuthenticationStateProvider>();
 
