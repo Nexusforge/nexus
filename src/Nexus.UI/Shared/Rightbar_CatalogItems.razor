@@ -1,0 +1,10 @@
+﻿@inject IAppState AppState
+
+<div class="flex-1">
+    @foreach (var selection in AppState.SelectedCatalogItems)
+    {
+        <CatalogItemSelectionView 
+            CatalogItemSelection="selection" 
+            OnDoubleClick="() => AppState.SelectedCatalogItems.Remove(selection)" />
+    }
+</div>

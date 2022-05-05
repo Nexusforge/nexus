@@ -1,86 +1,12 @@
-﻿@inject IAppState AppState
-@inject INexusClient Client
+﻿<div class="bg-cyan-900 hidden xl:flex flex-col p-3 @CssClass">
 
-<div class="bg-cyan-900 hidden xl:flex flex-col p-3 @CssClass">
-
-    <div>
-
-        <UITextBox 
-            Label="File Period" 
-            @bind-Value="AppState.Settings.FilePeriod">
-        </UITextBox>
-
-        @if (AppState.Settings.ExtensionDescriptions is not null)
-        {
-            <UISelect 
-                Label="File Type" 
-                Items="AppState.Settings.Items"
-                @bind-SelectedItem="AppState.Settings.FileType">
-            </UISelect>
-
-            @if (AppState.Settings.Options is not null)
-            {
-                @foreach (var entry in AppState.Settings.Options)
-                {
-                    @if (entry.Key == "IntegerNumberInput" &&
-                        entry.Value.TryGetValue("ConfigurationKey", out var configurationKey) &&
-                        entry.Value.TryGetValue("Label", out var label) &&
-                        entry.Value.TryGetValue("DefaultValue", out var defaultValueString) &&
-                        entry.Value.TryGetValue("Minmum", out var minmumString) &&
-                        entry.Value.TryGetValue("Maximum", out var maximumString) &&
-                        int.TryParse(defaultValueString, out var defaultValue) &&
-                        int.TryParse(minmumString, out var minimum) &&
-                        int.TryParse(maximumString, out var maximum))
-                    {
-                        <UIOption Key="@configurationKey" DefaultValue="defaultValue" Store="AppState.ExportParameters.Configuration">
-                            <ChildContent>
-                                <UINumericTextBox 
-                                    @bind-Value="@context.Value"
-                                    Label="@label"
-                                    Minimum="minimum"
-                                    Maximum="maximum">
-                                </UINumericTextBox>
-                            </ChildContent>
-                        </UIOption>
-                    }
-                    else if (entry.Key == "Select" &&
-                        entry.Value.TryGetValue("ConfigurationKey", out var configurationKey2) &&
-                        entry.Value.TryGetValue("Label", out var label2) &&
-                        entry.Value.TryGetValue("DefaultValue", out var defaultValue2))
-                    {
-                        <UIOption Key="@configurationKey2" DefaultValue="defaultValue2" Store="AppState.ExportParameters.Configuration">
-                            <UISelect 
-                                @bind-SelectedItem="@context.Value"
-                                Items="AppState.Settings.GetOptionItems(entry.Value)"
-                                Label="@label2">
-                            </UISelect>
-                        </UIOption>
-                    }
-                }
-            }
-        }
-
-    </div>
-
-    <div class="flex-1">
-        @foreach (var selection in AppState.SelectedCatalogItems)
-        {
-            <CatalogItemSelectionView 
-                CatalogItemSelection="selection" 
-                OnDoubleClick="() => AppState.SelectedCatalogItems.Remove(selection)" />
-        }
-    </div>
-
-    <UIButton Icon="download-outline" Label="Export" OnClick="AppState.Settings.ExportAsync"></UIButton>
+    <Rightbar_Settings />
+    <Rightbar_CatalogItems />
+    <Rightbar_Actions />
 
 </div>
 
 @code {
     [Parameter]
     public string? CssClass { get; set; }
-
-    protected override Task OnInitializedAsync()
-    {
-        return AppState.Settings.InitializeTask.Value;
-    }
 }

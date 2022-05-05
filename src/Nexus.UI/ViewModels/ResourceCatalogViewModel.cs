@@ -28,6 +28,7 @@ public abstract class ResourceCatalogViewModel
 
     public bool IsOpen { get; set; }
 
+    public ResourceCatalog? Catalog { get; private set; }
     public List<ResourceCatalogViewModel>? Children { get; private set; }
 
     protected Lazy<Task<List<ResourceCatalogViewModel>>> ChildrenTask { get; set; } = default!;
@@ -46,6 +47,7 @@ public abstract class ResourceCatalogViewModel
 
         if (IsSelected)
         {
+            Catalog = await CatalogTask.Value;
             Children = await ChildrenTask.Value;
             isOpen = !IsOpen;
             _appState.SelectedCatalog = this;

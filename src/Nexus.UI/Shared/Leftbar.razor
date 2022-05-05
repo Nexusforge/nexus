@@ -1,35 +1,7 @@
-﻿@inject IAppState AppState
+﻿<div class="bg-cyan-900 hidden xl:flex flex-col justify-between p-3 @CssClass">
 
-<div class="bg-cyan-900 hidden xl:flex flex-col justify-between p-3 @CssClass">
-
-    <div>
-        <UIDatePicker Label="From (UTC)" @bind-Value="AppState.Settings.Begin">
-        </UIDatePicker>
-
-        <UIDatePicker Label="To (UTC)" @bind-Value="AppState.Settings.End">
-        </UIDatePicker>
-
-        <UITextBox Label="Sample Period" @bind-Value="AppState.Settings.SamplePeriod">
-        </UITextBox>
-
-        <UICheckbox Label="Begin at zero">
-        </UICheckbox>
-    </div>
-
-    <div class="flex justify-between text-gray-200">
-        <div class="p-4 flex flex-col justify-center items-center hover:text-orange-500 cursor-pointer">
-            <span class="text-2xl mdi mdi-folder-open mb-1"></span>
-            <span class="text-sm">Load</span>
-        </div>
-        <div class="p-4 flex flex-col justify-center items-center hover:text-orange-500 cursor-pointer">
-            <span class="text-2xl mdi mdi-file-download mb-1"></span>
-            <span class="text-sm">Save</span>
-        </div>
-        <div class="p-4 flex flex-col justify-center items-center hover:text-orange-500 cursor-pointer">
-            <span class="text-2xl mdi mdi-chart-areaspline mb-1"></span>
-            <span class="text-sm">Visualize</span>
-        </div>
-    </div>
+    <Leftbar_Settings />
+    <Leftbar_Actions />
 
 </div>
 
@@ -37,9 +9,4 @@
 
     [Parameter]
     public string? CssClass { get; set; }
-
-    protected override Task OnInitializedAsync()
-    {
-        return AppState.Settings.InitializeTask.Value;
-    }
 }
