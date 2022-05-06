@@ -1,33 +1,44 @@
+using System.ComponentModel;
 using Microsoft.JSInterop;
 using Nexus.Api;
 using Nexus.UI.ViewModels;
 
 namespace Nexus.UI.Core;
 
-public interface IAppState
+public interface IAppState : INotifyPropertyChanged
 {
     IList<AuthenticationSchemeDescription> AuthenticationSchemes { get; }
 
     TimeSpan SamplePeriod { get; set; }
     ExportParameters ExportParameters { get; set; }
     SettingsViewModel Settings { get; }
-    List<CatalogItemSelection> SelectedCatalogItems { get; set; }
+    IReadOnlyList<CatalogItemViewModel> SelectedCatalogItems { get; }
 
     ResourceCatalogViewModel RootCatalog { get; }
     ResourceCatalogViewModel? SelectedCatalog { get; set; }
-    SortedDictionary<string, List<Resource>>? GroupedResources { get; }
-    List<Resource>? SelectedResourceGroup { get; }
+    SortedDictionary<string, List<CatalogItemViewModel>>? CatalogItemsMap { get; }
+    List<CatalogItemViewModel>? CatalogItems { get; set; }
 
     string? SearchString { get; set; }
 
     Task SelectCatalogAsync(string? catalogId);
+    bool IsSelected(CatalogItemViewModel catalogItem);
+    void ToggleCatalogItemSelection(CatalogItemViewModel catalogItem);
 }
 
 public class AppState : IAppState
 {
+    #region Events
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    #endregion
+
     #region Fields
 
+    private List<CatalogItemViewModel> _selectedCatalogItems = new List<CatalogItemViewModel>();
     private const string GROUP_KEY = "Groups";
+
 
     #endregion
 
@@ -66,13 +77,12 @@ public class AppState : IAppState
     public TimeSpan SamplePeriod { get; set; } = TimeSpan.FromSeconds(1);
     public ExportParameters ExportParameters { get; set; }
     public SettingsViewModel Settings { get; }
-    public List<CatalogItemSelection> SelectedCatalogItems { get; set; } = new List<CatalogItemSelection>();
-
+    public IReadOnlyList<CatalogItemViewModel> SelectedCatalogItems => _selectedCatalogItems;
 
     public ResourceCatalogViewModel RootCatalog { get; }
     public ResourceCatalogViewModel? SelectedCatalog { get; set; }
-    public SortedDictionary<string, List<Resource>>? GroupedResources { get; private set; }
-    public List<Resource>? SelectedResourceGroup { get; private set; }
+    public SortedDictionary<string, List<CatalogItemViewModel>>? CatalogItemsMap { get; private set; }
+    public List<CatalogItemViewModel>? CatalogItems { get; set; }
 
     public string? SearchString { get; set; }
 
@@ -89,26 +99,55 @@ public class AppState : IAppState
 
         if (SelectedCatalog is null || SelectedCatalog.Catalog is null)
         {
-            GroupedResources = null;
-            SelectedResourceGroup = null;
+            CatalogItemsMap = null;
+            CatalogItems = null;
         }
 
         else
         {
-            GroupedResources = GroupResources(SelectedCatalog.Catalog);
-            SelectedResourceGroup = GroupedResources?.Values.FirstOrDefault();
+            CatalogItemsMap = GroupCatalogItems(SelectedCatalog.Catalog);
+            CatalogItems = CatalogItemsMap?.Values.FirstOrDefault();
         }
     }
 
-    private SortedDictionary<string, List<Resource>>? GroupResources(ResourceCatalog catalog)
+    public bool IsSelected(CatalogItemViewModel catalogItem)
+    {
+        return TryFindCatalogItem(catalogItem) is not null;
+    }
+
+    public void ToggleCatalogItemSelection(CatalogItemViewModel catalogItem)
+    {
+        var reference = TryFindCatalogItem(catalogItem);
+
+        if (reference is null)
+            _selectedCatalogItems.Add(catalogItem);
+        
+        else
+            _selectedCatalogItems.Remove(reference);
+
+        this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedCatalogItems)));
+    }
+
+    private CatalogItemViewModel? TryFindCatalogItem(CatalogItemViewModel catalogItem)
+    {
+        return SelectedCatalogItems.FirstOrDefault(current => 
+            current.Catalog.Id == catalogItem.Catalog.Id &&
+            current.Resource.Id == catalogItem.Resource.Id &&
+            current.Representation.SamplePeriod == catalogItem.Representation.SamplePeriod);
+    }
+
+    private SortedDictionary<string, List<CatalogItemViewModel>>? GroupCatalogItems(ResourceCatalog catalog)
     {
         if (catalog.Resources is null)
             return null;
 
-        var groupedResources = new SortedDictionary<string, List<Resource>>();
+        var catalogItemsMap = new SortedDictionary<string, List<CatalogItemViewModel>>();
 
         foreach (var resource in catalog.Resources)
         {
+            if (resource.Representations is null)
+                continue;
+
             List<string> groupNames;
 
             if (resource.Properties is null)
@@ -119,7 +158,7 @@ public class AppState : IAppState
             else
             {
                 groupNames = resource.Properties
-                    .Where(entry => entry.Value.StartsWith(GROUP_KEY + ":"))
+                    .Where(entry => entry.Key.StartsWith(GROUP_KEY + ":"))
                     .Select(entry => entry.Value)
                     .ToList();
             }
@@ -129,19 +168,22 @@ public class AppState : IAppState
 
             foreach (var groupName in groupNames)
             {
-                var success = groupedResources.TryGetValue(groupName, out var group);
+                var success = catalogItemsMap.TryGetValue(groupName, out var group);
 
                 if (!success)
                 {
-                    group = new List<Resource>();
-                    groupedResources[groupName] = group;
+                    group = new List<CatalogItemViewModel>();
+                    catalogItemsMap[groupName] = group;
                 }
 
-                group!.Add(resource);
+                foreach (var representation in resource.Representations)
+                {
+                    group!.Add(new CatalogItemViewModel(catalog, resource, representation));
+                }
             }
         }
 
-        return groupedResources;
+        return catalogItemsMap;
     }
 
     #endregion

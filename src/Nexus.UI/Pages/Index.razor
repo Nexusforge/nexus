@@ -18,7 +18,7 @@
     }
     else
     {
-        <SelectedResourceCatalogView Catalog="AppState.SelectedCatalog" />
+        <ResourceCatalogDetailView Catalog="AppState.SelectedCatalog" />
     }
 </div>
 
@@ -46,37 +46,8 @@ else if (!AppState.SelectedCatalog.Info.IsAccessible && AppState.SelectedCatalog
 }
 else
 {
-    <div class="sm:row-start-3 sm:col-start-2 sm:col-span-2 flex bg-gray-100 p-2">
-        <div class="flex flex-col">
-            <div>
-                <UITextBox
-                    @bind-Value="AppState.SearchString"
-                    Label="Search" 
-                    Icon="magnify"
-                    DarkMode="false">
-                </UITextBox>
-
-                @if (AppState.GroupedResources is not null)
-                {
-                    @foreach (var entry in AppState.GroupedResources)
-                    {
-                        <div class="flex justify-between items-end p-1 border border-transparent hover:border-cyan-600 cursor-pointer">
-                            <span class="font-bold text-cyan-800">@entry.Key</span>
-                            <span class="text-sm text-gray-500">@entry.Value.Count</span>
-                        </div>
-                    }
-                }
-            </div>
-        </div>
-        <div class="row-start-3 col-start-3 flex flex-col">
-            @if (AppState.SelectedResourceGroup is not null)
-            {
-                @foreach (var resource in AppState.SelectedResourceGroup)
-                {
-                    <span>@resource.Id</span>
-                }
-            }
-        </div>
+    <div class="sm:row-start-3 sm:col-start-2 sm:col-span-2 flex bg-gray-100 overflow-y-auto min-h-[250px]">
+        <ResourceView />
     </div>
 }
 

@@ -1,10 +1,22 @@
 ﻿@inject IAppState AppState
 
 <div class="flex-1">
-    @foreach (var selection in AppState.SelectedCatalogItems)
+    @foreach (var catalogItem in AppState.SelectedCatalogItems)
     {
         <CatalogItemSelectionView 
-            CatalogItemSelection="selection" 
-            OnDoubleClick="() => AppState.SelectedCatalogItems.Remove(selection)" />
+            CatalogItem="catalogItem" 
+            OnDoubleClick="() => AppState.ToggleCatalogItemSelection(catalogItem)" />
     }
 </div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        AppState.PropertyChanged += (sender, e) => 
+        {
+            if (e.PropertyName == nameof(AppState.SelectedCatalogItems))
+                this.StateHasChanged();
+        };
+    }
+}
+

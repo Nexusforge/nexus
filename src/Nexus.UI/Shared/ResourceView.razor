@@ -1,0 +1,62 @@
+﻿@inject IAppState AppState
+
+<div class="flex w-full">
+
+    <div class="flex flex-col p-2 select-none">
+        <UITextBox
+            @bind-Value="AppState.SearchString"
+            Label="Search" 
+            Icon="magnify"
+            DarkMode="false">
+        </UITextBox>
+
+        <div class="overflow-y-auto">
+            @if (AppState.CatalogItemsMap is not null)
+            {
+                @foreach (var entry in AppState.CatalogItemsMap)
+                {
+                    @if (entry.Value == AppState.CatalogItems)
+                    {
+                        <div class="flex justify-between items-end p-0.5 cursor-pointer bg-white">
+                            <span class="font-bold text-orange-500">@entry.Key</span>
+                            <span class="text-sm text-gray-500">@entry.Value.Count</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="flex justify-between items-end p-0.5 cursor-pointer"
+                            @onclick="() => AppState.CatalogItems = entry.Value">
+                            <span class="font-bold text-cyan-800">@entry.Key</span>
+                            <span class="text-sm text-gray-500">@entry.Value.Count</span>
+                        </div>
+                    }
+                }
+            }
+        </div>
+    </div>
+    <div class="flex-1 flex flex-col p-2 overflow-y-auto select-none">
+        @if (AppState.CatalogItems is not null)
+        {
+            <Virtualize Items="AppState.CatalogItems" Context="catalogItem">
+                <div class="flex flex-col p-1 hover:bg-white cursor-pointer @(AppState.IsSelected(catalogItem) ? "bg-white" : "")"
+                    @onclick="() => AppState.ToggleCatalogItemSelection(catalogItem)">
+                    <div class="flex items-center">
+                        <span class="font-bold @(AppState.IsSelected(catalogItem) ? "text-orange-500" : "text-cyan-800")">
+                            @catalogItem.Resource.Id&nbsp;:&nbsp;@Utilities.ToUnitString(catalogItem.Representation.SamplePeriod)
+                        </span>
+                        <span class="text-gray-500 mx-2">@catalogItem.Unit</span>
+
+                        @* @if (catalogItem.Warning is not null)
+                        { *@
+                            <span class="mdi mdi-alert ml-2 mr-1 text-orange-500"></span>
+                            <span class="text-orange-500">This is a warning!! Alarma!</span>
+                            <span class="text-orange-500">@catalogItem.Warning</span>
+                        @* } *@
+                    </div>
+                    <span class="text-sm text-gray-500">@catalogItem.Description</span>
+                </div>
+            </Virtualize>
+        }
+    </div>
+
+</div>
