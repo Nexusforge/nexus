@@ -5,22 +5,32 @@
 <AuthorizeView>
 
     <Authorized>
-        <Navbar OpenHamburgerMenu="() => _isHamburgerMenuOpen = true" />
 
-        <div class="flex flex-1 max-w-full overflow-y-auto">
-            @if (!_isHamburgerMenuOpen)
-            {
-                <Leftbar CssClass="w-64" />
-            }
+        <div class="flex-1 gap-x-0 grid sm:grid-cols-[auto,1fr,1fr,auto] sm:grid-rows-[auto,auto,1fr]">
 
-            <div class="flex-1 bg-gray-100 min-w-0"> <!-- min-w-0: if license is wider than screen => https://stackoverflow.com/a/66689926 -->
-                @Body
+            <div class="sm:col-span-4">
+                <Navbar OpenHamburgerMenu="() => _isHamburgerMenuOpen = true" />
             </div>
 
             @if (!_isHamburgerMenuOpen)
             {
-                <Rightbar CssClass="w-64" />
+                <div class="col-start-1 row-start-2 row-span-2 bg-cyan-900 hidden xl:flex flex-col justify-between p-3">
+                    <Leftbar_Settings />
+                    <Leftbar_Actions />
+                </div>
             }
+
+            @Body
+
+            @if (!_isHamburgerMenuOpen)
+            {
+                <div class="col-start-4 row-start-2 row-span-2 bg-cyan-900 hidden xl:flex flex-col p-3">
+                    <Rightbar_Settings />
+                    <Rightbar_CatalogItems />
+                    <Rightbar_Actions />
+                </div>
+            }
+
         </div>
         @if (_isHamburgerMenuOpen)
         {

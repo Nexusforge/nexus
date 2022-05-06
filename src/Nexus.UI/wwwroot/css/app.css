@@ -3,8 +3,10 @@
 }
 
 #app {
+    height: min-content;
     min-height: 100vh;
-    max-height: 100vh;
+    display: flex;
+    flex-direction: column;
     width: 100vw;
     color: rgb(30, 41, 59);
     display: flex;

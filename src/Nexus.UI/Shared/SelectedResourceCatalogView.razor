@@ -1,8 +1,12 @@
 ﻿@using System.Net
-<div class="flex flex-col h-full w-full">
-    <h1 class="font-bold text-cyan-700">@Utilities.ToSpaceFilledCatalogId(Catalog.Id)</h1>
+<div class="h-full flex flex-col">
+    <h1 class="py-0.5 font-bold text-cyan-700">
+        @Utilities.ToSpaceFilledCatalogId(Catalog.Id)
+        @* Fake icon for correct height *@
+        <span class="text-xl mdi-chevron-down invisible"></span>
+    </h1>
 
-    <div class="flex-1 overflow-y-auto text-gray-500">
+    <div class="flex-1 overflow-auto text-gray-500">
         @if (_readme is not null)
         {
             <MarkdownRenderer MarkdownString="@_readme"></MarkdownRenderer>
