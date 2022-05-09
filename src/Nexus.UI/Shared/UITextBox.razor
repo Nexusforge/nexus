@@ -6,7 +6,7 @@
 
     <div class="w-full pt-2 flex @TextColor">
         <input @bind="Value" @onfocus="() => _hasFocus = true" @onblur="() => _hasFocus = false"
-            class="flex-1 focus:outline-none @PlaceHolderColor bg-transparent focus:placeholder:placeholder-transparent"
+            class="flex-1 w-full focus:outline-none @PlaceHolderColor bg-transparent focus:placeholder:placeholder-transparent"
             type="text" 
             placeholder="@Label">
         @if (Icon is not null)

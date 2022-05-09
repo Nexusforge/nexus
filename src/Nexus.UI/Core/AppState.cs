@@ -12,7 +12,6 @@ public interface IAppState : INotifyPropertyChanged
     TimeSpan SamplePeriod { get; set; }
     ExportParameters ExportParameters { get; set; }
     SettingsViewModel Settings { get; }
-    IReadOnlyList<CatalogItemViewModel> SelectedCatalogItems { get; }
 
     ResourceCatalogViewModel RootCatalog { get; }
     ResourceCatalogViewModel? SelectedCatalog { get; set; }
@@ -22,8 +21,6 @@ public interface IAppState : INotifyPropertyChanged
     string? SearchString { get; set; }
 
     Task SelectCatalogAsync(string? catalogId);
-    bool IsSelected(CatalogItemViewModel catalogItem);
-    void ToggleCatalogItemSelection(CatalogItemViewModel catalogItem);
 }
 
 public class AppState : IAppState
@@ -36,9 +33,7 @@ public class AppState : IAppState
 
     #region Fields
 
-    private List<CatalogItemViewModel> _selectedCatalogItems = new List<CatalogItemViewModel>();
     private const string GROUP_KEY = "Groups";
-
 
     #endregion
 
@@ -77,7 +72,6 @@ public class AppState : IAppState
     public TimeSpan SamplePeriod { get; set; } = TimeSpan.FromSeconds(1);
     public ExportParameters ExportParameters { get; set; }
     public SettingsViewModel Settings { get; }
-    public IReadOnlyList<CatalogItemViewModel> SelectedCatalogItems => _selectedCatalogItems;
 
     public ResourceCatalogViewModel RootCatalog { get; }
     public ResourceCatalogViewModel? SelectedCatalog { get; set; }
@@ -108,32 +102,8 @@ public class AppState : IAppState
             CatalogItemsMap = GroupCatalogItems(SelectedCatalog.Catalog);
             CatalogItems = CatalogItemsMap?.Values.FirstOrDefault();
         }
-    }
 
-    public bool IsSelected(CatalogItemViewModel catalogItem)
-    {
-        return TryFindCatalogItem(catalogItem) is not null;
-    }
-
-    public void ToggleCatalogItemSelection(CatalogItemViewModel catalogItem)
-    {
-        var reference = TryFindCatalogItem(catalogItem);
-
-        if (reference is null)
-            _selectedCatalogItems.Add(catalogItem);
-        
-        else
-            _selectedCatalogItems.Remove(reference);
-
-        this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedCatalogItems)));
-    }
-
-    private CatalogItemViewModel? TryFindCatalogItem(CatalogItemViewModel catalogItem)
-    {
-        return SelectedCatalogItems.FirstOrDefault(current => 
-            current.Catalog.Id == catalogItem.Catalog.Id &&
-            current.Resource.Id == catalogItem.Resource.Id &&
-            current.Representation.SamplePeriod == catalogItem.Representation.SamplePeriod);
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CatalogItemsMap)));
     }
 
     private SortedDictionary<string, List<CatalogItemViewModel>>? GroupCatalogItems(ResourceCatalog catalog)

@@ -1,11 +1,18 @@
+using System.ComponentModel;
 using Microsoft.JSInterop;
 using Nexus.Api;
 using Nexus.UI.Core;
 
 namespace Nexus.UI.ViewModels;
 
-public class SettingsViewModel
+public class SettingsViewModel : INotifyPropertyChanged
 {
+    #region Events
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    #endregion
+
     private IAppState _appState;
     private INexusClient _client;
     private IJSInProcessRuntime _jSInProcessRuntime;
@@ -13,6 +20,8 @@ public class SettingsViewModel
     private const string OPTIONS_KEY = "UI:Options";
     private const string FORMAT_NAME_KEY = "UI:FormatName";
     private const string TYPE_KEY = "Type";
+
+    private List<CatalogItemSelectionViewModel> _selectedCatalogItems = new List<CatalogItemSelectionViewModel>();
 
     public SettingsViewModel(IAppState appState, IJSInProcessRuntime jSInProcessRuntime, INexusClient client)
     {
@@ -56,9 +65,14 @@ public class SettingsViewModel
     public Period SamplePeriod 
     {
         get => new Period(_appState.SamplePeriod);
-        set => _appState.SamplePeriod = value.Value == default 
-            ? TimeSpan.FromSeconds(1) 
-            : value.Value;
+        set
+        {
+            _appState.SamplePeriod = value.Value == default 
+                ? TimeSpan.FromSeconds(1) 
+                : value.Value;
+
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SamplePeriod)));
+        }
     }
 
     public Period FilePeriod 
@@ -81,6 +95,13 @@ public class SettingsViewModel
         }
     }
     
+    public IDictionary<string, string> Configuration
+    {
+        get => _appState.ExportParameters.Configuration;
+    }
+
+    public IReadOnlyList<CatalogItemSelectionViewModel> SelectedCatalogItems => _selectedCatalogItems;
+
     public IList<ExtensionDescription>? ExtensionDescriptions { get; private set; }
     public Dictionary<string, string> Items { get; private set; } = default!;
     public Dictionary<string, Dictionary<string, string>>? Options { get; private set; }
@@ -100,6 +121,67 @@ public class SettingsViewModel
         return items
             .Where(entry => entry.Key.StartsWith("KeyValueMap"))
             .ToDictionary(entry => string.Join(':', entry.Key.Split(':').Skip(2)), entry => entry.Value);
+    }
+
+    public void AddRepresentationKind(CatalogItemSelectionViewModel selectedItem, RepresentationKind kind)
+    {
+        selectedItem.Kinds.Add(kind);
+    }
+
+    public void RemoveRepresentationKind(CatalogItemSelectionViewModel selectedItem, RepresentationKind kind)
+    {
+        selectedItem.Kinds.Remove(kind);
+        EnsureDefaultRepresentationKind(selectedItem);
+    }
+
+    public bool IsSelected(CatalogItemViewModel catalogItem)
+    {
+        return TryFindSelectedCatalogItem(catalogItem) is not null;
+    }
+
+    public void ToggleCatalogItemSelection(CatalogItemViewModel catalogItem)
+    {
+        var reference = TryFindSelectedCatalogItem(catalogItem);
+
+        if (reference is null)
+        {
+            var selectedItem = new CatalogItemSelectionViewModel(catalogItem);
+            EnsureDefaultRepresentationKind(selectedItem);
+            _selectedCatalogItems.Add(selectedItem);
+        }
+        
+        else
+        {
+            _selectedCatalogItems.Remove(reference);
+        }
+
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedCatalogItems)));
+    }
+
+    private CatalogItemSelectionViewModel? TryFindSelectedCatalogItem(CatalogItemViewModel catalogItem)
+    {
+        return SelectedCatalogItems.FirstOrDefault(current => 
+            current.BaseItem.Catalog.Id == catalogItem.Catalog.Id &&
+            current.BaseItem.Resource.Id == catalogItem.Resource.Id &&
+            current.BaseItem.Representation.SamplePeriod == catalogItem.Representation.SamplePeriod);
+    }
+
+    private void EnsureDefaultRepresentationKind(CatalogItemSelectionViewModel selectedItem)
+    {
+        var baseItem = selectedItem.BaseItem;
+        var baseSamplePeriod = baseItem.Representation.SamplePeriod;
+
+        if (!selectedItem.Kinds.Any())
+        {
+            if (SamplePeriod.Value < baseSamplePeriod)
+                selectedItem.Kinds.Add(RepresentationKind.Resampled);
+
+            else if (SamplePeriod.Value > baseSamplePeriod)
+                selectedItem.Kinds.Add(RepresentationKind.Mean);
+
+            else
+                selectedItem.Kinds.Add(RepresentationKind.Original);
+        }
     }
 
     private async Task InitializeAsync()

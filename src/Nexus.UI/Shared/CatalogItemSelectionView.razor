@@ -1,24 +1,89 @@
-﻿<div class="text-gray-200 cursor-pointer hover:bg-cyan-800 p-2 rounded select-none" @onclick="OnClick" @ondblclick="OnDoubleClick">
+﻿@inject IAppState AppState
+
+<div class="group text-gray-200 cursor-pointer hover:bg-cyan-800 p-2 pt-1 rounded select-none">
     <div class="flex justify-between">
-        <span class="text-sm overflow-hidden text-ellipsis">@CatalogItem.Resource.Id</span>
-        <span class="ml-2 text-xs font-semibold px-2.5 py-0.5 rounded bg-teal-600 text-gray-300">@CatalogItem.Representation.Kind</span>
+        <div>
+            <div>
+                <span class="text-sm text-gray-400">@Utilities.ToSpaceFilledCatalogId(SelectedCatalogItem.BaseItem.Catalog.Id)&nbsp;/&nbsp;</span>
+                <span class="text-sm">@SelectedCatalogItem.BaseItem.Resource.Id</span>
+            </div>
+            <div class="flex flex-wrap gap-1">
+
+                @foreach (var kind in SelectedCatalogItem.Kinds)
+                {
+                    <span 
+                        @ondblclick="() => RemoveRepresentationKind(kind)" @ondblclick:stopPropagation="true"
+                        class="text-xs font-semibold px-2.5 py-0.5 rounded bg-teal-600 text-gray-300">@kind</span>      
+                }
+
+                @if (_kinds.Any())
+                {
+                    <div class="invisible group-hover:visible">
+                        <UISpecialSelect
+                            Label="+"
+                            Items="_kinds"
+                            OnItemSelected="(RepresentationKind newKind) => AddRepresentationKind(newKind)">
+                        </UISpecialSelect>
+                    </div>
+                }
+            </div>
+        </div>
+        <div @ondblclick="() => AppState.Settings.ToggleCatalogItemSelection(SelectedCatalogItem.BaseItem)"
+            class="group-hover:border-l border-white flex items-center ml-2 pl-2">
+            <span class="text-center hidden group-hover:block text-2xl mdi mdi-close w-8 h-8 hover:scale-125"></span>
+        </div>
     </div>
-    <p class="text-xs text-gray-400 overflow-hidden text-ellipsis my-0.5">@Utilities.ToSpaceFilledCatalogId(CatalogItem.Catalog.Id)</p>
 </div>
 
 @code {
 
-    [Parameter]
-    public EventCallback<MouseEventArgs> OnClick { get; set; }
+    private Dictionary<RepresentationKind, string> _kinds = default!;
 
     [Parameter]
-    public EventCallback<MouseEventArgs> OnDoubleClick { get; set; }
+    public CatalogItemSelectionViewModel SelectedCatalogItem { get; set; } = default!;
 
-    [Parameter]
-    public CatalogItemViewModel CatalogItem { get; set; } = default!;
+    protected override void OnParametersSet()
+    {
+        _kinds = GetKinds();
+    }
+  
+    private void RemoveRepresentationKind(RepresentationKind kind)
+    {
+        AppState.Settings.RemoveRepresentationKind(SelectedCatalogItem, kind);
+        _kinds = GetKinds();
+    }
+
+    private void AddRepresentationKind(RepresentationKind newKind)
+    {
+        AppState.Settings.AddRepresentationKind(SelectedCatalogItem, newKind);
+        _kinds = GetKinds();
+    }
 
     private string GetId()
     {
-        return $"{@CatalogItem.Catalog.Id}/{@CatalogItem.Resource.Id}";
+        return $"{@SelectedCatalogItem.BaseItem.Catalog.Id}/{@SelectedCatalogItem.BaseItem.Resource.Id}";
+    }
+
+    private Dictionary<RepresentationKind, string> GetKinds()
+    {
+        var samplePeriod = AppState.Settings.SamplePeriod;
+        var baseSamplePeriod = SelectedCatalogItem.BaseItem.Representation.SamplePeriod;
+
+        return Enum
+            .GetValues<RepresentationKind>()
+            .Where(kind => 
+            {
+                return 
+                    !(SelectedCatalogItem.Kinds.Contains(kind) ||
+                    kind == RepresentationKind.Resampled && samplePeriod.Value >= baseSamplePeriod ||
+                    kind == RepresentationKind.Original && samplePeriod.Value != baseSamplePeriod ||
+                    kind > RepresentationKind.Original && samplePeriod.Value <= baseSamplePeriod);
+            })
+            .ToDictionary(kind => kind, kind => kind.ToString());
     }
 }
+
+
+
+
+

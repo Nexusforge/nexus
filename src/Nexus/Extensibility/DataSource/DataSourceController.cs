@@ -262,7 +262,7 @@ namespace Nexus.Extensibility
                     progress.Report(totalProgress);
                 };
 
-                var originalTask = this.ReadOriginalAsync(
+                var originalTask = ReadOriginalAsync(
                     begin, 
                     end, 
                     samplePeriod,
@@ -294,7 +294,7 @@ namespace Nexus.Extensibility
                         progress.Report(totalProgress);
                     };
 
-                    var processingTask = this.ReadProcessingAsync(
+                    var processingTask = ReadProcessingAsync(
                         begin, 
                         end, 
                         processingReadUnit,

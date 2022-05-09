@@ -2,6 +2,21 @@
     font-family: Inter var,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;
 }
 
+.styled-scrollbars {
+    scrollbar-color: #164e63 #9ca3af;
+    scrollbar-width: thin;
+}
+    .styled-scrollbars::-webkit-scrollbar {
+        width: 5px;
+        height: 5px;
+    }
+    .styled-scrollbars::-webkit-scrollbar-thumb {
+        background: #9ca3af;
+    }
+    .styled-scrollbars::-webkit-scrollbar-track {
+        background: #164e63;
+    }
+
 #app {
     height: 100vh;
     display: flex;

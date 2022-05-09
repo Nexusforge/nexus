@@ -5,7 +5,7 @@
     <div class="px-3 cursor-pointer" @onmouseup="ToggleIsOpen" onclick="event.stopPropagation()">
         <label class="block text-xs text-gray-300 cursor-pointer">@Label</label>
 
-        <div class="block">
+        <div>
             @Items[SelectedItem]
         </div>
     </div>
@@ -67,7 +67,7 @@
     public void OnClick()
     {
         _isOpen = false;
-        this.StateHasChanged();
+        StateHasChanged();
     }
     
     private void ToggleIsOpen()

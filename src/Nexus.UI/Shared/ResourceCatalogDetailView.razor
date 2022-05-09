@@ -23,9 +23,10 @@
             <div class="text-sm">
                 @if (_timeRange is not null)
                 {
-                    <span class="font-bold">Start:</span>
-                    <span class="mr-4">@_timeRange.Begin.ToString("yyyy-MM-dd")</span>
-                    <span class="font-bold">End:</span>
+                    <span class="hidden sm:inline font-bold">Start:</span>
+                    <span class="">@_timeRange.Begin.ToString("yyyy-MM-dd")</span>
+                    <span class="mx-2">-</span>
+                    <span class="hidden sm:inline font-bold">End:</span>
                     <span class="">@_timeRange.End.ToString("yyyy-MM-dd")</span>
                 }
             </div>
@@ -87,7 +88,7 @@
             _ = Task.Run(async () =>
             {
                 _timeRange = await Catalog.TimeRangeTask.Value;
-                this.StateHasChanged();
+                StateHasChanged();
             });
 
             _ = Task.Run(async () =>
@@ -95,7 +96,7 @@
                 try
                 {
                     _readme = await Catalog.ReadmeTask.Value;
-                    this.StateHasChanged();
+                    StateHasChanged();
                 }
                 catch
                 {
@@ -118,7 +119,7 @@
         _ = Task.Run(async () =>
         {
             _attachments = await Client.Catalogs.GetAttachmentsAsync(Catalog.Id, CancellationToken.None);
-            this.StateHasChanged();
+            StateHasChanged();
         });
     }
 

@@ -1,0 +1,23 @@
+﻿@inject IAppState AppState
+
+<div>
+    @foreach (var selectedCatalogItem in AppState.Settings.SelectedCatalogItems)
+    {
+        <CatalogItemSelectionView SelectedCatalogItem="selectedCatalogItem" />
+    }
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        AppState.Settings.PropertyChanged += (sender, e) => 
+        {
+            if (e.PropertyName == nameof(AppState.Settings.SelectedCatalogItems))
+                StateHasChanged();
+
+            else if (e.PropertyName == nameof(AppState.Settings.SamplePeriod))
+                StateHasChanged();
+        };
+    }
+}
+

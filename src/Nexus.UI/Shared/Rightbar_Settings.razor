@@ -29,7 +29,7 @@
                     int.TryParse(minmumString, out var minimum) &&
                     int.TryParse(maximumString, out var maximum))
                 {
-                    <UIOption Key="@configurationKey" DefaultValue="defaultValue" Store="AppState.ExportParameters.Configuration">
+                    <UIOption Key="@configurationKey" DefaultValue="defaultValue" Store="AppState.Settings.Configuration">
                         <ChildContent>
                             <UINumericTextBox 
                                 @bind-Value="@context.Value"
@@ -45,7 +45,7 @@
                     entry.Value.TryGetValue("Label", out var label2) &&
                     entry.Value.TryGetValue("DefaultValue", out var defaultValue2))
                 {
-                    <UIOption Key="@configurationKey2" DefaultValue="defaultValue2" Store="AppState.ExportParameters.Configuration">
+                    <UIOption Key="@configurationKey2" DefaultValue="defaultValue2" Store="AppState.Settings.Configuration">
                         <UISelect 
                             @bind-SelectedItem="@context.Value"
                             Items="AppState.Settings.GetOptionItems(entry.Value)"

@@ -1,11 +1,11 @@
 ﻿@inherits LayoutComponentBase
 @inject IAppState AppState
+@inject IJSInProcessRuntime JSInProcessRuntime
 @inject NavigationManager NavigationManager
 
 <AuthorizeView>
 
     <Authorized>
-
         <div class="flex-1 overflow-auto grid sm:grid-cols-[auto,1fr,1fr,auto] sm:grid-rows-[auto,auto,1fr]">
 
             <div class="sm:col-span-4">
@@ -14,8 +14,11 @@
 
             @if (!_isHamburgerMenuOpen)
             {
-                <div class="col-start-1 row-start-2 row-span-2 bg-cyan-900 hidden xl:flex flex-col justify-between p-3">
+                <div class="col-start-1 row-start-2 row-span-2 bg-cyan-900 hidden xl:flex flex-col justify-between p-3 w-72">
                     <Leftbar_Settings />
+                    <div class="flex-1 overflow-y-auto styled-scrollbars">
+                        <Leftbar_CatalogItems />
+                    </div>
                     <Leftbar_Actions />
                 </div>
             }
@@ -24,9 +27,9 @@
 
             @if (!_isHamburgerMenuOpen)
             {
-                <div class="col-start-4 row-start-2 row-span-2 bg-cyan-900 hidden xl:flex flex-col p-3">
+                <div class="col-start-4 row-start-2 row-span-2 bg-cyan-900 hidden xl:flex flex-col p-3 w-72">
                     <Rightbar_Settings />
-                    <Rightbar_CatalogItems />
+                    <div class="flex-1"></div>
                     <Rightbar_Actions />
                 </div>
             }

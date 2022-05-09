@@ -195,7 +195,7 @@ namespace Nexus.UI.Shared
         private void OnMouseMove(MouseEventArgs e)
         {
             var relativePosition = JSInProcessRuntime.Invoke<Position>("nexus.chart.toRelative", _chartId, e.ClientX, e.ClientY);
-            this.DrawAuxiliary(relativePosition);
+            DrawAuxiliary(relativePosition);
         }
 
         private void OnMouseLeave(MouseEventArgs e)

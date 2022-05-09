@@ -28,17 +28,17 @@
             set
             {
                 _value = value;
-                this.Store[this.Key] = value.ToString()!;
+                Store[Key] = value.ToString()!;
             }
         }
 
         protected override void OnInitialized()
         {
             // ensure there is some value to assign
-            if (!this.Store.TryGetValue(this.Key, out var value))
+            if (!Store.TryGetValue(Key, out var value))
             {
-                value = this.DefaultValue.ToString()!;
-                this.Store[this.Key] = value;
+                value = DefaultValue.ToString()!;
+                Store[Key] = value;
             }
 
             // get new value
@@ -57,7 +57,7 @@
             if (_value is null || !_value.Equals(newValue))
             {
                 _value = newValue;
-                this.StateHasChanged();
+                StateHasChanged();
             }
 
             base.OnInitialized();
