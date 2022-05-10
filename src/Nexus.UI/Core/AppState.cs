@@ -9,7 +9,6 @@ public interface IAppState : INotifyPropertyChanged
 {
     IList<AuthenticationSchemeDescription> AuthenticationSchemes { get; }
 
-    TimeSpan SamplePeriod { get; set; }
     ExportParameters ExportParameters { get; set; }
     SettingsViewModel Settings { get; }
 
@@ -41,7 +40,7 @@ public class AppState : IAppState
 
     public AppState(
         IList<AuthenticationSchemeDescription> authenticationSchemes, 
-        INexusClient client, 
+        INexusClient client,
         IJSInProcessRuntime jSInProcessRuntime)
     {
         AuthenticationSchemes = authenticationSchemes;
@@ -49,7 +48,16 @@ public class AppState : IAppState
 
         var childCatalogInfosTask = client.Catalogs.GetChildCatalogInfosAsync(ResourceCatalogViewModel.ROOT_CATALOG_ID, CancellationToken.None);
 
-        var rootInfo = new CatalogInfo(ResourceCatalogViewModel.ROOT_CATALOG_ID, default!, default, default, true, false);
+        var rootInfo = new CatalogInfo(
+            Id: ResourceCatalogViewModel.ROOT_CATALOG_ID,
+            Title: default!, 
+            Contact: default, 
+            License: default,
+            IsReadable: true,
+            IsWritable: false, 
+            IsPublished: true, 
+            IsOwner: false);
+
         RootCatalog = new FakeResourceCatalogViewModel(rootInfo, "", client, this, childCatalogInfosTask);
 
         // export parameters
@@ -68,8 +76,7 @@ public class AppState : IAppState
     #region Properties
 
     public IList<AuthenticationSchemeDescription> AuthenticationSchemes { get; }
-
-    public TimeSpan SamplePeriod { get; set; } = TimeSpan.FromSeconds(1);
+    
     public ExportParameters ExportParameters { get; set; }
     public SettingsViewModel Settings { get; }
 

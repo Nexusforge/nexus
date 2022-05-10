@@ -392,6 +392,8 @@ class CatalogInfo:
         license: The license.
         is_accessible: A boolean which indicates if the catalog is accessible.
         is_editable: A boolean which indicates if the catalog is editable.
+        is_published: A boolean which indicates if the catalog is published.
+        is_owner: A boolean which indicates if the catalog is owned by the current user.
     """
 
     id: str
@@ -411,6 +413,12 @@ class CatalogInfo:
 
     is_editable: bool
     """A boolean which indicates if the catalog is editable."""
+
+    is_published: bool
+    """A boolean which indicates if the catalog is published."""
+
+    is_owner: bool
+    """A boolean which indicates if the catalog is owned by the current user."""
 
 
 @dataclass

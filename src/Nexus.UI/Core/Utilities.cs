@@ -16,8 +16,12 @@ public static class Utilities
     private static string[] _postFixes = new[] { "ns", "us", "ms", "s", "min" };
     private static Regex _unitStringEvaluator = new Regex(@"^([0-9]+)[\s_]?([a-z]+)$", RegexOptions.Compiled);
 
-    public static string ToUnitString(this TimeSpan samplePeriod)
+    public static string ToUnitString(this TimeSpan samplePeriod, bool withUnderScore = false)
     {
+        var fillValue = withUnderScore
+            ? "_"
+            : " ";
+
         var currentValue = samplePeriod.Ticks * NS_PER_TICK;
 
         for (int i = 0; i < _postFixes.Length; i++)
@@ -25,13 +29,13 @@ public static class Utilities
             var quotient = Math.DivRem(currentValue, _quotients[i], out var remainder);
 
             if (remainder != 0)
-                return $"{currentValue} {_postFixes[i]}";
+                return $"{currentValue}{fillValue}{_postFixes[i]}";
 
             else
                 currentValue = quotient;
         }
 
-        return $"{(int)currentValue} {_postFixes.Last()}";
+        return $"{(int)currentValue}{fillValue}{_postFixes.Last()}";
     }
 
     public static TimeSpan ToPeriod(string unitString)

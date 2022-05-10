@@ -13,6 +13,7 @@ public class SettingsViewModel : INotifyPropertyChanged
 
     #endregion
 
+    private TimeSpan _samplePeriod { get; set; } = TimeSpan.FromSeconds(1);
     private IAppState _appState;
     private INexusClient _client;
     private IJSInProcessRuntime _jSInProcessRuntime;
@@ -64,10 +65,10 @@ public class SettingsViewModel : INotifyPropertyChanged
 
     public Period SamplePeriod 
     {
-        get => new Period(_appState.SamplePeriod);
+        get => new Period(_samplePeriod);
         set
         {
-            _appState.SamplePeriod = value.Value == default 
+            _samplePeriod = value.Value == default 
                 ? TimeSpan.FromSeconds(1) 
                 : value.Value;
 
@@ -121,17 +122,6 @@ public class SettingsViewModel : INotifyPropertyChanged
         return items
             .Where(entry => entry.Key.StartsWith("KeyValueMap"))
             .ToDictionary(entry => string.Join(':', entry.Key.Split(':').Skip(2)), entry => entry.Value);
-    }
-
-    public void AddRepresentationKind(CatalogItemSelectionViewModel selectedItem, RepresentationKind kind)
-    {
-        selectedItem.Kinds.Add(kind);
-    }
-
-    public void RemoveRepresentationKind(CatalogItemSelectionViewModel selectedItem, RepresentationKind kind)
-    {
-        selectedItem.Kinds.Remove(kind);
-        EnsureDefaultRepresentationKind(selectedItem);
     }
 
     public bool IsSelected(CatalogItemViewModel catalogItem)

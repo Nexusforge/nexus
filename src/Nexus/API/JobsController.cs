@@ -99,7 +99,7 @@ namespace Nexus.Controllers
                 {
                     var catalogContainer = group.First().Container;
 
-                    if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, HttpContext.User))
+                    if (!AuthorizationUtilities.IsCatalogReadable(catalogContainer.Id, catalogContainer.Metadata, catalogContainer.Owner, HttpContext.User))
                         throw new UnauthorizedAccessException($"The current user is not permitted to access catalog {catalogContainer.Id}.");
                 }
             }
@@ -157,30 +157,32 @@ namespace Nexus.Controllers
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="begin">Start date/time.</param>
         /// <param name="end">End date/time.</param>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpPost("clear-cache")]
-        public ActionResult<Job> ClearCache(
+        public async Task<ActionResult<Job>> ClearCache(
             [BindRequired] string catalogId,
             [BindRequired] DateTime begin,
-            [BindRequired] DateTime end)
+            [BindRequired] DateTime end,
+            CancellationToken cancellationToken)
         {
             var username = User.Identity?.Name!;
             var job = new Job(Guid.NewGuid(), "clear-cache", username, default);
 
-            var canEdit = AuthorizationUtilities.IsCatalogEditable(catalogId, User);
-
-            if (!canEdit)
-                return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to modify the catalog {catalogId}.");
-
-            var progress = new Progress<double>();
-            var cacheService = _serviceProvider.GetRequiredService<ICacheService>();
-
-            var jobControl = _jobService.AddJob(job, progress, async (jobControl, cts) =>
+            var response = await ProtectCatalogByEditabilityNonGenericAsync(catalogId, catalogContainer =>
             {
-                await cacheService.ClearAsync(catalogId, begin, end, progress, cts.Token);
-                return null;
-            });
+                var progress = new Progress<double>();
+                var cacheService = _serviceProvider.GetRequiredService<ICacheService>();
 
-            return Accepted(GetAcceptUrl(job.Id), job);
+                var jobControl = _jobService.AddJob(job, progress, async (jobControl, cts) =>
+                {
+                    await cacheService.ClearAsync(catalogId, begin, end, progress, cts.Token);
+                    return null;
+                });
+
+                return Task.FromResult((ActionResult)Accepted(GetAcceptUrl(job.Id), job));
+            }, cancellationToken);
+
+            return (ActionResult<Job>)response;
         }
 
         /// <summary>
@@ -288,6 +290,27 @@ namespace Nexus.Controllers
         private string GetAcceptUrl(Guid jobId)
         {
             return $"{Request.Scheme}://{Request.Host}{Request.Path}/{jobId}/status";
+        }
+
+         private async Task<ActionResult> ProtectCatalogByEditabilityNonGenericAsync(
+            string catalogId,
+            Func<CatalogContainer, Task<ActionResult>> action,
+            CancellationToken cancellationToken)
+        {
+            var root = _appStateManager.AppState.CatalogState.Root;
+            var catalogContainer = await root.TryFindCatalogContainerAsync(catalogId, cancellationToken);
+
+            if (catalogContainer is not null)
+            {
+                if (!AuthorizationUtilities.IsCatalogWritable(catalogContainer.Id, User))
+                    return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to modify the catalog {catalogId}.");
+
+                return await action.Invoke(catalogContainer);
+            }
+            else
+            {
+                return NotFound(catalogId);
+            }
         }
 
         #endregion

@@ -236,7 +236,7 @@ namespace Nexus.Controllers
                 .ToDictionary(current => current.Key, current => current.Value);
 
             var claimId = Guid.NewGuid();
-            newClaims[claimId] = new NexusClaim(NexusClaims.CAN_ACCESS_CATALOG, catalogId);
+            newClaims[claimId] = new NexusClaim(NexusClaims.CAN_READ_CATALOG, catalogId);
             user.Claims = new ReadOnlyDictionary<Guid, NexusClaim>(newClaims);
 
             await _dbService.UpdateUserAsync(user);
@@ -244,7 +244,7 @@ namespace Nexus.Controllers
             foreach (var identity in User.Identities)
             {
                 if (identity is not null)
-                    identity.AddClaim(new Claim(NexusClaims.CAN_ACCESS_CATALOG, catalogId));
+                    identity.AddClaim(new Claim(NexusClaims.CAN_READ_CATALOG, catalogId));
             }
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, User);

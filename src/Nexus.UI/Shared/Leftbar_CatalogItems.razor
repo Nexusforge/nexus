@@ -1,9 +1,9 @@
 ﻿@inject IAppState AppState
 
 <div>
-    @foreach (var selectedCatalogItem in AppState.Settings.SelectedCatalogItems)
+    @foreach (var selectedItem in AppState.Settings.SelectedCatalogItems)
     {
-        <CatalogItemSelectionView SelectedCatalogItem="selectedCatalogItem" />
+        <CatalogItemSelectionView SelectedItem="selectedItem" />
     }
 </div>
 

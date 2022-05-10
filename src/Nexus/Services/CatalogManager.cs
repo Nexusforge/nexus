@@ -2,6 +2,7 @@ using Microsoft.Extensions.Options;
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Sources;
+using Nexus.Utilities;
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -223,12 +224,13 @@ namespace Nexus.Services
                 else
                 {
                     var owner = catalogPrototype.Owner;
-                    var ownerIsAdmin = owner is null || owner.HasClaim(NexusClaims.IS_ADMIN, "true");
+                    var ownerCanWrite = owner is null || AuthorizationUtilities.IsCatalogWritable(catalogPrototype.Registration.Path, owner);
 
-                    var otherOwner = catalogPrototypesToKeep[referenceIndex].Owner;
-                    var otherOwnerIsAdmin = otherOwner is null || otherOwner.HasClaim(NexusClaims.IS_ADMIN, "true");
+                    var otherPrototype = catalogPrototypesToKeep[referenceIndex];
+                    var otherOwner = otherPrototype.Owner;
+                    var otherOwnerCanWrite = otherOwner is null || AuthorizationUtilities.IsCatalogWritable(otherPrototype.Registration.Path, otherOwner);
 
-                    if (!otherOwnerIsAdmin && ownerIsAdmin)
+                    if (!otherOwnerCanWrite && ownerCanWrite)
                     {
                         _logger.LogWarning("Duplicate catalog {CatalogId}", catalogPrototypesToKeep[referenceIndex]);
                         catalogPrototypesToKeep[referenceIndex] = catalogPrototype;

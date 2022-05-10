@@ -1,4 +1,8 @@
-﻿@using System.Security.Claims
+﻿@inject INexusClient Client
+@inject IJSInProcessRuntime JSInProcessRuntime
+
+@using System.Security.Claims
+
 <div class="z-0 w-full bg-white py-3 pr-3 flex justify-between items-center text-slate-500 bg-gray-200 shadow-md">
 
     <a href="">
@@ -6,20 +10,44 @@
     </a>
 
     <div class="flex items-center">
-        <a class="mx-3 text-sm font-semibold px-2.5 py-0.5 rounded text-cyan-700 hover:text-orange-500" href="api" target="_blank">API</a>
+        <a class="text-sm font-semibold px-3 py-0.5 rounded text-cyan-700 hover:text-orange-500" href="api" target="_blank">
+            API
+        </a>
         @if (_authenticationState is not null)
         {
             @if (IsAdmin(_authenticationState.User))
             {
-                <span class="mx-3 text-xs font-semibold px-2.5 py-0.5 rounded bg-orange-500 text-gray-100">admin</span>
+                <span class="mx-3 text-xs font-semibold px-2.5 py-0.5 rounded bg-orange-500 text-gray-100">
+                    admin
+                </span>
             }
-            <div class="mx-3 w-9 h-9 flex justify-center items-center rounded-full bg-cyan-900 text-white">@GetInitials(_authenticationState.User.Identity!.Name!)</div>   
+            <div class="mx-3 w-9 h-9 flex justify-center items-center rounded-full text-white bg-cyan-900 hover:bg-cyan-700 cursor-pointer select-none"
+                @onclick="OpenRefreshTokenModal">
+                @GetInitials(_authenticationState.User.Identity!.Name!)
+            </div>   
         }
         <span class="mx-3 w-9 h-9 flex justify-center items-center text-2xl mdi mdi-menu xl:hidden cursor-pointer hover:text-orange-500"
             @onclick="OpenHamburgerMenu">
         </span>
     </div>
 </div>
+
+<UIModal @bind-IsOpen="_isRefreshTokenModalOpen" Title="Refresh Token" Width="600px" AutoHeight="true">
+    @if (_refreshToken is not null)
+    {
+        <div class="flex items-center text-gray-400">
+            <span class="text-sm break-all mr-3 bg-gray-100 rounded-lg p-3">@_refreshToken</span>
+            <UIIconButton Icon="content-copy" @onclick="CopyToClipboard" />
+        </div>
+    }
+    else
+    {
+        <div class="flex items-center">
+            <UISpinner />
+            <span class="ml-3 text-gray-400">Acquiring refresh token ... </span>
+        </div>
+    }
+</UIModal>
 
 @code {
 
@@ -29,11 +57,34 @@
     [Parameter]
     public Action OpenHamburgerMenu { get; set; } = default!;
 
+    private string? _refreshToken = "f9208f50-cd54-4165-8041-b5cd19af45a4%40nexus@JLmBwiie4IYd2eosK7cqmLg0o0jAYgd2iHSEkxYUhgVxd0cZ3eDibC3lBU5B/bCEeqOKwPGRArrpJP/pGo/guw==";
+
+    private bool _isRefreshTokenModalOpen;
+
     private AuthenticationState _authenticationState = default!;
 
     protected override async Task OnInitializedAsync()
     {
         _authenticationState = await GetAuthenticationStateTask;
+    }
+
+    private void CopyToClipboard()
+    {
+        Console.WriteLine("copyyyyy toooooo cliiiiippppboaoord");
+
+        JSInProcessRuntime.InvokeVoid("nexus.util.copyToClipboard", _refreshToken);
+    }
+
+    private void OpenRefreshTokenModal()
+    {
+        _isRefreshTokenModalOpen = true;
+        _refreshToken = null;
+
+        Task.Run(async () =>
+        {
+            _refreshToken = await Client.Users.GenerateRefreshTokenAsync(CancellationToken.None);
+            this.StateHasChanged();
+        });
     }
 
     private bool IsAdmin(ClaimsPrincipal user)

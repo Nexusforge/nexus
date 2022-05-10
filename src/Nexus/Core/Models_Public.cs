@@ -223,15 +223,19 @@ namespace Nexus.Core
     /// <param name="Title">The title.</param>
     /// <param name="Contact">The contact.</param>
     /// <param name="License">The license.</param>
-    /// <param name="IsAccessible">A boolean which indicates if the catalog is accessible.</param>
-    /// <param name="IsEditable">A boolean which indicates if the catalog is editable.</param>
+    /// <param name="IsReadable">A boolean which indicates if the catalog is accessible.</param>
+    /// <param name="IsWritable">A boolean which indicates if the catalog is editable.</param>
+    /// <param name="IsPublished">A boolean which indicates if the catalog is published.</param>
+    /// <param name="IsOwner">A boolean which indicates if the catalog is owned by the current user.</param>
     public record CatalogInfo(
         string Id,
         string Title,
         string? Contact,
         string? License,
-        bool IsAccessible,
-        bool IsEditable);
+        bool IsReadable,
+        bool IsWritable,
+        bool IsPublished,
+        bool IsOwner);
 
     /// <summary>
     /// A structure for catalog metadata.

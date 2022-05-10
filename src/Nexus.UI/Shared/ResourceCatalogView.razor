@@ -29,13 +29,20 @@ else
             </span>
 
             <div>
-                <span class="font-bold @(Catalog.Info.IsAccessible ? "text-cyan-700" : "text-gray-500") @(Catalog.IsSelected ? "text-orange-500" : "")">
+                <span class="font-bold @(Catalog.Info.IsReadable ? "text-cyan-700" : "text-gray-500") @(Catalog.IsSelected ? "text-orange-500" : "")">
                     @Catalog.DisplayName
                 </span>
-                @if (!Catalog.Info.IsAccessible)
+
+                @if (!Catalog.Info.IsReadable)
                 {
                     <span class="mdi mdi-lock mx-1"></span>
                 }
+
+                @if (!Catalog.Info.IsPublished && Catalog.Info.IsOwner)
+                {
+                    <span class="mdi mdi-sunglasses mx-1"></span>
+                }
+                
                 <span class="ml-2 text-sm text-gray-500">
                     @Catalog.Info.Title
                 </span>

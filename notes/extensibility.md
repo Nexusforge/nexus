@@ -53,7 +53,7 @@ There might be duplicate package references. This is not an issue because all ex
 
 **Backend Source Duplicates**
 
-When a backend source is registered twice this will most likely lead to duplicate catalogs. Duplicates will be ignored with a log warning. Catalogs provided by backend sources registerd by administrators will win over other catalogs. Also catalogs that are already registered will win over new catalogs.
+When a backend source is registered twice this will most likely lead to duplicate catalogs. Duplicates will be ignored with a log warning. Catalogs provided by backend sources registered by administrators will win over other catalogs. Also catalogs that are already registered will win over new catalogs.
 
 **Add / Remove Package Reference**
 

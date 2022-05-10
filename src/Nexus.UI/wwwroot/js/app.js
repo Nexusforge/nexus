@@ -35,3 +35,7 @@ nexus.util.loadSetting = function (key) {
     else
         return null
 }
+
+nexus.util.copyToClipboard = function (text) {
+    navigator.clipboard.writeText(text)
+}

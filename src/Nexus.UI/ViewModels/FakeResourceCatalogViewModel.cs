@@ -39,21 +39,43 @@ public class FakeResourceCatalogViewModel : ResourceCatalogViewModel
         id = id == "/" ? "" : id;
 
         var result = new List<ResourceCatalogViewModel>();
-        var groupedInfos = childCatalogInfos.GroupBy(childInfo => childInfo.Id.Substring(id.Length).Split('/', count: 3)[1]);
 
-        foreach (var group in groupedInfos)
+        var groupedPublishedInfos = childCatalogInfos
+            .Where(catalogInfo => catalogInfo.IsPublished)
+            .GroupBy(childInfo => childInfo.Id.Substring(id.Length).Split('/', count: 3)[1]);
+
+        foreach (var group in groupedPublishedInfos)
         {
-            if (group.Count() == 1)
+            var filteredInfos = group
+                .Where(info => info.IsPublished || info.IsOwner)
+                .ToList();
+
+            if (!filteredInfos.Any())
             {
-                var childInfo = group.First();
+                // do nothing
+            }
+
+            else if (filteredInfos.Count == 1)
+            {
+                var childInfo = filteredInfos.First();
                 result.Add(new RealResourceCatalogViewModel(childInfo, id, client, appState));
             }
 
             else
             {
                 var childId = id + "/" + group.Key;
-                var childInfo = new CatalogInfo(childId, default!, default, default, true, false);
-                var childCatalogInfosTask = Task.FromResult((IList<CatalogInfo>)group.ToList());
+
+                var childInfo = new CatalogInfo(
+                    Id: childId,
+                    Title: default!, 
+                    Contact: default, 
+                    License: default,
+                    IsReadable: true,
+                    IsWritable: false, 
+                    IsPublished: true,
+                    IsOwner: false);
+
+                var childCatalogInfosTask = Task.FromResult((IList<CatalogInfo>)filteredInfos);
                 result.Add(new FakeResourceCatalogViewModel(childInfo, id, client, appState, childCatalogInfosTask));
             }
         }

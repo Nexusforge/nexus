@@ -1,0 +1,13 @@
+﻿<div class="flex-none flex justify-center items-center rounded-full w-12 h-12 hover:bg-gray-200 hover:text-cyan-700 cursor-pointer"
+    @onclick="OnClick">
+    <span class="text-xl mdi mdi-@Icon"></span>
+</div>
+
+@code 
+{
+    [Parameter]
+    public string Icon { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<MouseEventArgs> OnClick { get; set; }
+}

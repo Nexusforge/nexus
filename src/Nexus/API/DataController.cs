@@ -79,7 +79,7 @@ namespace Nexus.Controllers
                 var catalogContainer = catalogItemRequest.Container;
 
                 // security check
-                if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, User))
+                if (!AuthorizationUtilities.IsCatalogReadable(catalogContainer.Id, catalogContainer.Metadata, catalogContainer.Owner, User))
                     return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to access the catalog {catalogContainer.Id}.");
 
                 // controller

@@ -23,7 +23,7 @@ namespace Other
         public void CanDetermineCatalogAccessibility(
             string authenticationType, 
             string isAdmin, 
-            string[] canAccessCatalog,
+            string[] canReadCatalog,
             string[] canAccessGroup,
             bool expected)
         {
@@ -33,11 +33,11 @@ namespace Other
 
             var principal = new ClaimsPrincipal(new ClaimsIdentity(
                 new Claim[] { new Claim(NexusClaims.IS_ADMIN, isAdmin) }
-                .Concat(canAccessCatalog.Select(value => new Claim(NexusClaims.CAN_ACCESS_CATALOG, value)))
+                .Concat(canReadCatalog.Select(value => new Claim(NexusClaims.CAN_READ_CATALOG, value)))
                 .Concat(canAccessGroup.Select(value => new Claim(NexusClaims.CAN_ACCESS_GROUP, value))), authenticationType));
 
             // Act
-            var actual = AuthorizationUtilities.IsCatalogAccessible(catalogId, catalogMetadata, principal);
+            var actual = AuthorizationUtilities.IsCatalogReadable(catalogId, catalogMetadata, principal);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -54,7 +54,7 @@ namespace Other
         public void CanDetermineCatalogEditability(
             string authenticationType,
             string isAdmin,
-            string[] canEditCatalog,
+            string[] canWriteCatalog,
             bool expected)
         {
             // Arrange
@@ -62,10 +62,10 @@ namespace Other
 
             var principal = new ClaimsPrincipal(new ClaimsIdentity(
                new Claim[] { new Claim(NexusClaims.IS_ADMIN, isAdmin) }
-               .Concat(canEditCatalog.Select(value => new Claim(NexusClaims.CAN_EDIT_CATALOG, value))), authenticationType));
+               .Concat(canWriteCatalog.Select(value => new Claim(NexusClaims.CAN_WRITE_CATALOG, value))), authenticationType));
 
             // Act
-            var actual = AuthorizationUtilities.IsCatalogEditable(catalogId, principal);
+            var actual = AuthorizationUtilities.IsCatalogWritable(catalogId, principal);
 
             // Assert
             Assert.Equal(expected, actual);

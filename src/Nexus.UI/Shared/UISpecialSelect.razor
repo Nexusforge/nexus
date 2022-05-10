@@ -1,14 +1,14 @@
 ﻿@typeparam T
 
-<div class="text-xs font-semibold rounded bg-teal-600 text-gray-300">
+<div class="text-xs font-semibold rounded bg-teal-600 text-gray-300 hover:bg-teal-500">
 
-    <div class="px-2.5 py-0.5" @onmouseup="ToggleIsOpen" onclick="event.stopPropagation()">
+    <div class="px-2.5 py-1" @onmouseup="ToggleIsOpen" onclick="event.stopPropagation()">
         @Label
     </div>
 
     @if (_isOpen)
     {
-        <div class="mt-2 absolute border border-orange-500 bg-cyan-900 z-50 cursor-pointer">
+        <div class="mt-2 absolute border border-teal-500 bg-cyan-900 z-50 cursor-pointer">
             @foreach (var entry in Items)
             {
                 <div class="px-3 py-2 text-gray-200 bg-cyan-900 hover:bg-cyan-800"

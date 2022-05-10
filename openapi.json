@@ -1442,13 +1442,21 @@
             "description": "The license.",
             "nullable": true
           },
-          "isAccessible": {
+          "isReadable": {
             "type": "boolean",
             "description": "A boolean which indicates if the catalog is accessible."
           },
-          "isEditable": {
+          "isWritable": {
             "type": "boolean",
             "description": "A boolean which indicates if the catalog is editable."
+          },
+          "isPublished": {
+            "type": "boolean",
+            "description": "A boolean which indicates if the catalog is published."
+          },
+          "isOwner": {
+            "type": "boolean",
+            "description": "A boolean which indicates if the catalog is owned by the current user."
           }
         }
       },

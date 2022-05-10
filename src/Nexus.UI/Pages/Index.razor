@@ -12,9 +12,7 @@
 <div class="sm:row-start-2 sm:col-start-3 m-2 h-40 sm:h-72 min-w-0">
     @if (AppState.SelectedCatalog is null || AppState.SelectedCatalog.GetType() == typeof(FakeResourceCatalogViewModel))
     {
-        <div class="flex w-full justify-center">
-            <span class="text-gray-400">no data available</span>
-        </div>
+        /* nothing */
     }
     else
     {
@@ -29,7 +27,7 @@
         <span>no data available</span>
     </div>
 }
-else if (!AppState.SelectedCatalog.Info.IsAccessible && AppState.SelectedCatalog.Info.License is not null)
+else if (!AppState.SelectedCatalog.Info.IsReadable && AppState.SelectedCatalog.Info.License is not null)
 {
     <div class="sm:row-start-3 sm:col-start-2 sm:col-span-2 flex flex-col">
         <span class="w-full text-center font-bold text-cyan-700 text-2xl mb-2">License</span>
