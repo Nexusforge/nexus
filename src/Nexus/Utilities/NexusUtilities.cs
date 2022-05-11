@@ -53,7 +53,7 @@ namespace Nexus.Utilities
         public static async ValueTask<T[]> WhenAll<T>(params ValueTask<T>[] tasks)
 #pragma warning restore VSTHRD200 // Verwenden Sie das Suffix "Async" für asynchrone Methoden
         {
-            List<Exception>? exceptions = null;
+            List<Exception>? exceptions = default;
 
             var results = new T[tasks.Length];
 

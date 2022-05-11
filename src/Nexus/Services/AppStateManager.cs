@@ -70,7 +70,7 @@ namespace Nexus.Services
                         .ContinueWith(task =>
                         {
                             LoadDataWriters();
-                            AppState.ReloadPackagesTask = null;
+                            AppState.ReloadPackagesTask = default;
                             return Task.CompletedTask;
                         }, TaskScheduler.Default);
                 }

@@ -111,7 +111,7 @@ namespace Nexus.PackageManagement
 
             _loadContext.Unload();
             var weakReference = new WeakReference(_loadContext, trackResurrection: true);
-            _loadContext = null;
+            _loadContext = default;
 
             return weakReference;
         }

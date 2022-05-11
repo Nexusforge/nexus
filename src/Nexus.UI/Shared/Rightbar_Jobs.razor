@@ -1,0 +1,20 @@
+﻿@inject IAppState AppState
+@inject INexusClient Client
+
+<div>
+    @foreach (var job in AppState.Jobs)
+    {
+        <JobView Job="job" />
+    }
+</div>
+
+@code
+{
+    protected override void OnInitialized()
+    {
+        AppState.Jobs.CollectionChanged += (sender, e) => 
+        {
+            StateHasChanged();    
+        };
+    }
+}

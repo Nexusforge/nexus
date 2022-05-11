@@ -107,7 +107,7 @@
 
     private void OpenAttachmentModal()
     {
-        _attachments = null;
+        _attachments = default;
         _isAttachmentModalOpen = true;
 
         _ = Task.Run(async () =>

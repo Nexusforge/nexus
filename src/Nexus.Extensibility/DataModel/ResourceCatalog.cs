@@ -30,7 +30,7 @@ namespace Nexus.DataModel
         /// <param name="properties">The map of properties.</param>
         /// <param name="resources">The list of representations.</param>
         /// <exception cref="ArgumentException">Thrown when the resource identifier is not valid.</exception>
-        public ResourceCatalog(string id, IReadOnlyDictionary<string, string>? properties = null, IReadOnlyList<Resource>? resources = null)
+        public ResourceCatalog(string id, IReadOnlyDictionary<string, string>? properties = default, IReadOnlyList<Resource>? resources = default)
         {
             if (!_idValidator.IsMatch(id))
                 throw new ArgumentException($"The resource catalog identifier {id} is not valid.");
@@ -178,7 +178,7 @@ namespace Nexus.DataModel
 
         internal bool TryFind(string resourcePath, [NotNullWhen(true)] out CatalogItem? catalogItem)
         {
-            catalogItem = null;
+            catalogItem = default;
 
             var pathParts = resourcePath.Split('/');
             var catalogId = string.Join('/', pathParts[..^2]);

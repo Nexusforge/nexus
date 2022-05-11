@@ -1,5 +1,4 @@
-﻿@using System.Text.RegularExpressions
-@inject IAppState AppState
+﻿@inject IAppState AppState
 @inject IJSInProcessRuntime JSInProcessRuntime
 
 <div class="group text-gray-200 cursor-pointer hover:bg-cyan-800 p-2 pt-1 rounded select-none">
@@ -11,11 +10,11 @@
 
         @foreach (var kind in SelectedItem.Kinds)
         {
-            <div class="nexus-pill nexus-hover-parent min-w-[6em] h-6 text-xs text-white font-bold rounded bg-teal-600 flex flex-col" placeholder="@kind">
+            <div class="nexus-pill nexus-hover-parent min-w-[6em] h-6 text-xs text-white font-bold rounded @(IsValid(kind) ? "bg-teal-600" : "bg-rose-700") flex flex-col" placeholder="@kind">
                 <div class="nexus-hover-hide py-1 text-center">@kind</div>
                 <div class="hidden flex-1 flex nexus-hover-flex">
-                    <div @onclick="() => CopyToClipboard(kind)" class="flex-1 hover:bg-teal-500 rounded-l mdi mdi-content-copy flex justify-center items-center"></div>
-                    <div @onclick="() => RemoveRepresentationKind(kind)" class="flex-1 hover:bg-teal-500 rounded-r mdi mdi-close flex justify-center items-center"></div>
+                    <div @onclick="() => CopyToClipboard(kind)" class="flex-1 hover:@(IsValid(kind) ? "bg-teal-500" : "bg-rose-600") rounded-l mdi mdi-content-copy flex justify-center items-center"></div>
+                    <div @onclick="() => RemoveRepresentationKind(kind)" class="flex-1 hover:@(IsValid(kind) ? "bg-teal-500" : "bg-rose-600") rounded-r mdi mdi-close flex justify-center items-center"></div>
                 </div>
             </div>
         }
@@ -35,8 +34,6 @@
 
 @code {
 
-    private static Regex _snakeCaseEvaluator = new Regex("(?<=[a-z])([A-Z])", RegexOptions.Compiled);
-
     private Dictionary<RepresentationKind, string> _kinds = default!;
 
     [Parameter]
@@ -47,27 +44,17 @@
         _kinds = GetKinds();
     }
   
-    private string GetResourcePath(RepresentationKind kind)
-    {
-        var baseItem = SelectedItem.BaseItem;
-        var samplePeriodString = Utilities.ToUnitString(AppState.Settings.SamplePeriod.Value, withUnderScore: true);
-        var baseSamplePeriodString = Utilities.ToUnitString(baseItem.Representation.SamplePeriod, withUnderScore: true);
-        var snakeCaseKind = _snakeCaseEvaluator.Replace(kind.ToString(), "_$1").Trim().ToLower();
-        var representationId = $"{samplePeriodString}_{snakeCaseKind}";
-        var resourcePath = $"{baseItem.Catalog.Id}/{baseItem.Resource.Id}/{representationId}#base={baseSamplePeriodString}";
-
-        return resourcePath;
-    }
-
     private void CopyToClipboard(RepresentationKind kind)
     {
-        JSInProcessRuntime.InvokeVoid("nexus.util.copyToClipboard", GetResourcePath(kind));
+        var resourcePath = SelectedItem.GetResourcePath(kind, AppState.Settings.SamplePeriod.Value);
+        JSInProcessRuntime.InvokeVoid("nexus.util.copyToClipboard", resourcePath);
     }
 
     private void AddRepresentationKind(RepresentationKind kind)
     {
         SelectedItem.Kinds.Add(kind);
         _kinds = GetKinds();
+        AppState.Settings.CanExportChanged();
     }
 
     private void RemoveRepresentationKind(RepresentationKind kind)
@@ -81,6 +68,7 @@
         {
             SelectedItem.Kinds.Remove(kind);
             _kinds = GetKinds();
+            AppState.Settings.CanExportChanged();
         }
     }
 
@@ -91,20 +79,17 @@
 
     private Dictionary<RepresentationKind, string> GetKinds()
     {
-        var samplePeriod = AppState.Settings.SamplePeriod;
-        var baseSamplePeriod = SelectedItem.BaseItem.Representation.SamplePeriod;
-
         return Enum
             .GetValues<RepresentationKind>()
             .Where(kind => 
-            {
-                return 
-                    !(SelectedItem.Kinds.Contains(kind) ||
-                    kind == RepresentationKind.Resampled && samplePeriod.Value >= baseSamplePeriod ||
-                    kind == RepresentationKind.Original && samplePeriod.Value != baseSamplePeriod ||
-                    kind > RepresentationKind.Original && samplePeriod.Value <= baseSamplePeriod);
-            })
+                !SelectedItem.Kinds.Contains(kind) && 
+                SelectedItem.IsValid(kind, AppState.Settings.SamplePeriod))
             .ToDictionary(kind => kind, kind => kind.ToString());
+    }
+
+    private bool IsValid(RepresentationKind kind)
+    {
+        return SelectedItem.IsValid(kind, AppState.Settings.SamplePeriod);
     }
 }
 

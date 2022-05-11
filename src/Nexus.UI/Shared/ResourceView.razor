@@ -3,10 +3,13 @@
 <div class="flex w-full">
 
     <div class="flex flex-col p-2 select-none w-36 sm:w-72">
+
         <UITextBox
             @bind-Value="AppState.SearchString"
             Label="Search"
-            Icon="magnify"
+            Icon="@_searchIcon"
+            OnIconClick="() => AppState.SearchString = default"
+            OnInput="true"
             DarkMode="false">
         </UITextBox>
 
@@ -69,12 +72,22 @@
 </div>
 
 @code {
+
+    private string _searchIcon = "magnify";
+
     protected override void OnInitialized()
     {
         AppState.PropertyChanged += (sender, e) => 
         {
             if (e.PropertyName == nameof(AppState.CatalogItemsMap))
                 StateHasChanged();
+
+            else if (e.PropertyName == nameof(AppState.SearchString))
+            {
+                _searchIcon = string.IsNullOrWhiteSpace(AppState.SearchString)
+                    ? "magnify"
+                    : "close";
+            }
         };
 
         AppState.Settings.PropertyChanged += (sender, e) => 

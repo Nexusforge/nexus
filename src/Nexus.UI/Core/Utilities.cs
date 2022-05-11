@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Nexus.Api;
 
 namespace Nexus.UI.Core;
 
@@ -58,5 +59,10 @@ public static class Utilities
         var ticks = totalNanoSeconds / NS_PER_TICK;
 
         return new TimeSpan(ticks);
+    }
+
+    public static int SizeOf(NexusDataType dataType)
+    {
+        return ((ushort)dataType & 0x00FF) / 8;
     }
 }

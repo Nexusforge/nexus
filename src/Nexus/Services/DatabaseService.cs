@@ -62,7 +62,7 @@ namespace Nexus.Services
             var catalogMetadataFileName = $"{physicalId}.json";
             var filePath = SafePathCombine(_pathsOptions.Config, Path.Combine("catalogs", catalogMetadataFileName));
 
-            catalogMetadata = null;
+            catalogMetadata = default;
 
             if (File.Exists(filePath))
             {
@@ -90,7 +90,7 @@ namespace Nexus.Services
         public bool TryReadProject([NotNullWhen(true)] out string? project)
         {
             var filePath = Path.Combine(_pathsOptions.Config, "project.json");
-            project = null;
+            project = default;
 
             if (File.Exists(filePath))
             {
@@ -136,7 +136,7 @@ namespace Nexus.Services
 
         public bool TryReadAttachment(string catalogId, string attachmentId, [NotNullWhen(true)] out Stream? attachment)
         {
-            attachment = null;
+            attachment = default;
 
             var physicalId = catalogId.TrimStart('/').Replace("/", "_");
             var attachmentFolder = Path.Combine(_pathsOptions.Catalogs, physicalId);
@@ -157,7 +157,7 @@ namespace Nexus.Services
 
         public bool TryReadFirstAttachment(string catalogId, string searchPattern, EnumerationOptions enumerationOptions, [NotNullWhen(true)] out Stream? attachment)
         {
-            attachment = null;
+            attachment = default;
 
             var physicalId = catalogId.TrimStart('/').Replace("/", "_");
             var attachmentFolder = SafePathCombine(_pathsOptions.Catalogs, physicalId);
@@ -192,7 +192,7 @@ namespace Nexus.Services
         /* /artifact */
         public bool TryReadArtifact(string artifactId, [NotNullWhen(true)] out Stream? artifact)
         {
-            artifact = null;
+            artifact = default;
 
             var attachmentFile = SafePathCombine(_pathsOptions.Artifacts, artifactId);
 
@@ -223,7 +223,7 @@ namespace Nexus.Services
 
         public bool TryReadCacheEntry(CatalogItem catalogItem, DateTime begin, [NotNullWhen(true)] out Stream? cacheEntry)
         {
-            cacheEntry = null;
+            cacheEntry = default;
 
             var cacheEntryFilePath = Path.Combine(_pathsOptions.Cache, GetCacheEntryId(catalogItem, begin));
 
@@ -241,7 +241,7 @@ namespace Nexus.Services
 
         public bool TryWriteCacheEntry(CatalogItem catalogItem, DateTime begin, [NotNullWhen(true)] out Stream? cacheEntry)
         {
-            cacheEntry = null;
+            cacheEntry = default;
 
             var cacheEntryFilePath = Path.Combine(_pathsOptions.Cache, GetCacheEntryId(catalogItem, begin));
             var cacheEntryDirectoryPath = Path.GetDirectoryName(cacheEntryFilePath);

@@ -27,19 +27,32 @@
         <span>no data available</span>
     </div>
 }
-else if (!AppState.SelectedCatalog.Info.IsReadable && AppState.SelectedCatalog.Info.License is not null)
+else if (!AppState.SelectedCatalog.Info.IsReadable)
 {
     <div class="sm:row-start-3 sm:col-start-2 sm:col-span-2 flex flex-col">
-        <span class="w-full text-center font-bold text-cyan-700 text-2xl mb-2">License</span>
-        <div class="border border-cyan-700 bg-white p-3 text-xl">
-            <MarkdownRenderer MarkdownString="@AppState.SelectedCatalog.Info.License"></MarkdownRenderer>
-        </div>
-        <div class="flex justify-center m-3">
-            <form action="/api/v1/users/accept-license">
-                <input type="hidden" name="catalogId" value="@AppState.SelectedCatalog.Id" /> 
-                <input class="w-20 p-1 rounded bg-cyan-700 flex justify-center items-center text-gray-200 cursor-pointer hover:bg-cyan-600" type="submit" value="Accept" />
-            </form>
-        </div>
+        @if (AppState.SelectedCatalog.Info.License is null)
+        {
+            <div class="flex-1 flex justify-center items-center">
+                You do not have access to this catalog. 
+                @if (!string.IsNullOrWhiteSpace(AppState.SelectedCatalog.Info.Contact))
+                {
+                    @: Please contact @(AppState.SelectedCatalog.Info.Contact) to request permission.
+                }
+            </div>
+        }
+        else
+        {
+            <span class="w-full text-center font-bold text-cyan-700 text-2xl mb-2">License</span>
+            <div class="border border-cyan-700 bg-white p-3 text-xl">
+                <MarkdownRenderer MarkdownString="@AppState.SelectedCatalog.Info.License"></MarkdownRenderer>
+            </div>
+            <div class="flex justify-center m-3">
+                <form action="/api/v1/users/accept-license">
+                    <input type="hidden" name="catalogId" value="@AppState.SelectedCatalog.Id" /> 
+                    <input class="w-20 p-1 rounded bg-cyan-700 flex justify-center items-center text-gray-200 cursor-pointer hover:bg-cyan-600" type="submit" value="Accept" />
+                </form>
+            </div>
+        }
     </div>
 }
 else

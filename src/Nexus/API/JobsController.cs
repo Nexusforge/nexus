@@ -255,7 +255,7 @@ namespace Nexus.Controllers
         /// <param name="jobId"></param>
         /// <returns></returns>
         [HttpDelete("{jobId}")]
-        public ActionResult DeleteJob(Guid jobId)
+        public ActionResult CancelJob(Guid jobId)
         {
             if (_jobService.TryGetJob(jobId, out var jobControl))
             {

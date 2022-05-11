@@ -140,8 +140,8 @@ namespace Nexus.Extensibility.Tests
             var representation0_V0 = _fixture.Representation0_V0;
             var representation1_V0 = _fixture.Representation1_V0;
             var resource0_V0 = _fixture.Resource0_V0 with { Representations = new List<Representation>() { representation0_V0, representation1_V0 } };
-            var resource1_V0 = _fixture.Resource1_V0 with { Representations = null };
-            var resource3_V0 = _fixture.Resource3_V0 with { Representations = null };
+            var resource1_V0 = _fixture.Resource1_V0 with { Representations = default };
+            var resource3_V0 = _fixture.Resource3_V0 with { Representations = default };
             var resource4_V0 = _fixture.Resource4_V0 with { Representations = new List<Representation>() { representation0_V0, representation1_V0 } };
             var catalog0_V0 = _fixture.Catalog0_V0 with { Resources = new List<Resource>() { resource0_V0, resource1_V0, resource3_V0, resource4_V0 } };
 
@@ -149,9 +149,9 @@ namespace Nexus.Extensibility.Tests
             var representation0_V1 = _fixture.Representation0_V1;
             var representation2_V0 = _fixture.Representation2_V0;
             var resource0_V1 = _fixture.Resource0_V1 with { Representations = new List<Representation>() { representation0_V1, representation2_V0 } };
-            var resource2_V0 = _fixture.Resource2_V0 with { Representations = null };
+            var resource2_V0 = _fixture.Resource2_V0 with { Representations = default };
             var resource3_V1 = _fixture.Resource3_V1 with { Representations = new List<Representation>() { representation0_V1, representation1_V0 } };
-            var resource4_V1 = _fixture.Resource4_V1 with { Representations = null };
+            var resource4_V1 = _fixture.Resource4_V1 with { Representations = default };
             var catalog0_V1 = _fixture.Catalog0_V1 with { Resources = new List<Resource>() { resource0_V1, resource2_V0, resource3_V1, resource4_V1 } };
 
             // prepare merged

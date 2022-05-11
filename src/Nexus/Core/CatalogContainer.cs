@@ -110,7 +110,7 @@ namespace Nexus.Core
                 Metadata = metadata;
 
                 // trigger merging of catalog and catalog overrides
-                _lazyCatalogInfo = null;
+                _lazyCatalogInfo = default;
             }
             finally
             {

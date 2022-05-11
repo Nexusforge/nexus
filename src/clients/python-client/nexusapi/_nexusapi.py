@@ -390,8 +390,8 @@ class CatalogInfo:
         title: The title.
         contact: The contact.
         license: The license.
-        is_accessible: A boolean which indicates if the catalog is accessible.
-        is_editable: A boolean which indicates if the catalog is editable.
+        is_readable: A boolean which indicates if the catalog is accessible.
+        is_writable: A boolean which indicates if the catalog is editable.
         is_published: A boolean which indicates if the catalog is published.
         is_owner: A boolean which indicates if the catalog is owned by the current user.
     """
@@ -408,10 +408,10 @@ class CatalogInfo:
     license: Optional[str]
     """The license."""
 
-    is_accessible: bool
+    is_readable: bool
     """A boolean which indicates if the catalog is accessible."""
 
-    is_editable: bool
+    is_writable: bool
     """A boolean which indicates if the catalog is editable."""
 
     is_published: bool
@@ -1054,7 +1054,7 @@ class JobsClient:
 
         return self._client._invoke_async(JobStatus, "GET", url, "application/json", None)
 
-    def delete_job(self, job_id: UUID) -> Awaitable[StreamResponse]:
+    def cancel_job(self, job_id: UUID) -> Awaitable[StreamResponse]:
         """
         Cancels the specified job.
 

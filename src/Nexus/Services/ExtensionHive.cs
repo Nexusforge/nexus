@@ -81,7 +81,7 @@ namespace Nexus.Services
                     controller.Unload();
                 }
 
-                _packageControllerMap = null;
+                _packageControllerMap = default;
             }
 
             // build new

@@ -360,7 +360,7 @@ public class NexusClient : INexusClient, IDisposable
     private void SignOut()
     {
         _httpClient.DefaultRequestHeaders.Remove(AuthorizationHeaderKey);
-        _tokenPair = null;
+        _tokenPair = default;
     }
 
     /// <inheritdoc />
@@ -677,7 +677,7 @@ public interface IJobsClient
     /// </summary>
     /// <param name="jobId"></param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<StreamResponse> DeleteJobAsync(Guid jobId, CancellationToken cancellationToken = default);
+    Task<StreamResponse> CancelJobAsync(Guid jobId, CancellationToken cancellationToken = default);
 
 }
 
@@ -753,7 +753,7 @@ public class JobsClient : IJobsClient
     }
 
     /// <inheritdoc />
-    public Task<StreamResponse> DeleteJobAsync(Guid jobId, CancellationToken cancellationToken = default)
+    public Task<StreamResponse> CancelJobAsync(Guid jobId, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/jobs/{jobId}");

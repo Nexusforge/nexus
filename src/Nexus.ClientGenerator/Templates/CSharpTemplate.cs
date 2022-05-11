@@ -280,7 +280,7 @@ public class {{1}} : I{{1}}, IDisposable
     private void SignOut()
     {
         _httpClient.DefaultRequestHeaders.Remove(AuthorizationHeaderKey);
-        _tokenPair = null;
+        _tokenPair = default;
     }
 
     /// <inheritdoc />

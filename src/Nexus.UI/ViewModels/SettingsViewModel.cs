@@ -45,6 +45,8 @@ public class SettingsViewModel : INotifyPropertyChanged
 
             if (_appState.ExportParameters.Begin >= _appState.ExportParameters.End)
                 _appState.ExportParameters = _appState.ExportParameters with { End = _appState.ExportParameters.Begin };
+
+            CanExportChanged();
         }
     }
 
@@ -60,6 +62,8 @@ public class SettingsViewModel : INotifyPropertyChanged
 
             if (_appState.ExportParameters.End <= _appState.ExportParameters.Begin)
                 _appState.ExportParameters = _appState.ExportParameters with { Begin = _appState.ExportParameters.End };
+
+            CanExportChanged();
         }
     }
 
@@ -73,13 +77,21 @@ public class SettingsViewModel : INotifyPropertyChanged
                 : value.Value;
 
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SamplePeriod)));
+            CanExportChanged();
         }
     }
 
     public Period FilePeriod 
     {
-        get => new Period(_appState.ExportParameters.FilePeriod);
-        set => _appState.ExportParameters = _appState.ExportParameters with { FilePeriod = value.Value };
+        get
+        {
+            return new Period(_appState.ExportParameters.FilePeriod);
+        }
+        set
+        {
+            _appState.ExportParameters = _appState.ExportParameters with { FilePeriod = value.Value };
+            CanExportChanged();
+        }
     }
 
     public string FileType
@@ -109,12 +121,25 @@ public class SettingsViewModel : INotifyPropertyChanged
 
     public Lazy<Task> InitializeTask { get; }
 
-    public Task ExportAsync()
+    public bool CanExport
     {
-        Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(_appState.ExportParameters));
-        return Task.CompletedTask;
+        get
+        {
+            var result =  
+                Begin < End &&
+                Begin.Ticks % SamplePeriod.Value.Ticks == 0 &&
+                End.Ticks % SamplePeriod.Value.Ticks == 0 &&
+                SelectedCatalogItems.Any() &&
+                SelectedCatalogItems.All(item => item.IsValid(SamplePeriod)) &&
+                (FilePeriod.Value == TimeSpan.Zero || FilePeriod.Value.Ticks % SamplePeriod.Value.Ticks == 0);
 
-        // return Client.Jobs.ExportAsync(AppState.ExportParameters, CancellationToken.None);
+            return result;
+        }
+    }
+
+    public void CanExportChanged()
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CanExport)));
     }
 
     public Dictionary<string, string> GetOptionItems(Dictionary<string, string> items)
@@ -146,6 +171,7 @@ public class SettingsViewModel : INotifyPropertyChanged
         }
 
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedCatalogItems)));
+        CanExportChanged();
     }
 
     private CatalogItemSelectionViewModel? TryFindSelectedCatalogItem(CatalogItemViewModel catalogItem)

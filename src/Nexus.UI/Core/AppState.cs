@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using Microsoft.JSInterop;
 using Nexus.Api;
@@ -19,6 +20,9 @@ public interface IAppState : INotifyPropertyChanged
 
     string? SearchString { get; set; }
 
+    ObservableCollection<JobViewModel> Jobs { get; }
+    void RemoveJob(JobViewModel job);
+
     Task SelectCatalogAsync(string? catalogId);
 }
 
@@ -32,6 +36,8 @@ public class AppState : IAppState
 
     #region Fields
 
+    private INexusClient _client;
+    private string? _searchString;
     private const string GROUP_KEY = "Groups";
 
     #endregion
@@ -44,6 +50,7 @@ public class AppState : IAppState
         IJSInProcessRuntime jSInProcessRuntime)
     {
         AuthenticationSchemes = authenticationSchemes;
+        _client = client;
         Settings = new SettingsViewModel(this, jSInProcessRuntime, client);
 
         var childCatalogInfosTask = client.Catalogs.GetChildCatalogInfosAsync(ResourceCatalogViewModel.ROOT_CATALOG_ID, CancellationToken.None);
@@ -85,14 +92,45 @@ public class AppState : IAppState
     public SortedDictionary<string, List<CatalogItemViewModel>>? CatalogItemsMap { get; private set; }
     public List<CatalogItemViewModel>? CatalogItems { get; set; }
 
-    public string? SearchString { get; set; }
+    public string? SearchString
+    {
+        get 
+        {
+            return _searchString;
+        }
+        set
+        {
+            if (value != _searchString)
+            {
+                _searchString = value;
+                
+                CatalogItemsMap = GroupCatalogItems(SelectedCatalog!.Catalog!);
+                CatalogItems = CatalogItemsMap?.Values.FirstOrDefault();
+
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SearchString)));
+            }
+        }
+    }
+
+    public ObservableCollection<JobViewModel> Jobs { get; set; } = new ObservableCollection<JobViewModel>();
 
     #endregion
 
     #region Methods
 
+    public void RemoveJob(JobViewModel job)
+    {
+        job.Cancel();
+        Jobs.Remove(job);
+
+        if (job.Status is null || job.Status.Status < Api.TaskStatus.RanToCompletion)
+            _ = _client.Jobs.CancelJobAsync(job.Id);
+    }
+
     public async Task SelectCatalogAsync(string? catalogId)
     {
+        _searchString = default;
+
         if (catalogId is null)
             catalogId = ResourceCatalogViewModel.ROOT_CATALOG_ID;
 
@@ -100,8 +138,8 @@ public class AppState : IAppState
 
         if (SelectedCatalog is null || SelectedCatalog.Catalog is null)
         {
-            CatalogItemsMap = null;
-            CatalogItems = null;
+            CatalogItemsMap = default;
+            CatalogItems = default;
         }
 
         else
@@ -122,7 +160,7 @@ public class AppState : IAppState
 
         foreach (var resource in catalog.Resources)
         {
-            if (resource.Representations is null)
+            if (resource.Representations is null || !ResourceMatchesFilter(resource))
                 continue;
 
             List<string> groupNames;
@@ -153,14 +191,34 @@ public class AppState : IAppState
                     catalogItemsMap[groupName] = group;
                 }
 
-                foreach (var representation in resource.Representations)
+                if (resource.Representations is not null)
                 {
-                    group!.Add(new CatalogItemViewModel(catalog, resource, representation));
+                    foreach (var representation in resource.Representations)
+                    {
+                        group!.Add(new CatalogItemViewModel(catalog, resource, representation));
+                    }
                 }
             }
         }
 
         return catalogItemsMap;
+    }
+
+    private bool ResourceMatchesFilter(Resource resource)
+    {
+        if (string.IsNullOrWhiteSpace(SearchString))
+            return true;
+
+        string? description = default;
+
+        if (resource.Properties is not null)
+            resource.Properties.TryGetValue(CatalogItemViewModel.DESCRIPTION_KEY, out description);
+
+        if (resource.Id.Contains(SearchString, StringComparison.OrdinalIgnoreCase) ||
+            description is not null && description.Contains(SearchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return false;
     }
 
     #endregion

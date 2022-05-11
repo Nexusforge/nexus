@@ -580,7 +580,7 @@
           "Jobs"
         ],
         "summary": "Cancels the specified job.",
-        "operationId": "Jobs_DeleteJob",
+        "operationId": "Jobs_CancelJob",
         "parameters": [
           {
             "name": "jobId",

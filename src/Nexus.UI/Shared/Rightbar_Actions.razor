@@ -1,3 +1,73 @@
 ﻿@inject IAppState AppState
+@inject INexusClient Client
 
-<UIButton Icon="download-outline" Label="Export" OnClick="AppState.Settings.ExportAsync"></UIButton>
+<UIButton
+    Icon="cloud-download-outline" 
+    Label="@GetLabel()" 
+    OnClick="ExportAsync"
+    Disabled="!AppState.Settings.CanExport">
+</UIButton>
+
+@code
+{
+    protected override void OnInitialized()
+    {
+        AppState.Settings.PropertyChanged += (sender, e) => 
+        {
+            if (e.PropertyName == nameof(AppState.Settings.CanExport))
+                StateHasChanged();
+        };
+    }
+
+    private async Task ExportAsync()
+    {
+        var samplePeriod = AppState.Settings.SamplePeriod.Value;
+
+        var resourcePaths = AppState.Settings.SelectedCatalogItems
+            .SelectMany(item => item.Kinds.Select(kind => item.GetResourcePath(kind, samplePeriod)))
+            .ToList();
+
+        var actualParameters = AppState.ExportParameters with { ResourcePaths = resourcePaths };
+        var job = await Client.Jobs.ExportAsync(actualParameters, CancellationToken.None);
+
+        AppState.Jobs.Add(new JobViewModel(job, actualParameters, Client));
+    }
+
+    private string GetLabel()
+    {
+        var byteCount = GetByteCount();
+
+        if (byteCount > 0)
+            return FormatByteCount(byteCount);
+
+        else
+            return string.Empty;
+    }
+
+    private long GetByteCount()
+    {
+        var settings = AppState.Settings;
+
+        var sampleCount = settings.SamplePeriod.Value.Ticks == default
+            ? 0 
+            : (settings.End - settings.Begin).Ticks / settings.SamplePeriod.Value.Ticks;
+
+        return sampleCount * settings.SelectedCatalogItems
+            .Sum(item => Utilities.SizeOf(item.BaseItem.Representation.DataType));
+    }
+
+    private string FormatByteCount(long byteCount)
+    {
+        if (byteCount >= 1000 * 1000 * 1000)
+            return $"{(double)byteCount / 1000 / 1000 / 1000:G3} GB";
+
+        else if (byteCount >= 1000 * 1000)
+            return $"{(double)byteCount / 1000 / 1000:G3} MB";
+
+        else if (byteCount >= 1000)
+            return $"{(double)byteCount / 1000:G3} kB";
+
+        else
+            return $"{(double)byteCount:F0} B";
+    }
+}

@@ -1,0 +1,24 @@
+﻿@inject IAppState AppState
+
+<div class="group text-gray-300 p-3 flex items-center hover:bg-cyan-800 rounded-lg cursor-pointer">
+    <div class="group-hover:bg-cyan-700 w-full bg-cyan-800 rounded-full h-1 group-hover:h-2">
+        <div class="group-hover:bg-cyan-400 bg-cyan-500 h-1 group-hover:h-2 rounded-full" style="width: @((int)(Job.Progress * 100))%"></div>
+    </div>
+    <div class="hidden group-hover:block mdi mdi-close pl-2 hover:scale-125"
+        @onclick="() => AppState.RemoveJob(Job)">
+    </div>
+</div>
+
+@code {
+    [Parameter] 
+    public JobViewModel Job { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        Job.PropertyChanged += (sender, e) => 
+        {
+            if (e.PropertyName == nameof(Job.Status))
+                StateHasChanged();
+        };
+    }
+}

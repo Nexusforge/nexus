@@ -29,7 +29,7 @@ namespace Nexus.DataModel
         /// <param name="properties">The map of properties.</param>
         /// <param name="representations">The list of representations.</param>
         /// <exception cref="ArgumentException">Thrown when the resource identifier is not valid.</exception>
-        public Resource(string id, IReadOnlyDictionary<string, string>? properties = null, IReadOnlyList<Representation>? representations = null)
+        public Resource(string id, IReadOnlyDictionary<string, string>? properties = default, IReadOnlyList<Representation>? representations = default)
         {
             if (!_idValidator.IsMatch(id))
                 throw new ArgumentException($"The resource identifier {id} is not valid.");
