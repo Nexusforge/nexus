@@ -1,0 +1,19 @@
+﻿ <div
+    class="mx-auto px-4 w-min p-1 rounded border border-gray-300 flex justify-center items-center text-cyan-700 cursor-pointer hover:bg-gray-100"
+    @onclick="OnClick">
+
+    <span class="mr-3 mdi mdi-@Icon"></span> @Label
+
+</div>
+
+@code {
+
+    [Parameter]
+    public EventCallback<MouseEventArgs> OnClick { get; set; }
+
+    [Parameter]
+    public string Icon { get; set; } = default!;
+
+    [Parameter]
+    public string Label { get; set; } = default!;
+}

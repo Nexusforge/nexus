@@ -1,0 +1,46 @@
+﻿<svg class="progress-ring" width="@(Radius * 2)" height="@(Radius * 2)">
+
+  <circle
+    class="@BackgroundColor"
+    stroke-width="@_strokeWidth"
+    fill="transparent"
+    r="@(Radius - 2 * _strokeWidth)"
+    cx="@Radius"
+    cy="@Radius"/>
+
+  <circle
+    class="progress-ring__circle @ForeGroundColor" style="stroke-dasharray: @GetCircumference() @GetCircumference(); stroke-dashoffset: @GetProgress()"
+    stroke-width="@_strokeWidth"
+    fill="transparent"
+    r="@(Radius - 2 * _strokeWidth)"
+    cx="@Radius"
+    cy="@Radius"/>
+
+</svg>
+
+@code {
+    private int _strokeWidth = 3;
+
+    private string BackgroundColor => DarkMode ? "stroke-cyan-800" : "stroke-gray-200";
+
+    private string ForeGroundColor => DarkMode ? "stroke-cyan-400" : "stroke-cyan-600";
+
+    [Parameter]
+    public double Progress { get; set; }
+
+    [Parameter]
+    public int Radius { get; set; }
+
+    [Parameter]
+    public bool DarkMode { get; set; }
+
+    private double GetCircumference()
+    {
+        return 2 * Math.PI * (Radius - 2 * _strokeWidth);
+    }
+
+    private double GetProgress()
+    {
+        return GetCircumference() * (1 - Progress);
+    }
+}

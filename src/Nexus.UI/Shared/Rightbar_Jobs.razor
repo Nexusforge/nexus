@@ -1,7 +1,7 @@
 ﻿@inject IAppState AppState
 @inject INexusClient Client
 
-<div>
+<div class="flex flex-wrap">
     @foreach (var job in AppState.Jobs)
     {
         <JobView Job="job" />

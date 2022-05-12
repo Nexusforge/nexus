@@ -99,8 +99,6 @@ public class NexusClient : INexusClient, IDisposable
 
     private static string _tokenFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nexusapi", "tokens");
 
-    private static JsonSerializerOptions _options;
-
     private TokenPair? _tokenPair;
     private HttpClient _httpClient;
     private string? _tokenFilePath;
@@ -113,17 +111,6 @@ public class NexusClient : INexusClient, IDisposable
     private SourcesClient _sources;
     private UsersClient _users;
     private WritersClient _writers;
-
-    static NexusClient()
-    {
-        _options = new JsonSerializerOptions()
-        {
-            PropertyNameCaseInsensitive = true,
-            WriteIndented = true
-        };
-
-        _options.Converters.Add(new JsonStringEnumConverter());
-    }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="NexusClient"/>.
@@ -196,14 +183,14 @@ public class NexusClient : INexusClient, IDisposable
         
         if (File.Exists(_tokenFilePath))
         {
-            actualRefreshToken = JsonSerializer.Deserialize<string>(File.ReadAllText(_tokenFilePath), _options)
+            actualRefreshToken = JsonSerializer.Deserialize<string>(File.ReadAllText(_tokenFilePath), Utilities.JsonOptions)
                 ?? throw new Exception($"Unable to deserialize file {_tokenFilePath}.");
         }
 
         else
         {
             Directory.CreateDirectory(_tokenFolderPath);
-            File.WriteAllText(_tokenFilePath, JsonSerializer.Serialize(refreshToken, _options));
+            File.WriteAllText(_tokenFilePath, JsonSerializer.Serialize(refreshToken, Utilities.JsonOptions));
             actualRefreshToken = refreshToken;
         }
 
@@ -227,14 +214,10 @@ public class NexusClient : INexusClient, IDisposable
         _httpClient.DefaultRequestHeaders.Remove(NexusConfigurationHeaderKey);
     }
 
-    internal async Task<T> InvokeAsync<T>(string method, string relativeUrl, string? acceptHeaderValue, object? content, CancellationToken cancellationToken)
+    internal async Task<T> InvokeAsync<T>(string method, string relativeUrl, string? acceptHeaderValue, string? contentTypeValue, HttpContent? content, CancellationToken cancellationToken)
     {
         // prepare request
-        var httpContent = content is null
-            ? default
-            : JsonContent.Create(content, options: _options);
-
-        using var request = BuildRequestMessage(method, relativeUrl, httpContent, acceptHeaderValue);
+        using var request = BuildRequestMessage(method, relativeUrl, content, contentTypeValue, acceptHeaderValue);
 
         // send request
         var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
@@ -258,7 +241,7 @@ public class NexusClient : INexusClient, IDisposable
                         {
                             await RefreshTokenAsync(_tokenPair.RefreshToken, cancellationToken);
 
-                            using var newRequest = BuildRequestMessage(method, relativeUrl, httpContent, acceptHeaderValue);
+                            using var newRequest = BuildRequestMessage(method, relativeUrl, content, contentTypeValue, acceptHeaderValue);
                             var newResponse = await _httpClient.SendAsync(newRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
                             if (newResponse is not null)
@@ -307,7 +290,7 @@ public class NexusClient : INexusClient, IDisposable
             else
             {
                 var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-                var returnValue = await JsonSerializer.DeserializeAsync<T>(stream, _options);
+                var returnValue = await JsonSerializer.DeserializeAsync<T>(stream, Utilities.JsonOptions);
 
                 if (returnValue is null)
                     throw new NexusException($"N01", "Response data could not be deserialized.");
@@ -322,14 +305,17 @@ public class NexusClient : INexusClient, IDisposable
         }
     }
     
-    private HttpRequestMessage BuildRequestMessage(string method, string relativeUrl, HttpContent? httpContent, string? acceptHeaderValue)
+    private HttpRequestMessage BuildRequestMessage(string method, string relativeUrl, HttpContent? content, string? contentTypeHeaderValue, string? acceptHeaderValue)
     {
         var requestMessage = new HttpRequestMessage()
         {
             Method = new HttpMethod(method),
             RequestUri = new Uri(relativeUrl, UriKind.Relative),
-            Content = httpContent
+            Content = content
         };
+
+        if (contentTypeHeaderValue is not null && requestMessage.Content is not null)
+            requestMessage.Content.Headers.ContentType = MediaTypeWithQualityHeaderValue.Parse(contentTypeHeaderValue);
 
         if (acceptHeaderValue is not null)
             requestMessage.Headers.Accept.Add(MediaTypeWithQualityHeaderValue.Parse(acceptHeaderValue));
@@ -347,7 +333,7 @@ public class NexusClient : INexusClient, IDisposable
         if (_tokenFilePath is not null)
         {
             Directory.CreateDirectory(_tokenFolderPath);
-            File.WriteAllText(_tokenFilePath, JsonSerializer.Serialize(tokenPair.RefreshToken, _options));
+            File.WriteAllText(_tokenFilePath, JsonSerializer.Serialize(tokenPair.RefreshToken, Utilities.JsonOptions));
         }
 
         var authorizationHeaderValue = $"Bearer {tokenPair.AccessToken}";
@@ -402,7 +388,7 @@ public class ArtifactsClient : IArtifactsClient
         urlBuilder.Replace("{artifactId}", Uri.EscapeDataString(Convert.ToString(artifactId, CultureInfo.InvariantCulture)!));
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<StreamResponse>("GET", url, "application/octet-stream", default, cancellationToken);
+        return _client.InvokeAsync<StreamResponse>("GET", url, "application/octet-stream", default, default, cancellationToken);
     }
 
 }
@@ -450,6 +436,23 @@ public interface ICatalogsClient
     Task<IList<string>> GetAttachmentsAsync(string catalogId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Uploads the specified attachment.
+    /// </summary>
+    /// <param name="catalogId">The catalog identifier.</param>
+    /// <param name="attachmentId">The attachment identifier.</param>
+    /// <param name="content">The binary file content.</param>
+    /// <param name="cancellationToken">The token to cancel the current operation.</param>
+    Task<StreamResponse> UploadAttachmentAsync(string catalogId, string attachmentId, Stream content, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Deletes the specified attachment.
+    /// </summary>
+    /// <param name="catalogId">The catalog identifier.</param>
+    /// <param name="attachmentId">The attachment identifier.</param>
+    /// <param name="cancellationToken">The token to cancel the current operation.</param>
+    Task<StreamResponse> DeleteAttachmentAsync(string catalogId, string attachmentId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets the specified attachment.
     /// </summary>
     /// <param name="catalogId">The catalog identifier.</param>
@@ -492,7 +495,7 @@ public class CatalogsClient : ICatalogsClient
         urlBuilder.Replace("{catalogId}", Uri.EscapeDataString(Convert.ToString(catalogId, CultureInfo.InvariantCulture)!));
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<ResourceCatalog>("GET", url, "application/json", default, cancellationToken);
+        return _client.InvokeAsync<ResourceCatalog>("GET", url, "application/json", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -503,7 +506,7 @@ public class CatalogsClient : ICatalogsClient
         urlBuilder.Replace("{catalogId}", Uri.EscapeDataString(Convert.ToString(catalogId, CultureInfo.InvariantCulture)!));
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<IList<CatalogInfo>>("GET", url, "application/json", default, cancellationToken);
+        return _client.InvokeAsync<IList<CatalogInfo>>("GET", url, "application/json", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -514,7 +517,7 @@ public class CatalogsClient : ICatalogsClient
         urlBuilder.Replace("{catalogId}", Uri.EscapeDataString(Convert.ToString(catalogId, CultureInfo.InvariantCulture)!));
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<CatalogTimeRange>("GET", url, "application/json", default, cancellationToken);
+        return _client.InvokeAsync<CatalogTimeRange>("GET", url, "application/json", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -534,7 +537,7 @@ public class CatalogsClient : ICatalogsClient
         urlBuilder.Append(query);
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<CatalogAvailability>("GET", url, "application/json", default, cancellationToken);
+        return _client.InvokeAsync<CatalogAvailability>("GET", url, "application/json", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -545,7 +548,31 @@ public class CatalogsClient : ICatalogsClient
         urlBuilder.Replace("{catalogId}", Uri.EscapeDataString(Convert.ToString(catalogId, CultureInfo.InvariantCulture)!));
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<IList<string>>("GET", url, "application/json", default, cancellationToken);
+        return _client.InvokeAsync<IList<string>>("GET", url, "application/json", default, default, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<StreamResponse> UploadAttachmentAsync(string catalogId, string attachmentId, Stream content, CancellationToken cancellationToken = default)
+    {
+        var urlBuilder = new StringBuilder();
+        urlBuilder.Append("/api/v1/catalogs/{catalogId}/attachments/{attachmentId}");
+        urlBuilder.Replace("{catalogId}", Uri.EscapeDataString(Convert.ToString(catalogId, CultureInfo.InvariantCulture)!));
+        urlBuilder.Replace("{attachmentId}", Uri.EscapeDataString(Convert.ToString(attachmentId, CultureInfo.InvariantCulture)!));
+
+        var url = urlBuilder.ToString();
+        return _client.InvokeAsync<StreamResponse>("PUT", url, "application/octet-stream", "application/octet-stream", new StreamContent(content), cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<StreamResponse> DeleteAttachmentAsync(string catalogId, string attachmentId, CancellationToken cancellationToken = default)
+    {
+        var urlBuilder = new StringBuilder();
+        urlBuilder.Append("/api/v1/catalogs/{catalogId}/attachments/{attachmentId}");
+        urlBuilder.Replace("{catalogId}", Uri.EscapeDataString(Convert.ToString(catalogId, CultureInfo.InvariantCulture)!));
+        urlBuilder.Replace("{attachmentId}", Uri.EscapeDataString(Convert.ToString(attachmentId, CultureInfo.InvariantCulture)!));
+
+        var url = urlBuilder.ToString();
+        return _client.InvokeAsync<StreamResponse>("DELETE", url, "application/octet-stream", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -557,7 +584,7 @@ public class CatalogsClient : ICatalogsClient
         urlBuilder.Replace("{attachmentId}", Uri.EscapeDataString(Convert.ToString(attachmentId, CultureInfo.InvariantCulture)!));
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<StreamResponse>("GET", url, "application/octet-stream", default, cancellationToken);
+        return _client.InvokeAsync<StreamResponse>("GET", url, "application/octet-stream", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -568,7 +595,7 @@ public class CatalogsClient : ICatalogsClient
         urlBuilder.Replace("{catalogId}", Uri.EscapeDataString(Convert.ToString(catalogId, CultureInfo.InvariantCulture)!));
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<CatalogMetadata>("GET", url, "application/json", default, cancellationToken);
+        return _client.InvokeAsync<CatalogMetadata>("GET", url, "application/json", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -579,7 +606,7 @@ public class CatalogsClient : ICatalogsClient
         urlBuilder.Replace("{catalogId}", Uri.EscapeDataString(Convert.ToString(catalogId, CultureInfo.InvariantCulture)!));
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<object>("PUT", url, "", catalogMetadata, cancellationToken);
+        return _client.InvokeAsync<object>("PUT", url, "", "application/json", JsonContent.Create(catalogMetadata, options: Utilities.JsonOptions), cancellationToken);
     }
 
 }
@@ -627,7 +654,7 @@ public class DataClient : IDataClient
         urlBuilder.Append(query);
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<StreamResponse>("GET", url, "application/octet-stream", default, cancellationToken);
+        return _client.InvokeAsync<StreamResponse>("GET", url, "application/octet-stream", default, default, cancellationToken);
     }
 
 }
@@ -698,7 +725,7 @@ public class JobsClient : IJobsClient
         urlBuilder.Append("/api/v1/jobs/export");
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<Job>("POST", url, "application/json", parameters, cancellationToken);
+        return _client.InvokeAsync<Job>("POST", url, "application/json", "application/json", JsonContent.Create(parameters, options: Utilities.JsonOptions), cancellationToken);
     }
 
     /// <inheritdoc />
@@ -708,7 +735,7 @@ public class JobsClient : IJobsClient
         urlBuilder.Append("/api/v1/jobs/load-packages");
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<Job>("POST", url, "application/json", default, cancellationToken);
+        return _client.InvokeAsync<Job>("POST", url, "application/json", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -728,7 +755,7 @@ public class JobsClient : IJobsClient
         urlBuilder.Append(query);
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<Job>("POST", url, "application/json", default, cancellationToken);
+        return _client.InvokeAsync<Job>("POST", url, "application/json", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -738,7 +765,7 @@ public class JobsClient : IJobsClient
         urlBuilder.Append("/api/v1/jobs");
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<IList<Job>>("GET", url, "application/json", default, cancellationToken);
+        return _client.InvokeAsync<IList<Job>>("GET", url, "application/json", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -749,7 +776,7 @@ public class JobsClient : IJobsClient
         urlBuilder.Replace("{jobId}", Uri.EscapeDataString(Convert.ToString(jobId, CultureInfo.InvariantCulture)!));
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<JobStatus>("GET", url, "application/json", default, cancellationToken);
+        return _client.InvokeAsync<JobStatus>("GET", url, "application/json", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -760,7 +787,7 @@ public class JobsClient : IJobsClient
         urlBuilder.Replace("{jobId}", Uri.EscapeDataString(Convert.ToString(jobId, CultureInfo.InvariantCulture)!));
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<StreamResponse>("DELETE", url, "application/octet-stream", default, cancellationToken);
+        return _client.InvokeAsync<StreamResponse>("DELETE", url, "application/octet-stream", default, default, cancellationToken);
     }
 
 }
@@ -817,7 +844,7 @@ public class PackageReferencesClient : IPackageReferencesClient
         urlBuilder.Append("/api/v1/packagereferences");
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<IDictionary<string, PackageReference>>("GET", url, "application/json", default, cancellationToken);
+        return _client.InvokeAsync<IDictionary<string, PackageReference>>("GET", url, "application/json", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -828,7 +855,7 @@ public class PackageReferencesClient : IPackageReferencesClient
         urlBuilder.Replace("{packageReferenceId}", Uri.EscapeDataString(Convert.ToString(packageReferenceId, CultureInfo.InvariantCulture)!));
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<object>("PUT", url, "", packageReference, cancellationToken);
+        return _client.InvokeAsync<object>("PUT", url, "", "application/json", JsonContent.Create(packageReference, options: Utilities.JsonOptions), cancellationToken);
     }
 
     /// <inheritdoc />
@@ -839,7 +866,7 @@ public class PackageReferencesClient : IPackageReferencesClient
         urlBuilder.Replace("{packageReferenceId}", Uri.EscapeDataString(Convert.ToString(packageReferenceId, CultureInfo.InvariantCulture)!));
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<object>("DELETE", url, "", default, cancellationToken);
+        return _client.InvokeAsync<object>("DELETE", url, "", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -850,7 +877,7 @@ public class PackageReferencesClient : IPackageReferencesClient
         urlBuilder.Replace("{packageReferenceId}", Uri.EscapeDataString(Convert.ToString(packageReferenceId, CultureInfo.InvariantCulture)!));
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<IList<string>>("GET", url, "application/json", default, cancellationToken);
+        return _client.InvokeAsync<IList<string>>("GET", url, "application/json", default, default, cancellationToken);
     }
 
 }
@@ -906,7 +933,7 @@ public class SourcesClient : ISourcesClient
         urlBuilder.Append("/api/v1/sources/descriptions");
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<IList<ExtensionDescription>>("GET", url, "application/json", default, cancellationToken);
+        return _client.InvokeAsync<IList<ExtensionDescription>>("GET", url, "application/json", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -916,7 +943,7 @@ public class SourcesClient : ISourcesClient
         urlBuilder.Append("/api/v1/sources/registrations");
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<IDictionary<string, DataSourceRegistration>>("GET", url, "application/json", default, cancellationToken);
+        return _client.InvokeAsync<IDictionary<string, DataSourceRegistration>>("GET", url, "application/json", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -927,7 +954,7 @@ public class SourcesClient : ISourcesClient
         urlBuilder.Replace("{registrationId}", Uri.EscapeDataString(Convert.ToString(registrationId, CultureInfo.InvariantCulture)!));
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<object>("PUT", url, "", registration, cancellationToken);
+        return _client.InvokeAsync<object>("PUT", url, "", "application/json", JsonContent.Create(registration, options: Utilities.JsonOptions), cancellationToken);
     }
 
     /// <inheritdoc />
@@ -938,7 +965,7 @@ public class SourcesClient : ISourcesClient
         urlBuilder.Replace("{registrationId}", Uri.EscapeDataString(Convert.ToString(registrationId, CultureInfo.InvariantCulture)!));
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<object>("DELETE", url, "", default, cancellationToken);
+        return _client.InvokeAsync<object>("DELETE", url, "", default, default, cancellationToken);
     }
 
 }
@@ -1051,7 +1078,7 @@ public class UsersClient : IUsersClient
         urlBuilder.Append("/api/v1/users/authentication-schemes");
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<IList<AuthenticationSchemeDescription>>("GET", url, "application/json", default, cancellationToken);
+        return _client.InvokeAsync<IList<AuthenticationSchemeDescription>>("GET", url, "application/json", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -1070,7 +1097,7 @@ public class UsersClient : IUsersClient
         urlBuilder.Append(query);
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<StreamResponse>("GET", url, "application/octet-stream", default, cancellationToken);
+        return _client.InvokeAsync<StreamResponse>("GET", url, "application/octet-stream", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -1088,7 +1115,7 @@ public class UsersClient : IUsersClient
         urlBuilder.Append(query);
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<StreamResponse>("GET", url, "application/octet-stream", default, cancellationToken);
+        return _client.InvokeAsync<StreamResponse>("GET", url, "application/octet-stream", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -1098,7 +1125,7 @@ public class UsersClient : IUsersClient
         urlBuilder.Append("/api/v1/users/refresh-token");
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<TokenPair>("POST", url, "application/json", request, cancellationToken);
+        return _client.InvokeAsync<TokenPair>("POST", url, "application/json", "application/json", JsonContent.Create(request, options: Utilities.JsonOptions), cancellationToken);
     }
 
     /// <inheritdoc />
@@ -1108,7 +1135,7 @@ public class UsersClient : IUsersClient
         urlBuilder.Append("/api/v1/users/revoke-token");
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<StreamResponse>("POST", url, "application/octet-stream", request, cancellationToken);
+        return _client.InvokeAsync<StreamResponse>("POST", url, "application/octet-stream", "application/json", JsonContent.Create(request, options: Utilities.JsonOptions), cancellationToken);
     }
 
     /// <inheritdoc />
@@ -1118,7 +1145,7 @@ public class UsersClient : IUsersClient
         urlBuilder.Append("/api/v1/users/me");
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<NexusUser>("GET", url, "application/json", default, cancellationToken);
+        return _client.InvokeAsync<NexusUser>("GET", url, "application/json", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -1128,7 +1155,7 @@ public class UsersClient : IUsersClient
         urlBuilder.Append("/api/v1/users/generate-refresh-token");
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<string>("POST", url, "application/json", default, cancellationToken);
+        return _client.InvokeAsync<string>("POST", url, "application/json", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -1146,7 +1173,7 @@ public class UsersClient : IUsersClient
         urlBuilder.Append(query);
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<StreamResponse>("GET", url, "application/octet-stream", default, cancellationToken);
+        return _client.InvokeAsync<StreamResponse>("GET", url, "application/octet-stream", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -1156,7 +1183,7 @@ public class UsersClient : IUsersClient
         urlBuilder.Append("/api/v1/users");
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<IList<NexusUser>>("GET", url, "application/json", default, cancellationToken);
+        return _client.InvokeAsync<IList<NexusUser>>("GET", url, "application/json", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -1167,7 +1194,7 @@ public class UsersClient : IUsersClient
         urlBuilder.Replace("{userId}", Uri.EscapeDataString(Convert.ToString(userId, CultureInfo.InvariantCulture)!));
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<StreamResponse>("DELETE", url, "application/octet-stream", default, cancellationToken);
+        return _client.InvokeAsync<StreamResponse>("DELETE", url, "application/octet-stream", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -1179,7 +1206,7 @@ public class UsersClient : IUsersClient
         urlBuilder.Replace("{claimId}", Uri.EscapeDataString(Convert.ToString(claimId, CultureInfo.InvariantCulture)!));
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<StreamResponse>("PUT", url, "application/octet-stream", claim, cancellationToken);
+        return _client.InvokeAsync<StreamResponse>("PUT", url, "application/octet-stream", "application/json", JsonContent.Create(claim, options: Utilities.JsonOptions), cancellationToken);
     }
 
     /// <inheritdoc />
@@ -1191,7 +1218,7 @@ public class UsersClient : IUsersClient
         urlBuilder.Replace("{claimId}", Uri.EscapeDataString(Convert.ToString(claimId, CultureInfo.InvariantCulture)!));
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<StreamResponse>("DELETE", url, "application/octet-stream", default, cancellationToken);
+        return _client.InvokeAsync<StreamResponse>("DELETE", url, "application/octet-stream", default, default, cancellationToken);
     }
 
 }
@@ -1226,7 +1253,7 @@ public class WritersClient : IWritersClient
         urlBuilder.Append("/api/v1/writers/descriptions");
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<IList<ExtensionDescription>>("GET", url, "application/json", default, cancellationToken);
+        return _client.InvokeAsync<IList<ExtensionDescription>>("GET", url, "application/json", default, default, cancellationToken);
     }
 
 }
@@ -1674,3 +1701,20 @@ public record RefreshToken(string Token, DateTime Created, DateTime Expires, Dat
 /// <param name="Value">The claim value.</param>
 public record NexusClaim(string Type, string Value);
 
+
+
+internal static class Utilities
+{
+    internal static JsonSerializerOptions JsonOptions { get; }
+
+    static Utilities()
+    {
+        JsonOptions = new JsonSerializerOptions()
+        {
+            PropertyNameCaseInsensitive = true,
+            WriteIndented = true
+        };
+
+        JsonOptions.Converters.Add(new JsonStringEnumConverter());
+    }
+}

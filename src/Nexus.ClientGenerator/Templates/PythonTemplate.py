@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from json import JSONEncoder
 from pathlib import Path
-from typing import Any, Awaitable, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, AsyncIterable, Awaitable, Iterable, Optional, Tuple, Type, TypeVar, Union
 from urllib.parse import quote
 from uuid import UUID
 
@@ -212,7 +212,7 @@ class StreamResponse:
     @property
     def response(self) -> Response:
         """Gets the underlying response."""
-        return _response
+        return self._response
 
     async def __aenter__(self) -> StreamResponse:
         return self
@@ -339,14 +339,10 @@ class {{1}}:
         if self._nexus_configuration_header_key in self._http_client.headers:
             del self._http_client.headers[self._nexus_configuration_header_key]
 
-    async def _invoke_async(self, typeOfT: Type[T], method: str, relative_url: str, accept_header_value: str, content: Any) -> T:
+    async def _invoke_async(self, typeOfT: Type[T], method: str, relative_url: str, accept_header_value: str, content_type_value: str, content: Union[None, str, bytes, Iterable[bytes], AsyncIterable[bytes]]) -> T:
 
         # prepare request
-        http_content: Any = None \
-            if content is None \
-            else json.dumps(content, cls=_MyEncoder)
-
-        request = self._build_request_message(method, relative_url, http_content, accept_header_value)
+        request = self._build_request_message(method, relative_url, content, content_type_value, accept_header_value)
 
         # send request
         response = await self._http_client.send(request)
@@ -367,7 +363,7 @@ class {{1}}:
                         try:
                             await self._refresh_token_async(self._token_pair.refresh_token)
 
-                            new_request = self._build_request_message(method, relative_url, http_content, accept_header_value)
+                            new_request = self._build_request_message(method, relative_url, content, content_type_value, accept_header_value)
                             new_response = await self._http_client.send(new_request)
 
                             if new_response is not None:
@@ -414,10 +410,12 @@ class {{1}}:
             if typeOfT is not StreamResponse:
                 await response.aclose()
     
-    def _build_request_message(self, method: str, relative_url: str, http_content: Any, accept_header_value: str) -> Request:
+    def _build_request_message(self, method: str, relative_url: str, content: Any, content_type_value:str, accept_header_value: str) -> Request:
        
-        request_message = self._http_client.build_request(method, relative_url, content = http_content)
-        request_message.headers["Content-Type"] = "application/json"
+        request_message = self._http_client.build_request(method, relative_url, content = content)
+
+        if content_type_value is not None:
+            request_message.headers["Content-Type"] = content_type_value
 
         if accept_header_value is not None:
             request_message.headers["Accept"] = accept_header_value

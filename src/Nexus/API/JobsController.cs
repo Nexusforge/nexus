@@ -168,7 +168,7 @@ namespace Nexus.Controllers
             var username = User.Identity?.Name!;
             var job = new Job(Guid.NewGuid(), "clear-cache", username, default);
 
-            var response = await ProtectCatalogByEditabilityNonGenericAsync(catalogId, catalogContainer =>
+            var response = await ProtectCatalogNonGenericAsync(catalogId, catalogContainer =>
             {
                 var progress = new Progress<double>();
                 var cacheService = _serviceProvider.GetRequiredService<ICacheService>();
@@ -292,7 +292,7 @@ namespace Nexus.Controllers
             return $"{Request.Scheme}://{Request.Host}{Request.Path}/{jobId}/status";
         }
 
-         private async Task<ActionResult> ProtectCatalogByEditabilityNonGenericAsync(
+         private async Task<ActionResult> ProtectCatalogNonGenericAsync(
             string catalogId,
             Func<CatalogContainer, Task<ActionResult>> action,
             CancellationToken cancellationToken)

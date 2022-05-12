@@ -293,17 +293,26 @@ $@"    /// <summary>
             if (isVoidReturnType)
                 returnType = "object";
 
-            var content = operation.Responses.First().Value.Content.FirstOrDefault();
+            var response = operation.Responses.First().Value.Content.FirstOrDefault();
 
-            var acceptHeaderValue = content.Equals(default)
+            var acceptHeaderValue = response.Equals(default)
                 ? "default"
-                : $"\"{content.Key}\"";
+                : $"\"{response.Key}\"";
 
-            var contentValue = bodyParameter is null
+            var contentTypeValue = operation.RequestBody is null
                 ? "default"
-                : bodyParameter.Split(" ")[1];
+                : $"\"{operation.RequestBody?.Content.Keys.First()}\"";
 
-            sourceTextBuilder.AppendLine($"        return _client.InvokeAsync<{returnType}>(\"{operationType.ToString().ToUpper()}\", url, {acceptHeaderValue}, {contentValue}, cancellationToken);");
+            var content = bodyParameter is null
+                ? "default"
+                : operation.RequestBody?.Content.Keys.First() switch
+                {
+                    "application/json" => $"JsonContent.Create({bodyParameter.Split(" ")[1]}, options: Utilities.JsonOptions)",
+                    "application/octet-stream" => $"new StreamContent({bodyParameter.Split(" ")[1]})",
+                    _ => throw new Exception($"The media type {operation.RequestBody!.Content.Keys.First()} is not supported.")
+                };
+
+            sourceTextBuilder.AppendLine($"        return _client.InvokeAsync<{returnType}>(\"{operationType.ToString().ToUpper()}\", url, {acceptHeaderValue}, {contentTypeValue}, {content}, cancellationToken);");
             sourceTextBuilder.AppendLine($"    }}");
         }
 
@@ -378,11 +387,11 @@ $@"    /// <summary>
             return string.Join(", ", methodParameters);
         }
 
-        private string GetType(string mediaTypeKey, OpenApiMediaType mediaType)
+        private string GetType(string mediaTypeKey, OpenApiMediaType mediaType, bool returnValue = false)
         {
             return mediaTypeKey switch
             {
-                "application/octet-stream" => "StreamResponse",
+                "application/octet-stream" => returnValue ? "StreamResponse" : "Stream",
                 "application/json" => GetType(mediaType.Schema),
                 _ => throw new Exception($"The media type {mediaTypeKey} is not supported.")
             };
@@ -455,10 +464,9 @@ $@"    /// <summary>
             returnType = response.Content.Count switch
             {
                 0 => string.Empty,
-                1 => $"{GetType(response.Content.Keys.First(), response.Content.Values.First())}",
+                1 => $"{GetType(response.Content.Keys.First(), response.Content.Values.First(), returnValue: true)}",
                 _ => throw new Exception("Only zero or one response contents are supported.")
             };
-
 
             parameters = Enumerable.Empty<(string, OpenApiParameter)>();
             bodyParameter = default;
@@ -484,8 +492,8 @@ $@"    /// <summary>
 
                     var content = operation.RequestBody.Content.First();
 
-                    if (content.Key != "application/json")
-                        throw new Exception("Only body content media type application/json is supported.");
+                    if (!(content.Key == "application/json" || content.Key == "application/octet-stream"))
+                        throw new Exception("Only body content media types application/json or application/octet-stream are supported.");
 
                     if (!operation.RequestBody.Extensions.TryGetValue("x-name", out var value))
                         throw new Exception("x-name extension is missing.");

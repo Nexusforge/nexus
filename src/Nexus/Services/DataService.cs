@@ -88,7 +88,7 @@ namespace Nexus.Services
                 throw new ValidationException("The file period must be a multiple of the sample period.");
 
             // start
-            var zipFileName = $"Nexus_{exportParameters.Begin.ToString("yyyy-MM-ddTHH-mm-ss")}_{samplePeriod.ToUnitString()}_{exportId.ToString().Substring(0, 8)}.zip";
+            var zipFileName = $"{Guid.NewGuid()}.zip";
             var zipArchiveStream = _databaseService.WriteArtifact(zipFileName);
             using var zipArchive = new ZipArchive(zipArchiveStream, ZipArchiveMode.Create);
 
@@ -124,7 +124,7 @@ namespace Nexus.Services
             // write zip archive
             WriteZipArchiveEntries(zipArchive, tmpFolderPath, cancellationToken);
 
-            return $"api/artifacts/{zipFileName}";
+            return zipFileName;
         }
 
         private void CopyLicenseIfAvailable(string catalogId, string targetFolder)

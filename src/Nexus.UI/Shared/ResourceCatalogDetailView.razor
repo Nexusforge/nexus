@@ -1,5 +1,4 @@
-﻿@using System.Net
-<div class="h-full flex flex-col">
+﻿<div class="h-full flex flex-col">
     <h1 class="py-0.5 font-bold text-cyan-700">
         @Utilities.ToSpaceFilledCatalogId(Catalog.Id)
         @* Fake icon for correct height *@
@@ -35,7 +34,7 @@
                 {
                     <UIIconButton Icon="format-section" @onclick="OpenLicenseModal" />
                 }
-                <UIIconButton Icon="paperclip" @onclick="OpenAttachmentModal" />
+                <AttachmentView Catalog="Catalog" />
             </div>
         </div>
     }
@@ -48,30 +47,12 @@
     }
 </UIModal>
 
-<UIModal @bind-IsOpen="_isAttachmentModalOpen" Title="Attachments" Width="400px">
-    @if (_attachments is not null)
-    {
-        @foreach (var attachment in _attachments)
-        {
-            <a class="flex items-center hover:bg-gray-300 rounded-lg p-0.5" href="@GetHref(attachment)">
-                <span class="text-2xl mr-1 mdi mdi-@(GetIcon(attachment))"></span>
-                <span>@attachment</span>
-            </a>
-        }
-    }
-</UIModal>
-
 @code {
     [Parameter]
     public ResourceCatalogViewModel Catalog { get; set; } = default!;
 
-    [Inject]
-    public INexusClient Client { get; set; } = default!;
-
     private bool _isLicenseModalOpen;
-    private bool _isAttachmentModalOpen;
     private CatalogTimeRange? _timeRange;
-    private IList<string>? _attachments;
 
     private string? _readme;
 
@@ -103,41 +84,6 @@
     private void OpenLicenseModal()
     {
         _isLicenseModalOpen = true;
-    }
-
-    private void OpenAttachmentModal()
-    {
-        _attachments = default;
-        _isAttachmentModalOpen = true;
-
-        _ = Task.Run(async () =>
-        {
-            _attachments = await Client.Catalogs.GetAttachmentsAsync(Catalog.Id, CancellationToken.None);
-            StateHasChanged();
-        });
-    }
-
-    private string GetIcon(string attachmendId)
-    {
-        var extension = Path.GetExtension(attachmendId);
-
-        return extension switch
-        {
-            ".docx" => "file-word",
-            ".xlsx" => "file-excel",
-            ".pptx" => "file-powerpoint",
-            ".pdf" => "file-pdf-box",
-            ".jpg" => "file-image",
-            ".jpeg" => "file-image",
-            ".png" => "file-image",
-            ".tiff" => "file-image",
-            _ => "file"
-        };
-    }
-
-    public string GetHref(string attachmentId)
-    {
-        return $"api/v1/catalogs/{WebUtility.UrlEncode(Catalog.Id)}/attachments/{WebUtility.UrlEncode(Path.GetFileName(attachmentId))}/content";
     }
 }
 

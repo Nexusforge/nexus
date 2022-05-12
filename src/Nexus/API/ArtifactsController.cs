@@ -47,7 +47,7 @@ namespace Nexus.Controllers
                 if (_databaseService.TryReadArtifact(artifactId, out var artifactStream))
                 {
                     Response.Headers.ContentLength = artifactStream.Length;
-                    return File(artifactStream, "application/octet-stream", artifactId);
+                    return File(artifactStream, "application/octet-stream"); // do not set filname here, otherwise <a download="abc.pdf" /> will not work!
                 }
 
                 else

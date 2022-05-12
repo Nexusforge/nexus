@@ -21,6 +21,7 @@ namespace Nexus.Services
         bool TryReadAttachment(string catalogId, string attachmentId, [NotNullWhen(true)] out Stream? attachment);
         bool TryReadFirstAttachment(string catalogId, string searchPattern, EnumerationOptions enumerationOptions, [NotNullWhen(true)] out Stream? attachment);
         Stream WriteAttachment(string catalogId, string attachmentId);
+        void DeleteAttachment(string catalogId, string attachmentId);
 
         /* /artifacts */
         bool TryReadArtifact(string artifactId, [NotNullWhen(true)] out Stream? artifact);
@@ -187,6 +188,15 @@ namespace Nexus.Services
             Directory.CreateDirectory(attachmentFolder);
 
             return File.Open(attachmentFile, FileMode.Create, FileAccess.Write);
+        }
+
+        public void DeleteAttachment(string catalogId, string attachmentId)
+        {
+            var physicalId = catalogId.TrimStart('/').Replace("/", "_");
+            var attachmentFile = SafePathCombine(Path.Combine(_pathsOptions.Catalogs, physicalId), attachmentId);
+            var attachmentFolder = Path.GetDirectoryName(attachmentFile)!;
+
+            File.Delete(attachmentFile);
         }
 
         /* /artifact */

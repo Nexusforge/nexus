@@ -21,7 +21,8 @@ public interface IAppState : INotifyPropertyChanged
     string? SearchString { get; set; }
 
     ObservableCollection<JobViewModel> Jobs { get; }
-    void RemoveJob(JobViewModel job);
+    void AddJob(JobViewModel job);
+    void CancelJob(JobViewModel job);
 
     Task SelectCatalogAsync(string? catalogId);
 }
@@ -118,10 +119,18 @@ public class AppState : IAppState
 
     #region Methods
 
-    public void RemoveJob(JobViewModel job)
+    public void AddJob(JobViewModel job)
     {
-        job.Cancel();
-        Jobs.Remove(job);
+        if (Jobs.Count >= 20)
+            Jobs.RemoveAt(0);
+
+        Jobs.Add(job);
+    }
+
+    public void CancelJob(JobViewModel job)
+    {      
+        if (Jobs.Count >= 20)
+            Jobs.RemoveAt(0);
 
         if (job.Status is null || job.Status.Status < Api.TaskStatus.RanToCompletion)
             _ = _client.Jobs.CancelJobAsync(job.Id);

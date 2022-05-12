@@ -1,0 +1,176 @@
+﻿@using System.Net
+
+<UIIconButton Icon="paperclip" @onclick="OpenAttachmentModal" />
+
+<UIModal @bind-IsOpen="_isAttachmentModalOpen" Title="Attachments" Width="400px">
+    <ChildContent>
+        @if (_attachments is null)
+        {
+            <div class="h-full flex justify-center items-center mx-auto">
+                <UISpinner />
+                <span class="ml-3 text-gray-400">Loading attachments ...</span>
+            </div>
+        }
+        else
+        {
+            @foreach (var attachment in _attachments)
+            {
+                <a class="group flex text-gray-600 items-center hover:text-cyan-700 hover:bg-gray-100 rounded-lg p-1" href="@GetHref(attachment)">
+                    <span class="text-xl mr-1 mdi mdi-@(GetIcon(attachment))"></span>
+                    <span class="truncate text-sm">@attachment</span>
+                    @if (Catalog.Info.IsWritable)
+                    {
+                        <span class="hidden group-hover:inline text-xl ml-auto mr-1 mdi mdi-close hover:text-orange-500 hover:scale-125"
+                            @ondblclick="() => DeleteAttachmentAsync(attachment)" @onclick:preventDefault="true">
+                        </span>
+                    }
+                </a>
+            }
+        }
+    </ChildContent>
+    <Footer>
+        @if (Catalog.Info.IsWritable)
+        {
+            @if (_isUploading)
+            {
+                <div class="group flex items-center">
+                    <div class="group-hover:hidden">
+                        <UIProgress Progress="_progress" Radius="20" />
+                    </div>
+                    <span class="p-2 hidden group-hover:inline text-xl mr-1 mdi mdi-close hover:text-orange-500 cursor-pointer"
+                        @onclick="() => _cts?.Cancel()">
+                    </span>
+                    <span class="ml-2 text-sm">Uploading ...</span>
+                </div>
+            }
+        
+            <label class="@(_isUploading ? "hidden" : "")">
+                <InputFile class="hidden" OnChange="UploadAttachmentsAsync" multiple />
+                <UIButton2 Label="Upload" Icon="upload" />
+            </label>
+        }
+    </Footer>
+</UIModal>
+
+@code {
+    private bool _isAttachmentModalOpen;
+    private IList<string>? _attachments;
+
+    private bool _isUploading;
+    private double _progress;
+    private CancellationTokenSource? _cts;
+
+    [Inject]
+    public INexusClient Client { get; set; } = default!;
+
+    [Parameter]
+    public ResourceCatalogViewModel Catalog { get; set; } = default!;
+
+    private async Task DeleteAttachmentAsync(string attachment)
+    {
+        _attachments = default;
+        this.StateHasChanged();
+
+        await Client.Catalogs.DeleteAttachmentAsync(Catalog.Id, attachment);
+        await GetAttachmentsAsync();
+    }
+
+    private async Task UploadAttachmentsAsync(InputFileChangeEventArgs e)
+    {
+        var cts = new CancellationTokenSource();
+
+        _cts = cts;
+        _progress = 0;
+        _isUploading = true;
+
+        this.StateHasChanged();
+
+        try
+        {
+            var processedFiles = 0;
+            var currentStream = default(Stream);
+
+            _ = Task.Run(async () =>
+            {
+                while (_isUploading)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(500));
+
+                    if (currentStream is not null)
+                    {
+                        var fileProgress = currentStream.Position / (double)currentStream.Length;
+                        _progress = (processedFiles + fileProgress) / (double)e.FileCount;
+                    }
+
+                    this.StateHasChanged();
+                }
+            });
+
+            foreach (var file in e.GetMultipleFiles())
+            {
+                cts.Token.ThrowIfCancellationRequested();
+
+                if (file.Size == 0)
+                {
+                    processedFiles++;
+                    continue;
+                }
+
+                using var stream = file.OpenReadStream(maxAllowedSize: long.MaxValue);
+                currentStream = stream;
+                await Client.Catalogs.UploadAttachmentAsync(Catalog.Id, file.Name, stream, cts.Token);
+
+                processedFiles++;
+            }
+        }
+        catch (Exception)
+        {
+            cts.Cancel();
+        }
+        finally
+        {
+            _isUploading = default;
+            _attachments = default;
+            this.StateHasChanged();
+
+            await GetAttachmentsAsync();
+        }
+    }
+
+        private void OpenAttachmentModal()
+    {
+        _attachments = default;
+        _isAttachmentModalOpen = true;
+
+        _ = GetAttachmentsAsync();
+    }
+
+    private async Task GetAttachmentsAsync()
+    {
+        _attachments = await Client.Catalogs.GetAttachmentsAsync(Catalog.Id, CancellationToken.None);
+        StateHasChanged();
+    }
+
+    private string GetIcon(string attachmentId)
+    {
+        var extension = Path.GetExtension(attachmentId);
+
+        return extension switch
+        {
+            ".docx" => "file-word",
+            ".xlsx" => "file-excel",
+            ".pptx" => "file-powerpoint",
+            ".pdf" => "file-pdf-box",
+            ".jpg" => "file-image",
+            ".jpeg" => "file-image",
+            ".png" => "file-image",
+            ".tiff" => "file-image",
+            _ => "file"
+        };
+    }
+
+    public string GetHref(string attachmentId)
+    {
+        return $"api/v1/catalogs/{WebUtility.UrlEncode(Catalog.Id)}/attachments/{WebUtility.UrlEncode(Path.GetFileName(attachmentId))}/content";
+    }
+}

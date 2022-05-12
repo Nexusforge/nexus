@@ -1,17 +1,55 @@
 ﻿@inject IAppState AppState
 
-<div class="group text-gray-300 p-3 flex items-center hover:bg-cyan-800 rounded-lg cursor-pointer">
-    <div class="group-hover:bg-cyan-700 w-full bg-cyan-800 rounded-full h-1 group-hover:h-2">
-        <div class="group-hover:bg-cyan-400 bg-cyan-500 h-1 group-hover:h-2 rounded-full" style="width: @((int)(Job.Progress * 100))%"></div>
-    </div>
-    <div class="hidden group-hover:block mdi mdi-close pl-2 hover:scale-125"
-        @onclick="() => AppState.RemoveJob(Job)">
-    </div>
+<div class="group flex items-center">
+    @if (Job.Status is not null && Job.Status.Status >= Api.TaskStatus.RanToCompletion)
+    {
+        if (Job.Status.Status == Api.TaskStatus.RanToCompletion)
+        {
+            <div class="group-hover:hidden text-cyan-400">
+                <UIIconButton Icon="check" DarkMode="true" />
+            </div>
+            <div class="hidden group-hover:block text-cyan-400">
+                <a download="@GetDownloadName()" href="api/v1/artifacts/@Job.Status.Result">
+                    <UIIconButton Icon="download" DarkMode="true" />
+                </a>
+            </div>
+        }
+        else if (Job.Status.Status == Api.TaskStatus.Canceled)
+        {
+            <div class="text-gray-500">
+                <UIIconButton Icon="cancel" DarkMode="true" />
+            </div>
+        }
+        else if (Job.Status.Status == Api.TaskStatus.Faulted)
+        {
+            <div class="text-orange-600">
+                <UIIconButton Icon="flash" DarkMode="true" @onclick="OpenErrorMessageModal" />
+            </div>
+            <UIModal Title="Exception Details" AutoHeight="true" Width="400px" @bind-IsOpen="_isErrorMessageModalOpen">
+                <div class="bg-gray-100 rounded-lg p-3 text-gray-500 text-sm">
+                    @Job.Status.ExceptionMessage
+                </div>
+            </UIModal>
+        }
+    }
+    else
+    {
+        <div class="group-hover:hidden">
+            <UIProgress Progress="Job.Progress" Radius="25" DarkMode="true" />
+        </div>
+        <div class="hidden group-hover:block">
+            <UIIconButton Icon="close" DarkMode="true" @onclick="() => AppState.CancelJob(Job)" />
+        </div>
+    }
 </div>
 
 @code {
+
+    private bool _isErrorMessageModalOpen;
+
     [Parameter] 
     public JobViewModel Job { get; set; } = default!;
+
 
     protected override void OnInitialized()
     {
@@ -20,5 +58,15 @@
             if (e.PropertyName == nameof(Job.Status))
                 StateHasChanged();
         };
+    }
+
+    private void OpenErrorMessageModal()
+    {
+        _isErrorMessageModalOpen = true;
+    }
+
+    private string GetDownloadName()
+    {
+        return $"Nexus_{Job.Parameters.Begin.ToString("yyyy-MM-ddTHH-mm-ss")}_{AppState.Settings.SamplePeriod.Value.ToUnitString(withUnderScore: true)}.zip";
     }
 }

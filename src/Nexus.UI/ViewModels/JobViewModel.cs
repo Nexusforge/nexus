@@ -8,27 +8,27 @@ public class JobViewModel : INotifyPropertyChanged
 {
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    private bool _isCancelled;
     private JobStatus? _status;
     private Job _model;
-    private ExportParameters _parameters;
 
     public JobViewModel(Job model, ExportParameters parameters, INexusClient client)
     {
         _model = model;
-        _parameters = parameters;
+        Parameters = parameters;
 
         Task.Run(async () =>
         {
-            do
+            while (Status is null || Status.Status < TaskStatus.RanToCompletion)
             {
                 Status = await client.Jobs.GetJobStatusAsync(model.Id, CancellationToken.None);
                 await Task.Delay(TimeSpan.FromMilliseconds(500));
-            } while (!_isCancelled && Status.Status < TaskStatus.RanToCompletion);
+            };
         });
     }
 
     public Guid Id => _model.Id;
+
+    public ExportParameters Parameters { get; }
 
     public double Progress => _status is null 
         ? 0.0 
@@ -45,10 +45,5 @@ public class JobViewModel : INotifyPropertyChanged
             _status = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Status)));
         }
-    }
-
-    public void Cancel()
-    {
-        _isCancelled = true;
     }
 }

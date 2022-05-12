@@ -30,7 +30,7 @@
         var actualParameters = AppState.ExportParameters with { ResourcePaths = resourcePaths };
         var job = await Client.Jobs.ExportAsync(actualParameters, CancellationToken.None);
 
-        AppState.Jobs.Add(new JobViewModel(job, actualParameters, Client));
+        AppState.AddJob(new JobViewModel(job, actualParameters, Client));
     }
 
     private string GetLabel()

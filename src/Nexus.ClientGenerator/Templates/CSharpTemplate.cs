@@ -59,24 +59,11 @@ public class {{1}} : I{{1}}, IDisposable
 
     private static string _tokenFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nexusapi", "tokens");
 
-    private static JsonSerializerOptions _options;
-
     private TokenPair? _tokenPair;
     private HttpClient _httpClient;
     private string? _tokenFilePath;
 
 {{4}}
-    static {{1}}()
-    {
-        _options = new JsonSerializerOptions()
-        {
-            PropertyNameCaseInsensitive = true,
-            WriteIndented = true
-        };
-
-        _options.Converters.Add(new JsonStringEnumConverter());
-    }
-
     /// <summary>
     /// Initializes a new instance of the <see cref="{{1}}"/>.
     /// </summary>
@@ -116,14 +103,14 @@ public class {{1}} : I{{1}}, IDisposable
         
         if (File.Exists(_tokenFilePath))
         {
-            actualRefreshToken = JsonSerializer.Deserialize<string>(File.ReadAllText(_tokenFilePath), _options)
+            actualRefreshToken = JsonSerializer.Deserialize<string>(File.ReadAllText(_tokenFilePath), Utilities.JsonOptions)
                 ?? throw new Exception($"Unable to deserialize file {_tokenFilePath}.");
         }
 
         else
         {
             Directory.CreateDirectory(_tokenFolderPath);
-            File.WriteAllText(_tokenFilePath, JsonSerializer.Serialize(refreshToken, _options));
+            File.WriteAllText(_tokenFilePath, JsonSerializer.Serialize(refreshToken, Utilities.JsonOptions));
             actualRefreshToken = refreshToken;
         }
 
@@ -147,14 +134,10 @@ public class {{1}} : I{{1}}, IDisposable
         _httpClient.DefaultRequestHeaders.Remove(NexusConfigurationHeaderKey);
     }
 
-    internal async Task<T> InvokeAsync<T>(string method, string relativeUrl, string? acceptHeaderValue, object? content, CancellationToken cancellationToken)
+    internal async Task<T> InvokeAsync<T>(string method, string relativeUrl, string? acceptHeaderValue, string? contentTypeValue, HttpContent? content, CancellationToken cancellationToken)
     {
         // prepare request
-        var httpContent = content is null
-            ? default
-            : JsonContent.Create(content, options: _options);
-
-        using var request = BuildRequestMessage(method, relativeUrl, httpContent, acceptHeaderValue);
+        using var request = BuildRequestMessage(method, relativeUrl, content, contentTypeValue, acceptHeaderValue);
 
         // send request
         var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
@@ -178,7 +161,7 @@ public class {{1}} : I{{1}}, IDisposable
                         {
                             await RefreshTokenAsync(_tokenPair.RefreshToken, cancellationToken);
 
-                            using var newRequest = BuildRequestMessage(method, relativeUrl, httpContent, acceptHeaderValue);
+                            using var newRequest = BuildRequestMessage(method, relativeUrl, content, contentTypeValue, acceptHeaderValue);
                             var newResponse = await _httpClient.SendAsync(newRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
                             if (newResponse is not null)
@@ -227,7 +210,7 @@ public class {{1}} : I{{1}}, IDisposable
             else
             {
                 var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-                var returnValue = await JsonSerializer.DeserializeAsync<T>(stream, _options);
+                var returnValue = await JsonSerializer.DeserializeAsync<T>(stream, Utilities.JsonOptions);
 
                 if (returnValue is null)
                     throw new {{8}}($"N01", "Response data could not be deserialized.");
@@ -242,14 +225,17 @@ public class {{1}} : I{{1}}, IDisposable
         }
     }
     
-    private HttpRequestMessage BuildRequestMessage(string method, string relativeUrl, HttpContent? httpContent, string? acceptHeaderValue)
+    private HttpRequestMessage BuildRequestMessage(string method, string relativeUrl, HttpContent? content, string? contentTypeHeaderValue, string? acceptHeaderValue)
     {
         var requestMessage = new HttpRequestMessage()
         {
             Method = new HttpMethod(method),
             RequestUri = new Uri(relativeUrl, UriKind.Relative),
-            Content = httpContent
+            Content = content
         };
+
+        if (contentTypeHeaderValue is not null && requestMessage.Content is not null)
+            requestMessage.Content.Headers.ContentType = MediaTypeWithQualityHeaderValue.Parse(contentTypeHeaderValue);
 
         if (acceptHeaderValue is not null)
             requestMessage.Headers.Accept.Add(MediaTypeWithQualityHeaderValue.Parse(acceptHeaderValue));
@@ -267,7 +253,7 @@ public class {{1}} : I{{1}}, IDisposable
         if (_tokenFilePath is not null)
         {
             Directory.CreateDirectory(_tokenFolderPath);
-            File.WriteAllText(_tokenFilePath, JsonSerializer.Serialize(tokenPair.RefreshToken, _options));
+            File.WriteAllText(_tokenFilePath, JsonSerializer.Serialize(tokenPair.RefreshToken, Utilities.JsonOptions));
         }
 
         var authorizationHeaderValue = $"Bearer {tokenPair.AccessToken}";
@@ -400,3 +386,19 @@ internal class DisposableConfiguration : IDisposable
 }
 
 {{9}}
+
+internal static class Utilities
+{
+    internal static JsonSerializerOptions JsonOptions { get; }
+
+    static Utilities()
+    {
+        JsonOptions = new JsonSerializerOptions()
+        {
+            PropertyNameCaseInsensitive = true,
+            WriteIndented = true
+        };
+
+        JsonOptions.Converters.Add(new JsonStringEnumConverter());
+    }
+}

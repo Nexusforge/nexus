@@ -51,12 +51,7 @@
         }
         else
         {
-            <div
-                class="mx-auto px-5 w-min p-1 rounded border border-gray-300 flex justify-center items-center text-cyan-700 cursor-pointer hover:bg-gray-100"
-                @onmousedown="GenerateTokenAsync">
-                <span class="mr-3 mdi mdi-autorenew"></span>
-                Generate
-            </div>
+            <UIButton2 Label="Generate" Icon="autorenew" @onclick="GenerateTokenAsync" />
         }
     }
 </UIModal>

@@ -25,6 +25,8 @@ namespace Nexus.Controllers
         // GET      /api/catalogs/{catalogId}/timerange
         // GET      /api/catalogs/{catalogId}/availability
         // GET      /api/catalogs/{catalogId}/attachments
+        // PUT      /api/catalogs/{catalogId}/attachments/{attachmentId}
+        // DELETE   /api/catalogs/{catalogId}/attachments/{attachmentId}
         // GET      /api/catalogs/{catalogId}/attachments/{attachmentId}/content
 
         // GET      /api/catalogs/{catalogId}/metadata
@@ -67,7 +69,7 @@ namespace Nexus.Controllers
         {
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            var response = ProtectCatalogByAccessibilityAsync<ResourceCatalog>(catalogId, checkAccess: true, async catalogContainer =>
+            var response = ProtectCatalogAsync<ResourceCatalog>(catalogId, ensureReadable: true, ensureWritable: false, async catalogContainer =>
             {
                 var lazyCatalogInfo = await catalogContainer.GetLazyCatalogInfoAsync(cancellationToken);
                 return lazyCatalogInfo.Catalog;
@@ -89,7 +91,7 @@ namespace Nexus.Controllers
         {
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            var response = await ProtectCatalogByAccessibilityAsync<CatalogInfo[]>(catalogId, checkAccess: false, async catalogContainer =>
+            var response = await ProtectCatalogAsync<CatalogInfo[]>(catalogId, ensureReadable: false, ensureWritable: false, async catalogContainer =>
             {
                 var childContainers = await catalogContainer.GetChildCatalogContainersAsync(cancellationToken);
 
@@ -139,7 +141,7 @@ namespace Nexus.Controllers
         {
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            var response = ProtectCatalogByAccessibilityAsync<CatalogTimeRange>(catalogId, checkAccess: true, async catalogContainer =>
+            var response = ProtectCatalogAsync<CatalogTimeRange>(catalogId, ensureReadable: true, ensureWritable: false, async catalogContainer =>
             {
                 using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(catalogContainer.DataSourceRegistration, cancellationToken);
                 return await dataSource.GetTimeRangeAsync(catalogContainer.Id, cancellationToken);
@@ -165,7 +167,7 @@ namespace Nexus.Controllers
         {
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            var response = ProtectCatalogByAccessibilityAsync<CatalogAvailability>(catalogId, checkAccess: true, async catalogContainer =>
+            var response = ProtectCatalogAsync<CatalogAvailability>(catalogId, ensureReadable: true, ensureWritable: false, async catalogContainer =>
             {
                 using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(catalogContainer.DataSourceRegistration, cancellationToken);
                 return await dataSource.GetAvailabilityAsync(catalogContainer.Id, begin, end, cancellationToken);
@@ -189,7 +191,7 @@ namespace Nexus.Controllers
 
             try
             {
-                var response = ProtectCatalogByAccessibilityAsync<string[]>(catalogId, checkAccess: true, catalog =>
+                var response = ProtectCatalogAsync<string[]>(catalogId, ensureReadable: true, ensureWritable: false, catalog =>
                 {
                     return Task.FromResult((ActionResult<string[]>)_databaseService.EnumerateAttachments(catalogId).ToArray());
                 }, cancellationToken);
@@ -201,6 +203,97 @@ namespace Nexus.Controllers
                 return Task.FromResult((ActionResult<string[]>)
                     UnprocessableEntity(ex.Message));
             }
+        }
+
+        /// <summary>
+        /// Uploads the specified attachment.
+        /// </summary>
+        /// <param name="catalogId">The catalog identifier.</param>
+        /// <param name="attachmentId">The attachment identifier.</param>
+        /// <param name="content">The binary file content.</param>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
+        [HttpPut("{catalogId}/attachments/{attachmentId}")]
+        [DisableRequestSizeLimit]
+        public Task<ActionResult>
+            UploadAttachmentAsync(
+                string catalogId,
+                string attachmentId,
+                [FromBody] Stream content,
+                CancellationToken cancellationToken)
+        {
+            catalogId = WebUtility.UrlDecode(catalogId);
+            attachmentId = WebUtility.UrlDecode(attachmentId);
+
+            var response = ProtectCatalogNonGenericAsync(catalogId, ensureReadable: false, ensureWritable: true, async catalog =>
+            {
+                try
+                {
+                    using var attachmentStream = _databaseService.WriteAttachment(catalogId, attachmentId);
+                    await content.CopyToAsync(attachmentStream, cancellationToken);
+
+                    return Ok();
+                }
+                catch (IOException ex)
+                {
+                    return (ActionResult)
+                        StatusCode(StatusCodes.Status423Locked, ex.Message);
+                }
+                catch (Exception ex)
+                {
+                    try
+                    {
+                        if (_databaseService.AttachmentExists(catalogId, attachmentId))
+                            _databaseService.DeleteAttachment(catalogId, attachmentId);
+                    }
+                    catch (Exception)
+                    {
+                        //
+                    }
+
+                    return (ActionResult)
+                        UnprocessableEntity(ex.Message);
+                }
+            }, cancellationToken);
+
+            return response;
+        }
+
+        /// <summary>
+        /// Deletes the specified attachment.
+        /// </summary>
+        /// <param name="catalogId">The catalog identifier.</param>
+        /// <param name="attachmentId">The attachment identifier.</param>
+        /// <param name="cancellationToken">A token to cancel the current operation.</param>
+        [HttpDelete("{catalogId}/attachments/{attachmentId}")]
+        public Task<ActionResult>
+            DeleteAttachmentAsync(
+                string catalogId,
+                string attachmentId,
+                CancellationToken cancellationToken)
+        {
+            catalogId = WebUtility.UrlDecode(catalogId);
+            attachmentId = WebUtility.UrlDecode(attachmentId);
+
+            var response = ProtectCatalogNonGenericAsync(catalogId, ensureReadable: false, ensureWritable: true, async catalog =>
+            {
+                try
+                {
+                    _databaseService.DeleteAttachment(catalogId, attachmentId);
+                    return Ok();
+                }
+                catch (IOException ex)
+                {
+                    return (ActionResult)
+                        StatusCode(StatusCodes.Status423Locked, ex.Message);
+                }
+                catch (Exception ex)
+                {
+                    return (ActionResult)
+                        UnprocessableEntity(ex.Message);
+                }
+            }, cancellationToken);
+
+            return response;
         }
 
         /// <summary>
@@ -219,7 +312,7 @@ namespace Nexus.Controllers
             catalogId = WebUtility.UrlDecode(catalogId);
             attachmentId = WebUtility.UrlDecode(attachmentId);
 
-            var response = ProtectCatalogByAccessibilityNonGenericAsync(catalogId, catalog =>
+            var response = ProtectCatalogNonGenericAsync(catalogId, ensureReadable: true, ensureWritable: false, catalog =>
             {
                 try
                 {
@@ -234,6 +327,11 @@ namespace Nexus.Controllers
                         return Task.FromResult((ActionResult)
                             NotFound($"Could not find attachment {attachmentId} for catalog {catalogId}."));
                     }
+                }
+                catch (IOException ex)
+                {
+                    return Task.FromResult((ActionResult)
+                        StatusCode(StatusCodes.Status423Locked, ex.Message));
                 }
                 catch (Exception ex)
                 {
@@ -258,7 +356,7 @@ namespace Nexus.Controllers
         {
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            var response = ProtectCatalogByAccessibilityAsync<CatalogMetadata>(catalogId, checkAccess: true, async catalogContainer =>
+            var response = ProtectCatalogAsync<CatalogMetadata>(catalogId, ensureReadable: true, ensureWritable: false, async catalogContainer =>
             {
                 return await Task.FromResult(catalogContainer.Metadata);
             }, cancellationToken);
@@ -281,7 +379,7 @@ namespace Nexus.Controllers
         {
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            var response = ProtectCatalogByAccessibilityAsync<object>(catalogId, checkAccess: true, async catalogContainer =>
+            var response = ProtectCatalogAsync<object>(catalogId, ensureReadable: true, ensureWritable: false, async catalogContainer =>
             {
                 var canEdit = AuthorizationUtilities.IsCatalogWritable(catalogId, User);
 
@@ -297,9 +395,10 @@ namespace Nexus.Controllers
             return response;
         }
 
-        private async Task<ActionResult<T>> ProtectCatalogByAccessibilityAsync<T>(
+        private async Task<ActionResult<T>> ProtectCatalogAsync<T>(
             string catalogId,
-            bool checkAccess,
+            bool ensureReadable,
+            bool ensureWritable,
             Func<CatalogContainer, Task<ActionResult<T>>> action,
             CancellationToken cancellationToken)
         {
@@ -311,8 +410,11 @@ namespace Nexus.Controllers
 
             if (catalogContainer is not null)
             {
-                if (checkAccess && !AuthorizationUtilities.IsCatalogReadable(catalogContainer.Id, catalogContainer.Metadata, catalogContainer.Owner, User))
-                    return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to access the catalog {catalogId}.");
+                if (ensureReadable && !AuthorizationUtilities.IsCatalogReadable(catalogContainer.Id, catalogContainer.Metadata, catalogContainer.Owner, User))
+                    return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to read the catalog {catalogId}.");
+
+                if (ensureWritable && !AuthorizationUtilities.IsCatalogWritable(catalogContainer.Id, User))
+                    return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to modify the catalog {catalogId}.");
 
                 return await action.Invoke(catalogContainer);
             }
@@ -322,8 +424,10 @@ namespace Nexus.Controllers
             }
         }
 
-        private async Task<ActionResult> ProtectCatalogByAccessibilityNonGenericAsync(
+        private async Task<ActionResult> ProtectCatalogNonGenericAsync(
             string catalogId,
+            bool ensureReadable,
+            bool ensureWritable,
             Func<CatalogContainer, Task<ActionResult>> action,
             CancellationToken cancellationToken)
         {
@@ -332,8 +436,11 @@ namespace Nexus.Controllers
 
             if (catalogContainer is not null)
             {
-                if (!AuthorizationUtilities.IsCatalogReadable(catalogContainer.Id, catalogContainer.Metadata, catalogContainer.Owner, User))
-                    return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to access the catalog {catalogId}.");
+                if (ensureReadable && !AuthorizationUtilities.IsCatalogReadable(catalogContainer.Id, catalogContainer.Metadata, catalogContainer.Owner, User))
+                    return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to read the catalog {catalogId}.");
+
+                if (ensureWritable && !AuthorizationUtilities.IsCatalogWritable(catalogContainer.Id, User))
+                    return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to modify the catalog {catalogId}.");
 
                 return await action.Invoke(catalogContainer);
             }

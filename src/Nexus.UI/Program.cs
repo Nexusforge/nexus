@@ -15,6 +15,8 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
+#warning Very large attachment upload is first loading into memory and only then to server (https://stackoverflow.com/questions/66770670/streaming-large-files-from-blazor-webassembly)
+
 var httpClient = new HttpClient
 {
     BaseAddress = new Uri(builder.HostEnvironment.BaseAddress)

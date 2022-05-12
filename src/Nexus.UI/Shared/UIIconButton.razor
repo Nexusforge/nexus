@@ -1,4 +1,4 @@
-﻿<div class="flex-none flex justify-center items-center rounded-full w-12 h-12 hover:bg-gray-200 hover:text-cyan-700 cursor-pointer"
+﻿<div class="flex-none flex justify-center items-center rounded-full w-12 h-12 hover:@BackgroundHoverColor hover:@TextHoverColor cursor-pointer select-none"
     @onclick="OnClick">
     <span class="text-xl mdi mdi-@Icon"></span>
 </div>
@@ -9,5 +9,12 @@
     public string Icon { get; set; } = default!;
 
     [Parameter]
+    public bool DarkMode { get; set; } = false;
+
+    [Parameter]
     public EventCallback<MouseEventArgs> OnClick { get; set; }
+
+    private string BackgroundHoverColor => DarkMode ? "bg-cyan-800" : "bg-gray-200";
+
+    private string TextHoverColor => DarkMode ? "inherit" : "text-cyan-700";
 }

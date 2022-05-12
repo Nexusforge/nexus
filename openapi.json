@@ -237,6 +237,107 @@
         }
       }
     },
+    "/api/v1/catalogs/{catalogId}/attachments/{attachmentId}": {
+      "put": {
+        "tags": [
+          "Catalogs"
+        ],
+        "summary": "Uploads the specified attachment.",
+        "operationId": "Catalogs_UploadAttachment",
+        "parameters": [
+          {
+            "name": "catalogId",
+            "in": "path",
+            "required": true,
+            "description": "The catalog identifier.",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "attachmentId",
+            "in": "path",
+            "required": true,
+            "description": "The attachment identifier.",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 2
+          }
+        ],
+        "requestBody": {
+          "x-name": "content",
+          "description": "The binary file content.",
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary",
+                "nullable": false
+              }
+            }
+          },
+          "required": true,
+          "x-position": 3
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Catalogs"
+        ],
+        "summary": "Deletes the specified attachment.",
+        "operationId": "Catalogs_DeleteAttachment",
+        "parameters": [
+          {
+            "name": "catalogId",
+            "in": "path",
+            "required": true,
+            "description": "The catalog identifier.",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "attachmentId",
+            "in": "path",
+            "required": true,
+            "description": "The attachment identifier.",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/catalogs/{catalogId}/attachments/{attachmentId}/content": {
       "get": {
         "tags": [
