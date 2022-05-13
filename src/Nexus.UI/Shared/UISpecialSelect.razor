@@ -32,7 +32,7 @@
     }
 
     [Inject]
-    public IJSInProcessRuntime JSInProcessRuntime { get; set; } = default!;
+    public IJSInProcessRuntime JSRuntime { get; set; } = default!;
 
     [Parameter]
     public string Label { get; set; } = default!;
@@ -61,6 +61,6 @@
         _isOpen = !_isOpen;
 
         if (_isOpen)
-            JSInProcessRuntime.InvokeVoid("nexus.util.addClickEvent", _dotNetHelper);
+            JSRuntime.InvokeVoid("nexus.util.addClickEvent", _dotNetHelper);
     }
 }

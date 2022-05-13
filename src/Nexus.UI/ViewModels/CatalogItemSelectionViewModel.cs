@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using Nexus.Api;
 using Nexus.UI.Core;
 
@@ -6,7 +5,6 @@ namespace Nexus.UI.ViewModels;
 
 public class CatalogItemSelectionViewModel
 {
-    private static Regex _snakeCaseEvaluator = new Regex("(?<=[a-z])([A-Z])", RegexOptions.Compiled);
 
     public CatalogItemSelectionViewModel(CatalogItemViewModel baseItem)
     {
@@ -21,11 +19,7 @@ public class CatalogItemSelectionViewModel
         var baseItem = BaseItem;
         var samplePeriodString = Utilities.ToUnitString(samplePeriod, withUnderScore: true);
         var baseSamplePeriodString = Utilities.ToUnitString(baseItem.Representation.SamplePeriod, withUnderScore: true);
-
-        var snakeCaseKind = kind == RepresentationKind.Original 
-            ? ""
-            : "_" + _snakeCaseEvaluator.Replace(kind.ToString(), "_$1").Trim().ToLower();
-
+        var snakeCaseKind = Utilities.KindToString(kind);
         var representationId = $"{samplePeriodString}{snakeCaseKind}";
         var resourcePath = $"{baseItem.Catalog.Id}/{baseItem.Resource.Id}/{representationId}#base={baseSamplePeriodString}";
 

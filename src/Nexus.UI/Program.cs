@@ -31,8 +31,8 @@ builder.Services
     .AddSingleton<IJSInProcessRuntime>(serviceProvider => (IJSInProcessRuntime)serviceProvider.GetRequiredService<IJSRuntime>())
     .AddSingleton<IAppState>(serviceProvider => 
     {
-        var jSInProcessRuntime = serviceProvider.GetRequiredService<IJSInProcessRuntime>();
-        var appState = new AppState(authenticationSchemes, (INexusClient)client, jSInProcessRuntime);
+        var jsRuntime = serviceProvider.GetRequiredService<IJSInProcessRuntime>();
+        var appState = new AppState(authenticationSchemes, (INexusClient)client, jsRuntime);
 
         return appState;
     })

@@ -24,10 +24,10 @@ public class SettingsViewModel : INotifyPropertyChanged
 
     private List<CatalogItemSelectionViewModel> _selectedCatalogItems = new List<CatalogItemSelectionViewModel>();
 
-    public SettingsViewModel(IAppState appState, IJSInProcessRuntime jSInProcessRuntime, INexusClient client)
+    public SettingsViewModel(IAppState appState, IJSInProcessRuntime jsRuntime, INexusClient client)
     {
         _appState = appState;
-        _jSInProcessRuntime = jSInProcessRuntime;
+        _jSInProcessRuntime = jsRuntime;
         _client = client;
 
         InitializeTask = new Lazy<Task>(InitializeAsync);
@@ -108,10 +108,7 @@ public class SettingsViewModel : INotifyPropertyChanged
         }
     }
     
-    public IDictionary<string, string> Configuration
-    {
-        get => _appState.ExportParameters.Configuration;
-    }
+    public IDictionary<string, string> Configuration => _appState.ExportParameters.Configuration;
 
     public IReadOnlyList<CatalogItemSelectionViewModel> SelectedCatalogItems => _selectedCatalogItems;
 
@@ -142,6 +139,19 @@ public class SettingsViewModel : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CanExport)));
     }
 
+    public ExportParameters GetExportParameters()
+    {
+        var samplePeriod = SamplePeriod.Value;
+
+        var resourcePaths = SelectedCatalogItems
+            .SelectMany(item => item.Kinds.Select(kind => item.GetResourcePath(kind, samplePeriod)))
+            .ToList();
+
+        var actualParameters = _appState.ExportParameters with { ResourcePaths = resourcePaths };
+
+        return actualParameters;
+    }
+
     public Dictionary<string, string> GetOptionItems(Dictionary<string, string> items)
     {
         return items
@@ -152,6 +162,12 @@ public class SettingsViewModel : INotifyPropertyChanged
     public bool IsSelected(CatalogItemViewModel catalogItem)
     {
         return TryFindSelectedCatalogItem(catalogItem) is not null;
+    }
+
+    public void SetSelectedCatalogItems(List<CatalogItemSelectionViewModel> selectedCatalogItems)
+    {
+        _selectedCatalogItems = selectedCatalogItems;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedCatalogItems)));
     }
 
     public void ToggleCatalogItemSelection(CatalogItemViewModel catalogItem)

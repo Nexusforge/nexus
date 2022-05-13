@@ -104,7 +104,6 @@ namespace Nexus.Extensibility
                 var baseProgress = consumedPeriod.Ticks / (double)totalPeriod.Ticks;
                 var relativeProgressFactor = currentPeriod.Ticks / (double)totalPeriod.Ticks;
                 var relativeProgress = progressValue * relativeProgressFactor;
-
                 progress?.Report(baseProgress + relativeProgress);
             };
 
@@ -219,7 +218,7 @@ namespace Nexus.Extensibility
                     consumedFilePeriod += currentPeriod;
                     remainingPeriod -= currentPeriod;
 
-                    progress?.Report(consumedFilePeriod.Ticks / (double)duration.Ticks);
+                    progress?.Report(consumedPeriod.Ticks / (double)totalPeriod.Ticks);
                 }
             });
 

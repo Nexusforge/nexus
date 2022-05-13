@@ -274,22 +274,23 @@ namespace Nexus.Controllers
             catalogId = WebUtility.UrlDecode(catalogId);
             attachmentId = WebUtility.UrlDecode(attachmentId);
 
-            var response = ProtectCatalogNonGenericAsync(catalogId, ensureReadable: false, ensureWritable: true, async catalog =>
+            var response = ProtectCatalogNonGenericAsync(catalogId, ensureReadable: false, ensureWritable: true, catalog =>
             {
                 try
                 {
                     _databaseService.DeleteAttachment(catalogId, attachmentId);
-                    return Ok();
+                    return Task.FromResult((ActionResult)
+                        Ok());
                 }
                 catch (IOException ex)
                 {
-                    return (ActionResult)
-                        StatusCode(StatusCodes.Status423Locked, ex.Message);
+                    return Task.FromResult((ActionResult)
+                        StatusCode(StatusCodes.Status423Locked, ex.Message));
                 }
                 catch (Exception ex)
                 {
-                    return (ActionResult)
-                        UnprocessableEntity(ex.Message);
+                    return Task.FromResult((ActionResult)
+                        UnprocessableEntity(ex.Message));
                 }
             }, cancellationToken);
 

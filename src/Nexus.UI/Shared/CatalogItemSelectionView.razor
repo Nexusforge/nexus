@@ -1,5 +1,5 @@
 ﻿@inject IAppState AppState
-@inject IJSInProcessRuntime JSInProcessRuntime
+@inject IJSInProcessRuntime JSRuntime
 
 <div class="group text-gray-200 cursor-pointer hover:bg-cyan-800 p-2 pt-1 rounded select-none">
     <div>
@@ -47,7 +47,7 @@
     private void CopyToClipboard(RepresentationKind kind)
     {
         var resourcePath = SelectedItem.GetResourcePath(kind, AppState.Settings.SamplePeriod.Value);
-        JSInProcessRuntime.InvokeVoid("nexus.util.copyToClipboard", resourcePath);
+        JSRuntime.InvokeVoid("nexus.util.copyToClipboard", resourcePath);
     }
 
     private void AddRepresentationKind(RepresentationKind kind)

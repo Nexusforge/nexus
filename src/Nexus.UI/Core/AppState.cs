@@ -37,6 +37,7 @@ public class AppState : IAppState
 
     #region Fields
 
+    private ExportParameters _exportParameters;
     private INexusClient _client;
     private string? _searchString;
     private const string GROUP_KEY = "Groups";
@@ -48,11 +49,11 @@ public class AppState : IAppState
     public AppState(
         IList<AuthenticationSchemeDescription> authenticationSchemes, 
         INexusClient client,
-        IJSInProcessRuntime jSInProcessRuntime)
+        IJSInProcessRuntime jsRuntime)
     {
         AuthenticationSchemes = authenticationSchemes;
         _client = client;
-        Settings = new SettingsViewModel(this, jSInProcessRuntime, client);
+        Settings = new SettingsViewModel(this, jsRuntime, client);
 
         var childCatalogInfosTask = client.Catalogs.GetChildCatalogInfosAsync(ResourceCatalogViewModel.ROOT_CATALOG_ID, CancellationToken.None);
 
@@ -85,7 +86,21 @@ public class AppState : IAppState
 
     public IList<AuthenticationSchemeDescription> AuthenticationSchemes { get; }
     
-    public ExportParameters ExportParameters { get; set; }
+    public ExportParameters ExportParameters
+    {
+        get {
+            return _exportParameters;
+        }
+        set
+        {
+            if (_exportParameters != value)
+            {
+                _exportParameters = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExportParameters)));
+            }
+        }
+    }
+
     public SettingsViewModel Settings { get; }
 
     public ResourceCatalogViewModel RootCatalog { get; }

@@ -1,14 +1,113 @@
-﻿<div class="flex justify-between text-gray-200">
-    <div class="p-4 flex flex-col justify-center items-center hover:text-orange-500 cursor-pointer">
-        <span class="text-2xl mdi mdi-folder-open mb-1"></span>
-        <span class="text-sm">Load</span>
-    </div>
-    <div class="p-4 flex flex-col justify-center items-center hover:text-orange-500 cursor-pointer">
+﻿@using System.Text.Json
+@using System.Text
+
+@inject IAppState AppState
+@inject IJSInProcessRuntime JSRuntime
+
+<div class="flex justify-between text-gray-200">
+
+     <label>
+        <InputFile class="hidden" OnChange="UploadSettingsAsync" accept="application/json" />
+        <div class="p-4 flex flex-col justify-center items-center hover:text-orange-500 cursor-pointer">
+            <span class="text-2xl mdi mdi-folder-open mb-1"></span>
+            <span class="text-sm">Load</span>
+        </div>
+    </label>
+
+    <div class="p-4 flex flex-col justify-center items-center hover:text-orange-500 cursor-pointer" @onclick="DownloadSettings">
         <span class="text-2xl mdi mdi-file-download mb-1"></span>
         <span class="text-sm">Save</span>
     </div>
+
     <div class="p-4 flex flex-col justify-center items-center hover:text-orange-500 cursor-pointer">
         <span class="text-2xl mdi mdi-chart-areaspline mb-1"></span>
         <span class="text-sm">Visualize</span>
     </div>
+
 </div>
+
+@code {
+
+    private async Task UploadSettingsAsync(InputFileChangeEventArgs e)
+    {
+        using var stream = e.File.OpenReadStream(maxAllowedSize: long.MaxValue);
+        var exportParameters = await JsonSerializer.DeserializeAsync<ExportParameters>(stream);
+
+        if (exportParameters is not null)
+        {
+            var catalogItemSelections = new List<CatalogItemSelectionViewModel>();
+            var commonSamplePeriod = default(TimeSpan);
+
+            foreach (var resourcePath in exportParameters.ResourcePaths)
+            {
+                try
+                {
+                    Utilities.ParseResourcePath(
+                        resourcePath,
+                        out var catalogId,
+                        out var resourceId,
+                        out var samplePeriod,
+                        out var kind,
+                        out var basePeriod);
+
+                    if (commonSamplePeriod.Equals(default))
+                        commonSamplePeriod = samplePeriod;
+
+                    else if (commonSamplePeriod != samplePeriod)
+                        continue;
+
+                    await AppState.RootCatalog.SelectCatalogAsync(catalogId);
+
+                    if (AppState.SelectedCatalog is not null && 
+                        AppState.SelectedCatalog.Catalog!.Resources is not null)
+                    {
+                        var catalog = AppState.SelectedCatalog.Catalog;
+                        
+                        var resource = catalog.Resources
+                            .FirstOrDefault(resource => resource.Id == resourceId);
+
+                        if (resource is not null && resource.Representations is not null)
+                        {
+                            var representation = resource.Representations
+                                .FirstOrDefault(representation => representation.SamplePeriod == basePeriod);
+
+                            if (representation is not null)
+                            {
+                                var catalogItemSelection = catalogItemSelections.FirstOrDefault(item => 
+                                    item.BaseItem.Catalog.Id == catalog.Id &&
+                                    item.BaseItem.Resource.Id == resource.Id &&
+                                    item.BaseItem.Representation.SamplePeriod == representation.SamplePeriod);
+
+                                if (catalogItemSelection is null)
+                                {
+                                    var catalogItem = new CatalogItemViewModel(catalog, resource, representation);
+                                    catalogItemSelection = new CatalogItemSelectionViewModel(catalogItem);
+                                    catalogItemSelections.Add(catalogItemSelection);
+                                }
+
+                                catalogItemSelection.Kinds.Add(kind);
+                            }
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+                    //
+                }
+            }
+
+            AppState.Settings.SamplePeriod = new Period(commonSamplePeriod);
+            AppState.Settings.SetSelectedCatalogItems(catalogItemSelections);
+            AppState.ExportParameters = exportParameters;
+        }
+    }
+
+    private void DownloadSettings()
+    {
+        var exportParameters = AppState.Settings.GetExportParameters();
+        var options = new JsonSerializerOptions() { WriteIndented = true };
+        var jsonString = JsonSerializer.Serialize(exportParameters, options);
+
+		JSRuntime.InvokeVoid("nexus.util.bloSaveAs", "nexus-settings.json", Convert.ToBase64String(Encoding.UTF8.GetBytes(jsonString)));
+    }
+}

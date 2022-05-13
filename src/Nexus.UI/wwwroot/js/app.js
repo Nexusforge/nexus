@@ -1,6 +1,17 @@
 nexus = {};
 nexus.util = {};
 
+nexus.util.bloSaveAs = function (filename, bytesBase64) {
+
+    let link = document.createElement('a');
+    link.download = filename;
+    link.href = "data:application/octet-stream;base64," + bytesBase64;
+
+    document.body.appendChild(link); // Needed for Firefox
+    link.click();
+    document.body.removeChild(link);
+}
+
 nexus.util.addMouseUpEvent = function (dotNetHelper) {
 
     window.addEventListener("mouseup", e => dotNetHelper.invokeMethodAsync("OnMouseUp"), {

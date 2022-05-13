@@ -61,6 +61,16 @@
 
 @code {
 
+    protected override void OnInitialized()
+    {
+        AppState.PropertyChanged += (sender, e) => 
+        {
+            if (e.PropertyName == nameof(AppState.ExportParameters))
+                this.StateHasChanged();
+        };
+    }
+
+
     protected override Task OnInitializedAsync()
     {
         return AppState.Settings.InitializeTask.Value;

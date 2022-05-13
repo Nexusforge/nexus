@@ -21,16 +21,10 @@
 
     private async Task ExportAsync()
     {
-        var samplePeriod = AppState.Settings.SamplePeriod.Value;
+        var exportParameters = AppState.Settings.GetExportParameters();
+        var job = await Client.Jobs.ExportAsync(exportParameters, CancellationToken.None);
 
-        var resourcePaths = AppState.Settings.SelectedCatalogItems
-            .SelectMany(item => item.Kinds.Select(kind => item.GetResourcePath(kind, samplePeriod)))
-            .ToList();
-
-        var actualParameters = AppState.ExportParameters with { ResourcePaths = resourcePaths };
-        var job = await Client.Jobs.ExportAsync(actualParameters, CancellationToken.None);
-
-        AppState.AddJob(new JobViewModel(job, actualParameters, Client));
+        AppState.AddJob(new JobViewModel(job, exportParameters, Client));
     }
 
     private string GetLabel()

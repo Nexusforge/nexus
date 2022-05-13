@@ -6,6 +6,8 @@ namespace Nexus.UI.Core;
 [TypeConverter(typeof(PeriodConverter))]
 public record Period
 {
+    internal const string SINGLE_FILE_LABEL = "Single File";
+
     public Period(TimeSpan value)
     {
         Value = value;
@@ -15,7 +17,9 @@ public record Period
 
     public override string ToString()
     {
-        return Utilities.ToUnitString(Value);
+        return Value.Equals(default)
+            ? SINGLE_FILE_LABEL
+            : Utilities.ToUnitString(Value);
     }
 }
 
@@ -32,7 +36,9 @@ public class PeriodConverter : TypeConverter
         {
             try
             {
-                return new Period(Utilities.ToPeriod(input));
+                return input == Period.SINGLE_FILE_LABEL
+                    ? new Period(TimeSpan.Zero)
+                    : new Period(Utilities.ToPeriod(input));
             }
 
             catch

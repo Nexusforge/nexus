@@ -12,9 +12,9 @@ public static class Utilities
         => Uri.EscapeDataString(catalogId);
 
     private const int NS_PER_TICK = 100;
-    private static long[] _nanoseconds = new[] { (long)1e0, (long)1e3, (long)1e6, (long)1e9, (long)60e9 };
-    private static int[] _quotients = new[] { 1000, 1000, 1000, 60, 1 };
-    private static string[] _postFixes = new[] { "ns", "us", "ms", "s", "min" };
+    private static long[] _nanoseconds = new[] { (long)1e0, (long)1e3, (long)1e6, (long)1e9, (long)60e9, (long)3600e9, (long)86400e9 };
+    private static int[] _quotients = new[] { 1000, 1000, 1000, 60, 60, 24, 1 };
+    private static string[] _postFixes = new[] { "ns", "us", "ms", "s", "min", "h", "d" };
     private static Regex _unitStringEvaluator = new Regex(@"^([0-9]+)[\s_]?([a-z]+)$", RegexOptions.Compiled);
 
     public static string ToUnitString(this TimeSpan samplePeriod, bool withUnderScore = false)
@@ -64,5 +64,73 @@ public static class Utilities
     public static int SizeOf(NexusDataType dataType)
     {
         return ((ushort)dataType & 0x00FF) / 8;
+    }
+
+    public static void ParseResourcePath(
+        string resourcePath,
+        out string catalogId, 
+        out string resourceId, 
+        out TimeSpan samplePeriod,
+        out RepresentationKind kind,
+        out TimeSpan basePeriod)
+    {
+#warning Replace with regex
+
+        var pathParts1 = resourcePath
+            .Split("#", count: 2);
+
+        var pathParts2 = pathParts1[0]
+            .Split('/');
+
+        /* catalog id */
+        catalogId = string
+            .Join('/', pathParts2[..^2]);
+
+        /* resource id */
+        resourceId = pathParts2[^2];
+
+        var representationId = pathParts2[^1];
+        var representationIdParts = representationId.Split('_', count: 3);
+
+        var unitString = string
+            .Join('_', representationIdParts[0..2]);
+
+        samplePeriod = Utilities.ToPeriod(unitString); 
+
+        /* kind */
+        if (representationIdParts.Length == 3)
+        {
+            var rawKind = representationIdParts[2];
+            kind = Utilities.StringToKind(rawKind);
+        }
+
+        else
+        {
+            kind = RepresentationKind.Original;
+        }
+
+        /* url fragment */
+        var baseUnitString = pathParts1[1].Split("=")[1];
+        basePeriod = Utilities.ToPeriod(baseUnitString);
+    }
+
+    private static Regex _snakeCaseEvaluator = new Regex("(?<=[a-z])([A-Z])", RegexOptions.Compiled);
+
+    public static string KindToString(RepresentationKind kind)
+    {
+        var snakeCaseKind = kind == RepresentationKind.Original 
+            ? ""
+            : "_" + _snakeCaseEvaluator.Replace(kind.ToString(), "_$1").Trim().ToLower();
+
+        return snakeCaseKind;
+    }
+
+    public static RepresentationKind StringToKind(string rawKind)
+    {
+        var camelCase = Regex.Replace(rawKind, "_.", match => match.Value.Substring(1).ToUpper());
+        var pascalCase = string.Concat(camelCase[0].ToString().ToUpper(), camelCase.AsSpan(1));
+        var kind = Enum.Parse<RepresentationKind>(pascalCase);
+
+        return kind;
     }
 }

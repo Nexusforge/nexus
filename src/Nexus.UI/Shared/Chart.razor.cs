@@ -128,7 +128,7 @@ namespace Nexus.UI.Shared
         public TypeFaceService TypeFaceService { get; set; } = default!;
 
         [Inject]
-        public IJSInProcessRuntime JSInProcessRuntime { get; set; } = default!;
+        public IJSInProcessRuntime JSRuntime { get; set; } = default!;
 
         [Parameter]
         public DateTime Begin { get; set; }
@@ -166,11 +166,11 @@ namespace Nexus.UI.Shared
 
         private void OnMouseDown(MouseEventArgs e)
         {
-            var position = JSInProcessRuntime.Invoke<Position>("nexus.chart.toRelative", _chartId, e.ClientX, e.ClientY);
+            var position = JSRuntime.Invoke<Position>("nexus.chart.toRelative", _chartId, e.ClientX, e.ClientY);
             _zoomStart = position;
             _zoomEnd = position;
 
-            JSInProcessRuntime.InvokeVoid("nexus.util.addMouseUpEvent", _dotNetHelper);
+            JSRuntime.InvokeVoid("nexus.util.addMouseUpEvent", _dotNetHelper);
 
             _isDragging = true;
         }
@@ -180,7 +180,7 @@ namespace Nexus.UI.Shared
         {
             _isDragging = false;
 
-            JSInProcessRuntime.InvokeVoid("nexus.chart.resize", _chartId, "selection", 0, 1, 0, 0);
+            JSRuntime.InvokeVoid("nexus.chart.resize", _chartId, "selection", 0, 1, 0, 0);
 
             var zoomBox = CreateZoomBox(_zoomStart, _zoomEnd);
 
@@ -194,19 +194,19 @@ namespace Nexus.UI.Shared
 
         private void OnMouseMove(MouseEventArgs e)
         {
-            var relativePosition = JSInProcessRuntime.Invoke<Position>("nexus.chart.toRelative", _chartId, e.ClientX, e.ClientY);
+            var relativePosition = JSRuntime.Invoke<Position>("nexus.chart.toRelative", _chartId, e.ClientX, e.ClientY);
             DrawAuxiliary(relativePosition);
         }
 
         private void OnMouseLeave(MouseEventArgs e)
         {
-            JSInProcessRuntime.InvokeVoid("nexus.chart.hide", _chartId, "crosshairs-x");
-            JSInProcessRuntime.InvokeVoid("nexus.chart.hide", _chartId, "crosshairs-y");
+            JSRuntime.InvokeVoid("nexus.chart.hide", _chartId, "crosshairs-x");
+            JSRuntime.InvokeVoid("nexus.chart.hide", _chartId, "crosshairs-y");
 
             foreach (var series in LineSeries)
             {
-                JSInProcessRuntime.InvokeVoid("nexus.chart.hide", _chartId, $"pointer_{series.Id}");
-                JSInProcessRuntime.InvokeVoid("nexus.chart.setTextContent", _chartId, $"value_{series.Id}", "--");
+                JSRuntime.InvokeVoid("nexus.chart.hide", _chartId, $"pointer_{series.Id}");
+                JSRuntime.InvokeVoid("nexus.chart.setTextContent", _chartId, $"value_{series.Id}", "--");
             }
         }
 
@@ -220,7 +220,7 @@ namespace Nexus.UI.Shared
         {
             const float FACTOR = 0.25f;
 
-            var relativePosition = JSInProcessRuntime.Invoke<Position>("nexus.chart.toRelative", _chartId, e.ClientX, e.ClientY);
+            var relativePosition = JSRuntime.Invoke<Position>("nexus.chart.toRelative", _chartId, e.ClientX, e.ClientY);
 
             var zoomBox = new SKRect();
 
@@ -297,7 +297,7 @@ namespace Nexus.UI.Shared
             }
 
             /* overlay */
-            JSInProcessRuntime.InvokeVoid(
+            JSRuntime.InvokeVoid(
                 "nexus.chart.resize",
                 _chartId,
                 "overlay",
@@ -314,11 +314,11 @@ namespace Nexus.UI.Shared
             var currentTimeBegin = _zoomedBegin + zoomedTimeRange * relativePosition.X;
             var currentTimeBeginString = currentTimeBegin.ToString(_timeAxisConfig.CursorLabelFormat);
 
-            JSInProcessRuntime.InvokeVoid("nexus.chart.setTextContent", _chartId, $"value_datetime", currentTimeBeginString);
+            JSRuntime.InvokeVoid("nexus.chart.setTextContent", _chartId, $"value_datetime", currentTimeBeginString);
 
             // crosshairs
-            JSInProcessRuntime.InvokeVoid("nexus.chart.translate", _chartId, "crosshairs-x", 0, relativePosition.Y);
-            JSInProcessRuntime.InvokeVoid("nexus.chart.translate", _chartId, "crosshairs-y", relativePosition.X, 0);
+            JSRuntime.InvokeVoid("nexus.chart.translate", _chartId, "crosshairs-x", 0, relativePosition.Y);
+            JSRuntime.InvokeVoid("nexus.chart.translate", _chartId, "crosshairs-y", relativePosition.X, 0);
 
             // points
             foreach (var axesEntry in _axesMap)
@@ -342,16 +342,16 @@ namespace Nexus.UI.Shared
 
                     if (float.IsFinite(x) && 0 <= x && x <= 1 &&
                         float.IsFinite(y) && 0 <= y && y <= 1)
-                        JSInProcessRuntime.InvokeVoid("nexus.chart.translate", _chartId, $"pointer_{series.Id}", x, 1 - y);
+                        JSRuntime.InvokeVoid("nexus.chart.translate", _chartId, $"pointer_{series.Id}", x, 1 - y);
 
                     else
-                        JSInProcessRuntime.InvokeVoid("nexus.chart.hide", _chartId, $"pointer_{series.Id}");
+                        JSRuntime.InvokeVoid("nexus.chart.hide", _chartId, $"pointer_{series.Id}");
 
                     var valueString = string.IsNullOrWhiteSpace(series.Unit)
                         ? value.ToString(formatString) 
                         : $"{value.ToString(formatString)} {@series.Unit}";
 
-                    JSInProcessRuntime.InvokeVoid("nexus.chart.setTextContent", _chartId, $"value_{series.Id}", valueString);
+                    JSRuntime.InvokeVoid("nexus.chart.setTextContent", _chartId, $"value_{series.Id}", valueString);
                 }
             }
 
@@ -361,7 +361,7 @@ namespace Nexus.UI.Shared
                 _zoomEnd = relativePosition;
                 var zoomBox = CreateZoomBox(_zoomStart, _zoomEnd);
 
-                JSInProcessRuntime.InvokeVoid(
+                JSRuntime.InvokeVoid(
                     "nexus.chart.resize",
                     _chartId,
                     "selection",

@@ -1,5 +1,5 @@
 ﻿@inject INexusClient Client
-@inject IJSInProcessRuntime JSInProcessRuntime
+@inject IJSInProcessRuntime JSRuntime
 
 @using System.Security.Claims
 
@@ -79,7 +79,7 @@
 
     private void CopyToClipboard()
     {
-        JSInProcessRuntime.InvokeVoid("nexus.util.copyToClipboard", _refreshToken);
+        JSRuntime.InvokeVoid("nexus.util.copyToClipboard", _refreshToken);
     }
 
     private void OpenRefreshTokenModal()

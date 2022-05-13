@@ -10,3 +10,15 @@
     <UITextBox Label="Sample Period" @bind-Value="AppState.Settings.SamplePeriod">
     </UITextBox>
 </div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        AppState.PropertyChanged += (sender, e) => 
+        {
+            if (e.PropertyName == nameof(AppState.ExportParameters))
+                this.StateHasChanged();
+        };
+    }
+}
+
