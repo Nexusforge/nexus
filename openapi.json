@@ -185,6 +185,16 @@
               "format": "date-time"
             },
             "x-position": 3
+          },
+          {
+            "name": "step",
+            "in": "query",
+            "description": "Step period.",
+            "schema": {
+              "type": "string",
+              "format": "duration"
+            },
+            "x-position": 4
           }
         ],
         "responses": {
@@ -1584,9 +1594,9 @@
         "additionalProperties": false,
         "properties": {
           "data": {
-            "type": "object",
+            "type": "array",
             "description": "The actual availability data.",
-            "additionalProperties": {
+            "items": {
               "type": "number",
               "format": "double"
             }

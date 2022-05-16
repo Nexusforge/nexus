@@ -17,7 +17,7 @@
         AppState.PropertyChanged += (sender, e) => 
         {
             if (e.PropertyName == nameof(AppState.ExportParameters))
-                this.StateHasChanged();
+                StateHasChanged();
         };
     }
 }

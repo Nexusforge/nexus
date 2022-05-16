@@ -91,11 +91,11 @@
     private async Task GenerateTokenAsync()
     {
         _isRefreshingToken = true;
-        this.StateHasChanged();
+        StateHasChanged();
 
         _refreshToken = await Client.Users.GenerateRefreshTokenAsync(CancellationToken.None);
         _isRefreshingToken = false;
-        this.StateHasChanged();
+        StateHasChanged();
     }
 
     private bool IsAdmin(ClaimsPrincipal user)

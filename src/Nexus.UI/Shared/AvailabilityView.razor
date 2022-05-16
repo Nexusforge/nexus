@@ -1,0 +1,62 @@
+﻿@inject IAppState AppState
+@inject INexusClient Client
+
+@if (_availabilityData is null)
+{
+    <div class="h-full flex justify-center items-center mx-auto">
+        <UISpinner />
+        <span class="ml-3 text-gray-400">Loading availability data ...</span>
+    </div>
+}
+else
+{
+    <div class="h-full p-5">
+        <AvailabilityChart AvailabilityData="_availabilityData"></AvailabilityChart>
+    </div>
+}
+
+@code {
+    AvailabilityData? _availabilityData;
+
+    protected override Task OnInitializedAsync()
+    {
+        AppState.PropertyChanged += (sender, e) =>
+        {
+            if (e.PropertyName == nameof(AppState.SelectedCatalog))
+                _ = LoadDataAsync();
+        };
+
+        AppState.Settings.PropertyChanged += (sender, e) =>
+        {
+            if (e.PropertyName == nameof(SettingsViewModel.Begin))
+                _ = LoadDataAsync();
+
+            else if (e.PropertyName == nameof(SettingsViewModel.End))
+                _ = LoadDataAsync();
+        };
+
+        return LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        _availabilityData = null;
+        StateHasChanged();
+
+        var begin = AppState.Settings.Begin.Date;
+        var end = AppState.Settings.End.Date;
+        var step = TimeSpan.FromDays(1);
+
+        var availability = await Client.Catalogs.GetAvailabilityAsync(
+            AppState.SelectedCatalog!.Id,
+            begin,
+            end,
+            step,
+            CancellationToken.None);
+
+        _availabilityData = new AvailabilityData(begin, end, step, availability.Data);
+        StateHasChanged();
+    }
+}
+
+

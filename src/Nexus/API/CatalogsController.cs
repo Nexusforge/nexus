@@ -156,21 +156,32 @@ namespace Nexus.Controllers
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="begin">Start date/time.</param>
         /// <param name="end">End date/time.</param>
+        /// <param name="step">Step period.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpGet("{catalogId}/availability")]
-        public Task<ActionResult<CatalogAvailability>>
+        public async Task<ActionResult<CatalogAvailability>>
             GetAvailabilityAsync(
                 string catalogId,
                 DateTime begin,
                 DateTime end,
+                TimeSpan step,
                 CancellationToken cancellationToken)
         {
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            var response = ProtectCatalogAsync<CatalogAvailability>(catalogId, ensureReadable: true, ensureWritable: false, async catalogContainer =>
+            if (begin >= end)
+                return UnprocessableEntity("The end date/time must be before the begin date/time.");
+
+            if (step <= TimeSpan.Zero)
+                return UnprocessableEntity("The step must be > 0.");
+
+            if ((end - begin).Ticks / step.Ticks > 1000)
+                return UnprocessableEntity("The number of steps is too large.");
+
+            var response = await ProtectCatalogAsync<CatalogAvailability>(catalogId, ensureReadable: true, ensureWritable: false, async catalogContainer =>
             {
                 using var dataSource = await _dataControllerService.GetDataSourceControllerAsync(catalogContainer.DataSourceRegistration, cancellationToken);
-                return await dataSource.GetAvailabilityAsync(catalogContainer.Id, begin, end, cancellationToken);
+                return await dataSource.GetAvailabilityAsync(catalogContainer.Id, begin, end, step, cancellationToken);
             }, cancellationToken);
 
             return response;

@@ -69,7 +69,7 @@
     private async Task DeleteAttachmentAsync(string attachment)
     {
         _attachments = default;
-        this.StateHasChanged();
+        StateHasChanged();
 
         await Client.Catalogs.DeleteAttachmentAsync(Catalog.Id, attachment);
         await GetAttachmentsAsync();
@@ -83,7 +83,7 @@
         _progress = 0;
         _isUploading = true;
 
-        this.StateHasChanged();
+        StateHasChanged();
 
         try
         {
@@ -102,7 +102,7 @@
                         _progress = (processedFiles + fileProgress) / (double)e.FileCount;
                     }
 
-                    this.StateHasChanged();
+                    StateHasChanged();
                 }
             });
 
@@ -131,7 +131,7 @@
         {
             _isUploading = default;
             _attachments = default;
-            this.StateHasChanged();
+            StateHasChanged();
 
             await GetAttachmentsAsync();
         }

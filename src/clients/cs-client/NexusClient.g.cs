@@ -425,8 +425,9 @@ public interface ICatalogsClient
     /// <param name="catalogId">The catalog identifier.</param>
     /// <param name="begin">Start date/time.</param>
     /// <param name="end">End date/time.</param>
+    /// <param name="step">Step period.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<CatalogAvailability> GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken = default);
+    Task<CatalogAvailability> GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, TimeSpan step, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets all attachments for the specified catalog.
@@ -521,7 +522,7 @@ public class CatalogsClient : ICatalogsClient
     }
 
     /// <inheritdoc />
-    public Task<CatalogAvailability> GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken = default)
+    public Task<CatalogAvailability> GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, TimeSpan step, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/catalogs/{catalogId}/availability");
@@ -531,6 +532,7 @@ public class CatalogsClient : ICatalogsClient
         {
             ["begin"] = Uri.EscapeDataString(Convert.ToString(begin, CultureInfo.InvariantCulture)),
             ["end"] = Uri.EscapeDataString(Convert.ToString(end, CultureInfo.InvariantCulture)),
+            ["step"] = Uri.EscapeDataString(Convert.ToString(step, CultureInfo.InvariantCulture)),
         };
 
         var query = "?" + string.Join('&', queryValues.Select(entry => $"{entry.Key}={entry.Value}"));
@@ -1534,7 +1536,7 @@ public record CatalogTimeRange(DateTime Begin, DateTime End);
 /// The catalog availability.
 /// </summary>
 /// <param name="Data">The actual availability data.</param>
-public record CatalogAvailability(IDictionary<string, double> Data);
+public record CatalogAvailability(IList<double> Data);
 
 /// <summary>
 /// A structure for catalog metadata.

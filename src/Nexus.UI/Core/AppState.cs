@@ -8,6 +8,7 @@ namespace Nexus.UI.Core;
 
 public interface IAppState : INotifyPropertyChanged
 {
+    ViewState ViewState { get; set; }
     IList<AuthenticationSchemeDescription> AuthenticationSchemes { get; }
 
     ExportParameters ExportParameters { get; set; }
@@ -17,6 +18,7 @@ public interface IAppState : INotifyPropertyChanged
     ResourceCatalogViewModel? SelectedCatalog { get; set; }
     SortedDictionary<string, List<CatalogItemViewModel>>? CatalogItemsMap { get; }
     List<CatalogItemViewModel>? CatalogItems { get; set; }
+
 
     string? SearchString { get; set; }
 
@@ -37,6 +39,8 @@ public class AppState : IAppState
 
     #region Fields
 
+    private ResourceCatalogViewModel? _selectedCatalog;
+    private ViewState _viewState = ViewState.Normal;
     private ExportParameters _exportParameters;
     private INexusClient _client;
     private string? _searchString;
@@ -84,6 +88,21 @@ public class AppState : IAppState
 
     #region Properties
 
+    public ViewState ViewState
+    {
+        get {
+            return _viewState;
+        }
+        set
+        {
+            if (_viewState != value)
+            {
+                _viewState = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ViewState)));
+            }
+        }
+    }
+
     public IList<AuthenticationSchemeDescription> AuthenticationSchemes { get; }
     
     public ExportParameters ExportParameters
@@ -104,7 +123,22 @@ public class AppState : IAppState
     public SettingsViewModel Settings { get; }
 
     public ResourceCatalogViewModel RootCatalog { get; }
-    public ResourceCatalogViewModel? SelectedCatalog { get; set; }
+
+    public ResourceCatalogViewModel? SelectedCatalog
+    {
+        get {
+            return _selectedCatalog;
+        }
+        set
+        {
+            if (_selectedCatalog != value)
+            {
+                _selectedCatalog = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedCatalog)));
+            }
+        }
+    }
+
     public SortedDictionary<string, List<CatalogItemViewModel>>? CatalogItemsMap { get; private set; }
     public List<CatalogItemViewModel>? CatalogItems { get; set; }
 
@@ -173,6 +207,9 @@ public class AppState : IAppState
         }
 
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CatalogItemsMap)));
+
+        if (SelectedCatalog is FakeResourceCatalogViewModel)
+            ViewState = ViewState.Normal;
     }
 
     private SortedDictionary<string, List<CatalogItemViewModel>>? GroupCatalogItems(ResourceCatalog catalog)

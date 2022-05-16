@@ -46,6 +46,7 @@ public class SettingsViewModel : INotifyPropertyChanged
             if (_appState.ExportParameters.Begin >= _appState.ExportParameters.End)
                 _appState.ExportParameters = _appState.ExportParameters with { End = _appState.ExportParameters.Begin };
 
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Begin)));
             CanExportChanged();
         }
     }
@@ -63,6 +64,7 @@ public class SettingsViewModel : INotifyPropertyChanged
             if (_appState.ExportParameters.End <= _appState.ExportParameters.Begin)
                 _appState.ExportParameters = _appState.ExportParameters with { Begin = _appState.ExportParameters.End };
 
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(End)));
             CanExportChanged();
         }
     }

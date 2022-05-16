@@ -20,11 +20,9 @@ namespace Nexus.Sources
             6.6, 6.7, 6.9, 6.5, 6.0, 5.8, 5.3, 5.8, 6.1, 6.8
         };
 
-        public const string SampleCatalogId = "/SAMPLE";
         public const string LocalCatalogId = "/SAMPLE/LOCAL";
         public const string RemoteCatalogId = "/SAMPLE/REMOTE";
 
-        private const string SampleCatalogTitle = "Sample catalogs with in-memory generated data";
         private const string LocalCatalogTitle = "Simulates a local catalog";
         private const string RemoteCatalogTitle = "Simulates a remote catalog";
 
@@ -50,12 +48,6 @@ namespace Nexus.Sources
         public Task<CatalogRegistration[]> GetCatalogRegistrationsAsync(string path, CancellationToken cancellationToken)
         {
             if (path == "/")
-                return Task.FromResult(new CatalogRegistration[] 
-                    {
-                        new CatalogRegistration(SampleCatalogId, SampleCatalogTitle),
-                    });
-
-            else if (path.TrimEnd('/') == SampleCatalogId)
                 return Task.FromResult(new CatalogRegistration[]
                     {
                         new CatalogRegistration(LocalCatalogId, LocalCatalogTitle),
@@ -68,11 +60,7 @@ namespace Nexus.Sources
 
         public Task<ResourceCatalog> GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
         {
-            if (catalogId == SampleCatalogId)
-                return Task.FromResult(new ResourceCatalog(catalogId));
-
-            else
-                return Task.FromResult(Sample.LoadCatalog(catalogId));
+            return Task.FromResult(Sample.LoadCatalog(catalogId));
         }
 
         public Task<(DateTime Begin, DateTime End)> GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
@@ -82,7 +70,7 @@ namespace Nexus.Sources
 
         public Task<double> GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
-            return Task.FromResult(new Random((int)begin.Ticks).NextDouble() / 10 + 0.9);
+            return Task.FromResult(1.0);
         }
 
         public async Task ReadAsync(DateTime begin, DateTime end, ReadRequest[] requests, IProgress<double> progress, CancellationToken cancellationToken)

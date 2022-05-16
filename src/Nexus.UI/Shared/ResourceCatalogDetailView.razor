@@ -1,4 +1,6 @@
-﻿<div class="h-full flex flex-col">
+﻿@inject IAppState AppState
+
+<div class="h-full flex flex-col">
     <h1 class="py-0.5 font-bold text-cyan-700">
         @Utilities.ToSpaceFilledCatalogId(Catalog.Id)
         @* Fake icon for correct height *@
@@ -30,10 +32,20 @@
                 }
             </div>
             <div class="flex">
+                @if (AppState.ViewState == ViewState.Normal)
+                {
+                    <UIIconButton Icon="poll" @onclick="ToggleAvailabilityChart" />
+                }
+                else
+                {
+                    <UIIconButton Icon="poll" IsSelected="true" @onclick="ToggleAvailabilityChart" />
+                }
+
                 @if (Catalog.Info.License is not null)
                 {
                     <UIIconButton Icon="format-section" @onclick="OpenLicenseModal" />
                 }
+
                 <AttachmentView Catalog="Catalog" />
             </div>
         </div>
@@ -83,7 +95,17 @@
 
     private void OpenLicenseModal()
     {
+        Console.WriteLine("Jo");
         _isLicenseModalOpen = true;
+    }
+
+    private void ToggleAvailabilityChart()
+    {
+        if (AppState.ViewState == ViewState.Normal)
+            AppState.ViewState = ViewState.Availability;
+
+        else
+            AppState.ViewState = ViewState.Normal;
     }
 }
 

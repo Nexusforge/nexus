@@ -230,7 +230,7 @@ namespace Nexus.Services
 
         private void WriteZipArchiveEntries(ZipArchive zipArchive, string sourceFolderPath, CancellationToken cancellationToken)
         {
-            ((IProgress<double>)this.WriteProgress).Report(0);
+            ((IProgress<double>)WriteProgress).Report(0);
 
             try
             {
@@ -253,7 +253,7 @@ namespace Nexus.Services
                     fileStream.CopyTo(zipArchiveEntryStream);
 
                     currentCount++;
-                    ((IProgress<double>)this.WriteProgress).Report(currentCount / (double)fileCount);
+                    ((IProgress<double>)WriteProgress).Report(currentCount / (double)fileCount);
                 }
             }
             finally

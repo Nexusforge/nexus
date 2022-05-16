@@ -27,6 +27,7 @@ namespace Nexus.Extensibility
             string catalogId, 
             DateTime begin,
             DateTime end,
+            TimeSpan step,
             CancellationToken cancellationToken);
 
         Task<CatalogTimeRange> GetTimeRangeAsync(
@@ -166,25 +167,35 @@ namespace Nexus.Extensibility
         public async Task<CatalogAvailability> GetAvailabilityAsync(
             string catalogId, 
             DateTime begin, 
-            DateTime end, 
+            DateTime end,
+            TimeSpan step,
             CancellationToken cancellationToken)
         {
-            var dateBegin = begin.Date;
-            var dateEnd = end.Date;
-            var aggregatedData = new ConcurrentDictionary<DateTime, double>();
-            var totalDays = (int)(dateEnd - dateBegin).TotalDays;
 
-            var tasks = Enumerable.Range(0, totalDays).Select(async day =>
+            var count = (int)Math.Ceiling((end - begin).Ticks / (double)step.Ticks);
+            var availabilities = new double[count];
+
+            var tasks = new List<Task>(capacity: count);
+            var currentBegin = begin;
+
+            for (int i = 0; i < count; i++)
             {
-                var date = dateBegin.AddDays(day);
-                var availability = await DataSource.GetAvailabilityAsync(catalogId, date, date.AddDays(1), cancellationToken);
-                aggregatedData.TryAdd(date, availability);
-            });
+                var currentEnd = currentBegin += step;
+                var j = i; /* capture loop variable */
+
+                tasks.Add(Task.Run(async () =>
+                {
+
+                    var availability = await DataSource.GetAvailabilityAsync(catalogId, currentBegin, currentEnd, cancellationToken);
+                    availabilities[j] = availability;
+                }));
+                
+                currentBegin = currentEnd;
+            }
 
             await Task.WhenAll(tasks);
 
-            return new CatalogAvailability(
-                Data: aggregatedData.ToDictionary(entry => entry.Key, entry => entry.Value));
+            return new CatalogAvailability(Data: availabilities);
         }
 
         public async Task<CatalogTimeRange> GetTimeRangeAsync(

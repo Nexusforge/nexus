@@ -447,7 +447,7 @@ class CatalogAvailability:
         data: The actual availability data.
     """
 
-    data: dict[str, float]
+    data: list[float]
     """The actual availability data."""
 
 
@@ -867,7 +867,7 @@ class CatalogsClient:
 
         return self._client._invoke_async(CatalogTimeRange, "GET", url, "application/json", None, default)
 
-    def get_availability(self, catalog_id: str, begin: datetime, end: datetime) -> Awaitable[CatalogAvailability]:
+    def get_availability(self, catalog_id: str, begin: datetime, end: datetime, step: timedelta) -> Awaitable[CatalogAvailability]:
         """
         Gets the specified catalog availability.
 
@@ -875,6 +875,7 @@ class CatalogsClient:
             catalog_id: The catalog identifier.
             begin: Start date/time.
             end: End date/time.
+            step: Step period.
         """
 
         url = "/api/v1/catalogs/{catalogId}/availability"
@@ -883,6 +884,7 @@ class CatalogsClient:
         queryValues: dict[str, str] = {
             "begin": quote(_to_string(begin), safe=""),
             "end": quote(_to_string(end), safe=""),
+            "step": quote(_to_string(step), safe=""),
         }
 
         query: str = "?" + "&".join(f"{key}={value}" for (key, value) in queryValues.items())

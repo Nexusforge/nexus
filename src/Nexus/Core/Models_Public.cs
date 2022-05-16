@@ -262,7 +262,7 @@ namespace Nexus.Core
     /// </summary>
     /// <param name="Data">The actual availability data.</param>
     public record CatalogAvailability(
-        IReadOnlyDictionary<DateTime, double> Data);
+        double[] Data);
 
     /// <summary>
     /// A backend source.

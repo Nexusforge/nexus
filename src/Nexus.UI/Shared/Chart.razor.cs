@@ -521,7 +521,8 @@ namespace Nexus.UI.Shared
             using var axisLabelPaint = new SKPaint
             {
                 Typeface = TypeFaceService.GetTTF("Courier New Bold"),
-                IsAntialias = true
+                IsAntialias = true,
+                Color = new SKColor(0x55, 0x55, 0x55)
             };
 
             using var axisTickPaint = new SKPaint
@@ -664,7 +665,8 @@ namespace Nexus.UI.Shared
             {
                 Typeface = TypeFaceService.GetTTF("Courier New Bold"),
                 TextAlign = SKTextAlign.Center,
-                IsAntialias = true
+                IsAntialias = true,
+                Color = new SKColor(0x55, 0x55, 0x55)
             };
 
             using var axisTickPaint = new SKPaint

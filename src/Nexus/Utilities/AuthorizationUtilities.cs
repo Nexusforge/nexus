@@ -29,7 +29,6 @@ namespace Nexus.Utilities
                     catalogMetadata.GroupMemberships.Any(group => Regex.IsMatch(group, claim.Value)));
 
                 var implicitAccess = 
-                    catalogId == Sample.SampleCatalogId ||
                     catalogId == Sample.LocalCatalogId || 
                     catalogId == Sample.RemoteCatalogId;
 

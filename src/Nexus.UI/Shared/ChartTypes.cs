@@ -4,6 +4,13 @@ using SkiaSharp;
 
 namespace Nexus.UI.Shared
 {
+    public record AvailabilityData(
+        DateTime Begin,
+        DateTime End,
+        TimeSpan Step,
+        IList<double> Data
+    );
+
     public record LineSeries(
         string Name,
         string Unit,
@@ -20,7 +27,7 @@ namespace Nexus.UI.Shared
         Memory<double> Data,
         SKRect DataBox);
 
-    public record struct Position(
+    internal record struct Position(
         float X,
         float Y);
 
