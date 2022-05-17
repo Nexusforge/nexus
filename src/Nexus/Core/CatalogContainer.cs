@@ -146,7 +146,7 @@ namespace Nexus.Core
 
                 // merge catalog
                 if (Metadata?.Overrides is not null)
-                    catalog = catalog.Merge(Metadata.Overrides, MergeMode.NewWins);
+                    catalog = catalog.Merge(Metadata.Overrides);
 
                 _lazyCatalogInfo = new LazyCatalogInfo(catalogBegin, catalogEnd, catalog);
             }

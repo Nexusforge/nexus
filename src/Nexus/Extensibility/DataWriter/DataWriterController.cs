@@ -186,7 +186,7 @@ namespace Nexus.Extensibility
                                 .WithProperty(DataModelExtensions.BasePath, request.BaseItem.ToPath())
                                 .Build();
 
-                            var augmentedResource = originalResource.Merge(newResource, MergeMode.ExclusiveOr);
+                            var augmentedResource = originalResource.Merge(newResource);
 
                             catalogItem = request.Item with
                             {

@@ -1,4 +1,6 @@
 ﻿using System.Diagnostics;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace Nexus.DataModel
 {
@@ -11,7 +13,7 @@ namespace Nexus.DataModel
         #region Fields
 
         private string _id;
-        private Dictionary<string, string>? _properties;
+        private JsonNode? _properties;
         private List<Representation>? _representations;
 
         #endregion
@@ -40,7 +42,7 @@ namespace Nexus.DataModel
         public ResourceBuilder WithProperty(string key, string value)
         {
             if (_properties is null)
-                _properties = new Dictionary<string, string>();
+                _properties = JsonNode.Parse("{}")!;
 
             _properties[key] = value;
 
@@ -93,7 +95,8 @@ namespace Nexus.DataModel
         /// <returns>The <see cref="Resource"/>.</returns>
         public Resource Build()
         {
-            return new Resource(_id, _properties, _representations);
+            var properties = JsonSerializer.SerializeToElement(_properties);
+            return new Resource(_id, properties, _representations);
         }
 
         #endregion

@@ -132,7 +132,7 @@ namespace Nexus.Extensibility.Tests
         }
 
         [Fact]
-        public void CanMergeCatalogs_NewWins()
+        public void CanMergeCatalogs()
         {
             // arrange
 
@@ -162,43 +162,10 @@ namespace Nexus.Extensibility.Tests
             var catalog0_Vnew = _fixture.Catalog0_Vmerged with { Resources = new List<Resource>() { resource0_Vnew, resource1_V0, resource3_Vnew, resource4_Vnew, resource2_V0 } };
 
             // act
-            var catalog0_actual = catalog0_V0.Merge(catalog0_V1, MergeMode.NewWins);
+            var catalog0_actual = catalog0_V0.Merge(catalog0_V1);
 
             // assert
             var expected = JsonSerializer.Serialize(catalog0_Vnew);
-            var actual = JsonSerializer.Serialize(catalog0_actual);
-
-            Assert.Equal(expected, actual);
-        }
-
-        [Fact]
-        public void CanMergeCatalogs_ExclusiveOr()
-        {
-            // arrange
-
-            // prepare catalog 0
-            var representation0_V0 = _fixture.Representation0_V0;
-            var representation1_V0 = _fixture.Representation1_V0;
-            var resource0_V0 = _fixture.Resource0_V0 with { Representations = new List<Representation>() { representation0_V0, representation1_V0 } };
-            var resource1_V0 = _fixture.Resource1_V0 with { Representations = new List<Representation>() };
-            var catalog0_V0 = _fixture.Catalog0_V0 with { Resources = new List<Resource>() { resource0_V0, resource1_V0 } };
-
-            // prepare catalog 1
-            var representation2_V0 = _fixture.Representation2_V0;
-            var resource0_V2 = _fixture.Resource0_V2 with { Representations = new List<Representation>() { representation2_V0 } };
-            var resource2_V0 = _fixture.Resource2_V0 with { Representations = new List<Representation>() };
-            var catalog0_V2 = _fixture.Catalog0_V2 with { Resources = new List<Resource>() { resource0_V2, resource2_V0 } };
-
-            // prepare merged
-            var representation0_Vxor = _fixture.Representation0_Vxor;
-            var resource0_Vxor = _fixture.Resource0_Vxor with { Representations = new List<Representation>() { representation0_Vxor, representation1_V0, representation2_V0 } };
-            var catalog0_Vxor = _fixture.Catalog0_Vxor with { Resources = new List<Resource>() { resource0_Vxor, resource1_V0, resource2_V0 } };
-
-            // act
-            var catalog0_actual = catalog0_V0.Merge(catalog0_V2, MergeMode.ExclusiveOr);
-
-            // assert
-            var expected = JsonSerializer.Serialize(catalog0_Vxor);
             var actual = JsonSerializer.Serialize(catalog0_actual);
 
             Assert.Equal(expected, actual);
@@ -212,7 +179,7 @@ namespace Nexus.Extensibility.Tests
             var catalog2 = new ResourceCatalog(id: "/C2");
 
             // Act
-            Action action = () => catalog1.Merge(catalog2, MergeMode.ExclusiveOr);
+            Action action = () => catalog1.Merge(catalog2);
 
             // Assert
             Assert.Throws<ArgumentException>(action);
@@ -239,7 +206,7 @@ namespace Nexus.Extensibility.Tests
         }
 
         [Fact]
-        public void ResourceMergeThrowsForNonUniqueRepresentation()
+        public void ResourceMergeThrowsForNonEqualRepresentations()
         {
             // Arrange
             var resource1 = new Resource(
@@ -253,13 +220,13 @@ namespace Nexus.Extensibility.Tests
                 id: "myresource",
                 representations: new List<Representation>()
                 {
-                    new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(1)),
+                    new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromSeconds(1)),
                     new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(2)),
                     new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: TimeSpan.FromSeconds(3))
                 });
 
             // Act
-            Action action = () => resource1.Merge(resource2, MergeMode.ExclusiveOr);
+            Action action = () => resource1.Merge(resource2);
 
             // Assert
             Assert.Throws<Exception>(action);
@@ -273,7 +240,7 @@ namespace Nexus.Extensibility.Tests
             var resource2 = new Resource(id: "R2");
 
             // Act
-            Action action = () => resource1.Merge(resource2, MergeMode.ExclusiveOr);
+            Action action = () => resource1.Merge(resource2);
 
             // Assert
             Assert.Throws<ArgumentException>(action);

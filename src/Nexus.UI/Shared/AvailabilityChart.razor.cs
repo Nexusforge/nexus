@@ -102,7 +102,7 @@ namespace Nexus.UI.Shared
             var valueWidth = xRange / count;
 
             var labelCount = xRange / 200;
-            var skip = (int)(count / (float)labelCount);
+            var skip = (int)(count / (float)labelCount) + 1;
             var lastBegin = DateTime.MinValue;
 
             for (int i = 0; i < count; i++)

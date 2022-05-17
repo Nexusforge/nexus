@@ -118,22 +118,6 @@
     }
 
     /// <summary>
-    /// Specifies the merge mode.
-    /// </summary>
-    public enum MergeMode
-    {
-        /// <summary>
-        /// Properties of the items to be merged must be unique.
-        /// </summary>
-        ExclusiveOr,
-
-        /// <summary>
-        /// Properties of the original item get overriden by existing properties of the item to be merged.
-        /// </summary>
-        NewWins
-    }
-
-    /// <summary>
     /// A catalog item consists of a catalog, a resource and a representation.
     /// </summary>
     /// <param name="Catalog">The catalog.</param>

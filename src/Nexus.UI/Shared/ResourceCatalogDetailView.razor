@@ -4,7 +4,7 @@
     <h1 class="py-0.5 font-bold text-cyan-700">
         @Utilities.ToSpaceFilledCatalogId(Catalog.Id)
         @* Fake icon for correct height *@
-        <span class="text-xl mdi-chevron-down invisible"></span>
+        <span class="text-xl mdi mdi-chevron-down invisible"></span>
     </h1>
 
     <div class="flex-1 overflow-auto text-gray-500">
@@ -24,29 +24,42 @@
             <div class="text-sm">
                 @if (_timeRange is not null)
                 {
-                    <span class="hidden sm:inline font-bold">Start:</span>
+                    <span class="hidden xl:inline mdi mdi-timer-outline mr-1"></span>
                     <span class="">@_timeRange.Begin.ToString("yyyy-MM-dd")</span>
                     <span class="mx-2">-</span>
-                    <span class="hidden sm:inline font-bold">End:</span>
+                    <span class="hidden xl:inline mdi mdi-timer-off-outline mr-1"></span>
                     <span class="">@_timeRange.End.ToString("yyyy-MM-dd")</span>
                 }
             </div>
             <div class="flex">
-                @if (AppState.ViewState == ViewState.Normal)
-                {
-                    <UIIconButton Icon="poll" @onclick="ToggleAvailabilityChart" />
-                }
-                else
-                {
-                    <UIIconButton Icon="poll" IsSelected="true" @onclick="ToggleAvailabilityChart" />
-                }
+                <UITooltip Tooltip="Availability">
+                    @if (AppState.ViewState == ViewState.Normal)
+                    {
+                        <UIIconButton Icon="poll" @onclick="ToggleAvailabilityChart" />    
+                    }
+                    else
+                    {
+                        <UIIconButton Icon="poll" IsSelected="true" @onclick="ToggleAvailabilityChart" />
+                    }
+                </UITooltip>
 
                 @if (Catalog.Info.License is not null)
                 {
-                    <UIIconButton Icon="format-section" @onclick="OpenLicenseModal" />
+                    <UITooltip Tooltip="License">
+                        <UIIconButton Icon="format-section" @onclick="OpenLicenseModal" />
+                    </UITooltip>
                 }
 
-                <AttachmentView Catalog="Catalog" />
+                @if (Catalog.Catalog is not null && Catalog.Catalog.Properties is null)
+                {
+                    <UITooltip Tooltip="Metadata">
+                        <UIIconButton Icon="code-json" @onclick="OpenLicenseModal" />
+                    </UITooltip>
+                }
+
+                <UITooltip Tooltip="Attachments">
+                    <AttachmentView Catalog="Catalog" />
+                </UITooltip>
             </div>
         </div>
     }
@@ -95,7 +108,6 @@
 
     private void OpenLicenseModal()
     {
-        Console.WriteLine("Jo");
         _isLicenseModalOpen = true;
     }
 

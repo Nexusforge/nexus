@@ -1,4 +1,7 @@
-﻿namespace Nexus.DataModel
+﻿using System.Text.Json;
+using System.Text.Json.Nodes;
+
+namespace Nexus.DataModel
 {
     /// <summary>
     /// A resource catalog builder simplifies building a resource catalog.
@@ -8,7 +11,7 @@
         #region Fields
 
         private string _id;
-        private Dictionary<string, string>? _properties;
+        private JsonNode? _properties;
         private List<Resource>? _resources;
 
         #endregion
@@ -37,7 +40,7 @@
         public ResourceCatalogBuilder WithProperty(string key, string value)
         {
             if (_properties is null)
-                _properties = new Dictionary<string, string>();
+                _properties = JsonNode.Parse("{}")!;
 
             _properties[key] = value;
 
@@ -90,7 +93,8 @@
         /// <returns>The <see cref="ResourceCatalog"/>.</returns>
         public ResourceCatalog Build()
         {
-            return new ResourceCatalog(_id, _properties, _resources);
+            var properties = JsonSerializer.SerializeToElement(_properties);
+            return new ResourceCatalog(_id, properties, _resources);
         }
 
         #endregion

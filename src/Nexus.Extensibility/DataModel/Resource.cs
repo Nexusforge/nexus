@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace Nexus.DataModel
@@ -12,10 +13,10 @@ namespace Nexus.DataModel
         #region Fields
 
         private static Regex _idValidator = new Regex(@"^[a-zA-Z][a-zA-Z0-9_]*$");
-        private static IReadOnlyDictionary<string, string> _emptyProperties = new Dictionary<string, string>();
+        private static JsonElement _emptyProperties = JsonDocument.Parse("{}").RootElement;
         private static IReadOnlyList<Representation> _emptyRepresentations = new List<Representation>();
 
-        private IReadOnlyDictionary<string, string>? _properties;
+        private JsonElement? _properties;
         private IReadOnlyList<Representation>? _representations;
 
         #endregion
@@ -29,7 +30,7 @@ namespace Nexus.DataModel
         /// <param name="properties">The map of properties.</param>
         /// <param name="representations">The list of representations.</param>
         /// <exception cref="ArgumentException">Thrown when the resource identifier is not valid.</exception>
-        public Resource(string id, IReadOnlyDictionary<string, string>? properties = default, IReadOnlyList<Representation>? representations = default)
+        public Resource(string id, JsonElement? properties = default, IReadOnlyList<Representation>? representations = default)
         {
             if (!_idValidator.IsMatch(id))
                 throw new ArgumentException($"The resource identifier {id} is not valid.");
@@ -56,7 +57,7 @@ namespace Nexus.DataModel
         /// <summary>
         /// The map of properties.
         /// </summary>
-        public IReadOnlyDictionary<string, string>? Properties
+        public JsonElement? Properties
         {
             get => _properties;
             init => _properties = value;
@@ -85,7 +86,7 @@ namespace Nexus.DataModel
         
         #region "Methods"
 
-        internal Resource Merge(Resource resource, MergeMode mergeMode)
+        internal Resource Merge(Resource resource)
         {
             if (Id != resource.Id)
                 throw new ArgumentException("The resources to be merged have different identifiers.");
@@ -106,23 +107,9 @@ namespace Nexus.DataModel
 
                 if (index >= 0)
                 {
-                    switch (mergeMode)
-                    {
-                        case MergeMode.ExclusiveOr:
+                    if (!representation.Equals(mergedRepresentations[index]))
+                        throw new Exception("The representations to be merged are not equal.");
 
-                            throw new Exception("There may be only a single representation with a given identifier.");
-
-                        case MergeMode.NewWins:
-
-                            if (!representation.Equals(mergedRepresentations[index]))
-                                throw new Exception("The representations to be merged are not equal.");
-
-                            break;
-
-                        default:
-
-                            throw new NotSupportedException($"The merge mode {mergeMode} is not supported.");
-                    }
                 }
                 else
                 {
@@ -131,53 +118,19 @@ namespace Nexus.DataModel
             }
 
             // merge properties
-            Resource merged;
+            var mergedProperties2 = thisProperties
+                .ToDictionary(entry => entry.Key, entry => entry.Value);
 
-            switch (mergeMode)
+            foreach (var (key, value) in newProperties)
             {
-                case MergeMode.ExclusiveOr:
-
-                    var mergedProperties1 = thisProperties
-                        .ToDictionary(entry => entry.Key, entry => entry.Value);
-
-                    foreach (var (key, value) in newProperties)
-                    {
-                        if (mergedProperties1.ContainsKey(key))
-                            throw new Exception($"The left resource has already the property {key}.");
-
-                        else
-                            mergedProperties1[key] = value;
-                    }
-
-                    merged = resource with
-                    {
-                        Properties = mergedProperties1.Any() ? mergedProperties1 : null,
-                        Representations = mergedRepresentations.Any() ? mergedRepresentations : null
-                    };
-
-                    break;
-
-                case MergeMode.NewWins:
-
-                    var mergedProperties2 = thisProperties
-                        .ToDictionary(entry => entry.Key, entry => entry.Value);
-
-                    foreach (var (key, value) in newProperties)
-                    {
-                        mergedProperties2[key] = value;
-                    }
-
-                    merged = resource with
-                    {
-                        Properties = mergedProperties2.Any() ? mergedProperties2 : null,
-                        Representations = mergedRepresentations.Any() ? mergedRepresentations : null
-                    };
-
-                    break;
-
-                default:
-                    throw new NotSupportedException($"The merge mode {mergeMode} is not supported.");
+                mergedProperties2[key] = value;
             }
+
+            var  merged = resource with
+            {
+                Properties = mergedProperties2.Any() ? mergedProperties2 : null,
+                Representations = mergedRepresentations.Any() ? mergedRepresentations : null
+            };
 
             return merged;
         }
@@ -191,7 +144,7 @@ namespace Nexus.DataModel
                     : Representations.Select(representation => representation.DeepCopy()).ToList(),
                 properties: Properties is null
                     ? null
-                    : Properties.ToDictionary(entry => entry.Key, entry => entry.Value));
+                    : Properties.Value.Clone());
         }
 
         private void ValidateRepresentations(IReadOnlyList<Representation> representations)
