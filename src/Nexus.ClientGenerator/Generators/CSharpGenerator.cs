@@ -407,7 +407,7 @@ $@"    /// <summary>
                 {
                     (null, _, _) => schema.OneOf.Count switch
                     {
-                        0 => "object",
+                        0 => "JsonElement",
                         1 => GetType(schema.OneOf.First()),
                         _ => throw new Exception("Only zero or one entries are supported.")
                     },

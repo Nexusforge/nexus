@@ -1,0 +1,53 @@
+﻿@using System.Text.Json
+@using System.Text.Encodings.Web
+@inject IJSInProcessRuntime JSRuntime
+
+<UIIconButton Icon="code-json" @onclick="OpenMetadataModal" />
+
+<UIModal @bind-IsOpen="_isMetadataModalOpen" Title="Metadata" Width="600px">
+    <div class="h-full">
+        @if (Properties.HasValue)
+        {
+            <pre>
+                <code>
+                    @GetHighlightedCode()
+                </code>
+            </pre>
+        }
+        else
+        {
+            <div class="h-full flex justify-center items-center text-gray-300">
+                <span class="mr-3 text-4xl mdi mdi-pac-man"></span>
+                <span>no metadata available</span>
+            </div>
+        }
+    </div>
+</UIModal>
+
+@code {
+
+    private static JsonSerializerOptions _options = new JsonSerializerOptions() 
+    { 
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        WriteIndented = true
+    };
+
+    private bool _isMetadataModalOpen;
+
+    [Parameter]
+    public JsonElement? Properties { get; set; } = default!;
+
+    private MarkupString GetHighlightedCode()
+    {
+        var code = JsonSerializer.Serialize(Properties, _options);
+        var highlightedCode = JSRuntime.Invoke<string>("nexus.util.highlight", code, "json");
+
+        return new MarkupString(highlightedCode);
+    }
+
+    private void OpenMetadataModal()
+    {
+        _isMetadataModalOpen = true;
+    }
+}
+

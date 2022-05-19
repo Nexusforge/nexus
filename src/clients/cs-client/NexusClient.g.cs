@@ -1375,7 +1375,7 @@ internal class DisposableConfiguration : IDisposable
 /// <param name="Id">The identifier.</param>
 /// <param name="Properties">The map of properties.</param>
 /// <param name="Resources">The list of representations.</param>
-public record ResourceCatalog(string Id, IDictionary<string, string>? Properties, IList<Resource>? Resources);
+public record ResourceCatalog(string Id, JsonElement? Properties, IList<Resource>? Resources);
 
 /// <summary>
 /// A resource is part of a resource catalog and holds a list of representations.
@@ -1383,7 +1383,7 @@ public record ResourceCatalog(string Id, IDictionary<string, string>? Properties
 /// <param name="Id">The identifier.</param>
 /// <param name="Properties">The map of properties.</param>
 /// <param name="Representations">The list of representations.</param>
-public record Resource(string Id, IDictionary<string, string>? Properties, IList<Representation>? Representations);
+public record Resource(string Id, JsonElement? Properties, IList<Representation>? Representations);
 
 /// <summary>
 /// A representation is part of a resource.
@@ -1553,7 +1553,7 @@ public record CatalogMetadata(string? Contact, IList<string>? GroupMemberships, 
 /// <param name="Type">export</param>
 /// <param name="Owner">test@nexus.localhost</param>
 /// <param name="Parameters">Job parameters.</param>
-public record Job(Guid Id, string Type, string Owner, object? Parameters);
+public record Job(Guid Id, string Type, string Owner, JsonElement? Parameters);
 
 /// <summary>
 /// A structure for export parameters.
@@ -1574,7 +1574,7 @@ public record ExportParameters(DateTime Begin, DateTime End, TimeSpan FilePeriod
 /// <param name="Progress">The progress from 0 to 1.</param>
 /// <param name="ExceptionMessage">An optional exception message.</param>
 /// <param name="Result">The optional result.</param>
-public record JobStatus(DateTime Start, TaskStatus Status, double Progress, string? ExceptionMessage, object? Result);
+public record JobStatus(DateTime Start, TaskStatus Status, double Progress, string? ExceptionMessage, JsonElement? Result);
 
 /// <summary>
 /// 

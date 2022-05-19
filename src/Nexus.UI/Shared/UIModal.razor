@@ -5,13 +5,13 @@
         
         <div class="absolute top-0 left-0 w-full h-full bg-black opacity-50" @onclick="CloseAsync"></div>
 
-        <div class="absolute rounded-xl w-11/12 sm:w-[@Width] @(AutoHeight ? "" : "h-3/4") bg-white flex flex-col">
+        <div class="absolute rounded-xl w-11/12 sm:w-[@Width] @(AutoHeight ? "" : "h-3/4") bg-gray-100 flex flex-col">
 
             <div class="h-16 flex justify-center items-center border-b border-gray-300">
                 <h1 class="text-xl font uppercase text-cyan-700 tracking-widest">@Title</h1>
             </div>
 
-            <div class="flex-1 p-3 overflow-y-auto">
+            <div class="flex-1 p-3 overflow-y-auto bg-white">
                 @ChildContent
             </div>
 

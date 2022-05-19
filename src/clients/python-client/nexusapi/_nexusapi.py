@@ -260,7 +260,7 @@ class ResourceCatalog:
     id: str
     """The identifier."""
 
-    properties: Optional[dict[str, str]]
+    properties: Optional[object]
     """The map of properties."""
 
     resources: Optional[list[Resource]]
@@ -281,7 +281,7 @@ class Resource:
     id: str
     """The identifier."""
 
-    properties: Optional[dict[str, str]]
+    properties: Optional[object]
     """The map of properties."""
 
     representations: Optional[list[Representation]]

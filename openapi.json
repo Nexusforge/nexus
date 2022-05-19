@@ -1400,12 +1400,8 @@
             "description": "The identifier."
           },
           "properties": {
-            "type": "object",
             "description": "The map of properties.",
-            "nullable": true,
-            "additionalProperties": {
-              "type": "string"
-            }
+            "nullable": true
           },
           "resources": {
             "type": "array",
@@ -1427,12 +1423,8 @@
             "description": "The identifier."
           },
           "properties": {
-            "type": "object",
             "description": "The map of properties.",
-            "nullable": true,
-            "additionalProperties": {
-              "type": "string"
-            }
+            "nullable": true
           },
           "representations": {
             "type": "array",

@@ -527,7 +527,7 @@ namespace Nexus.UI.Shared
 
             using var axisTickPaint = new SKPaint
             {
-                Color = SKColors.LightGray,
+                Color = new SKColor(0xDD, 0xDD, 0xDD),
                 IsAntialias = true
             };
 

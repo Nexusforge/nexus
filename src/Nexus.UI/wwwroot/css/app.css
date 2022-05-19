@@ -36,18 +36,6 @@
     display: none;
 }
  
-.nexus-hover-parent:hover > .nexus-hover-block {
-    display: block;
-}
-
-.nexus-hover-parent:hover > .nexus-hover-inline {
-    display: inline;
-}
-
-.nexus-hover-parent:hover > .nexus-hover-invisible {
-    visibility: hidden;
-}
-
 .nexus-hover-parent:hover > .nexus-hover-flex {
     display: flex;
 }

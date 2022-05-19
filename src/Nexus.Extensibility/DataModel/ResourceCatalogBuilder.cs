@@ -37,7 +37,7 @@ namespace Nexus.DataModel
         /// <param name="key">The key of the property.</param>
         /// <param name="value">The value of the property.</param>
         /// <returns>The resource catalog builder.</returns>
-        public ResourceCatalogBuilder WithProperty(string key, string value)
+        public ResourceCatalogBuilder WithProperty(string key, JsonNode? value)
         {
             if (_properties is null)
                 _properties = JsonNode.Parse("{}")!;

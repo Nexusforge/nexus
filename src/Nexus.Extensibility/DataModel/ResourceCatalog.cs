@@ -14,8 +14,6 @@ namespace Nexus.DataModel
         #region Fields
 
         private static Regex _idValidator = new Regex(@"^(?:\/[a-zA-Z][a-zA-Z0-9_]*)+$");
-        private static JsonElement _emptyProperties = JsonDocument.Parse("{}").RootElement;
-        private static IReadOnlyList<Resource> _emptyResources = new List<Resource>();
 
         private JsonElement? _properties;
         private IReadOnlyList<Resource>? _resources;
@@ -93,87 +91,17 @@ namespace Nexus.DataModel
         /// <returns>The merged catalog.</returns>
         public ResourceCatalog Merge(ResourceCatalog catalog)
         {
-            // if (Id != catalog.Id)
-            //     throw new ArgumentException("The catalogs to be merged have different identifiers.");
+            if (Id != catalog.Id)
+                throw new ArgumentException("The catalogs to be merged have different identifiers.");
 
-            // var newProperties = catalog.Properties ?? _emptyProperties;
-            // var newResources = catalog.Resources ?? _emptyResources;
-            // var thisProperties = Properties ?? _emptyProperties;
-            // var thisResources = Resources ?? _emptyResources;
+            var mergedResources = DataModelUtilities.MergeResources(Resources, catalog.Resources);
+            var mergedProperties = DataModelUtilities.MergeProperties(Properties, catalog.Properties);
 
-            // // merge resources
-            // var mergedResources = thisResources
-            //     .Select(resource => resource.DeepCopy())
-            //     .ToList();
-
-            // foreach (var newResource in newResources)
-            // {
-            //     var index = mergedResources.FindIndex(current => current.Id == newResource.Id);
-
-            //     if (index >= 0)
-            //     {
-            //         mergedResources[index] = mergedResources[index].Merge(newResource);
-            //     }
-            //     else
-            //     {
-            //         mergedResources.Add(newResource with
-            //         {
-            //             Properties = newResource.Properties?.ToDictionary(entry => entry.Key, entry => entry.Value),
-            //             Representations = newResource.Representations?.ToList()
-            //         });
-            //     }
-            // }
-
-            // // merge properties
-            // ResourceCatalog merged;
-
-            // switch (mergeMode)
-            // {
-            //     case MergeMode.ExclusiveOr:
-
-            //         var mergedProperties1 = thisProperties
-            //             .ToDictionary(entry => entry.Key, entry => entry.Value);
-
-            //         foreach (var (key, value) in newProperties)
-            //         {
-            //             if (mergedProperties1.ContainsKey(key))
-            //                 throw new Exception($"The left catalog has already the property {key}.");
-
-            //             else
-            //                 mergedProperties1[key] = value;
-            //         }
-
-            //         merged = catalog with
-            //         {
-            //             Properties = mergedProperties1.Any() ? mergedProperties1 : null,
-            //             Resources = mergedResources.Any() ? mergedResources : null
-            //         };
-
-            //         break;
-
-            //     case MergeMode.NewWins:
-
-            //         var mergedProperties2 = thisProperties
-            //             .ToDictionary(entry => entry.Key, entry => entry.Value);
-
-            //         foreach (var (key, value) in newProperties)
-            //         {
-            //             mergedProperties2[key] = value;
-            //         }
-
-            //         merged = catalog with
-            //         {
-            //             Properties = mergedProperties2.Any() ? mergedProperties2 : null,
-            //             Resources = mergedResources.Any() ? mergedResources : null
-            //         };
-
-            //         break;
-
-            //     default:
-            //         throw new NotSupportedException();
-            // }
-
-            // return merged;
+            var merged = catalog with
+            {
+                Properties = mergedProperties,
+                Resources = mergedResources
+            };
 
             throw new NotImplementedException();
         }

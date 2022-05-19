@@ -5,13 +5,98 @@ namespace Nexus.DataModel
 {
     internal static class DataModelUtilities
     {
-        public static JsonElement MergeProperties(JsonElement properties1, JsonElement properties2)
+        public static List<Resource>? MergeResources(IReadOnlyList<Resource>? resources1, IReadOnlyList<Resource>? resources2)
         {
-            if (properties1.ValueKind != JsonValueKind.Object || properties2.ValueKind != JsonValueKind.Object)
-                throw new InvalidOperationException($"The JSON elements to merge must be a JSON object. Instead it is {properties1.ValueKind}.");
+            if (resources1 is null && resources2 is null)
+                return null;
+
+            if (resources1 is null)
+                return resources2!
+                    .Select(resource => resource.DeepCopy())
+                    .ToList();
+
+            if (resources2 is null)
+                return resources1!
+                    .Select(resource => resource.DeepCopy())
+                    .ToList();
+
+            var mergedResources = resources1
+                .Select(resource => resource.DeepCopy())
+                .ToList();
+
+            foreach (var newResource in resources2)
+            {
+                var index = mergedResources.FindIndex(current => current.Id == newResource.Id);
+
+                if (index >= 0)
+                {
+                    mergedResources[index] = mergedResources[index].Merge(newResource);
+                }
+
+                else
+                {
+                    mergedResources.Add(newResource.DeepCopy());
+                }
+            }
+
+            return mergedResources;
+        }
+
+        public static List<Representation>? MergeRepresentations(IReadOnlyList<Representation>? representations1, IReadOnlyList<Representation>? representations2)
+        {
+            if (representations1 is null && representations2 is null)
+                return null;
+
+            if (representations1 is null)
+                return representations2!
+                    .Select(representation => representation.DeepCopy())
+                    .ToList();
+
+            if (representations2 is null)
+                return representations1!
+                    .Select(representation => representation.DeepCopy())
+                    .ToList();
+
+            var mergedRepresentations = representations1
+                .Select(representation => representation.DeepCopy())
+                .ToList();
+
+            foreach (var newRepresentation in representations2)
+            {
+                var index = mergedRepresentations.FindIndex(current => current.Id == newRepresentation.Id);
+
+                if (index >= 0)
+                {
+                    if (!newRepresentation.Equals(mergedRepresentations[index]))
+                        throw new Exception("The representations to be merged are not equal.");
+
+                }
+
+                else
+                {
+                    mergedRepresentations.Add(newRepresentation);
+                }
+            }
+
+            return mergedRepresentations;
+        }
+
+        public static JsonElement? MergeProperties(JsonElement? properties1, JsonElement? properties2)
+        {
+            if (!(properties1.HasValue && properties2.HasValue))
+                return default;
+
+            if (!properties1.HasValue)
+                return properties2;
+
+            if (!properties2.HasValue)
+                return properties1;
+
+            if (properties1.Value.ValueKind != JsonValueKind.Object || properties2.Value.ValueKind != JsonValueKind.Object)
+                throw new InvalidOperationException($"The JSON elements to merge must be a JSON object. Instead it is {properties1.Value.ValueKind}.");
 
             var mergedProperties = new JsonObject();
-            MergeObjects(mergedProperties, properties1, properties2);
+            MergeObjects(mergedProperties, properties1.Value, properties2.Value);
                 
             return JsonSerializer.SerializeToElement(mergedProperties);
         }
@@ -42,7 +127,9 @@ namespace Nexus.DataModel
                     }
 
                     else
+                    {
                         currentObject[property.Name] = ToJsonNode(newValue);
+                    }
                 }
 
                 else

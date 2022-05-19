@@ -50,10 +50,10 @@
                     </UITooltip>
                 }
 
-                @if (Catalog.Catalog is not null && Catalog.Catalog.Properties is null)
+                @if (Catalog.Catalog is not null)
                 {
                     <UITooltip Tooltip="Metadata">
-                        <UIIconButton Icon="code-json" @onclick="OpenLicenseModal" />
+                        <MetadataView Properties="Catalog.Catalog!.Properties" />
                     </UITooltip>
                 }
 

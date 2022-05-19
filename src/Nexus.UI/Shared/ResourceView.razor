@@ -29,10 +29,10 @@
                     }
                     else
                     {
-                        <div class="flex justify-between items-end py-0.5 px-1 cursor-pointer"
+                        <div class="group flex justify-between items-end py-0.5 px-1 cursor-pointer"
                             @onclick="() => AppState.CatalogItems = entry.Value">
                             <UITooltip Tooltip="@entry.Key">
-                                <span class="font-bold text-cyan-800">@entry.Key</span>
+                                <span class="group-hover:text-cyan-500 font-bold text-cyan-700">@entry.Key</span>
                             </UITooltip>
                             <span class="text-sm text-gray-500">@entry.Value.Count</span>
                         </div>
@@ -45,10 +45,11 @@
         @if (AppState.CatalogItems is not null)
         {
             <Virtualize Items="AppState.CatalogItems" Context="catalogItem">
-                <div class="flex flex-col p-1 border-b border-transparent hover:border-orange-500 cursor-pointer mb-2"
+                <div class="group grid grid-cols-[1fr,auto] grid-rows-[auto,auto] p-1 cursor-pointer mb-2"
                     @onclick="() => AppState.Settings.ToggleCatalogItemSelection(catalogItem)">
-                    <div class="flex items-center">
-                        <span class="font-bold whitespace-nowrap @(AppState.Settings.IsSelected(catalogItem) ? "text-orange-500" : "text-cyan-800")">
+
+                    <div class="flex items-center col-start-1 row-start-1 @(AppState.Settings.IsSelected(catalogItem) ? "text-orange-500" : "text-cyan-700 group-hover:text-cyan-500")">
+                        <span class="font-bold whitespace-nowrap">
                             @catalogItem.Resource.Id&nbsp;:&nbsp;@Utilities.ToUnitString(catalogItem.Representation.SamplePeriod)
                         </span>
                         <span class="text-gray-500 whitespace-nowrap mx-2">@catalogItem.Unit</span>
@@ -61,9 +62,17 @@
                             </UITooltip>
                         }
                     </div>
-                    <UITooltip Tooltip="@catalogItem.Description">
-                        <span class="text-sm text-gray-500">@catalogItem.Description</span>
-                    </UITooltip>
+
+                    <div class="col-start-1 row-start-2 truncate">
+                        <UITooltip Tooltip="@catalogItem.Description">
+                            <span class="text-sm text-gray-500">@catalogItem.Description</span>
+                        </UITooltip>
+                    </div>
+
+                    <div class="col-start-3 row-start-1 row-span-2 invisible group-hover:visible">
+                        <MetadataView Properties="catalogItem.Resource.Properties" />
+                    </div>
+
                 </div>
             </Virtualize>
         }

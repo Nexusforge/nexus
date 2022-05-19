@@ -1,6 +1,10 @@
 nexus = {};
 nexus.util = {};
 
+nexus.util.highlight = function (code, language) {
+    return hljs.highlight(code, {language: language}).value
+}
+
 nexus.util.bloSaveAs = function (filename, bytesBase64) {
 
     let link = document.createElement('a');

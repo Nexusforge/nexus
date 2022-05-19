@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 
 namespace Nexus.DataModel
 {
@@ -67,26 +68,7 @@ namespace Nexus.DataModel
         /// <returns>A resource builder.</returns>
         public static ResourceBuilder WithGroups(this ResourceBuilder resourceBuilder, params string[] groups)
         {
-            return resourceBuilder.WithGroups((IEnumerable<string>)groups);
-        }
-
-        /// <summary>
-        /// Adds groups.
-        /// </summary>
-        /// <param name="resourceBuilder">The resource builder.</param>
-        /// <param name="groups">The groups to add.</param>
-        /// <returns>A resource builder.</returns>
-        public static ResourceBuilder WithGroups(this ResourceBuilder resourceBuilder, IEnumerable<string> groups)
-        {
-            var counter = 0;
-
-            foreach (var group in groups)
-            {
-                resourceBuilder.WithProperty($"{Groups}:{counter}", group);
-                counter++;
-            }
-
-            return resourceBuilder;
+            return resourceBuilder.WithProperty(Groups, new JsonArray(groups.Select(group => (JsonNode)group!).ToArray()));
         }
 
         #endregion

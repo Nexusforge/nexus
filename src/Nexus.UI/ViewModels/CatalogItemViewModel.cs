@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Nexus.Api;
 
 namespace Nexus.UI.ViewModels;
@@ -14,11 +15,25 @@ public class CatalogItemViewModel
         Resource = resource;
         Representation = representation;
 
-        if (resource.Properties is not null)
+        if (resource.Properties.HasValue)
         {
-            resource.Properties.TryGetValue(DESCRIPTION_KEY, out Description);
-            resource.Properties.TryGetValue(WARNING_KEY, out Warning);
-            resource.Properties.TryGetValue(UNIT_KEY, out Unit);
+            if (resource.Properties.Value.TryGetProperty(DESCRIPTION_KEY, out var descriptionElement) && 
+                descriptionElement.ValueKind == JsonValueKind.String)
+            {
+                Description = descriptionElement.GetString();
+            }
+
+            if (resource.Properties.Value.TryGetProperty(WARNING_KEY, out var warningElement) && 
+                warningElement.ValueKind == JsonValueKind.String)
+            {
+                Warning = descriptionElement.GetString();
+            }
+
+            if (resource.Properties.Value.TryGetProperty(WARNING_KEY, out var unitElement) && 
+                unitElement.ValueKind == JsonValueKind.String)
+            {
+                Unit = descriptionElement.GetString();
+            }
         }
     }
 

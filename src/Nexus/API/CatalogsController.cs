@@ -7,6 +7,8 @@ using Nexus.Utilities;
 using System.Data;
 using System.Net;
 using System.Security.Claims;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Nexus.Controllers

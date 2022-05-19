@@ -290,8 +290,12 @@ namespace Nexus.Writers
         {
             string? unit = default;
 
-            catalogItem.Resource.Properties?
-                .TryGetValue(DataModelExtensions.Unit, out unit);
+            if (catalogItem.Resource.Properties is not null && 
+                catalogItem.Resource.Properties.Value.TryGetProperty(DataModelExtensions.Unit, out var unitElement) &&
+                unitElement.ValueKind == JsonValueKind.String)
+            {
+                unit = unitElement.GetString();
+            }
 
             var fieldName = $"{catalogItem.Resource.Id}_{catalogItem.Representation.Id}";
 

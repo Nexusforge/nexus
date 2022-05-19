@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Text.Json;
 using Microsoft.JSInterop;
 using Nexus.Api;
 using Nexus.UI.ViewModels;
@@ -233,10 +234,20 @@ public class AppState : IAppState
 
             else
             {
-                groupNames = resource.Properties
-                    .Where(entry => entry.Key.StartsWith(GROUP_KEY + ":"))
-                    .Select(entry => entry.Value)
-                    .ToList();
+                if (resource.Properties.Value.TryGetProperty(GROUP_KEY, out var groupElement) && 
+                    groupElement.ValueKind == JsonValueKind.Array)
+                {
+                    groupNames = groupElement
+                        .EnumerateArray()
+                        .Where(current => current.ValueKind == JsonValueKind.String)
+                        .Select(current => current.GetString()!)
+                        .ToList();
+                }
+
+                else
+                {
+                    groupNames = new List<string>() { "General" };
+                }
             }
 
             if (!groupNames.Any())
@@ -272,8 +283,12 @@ public class AppState : IAppState
 
         string? description = default;
 
-        if (resource.Properties is not null)
-            resource.Properties.TryGetValue(CatalogItemViewModel.DESCRIPTION_KEY, out description);
+        if (resource.Properties is not null && 
+            resource.Properties.Value.TryGetProperty(CatalogItemViewModel.DESCRIPTION_KEY, out var descriptionElement) &&
+            descriptionElement.ValueKind == JsonValueKind.String)
+        {
+            description = descriptionElement.GetString();
+        };
 
         if (resource.Id.Contains(SearchString, StringComparison.OrdinalIgnoreCase) ||
             description is not null && description.Contains(SearchString, StringComparison.OrdinalIgnoreCase))
