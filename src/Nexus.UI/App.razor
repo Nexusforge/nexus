@@ -6,9 +6,12 @@
         </Found>
         <NotFound>
             <PageTitle>Not found</PageTitle>
-            <LayoutView Layout="@typeof(MainLayout)">
-                <p role="alert">Sorry, there's nothing at this address.</p>
-            </LayoutView>
+            <div class="flex-1 flex justify-center items-center">
+                <a class="text-gray-400 opacity-50 flex flex-col items-center p-5 hover:text-orange-500 cursor-pointer" href="">
+                    <span class="text-[150px] mdi mdi-robot-confused"></span>
+                    <span class="text-xl font-bold tracking-widest">PAGE NOT FOUND</span>
+                </a>
+            </div>
         </NotFound>
     </Router>
 </CascadingAuthenticationState>

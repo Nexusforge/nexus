@@ -5,7 +5,7 @@ using Nexus.UI.Services;
 using SkiaSharp;
 using SkiaSharp.Views.Blazor;
 
-namespace Nexus.UI.Shared
+namespace Nexus.UI.Charts
 {
     public partial class Chart : IDisposable
     {
@@ -31,8 +31,9 @@ namespace Nexus.UI.Shared
         private const float TICK_SIZE = 10;
 
         /* Y-Axis */
+        private const float Y_PADDING_LEFT = 10;
         private const float Y_PADDING_TOP = 20;
-        private const float Y_PADDING_Bottom = 40;
+        private const float Y_PADDING_Bottom = 25 + TIME_FAST_LABEL_OFFSET * 2;
         private const float Y_UNIT_OFFSET = 30;
         private const float TICK_MARGIN_LEFT = 5;
 
@@ -48,6 +49,7 @@ namespace Nexus.UI.Shared
         private TimeAxisConfig[] _timeAxisConfigs;
 
         /* Others */
+        private bool _beginAtZero;
         private SKColor[] _colors;
 
         #endregion
@@ -61,50 +63,50 @@ namespace Nexus.UI.Shared
             _timeAxisConfigs = new[]
             {
                 /* nanoseconds */
-                new TimeAxisConfig(TimeSpan.FromSeconds(100e-9), ".fffffff", TriggerPeriod.Second, "yyyy-MM-dd HH:mm.ss", "yyyy-MM-ddTHH:mm:ss.fffffff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(100e-9), ".fffffff", TriggerPeriod.Second, "HH:mm.ss", "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss.fffffff"),
 
                 /* microseconds */
-                new TimeAxisConfig(TimeSpan.FromSeconds(1e-6), ".ffffff", TriggerPeriod.Second, "yyyy-MM-ddTHH:mm.ss", "yyyy-MM-ddTHH:mm:ss.fffffff"),
-                new TimeAxisConfig(TimeSpan.FromSeconds(5e-6), ".ffffff", TriggerPeriod.Second, "yyyy-MM-ddTHH:mm.ss", "yyyy-MM-ddTHH:mm:ss.fffffff"),
-                new TimeAxisConfig(TimeSpan.FromSeconds(10e-6), ".ffffff", TriggerPeriod.Second, "yyyy-MM-ddTHH:mm.ss", "yyyy-MM-ddTHH:mm:ss.fffffff"),
-                new TimeAxisConfig(TimeSpan.FromSeconds(50e-6), ".ffffff", TriggerPeriod.Second, "yyyy-MM-ddTHH:mm.ss", "yyyy-MM-ddTHH:mm:ss.fffffff"),
-                new TimeAxisConfig(TimeSpan.FromSeconds(100e-6), ".ffffff", TriggerPeriod.Second, "yyyy-MM-ddTHH:mm.ss", "yyyy-MM-ddTHH:mm:ss.fffffff"),
-                new TimeAxisConfig(TimeSpan.FromSeconds(500e-6), ".ffffff", TriggerPeriod.Second, "yyyy-MM-ddTHH:mm.ss", "yyyy-MM-ddTHH:mm:ss.fffffff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(1e-6), ".ffffff", TriggerPeriod.Second, "HH:mm.ss", "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss.fffffff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(5e-6), ".ffffff", TriggerPeriod.Second, "HH:mm.ss", "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss.fffffff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(10e-6), ".ffffff", TriggerPeriod.Second, "HH:mm.ss", "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss.fffffff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(50e-6), ".ffffff", TriggerPeriod.Second, "HH:mm.ss", "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss.fffffff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(100e-6), ".ffffff", TriggerPeriod.Second, "HH:mm.ss", "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss.fffffff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(500e-6), ".ffffff", TriggerPeriod.Second, "HH:mm.ss", "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss.fffffff"),
 
                 /* milliseconds */
-                new TimeAxisConfig(TimeSpan.FromSeconds(1e-3), ":ss.fff", TriggerPeriod.Minute, "yyyy-MM-ddTHH:mm", "yyyy-MM-ddTHH:mm:ss.ffffff"),
-                new TimeAxisConfig(TimeSpan.FromSeconds(5e-3), ":ss.fff", TriggerPeriod.Minute, "yyyy-MM-ddTHH:mm", "yyyy-MM-ddTHH:mm:ss.ffffff"),
-                new TimeAxisConfig(TimeSpan.FromSeconds(10e-3), ":ss.fff", TriggerPeriod.Minute, "yyyy-MM-ddTHH:mm", "yyyy-MM-ddTHH:mm:ss.fffff"),
-                new TimeAxisConfig(TimeSpan.FromSeconds(50e-3), ":ss.fff", TriggerPeriod.Minute, "yyyy-MM-ddTHH:mm", "yyyy-MM-ddTHH:mm:ss.fffff"),
-                new TimeAxisConfig(TimeSpan.FromSeconds(100e-3), ":ss.fff", TriggerPeriod.Minute, "yyyy-MM-ddTHH:mm", "yyyy-MM-ddTHH:mm:ss.ffff"),
-                new TimeAxisConfig(TimeSpan.FromSeconds(500e-3), ":ss.fff", TriggerPeriod.Minute, "yyyy-MM-ddTHH:mm", "yyyy-MM-ddTHH:mm:ss.ffff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(1e-3), ".fff", TriggerPeriod.Minute, "HH:mm:ss", "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss.ffffff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(5e-3), ".fff", TriggerPeriod.Minute, "HH:mm:ss", "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss.ffffff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(10e-3), ".fff", TriggerPeriod.Minute, "HH:mm:ss", "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss.fffff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(50e-3), ".fff", TriggerPeriod.Minute, "HH:mm:ss", "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss.fffff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(100e-3), ".fff", TriggerPeriod.Minute, "HH:mm:ss", "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss.ffff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(500e-3), ".fff", TriggerPeriod.Minute, "HH:mm:ss", "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss.ffff"),
 
                 /* seconds */
-                new TimeAxisConfig(TimeSpan.FromSeconds(1), ":mm:ss", TriggerPeriod.Hour, "yyyy-MM-ddTHH", "yyyy-MM-ddTHH:mm:ss.fff"),
-                new TimeAxisConfig(TimeSpan.FromSeconds(5), ":mm:ss", TriggerPeriod.Hour, "yyyy-MM-ddTHH", "yyyy-MM-ddTHH:mm:ss.fff"),
-                new TimeAxisConfig(TimeSpan.FromSeconds(10), ":mm:ss", TriggerPeriod.Hour, "yyyy-MM-ddTHH", "yyyy-MM-ddTHH:mm:ss.fff"),
-                new TimeAxisConfig(TimeSpan.FromSeconds(30), ":mm:ss", TriggerPeriod.Hour, "yyyy-MM-ddTHH", "yyyy-MM-ddTHH:mm:ss.fff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(1), "HH:mm:ss", TriggerPeriod.Hour, "yyyy-MM-dd", default, "yyyy-MM-dd HH:mm:ss.fff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(5), "HH:mm:ss", TriggerPeriod.Hour, "yyyy-MM-dd", default, "yyyy-MM-dd HH:mm:ss.fff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(10), "HH:mm:ss", TriggerPeriod.Hour, "yyyy-MM-dd", default, "yyyy-MM-dd HH:mm:ss.fff"),
+                new TimeAxisConfig(TimeSpan.FromSeconds(30), "HH:mm:ss", TriggerPeriod.Hour, "yyyy-MM-dd", default, "yyyy-MM-dd HH:mm:ss.fff"),
 
                 /* minutes */
-                new TimeAxisConfig(TimeSpan.FromMinutes(1), "HH:mm", TriggerPeriod.Day, "yyyy-MM-dd", "yyyy-MM-ddTHH:mm:ss"),
-                new TimeAxisConfig(TimeSpan.FromMinutes(5), "HH:mm", TriggerPeriod.Day, "yyyy-MM-dd", "yyyy-MM-ddTHH:mm:ss"),
-                new TimeAxisConfig(TimeSpan.FromMinutes(10), "HH:mm", TriggerPeriod.Day, "yyyy-MM-dd", "yyyy-MM-ddTHH:mm:ss"),
-                new TimeAxisConfig(TimeSpan.FromMinutes(30), "HH:mm", TriggerPeriod.Day, "yyyy-MM-dd", "yyyy-MM-ddTHH:mm:ss"),
+                new TimeAxisConfig(TimeSpan.FromMinutes(1), "HH:mm", TriggerPeriod.Day, "yyyy-MM-dd", default, "yyyy-MM-dd HH:mm:ss"),
+                new TimeAxisConfig(TimeSpan.FromMinutes(5), "HH:mm", TriggerPeriod.Day, "yyyy-MM-dd", default, "yyyy-MM-dd HH:mm:ss"),
+                new TimeAxisConfig(TimeSpan.FromMinutes(10), "HH:mm", TriggerPeriod.Day, "yyyy-MM-dd", default, "yyyy-MM-dd HH:mm:ss"),
+                new TimeAxisConfig(TimeSpan.FromMinutes(30), "HH:mm", TriggerPeriod.Day, "yyyy-MM-dd", default, "yyyy-MM-dd HH:mm:ss"),
 
                 /* hours */
-                new TimeAxisConfig(TimeSpan.FromHours(1), "HH", TriggerPeriod.Day, "yyyy-MM-dd", "yyyy-MM-ddTHH:mm"),
-                new TimeAxisConfig(TimeSpan.FromHours(3), "HH", TriggerPeriod.Day, "yyyy-MM-dd", "yyyy-MM-ddTHH:mm"),
-                new TimeAxisConfig(TimeSpan.FromHours(6), "HH", TriggerPeriod.Day, "yyyy-MM-dd", "yyyy-MM-ddTHH:mm"),
-                new TimeAxisConfig(TimeSpan.FromHours(12), "HH", TriggerPeriod.Day, "yyyy-MM-dd", "yyyy-MM-ddTHH:mm"),
+                new TimeAxisConfig(TimeSpan.FromHours(1), "HH", TriggerPeriod.Day, "yyyy-MM-dd", default, "yyyy-MM-dd HH:mm"),
+                new TimeAxisConfig(TimeSpan.FromHours(3), "HH", TriggerPeriod.Day, "yyyy-MM-dd", default, "yyyy-MM-dd HH:mm"),
+                new TimeAxisConfig(TimeSpan.FromHours(6), "HH", TriggerPeriod.Day, "yyyy-MM-dd", default, "yyyy-MM-dd HH:mm"),
+                new TimeAxisConfig(TimeSpan.FromHours(12), "HH", TriggerPeriod.Day, "yyyy-MM-dd", default, "yyyy-MM-dd HH:mm"),
 
                 /* days */
-                new TimeAxisConfig(TimeSpan.FromDays(1), "dd", TriggerPeriod.Month, "yyyy-MM", "yyyy-MM-ddTHH:mm"),
-                new TimeAxisConfig(TimeSpan.FromDays(10), "dd", TriggerPeriod.Month, "yyyy-MM", "yyyy-MM-ddTHH"),
-                new TimeAxisConfig(TimeSpan.FromDays(30), "dd", TriggerPeriod.Month, "yyyy-MM", "yyyy-MM-ddTHH"),
-                new TimeAxisConfig(TimeSpan.FromDays(90), "dd", TriggerPeriod.Month, "yyyy-MM", "yyyy-MM-ddTHH"),
+                new TimeAxisConfig(TimeSpan.FromDays(1), "dd", TriggerPeriod.Month, "yyyy-MM", default, "yyyy-MM-dd HH:mm"),
+                new TimeAxisConfig(TimeSpan.FromDays(10), "dd", TriggerPeriod.Month, "yyyy-MM", default, "yyyy-MM-dd HH"),
+                new TimeAxisConfig(TimeSpan.FromDays(30), "dd", TriggerPeriod.Month, "yyyy-MM", default, "yyyy-MM-dd HH"),
+                new TimeAxisConfig(TimeSpan.FromDays(90), "dd", TriggerPeriod.Month, "yyyy-MM", default, "yyyy-MM-dd HH"),
 
                 /* years */
-                new TimeAxisConfig(TimeSpan.FromDays(365), "yyyy", TriggerPeriod.Year, "", "yyyy-MM-dd"),
+                new TimeAxisConfig(TimeSpan.FromDays(365), "yyyy", TriggerPeriod.Year, default, default, "yyyy-MM-dd"),
             };
 
             _timeAxisConfig = _timeAxisConfigs.First();
@@ -131,16 +133,32 @@ namespace Nexus.UI.Shared
         public IJSInProcessRuntime JSRuntime { get; set; } = default!;
 
         [Parameter]
-        public DateTime Begin { get; set; }
+        public LineSeriesData LineSeriesData { get; set; } = default!;
 
         [Parameter]
-        public DateTime End { get; set; }
+        public bool BeginAtZero
+        {
+            get
+            {
+                return _beginAtZero;
+            }
+            set
+            {
+                if (value != _beginAtZero)
+                {
+                    _beginAtZero = value;
 
-        [Parameter]
-        public LineSeries[] LineSeries { get; set; } = default!;
+                    Task.Run(() =>
+                    {
+                        _axesMap = LineSeriesData.Series
+                            .GroupBy(lineSeries => lineSeries.Unit)
+                            .ToDictionary(group => GetAxisInfo(group.Key, group), group => group.ToArray());
 
-        [Parameter]
-        public bool BeginAtZero { get; set; }
+                        _skiaView.Invalidate();
+                    });
+                }
+            }
+        }
 
         #endregion
 
@@ -149,14 +167,14 @@ namespace Nexus.UI.Shared
         protected override void OnInitialized()
         {
             /* line series color */
-            for (int i = 0; i < LineSeries.Length; i++)
+            for (int i = 0; i < LineSeriesData.Series.Count; i++)
             {
                 var color = _colors[i % _colors.Length];
-                LineSeries[i].Color = color;
+                LineSeriesData.Series[i].Color = color;
             }
 
             /* axes info */
-            _axesMap = LineSeries
+            _axesMap = LineSeriesData.Series
                 .GroupBy(lineSeries => lineSeries.Unit)
                 .ToDictionary(group => GetAxisInfo(group.Key, group), group => group.ToArray());
 
@@ -203,7 +221,7 @@ namespace Nexus.UI.Shared
             JSRuntime.InvokeVoid("nexus.chart.hide", _chartId, "crosshairs-x");
             JSRuntime.InvokeVoid("nexus.chart.hide", _chartId, "crosshairs-y");
 
-            foreach (var series in LineSeries)
+            foreach (var series in LineSeriesData.Series)
             {
                 JSRuntime.InvokeVoid("nexus.chart.hide", _chartId, $"pointer_{series.Id}");
                 JSRuntime.InvokeVoid("nexus.chart.setTextContent", _chartId, $"value_{series.Id}", "--");
@@ -213,6 +231,10 @@ namespace Nexus.UI.Shared
         private void OnDoubleClick(MouseEventArgs e)
         {
             ResetZoom();
+
+            var relativePosition = JSRuntime.Invoke<Position>("nexus.chart.toRelative", _chartId, e.ClientX, e.ClientY);
+            DrawAuxiliary(relativePosition);
+
             _skiaView.Invalidate();
         }
 
@@ -242,8 +264,9 @@ namespace Nexus.UI.Shared
 
 
             ApplyZoom(zoomBox);
-            _skiaView.Invalidate();
             DrawAuxiliary(relativePosition);       
+
+            _skiaView.Invalidate();
         }
 
         private void ToggleSeriesEnabled(LineSeries series)
@@ -264,11 +287,11 @@ namespace Nexus.UI.Shared
 
             var yMin = Y_PADDING_TOP;
             var yMax = surfaceSize.Height - Y_PADDING_Bottom;
-            var xMin = 0.0f;
+            var xMin = Y_PADDING_LEFT;
             var xMax = surfaceSize.Width;
 
             /* y-axis */
-            xMin = DrawYAxes(canvas, yMin, yMax, _axesMap);
+            xMin = DrawYAxes(canvas, xMin, yMin, yMax, _axesMap);
             yMin += Y_UNIT_OFFSET;
 
             /* time-axis */
@@ -340,7 +363,8 @@ namespace Nexus.UI.Shared
                     var value = (float)series.Data[snappedIndex];
                     var y = (value - axisInfo.Min) / (axisInfo.Max - axisInfo.Min);
 
-                    if (float.IsFinite(x) && 0 <= x && x <= 1 &&
+                    if (series.Show &&
+                        float.IsFinite(x) && 0 <= x && x <= 1 &&
                         float.IsFinite(y) && 0 <= y && y <= 1)
                         JSRuntime.InvokeVoid("nexus.chart.translate", _chartId, $"pointer_{series.Id}", x, 1 - y);
 
@@ -474,9 +498,10 @@ namespace Nexus.UI.Shared
                 return;
 
             /* time range */
-            var timeRange = End - Begin;
-            _zoomedBegin = Begin + timeRange * _zoomBox.Left;
-            _zoomedEnd = Begin + timeRange * _zoomBox.Right;
+            var timeRange = LineSeriesData.End - LineSeriesData.Begin;
+
+            _zoomedBegin = LineSeriesData.Begin + timeRange * newZoomBox.Left;
+            _zoomedEnd = LineSeriesData.Begin + timeRange * newZoomBox.Right;
 
             /* data range */
             foreach (var axesEntry in _axesMap)
@@ -499,8 +524,8 @@ namespace Nexus.UI.Shared
             _zoomBox = new SKRect(0, 0, 1, 1);
 
             /* time range */
-            _zoomedBegin = Begin;
-            _zoomedEnd = End;
+            _zoomedBegin = LineSeriesData.Begin;
+            _zoomedEnd = LineSeriesData.End;
 
             /* data range */
             foreach (var axesEntry in _axesMap)
@@ -516,7 +541,7 @@ namespace Nexus.UI.Shared
 
         #region Y axis
 
-        private float DrawYAxes(SKCanvas canvas, float yMin, float yMax, Dictionary<AxisInfo, LineSeries[]> axesMap)
+        private float DrawYAxes(SKCanvas canvas, float xMin, float yMin, float yMax, Dictionary<AxisInfo, LineSeries[]> axesMap)
         {
             using var axisLabelPaint = new SKPaint
             {
@@ -531,7 +556,7 @@ namespace Nexus.UI.Shared
                 IsAntialias = true
             };
 
-            var currentOffset = 0.0f;
+            var currentOffset = xMin;
             var canvasRange = yMax - yMin;
             var maxTickCount = Math.Max(1, (int)Math.Round(canvasRange / 50, MidpointRounding.AwayFromZero));
             var widthPerCharacter = axisLabelPaint.MeasureText(" ");
@@ -610,6 +635,10 @@ namespace Nexus.UI.Shared
 
             /* range and position of first significant digit */
             var range = max - min;
+
+            if (range == 0)
+                range = 1;
+
             var significant = (int)Math.Round(Math.Log10(range), MidpointRounding.AwayFromZero);
 
             /* get limits */
@@ -677,7 +706,6 @@ namespace Nexus.UI.Shared
 
             var canvasRange = xMax - xMin;
             var maxTickCount = Math.Max(1, (int)Math.Round(canvasRange / 130, MidpointRounding.AwayFromZero));
-
             var (config, ticks) = GetTimeTicks(begin, end, maxTickCount);
             _timeAxisConfig = config;
 
@@ -700,8 +728,17 @@ namespace Nexus.UI.Shared
 
                 if (addSlowTick)
                 {
-                    var slowTickLabel = tick.ToString(config.SlowTickLabelFormat);
-                    canvas.DrawText(slowTickLabel, x, yMax + TICK_SIZE + TIME_AXIS_MARGIN_TOP + TIME_FAST_LABEL_OFFSET, axisLabelPaint);
+                    if (config.SlowTickLabelFormat1 is not null)
+                    {
+                        var slowTickLabel1 = tick.ToString(config.SlowTickLabelFormat1);
+                        canvas.DrawText(slowTickLabel1, x, yMax + TICK_SIZE + TIME_AXIS_MARGIN_TOP + TIME_FAST_LABEL_OFFSET, axisLabelPaint);
+                    }
+
+                    if (config.SlowTickLabelFormat2 is not null)
+                    {
+                        var slowTickLabel2 = tick.ToString(config.SlowTickLabelFormat2);
+                        canvas.DrawText(slowTickLabel2, x, yMax + TICK_SIZE + TIME_AXIS_MARGIN_TOP + TIME_FAST_LABEL_OFFSET * 2, axisLabelPaint);
+                    }
                 }
 
                 /* */
@@ -711,8 +748,8 @@ namespace Nexus.UI.Shared
 
         private (TimeAxisConfig, DateTime[]) GetTimeTicks(DateTime begin, DateTime end, int maxTickCount)
         {
-            int GetTickCount(DateTime begin, DateTime end, TimeSpan tickInterval)
-                => (int)Math.Ceiling((end - begin) / tickInterval);
+            long GetTickCount(DateTime begin, DateTime end, TimeSpan tickInterval)
+                => (long)Math.Ceiling((end - begin) / tickInterval);
 
             /* find TimeAxisConfig */
             TimeAxisConfig? selectedConfig = default;
@@ -745,7 +782,7 @@ namespace Nexus.UI.Shared
             var firstTick = RoundUp(begin, tickInterval);
 
             var ticks = Enumerable
-                .Range(0, tickCount)
+                .Range(0, (int)tickCount)
                 .Select(tickIndex => firstTick + tickIndex * tickInterval)
                 .Where(tick => tick < end)
                 .ToArray();

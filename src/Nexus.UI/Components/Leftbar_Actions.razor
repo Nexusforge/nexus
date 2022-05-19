@@ -19,14 +19,34 @@
         <span class="text-sm">Save</span>
     </div>
 
-    <div class="p-4 flex flex-col justify-center items-center hover:text-orange-500 cursor-pointer">
-        <span class="text-2xl mdi mdi-chart-areaspline mb-1"></span>
-        <span class="text-sm">Visualize</span>
-    </div>
+    @if (AppState.Settings.CanVisualize)
+    {
+        <div class="p-4 flex flex-col justify-center items-center @(AppState.ViewState == ViewState.Data ? "text-orange-500" : "hover:text-orange-500") cursor-pointer" 
+            @onclick="ToggleDataChart">
+            <span class="text-2xl mdi mdi-chart-areaspline mb-1"></span>
+            <span class="text-sm">Visualize</span>
+        </div>
+    }
+    else
+    {
+        <div class="p-4 flex flex-col justify-center items-center text-gray-400 cursor-not-allowed">
+            <span class="text-2xl mdi mdi-chart-areaspline mb-1"></span>
+            <span class="text-sm">Visualize</span>
+        </div>
+    }
 
 </div>
 
 @code {
+
+    protected override void OnInitialized()
+    {
+        AppState.Settings.PropertyChanged += (sender, e) => 
+        {
+            if (e.PropertyName == nameof(AppState.Settings.CanVisualize))
+                StateHasChanged();
+        };
+    }
 
     private async Task UploadSettingsAsync(InputFileChangeEventArgs e)
     {
@@ -101,7 +121,6 @@
             AppState.ExportParameters = exportParameters;
         }
     }
-
     private void DownloadSettings()
     {
         var exportParameters = AppState.Settings.GetExportParameters();
@@ -109,5 +128,14 @@
         var jsonString = JsonSerializer.Serialize(exportParameters, options);
 
 		JSRuntime.InvokeVoid("nexus.util.bloSaveAs", "nexus-settings.json", Convert.ToBase64String(Encoding.UTF8.GetBytes(jsonString)));
+    }
+
+    private void ToggleDataChart()
+    {
+        if (AppState.ViewState == ViewState.Normal)
+            AppState.ViewState = ViewState.Data;
+
+        else
+            AppState.ViewState = ViewState.Normal;
     }
 }

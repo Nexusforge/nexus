@@ -1,9 +1,8 @@
 ﻿@page "/chart-test"
-@using SkiaSharp.Views.Blazor
+
 <PageTitle>Chart Test Page</PageTitle>
 
 <div class="row-start-2 col-start-2 col-span-2 row-span-2 p-5 flex">
-    <Chart Begin=_begin End=_end LineSeries=_lineSeries BeginAtZero="true">
-    </Chart>
+    <Chart LineSeriesData="_lineSeriesData" BeginAtZero="true" />
 </div>
 

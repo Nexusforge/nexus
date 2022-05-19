@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Components.Web;
 using SkiaSharp;
 
-namespace Nexus.UI.Shared
+namespace Nexus.UI.Charts
 {
     public record AvailabilityData(
         DateTime Begin,
@@ -11,10 +11,15 @@ namespace Nexus.UI.Shared
         IList<double> Data
     );
 
+    public record LineSeriesData(
+        DateTime Begin,
+        DateTime End,
+        IList<LineSeries> Series
+    );
+
     public record LineSeries(
         string Name,
         string Unit,
-        DateTime Begin,
         TimeSpan SamplePeriod,
         double[] Data)
     {
@@ -51,8 +56,11 @@ namespace Nexus.UI.Shared
         /* Ticks where the TriggerPeriod changes will have a slow tick label attached */
         TriggerPeriod SlowTickTrigger,
 
-        /* The slow tick format */
-        string SlowTickLabelFormat,
+        /* The slow tick format (row 1) */
+        string? SlowTickLabelFormat1,
+
+        /* The slow tick format (row 2) */
+        string? SlowTickLabelFormat2,
         
         /* The cursor label format*/
         string CursorLabelFormat);

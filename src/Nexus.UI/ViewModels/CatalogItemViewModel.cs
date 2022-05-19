@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Nexus.Api;
+using Nexus.UI.Core;
 
 namespace Nexus.UI.ViewModels;
 
@@ -7,7 +8,7 @@ public class CatalogItemViewModel
 {
     public const string DESCRIPTION_KEY = "Description";
     private const string WARNING_KEY = "Warning";
-    private const string UNIT_KEY = "Unit";
+    public const string UNIT_KEY = "Unit";
 
     public CatalogItemViewModel(ResourceCatalog resourceCatalog, Resource resource, Representation representation)
     {
@@ -17,23 +18,9 @@ public class CatalogItemViewModel
 
         if (resource.Properties.HasValue)
         {
-            if (resource.Properties.Value.TryGetProperty(DESCRIPTION_KEY, out var descriptionElement) && 
-                descriptionElement.ValueKind == JsonValueKind.String)
-            {
-                Description = descriptionElement.GetString();
-            }
-
-            if (resource.Properties.Value.TryGetProperty(WARNING_KEY, out var warningElement) && 
-                warningElement.ValueKind == JsonValueKind.String)
-            {
-                Warning = descriptionElement.GetString();
-            }
-
-            if (resource.Properties.Value.TryGetProperty(WARNING_KEY, out var unitElement) && 
-                unitElement.ValueKind == JsonValueKind.String)
-            {
-                Unit = descriptionElement.GetString();
-            }
+            Description = Utilities.GetPropertyStringValue(resource.Properties, DESCRIPTION_KEY);
+            Warning = Utilities.GetPropertyStringValue(resource.Properties, WARNING_KEY);
+            Unit = Utilities.GetPropertyStringValue(resource.Properties, UNIT_KEY);
         }
     }
 

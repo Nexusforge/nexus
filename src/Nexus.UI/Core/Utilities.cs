@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Nexus.Api;
 
@@ -63,7 +64,20 @@ public static class Utilities
 
     public static int SizeOf(NexusDataType dataType)
     {
-        return ((ushort)dataType & 0x00FF) / 8;
+        return dataType switch
+        {
+            NexusDataType.UINT8     => 1,
+            NexusDataType.INT8      => 1,
+            NexusDataType.UINT16    => 2,
+            NexusDataType.INT16     => 2,
+            NexusDataType.UINT32    => 4,
+            NexusDataType.INT32     => 4,
+            NexusDataType.UINT64    => 8,
+            NexusDataType.INT64     => 8,
+            NexusDataType.FLOAT32   => 4,
+            NexusDataType.FLOAT64   => 8,
+            _                       => throw new Exception($"The data type {dataType} is not supported.")
+        };
     }
 
     public static void ParseResourcePath(
@@ -116,11 +130,11 @@ public static class Utilities
 
     private static Regex _snakeCaseEvaluator = new Regex("(?<=[a-z])([A-Z])", RegexOptions.Compiled);
 
-    public static string KindToString(RepresentationKind kind)
+    public static string? KindToString(RepresentationKind kind)
     {
         var snakeCaseKind = kind == RepresentationKind.Original 
-            ? ""
-            : "_" + _snakeCaseEvaluator.Replace(kind.ToString(), "_$1").Trim().ToLower();
+            ? null
+            : _snakeCaseEvaluator.Replace(kind.ToString(), "_$1").Trim().ToLower();
 
         return snakeCaseKind;
     }
@@ -132,5 +146,18 @@ public static class Utilities
         var kind = Enum.Parse<RepresentationKind>(pascalCase);
 
         return kind;
+    }
+
+    public static string? GetPropertyStringValue(JsonElement? properties, string key)
+    {
+        string? result = default;
+
+        if (properties is not null && properties.Value.TryGetProperty(key, out var warningElement) && 
+            warningElement.ValueKind == JsonValueKind.String)
+        {
+            result = warningElement.GetString();
+        }
+
+        return result;
     }
 }

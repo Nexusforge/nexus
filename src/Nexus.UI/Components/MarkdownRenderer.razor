@@ -1,4 +1,4 @@
-﻿@inject IJSRuntime JsRuntime
+﻿@inject IJSRuntime JSRuntime
 
 <div class="markdown">
     @((MarkupString)@Render(MarkdownString))
@@ -11,6 +11,6 @@
 
     private string Render(string markdownString)
     {
-        return ((IJSInProcessRuntime)JsRuntime).Invoke<string>("marked.parse", markdownString);
+        return ((IJSInProcessRuntime)JSRuntime).Invoke<string>("marked.parse", markdownString);
     }
 }

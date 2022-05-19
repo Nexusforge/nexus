@@ -55,6 +55,7 @@
         SelectedItem.Kinds.Add(kind);
         _kinds = GetKinds();
         AppState.Settings.CanExportChanged();
+        AppState.Settings.CanVisualizeChanged();
     }
 
     private void RemoveRepresentationKind(RepresentationKind kind)
@@ -69,6 +70,7 @@
             SelectedItem.Kinds.Remove(kind);
             _kinds = GetKinds();
             AppState.Settings.CanExportChanged();
+            AppState.Settings.CanVisualizeChanged();
         }
     }
 

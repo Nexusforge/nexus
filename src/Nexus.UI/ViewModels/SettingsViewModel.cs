@@ -48,6 +48,7 @@ public class SettingsViewModel : INotifyPropertyChanged
 
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Begin)));
             CanExportChanged();
+            CanVisualizeChanged();
         }
     }
 
@@ -66,6 +67,7 @@ public class SettingsViewModel : INotifyPropertyChanged
 
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(End)));
             CanExportChanged();
+            CanVisualizeChanged();
         }
     }
 
@@ -80,6 +82,7 @@ public class SettingsViewModel : INotifyPropertyChanged
 
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SamplePeriod)));
             CanExportChanged();
+            CanVisualizeChanged();
         }
     }
 
@@ -125,20 +128,39 @@ public class SettingsViewModel : INotifyPropertyChanged
         get
         {
             var result =  
-                Begin < End &&
-                Begin.Ticks % SamplePeriod.Value.Ticks == 0 &&
-                End.Ticks % SamplePeriod.Value.Ticks == 0 &&
-                SelectedCatalogItems.Any() &&
-                SelectedCatalogItems.All(item => item.IsValid(SamplePeriod)) &&
+                CanVisualize &&
                 (FilePeriod.Value == TimeSpan.Zero || FilePeriod.Value.Ticks % SamplePeriod.Value.Ticks == 0);
 
             return result;
         }
     }
 
+    public bool CanVisualize
+    {
+        get
+        {
+            var canVisualize =  
+                Begin < End &&
+                Begin.Ticks % SamplePeriod.Value.Ticks == 0 &&
+                End.Ticks % SamplePeriod.Value.Ticks == 0 &&
+                SelectedCatalogItems.Any() &&
+                SelectedCatalogItems.All(item => item.IsValid(SamplePeriod));
+
+            if (!canVisualize)
+                _appState.ViewState = ViewState.Normal;
+
+            return canVisualize;
+        }
+    }
+
     public void CanExportChanged()
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CanExport)));
+    }
+
+    public void CanVisualizeChanged()
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CanVisualize)));
     }
 
     public ExportParameters GetExportParameters()
@@ -170,6 +192,8 @@ public class SettingsViewModel : INotifyPropertyChanged
     {
         _selectedCatalogItems = selectedCatalogItems;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedCatalogItems)));
+        CanExportChanged();
+        CanVisualizeChanged();
     }
 
     public void ToggleCatalogItemSelection(CatalogItemViewModel catalogItem)
@@ -190,6 +214,7 @@ public class SettingsViewModel : INotifyPropertyChanged
 
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedCatalogItems)));
         CanExportChanged();
+        CanVisualizeChanged();
     }
 
     private CatalogItemSelectionViewModel? TryFindSelectedCatalogItem(CatalogItemViewModel catalogItem)

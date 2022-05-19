@@ -1,0 +1,78 @@
+﻿@inject IAppState AppState
+@inject INexusClient Client
+
+@if (_lineSeriesData is null)
+{
+    <div class="h-full flex justify-center items-center mx-auto">
+        <UISpinner />
+        <span class="ml-3 text-gray-400">Loading data ...</span>
+    </div>
+}
+else
+{
+    <div class="h-full p-5">
+        <Chart LineSeriesData="_lineSeriesData" BeginAtZero="AppState.BeginAtZero" />
+    </div>
+}
+
+@code {
+    LineSeriesData? _lineSeriesData;
+
+    protected override Task OnInitializedAsync()
+    {
+        AppState.Settings.PropertyChanged += (sender, e) =>
+        {
+            if (e.PropertyName == nameof(AppState.Settings.CanVisualize))
+                _ = LoadDataAsync();
+        };
+
+        AppState.PropertyChanged += (sender, e) =>
+        {
+            if (e.PropertyName == nameof(AppState.BeginAtZero))
+                this.StateHasChanged();
+        };
+
+        return LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        _lineSeriesData = null;
+        StateHasChanged();
+
+        var begin = AppState.Settings.Begin;
+        var end = AppState.Settings.End;
+
+        var lineSeriesSet = new List<LineSeries>();
+
+        foreach (var catalogItem in AppState.Settings.SelectedCatalogItems)
+        {
+            foreach (var kind in catalogItem.Kinds)
+            {
+                var resourcePath = catalogItem.GetResourcePath(kind, AppState.Settings.SamplePeriod.Value);
+
+                var response = await Client.Data
+                    .GetStreamAsync(resourcePath, begin, end, CancellationToken.None);
+
+                var resource = catalogItem.BaseItem.Resource;
+                var kindAsString = Utilities.KindToString(kind);
+
+                var name = kindAsString is null
+                    ? resource.Id
+                    : $"{resource.Id} ({kindAsString})";
+
+                var unit = Utilities.GetPropertyStringValue(resource.Properties, CatalogItemViewModel.UNIT_KEY) ?? string.Empty;
+                var data = await response.ReadAsDoubleAsync();
+
+                lineSeriesSet.Add(new LineSeries(name, unit, AppState.Settings.SamplePeriod.Value, data));
+            }
+        }
+
+        _lineSeriesData = new LineSeriesData(begin, end, lineSeriesSet);
+        StateHasChanged();
+    }
+}
+
+
+
+

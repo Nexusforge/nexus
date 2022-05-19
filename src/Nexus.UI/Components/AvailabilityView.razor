@@ -47,12 +47,22 @@ else
         var end = AppState.Settings.End.Date;
         var step = TimeSpan.FromDays(1);
 
-        var availability = await Client.Catalogs.GetAvailabilityAsync(
-            AppState.SelectedCatalog!.Id,
-            begin,
-            end,
-            step,
-            CancellationToken.None);
+        CatalogAvailability? availability;
+
+        if (begin < end)
+        {
+            availability = await Client.Catalogs.GetAvailabilityAsync(
+                AppState.SelectedCatalog!.Id,
+                begin,
+                end,
+                step,
+                CancellationToken.None);
+        }
+        
+        else
+        {
+            availability = new CatalogAvailability(Data: new List<double>());
+        }
 
         _availabilityData = new AvailabilityData(begin, end, step, availability.Data);
         StateHasChanged();

@@ -20,7 +20,11 @@ public class CatalogItemSelectionViewModel
         var samplePeriodString = Utilities.ToUnitString(samplePeriod, withUnderScore: true);
         var baseSamplePeriodString = Utilities.ToUnitString(baseItem.Representation.SamplePeriod, withUnderScore: true);
         var snakeCaseKind = Utilities.KindToString(kind);
-        var representationId = $"{samplePeriodString}{snakeCaseKind}";
+
+        var representationId = snakeCaseKind is not null
+            ? $"{samplePeriodString}_{snakeCaseKind}"
+            : $"{samplePeriodString}";
+
         var resourcePath = $"{baseItem.Catalog.Id}/{baseItem.Resource.Id}/{representationId}#base={baseSamplePeriodString}";
 
         return resourcePath;

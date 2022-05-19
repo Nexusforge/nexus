@@ -20,7 +20,7 @@ public interface IAppState : INotifyPropertyChanged
     SortedDictionary<string, List<CatalogItemViewModel>>? CatalogItemsMap { get; }
     List<CatalogItemViewModel>? CatalogItems { get; set; }
 
-
+    bool BeginAtZero { get; set; }
     string? SearchString { get; set; }
 
     ObservableCollection<JobViewModel> Jobs { get; }
@@ -44,6 +44,7 @@ public class AppState : IAppState
     private ViewState _viewState = ViewState.Normal;
     private ExportParameters _exportParameters;
     private INexusClient _client;
+    private bool _beginAtZero;
     private string? _searchString;
     private const string GROUP_KEY = "Groups";
 
@@ -142,6 +143,22 @@ public class AppState : IAppState
 
     public SortedDictionary<string, List<CatalogItemViewModel>>? CatalogItemsMap { get; private set; }
     public List<CatalogItemViewModel>? CatalogItems { get; set; }
+
+    public bool BeginAtZero
+    {
+        get 
+        {
+            return _beginAtZero;
+        }
+        set
+        {
+            if (value != _beginAtZero)
+            {
+                _beginAtZero = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(BeginAtZero)));
+            }
+        }
+    }
 
     public string? SearchString
     {

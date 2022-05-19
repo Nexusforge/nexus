@@ -3,10 +3,11 @@ using Nexus.UI.Services;
 using SkiaSharp;
 using SkiaSharp.Views.Blazor;
 
-namespace Nexus.UI.Shared
+namespace Nexus.UI.Charts
 {
     public partial class AvailabilityChart
     {
+        private SKGLView _skiaView = default!;
         private const float LINE_HEIGHT = 7.0f;
         private const float HALF_LINE_HEIGHT = LINE_HEIGHT / 2;
 
@@ -82,16 +83,22 @@ namespace Nexus.UI.Shared
             xMin += 10;
 
             var widthPerCharacter = axisLabelPaint.MeasureText(" ");
+            var desiredYLabelCount = 11;
+            var maxYLabelCount = yRange / 50;
+            var ySkip = (int)(desiredYLabelCount / (float)maxYLabelCount) + 1;
 
-            for (int i = 0; i < 11; i++)
+            for (int i = 0; i < desiredYLabelCount; i++)
             {
-                var relative = i / 10.0f;
-                var y = yMin + (1 - relative) * yRange;
-                var label = $"{(int)(relative * 100),3:D0}";
-                var lineOffset = widthPerCharacter * 3;
+                if ((i + ySkip) % ySkip == 0)
+                {
+                    var relative = i / 10.0f;
+                    var y = yMin + (1 - relative) * yRange;
+                    var label = $"{(int)(relative * 100),3:D0}";
+                    var lineOffset = widthPerCharacter * 3;
 
-                canvas.DrawText(label, new SKPoint(xMin, y + HALF_LINE_HEIGHT), axisLabelPaint);
-                canvas.DrawLine(new SKPoint(xMin + lineOffset, y), new SKPoint(xMax, y), axisTickPaint);
+                    canvas.DrawText(label, new SKPoint(xMin, y + HALF_LINE_HEIGHT), axisLabelPaint);
+                    canvas.DrawLine(new SKPoint(xMin + lineOffset, y), new SKPoint(xMax, y), axisTickPaint);
+                }
             }
 
             xMin += widthPerCharacter * 4;
@@ -101,8 +108,8 @@ namespace Nexus.UI.Shared
             var xRange = xMax - xMin;
             var valueWidth = xRange / count;
 
-            var labelCount = xRange / 200;
-            var skip = (int)(count / (float)labelCount) + 1;
+            var maxXLabelCount = xRange / 200;
+            var xSkip = (int)(count / (float)maxXLabelCount) + 1;
             var lastBegin = DateTime.MinValue;
 
             for (int i = 0; i < count; i++)
@@ -125,7 +132,7 @@ namespace Nexus.UI.Shared
 
                 canvas.DrawPath(path, barStrokePaint);
 
-                if ((i + skip) % skip == 0)
+                if ((i + xSkip) % xSkip == 0)
                 {
                     var currentBegin = AvailabilityData.Begin.AddDays(i);
                     canvas.DrawText(currentBegin.ToString("dd.MM"), xMin + (i + 0.5f) * valueWidth, yMax - 20, axisLabelCenteredPaint);

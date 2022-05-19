@@ -33,15 +33,21 @@ nexus.chart.hide = function (chartId, elementId) {
 };
 
 nexus.chart.toRelative = function (chartId, clientX, clientY) {
-
+   
     let overlay = document
         .getElementById(`overlay_${chartId}`);
-
+    
     let rect = overlay
         .getBoundingClientRect();
-
+    
     let x = (clientX - rect.left) / rect.width;
     let y = (clientY - rect.top) / rect.height;
+
+    x = Math.max(0, x)
+    x = Math.min(1, x)
+
+    y = Math.max(0, y)
+    y = Math.min(1, y)
 
     return {
         "x": x,

@@ -1,6 +1,11 @@
 nexus = {};
 nexus.util = {};
 
+/* sometimes Console.WriteLine does not work */
+nexus.util.log = function (message) {
+    console.log(message)
+}
+
 nexus.util.highlight = function (code, language) {
     return hljs.highlight(code, {language: language}).value
 }
