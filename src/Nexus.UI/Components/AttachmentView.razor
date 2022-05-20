@@ -61,6 +61,9 @@
     private CancellationTokenSource? _cts;
 
     [Inject]
+    public IAppState AppState { get; set; } = default!;
+
+    [Inject]
     public INexusClient Client { get; set; } = default!;
 
     [Parameter]
@@ -71,8 +74,15 @@
         _attachments = default;
         StateHasChanged();
 
-        await Client.Catalogs.DeleteAttachmentAsync(Catalog.Id, attachment);
-        await GetAttachmentsAsync();
+        try
+        {
+            await Client.Catalogs.DeleteAttachmentAsync(Catalog.Id, attachment);
+            await GetAttachmentsAsync();    
+        }
+        catch (Exception ex)
+        {
+            AppState.AddError(ex);
+        }
     }
 
     private async Task UploadAttachmentsAsync(InputFileChangeEventArgs e)

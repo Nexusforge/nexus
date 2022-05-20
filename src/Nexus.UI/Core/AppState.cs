@@ -20,10 +20,13 @@ public interface IAppState : INotifyPropertyChanged
     SortedDictionary<string, List<CatalogItemViewModel>>? CatalogItemsMap { get; }
     List<CatalogItemViewModel>? CatalogItems { get; set; }
 
+    IReadOnlyList<(DateTime, Exception)> Errors { get; }
     bool BeginAtZero { get; set; }
     string? SearchString { get; set; }
 
     ObservableCollection<JobViewModel> Jobs { get; }
+
+    void AddError(Exception error);
     void AddJob(JobViewModel job);
     void CancelJob(JobViewModel job);
 
@@ -44,6 +47,7 @@ public class AppState : IAppState
     private ViewState _viewState = ViewState.Normal;
     private ExportParameters _exportParameters;
     private INexusClient _client;
+    private List<(DateTime, Exception)> _errors = new List<(DateTime, Exception)>();
     private bool _beginAtZero;
     private string? _searchString;
     private const string GROUP_KEY = "Groups";
@@ -144,6 +148,8 @@ public class AppState : IAppState
     public SortedDictionary<string, List<CatalogItemViewModel>>? CatalogItemsMap { get; private set; }
     public List<CatalogItemViewModel>? CatalogItems { get; set; }
 
+    public IReadOnlyList<(DateTime, Exception)> Errors => _errors;
+
     public bool BeginAtZero
     {
         get 
@@ -228,6 +234,12 @@ public class AppState : IAppState
 
         if (SelectedCatalog is FakeResourceCatalogViewModel)
             ViewState = ViewState.Normal;
+    }
+
+    public void AddError(Exception error)
+    {
+        _errors.Add((DateTime.UtcNow, error));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Errors)));
     }
 
     private SortedDictionary<string, List<CatalogItemViewModel>>? GroupCatalogItems(ResourceCatalog catalog)

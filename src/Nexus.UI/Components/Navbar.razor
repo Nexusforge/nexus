@@ -1,4 +1,5 @@
-﻿@inject INexusClient Client
+﻿@inject IAppState AppState
+@inject INexusClient Client
 @inject IJSInProcessRuntime JSRuntime
 
 @using System.Security.Claims
@@ -10,6 +11,21 @@
     </a>
 
     <div class="flex items-center">
+        @if (AppState.Errors.Any())
+        {
+            <span class="relative mr-2 text-2xl mdi mdi-alert text-red-800 cursor-pointer hover:text-red-600" @onclick="OpenErrorModal">
+                <div class="flex text-red-900 font-bold items-center justify-center absolute w-5 h-5 left-4 top-0 text-xs rounded-full">
+                    @if (AppState.Errors.Count > 9)
+                    {
+                        @:9+
+                    }
+                    else
+                    {
+                        @AppState.Errors.Count
+                    }
+                </div>
+            </span>
+        }
         <a class="text-sm font-semibold px-3 py-0.5 rounded text-cyan-700 hover:text-orange-500" href="api" target="_blank">
             API
         </a>
@@ -31,6 +47,22 @@
         </span>
     </div>
 </div>
+
+<UIModal @bind-IsOpen="_isErrorModalOpen" Title="Errors" Width="600px">
+    <div class="flex flex-col">
+        @foreach (var error in AppState.Errors.Reverse())
+        {
+            <div class="p-2 m-3 rounded-lg bg-gray-200 overflow-x-auto">
+                <span class="mdi mdi-alert text-red-800"></span>
+                <span class="font-bold">
+                    @error.Item1.ToLocalTime().ToString("HH:mm:ss")
+                </span>
+                <span class="text-sm">@error.Item2.Message</span>
+                <span class="block text-sm">@error.Item2.ToString()</span>
+            </div>
+        }
+    </div>
+</UIModal>
 
 <UIModal @bind-IsOpen="_isRefreshTokenModalOpen" Title="Refresh Token" Width="600px" AutoHeight="true">
     @if (_refreshToken is not null)
@@ -70,16 +102,29 @@
 
     private bool _isRefreshTokenModalOpen;
 
+    private bool _isErrorModalOpen;
+
     private AuthenticationState _authenticationState = default!;
 
     protected override async Task OnInitializedAsync()
     {
+        AppState.PropertyChanged += (sender, e) =>
+        {
+            if (e.PropertyName == nameof(AppState.Errors))
+                this.StateHasChanged();
+        };
+
         _authenticationState = await GetAuthenticationStateTask;
     }
 
     private void CopyToClipboard()
     {
         JSRuntime.InvokeVoid("nexus.util.copyToClipboard", _refreshToken);
+    }
+
+    private void OpenErrorModal()
+    {
+        _isErrorModalOpen = true;
     }
 
     private void OpenRefreshTokenModal()
