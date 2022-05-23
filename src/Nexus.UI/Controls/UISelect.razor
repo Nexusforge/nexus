@@ -6,7 +6,14 @@
         <label class="block text-xs text-gray-300 cursor-pointer">@Label</label>
 
         <div>
-            @Items[SelectedItem]
+            @if (IsEditable)
+            {
+                <input type="text" @bind="SelectedItem" />
+            }
+            else
+            {
+                @Items[SelectedItem]
+            }
         </div>
     </div>
 
@@ -56,6 +63,9 @@
 
     [Parameter]
     public string Label { get; set; } = default!;
+
+    [Parameter]
+    public bool IsEditable { get; set; } = default!;
 
     [Parameter]
     public EventCallback<T> SelectedItemChanged { get; set; }

@@ -95,27 +95,27 @@
 
         StateHasChanged();
 
+        var processedFiles = 0;
+        var currentStream = default(Stream);
+
+        _ = Task.Run(async () =>
+        {
+            while (_isUploading)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(500));
+
+                if (currentStream is not null)
+                {
+                    var fileProgress = currentStream.Position / (double)currentStream.Length;
+                    _progress = (processedFiles + fileProgress) / (double)e.FileCount;
+                }
+
+                StateHasChanged();
+            }
+        });
+
         try
         {
-            var processedFiles = 0;
-            var currentStream = default(Stream);
-
-            _ = Task.Run(async () =>
-            {
-                while (_isUploading)
-                {
-                    await Task.Delay(TimeSpan.FromMilliseconds(500));
-
-                    if (currentStream is not null)
-                    {
-                        var fileProgress = currentStream.Position / (double)currentStream.Length;
-                        _progress = (processedFiles + fileProgress) / (double)e.FileCount;
-                    }
-
-                    StateHasChanged();
-                }
-            });
-
             foreach (var file in e.GetMultipleFiles())
             {
                 cts.Token.ThrowIfCancellationRequested();
@@ -128,7 +128,15 @@
 
                 using var stream = file.OpenReadStream(maxAllowedSize: long.MaxValue);
                 currentStream = stream;
-                await Client.Catalogs.UploadAttachmentAsync(Catalog.Id, file.Name, stream, cts.Token);
+
+                try
+                {
+                    await Client.Catalogs.UploadAttachmentAsync(Catalog.Id, file.Name, stream, cts.Token);
+                }
+                catch (Exception ex)
+                {
+                    AppState.AddError(ex);
+                }
 
                 processedFiles++;
             }
@@ -157,7 +165,15 @@
 
     private async Task GetAttachmentsAsync()
     {
-        _attachments = await Client.Catalogs.GetAttachmentsAsync(Catalog.Id, CancellationToken.None);
+        try
+        {
+            _attachments = await Client.Catalogs.GetAttachmentsAsync(Catalog.Id, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            AppState.AddError(ex);
+        }
+
         StateHasChanged();
     }
 

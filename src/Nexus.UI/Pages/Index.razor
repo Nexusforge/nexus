@@ -1,4 +1,5 @@
-﻿@inject IAppState AppState
+﻿@implements IDisposable
+@inject IAppState AppState
 @page "/"
 @page "/catalogs/{catalogId}"
 
@@ -81,13 +82,20 @@ else
 
 @code {
 
-    protected override void OnInitialized()
+    private PropertyChangedEventHandler _handler;
+
+    public Index()
     {
-        AppState.PropertyChanged += (sender, e) =>
+        _handler = (sender, e) =>
         {
             if (e.PropertyName == nameof(AppState.ViewState))
                 StateHasChanged();
         };
+    }
+
+    protected override void OnInitialized()
+    {
+        AppState.PropertyChanged += _handler;
     }
 
     protected override Task OnParametersSetAsync()
@@ -97,6 +105,11 @@ else
 
     [Parameter]
     public string? CatalogId { get; set; }
+
+    public void Dispose()
+    {
+        AppState.PropertyChanged -= _handler;
+    }
 }
 
 

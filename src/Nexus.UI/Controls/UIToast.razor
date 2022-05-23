@@ -1,0 +1,70 @@
+﻿@inject ToastService ToastService
+
+@if (_show)
+{
+    <div class="fixed mx-auto w-1/6 inset-x-0 bottom-5 z-50 bg-red-800 opacity-@_opacity p-5 rounded-lg text-white text-xl flex-col shadow-2xl">
+        <div>
+            <span class="mdi mdi-alert"></span>
+            <span class="ml-3">@_title</span>
+        </div>
+        <span class="text-sm">@_message</span>
+    </div>
+}
+
+@code {
+
+    private static SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+    private CancellationTokenSource _cts = new CancellationTokenSource();
+    private bool _show;
+    private int _opacity;
+    private string _title = default!;
+    private string _message = default!;
+
+    public async Task ShowAsync(string title, string message)
+    {
+        _title = title;
+        _message = message;
+
+        _cts.Cancel();
+
+        await _semaphore.WaitAsync();
+
+        _show = true;
+        _opacity = 70;
+
+        try
+        {
+            StateHasChanged();
+
+            _cts = new CancellationTokenSource();
+
+            var cts = _cts;
+            await Task.Delay(TimeSpan.FromSeconds(2), cts.Token);
+
+            for (int i = 70; i > 0; i-=10)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(100));
+                _opacity = i;
+                StateHasChanged();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            //
+        }
+        finally
+        {
+            _show = false;
+            _semaphore.Release();
+
+            StateHasChanged();
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        ToastService.Toast = this;
+    }
+}
+
+

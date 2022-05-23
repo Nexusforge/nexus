@@ -27,12 +27,14 @@ var authenticationSchemes = await client.Users.GetAuthenticationSchemesAsync();
 
 builder.Services
     .AddAuthorizationCore()
+    .AddSingleton<ToastService>()
     .AddSingleton<INexusClient>(client)
     .AddSingleton<IJSInProcessRuntime>(serviceProvider => (IJSInProcessRuntime)serviceProvider.GetRequiredService<IJSRuntime>())
     .AddSingleton<IAppState>(serviceProvider => 
     {
         var jsRuntime = serviceProvider.GetRequiredService<IJSInProcessRuntime>();
-        var appState = new AppState(authenticationSchemes, (INexusClient)client, jsRuntime);
+        var toastService = serviceProvider.GetRequiredService<ToastService>();
+        var appState = new AppState(authenticationSchemes, (INexusClient)client, jsRuntime, toastService);
 
         return appState;
     })

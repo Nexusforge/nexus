@@ -1,4 +1,7 @@
-﻿@inject IAppState AppState
+﻿@using System.Collections.Specialized
+@implements IDisposable
+
+@inject IAppState AppState
 @inject INexusClient Client
 
 <div class="flex flex-wrap">
@@ -10,11 +13,23 @@
 
 @code
 {
-    protected override void OnInitialized()
+    private NotifyCollectionChangedEventHandler _handler;
+
+    public Rightbar_Jobs()
     {
-        AppState.Jobs.CollectionChanged += (sender, e) => 
+        _handler = (sender, e) => 
         {
             StateHasChanged();    
         };
+    }
+
+    protected override void OnInitialized()
+    {
+        AppState.Jobs.CollectionChanged += _handler;
+    }
+
+    public void Dispose()
+    {
+        AppState.Jobs.CollectionChanged -= _handler;
     }
 }

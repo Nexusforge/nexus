@@ -4,8 +4,10 @@ from __future__ import annotations
 import base64
 import dataclasses
 import json
+from msilib.schema import Error
 import os
 import re
+from signal import raise_signal
 import typing
 from array import array
 from dataclasses import dataclass
@@ -205,7 +207,11 @@ class StreamResponse:
         """Reads the data as an array of floats."""
         
         byteBuffer = await self._response.aread()
-        doubleBuffer = array('d', byteBuffer)
+
+        if len(byteBuffer) % 8 != 0:
+            raise Exception("The data length is invalid.")
+
+        doubleBuffer = array("d", byteBuffer)
 
         return doubleBuffer 
 

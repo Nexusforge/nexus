@@ -1,16 +1,19 @@
-﻿@inject IAppState AppState
+﻿@implements IDisposable
+@inject IAppState AppState
 
 <div>
 
-    <UITextBox 
-        Label="File Period" 
-        @bind-Value="AppState.Settings.FilePeriod">
-    </UITextBox>
+    <UISelect 
+        Label="File Period"
+        Items="_items"
+        IsEditable="true"
+        @bind-SelectedItem="AppState.Settings.FilePeriod">
+    </UISelect>
 
     @if (AppState.Settings.ExtensionDescriptions is not null)
     {
         <UISelect 
-            Label="File Type" 
+            Label="File Type"
             Items="AppState.Settings.Items"
             @bind-SelectedItem="AppState.Settings.FileType">
         </UISelect>
@@ -61,18 +64,38 @@
 
 @code {
 
-    protected override void OnInitialized()
+    private PropertyChangedEventHandler _handler;
+
+    public Rightbar_Settings()
     {
-        AppState.PropertyChanged += (sender, e) => 
+        _handler = (sender, e) => 
         {
             if (e.PropertyName == nameof(AppState.ExportParameters))
                 StateHasChanged();
         };
     }
 
+    private Dictionary<Period, string> _items = new Dictionary<Period, string>()
+    {
+        [new Period(TimeSpan.Zero)] = "Single File",
+        [new Period(TimeSpan.FromMinutes(1))] = "1 min",
+        [new Period(TimeSpan.FromMinutes(10))] = "10 min",
+        [new Period(TimeSpan.FromHours(1))] = "1 h",
+        [new Period(TimeSpan.FromHours(24))] = "1 d"
+    };
+
+    protected override void OnInitialized()
+    {
+        AppState.PropertyChanged += _handler;
+    }
 
     protected override Task OnInitializedAsync()
     {
         return AppState.Settings.InitializeTask.Value;
+    }
+
+    public void Dispose()
+    {
+        AppState.PropertyChanged -= _handler;
     }
 }

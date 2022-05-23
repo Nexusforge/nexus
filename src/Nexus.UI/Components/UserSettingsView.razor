@@ -1,0 +1,92 @@
+﻿@inject IAppState AppState
+@inject INexusClient Client
+@inject IJSInProcessRuntime JSRuntime
+
+<div class="mx-3 w-9 h-9 flex justify-center items-center rounded-full text-white bg-cyan-900 hover:bg-cyan-700 cursor-pointer select-none"
+    @onclick="OpenRefreshTokenModal">
+    @GetInitials(_authenticationState.User.Identity!.Name!)
+</div>
+
+<UIModal @bind-IsOpen="_isRefreshTokenModalOpen" Title="Refresh Token" Width="600px" AutoHeight="true">
+    @if (_refreshToken is not null)
+    {
+        <div class="flex items-center text-gray-400">
+            <span class="text-sm break-all mr-3 bg-gray-100 rounded-lg p-3">@_refreshToken</span>
+            <UIIconButton Icon="content-copy" @onclick="CopyToClipboard" />
+        </div>
+    }
+    else
+    {
+        if (_isRefreshingToken)
+        {
+            <div class="flex items-center mx-auto">
+                <UISpinner />
+                <span class="ml-3 text-gray-400">Acquiring refresh token ...</span>
+            </div>
+        }
+        else
+        {
+            <UIButton2 Label="Generate" Icon="autorenew" @onclick="GenerateTokenAsync" />
+        }
+    }
+</UIModal>
+
+@code {
+    private string? _refreshToken = "f9208f50-cd54-4165-8041-b5cd19af45a4%40nexus@JLmBwiie4IYd2eosK7cqmLg0o0jAYgd2iHSEkxYUhgVxd0cZ3eDibC3lBU5B/bCEeqOKwPGRArrpJP/pGo/guw==";
+
+    private bool _isRefreshingToken;
+
+    private bool _isRefreshTokenModalOpen;
+
+    private AuthenticationState _authenticationState = default!;
+
+    [CascadingParameter]
+    public Task<AuthenticationState> GetAuthenticationStateTask { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _authenticationState = await GetAuthenticationStateTask;
+    }
+
+    private void OpenRefreshTokenModal()
+    {
+        _isRefreshTokenModalOpen = true;
+        _refreshToken = default;
+    }
+
+    private void CopyToClipboard()
+    {
+        JSRuntime.InvokeVoid("nexus.util.copyToClipboard", _refreshToken);
+    }
+
+    private async Task GenerateTokenAsync()
+    {
+        _isRefreshingToken = true;
+        StateHasChanged();
+
+        try
+        {
+            _refreshToken = await Client.Users.GenerateRefreshTokenAsync(CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            AppState.AddError(ex);
+        }
+
+        _isRefreshingToken = false;
+        StateHasChanged();
+    }
+
+    private string GetInitials(string name)
+    {
+        var parts = name.Split(" ", StringSplitOptions.RemoveEmptyEntries);
+        var initials = string.Empty;
+
+        foreach (var part in parts)
+        {
+            initials += part[0];
+        }
+
+        return initials.ToUpper();
+    }
+}

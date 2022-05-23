@@ -1,4 +1,5 @@
-﻿@inject IAppState AppState
+﻿@implements IDisposable
+@inject IAppState AppState
 
 <div class="flex w-full">
 
@@ -82,11 +83,12 @@
 
 @code {
 
+    private PropertyChangedEventHandler _handler;
     private string _searchIcon = "magnify";
 
-    protected override void OnInitialized()
+    public ResourceView()
     {
-        AppState.PropertyChanged += (sender, e) => 
+        _handler = (sender, e) => 
         {
             if (e.PropertyName == nameof(AppState.CatalogItemsMap))
                 StateHasChanged();
@@ -97,13 +99,22 @@
                     ? "magnify"
                     : "close";
             }
-        };
 
-        AppState.Settings.PropertyChanged += (sender, e) => 
-        {
-            if (e.PropertyName == nameof(AppState.Settings.SelectedCatalogItems))
+            else if (e.PropertyName == nameof(AppState.Settings.SelectedCatalogItems))
                 StateHasChanged();
         };
+    }
+
+    protected override void OnInitialized()
+    {
+        AppState.PropertyChanged += _handler;
+        AppState.Settings.PropertyChanged +=  _handler;
+    }
+
+    public void Dispose()
+    {
+        AppState.PropertyChanged -= _handler;
+        AppState.Settings.PropertyChanged -= _handler;
     }
 }
 

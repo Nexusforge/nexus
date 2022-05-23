@@ -11,16 +11,30 @@ public class JobViewModel : INotifyPropertyChanged
     private JobStatus? _status;
     private Job _model;
 
-    public JobViewModel(Job model, ExportParameters parameters, INexusClient client)
+    public JobViewModel(Job model, ExportParameters parameters, INexusClient client, Action<Exception> onError)
     {
         _model = model;
         Parameters = parameters;
 
         Task.Run(async () =>
         {
+            var isFirstError = true;
+
             while (Status is null || Status.Status < TaskStatus.RanToCompletion)
             {
-                Status = await client.Jobs.GetJobStatusAsync(model.Id, CancellationToken.None);
+                try
+                {
+                    Status = await client.Jobs.GetJobStatusAsync(model.Id, CancellationToken.None);
+                }
+                catch (Exception ex)
+                {
+                    if (isFirstError)
+                    {
+                        onError(ex);
+                        isFirstError = false;
+                    }
+                }
+                
                 await Task.Delay(TimeSpan.FromMilliseconds(500));
             };
         });

@@ -7,7 +7,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Nexus.Core;
 using Nexus.Services;
-using OpenIddict.Server.AspNetCore;
 using System.Collections.ObjectModel;
 using System.Net;
 using System.Security.Claims;
@@ -109,17 +108,13 @@ namespace Nexus.Controllers
         /// </summary>
         [AllowAnonymous]
         [HttpGet("signout")]
-        public async Task<RedirectResult> SignOutAsync(
+        public SignOutResult SignOut(
             [BindRequired] string returnUrl)
         {
-            // If called SignOut with a scheme, the user is forwarded to the identity providers
-            // logout page. But that doesn't seem to be required here. Simply log out of Nexus.
-            //
-            // return SignOut(properties, scheme);
+            var properties = new AuthenticationProperties() { RedirectUri = returnUrl };
+            var scheme = User.Identity!.AuthenticationType!;
 
-            await HttpContext.SignOutAsync();
-
-            return Redirect(returnUrl);
+            return SignOut(properties, scheme);
         }
 
         /// <summary>

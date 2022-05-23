@@ -305,6 +305,8 @@ public class NexusClient : INexusClient, IDisposable
         }
     }
     
+    private static readonly HttpRequestOptionsKey<bool> WebAssemblyEnableStreamingResponseKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
+
     private HttpRequestMessage BuildRequestMessage(string method, string relativeUrl, HttpContent? content, string? contentTypeHeaderValue, string? acceptHeaderValue)
     {
         var requestMessage = new HttpRequestMessage()
@@ -319,6 +321,11 @@ public class NexusClient : INexusClient, IDisposable
 
         if (acceptHeaderValue is not null)
             requestMessage.Headers.Accept.Add(MediaTypeWithQualityHeaderValue.Parse(acceptHeaderValue));
+
+        // For web assembly
+        // https://docs.microsoft.com/de-de/dotnet/api/microsoft.aspnetcore.components.webassembly.http.webassemblyhttprequestmessageextensions.setbrowserresponsestreamingenabled?view=aspnetcore-6.0
+        // https://github.com/dotnet/aspnetcore/blob/0ee742c53f2669fd7233df6da89db5e8ab944585/src/Components/WebAssembly/WebAssembly/src/Http/WebAssemblyHttpRequestMessageExtensions.cs
+        requestMessage.Options.Set(WebAssemblyEnableStreamingResponseKey, true);
 
         return requestMessage;
     }
@@ -1287,23 +1294,38 @@ internal class CastMemoryManager<TFrom, TTo> : MemoryManager<TTo>
 /// </summary>
 public class StreamResponse : IDisposable
 {
+    private long _length;
     private HttpResponseMessage _response;
 
     internal StreamResponse(HttpResponseMessage response)
     {
         _response = response;
+       
+        if (_response.Content.Headers.TryGetValues("Content-Length", out var values) && 
+            values.Any() && 
+            int.TryParse(values.First(), out var contentLength))
+        {
+            _length = contentLength;
+        }
+        else
+        {
+            _length = -1;
+        }
     }
 
     /// <summary>
     /// Reads the data as an array of doubles.
     /// </summary>
-    /// <param name="cancellationToken">A token to cancel to current operation.</param>
+    /// <param name="cancellationToken">A token to cancel the current operation.</param>
     public async Task<double[]> ReadAsDoubleAsync(CancellationToken cancellationToken = default)
     {
-        if (!_response.Content.Headers.TryGetValues("Content-Length", out var values) || !values.Any() || !int.TryParse(values.First(), out var contentLength))
-            throw new Exception("The content-length header is missing or invalid.");
+        if (_length < 0)
+            throw new Exception("The data length is unknown.");
 
-        var elementCount = contentLength / 8;
+        if (_length % 8 != 0)
+            throw new Exception("The data length is invalid.");
+
+        var elementCount = _length / 8;
         var doubleBuffer = new double[elementCount];
         var byteBuffer = new CastMemoryManager<double, byte>(doubleBuffer).Memory;
         var stream = await _response.Content.ReadAsStreamAsync(cancellationToken);
@@ -1325,7 +1347,7 @@ public class StreamResponse : IDisposable
     /// <summary>
     /// Returns the underlying stream.
     /// </summary>
-    /// <param name="cancellationToken">A token to cancel to current operation.</param>
+    /// <param name="cancellationToken">A token to cancel the current operation.</param>
     public Task<Stream> GetStreamAsync(CancellationToken cancellationToken = default)
     {
         return _response.Content.ReadAsStreamAsync(cancellationToken);

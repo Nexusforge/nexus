@@ -163,6 +163,18 @@ public class SettingsViewModel : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CanVisualize)));
     }
 
+    public long GetTotalByteCount()
+    {
+        var elementCount = Utilities.GetElementCount(
+            _appState.Settings.Begin, 
+            _appState.Settings.End,
+            _appState.Settings.SamplePeriod.Value);
+
+        var byteCount = Utilities.GetByteCount(elementCount, _appState.Settings.SelectedCatalogItems);
+
+        return byteCount;
+    }
+
     public ExportParameters GetExportParameters()
     {
         var samplePeriod = SamplePeriod.Value;
@@ -245,30 +257,37 @@ public class SettingsViewModel : INotifyPropertyChanged
 
     private async Task InitializeAsync()
     {
-        var extensionDescriptions = (await _client.Writers
-            .GetDescriptionsAsync(CancellationToken.None))
-            .Where(description => 
-                description.AdditionalInfo is not null && 
-                description.AdditionalInfo.ContainsKey(FORMAT_NAME_KEY))
-            .ToList();
-
-        if (extensionDescriptions.Any())
+        try
         {
-            var fileType = _jSInProcessRuntime.Invoke<string?>("nexus.util.loadSetting", "nexus.ui.file-type");
-    
-            _appState.ExportParameters = _appState.ExportParameters with
-            { 
-                Type = !string.IsNullOrWhiteSpace(fileType) && extensionDescriptions.Any(extensionDescription => extensionDescription.Type == fileType)
-                    ? fileType
-                    : extensionDescriptions.First().Type 
-            };
+            var extensionDescriptions = (await _client.Writers
+                .GetDescriptionsAsync(CancellationToken.None))
+                .Where(description => 
+                    description.AdditionalInfo is not null && 
+                    description.AdditionalInfo.ContainsKey(FORMAT_NAME_KEY))
+                .ToList();
+
+            if (extensionDescriptions.Any())
+            {
+                var fileType = _jSInProcessRuntime.Invoke<string?>("nexus.util.loadSetting", "nexus.ui.file-type");
+        
+                _appState.ExportParameters = _appState.ExportParameters with
+                { 
+                    Type = !string.IsNullOrWhiteSpace(fileType) && extensionDescriptions.Any(extensionDescription => extensionDescription.Type == fileType)
+                        ? fileType
+                        : extensionDescriptions.First().Type 
+                };
+            }
+
+            Items = extensionDescriptions.ToDictionary(
+                description => description.Type,
+                description => description.AdditionalInfo![FORMAT_NAME_KEY]);
+
+            ExtensionDescriptions = extensionDescriptions;
         }
-
-        Items = extensionDescriptions.ToDictionary(
-            description => description.Type,
-            description => description.AdditionalInfo![FORMAT_NAME_KEY]);
-
-        ExtensionDescriptions = extensionDescriptions;
+        catch (Exception ex)
+        {
+            _appState.AddError(ex);
+        }
 
         PrepareOptions();
     }

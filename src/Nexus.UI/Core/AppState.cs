@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Text.Json;
 using Microsoft.JSInterop;
 using Nexus.Api;
+using Nexus.UI.Services;
 using Nexus.UI.ViewModels;
 
 namespace Nexus.UI.Core;
@@ -21,6 +22,7 @@ public interface IAppState : INotifyPropertyChanged
     List<CatalogItemViewModel>? CatalogItems { get; set; }
 
     IReadOnlyList<(DateTime, Exception)> Errors { get; }
+    bool HasUnreadErrors { get; set; }
     bool BeginAtZero { get; set; }
     string? SearchString { get; set; }
 
@@ -43,6 +45,7 @@ public class AppState : IAppState
 
     #region Fields
 
+    private ToastService _toastService;
     private ResourceCatalogViewModel? _selectedCatalog;
     private ViewState _viewState = ViewState.Normal;
     private ExportParameters _exportParameters;
@@ -59,12 +62,14 @@ public class AppState : IAppState
     public AppState(
         IList<AuthenticationSchemeDescription> authenticationSchemes, 
         INexusClient client,
-        IJSInProcessRuntime jsRuntime)
+        IJSInProcessRuntime jsRuntime,
+        ToastService toastService)
     {
         AuthenticationSchemes = authenticationSchemes;
         _client = client;
         Settings = new SettingsViewModel(this, jsRuntime, client);
-
+        _toastService = toastService;
+    
         var childCatalogInfosTask = client.Catalogs.GetChildCatalogInfosAsync(ResourceCatalogViewModel.ROOT_CATALOG_ID, CancellationToken.None);
 
         var rootInfo = new CatalogInfo(
@@ -149,6 +154,8 @@ public class AppState : IAppState
     public List<CatalogItemViewModel>? CatalogItems { get; set; }
 
     public IReadOnlyList<(DateTime, Exception)> Errors => _errors;
+
+    public bool HasUnreadErrors { get; set; }
 
     public bool BeginAtZero
     {
@@ -239,7 +246,11 @@ public class AppState : IAppState
     public void AddError(Exception error)
     {
         _errors.Add((DateTime.UtcNow, error));
+        HasUnreadErrors = true;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Errors)));
+
+        if (_toastService.Toast is not null)
+            _ = _toastService.Toast.ShowAsync("An error occured.", error.Message);
     }
 
     private SortedDictionary<string, List<CatalogItemViewModel>>? GroupCatalogItems(ResourceCatalog catalog)

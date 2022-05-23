@@ -1,8 +1,4 @@
-﻿@inject IAppState AppState
-@inject INexusClient Client
-@inject IJSInProcessRuntime JSRuntime
-
-@using System.Security.Claims
+﻿@using System.Security.Claims
 
 <div class="z-0 w-full py-3 pr-3 flex justify-between items-center text-slate-500 bg-gray-200 shadow-md">
 
@@ -11,21 +7,7 @@
     </a>
 
     <div class="flex items-center">
-        @if (AppState.Errors.Any())
-        {
-            <span class="relative mr-2 text-2xl mdi mdi-alert text-red-800 cursor-pointer hover:text-red-600" @onclick="OpenErrorModal">
-                <div class="flex text-red-900 font-bold items-center justify-center absolute w-5 h-5 left-4 top-0 text-xs rounded-full">
-                    @if (AppState.Errors.Count > 9)
-                    {
-                        @:9+
-                    }
-                    else
-                    {
-                        @AppState.Errors.Count
-                    }
-                </div>
-            </span>
-        }
+        <ErrorsView />
         <a class="text-sm font-semibold px-3 py-0.5 rounded text-cyan-700 hover:text-orange-500" href="api" target="_blank">
             API
         </a>
@@ -37,10 +19,7 @@
                     admin
                 </span>
             }
-            <div class="mx-3 w-9 h-9 flex justify-center items-center rounded-full text-white bg-cyan-900 hover:bg-cyan-700 cursor-pointer select-none"
-                @onclick="OpenRefreshTokenModal">
-                @GetInitials(_authenticationState.User.Identity!.Name!)
-            </div>   
+            <UserSettingsView />
         }
         <span class="mx-3 w-9 h-9 flex justify-center items-center text-2xl mdi mdi-menu xl:hidden cursor-pointer hover:text-orange-500"
             @onclick="OpenHamburgerMenu">
@@ -48,47 +27,9 @@
     </div>
 </div>
 
-<UIModal @bind-IsOpen="_isErrorModalOpen" Title="Errors" Width="600px">
-    <div class="flex flex-col">
-        @foreach (var error in AppState.Errors.Reverse())
-        {
-            <div class="p-2 m-3 rounded-lg bg-gray-200 overflow-x-auto">
-                <span class="mdi mdi-alert text-red-800"></span>
-                <span class="font-bold">
-                    @error.Item1.ToLocalTime().ToString("HH:mm:ss")
-                </span>
-                <span class="text-sm">@error.Item2.Message</span>
-                <span class="block text-sm">@error.Item2.ToString()</span>
-            </div>
-        }
-    </div>
-</UIModal>
-
-<UIModal @bind-IsOpen="_isRefreshTokenModalOpen" Title="Refresh Token" Width="600px" AutoHeight="true">
-    @if (_refreshToken is not null)
-    {
-        <div class="flex items-center text-gray-400">
-            <span class="text-sm break-all mr-3 bg-gray-100 rounded-lg p-3">@_refreshToken</span>
-            <UIIconButton Icon="content-copy" @onclick="CopyToClipboard" />
-        </div>
-    }
-    else
-    {
-        if (_isRefreshingToken)
-        {
-            <div class="flex items-center mx-auto">
-                <UISpinner />
-                <span class="ml-3 text-gray-400">Acquiring refresh token ...</span>
-            </div>
-        }
-        else
-        {
-            <UIButton2 Label="Generate" Icon="autorenew" @onclick="GenerateTokenAsync" />
-        }
-    }
-</UIModal>
-
 @code {
+
+    private AuthenticationState _authenticationState = default!;
 
     [CascadingParameter]
     public Task<AuthenticationState> GetAuthenticationStateTask { get; set; } = default!;
@@ -96,69 +37,14 @@
     [Parameter]
     public Action OpenHamburgerMenu { get; set; } = default!;
 
-    private string? _refreshToken = "f9208f50-cd54-4165-8041-b5cd19af45a4%40nexus@JLmBwiie4IYd2eosK7cqmLg0o0jAYgd2iHSEkxYUhgVxd0cZ3eDibC3lBU5B/bCEeqOKwPGRArrpJP/pGo/guw==";
-
-    private bool _isRefreshingToken;
-
-    private bool _isRefreshTokenModalOpen;
-
-    private bool _isErrorModalOpen;
-
-    private AuthenticationState _authenticationState = default!;
-
     protected override async Task OnInitializedAsync()
     {
-        AppState.PropertyChanged += (sender, e) =>
-        {
-            if (e.PropertyName == nameof(AppState.Errors))
-                this.StateHasChanged();
-        };
-
         _authenticationState = await GetAuthenticationStateTask;
-    }
-
-    private void CopyToClipboard()
-    {
-        JSRuntime.InvokeVoid("nexus.util.copyToClipboard", _refreshToken);
-    }
-
-    private void OpenErrorModal()
-    {
-        _isErrorModalOpen = true;
-    }
-
-    private void OpenRefreshTokenModal()
-    {
-        _isRefreshTokenModalOpen = true;
-        _refreshToken = default;
-    }
-
-    private async Task GenerateTokenAsync()
-    {
-        _isRefreshingToken = true;
-        StateHasChanged();
-
-        _refreshToken = await Client.Users.GenerateRefreshTokenAsync(CancellationToken.None);
-        _isRefreshingToken = false;
-        StateHasChanged();
     }
 
     private bool IsAdmin(ClaimsPrincipal user)
     {
         return user
             .HasClaim(claim => claim.Type == "IsAdmin" && claim.Value == "true");
-    }
-
-    private string GetInitials(string name)
-    {
-        var parts = name.Split(" ", StringSplitOptions.RemoveEmptyEntries);
-        var initials = string.Empty;
-
-        foreach (var part in parts)
-        {
-            initials += part[0];
-        }
-
-        return initials.ToUpper();
     }
 }

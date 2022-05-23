@@ -167,6 +167,12 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new InvalidOperationException("The specified grant type is not supported.");
             });
 
+            // AuthorizationController.cs https://github.com/openiddict/openiddict-samples/blob/dev/samples/Balosar/Balosar.Server/Controllers/AuthorizationController.cs
+            app.MapPost("/connect/logout", () =>
+            {
+                return Results.SignOut(authenticationSchemes: new[] { OpenIddictServerAspNetCoreDefaults.AuthenticationScheme });
+            });
+
             return app;
         }
     }
@@ -202,6 +208,7 @@ namespace Microsoft.Extensions.DependencyInjection
                         // endpoints
                         Permissions.Endpoints.Authorization,
                         Permissions.Endpoints.Token,
+                        Permissions.Endpoints.Logout,
                         
                         // grant types
                         Permissions.GrantTypes.AuthorizationCode,

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Nexus.Api;
+using Nexus.UI.ViewModels;
 
 namespace Nexus.UI.Core;
 
@@ -62,22 +63,19 @@ public static class Utilities
         return new TimeSpan(ticks);
     }
 
-    public static int SizeOf(NexusDataType dataType)
+    public static long GetElementCount(DateTime begin, DateTime end, TimeSpan samplePeriod)
     {
-        return dataType switch
-        {
-            NexusDataType.UINT8     => 1,
-            NexusDataType.INT8      => 1,
-            NexusDataType.UINT16    => 2,
-            NexusDataType.INT16     => 2,
-            NexusDataType.UINT32    => 4,
-            NexusDataType.INT32     => 4,
-            NexusDataType.UINT64    => 8,
-            NexusDataType.INT64     => 8,
-            NexusDataType.FLOAT32   => 4,
-            NexusDataType.FLOAT64   => 8,
-            _                       => throw new Exception($"The data type {dataType} is not supported.")
-        };
+        return (long)((end - begin).Ticks / samplePeriod.Ticks);
+    }
+
+    public static long GetByteCount(long elementCount, IEnumerable<CatalogItemSelectionViewModel> selectedatalogItems)
+    {
+        var elementSize = 8;
+
+        var representationCount = selectedatalogItems
+            .Sum(item => item.Kinds.Count);
+
+        return elementCount * elementSize * representationCount;
     }
 
     public static void ParseResourcePath(

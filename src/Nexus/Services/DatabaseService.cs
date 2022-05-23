@@ -320,7 +320,7 @@ namespace Nexus.Services
                     // file is still in use
                 }
 
-                await Task.Delay(5);
+                await Task.Delay(TimeSpan.FromSeconds(1));
             }
 
             if (File.Exists(cacheEntry))

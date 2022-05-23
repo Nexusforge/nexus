@@ -159,7 +159,7 @@ namespace Nexus.Controllers
         /// <param name="end">End date/time.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpPost("clear-cache")]
-        public async Task<ActionResult<Job>> ClearCache(
+        public async Task<ActionResult<Job>> ClearCacheAsync(
             [BindRequired] string catalogId,
             [BindRequired] DateTime begin,
             [BindRequired] DateTime end,

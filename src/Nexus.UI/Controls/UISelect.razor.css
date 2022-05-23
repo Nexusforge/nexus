@@ -1,0 +1,7 @@
+﻿input[type=text] {
+    background-color: transparent;
+}
+
+input[type=text]:focus {
+    outline: none;
+}

@@ -1,4 +1,5 @@
-﻿@inject IAppState AppState
+﻿@implements IDisposable
+@inject IAppState AppState
 
 @if (AppState.ViewState == ViewState.Data)
 {
@@ -9,12 +10,24 @@
 
 @code {
 
-    protected override void OnInitialized()
+    private PropertyChangedEventHandler _handler;
+
+    public Leftbar_ChartSettings()
     {
-        AppState.PropertyChanged += (sender, e) =>
+        _handler = (sender, e) =>
         {
             if (e.PropertyName == nameof(AppState.ViewState))
                 StateHasChanged();
         };
+    }
+
+    protected override void OnInitialized()
+    {
+        AppState.PropertyChanged += _handler;
+    }
+
+    public void Dispose()
+    {
+        AppState.PropertyChanged -= _handler;
     }
 }
