@@ -90,7 +90,7 @@ namespace Nexus.Controllers
         /// <param name="scheme">The authentication scheme to challenge.</param>
         /// <param name="returnUrl">The URL to return after successful authentication.</param>
         [AllowAnonymous]
-        [HttpGet("authenticate")]
+        [HttpPost("authenticate")]
         public ChallengeResult Authenticate(
             [BindRequired] string scheme,
             [BindRequired] string returnUrl)
@@ -107,14 +107,17 @@ namespace Nexus.Controllers
         /// Logs out the user.
         /// </summary>
         [AllowAnonymous]
-        [HttpGet("signout")]
-        public SignOutResult SignOut(
+        [HttpPost("signout")]
+        public async Task<RedirectResult> SignOutAsync(
             [BindRequired] string returnUrl)
         {
             var properties = new AuthenticationProperties() { RedirectUri = returnUrl };
             var scheme = User.Identity!.AuthenticationType!;
 
-            return SignOut(properties, scheme);
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            await HttpContext.SignOutAsync(scheme);
+
+            return Redirect(returnUrl);
         }
 
         /// <summary>

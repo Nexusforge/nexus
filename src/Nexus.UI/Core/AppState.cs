@@ -79,7 +79,8 @@ public class AppState : IAppState
             License: default,
             IsReadable: true,
             IsWritable: false, 
-            IsPublished: true, 
+            IsReleased: true,
+            IsVisible: true,
             IsOwner: false);
 
         RootCatalog = new FakeResourceCatalogViewModel(rootInfo, "", client, this, childCatalogInfosTask);

@@ -398,7 +398,8 @@ class CatalogInfo:
         license: The license.
         is_readable: A boolean which indicates if the catalog is accessible.
         is_writable: A boolean which indicates if the catalog is editable.
-        is_published: A boolean which indicates if the catalog is published.
+        is_released: A boolean which indicates if the catalog is released.
+        is_visible: A boolean which indicates if the catalog is visible.
         is_owner: A boolean which indicates if the catalog is owned by the current user.
     """
 
@@ -420,8 +421,11 @@ class CatalogInfo:
     is_writable: bool
     """A boolean which indicates if the catalog is editable."""
 
-    is_published: bool
-    """A boolean which indicates if the catalog is published."""
+    is_released: bool
+    """A boolean which indicates if the catalog is released."""
+
+    is_visible: bool
+    """A boolean which indicates if the catalog is visible."""
 
     is_owner: bool
     """A boolean which indicates if the catalog is owned by the current user."""
@@ -634,18 +638,18 @@ class ExtensionDescription:
 @dataclass
 class DataSourceRegistration:
     """
-    A backend source.
+    A data source registration.
 
     Args:
-        type: The type of the backend source.
+        type: The type of the data source.
         resource_locator: An URL which points to the data.
         configuration: Configuration parameters for the instantiated source.
-        publish: A boolean which indicates if the found catalogs should be available for everyone.
-        disable: A boolean which indicates if this backend source should be ignored.
+        release_pattern: An optional regular expressions pattern to select the catalogs to be released. By default, all catalogs will be released.
+        visibility_pattern: An optional regular expressions pattern to select the catalogs to be visible. By default, all catalogs will be visible.
     """
 
     type: str
-    """The type of the backend source."""
+    """The type of the data source."""
 
     resource_locator: str
     """An URL which points to the data."""
@@ -653,11 +657,11 @@ class DataSourceRegistration:
     configuration: dict[str, str]
     """Configuration parameters for the instantiated source."""
 
-    publish: bool
-    """A boolean which indicates if the found catalogs should be available for everyone."""
+    release_pattern: str
+    """An optional regular expressions pattern to select the catalogs to be released. By default, all catalogs will be released."""
 
-    disable: bool
-    """A boolean which indicates if this backend source should be ignored."""
+    visibility_pattern: str
+    """An optional regular expressions pattern to select the catalogs to be visible. By default, all catalogs will be visible."""
 
 
 @dataclass
@@ -1260,7 +1264,7 @@ class UsersClient:
         query: str = "?" + "&".join(f"{key}={value}" for (key, value) in queryValues.items())
         url += query
 
-        return self._client._invoke_async(StreamResponse, "GET", url, "application/octet-stream", None, default)
+        return self._client._invoke_async(StreamResponse, "POST", url, "application/octet-stream", None, default)
 
     def sign_out(self, return_url: str) -> Awaitable[StreamResponse]:
         """
@@ -1279,7 +1283,7 @@ class UsersClient:
         query: str = "?" + "&".join(f"{key}={value}" for (key, value) in queryValues.items())
         url += query
 
-        return self._client._invoke_async(StreamResponse, "GET", url, "application/octet-stream", None, default)
+        return self._client._invoke_async(StreamResponse, "POST", url, "application/octet-stream", None, default)
 
     def refresh_token(self, request: RefreshTokenRequest) -> Awaitable[TokenPair]:
         """

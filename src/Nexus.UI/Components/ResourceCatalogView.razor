@@ -28,7 +28,7 @@ else
                     : "")">
             </span>
 
-            <div>
+            <div class="flex">
                 <span class="font-bold @(Catalog.Info.IsReadable ? "text-cyan-700" : "text-gray-500") @(Catalog.IsSelected ? "text-orange-500" : "")">
                     @Catalog.DisplayName
                 </span>
@@ -38,11 +38,20 @@ else
                     <span class="mdi mdi-lock mx-1"></span>
                 }
 
-                @if (!Catalog.Info.IsPublished && Catalog.Info.IsOwner)
+                @if (!Catalog.Info.IsReleased && Catalog.Info.IsOwner)
                 {
-                    <span class="mdi mdi-sunglasses mx-1"></span>
+                    <UITooltip Tooltip="The catalog is not released.">
+                        <span class="mdi mdi-publish-off mx-1"></span>
+                    </UITooltip>
                 }
-                
+
+                @if (!Catalog.Info.IsVisible && Catalog.Info.IsOwner)
+                {
+                    <UITooltip Tooltip="The catalog is not generally visible.">
+                        <span class="mdi mdi-sunglasses mx-1"></span>
+                    </UITooltip>
+                }
+
                 <span class="ml-2 text-sm text-gray-500">
                     @Catalog.Info.Title
                 </span>

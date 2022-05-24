@@ -46,6 +46,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
                     options
                         .SetAuthorizationEndpointUris("/connect/authorize")
+                        .SetLogoutEndpointUris("/connect/logout")
                         .SetTokenEndpointUris("/connect/token");
 
                     options
@@ -55,8 +56,9 @@ namespace Microsoft.Extensions.DependencyInjection
 
                     options
                         .UseAspNetCore()
-                        .EnableTokenEndpointPassthrough()
-                        .EnableAuthorizationEndpointPassthrough();
+                        .EnableAuthorizationEndpointPassthrough()
+                        .EnableLogoutEndpointPassthrough()
+                        .EnableTokenEndpointPassthrough();
                 });
 
                 services.AddHostedService<HostedService>();
@@ -167,12 +169,6 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new InvalidOperationException("The specified grant type is not supported.");
             });
 
-            // AuthorizationController.cs https://github.com/openiddict/openiddict-samples/blob/dev/samples/Balosar/Balosar.Server/Controllers/AuthorizationController.cs
-            app.MapPost("/connect/logout", () =>
-            {
-                return Results.SignOut(authenticationSchemes: new[] { OpenIddictServerAspNetCoreDefaults.AuthenticationScheme });
-            });
-
             return app;
         }
     }
@@ -197,12 +193,14 @@ namespace Microsoft.Extensions.DependencyInjection
 
             if (await manager.FindByClientIdAsync("nexus", cancellationToken) is null)
             {
+#warning https://localhost:8444 should not be hardcoded
                 await manager.CreateAsync(new OpenIddictApplicationDescriptor
                 {
                     ClientId = "nexus",
                     ClientSecret = "nexus-secret",
                     DisplayName = "Nexus",
-                    RedirectUris = { new Uri("https://localhost:8443/signin-oidc/nexus") },
+                    RedirectUris = { new Uri("https://localhost:8444/signin-oidc/nexus") },
+                    PostLogoutRedirectUris = { new Uri("https://localhost:8444/signout-oidc/nexus") },
                     Permissions =
                     {
                         // endpoints

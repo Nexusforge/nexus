@@ -1106,7 +1106,7 @@ public class UsersClient : IUsersClient
         urlBuilder.Append(query);
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<StreamResponse>("GET", url, "application/octet-stream", default, default, cancellationToken);
+        return _client.InvokeAsync<StreamResponse>("POST", url, "application/octet-stream", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -1124,7 +1124,7 @@ public class UsersClient : IUsersClient
         urlBuilder.Append(query);
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<StreamResponse>("GET", url, "application/octet-stream", default, default, cancellationToken);
+        return _client.InvokeAsync<StreamResponse>("POST", url, "application/octet-stream", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -1543,9 +1543,10 @@ public enum RepresentationKind
 /// <param name="License">The license.</param>
 /// <param name="IsReadable">A boolean which indicates if the catalog is accessible.</param>
 /// <param name="IsWritable">A boolean which indicates if the catalog is editable.</param>
-/// <param name="IsPublished">A boolean which indicates if the catalog is published.</param>
+/// <param name="IsReleased">A boolean which indicates if the catalog is released.</param>
+/// <param name="IsVisible">A boolean which indicates if the catalog is visible.</param>
 /// <param name="IsOwner">A boolean which indicates if the catalog is owned by the current user.</param>
-public record CatalogInfo(string Id, string Title, string? Contact, string? License, bool IsReadable, bool IsWritable, bool IsPublished, bool IsOwner);
+public record CatalogInfo(string Id, string Title, string? Contact, string? License, bool IsReadable, bool IsWritable, bool IsReleased, bool IsVisible, bool IsOwner);
 
 /// <summary>
 /// A catalog time range.
@@ -1661,14 +1662,14 @@ public record PackageReference(string Provider, IDictionary<string, string> Conf
 public record ExtensionDescription(string Type, string? Description, IDictionary<string, string>? AdditionalInfo);
 
 /// <summary>
-/// A backend source.
+/// A data source registration.
 /// </summary>
-/// <param name="Type">The type of the backend source.</param>
+/// <param name="Type">The type of the data source.</param>
 /// <param name="ResourceLocator">An URL which points to the data.</param>
 /// <param name="Configuration">Configuration parameters for the instantiated source.</param>
-/// <param name="Publish">A boolean which indicates if the found catalogs should be available for everyone.</param>
-/// <param name="Disable">A boolean which indicates if this backend source should be ignored.</param>
-public record DataSourceRegistration(string Type, Uri ResourceLocator, IDictionary<string, string> Configuration, bool Publish, bool Disable);
+/// <param name="ReleasePattern">An optional regular expressions pattern to select the catalogs to be released. By default, all catalogs will be released.</param>
+/// <param name="VisibilityPattern">An optional regular expressions pattern to select the catalogs to be visible. By default, all catalogs will be visible.</param>
+public record DataSourceRegistration(string Type, Uri ResourceLocator, IDictionary<string, string> Configuration, string ReleasePattern, string VisibilityPattern);
 
 /// <summary>
 /// Describes an OpenID connect provider.

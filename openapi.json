@@ -983,7 +983,7 @@
       }
     },
     "/api/v1/users/authenticate": {
-      "get": {
+      "post": {
         "tags": [
           "Users"
         ],
@@ -1027,7 +1027,7 @@
       }
     },
     "/api/v1/users/signout": {
-      "get": {
+      "post": {
         "tags": [
           "Users"
         ],
@@ -1553,9 +1553,13 @@
             "type": "boolean",
             "description": "A boolean which indicates if the catalog is editable."
           },
-          "isPublished": {
+          "isReleased": {
             "type": "boolean",
-            "description": "A boolean which indicates if the catalog is published."
+            "description": "A boolean which indicates if the catalog is released."
+          },
+          "isVisible": {
+            "type": "boolean",
+            "description": "A boolean which indicates if the catalog is visible."
           },
           "isOwner": {
             "type": "boolean",
@@ -1790,12 +1794,12 @@
       },
       "DataSourceRegistration": {
         "type": "object",
-        "description": "A backend source.",
+        "description": "A data source registration.",
         "additionalProperties": false,
         "properties": {
           "type": {
             "type": "string",
-            "description": "The type of the backend source."
+            "description": "The type of the data source."
           },
           "resourceLocator": {
             "type": "string",
@@ -1809,13 +1813,13 @@
               "type": "string"
             }
           },
-          "publish": {
-            "type": "boolean",
-            "description": "A boolean which indicates if the found catalogs should be available for everyone."
+          "releasePattern": {
+            "type": "string",
+            "description": "An optional regular expressions pattern to select the catalogs to be released. By default, all catalogs will be released."
           },
-          "disable": {
-            "type": "boolean",
-            "description": "A boolean which indicates if this backend source should be ignored."
+          "visibilityPattern": {
+            "type": "string",
+            "description": "An optional regular expressions pattern to select the catalogs to be visible. By default, all catalogs will be visible."
           }
         }
       },

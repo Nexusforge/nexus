@@ -1,34 +1,44 @@
-﻿@inject IAppState AppState
+﻿@using System.Net
+
+@inject IAppState AppState
 @inject INexusClient Client
 @inject IJSInProcessRuntime JSRuntime
+@inject NavigationManager NavigationManager
 
 <div class="mx-3 w-9 h-9 flex justify-center items-center rounded-full text-white bg-cyan-900 hover:bg-cyan-700 cursor-pointer select-none"
-    @onclick="OpenRefreshTokenModal">
+    @onclick="OpenUserSettingsModal">
     @GetInitials(_authenticationState.User.Identity!.Name!)
 </div>
 
-<UIModal @bind-IsOpen="_isRefreshTokenModalOpen" Title="Refresh Token" Width="600px" AutoHeight="true">
-    @if (_refreshToken is not null)
-    {
-        <div class="flex items-center text-gray-400">
-            <span class="text-sm break-all mr-3 bg-gray-100 rounded-lg p-3">@_refreshToken</span>
-            <UIIconButton Icon="content-copy" @onclick="CopyToClipboard" />
-        </div>
-    }
-    else
-    {
-        if (_isRefreshingToken)
+<UIModal @bind-IsOpen="_isUserSettingsModalOpen" Title="Settings" Width="600px" AutoHeight="true">
+    <ChildContent>
+        @if (_refreshToken is not null)
         {
-            <div class="flex items-center mx-auto">
-                <UISpinner />
-                <span class="ml-3 text-gray-400">Acquiring refresh token ...</span>
+            <div class="flex items-center text-gray-400">
+                <span class="text-sm break-all mr-3 bg-gray-100 rounded-lg p-3">@_refreshToken</span>
+                <UIIconButton Icon="content-copy" @onclick="CopyToClipboard" />
             </div>
         }
         else
         {
-            <UIButton2 Label="Generate" Icon="autorenew" @onclick="GenerateTokenAsync" />
+            if (_isRefreshingToken)
+            {
+                <div class="flex items-center mx-auto">
+                    <UISpinner />
+                    <span class="ml-3 text-gray-400">Acquiring refresh token ...</span>
+                </div>
+            }
+            else
+            {
+                <UIButton2 Label="Generate Refresh Token" Icon="autorenew" @onclick="GenerateTokenAsync" />
+            }
         }
-    }
+    </ChildContent>
+    <Footer>
+        <form action="/api/v1/users/signout?returnUrl=@(WebUtility.UrlEncode(NavigationManager.Uri))" method="post">
+            <UIButton2 Label="Sign-Out" Icon="logout" IsSubmitButton="true" />
+        </form>
+    </Footer>
 </UIModal>
 
 @code {
@@ -36,7 +46,7 @@
 
     private bool _isRefreshingToken;
 
-    private bool _isRefreshTokenModalOpen;
+    private bool _isUserSettingsModalOpen;
 
     private AuthenticationState _authenticationState = default!;
 
@@ -48,9 +58,9 @@
         _authenticationState = await GetAuthenticationStateTask;
     }
 
-    private void OpenRefreshTokenModal()
+    private void OpenUserSettingsModal()
     {
-        _isRefreshTokenModalOpen = true;
+        _isUserSettingsModalOpen = true;
         _refreshToken = default;
     }
 

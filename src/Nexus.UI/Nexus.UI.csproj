@@ -6,6 +6,7 @@
 	
   <PropertyGroup>
 	  <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- <RunAOTCompilation>true</RunAOTCompilation> -->
   </PropertyGroup>
 		
   <ItemGroup>

@@ -7,8 +7,7 @@ using Nexus.Utilities;
 using System.Data;
 using System.Net;
 using System.Security.Claims;
-using System.Text.Json;
-using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Nexus.Controllers
@@ -105,7 +104,13 @@ namespace Nexus.Controllers
                         var contact = childContainer.Metadata.Contact;
                         var isReadable = AuthorizationUtilities.IsCatalogReadable(childContainer.Id, childContainer.Metadata, childContainer.Owner, User);
                         var isWritable = AuthorizationUtilities.IsCatalogWritable(childContainer.Id, User);
-                        var isPublished = childContainer.Owner is null || AuthorizationUtilities.IsCatalogWritable(childContainer.Id, childContainer.Owner);
+
+                        var isReleased = childContainer.Owner is null ||
+                            isWritable && Regex.IsMatch(id, childContainer.DataSourceRegistration.ReleasePattern);
+
+                        var isVisible = 
+                            isReadable && Regex.IsMatch(id, childContainer.DataSourceRegistration.VisibilityPattern);
+
                         var isOwner = childContainer.Owner?.FindFirstValue(Claims.Subject) == User.FindFirstValue(Claims.Subject);
 
                         string? license = default!;
@@ -120,7 +125,8 @@ namespace Nexus.Controllers
                             license,
                             isReadable,
                             isWritable,
-                            isPublished,
+                            isReleased,
+                            isVisible,
                             isOwner
                         );
                     })

@@ -1,10 +1,11 @@
-﻿ <div
-    class="mx-auto px-4 w-min p-1 rounded border border-gray-300 bg-white flex justify-center items-center text-cyan-700 cursor-pointer hover:text-orange-500"
+﻿ <button
+    type="@(IsSubmitButton ? "submit" : "button")"
+    class="mx-auto px-4 w-max p-1 rounded border border-gray-300 bg-white flex justify-center items-center text-cyan-700 hover:text-orange-500"
     @onclick="OnClick">
 
     <span class="mr-3 mdi mdi-@Icon"></span> @Label
 
-</div>
+</button>
 
 @code {
 
@@ -16,4 +17,7 @@
 
     [Parameter]
     public string Label { get; set; } = default!;
+
+    [Parameter]
+    public bool IsSubmitButton { get; set; }
 }

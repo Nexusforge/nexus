@@ -15,7 +15,7 @@ public class RealResourceCatalogViewModel : ResourceCatalogViewModel
             var childCatalogInfos = await client.Catalogs.GetChildCatalogInfosAsync(id, CancellationToken.None);
 
             return childCatalogInfos
-                .Where(info => info.IsPublished || info.IsOwner)
+                .Where(info => (info.IsReleased && info.IsVisible) || info.IsOwner)
                 .Select(childInfo => (ResourceCatalogViewModel)new RealResourceCatalogViewModel(childInfo, id, client, appState))
                 .ToList();
         };

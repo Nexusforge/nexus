@@ -41,13 +41,13 @@ public class FakeResourceCatalogViewModel : ResourceCatalogViewModel
         var result = new List<ResourceCatalogViewModel>();
 
         var groupedPublishedInfos = childCatalogInfos
-            .Where(catalogInfo => catalogInfo.IsPublished)
+            .Where(info => info.IsReleased && info.IsVisible)
             .GroupBy(childInfo => childInfo.Id.Substring(id.Length).Split('/', count: 3)[1]);
 
         foreach (var group in groupedPublishedInfos)
         {
             var filteredInfos = group
-                .Where(info => info.IsPublished || info.IsOwner)
+                .Where(info => (info.IsReleased && info.IsVisible) || info.IsOwner)
                 .ToList();
 
             if (!filteredInfos.Any())
@@ -72,7 +72,8 @@ public class FakeResourceCatalogViewModel : ResourceCatalogViewModel
                     License: default,
                     IsReadable: true,
                     IsWritable: false, 
-                    IsPublished: true,
+                    IsReleased: true,
+                    IsVisible: true,
                     IsOwner: false);
 
                 var childCatalogInfosTask = Task.FromResult((IList<CatalogInfo>)filteredInfos);

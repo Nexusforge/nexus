@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             Scheme = "nexus",
             DisplayName = "Nexus",
-            Authority = "https://localhost:8443",
+            Authority = "https://localhost:8444",
             ClientId = "nexus",
             ClientSecret = "nexus-secret"
         };
@@ -81,6 +81,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     options.ClientSecret = provider.ClientSecret;
 
                     options.CallbackPath = $"/signin-oidc/{provider.Scheme}";
+                    options.SignedOutCallbackPath = $"/signout-oidc/{provider.Scheme}";
                     options.ResponseType = OpenIdConnectResponseType.Code;
 
                     options.TokenValidationParameters.AuthenticationType = provider.Scheme;

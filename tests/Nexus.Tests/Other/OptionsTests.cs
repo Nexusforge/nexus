@@ -36,7 +36,7 @@ namespace Other
                 .GetSection(ServerOptions.Section)
                 .Get<ServerOptions>();
 
-            Assert.Equal(8443, options.HttpPort);
+            Assert.Equal(8444, options.HttpPort);
         }
 
         [Fact]

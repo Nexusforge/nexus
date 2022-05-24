@@ -71,8 +71,7 @@ namespace Nexus.Services
                     new DataSourceRegistration(
                         Type: typeof(Sample).FullName ?? throw new Exception("full name is null"),
                         ResourceLocator: new Uri("memory://localhost"),
-                        Configuration: new Dictionary<string, string>(),
-                        Publish: true),
+                        Configuration: new Dictionary<string, string>()),
                 };
 
                 /* load all catalog identifiers */

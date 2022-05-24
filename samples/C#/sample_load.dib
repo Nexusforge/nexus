@@ -21,7 +21,7 @@ using Nexus.Api;
 
 var refreshToken = "<refresh-token>";
 
-var uri = new Uri("https://localhost:8443");
+var uri = new Uri("https://localhost:8444");
 var client = new NexusClient(uri);
 await client.SignInAsync(refreshToken);
 
