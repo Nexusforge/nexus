@@ -59,7 +59,7 @@ namespace Nexus.Core
         public const string Section = "Server";
         public string? HttpScheme { get; set; } = "https";
         public string? HttpAddress { get; set; } = "0.0.0.0";
-        public int HttpPort { get; set; } = 8444;
+        public int HttpPort { get; set; } = 8443;
     }
 
     internal record PathsOptions() : NexusOptionsBase
