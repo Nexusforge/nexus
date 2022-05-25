@@ -239,7 +239,7 @@ $@"class {augmentedClassName}:
                 : $"\"{operation.RequestBody?.Content.Keys.First()}\"";
 
             var content = bodyParameter is null
-                ? "default"
+                ? "None"
                 : operation.RequestBody?.Content.Keys.First() switch
                 {
                     "application/json" => $"json.dumps({bodyParameter.Split(":")[0]}, cls=_MyEncoder)",
@@ -416,7 +416,8 @@ $@"    {propertyName}: {type}
                     throw new Exception("Only path or query parameters are supported.");
 
                 parameters = operation.Parameters
-                    .Select(parameter => ($"{Shared.ToSnakeCase(parameter.Name)}: {GetType(parameter.Schema)}", parameter));
+                    .OrderByDescending(parameter => parameter.Required)
+                    .Select(parameter => ($"{Shared.ToSnakeCase(parameter.Name)}: {GetType(parameter.Schema)}{(parameter.Required ? "" : " = None")}", parameter));
                 
                 if (operation.RequestBody is not null)
                 {
@@ -441,8 +442,15 @@ $@"    {propertyName}: {type}
                 }
 
                 var parametersString = bodyParameter == default
-                    ? string.Join(", ", parameters.Select(parameter => parameter.Item1))
-                    : string.Join(", ", parameters.Select(parameter => parameter.Item1).Concat(new[] { bodyParameter }));
+                
+                    ? string.Join(", ", parameters
+                        .OrderByDescending(parameter => parameter.Item2.Required)
+                        .Select(parameter => parameter.Item1))
+
+                    : string.Join(", ", parameters
+                        .Concat(new[] { (bodyParameter, default(OpenApiParameter)!) })
+                        .OrderByDescending(parameter => parameter.Item2 is null || parameter.Item2.Required)
+                        .Select(parameter => parameter.Item1));
 
                 return $"{Shared.ToSnakeCase(asyncMethodName)}(self, {parametersString})";
             }

@@ -345,7 +345,7 @@ class {{1}}:
         if self._nexus_configuration_header_key in self._http_client.headers:
             del self._http_client.headers[self._nexus_configuration_header_key]
 
-    async def _invoke_async(self, typeOfT: Type[T], method: str, relative_url: str, accept_header_value: str, content_type_value: str, content: Union[None, str, bytes, Iterable[bytes], AsyncIterable[bytes]]) -> T:
+    async def _invoke_async(self, typeOfT: Type[T], method: str, relative_url: str, accept_header_value: Optional[str], content_type_value: Optional[str], content: Union[None, str, bytes, Iterable[bytes], AsyncIterable[bytes]]) -> T:
 
         # prepare request
         request = self._build_request_message(method, relative_url, content, content_type_value, accept_header_value)
@@ -416,7 +416,7 @@ class {{1}}:
             if typeOfT is not StreamResponse:
                 await response.aclose()
     
-    def _build_request_message(self, method: str, relative_url: str, content: Any, content_type_value:str, accept_header_value: str) -> Request:
+    def _build_request_message(self, method: str, relative_url: str, content: Any, content_type_value: Optional[str], accept_header_value: Optional[str]) -> Request:
        
         request_message = self._http_client.build_request(method, relative_url, content = content)
 

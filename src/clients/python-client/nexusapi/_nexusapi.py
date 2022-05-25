@@ -508,39 +508,6 @@ class Job:
 
 
 @dataclass
-class ExportParameters:
-    """
-    A structure for export parameters.
-
-    Args:
-        begin: 2020-02-01T00:00:00Z
-        end: 2020-02-02T00:00:00Z
-        file_period: 00:00:00
-        type: Nexus.Writers.Csv
-        resource_paths: ["/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean", "/IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean"]
-        configuration: { "RowIndexFormat": "Index", "SignificantFigures": "4" }
-    """
-
-    begin: datetime
-    """2020-02-01T00:00:00Z"""
-
-    end: datetime
-    """2020-02-02T00:00:00Z"""
-
-    file_period: timedelta
-    """00:00:00"""
-
-    type: str
-    """Nexus.Writers.Csv"""
-
-    resource_paths: list[str]
-    """["/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean", "/IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean"]"""
-
-    configuration: dict[str, str]
-    """{ "RowIndexFormat": "Index", "SignificantFigures": "4" }"""
-
-
-@dataclass
 class JobStatus:
     """
     Describes the status of the job.
@@ -595,6 +562,39 @@ class TaskStatus(Enum):
 
     FAULTED = "FAULTED"
     """Faulted"""
+
+
+@dataclass
+class ExportParameters:
+    """
+    A structure for export parameters.
+
+    Args:
+        begin: 2020-02-01T00:00:00Z
+        end: 2020-02-02T00:00:00Z
+        file_period: 00:00:00
+        type: Nexus.Writers.Csv
+        resource_paths: ["/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean", "/IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean"]
+        configuration: { "RowIndexFormat": "Index", "SignificantFigures": "4" }
+    """
+
+    begin: datetime
+    """2020-02-01T00:00:00Z"""
+
+    end: datetime
+    """2020-02-02T00:00:00Z"""
+
+    file_period: timedelta
+    """00:00:00"""
+
+    type: str
+    """Nexus.Writers.Csv"""
+
+    resource_paths: list[str]
+    """["/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean", "/IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean"]"""
+
+    configuration: dict[str, str]
+    """{ "RowIndexFormat": "Index", "SignificantFigures": "4" }"""
 
 
 @dataclass
@@ -827,7 +827,7 @@ class ArtifactsClient:
         url = "/api/v1/artifacts/{artifactId}"
         url = url.replace("{artifactId}", quote(str(artifact_id), safe=""))
 
-        return self._client._invoke_async(StreamResponse, "GET", url, "application/octet-stream", None, default)
+        return self._client._invoke_async(StreamResponse, "GET", url, "application/octet-stream", None, None)
 
 
 class CatalogsClient:
@@ -849,7 +849,7 @@ class CatalogsClient:
         url = "/api/v1/catalogs/{catalogId}"
         url = url.replace("{catalogId}", quote(str(catalog_id), safe=""))
 
-        return self._client._invoke_async(ResourceCatalog, "GET", url, "application/json", None, default)
+        return self._client._invoke_async(ResourceCatalog, "GET", url, "application/json", None, None)
 
     def get_child_catalog_infos(self, catalog_id: str) -> Awaitable[list[CatalogInfo]]:
         """
@@ -862,7 +862,7 @@ class CatalogsClient:
         url = "/api/v1/catalogs/{catalogId}/child-catalog-infos"
         url = url.replace("{catalogId}", quote(str(catalog_id), safe=""))
 
-        return self._client._invoke_async(list[CatalogInfo], "GET", url, "application/json", None, default)
+        return self._client._invoke_async(list[CatalogInfo], "GET", url, "application/json", None, None)
 
     def get_time_range(self, catalog_id: str) -> Awaitable[CatalogTimeRange]:
         """
@@ -875,7 +875,7 @@ class CatalogsClient:
         url = "/api/v1/catalogs/{catalogId}/timerange"
         url = url.replace("{catalogId}", quote(str(catalog_id), safe=""))
 
-        return self._client._invoke_async(CatalogTimeRange, "GET", url, "application/json", None, default)
+        return self._client._invoke_async(CatalogTimeRange, "GET", url, "application/json", None, None)
 
     def get_availability(self, catalog_id: str, begin: datetime, end: datetime, step: timedelta) -> Awaitable[CatalogAvailability]:
         """
@@ -900,7 +900,7 @@ class CatalogsClient:
         query: str = "?" + "&".join(f"{key}={value}" for (key, value) in queryValues.items())
         url += query
 
-        return self._client._invoke_async(CatalogAvailability, "GET", url, "application/json", None, default)
+        return self._client._invoke_async(CatalogAvailability, "GET", url, "application/json", None, None)
 
     def get_attachments(self, catalog_id: str) -> Awaitable[list[str]]:
         """
@@ -913,7 +913,7 @@ class CatalogsClient:
         url = "/api/v1/catalogs/{catalogId}/attachments"
         url = url.replace("{catalogId}", quote(str(catalog_id), safe=""))
 
-        return self._client._invoke_async(list[str], "GET", url, "application/json", None, default)
+        return self._client._invoke_async(list[str], "GET", url, "application/json", None, None)
 
     def upload_attachment(self, catalog_id: str, attachment_id: str, content: Union[bytes, Iterable[bytes], AsyncIterable[bytes]]) -> Awaitable[StreamResponse]:
         """
@@ -943,7 +943,7 @@ class CatalogsClient:
         url = url.replace("{catalogId}", quote(str(catalog_id), safe=""))
         url = url.replace("{attachmentId}", quote(str(attachment_id), safe=""))
 
-        return self._client._invoke_async(StreamResponse, "DELETE", url, "application/octet-stream", None, default)
+        return self._client._invoke_async(StreamResponse, "DELETE", url, "application/octet-stream", None, None)
 
     def get_attachment_stream(self, catalog_id: str, attachment_id: str) -> Awaitable[StreamResponse]:
         """
@@ -958,7 +958,7 @@ class CatalogsClient:
         url = url.replace("{catalogId}", quote(str(catalog_id), safe=""))
         url = url.replace("{attachmentId}", quote(str(attachment_id), safe=""))
 
-        return self._client._invoke_async(StreamResponse, "GET", url, "application/octet-stream", None, default)
+        return self._client._invoke_async(StreamResponse, "GET", url, "application/octet-stream", None, None)
 
     def get_metadata(self, catalog_id: str) -> Awaitable[CatalogMetadata]:
         """
@@ -971,7 +971,7 @@ class CatalogsClient:
         url = "/api/v1/catalogs/{catalogId}/metadata"
         url = url.replace("{catalogId}", quote(str(catalog_id), safe=""))
 
-        return self._client._invoke_async(CatalogMetadata, "GET", url, "application/json", None, default)
+        return self._client._invoke_async(CatalogMetadata, "GET", url, "application/json", None, None)
 
     def put_metadata(self, catalog_id: str, catalog_metadata: CatalogMetadata) -> Awaitable[None]:
         """
@@ -1016,7 +1016,7 @@ class DataClient:
         query: str = "?" + "&".join(f"{key}={value}" for (key, value) in queryValues.items())
         url += query
 
-        return self._client._invoke_async(StreamResponse, "GET", url, "application/octet-stream", None, default)
+        return self._client._invoke_async(StreamResponse, "GET", url, "application/octet-stream", None, None)
 
 
 class JobsClient:
@@ -1026,6 +1026,43 @@ class JobsClient:
     
     def __init__(self, client: NexusAsyncClient):
         self._client = client
+
+    def get_jobs(self) -> Awaitable[list[Job]]:
+        """
+        Gets a list of jobs.
+
+        Args:
+        """
+
+        url = "/api/v1/jobs"
+
+        return self._client._invoke_async(list[Job], "GET", url, "application/json", None, None)
+
+    def cancel_job(self, job_id: UUID) -> Awaitable[StreamResponse]:
+        """
+        Cancels the specified job.
+
+        Args:
+            job_id: 
+        """
+
+        url = "/api/v1/jobs/{jobId}"
+        url = url.replace("{jobId}", quote(str(job_id), safe=""))
+
+        return self._client._invoke_async(StreamResponse, "DELETE", url, "application/octet-stream", None, None)
+
+    def get_job_status(self, job_id: UUID) -> Awaitable[JobStatus]:
+        """
+        Gets the status of the specified job.
+
+        Args:
+            job_id: 
+        """
+
+        url = "/api/v1/jobs/{jobId}/status"
+        url = url.replace("{jobId}", quote(str(job_id), safe=""))
+
+        return self._client._invoke_async(JobStatus, "GET", url, "application/json", None, None)
 
     def export(self, parameters: ExportParameters) -> Awaitable[Job]:
         """
@@ -1047,7 +1084,7 @@ class JobsClient:
 
         url = "/api/v1/jobs/load-packages"
 
-        return self._client._invoke_async(Job, "POST", url, "application/json", None, default)
+        return self._client._invoke_async(Job, "POST", url, "application/json", None, None)
 
     def clear_cache(self, catalog_id: str, begin: datetime, end: datetime) -> Awaitable[Job]:
         """
@@ -1070,44 +1107,7 @@ class JobsClient:
         query: str = "?" + "&".join(f"{key}={value}" for (key, value) in queryValues.items())
         url += query
 
-        return self._client._invoke_async(Job, "POST", url, "application/json", None, default)
-
-    def get_jobs(self) -> Awaitable[list[Job]]:
-        """
-        Gets a list of jobs.
-
-        Args:
-        """
-
-        url = "/api/v1/jobs"
-
-        return self._client._invoke_async(list[Job], "GET", url, "application/json", None, default)
-
-    def get_job_status(self, job_id: UUID) -> Awaitable[JobStatus]:
-        """
-        Gets the status of the specified job.
-
-        Args:
-            job_id: 
-        """
-
-        url = "/api/v1/jobs/{jobId}/status"
-        url = url.replace("{jobId}", quote(str(job_id), safe=""))
-
-        return self._client._invoke_async(JobStatus, "GET", url, "application/json", None, default)
-
-    def cancel_job(self, job_id: UUID) -> Awaitable[StreamResponse]:
-        """
-        Cancels the specified job.
-
-        Args:
-            job_id: 
-        """
-
-        url = "/api/v1/jobs/{jobId}"
-        url = url.replace("{jobId}", quote(str(job_id), safe=""))
-
-        return self._client._invoke_async(StreamResponse, "DELETE", url, "application/octet-stream", None, default)
+        return self._client._invoke_async(Job, "POST", url, "application/json", None, None)
 
 
 class PackageReferencesClient:
@@ -1127,7 +1127,7 @@ class PackageReferencesClient:
 
         url = "/api/v1/packagereferences"
 
-        return self._client._invoke_async(dict[str, PackageReference], "GET", url, "application/json", None, default)
+        return self._client._invoke_async(dict[str, PackageReference], "GET", url, "application/json", None, None)
 
     def put(self, package_reference_id: UUID, package_reference: PackageReference) -> Awaitable[None]:
         """
@@ -1153,7 +1153,7 @@ class PackageReferencesClient:
         url = "/api/v1/packagereferences/{packageReferenceId}"
         url = url.replace("{packageReferenceId}", quote(str(package_reference_id), safe=""))
 
-        return self._client._invoke_async(type(None), "DELETE", url, "", None, default)
+        return self._client._invoke_async(type(None), "DELETE", url, "", None, None)
 
     def get_versions(self, package_reference_id: UUID) -> Awaitable[list[str]]:
         """
@@ -1166,7 +1166,7 @@ class PackageReferencesClient:
         url = "/api/v1/packagereferences/{packageReferenceId}/versions"
         url = url.replace("{packageReferenceId}", quote(str(package_reference_id), safe=""))
 
-        return self._client._invoke_async(list[str], "GET", url, "application/json", None, default)
+        return self._client._invoke_async(list[str], "GET", url, "application/json", None, None)
 
 
 class SourcesClient:
@@ -1186,44 +1186,68 @@ class SourcesClient:
 
         url = "/api/v1/sources/descriptions"
 
-        return self._client._invoke_async(list[ExtensionDescription], "GET", url, "application/json", None, default)
+        return self._client._invoke_async(list[ExtensionDescription], "GET", url, "application/json", None, None)
 
-    def get_registrations(self) -> Awaitable[dict[str, DataSourceRegistration]]:
+    def get_registrations(self, username: Optional[str] = None) -> Awaitable[dict[str, DataSourceRegistration]]:
         """
         Gets the list of backend sources.
 
         Args:
+            username: The optional username. If not specified, the name of the current user will be used.
         """
 
         url = "/api/v1/sources/registrations"
 
-        return self._client._invoke_async(dict[str, DataSourceRegistration], "GET", url, "application/json", None, default)
+        queryValues: dict[str, str] = {
+            "username": quote(_to_string(username), safe=""),
+        }
 
-    def put_registration(self, registration_id: UUID, registration: DataSourceRegistration) -> Awaitable[None]:
+        query: str = "?" + "&".join(f"{key}={value}" for (key, value) in queryValues.items())
+        url += query
+
+        return self._client._invoke_async(dict[str, DataSourceRegistration], "GET", url, "application/json", None, None)
+
+    def put_registration(self, registration_id: UUID, registration: DataSourceRegistration, username: Optional[str] = None) -> Awaitable[StreamResponse]:
         """
         Puts a backend source.
 
         Args:
             registration_id: The identifier of the registration.
+            username: The optional username. If not specified, the name of the current user will be used.
         """
 
         url = "/api/v1/sources/registrations/{registrationId}"
         url = url.replace("{registrationId}", quote(str(registration_id), safe=""))
 
-        return self._client._invoke_async(type(None), "PUT", url, "", "application/json", json.dumps(registration, cls=_MyEncoder))
+        queryValues: dict[str, str] = {
+            "username": quote(_to_string(username), safe=""),
+        }
 
-    def delete_registration(self, registration_id: UUID) -> Awaitable[None]:
+        query: str = "?" + "&".join(f"{key}={value}" for (key, value) in queryValues.items())
+        url += query
+
+        return self._client._invoke_async(StreamResponse, "PUT", url, "application/octet-stream", "application/json", json.dumps(registration, cls=_MyEncoder))
+
+    def delete_registration(self, registration_id: UUID, username: Optional[str] = None) -> Awaitable[StreamResponse]:
         """
         Deletes a backend source.
 
         Args:
             registration_id: The identifier of the registration.
+            username: The optional username. If not specified, the name of the current user will be used.
         """
 
         url = "/api/v1/sources/registrations/{registrationId}"
         url = url.replace("{registrationId}", quote(str(registration_id), safe=""))
 
-        return self._client._invoke_async(type(None), "DELETE", url, "", None, default)
+        queryValues: dict[str, str] = {
+            "username": quote(_to_string(username), safe=""),
+        }
+
+        query: str = "?" + "&".join(f"{key}={value}" for (key, value) in queryValues.items())
+        url += query
+
+        return self._client._invoke_async(StreamResponse, "DELETE", url, "application/octet-stream", None, None)
 
 
 class UsersClient:
@@ -1243,7 +1267,7 @@ class UsersClient:
 
         url = "/api/v1/users/authentication-schemes"
 
-        return self._client._invoke_async(list[AuthenticationSchemeDescription], "GET", url, "application/json", None, default)
+        return self._client._invoke_async(list[AuthenticationSchemeDescription], "GET", url, "application/json", None, None)
 
     def authenticate(self, scheme: str, return_url: str) -> Awaitable[StreamResponse]:
         """
@@ -1264,7 +1288,7 @@ class UsersClient:
         query: str = "?" + "&".join(f"{key}={value}" for (key, value) in queryValues.items())
         url += query
 
-        return self._client._invoke_async(StreamResponse, "POST", url, "application/octet-stream", None, default)
+        return self._client._invoke_async(StreamResponse, "POST", url, "application/octet-stream", None, None)
 
     def sign_out(self, return_url: str) -> Awaitable[StreamResponse]:
         """
@@ -1283,7 +1307,7 @@ class UsersClient:
         query: str = "?" + "&".join(f"{key}={value}" for (key, value) in queryValues.items())
         url += query
 
-        return self._client._invoke_async(StreamResponse, "POST", url, "application/octet-stream", None, default)
+        return self._client._invoke_async(StreamResponse, "POST", url, "application/octet-stream", None, None)
 
     def refresh_token(self, request: RefreshTokenRequest) -> Awaitable[TokenPair]:
         """
@@ -1316,7 +1340,7 @@ class UsersClient:
 
         url = "/api/v1/users/me"
 
-        return self._client._invoke_async(NexusUser, "GET", url, "application/json", None, default)
+        return self._client._invoke_async(NexusUser, "GET", url, "application/json", None, None)
 
     def generate_refresh_token(self) -> Awaitable[str]:
         """
@@ -1327,7 +1351,7 @@ class UsersClient:
 
         url = "/api/v1/users/generate-refresh-token"
 
-        return self._client._invoke_async(str, "POST", url, "application/json", None, default)
+        return self._client._invoke_async(str, "POST", url, "application/json", None, None)
 
     def accept_license(self, catalog_id: str) -> Awaitable[StreamResponse]:
         """
@@ -1346,7 +1370,7 @@ class UsersClient:
         query: str = "?" + "&".join(f"{key}={value}" for (key, value) in queryValues.items())
         url += query
 
-        return self._client._invoke_async(StreamResponse, "GET", url, "application/octet-stream", None, default)
+        return self._client._invoke_async(StreamResponse, "GET", url, "application/octet-stream", None, None)
 
     def get_users(self) -> Awaitable[list[NexusUser]]:
         """
@@ -1357,7 +1381,7 @@ class UsersClient:
 
         url = "/api/v1/users"
 
-        return self._client._invoke_async(list[NexusUser], "GET", url, "application/json", None, default)
+        return self._client._invoke_async(list[NexusUser], "GET", url, "application/json", None, None)
 
     def delete_user(self, user_id: str) -> Awaitable[StreamResponse]:
         """
@@ -1370,7 +1394,7 @@ class UsersClient:
         url = "/api/v1/users/{userId}"
         url = url.replace("{userId}", quote(str(user_id), safe=""))
 
-        return self._client._invoke_async(StreamResponse, "DELETE", url, "application/octet-stream", None, default)
+        return self._client._invoke_async(StreamResponse, "DELETE", url, "application/octet-stream", None, None)
 
     def put_claim(self, user_id: str, claim_id: UUID, claim: NexusClaim) -> Awaitable[StreamResponse]:
         """
@@ -1400,7 +1424,7 @@ class UsersClient:
         url = url.replace("{userId}", quote(str(user_id), safe=""))
         url = url.replace("{claimId}", quote(str(claim_id), safe=""))
 
-        return self._client._invoke_async(StreamResponse, "DELETE", url, "application/octet-stream", None, default)
+        return self._client._invoke_async(StreamResponse, "DELETE", url, "application/octet-stream", None, None)
 
 
 class WritersClient:
@@ -1420,7 +1444,7 @@ class WritersClient:
 
         url = "/api/v1/writers/descriptions"
 
-        return self._client._invoke_async(list[ExtensionDescription], "GET", url, "application/json", None, default)
+        return self._client._invoke_async(list[ExtensionDescription], "GET", url, "application/json", None, None)
 
 
 
@@ -1571,7 +1595,7 @@ class NexusAsyncClient:
         if self._nexus_configuration_header_key in self._http_client.headers:
             del self._http_client.headers[self._nexus_configuration_header_key]
 
-    async def _invoke_async(self, typeOfT: Type[T], method: str, relative_url: str, accept_header_value: str, content_type_value: str, content: Union[None, str, bytes, Iterable[bytes], AsyncIterable[bytes]]) -> T:
+    async def _invoke_async(self, typeOfT: Type[T], method: str, relative_url: str, accept_header_value: Optional[str], content_type_value: Optional[str], content: Union[None, str, bytes, Iterable[bytes], AsyncIterable[bytes]]) -> T:
 
         # prepare request
         request = self._build_request_message(method, relative_url, content, content_type_value, accept_header_value)
@@ -1642,7 +1666,7 @@ class NexusAsyncClient:
             if typeOfT is not StreamResponse:
                 await response.aclose()
     
-    def _build_request_message(self, method: str, relative_url: str, content: Any, content_type_value:str, accept_header_value: str) -> Request:
+    def _build_request_message(self, method: str, relative_url: str, content: Any, content_type_value: Optional[str], accept_header_value: Optional[str]) -> Request:
        
         request_message = self._http_client.build_request(method, relative_url, content = content)
 

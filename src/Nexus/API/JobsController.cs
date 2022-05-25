@@ -17,6 +17,13 @@ namespace Nexus.Controllers
     [Route("api/v{version:apiVersion}/[controller]")]
     internal class JobsController : ControllerBase
     {
+        // GET      /jobs
+        // DELETE   /jobs{jobId}
+        // GET      /jobs{jobId}/status
+        // POST     /jobs/export
+        // POST     /jobs/load-packages
+        // POST     /jobs/clear-cache
+
         #region Fields
 
         private AppStateManager _appStateManager;
@@ -45,7 +52,109 @@ namespace Nexus.Controllers
 
         #endregion
 
-        #region Export
+        #region Jobs Management
+
+        /// <summary>
+        /// Gets a list of jobs.
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        public ActionResult<List<Job>> GetJobs()
+        {
+            var isAdmin = User.HasClaim(NexusClaims.IS_ADMIN, "true");
+            var username = User.Identity?.Name;
+
+            if (username is null)
+                throw new Exception("This should never happen.");
+
+            var result = _jobService
+                .GetJobs()
+                .Select(jobControl => jobControl.Job)
+                .Where(job => job.Owner == username || isAdmin)
+                .ToList();
+
+            return result;
+        }
+
+        /// <summary>
+        /// Cancels the specified job.
+        /// </summary>
+        /// <param name="jobId"></param>
+        /// <returns></returns>
+        [HttpDelete("{jobId}")]
+        public ActionResult CancelJob(Guid jobId)
+        {
+            if (_jobService.TryGetJob(jobId, out var jobControl))
+            {
+                var isAdmin = User.HasClaim(NexusClaims.IS_ADMIN, "true");
+                var username = User.Identity?.Name;
+
+                if (username is null)
+                    throw new Exception("This should never happen.");
+
+                if (jobControl.Job.Owner == username || isAdmin)
+                {
+                    jobControl.CancellationTokenSource.Cancel();
+                    return Accepted();
+                }
+
+                else
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to cancel the job {jobControl.Job.Id}.");
+                }
+            }
+
+            else
+            {
+                return NotFound(jobId);
+            }
+        }
+
+        /// <summary>
+        /// Gets the status of the specified job.
+        /// </summary>
+        /// <param name="jobId"></param>
+        /// <returns></returns>
+        [HttpGet("{jobId}/status")]
+        public async Task<ActionResult<JobStatus>> GetJobStatusAsync(Guid jobId)
+        {
+            if (_jobService.TryGetJob(jobId, out var jobControl))
+            {
+                var isAdmin = User.HasClaim(NexusClaims.IS_ADMIN, "true");
+                var username = User.Identity?.Name;
+
+                if (username is null)
+                    throw new Exception("This should never happen.");
+
+                if (jobControl.Job.Owner == username || isAdmin)
+                {
+                    var status = new JobStatus(
+                        Start: jobControl.Start,
+                        Progress: jobControl.Progress,
+                        Status: jobControl.Task.Status,
+                        ExceptionMessage: jobControl.Task.Exception is not null
+                            ? jobControl.Task.Exception.Message
+                            : string.Empty,
+                        Result: jobControl.Task.Status == TaskStatus.RanToCompletion && (await jobControl.Task) is not null
+                            ? await jobControl.Task
+                            : null);
+
+                    return status;
+                }
+                else
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to access the status of job {jobControl.Job.Id}.");
+                }
+            }
+            else
+            {
+                return NotFound(jobId);
+            }
+        }
+
+        #endregion
+
+        #region Jobs
 
         /// <summary>
         /// Creates a new export job.
@@ -185,104 +294,6 @@ namespace Nexus.Controllers
             return (ActionResult<Job>)response;
         }
 
-        /// <summary>
-        /// Gets a list of jobs.
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet]
-        public ActionResult<List<Job>> GetJobs()
-        {
-            var isAdmin = User.HasClaim(NexusClaims.IS_ADMIN, "true");
-            var username = User.Identity?.Name;
-
-            if (username is null)
-                throw new Exception("This should never happen.");
-
-            var result = _jobService
-                .GetJobs()
-                .Select(jobControl => jobControl.Job)
-                .Where(job => job.Owner == username || isAdmin)
-                .ToList();
-
-            return result;
-        }
-
-        /// <summary>
-        /// Gets the status of the specified job.
-        /// </summary>
-        /// <param name="jobId"></param>
-        /// <returns></returns>
-        [HttpGet("{jobId}/status")]
-        public async Task<ActionResult<JobStatus>> GetJobStatusAsync(Guid jobId)
-        {
-            if (_jobService.TryGetJob(jobId, out var jobControl))
-            {
-                var isAdmin = User.HasClaim(NexusClaims.IS_ADMIN, "true");
-                var username = User.Identity?.Name;
-
-                if (username is null)
-                    throw new Exception("This should never happen.");
-
-                if (jobControl.Job.Owner == username || isAdmin)
-                {
-                    var status = new JobStatus(
-                        Start: jobControl.Start,
-                        Progress: jobControl.Progress,
-                        Status: jobControl.Task.Status,
-                        ExceptionMessage: jobControl.Task.Exception is not null
-                            ? jobControl.Task.Exception.Message
-                            : string.Empty,
-                        Result: jobControl.Task.Status == TaskStatus.RanToCompletion && (await jobControl.Task) is not null
-                            ? await jobControl.Task
-                            : null);
-
-                    return status;
-                }
-                else
-                {
-                    return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to access the status of job {jobControl.Job.Id}.");
-                }
-            }
-            else
-            {
-                return NotFound(jobId);
-            }
-        }
-
-        /// <summary>
-        /// Cancels the specified job.
-        /// </summary>
-        /// <param name="jobId"></param>
-        /// <returns></returns>
-        [HttpDelete("{jobId}")]
-        public ActionResult CancelJob(Guid jobId)
-        {
-            if (_jobService.TryGetJob(jobId, out var jobControl))
-            {
-                var isAdmin = User.HasClaim(NexusClaims.IS_ADMIN, "true");
-                var username = User.Identity?.Name;
-
-                if (username is null)
-                    throw new Exception("This should never happen.");
-
-                if (jobControl.Job.Owner == username || isAdmin)
-                {
-                    jobControl.CancellationTokenSource.Cancel();
-                    return Accepted();
-                }
-
-                else
-                {
-                    return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to cancel the job {jobControl.Job.Id}.");
-                }
-            }
-
-            else
-            {
-                return NotFound(jobId);
-            }
-        }
-
         #endregion
 
         #region Methods
@@ -292,7 +303,7 @@ namespace Nexus.Controllers
             return $"{Request.Scheme}://{Request.Host}{Request.Path}/{jobId}/status";
         }
 
-         private async Task<ActionResult> ProtectCatalogNonGenericAsync(
+        private async Task<ActionResult> ProtectCatalogNonGenericAsync(
             string catalogId,
             Func<CatalogContainer, Task<ActionResult>> action,
             CancellationToken cancellationToken)

@@ -483,7 +483,7 @@ $@"    /// <summary>
                     throw new Exception("Only path or query parameters are supported.");
 
                 parameters = operation.Parameters
-                    .Select(parameter => ($"{GetType(parameter.Schema)} {parameter.Name}", parameter));
+                    .Select(parameter => ($"{GetType(parameter.Schema)} {parameter.Name}{(parameter.Required ? "" : " = default")}", parameter));
                 
                 if (operation.RequestBody is not null)
                 {
@@ -508,8 +508,15 @@ $@"    /// <summary>
                 }
 
                 var parametersString = bodyParameter == default
-                    ? string.Join(", ", parameters.Select(parameter => parameter.Item1))
-                    : string.Join(", ", parameters.Select(parameter => parameter.Item1).Concat(new[] { bodyParameter }));
+                
+                    ? string.Join(", ", parameters
+                        .OrderByDescending(parameter => parameter.Item2.Required)
+                        .Select(parameter => parameter.Item1))
+
+                    : string.Join(", ", parameters
+                        .Concat(new[] { (bodyParameter, default(OpenApiParameter)!) })
+                        .OrderByDescending(parameter => parameter.Item2 is null || parameter.Item2.Required)
+                        .Select(parameter => parameter.Item1));
 
                 return $"{asyncMethodName}({parametersString}, CancellationToken cancellationToken = default)";
             }

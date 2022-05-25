@@ -1,9 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Nexus.Core;
-using Nexus.Extensibility;
-using Nexus.Services;
-using System.Reflection;
 
 namespace Nexus.Controllers
 {

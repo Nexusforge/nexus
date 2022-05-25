@@ -169,6 +169,7 @@
           {
             "name": "begin",
             "in": "query",
+            "required": true,
             "description": "Start date/time.",
             "schema": {
               "type": "string",
@@ -179,6 +180,7 @@
           {
             "name": "end",
             "in": "query",
+            "required": true,
             "description": "End date/time.",
             "schema": {
               "type": "string",
@@ -189,6 +191,7 @@
           {
             "name": "step",
             "in": "query",
+            "required": true,
             "description": "Step period.",
             "schema": {
               "type": "string",
@@ -518,6 +521,97 @@
         }
       }
     },
+    "/api/v1/jobs": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Gets a list of jobs.",
+        "operationId": "Jobs_GetJobs",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Job"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/{jobId}": {
+      "delete": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Cancels the specified job.",
+        "operationId": "Jobs_CancelJob",
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/{jobId}/status": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Gets the status of the specified job.",
+        "operationId": "Jobs_GetJobStatus",
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/jobs/export": {
       "post": {
         "tags": [
@@ -621,97 +715,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Job"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/jobs": {
-      "get": {
-        "tags": [
-          "Jobs"
-        ],
-        "summary": "Gets a list of jobs.",
-        "operationId": "Jobs_GetJobs",
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Job"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/jobs/{jobId}/status": {
-      "get": {
-        "tags": [
-          "Jobs"
-        ],
-        "summary": "Gets the status of the specified job.",
-        "operationId": "Jobs_GetJobStatus",
-        "parameters": [
-          {
-            "name": "jobId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/JobStatus"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/jobs/{jobId}": {
-      "delete": {
-        "tags": [
-          "Jobs"
-        ],
-        "summary": "Cancels the specified job.",
-        "operationId": "Jobs_CancelJob",
-        "parameters": [
-          {
-            "name": "jobId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/octet-stream": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
                 }
               }
             }
@@ -876,6 +879,18 @@
         ],
         "summary": "Gets the list of backend sources.",
         "operationId": "Sources_GetRegistrations",
+        "parameters": [
+          {
+            "name": "username",
+            "in": "query",
+            "description": "The optional username. If not specified, the name of the current user will be used.",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 1
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
@@ -911,6 +926,16 @@
               "format": "guid"
             },
             "x-position": 1
+          },
+          {
+            "name": "username",
+            "in": "query",
+            "description": "The optional username. If not specified, the name of the current user will be used.",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 3
           }
         ],
         "requestBody": {
@@ -928,7 +953,15 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
           }
         }
       },
@@ -949,11 +982,29 @@
               "format": "guid"
             },
             "x-position": 1
+          },
+          {
+            "name": "username",
+            "in": "query",
+            "description": "The optional username. If not specified, the name of the current user will be used.",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 2
           }
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
           }
         }
       }
@@ -1652,46 +1703,6 @@
           }
         }
       },
-      "ExportParameters": {
-        "type": "object",
-        "description": "A structure for export parameters.",
-        "additionalProperties": false,
-        "properties": {
-          "begin": {
-            "type": "string",
-            "description": "2020-02-01T00:00:00Z",
-            "format": "date-time"
-          },
-          "end": {
-            "type": "string",
-            "description": "2020-02-02T00:00:00Z",
-            "format": "date-time"
-          },
-          "filePeriod": {
-            "type": "string",
-            "description": "00:00:00",
-            "format": "duration"
-          },
-          "type": {
-            "type": "string",
-            "description": "Nexus.Writers.Csv"
-          },
-          "resourcePaths": {
-            "type": "array",
-            "description": "[\"/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean\", \"/IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean\"]",
-            "items": {
-              "type": "string"
-            }
-          },
-          "configuration": {
-            "type": "object",
-            "description": "{ \"RowIndexFormat\": \"Index\", \"SignificantFigures\": \"4\" }",
-            "additionalProperties": {
-              "type": "string"
-            }
-          }
-        }
-      },
       "JobStatus": {
         "type": "object",
         "description": "Describes the status of the job.",
@@ -1749,6 +1760,46 @@
           "Canceled",
           "Faulted"
         ]
+      },
+      "ExportParameters": {
+        "type": "object",
+        "description": "A structure for export parameters.",
+        "additionalProperties": false,
+        "properties": {
+          "begin": {
+            "type": "string",
+            "description": "2020-02-01T00:00:00Z",
+            "format": "date-time"
+          },
+          "end": {
+            "type": "string",
+            "description": "2020-02-02T00:00:00Z",
+            "format": "date-time"
+          },
+          "filePeriod": {
+            "type": "string",
+            "description": "00:00:00",
+            "format": "duration"
+          },
+          "type": {
+            "type": "string",
+            "description": "Nexus.Writers.Csv"
+          },
+          "resourcePaths": {
+            "type": "array",
+            "description": "[\"/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean\", \"/IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean\"]",
+            "items": {
+              "type": "string"
+            }
+          },
+          "configuration": {
+            "type": "object",
+            "description": "{ \"RowIndexFormat\": \"Index\", \"SignificantFigures\": \"4\" }",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
       },
       "PackageReference": {
         "type": "object",

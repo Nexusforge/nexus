@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Services;
@@ -170,9 +171,9 @@ namespace Nexus.Controllers
         public async Task<ActionResult<CatalogAvailability>>
             GetAvailabilityAsync(
                 string catalogId,
-                DateTime begin,
-                DateTime end,
-                TimeSpan step,
+                [BindRequired] DateTime begin,
+                [BindRequired] DateTime end,
+                [BindRequired] TimeSpan step,
                 CancellationToken cancellationToken)
         {
             catalogId = WebUtility.UrlDecode(catalogId);

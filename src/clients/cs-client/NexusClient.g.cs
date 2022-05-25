@@ -674,6 +674,26 @@ public class DataClient : IDataClient
 public interface IJobsClient
 {
     /// <summary>
+    /// Gets a list of jobs.
+    /// </summary>
+    /// <param name="cancellationToken">The token to cancel the current operation.</param>
+    Task<IList<Job>> GetJobsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Cancels the specified job.
+    /// </summary>
+    /// <param name="jobId"></param>
+    /// <param name="cancellationToken">The token to cancel the current operation.</param>
+    Task<StreamResponse> CancelJobAsync(Guid jobId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets the status of the specified job.
+    /// </summary>
+    /// <param name="jobId"></param>
+    /// <param name="cancellationToken">The token to cancel the current operation.</param>
+    Task<JobStatus> GetJobStatusAsync(Guid jobId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Creates a new export job.
     /// </summary>
     /// <param name="parameters">Export parameters.</param>
@@ -695,26 +715,6 @@ public interface IJobsClient
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
     Task<Job> ClearCacheAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// Gets a list of jobs.
-    /// </summary>
-    /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<IList<Job>> GetJobsAsync(CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Gets the status of the specified job.
-    /// </summary>
-    /// <param name="jobId"></param>
-    /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<JobStatus> GetJobStatusAsync(Guid jobId, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Cancels the specified job.
-    /// </summary>
-    /// <param name="jobId"></param>
-    /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<StreamResponse> CancelJobAsync(Guid jobId, CancellationToken cancellationToken = default);
-
 }
 
 /// <inheritdoc />
@@ -725,6 +725,38 @@ public class JobsClient : IJobsClient
     internal JobsClient(NexusClient client)
     {
         _client = client;
+    }
+
+    /// <inheritdoc />
+    public Task<IList<Job>> GetJobsAsync(CancellationToken cancellationToken = default)
+    {
+        var urlBuilder = new StringBuilder();
+        urlBuilder.Append("/api/v1/jobs");
+
+        var url = urlBuilder.ToString();
+        return _client.InvokeAsync<IList<Job>>("GET", url, "application/json", default, default, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<StreamResponse> CancelJobAsync(Guid jobId, CancellationToken cancellationToken = default)
+    {
+        var urlBuilder = new StringBuilder();
+        urlBuilder.Append("/api/v1/jobs/{jobId}");
+        urlBuilder.Replace("{jobId}", Uri.EscapeDataString(Convert.ToString(jobId, CultureInfo.InvariantCulture)!));
+
+        var url = urlBuilder.ToString();
+        return _client.InvokeAsync<StreamResponse>("DELETE", url, "application/octet-stream", default, default, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<JobStatus> GetJobStatusAsync(Guid jobId, CancellationToken cancellationToken = default)
+    {
+        var urlBuilder = new StringBuilder();
+        urlBuilder.Append("/api/v1/jobs/{jobId}/status");
+        urlBuilder.Replace("{jobId}", Uri.EscapeDataString(Convert.ToString(jobId, CultureInfo.InvariantCulture)!));
+
+        var url = urlBuilder.ToString();
+        return _client.InvokeAsync<JobStatus>("GET", url, "application/json", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -765,38 +797,6 @@ public class JobsClient : IJobsClient
 
         var url = urlBuilder.ToString();
         return _client.InvokeAsync<Job>("POST", url, "application/json", default, default, cancellationToken);
-    }
-
-    /// <inheritdoc />
-    public Task<IList<Job>> GetJobsAsync(CancellationToken cancellationToken = default)
-    {
-        var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/jobs");
-
-        var url = urlBuilder.ToString();
-        return _client.InvokeAsync<IList<Job>>("GET", url, "application/json", default, default, cancellationToken);
-    }
-
-    /// <inheritdoc />
-    public Task<JobStatus> GetJobStatusAsync(Guid jobId, CancellationToken cancellationToken = default)
-    {
-        var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/jobs/{jobId}/status");
-        urlBuilder.Replace("{jobId}", Uri.EscapeDataString(Convert.ToString(jobId, CultureInfo.InvariantCulture)!));
-
-        var url = urlBuilder.ToString();
-        return _client.InvokeAsync<JobStatus>("GET", url, "application/json", default, default, cancellationToken);
-    }
-
-    /// <inheritdoc />
-    public Task<StreamResponse> CancelJobAsync(Guid jobId, CancellationToken cancellationToken = default)
-    {
-        var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/jobs/{jobId}");
-        urlBuilder.Replace("{jobId}", Uri.EscapeDataString(Convert.ToString(jobId, CultureInfo.InvariantCulture)!));
-
-        var url = urlBuilder.ToString();
-        return _client.InvokeAsync<StreamResponse>("DELETE", url, "application/octet-stream", default, default, cancellationToken);
     }
 
 }
@@ -905,23 +905,26 @@ public interface ISourcesClient
     /// <summary>
     /// Gets the list of backend sources.
     /// </summary>
+    /// <param name="username">The optional username. If not specified, the name of the current user will be used.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<IDictionary<string, DataSourceRegistration>> GetRegistrationsAsync(CancellationToken cancellationToken = default);
+    Task<IDictionary<string, DataSourceRegistration>> GetRegistrationsAsync(string? username = default, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Puts a backend source.
     /// </summary>
     /// <param name="registrationId">The identifier of the registration.</param>
+    /// <param name="username">The optional username. If not specified, the name of the current user will be used.</param>
     /// <param name="registration">The registration to put.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task PutRegistrationAsync(Guid registrationId, DataSourceRegistration registration, CancellationToken cancellationToken = default);
+    Task<StreamResponse> PutRegistrationAsync(Guid registrationId, DataSourceRegistration registration, string? username = default, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Deletes a backend source.
     /// </summary>
     /// <param name="registrationId">The identifier of the registration.</param>
+    /// <param name="username">The optional username. If not specified, the name of the current user will be used.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task DeleteRegistrationAsync(Guid registrationId, CancellationToken cancellationToken = default);
+    Task<StreamResponse> DeleteRegistrationAsync(Guid registrationId, string? username = default, CancellationToken cancellationToken = default);
 
 }
 
@@ -946,35 +949,59 @@ public class SourcesClient : ISourcesClient
     }
 
     /// <inheritdoc />
-    public Task<IDictionary<string, DataSourceRegistration>> GetRegistrationsAsync(CancellationToken cancellationToken = default)
+    public Task<IDictionary<string, DataSourceRegistration>> GetRegistrationsAsync(string? username = default, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/sources/registrations");
+
+        var queryValues = new Dictionary<string, string>()
+        {
+            ["username"] = Uri.EscapeDataString(Convert.ToString(username, CultureInfo.InvariantCulture)),
+        };
+
+        var query = "?" + string.Join('&', queryValues.Select(entry => $"{entry.Key}={entry.Value}"));
+        urlBuilder.Append(query);
 
         var url = urlBuilder.ToString();
         return _client.InvokeAsync<IDictionary<string, DataSourceRegistration>>("GET", url, "application/json", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
-    public Task PutRegistrationAsync(Guid registrationId, DataSourceRegistration registration, CancellationToken cancellationToken = default)
+    public Task<StreamResponse> PutRegistrationAsync(Guid registrationId, DataSourceRegistration registration, string? username = default, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/sources/registrations/{registrationId}");
         urlBuilder.Replace("{registrationId}", Uri.EscapeDataString(Convert.ToString(registrationId, CultureInfo.InvariantCulture)!));
 
+        var queryValues = new Dictionary<string, string>()
+        {
+            ["username"] = Uri.EscapeDataString(Convert.ToString(username, CultureInfo.InvariantCulture)),
+        };
+
+        var query = "?" + string.Join('&', queryValues.Select(entry => $"{entry.Key}={entry.Value}"));
+        urlBuilder.Append(query);
+
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<object>("PUT", url, "", "application/json", JsonContent.Create(registration, options: Utilities.JsonOptions), cancellationToken);
+        return _client.InvokeAsync<StreamResponse>("PUT", url, "application/octet-stream", "application/json", JsonContent.Create(registration, options: Utilities.JsonOptions), cancellationToken);
     }
 
     /// <inheritdoc />
-    public Task DeleteRegistrationAsync(Guid registrationId, CancellationToken cancellationToken = default)
+    public Task<StreamResponse> DeleteRegistrationAsync(Guid registrationId, string? username = default, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/sources/registrations/{registrationId}");
         urlBuilder.Replace("{registrationId}", Uri.EscapeDataString(Convert.ToString(registrationId, CultureInfo.InvariantCulture)!));
 
+        var queryValues = new Dictionary<string, string>()
+        {
+            ["username"] = Uri.EscapeDataString(Convert.ToString(username, CultureInfo.InvariantCulture)),
+        };
+
+        var query = "?" + string.Join('&', queryValues.Select(entry => $"{entry.Key}={entry.Value}"));
+        urlBuilder.Append(query);
+
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<object>("DELETE", url, "", default, default, cancellationToken);
+        return _client.InvokeAsync<StreamResponse>("DELETE", url, "application/octet-stream", default, default, cancellationToken);
     }
 
 }
@@ -1579,17 +1606,6 @@ public record CatalogMetadata(string? Contact, IList<string>? GroupMemberships, 
 public record Job(Guid Id, string Type, string Owner, JsonElement? Parameters);
 
 /// <summary>
-/// A structure for export parameters.
-/// </summary>
-/// <param name="Begin">2020-02-01T00:00:00Z</param>
-/// <param name="End">2020-02-02T00:00:00Z</param>
-/// <param name="FilePeriod">00:00:00</param>
-/// <param name="Type">Nexus.Writers.Csv</param>
-/// <param name="ResourcePaths">["/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean", "/IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean"]</param>
-/// <param name="Configuration">{ "RowIndexFormat": "Index", "SignificantFigures": "4" }</param>
-public record ExportParameters(DateTime Begin, DateTime End, TimeSpan FilePeriod, string Type, IList<string> ResourcePaths, IDictionary<string, string> Configuration);
-
-/// <summary>
 /// Describes the status of the job.
 /// </summary>
 /// <param name="Start">The start date/time.</param>
@@ -1645,6 +1661,17 @@ public enum TaskStatus
     Faulted
 }
 
+
+/// <summary>
+/// A structure for export parameters.
+/// </summary>
+/// <param name="Begin">2020-02-01T00:00:00Z</param>
+/// <param name="End">2020-02-02T00:00:00Z</param>
+/// <param name="FilePeriod">00:00:00</param>
+/// <param name="Type">Nexus.Writers.Csv</param>
+/// <param name="ResourcePaths">["/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean", "/IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean"]</param>
+/// <param name="Configuration">{ "RowIndexFormat": "Index", "SignificantFigures": "4" }</param>
+public record ExportParameters(DateTime Begin, DateTime End, TimeSpan FilePeriod, string Type, IList<string> ResourcePaths, IDictionary<string, string> Configuration);
 
 /// <summary>
 /// A package reference.
