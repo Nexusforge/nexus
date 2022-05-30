@@ -29,10 +29,8 @@
                     else
                     {
                         <div class="group flex justify-between items-end py-0.5 px-1 cursor-pointer"
-                            @onclick="() => AppState.CatalogItems = entry.Value">
-                            <UITooltip Tooltip="@entry.Key">
-                                <span class="group-hover:text-cyan-500 font-bold text-cyan-700">@entry.Key</span>
-                            </UITooltip>
+                            @onclick="() => SelectCatalogItems(entry.Value)">
+                            <span class="group-hover:text-cyan-500 font-bold text-cyan-700">@entry.Key</span>
                             <span class="text-sm text-gray-500">@entry.Value.Count</span>
                         </div>
                     }
@@ -45,7 +43,7 @@
         <div class="overflow-y-auto select-none h-full">
             @if (AppState.CatalogItems is not null)
             {
-                <Virtualize Context="catalogItemPair" ItemsProvider="LoadItems">
+                <Virtualize Context="catalogItemPair" ItemsProvider="LoadItems" @ref="_virtualizeComponent">
                     <div class="flex flex-wrap">
 
                         @foreach (var catalogItem in catalogItemPair)
@@ -90,12 +88,13 @@
 
 @code {
 
+    private Virtualize<List<CatalogItemViewModel>>? _virtualizeComponent;
     private PropertyChangedEventHandler _handler;
     private string _searchIcon = "magnify";
 
     public ResourceView()
     {
-        _handler = (sender, e) => 
+        _handler = async (sender, e) => 
         {
             if (e.PropertyName == nameof(AppState.CatalogItemsMap))
                 StateHasChanged();
@@ -112,10 +111,20 @@
         };
     }
 
+    private async Task SelectCatalogItems(List<CatalogItemViewModel> catalogItems)
+    {
+        AppState.CatalogItems = catalogItems;
+
+        if (_virtualizeComponent is not null)
+            await _virtualizeComponent.RefreshDataAsync();
+
+        StateHasChanged();
+    }
+
     private ValueTask<ItemsProviderResult<List<CatalogItemViewModel>>> LoadItems(ItemsProviderRequest request)
     {
         var groupSize = 4;
-        var total = (AppState.CatalogItems!.Count + 1) / groupSize;
+        var total = (int)Math.Ceiling(AppState.CatalogItems!.Count / (double)groupSize);
 
         var source = AppState.CatalogItems!
             .Skip(request.StartIndex * groupSize)
