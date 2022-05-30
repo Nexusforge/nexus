@@ -152,6 +152,7 @@ public class AppState : IAppState
     }
 
     public SortedDictionary<string, List<CatalogItemViewModel>>? CatalogItemsMap { get; private set; }
+    
     public List<CatalogItemViewModel>? CatalogItems { get; set; }
 
     public IReadOnlyList<(DateTime, Exception)> Errors => _errors;

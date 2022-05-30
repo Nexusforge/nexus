@@ -180,6 +180,18 @@ namespace Nexus.Sources
                 resourceBuilderD.Build()
             });
 
+            for (int i = 0; i < 1100; i++)
+            {
+                var resourceBuilderX = new ResourceBuilder(id: "T1_" + i)
+                .WithUnit("°C")
+                .WithDescription("Test Resource A")
+                .WithGroups("Group 1")
+                .AddRepresentation(new Representation(dataType: NexusDataType.FLOAT64, samplePeriod: TimeSpan.FromSeconds(1)))
+                .Build();
+
+                catalogBuilder.AddResource(resourceBuilderX);
+            }
+
             return catalogBuilder.Build();
         }
 
