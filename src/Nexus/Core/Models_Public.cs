@@ -184,19 +184,23 @@ namespace Nexus.Core
     /// </summary>
     /// <param name="Provider">The provider which loads the package.</param>
     /// <param name="Configuration">The configuration of the package reference.</param>
+    /// <param name="ProjectUrl">An optional project website URL.</param>
+    /// <param name="RepositoryUrl">An optional source repository URL.</param>
     public record PackageReference(
         string Provider,
-        Dictionary<string, string> Configuration);
+        Dictionary<string, string> Configuration,
+        string? ProjectUrl = default,
+        string? RepositoryUrl = default);
 
     /// <summary>
     /// A structure for export parameters.
     /// </summary>
-    /// <param name="Begin"><example>2020-02-01T00:00:00Z</example></param>
-    /// <param name="End"><example>2020-02-02T00:00:00Z</example></param>
-    /// <param name="FilePeriod"><example>00:00:00</example></param>
-    /// <param name="Type"><example>Nexus.Writers.Csv</example></param>
-    /// <param name="ResourcePaths"><example>["/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean", "/IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean"]</example></param>
-    /// <param name="Configuration"><example>{ "RowIndexFormat": "Index", "SignificantFigures": "4" }</example></param>
+    /// <param name="Begin">The start date/time.</param>
+    /// <param name="End">The end date/time.</param>
+    /// <param name="FilePeriod">The file period.</param>
+    /// <param name="Type">The writer type.</param>
+    /// <param name="ResourcePaths">The resource paths to export.</param>
+    /// <param name="Configuration">The configuration.</param>
     public record ExportParameters(
         DateTime Begin,
         DateTime End,
@@ -209,8 +213,8 @@ namespace Nexus.Core
     /// An extension description.
     /// </summary>
     /// <param name="Type">The extension type.</param>
-    /// <param name="Description">An optional description.</param>
-    /// <param name="AdditionalInfo">An optional dictionary with additional information.</param>
+    /// <param name="Description">A nullable description.</param>
+    /// <param name="AdditionalInfo">A nullable dictionary with additional information.</param>
     public record ExtensionDescription(
         string Type, 
         string? Description,
@@ -221,8 +225,10 @@ namespace Nexus.Core
     /// </summary>
     /// <param name="Id">The identifier.</param>
     /// <param name="Title">The title.</param>
-    /// <param name="Contact">The contact.</param>
-    /// <param name="License">The license.</param>
+    /// <param name="Contact">A nullable contact.</param>
+    /// <param name="License">A nullable license.</param>
+    /// <param name="SourceProjectUrl">A nullable source project website URL.</param>
+    /// <param name="SourceRepositoryUrl">A nullable source repository URL.</param>
     /// <param name="IsReadable">A boolean which indicates if the catalog is accessible.</param>
     /// <param name="IsWritable">A boolean which indicates if the catalog is editable.</param>
     /// <param name="IsReleased">A boolean which indicates if the catalog is released.</param>
@@ -233,6 +239,8 @@ namespace Nexus.Core
         string Title,
         string? Contact,
         string? License,
+        string? SourceProjectUrl,
+        string? SourceRepositoryUrl,
         bool IsReadable,
         bool IsWritable,
         bool IsReleased,
@@ -272,22 +280,26 @@ namespace Nexus.Core
     /// <param name="Type">The type of the data source.</param>
     /// <param name="ResourceLocator">An URL which points to the data.</param>
     /// <param name="Configuration">Configuration parameters for the instantiated source.</param>
+    /// <param name="ProjectUrl">An optional project website URL.</param>
+    /// <param name="RepositoryUrl">An optional source repository URL.</param>
     /// <param name="ReleasePattern">An optional regular expressions pattern to select the catalogs to be released. By default, all catalogs will be released.</param>
     /// <param name="VisibilityPattern">An optional regular expressions pattern to select the catalogs to be visible. By default, all catalogs will be visible.</param>
     public record DataSourceRegistration(
         string Type,
         Uri ResourceLocator,
         IReadOnlyDictionary<string, string> Configuration,
+        string? ProjectUrl = default,
+        string? RepositoryUrl = default,
         string ReleasePattern = ".*",
         string VisibilityPattern = ".*");
 
     /// <summary>
     /// Description of a job.
     /// </summary>
-    /// <param name="Id"><example>06f8eb30-5924-4a71-bdff-322f92343f5b</example></param>
-    /// <param name="Owner"><example>test@nexus.localhost</example></param>
-    /// <param name="Type"><example>export</example></param>
-    /// <param name="Parameters">Job parameters.</param>
+    /// <param name="Id">The global unique identifier.</param>
+    /// <param name="Owner">The owner of the job.</param>
+    /// <param name="Type">The job type</param>
+    /// <param name="Parameters">The job parameters.</param>
     public record Job(
         Guid Id,
         string Type,
@@ -300,8 +312,8 @@ namespace Nexus.Core
     /// <param name="Start">The start date/time.</param>
     /// <param name="Status">The status.</param>
     /// <param name="Progress">The progress from 0 to 1.</param>
-    /// <param name="ExceptionMessage">An optional exception message.</param>
-    /// <param name="Result">The optional result.</param>
+    /// <param name="ExceptionMessage">The nullable exception message.</param>
+    /// <param name="Result">The nullable result.</param>
     public record JobStatus(
         DateTime Start,
         TaskStatus Status,

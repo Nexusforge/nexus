@@ -22,6 +22,7 @@ namespace Nexus.Core
             CatalogRegistration catalogRegistration,
             ClaimsPrincipal? owner,
             DataSourceRegistration dataSourceRegistration,
+            PackageReference packageReference,
             CatalogMetadata metadata,
             ICatalogManager catalogManager,
             IDatabaseService databaseService,
@@ -32,6 +33,7 @@ namespace Nexus.Core
             IsTransient = catalogRegistration.IsTransient;
             Owner = owner;
             DataSourceRegistration = dataSourceRegistration;
+            PackageReference = packageReference;
             Metadata = metadata;
 
             _catalogManager = catalogManager;
@@ -48,12 +50,20 @@ namespace Nexus.Core
         public string PhysicalName => Id.TrimStart('/').Replace('/', '_');
 
         public DataSourceRegistration DataSourceRegistration { get; }
+        public PackageReference PackageReference { get; }
 
         public CatalogMetadata Metadata { get; internal set; }
 
         public static CatalogContainer CreateRoot(ICatalogManager catalogManager, IDatabaseService databaseService)
         {
-            return new CatalogContainer(new CatalogRegistration(RootCatalogId, string.Empty), default!, default!, default!, catalogManager, databaseService, default!);
+            return new CatalogContainer(
+                new CatalogRegistration(RootCatalogId, string.Empty), 
+                default!, 
+                default!,
+                default!,
+                default!, 
+                catalogManager,
+                databaseService, default!);
         }
 
         public async Task<IEnumerable<CatalogContainer>> GetChildCatalogContainersAsync(

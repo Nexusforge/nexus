@@ -70,6 +70,8 @@ public class FakeResourceCatalogViewModel : ResourceCatalogViewModel
                     Title: default!, 
                     Contact: default, 
                     License: default,
+                    SourceProjectUrl: default,
+                    SourceRepositoryUrl: default,
                     IsReadable: true,
                     IsWritable: false, 
                     IsReleased: true,

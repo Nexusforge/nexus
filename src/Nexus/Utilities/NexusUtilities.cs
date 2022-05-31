@@ -93,11 +93,6 @@ namespace Nexus.Utilities
             };
         }
 
-        public static double ToUnixTimeStamp(this DateTime value)
-        {
-            return value.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
-        }
-
         public static int SizeOf(NexusDataType dataType)
         {
             return ((ushort)dataType & 0x00FF) / 8;

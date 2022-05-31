@@ -1,5 +1,4 @@
-﻿using Nexus.Core;
-using Nexus.DataModel;
+﻿using Nexus.DataModel;
 using Nexus.Extensibility;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -148,7 +147,7 @@ namespace Nexus.Writers
                 }
 
                 /* data */
-                var dataFileName = $"{physicalId}_{fileBegin.ToISO8601()}_{samplePeriod.ToUnitString()}.csv";
+                var dataFileName = $"{physicalId}_{ToISO8601(fileBegin)}_{samplePeriod.ToUnitString()}.csv";
                 var dataFilePath = Path.Combine(root, dataFileName);
 
                 if (!File.Exists(dataFilePath))
@@ -159,7 +158,7 @@ namespace Nexus.Writers
 
                     /* header values */
 #warning use .ToString("o") instead?
-                    stringBuilder.Append($"# date_time: {fileBegin.ToISO8601()}");
+                    stringBuilder.Append($"# date_time: {ToISO8601(fileBegin)}");
                     AppendWindowsNewLine(stringBuilder);
 
                     stringBuilder.Append($"# sample_period: {samplePeriod.ToUnitString()}");
@@ -208,7 +207,7 @@ namespace Nexus.Writers
                 var writeRequests = requestGroup.ToArray();
                 var physicalId = catalog.Id.TrimStart('/').Replace('/', '_');
                 var root = Context.ResourceLocator.ToPath();
-                var filePath = Path.Combine(root, $"{physicalId}_{_lastFileBegin.ToISO8601()}_{_lastSamplePeriod.ToUnitString()}.csv");
+                var filePath = Path.Combine(root, $"{physicalId}_{ToISO8601(_lastFileBegin)}_{_lastSamplePeriod.ToUnitString()}.csv");
                 var rowIndexFormat = Context.Configuration.GetValueOrDefault("RowIndexFormat", "Index");
                 var significantFigures = uint.Parse(Context.Configuration.GetValueOrDefault("SignificantFigures", "4"));
 
@@ -304,6 +303,11 @@ namespace Nexus.Writers
                 : $" ({unit})";
 
             return fieldName;
+        }
+
+        private string ToISO8601(DateTime dateTime)
+        {
+            return dateTime.ToUniversalTime().ToString("yyyy-MM-ddTHH-mm-ssZ");
         }
 
         #endregion

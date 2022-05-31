@@ -1566,14 +1566,16 @@ public enum RepresentationKind
 /// </summary>
 /// <param name="Id">The identifier.</param>
 /// <param name="Title">The title.</param>
-/// <param name="Contact">The contact.</param>
-/// <param name="License">The license.</param>
+/// <param name="Contact">A nullable contact.</param>
+/// <param name="License">A nullable license.</param>
+/// <param name="SourceProjectUrl">A nullable source project website URL.</param>
+/// <param name="SourceRepositoryUrl">A nullable source repository URL.</param>
 /// <param name="IsReadable">A boolean which indicates if the catalog is accessible.</param>
 /// <param name="IsWritable">A boolean which indicates if the catalog is editable.</param>
 /// <param name="IsReleased">A boolean which indicates if the catalog is released.</param>
 /// <param name="IsVisible">A boolean which indicates if the catalog is visible.</param>
 /// <param name="IsOwner">A boolean which indicates if the catalog is owned by the current user.</param>
-public record CatalogInfo(string Id, string Title, string? Contact, string? License, bool IsReadable, bool IsWritable, bool IsReleased, bool IsVisible, bool IsOwner);
+public record CatalogInfo(string Id, string Title, string? Contact, string? License, string? SourceProjectUrl, string? SourceRepositoryUrl, bool IsReadable, bool IsWritable, bool IsReleased, bool IsVisible, bool IsOwner);
 
 /// <summary>
 /// A catalog time range.
@@ -1599,10 +1601,10 @@ public record CatalogMetadata(string? Contact, IList<string>? GroupMemberships, 
 /// <summary>
 /// Description of a job.
 /// </summary>
-/// <param name="Id">06f8eb30-5924-4a71-bdff-322f92343f5b</param>
-/// <param name="Type">export</param>
-/// <param name="Owner">test@nexus.localhost</param>
-/// <param name="Parameters">Job parameters.</param>
+/// <param name="Id">The global unique identifier.</param>
+/// <param name="Type">The job type</param>
+/// <param name="Owner">The owner of the job.</param>
+/// <param name="Parameters">The job parameters.</param>
 public record Job(Guid Id, string Type, string Owner, JsonElement? Parameters);
 
 /// <summary>
@@ -1611,8 +1613,8 @@ public record Job(Guid Id, string Type, string Owner, JsonElement? Parameters);
 /// <param name="Start">The start date/time.</param>
 /// <param name="Status">The status.</param>
 /// <param name="Progress">The progress from 0 to 1.</param>
-/// <param name="ExceptionMessage">An optional exception message.</param>
-/// <param name="Result">The optional result.</param>
+/// <param name="ExceptionMessage">The nullable exception message.</param>
+/// <param name="Result">The nullable result.</param>
 public record JobStatus(DateTime Start, TaskStatus Status, double Progress, string? ExceptionMessage, JsonElement? Result);
 
 /// <summary>
@@ -1665,12 +1667,12 @@ public enum TaskStatus
 /// <summary>
 /// A structure for export parameters.
 /// </summary>
-/// <param name="Begin">2020-02-01T00:00:00Z</param>
-/// <param name="End">2020-02-02T00:00:00Z</param>
-/// <param name="FilePeriod">00:00:00</param>
-/// <param name="Type">Nexus.Writers.Csv</param>
-/// <param name="ResourcePaths">["/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean", "/IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean"]</param>
-/// <param name="Configuration">{ "RowIndexFormat": "Index", "SignificantFigures": "4" }</param>
+/// <param name="Begin">The start date/time.</param>
+/// <param name="End">The end date/time.</param>
+/// <param name="FilePeriod">The file period.</param>
+/// <param name="Type">The writer type.</param>
+/// <param name="ResourcePaths">The resource paths to export.</param>
+/// <param name="Configuration">The configuration.</param>
 public record ExportParameters(DateTime Begin, DateTime End, TimeSpan FilePeriod, string Type, IList<string> ResourcePaths, IDictionary<string, string> Configuration);
 
 /// <summary>
@@ -1678,14 +1680,16 @@ public record ExportParameters(DateTime Begin, DateTime End, TimeSpan FilePeriod
 /// </summary>
 /// <param name="Provider">The provider which loads the package.</param>
 /// <param name="Configuration">The configuration of the package reference.</param>
-public record PackageReference(string Provider, IDictionary<string, string> Configuration);
+/// <param name="ProjectUrl">An optional project website URL.</param>
+/// <param name="RepositoryUrl">An optional source repository URL.</param>
+public record PackageReference(string Provider, IDictionary<string, string> Configuration, string? ProjectUrl, string? RepositoryUrl);
 
 /// <summary>
 /// An extension description.
 /// </summary>
 /// <param name="Type">The extension type.</param>
-/// <param name="Description">An optional description.</param>
-/// <param name="AdditionalInfo">An optional dictionary with additional information.</param>
+/// <param name="Description">A nullable description.</param>
+/// <param name="AdditionalInfo">A nullable dictionary with additional information.</param>
 public record ExtensionDescription(string Type, string? Description, IDictionary<string, string>? AdditionalInfo);
 
 /// <summary>
@@ -1694,9 +1698,11 @@ public record ExtensionDescription(string Type, string? Description, IDictionary
 /// <param name="Type">The type of the data source.</param>
 /// <param name="ResourceLocator">An URL which points to the data.</param>
 /// <param name="Configuration">Configuration parameters for the instantiated source.</param>
+/// <param name="ProjectUrl">An optional project website URL.</param>
+/// <param name="RepositoryUrl">An optional source repository URL.</param>
 /// <param name="ReleasePattern">An optional regular expressions pattern to select the catalogs to be released. By default, all catalogs will be released.</param>
 /// <param name="VisibilityPattern">An optional regular expressions pattern to select the catalogs to be visible. By default, all catalogs will be visible.</param>
-public record DataSourceRegistration(string Type, Uri ResourceLocator, IDictionary<string, string> Configuration, string ReleasePattern, string VisibilityPattern);
+public record DataSourceRegistration(string Type, Uri ResourceLocator, IDictionary<string, string> Configuration, string? ProjectUrl, string? RepositoryUrl, string ReleasePattern, string VisibilityPattern);
 
 /// <summary>
 /// Describes an OpenID connect provider.

@@ -77,6 +77,8 @@ public class AppState : IAppState
             Title: default!, 
             Contact: default, 
             License: default,
+            SourceProjectUrl: default,
+            SourceRepositoryUrl: default,
             IsReadable: true,
             IsWritable: false, 
             IsReleased: true,

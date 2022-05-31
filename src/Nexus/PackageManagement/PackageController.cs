@@ -15,6 +15,7 @@ namespace Nexus.PackageManagement
     {
         #region Fields
 
+        public const string BUILTIN_PROVIDER = "nexus";
         private const int MAX_PAGES = 20;
         private const int PER_PAGE = 100;
 
@@ -51,6 +52,10 @@ namespace Nexus.PackageManagement
 
             switch (PackageReference.Provider)
             {
+                case BUILTIN_PROVIDER:
+                    result = new string[] { "current" };
+                    break;
+
                 case "local":
                     result = await DiscoverLocalAsync(cancellationToken);
                     break;
@@ -81,25 +86,36 @@ namespace Nexus.PackageManagement
             if (_loadContext is not null)
                 throw new Exception("The extension is already loaded.");
 
-            var restoreFolderPath = await RestoreAsync(restoreRoot, cancellationToken);
-            var depsJsonExtension = ".deps.json";
+            Assembly assembly;
 
-            var depsJsonFilePath = Directory
-                .EnumerateFiles(restoreFolderPath, $"*{depsJsonExtension}", SearchOption.AllDirectories)
-                .SingleOrDefault();
+            if (PackageReference.Provider == BUILTIN_PROVIDER)
+            {
+                assembly = Assembly.GetExecutingAssembly();
+                _loadContext = new PackageLoadContext(assembly.Location);
+            }
+            
+            else
+            {
+                var restoreFolderPath = await RestoreAsync(restoreRoot, cancellationToken);
+                var depsJsonExtension = ".deps.json";
 
-            if (depsJsonFilePath is null)
-                throw new Exception($"Could not determine the location of the .deps.json file in folder {restoreFolderPath}.");
+                var depsJsonFilePath = Directory
+                    .EnumerateFiles(restoreFolderPath, $"*{depsJsonExtension}", SearchOption.AllDirectories)
+                    .SingleOrDefault();
 
-            var entryDllPath = depsJsonFilePath.Substring(0, depsJsonFilePath.Length - depsJsonExtension.Length) + ".dll";
+                if (depsJsonFilePath is null)
+                    throw new Exception($"Could not determine the location of the .deps.json file in folder {restoreFolderPath}.");
 
-            if (entryDllPath is null)
-                throw new Exception($"Could not determine the location of the entry DLL file in folder {restoreFolderPath}.");
+                var entryDllPath = depsJsonFilePath.Substring(0, depsJsonFilePath.Length - depsJsonExtension.Length) + ".dll";
 
-            _loadContext = new PackageLoadContext(entryDllPath);
+                if (entryDllPath is null)
+                    throw new Exception($"Could not determine the location of the entry DLL file in folder {restoreFolderPath}.");
 
-            var assemblyName = new AssemblyName(Path.GetFileNameWithoutExtension(entryDllPath));
-            var assembly = _loadContext.LoadFromAssemblyName(assemblyName);
+                _loadContext = new PackageLoadContext(entryDllPath);
+
+                var assemblyName = new AssemblyName(Path.GetFileNameWithoutExtension(entryDllPath));
+                assembly = _loadContext.LoadFromAssemblyName(assemblyName);
+            }
 
             return assembly;
         }

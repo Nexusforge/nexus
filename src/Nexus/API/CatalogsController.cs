@@ -103,6 +103,20 @@ namespace Nexus.Controllers
                         var id = childContainer.Id;
                         var title = childContainer.Title;
                         var contact = childContainer.Metadata.Contact;
+
+                        string? license = default!;
+
+                        if (_databaseService.TryReadAttachment(childContainer.Id, "LICENSE.md", out var attachment))
+                            license = new StreamReader(attachment).ReadToEnd();
+
+                        var sourceProjectUrl = !string.IsNullOrWhiteSpace(childContainer.DataSourceRegistration.ProjectUrl)
+                            ? childContainer.DataSourceRegistration.ProjectUrl
+                            : childContainer.PackageReference.ProjectUrl;
+
+                        var sourceRepositoryUrl = !string.IsNullOrWhiteSpace(childContainer.DataSourceRegistration.RepositoryUrl)
+                            ? childContainer.DataSourceRegistration.RepositoryUrl
+                            : childContainer.PackageReference.RepositoryUrl;
+
                         var isReadable = AuthorizationUtilities.IsCatalogReadable(childContainer.Id, childContainer.Metadata, childContainer.Owner, User);
                         var isWritable = AuthorizationUtilities.IsCatalogWritable(childContainer.Id, User);
 
@@ -114,16 +128,13 @@ namespace Nexus.Controllers
 
                         var isOwner = childContainer.Owner?.FindFirstValue(Claims.Subject) == User.FindFirstValue(Claims.Subject);
 
-                        string? license = default!;
-
-                        if (_databaseService.TryReadAttachment(childContainer.Id, "LICENSE.md", out var attachment))
-                            license = new StreamReader(attachment).ReadToEnd();
-
                         return new CatalogInfo(
                             id,
                             title,
                             contact,
                             license,
+                            sourceProjectUrl,
+                            sourceRepositoryUrl,
                             isReadable,
                             isWritable,
                             isReleased,

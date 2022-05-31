@@ -394,8 +394,10 @@ class CatalogInfo:
     Args:
         id: The identifier.
         title: The title.
-        contact: The contact.
-        license: The license.
+        contact: A nullable contact.
+        license: A nullable license.
+        source_project_url: A nullable source project website URL.
+        source_repository_url: A nullable source repository URL.
         is_readable: A boolean which indicates if the catalog is accessible.
         is_writable: A boolean which indicates if the catalog is editable.
         is_released: A boolean which indicates if the catalog is released.
@@ -410,10 +412,16 @@ class CatalogInfo:
     """The title."""
 
     contact: Optional[str]
-    """The contact."""
+    """A nullable contact."""
 
     license: Optional[str]
-    """The license."""
+    """A nullable license."""
+
+    source_project_url: Optional[str]
+    """A nullable source project website URL."""
+
+    source_repository_url: Optional[str]
+    """A nullable source repository URL."""
 
     is_readable: bool
     """A boolean which indicates if the catalog is accessible."""
@@ -488,23 +496,23 @@ class Job:
     Description of a job.
 
     Args:
-        id: 06f8eb30-5924-4a71-bdff-322f92343f5b
-        type: export
-        owner: test@nexus.localhost
-        parameters: Job parameters.
+        id: The global unique identifier.
+        type: The job type
+        owner: The owner of the job.
+        parameters: The job parameters.
     """
 
     id: UUID
-    """06f8eb30-5924-4a71-bdff-322f92343f5b"""
+    """The global unique identifier."""
 
     type: str
-    """export"""
+    """The job type"""
 
     owner: str
-    """test@nexus.localhost"""
+    """The owner of the job."""
 
     parameters: Optional[object]
-    """Job parameters."""
+    """The job parameters."""
 
 
 @dataclass
@@ -516,8 +524,8 @@ class JobStatus:
         start: The start date/time.
         status: The status.
         progress: The progress from 0 to 1.
-        exception_message: An optional exception message.
-        result: The optional result.
+        exception_message: The nullable exception message.
+        result: The nullable result.
     """
 
     start: datetime
@@ -530,10 +538,10 @@ class JobStatus:
     """The progress from 0 to 1."""
 
     exception_message: Optional[str]
-    """An optional exception message."""
+    """The nullable exception message."""
 
     result: Optional[object]
-    """The optional result."""
+    """The nullable result."""
 
 
 class TaskStatus(Enum):
@@ -570,31 +578,31 @@ class ExportParameters:
     A structure for export parameters.
 
     Args:
-        begin: 2020-02-01T00:00:00Z
-        end: 2020-02-02T00:00:00Z
-        file_period: 00:00:00
-        type: Nexus.Writers.Csv
-        resource_paths: ["/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean", "/IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean"]
-        configuration: { "RowIndexFormat": "Index", "SignificantFigures": "4" }
+        begin: The start date/time.
+        end: The end date/time.
+        file_period: The file period.
+        type: The writer type.
+        resource_paths: The resource paths to export.
+        configuration: The configuration.
     """
 
     begin: datetime
-    """2020-02-01T00:00:00Z"""
+    """The start date/time."""
 
     end: datetime
-    """2020-02-02T00:00:00Z"""
+    """The end date/time."""
 
     file_period: timedelta
-    """00:00:00"""
+    """The file period."""
 
     type: str
-    """Nexus.Writers.Csv"""
+    """The writer type."""
 
     resource_paths: list[str]
-    """["/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean", "/IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean"]"""
+    """The resource paths to export."""
 
     configuration: dict[str, str]
-    """{ "RowIndexFormat": "Index", "SignificantFigures": "4" }"""
+    """The configuration."""
 
 
 @dataclass
@@ -605,6 +613,8 @@ class PackageReference:
     Args:
         provider: The provider which loads the package.
         configuration: The configuration of the package reference.
+        project_url: An optional project website URL.
+        repository_url: An optional source repository URL.
     """
 
     provider: str
@@ -612,6 +622,12 @@ class PackageReference:
 
     configuration: dict[str, str]
     """The configuration of the package reference."""
+
+    project_url: Optional[str]
+    """An optional project website URL."""
+
+    repository_url: Optional[str]
+    """An optional source repository URL."""
 
 
 @dataclass
@@ -621,18 +637,18 @@ class ExtensionDescription:
 
     Args:
         type: The extension type.
-        description: An optional description.
-        additional_info: An optional dictionary with additional information.
+        description: A nullable description.
+        additional_info: A nullable dictionary with additional information.
     """
 
     type: str
     """The extension type."""
 
     description: Optional[str]
-    """An optional description."""
+    """A nullable description."""
 
     additional_info: Optional[dict[str, str]]
-    """An optional dictionary with additional information."""
+    """A nullable dictionary with additional information."""
 
 
 @dataclass
@@ -644,6 +660,8 @@ class DataSourceRegistration:
         type: The type of the data source.
         resource_locator: An URL which points to the data.
         configuration: Configuration parameters for the instantiated source.
+        project_url: An optional project website URL.
+        repository_url: An optional source repository URL.
         release_pattern: An optional regular expressions pattern to select the catalogs to be released. By default, all catalogs will be released.
         visibility_pattern: An optional regular expressions pattern to select the catalogs to be visible. By default, all catalogs will be visible.
     """
@@ -656,6 +674,12 @@ class DataSourceRegistration:
 
     configuration: dict[str, str]
     """Configuration parameters for the instantiated source."""
+
+    project_url: Optional[str]
+    """An optional project website URL."""
+
+    repository_url: Optional[str]
+    """An optional source repository URL."""
 
     release_pattern: str
     """An optional regular expressions pattern to select the catalogs to be released. By default, all catalogs will be released."""

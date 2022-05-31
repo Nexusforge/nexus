@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Options;
 using Nexus.Core;
 using Nexus.DataModel;
+using Nexus.Extensibility;
 using Nexus.Sources;
 using Nexus.Utilities;
 using System.Security.Claims;
@@ -19,7 +20,11 @@ namespace Nexus.Services
     {
         #region Types
 
-        record CatalogPrototype(CatalogRegistration Registration, DataSourceRegistration DataSourceRegistration, ClaimsPrincipal? Owner);
+        record CatalogPrototype(
+            CatalogRegistration Registration,
+            DataSourceRegistration DataSourceRegistration,
+            PackageReference PackageReference, 
+            ClaimsPrincipal? Owner);
 
         #endregion
 
@@ -29,6 +34,7 @@ namespace Nexus.Services
         private IDataControllerService _dataControllerService;
         private IDatabaseService _databaseService;
         private IUserManagerWrapper _userManagerWrapper;
+        private IExtensionHive _extensionHive;
         private SecurityOptions _securityOptions;
         private ILogger<CatalogManager> _logger;
 
@@ -41,6 +47,7 @@ namespace Nexus.Services
             IDataControllerService dataControllerService, 
             IDatabaseService databaseService,
             IUserManagerWrapper userManagerWrapper,
+            IExtensionHive extensionHive,
             IOptions<SecurityOptions> securityOptions,
             ILogger<CatalogManager> logger)
         {
@@ -48,6 +55,7 @@ namespace Nexus.Services
             _dataControllerService = dataControllerService;
             _databaseService = databaseService;
             _userManagerWrapper = userManagerWrapper;
+            _extensionHive = extensionHive;
             _securityOptions = securityOptions.Value;
             _logger = logger;
         }
@@ -78,22 +86,27 @@ namespace Nexus.Services
                 var path = CatalogContainer.RootCatalogId;
                 var catalogPrototypes = new List<CatalogPrototype>();
 
-                /* => for the built-in backend sources */
+                /* => for the built-in data source registrations */
 
 #warning Load Parallel?
-                /* for each backend source */
+                /* for each data source registration */
                 foreach (var registration in builtinDataSourceRegistrations)
                 {
                     using var controller = await _dataControllerService.GetDataSourceControllerAsync(registration, cancellationToken);
                     var catalogRegistrations = await controller.GetCatalogRegistrationsAsync(path, cancellationToken);
+                    var packageReference = _extensionHive.GetPackageReference<IDataSource>(registration.Type);
 
                     foreach (var catalogRegistration in catalogRegistrations)
                     {
-                        catalogPrototypes.Add(new CatalogPrototype(catalogRegistration, registration, null));
+                        catalogPrototypes.Add(new CatalogPrototype(
+                            catalogRegistration, 
+                            registration, 
+                            packageReference, 
+                            null));
                     }
                 }
 
-                /* => for each user with existing config file */
+                /* => for each user with existing config */
                 foreach (var (username, userConfiguration) in _appState.Project.UserConfigurations)
                 {
                     var user = await _userManagerWrapper.GetClaimsPrincipalAsync(username);
@@ -101,21 +114,33 @@ namespace Nexus.Services
                     if (user is null)
                         continue;
 
-                    /* for each backend source */
+                    /* for each data source registration */
                     foreach (var registration in userConfiguration.DataSourceRegistrations.Values)
                     {
-                        using var controller = await _dataControllerService.GetDataSourceControllerAsync(registration, cancellationToken);
-                        var catalogIds = await controller.GetCatalogRegistrationsAsync(path, cancellationToken);
-
-                        foreach (var catalogId in catalogIds)
+                        try
                         {
-                            catalogPrototypes.Add(new CatalogPrototype(catalogId, registration, user));
+                            using var controller = await _dataControllerService.GetDataSourceControllerAsync(registration, cancellationToken);
+                            var catalogRegistrations = await controller.GetCatalogRegistrationsAsync(path, cancellationToken);
+                            var packageReference = _extensionHive.GetPackageReference<IDataSource>(registration.Type);
+
+                            foreach (var catalogRegistration in catalogRegistrations)
+                            {
+                                catalogPrototypes.Add(new CatalogPrototype(
+                                    catalogRegistration, 
+                                    registration,
+                                    packageReference, 
+                                    user));
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "Unable to process data source registration for user {Username}", username);
                         }
                     }
                 }
 
                 catalogContainers = ProcessCatalogPrototypes(catalogPrototypes.ToArray());
-                _logger.LogInformation("Found {CatalogCount} top level catalogs.", catalogContainers.Length);
+                _logger.LogInformation("Found {CatalogCount} top level catalogs", catalogContainers.Length);
             }
 
             /* all other catalogs */
@@ -133,7 +158,7 @@ namespace Nexus.Services
                     .GetCatalogRegistrationsAsync(parent.Id + "/", cancellationToken);
 
                 var prototypes = catalogRegistrations
-                    .Select(catalogId => new CatalogPrototype(catalogId, parent.DataSourceRegistration, parent.Owner));
+                    .Select(catalogId => new CatalogPrototype(catalogId, parent.DataSourceRegistration, parent.PackageReference, parent.Owner));
 
                 catalogContainers = ProcessCatalogPrototypes(prototypes.ToArray());
             }
@@ -164,6 +189,7 @@ namespace Nexus.Services
                     prototype.Registration,
                     prototype.Owner,
                     prototype.DataSourceRegistration,
+                    prototype.PackageReference,
                     catalogMetadata,
                     this,
                     _databaseService,

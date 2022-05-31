@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Nexus.Core;
 using Nexus.Extensibility;
 using Nexus.PackageManagement;
@@ -13,6 +14,9 @@ namespace Nexus.Services
         IEnumerable<Type> GetExtensions<T>(
             ) where T : IExtension;
 
+        PackageReference GetPackageReference<T>(
+            string fullName) where T : IExtension;
+
         T GetInstance<T>(
             string fullName) where T : IExtension;
 
@@ -24,10 +28,6 @@ namespace Nexus.Services
         Task<string[]> GetVersionsAsync(
             PackageReference packageReference,
             CancellationToken cancellationToken);
-
-        bool TryGetInstance<T>(
-            string identifier,
-            out T? instance) where T : IExtension;
     }
 
     internal class ExtensionHive : IExtensionHive
@@ -39,8 +39,6 @@ namespace Nexus.Services
         private PathsOptions _pathsOptions;
 
         private Dictionary<PackageController, ReadOnlyCollection<Type>>? _packageControllerMap = default!;
-
-        private ReadOnlyCollection<Type> _builtinExtensions;
 
         #endregion
 
@@ -54,12 +52,6 @@ namespace Nexus.Services
             _logger = logger;
             _loggerFactory = loggerFactory;
             _pathsOptions = pathsOptions.Value;
-
-            // add built-in extensions
-            var thisAssembly = Assembly.GetExecutingAssembly();
-            var thisTypes = ScanAssembly(thisAssembly, thisAssembly.DefinedTypes);
-
-            _builtinExtensions = thisTypes;
         }
 
         #endregion
@@ -84,6 +76,15 @@ namespace Nexus.Services
                 _packageControllerMap = default;
             }
 
+            var nexusPackageReference = new PackageReference(
+                Provider: PackageController.BUILTIN_PROVIDER,
+                Configuration: new Dictionary<string, string>(),
+                ProjectUrl: "https://github.com/Nexusforge/nexus",
+                RepositoryUrl: "https://github.com/Nexusforge/nexus/blob/master/src/Nexus/Extensions"
+            );
+
+            packageReferences = new List<PackageReference>() { nexusPackageReference }.Concat(packageReferences);
+
             // build new
             var packageControllerMap = new Dictionary<PackageController, ReadOnlyCollection<Type>>();
             var currentCount = 0;
@@ -98,7 +99,11 @@ namespace Nexus.Services
                 {
                     _logger.LogDebug("Load package");
                     var assembly = await packageController.LoadAsync(_pathsOptions.Packages, cancellationToken);
-                    var types = ScanAssembly(assembly, assembly.ExportedTypes);
+
+                    var types = ScanAssembly(assembly, packageReference.Provider == PackageController.BUILTIN_PROVIDER
+                        ? assembly.DefinedTypes
+                        : assembly.ExportedTypes);
+
                     packageControllerMap[packageController] = types;
                 }
                 catch (Exception ex)
@@ -126,46 +131,63 @@ namespace Nexus.Services
 
         public IEnumerable<Type> GetExtensions<T>() where T : IExtension
         {
-            var types = _packageControllerMap is null
-                ? _builtinExtensions
-                : _builtinExtensions.Concat(_packageControllerMap.SelectMany(entry => entry.Value));
+            if (_packageControllerMap is null)
+            {
+                return Enumerable.Empty<Type>();
+            }
 
-            return types
-                .Where(type => typeof(T).IsAssignableFrom(type));
+            else
+            {
+                var types = _packageControllerMap.SelectMany(entry => entry.Value);
+
+                return types
+                    .Where(type => typeof(T).IsAssignableFrom(type));
+            }
+        }
+
+        public PackageReference GetPackageReference<T>(string fullName) where T : IExtension
+        {
+            if (!TryGetTypeInfo<T>(fullName, out var packageController, out var _))
+                throw new Exception($"Could not find extension {fullName} of type {typeof(T).FullName}.");
+
+            return packageController.PackageReference;
         }
 
         public T GetInstance<T>(string fullName) where T : IExtension
         {
-            if (!TryGetInstance<T>(fullName, out var instance))
+            if (!TryGetTypeInfo<T>(fullName, out var _, out var type))
                 throw new Exception($"Could not find extension {fullName} of type {typeof(T).FullName}.");
+
+            _logger.LogDebug("Instantiate extension {ExtensionType}", fullName);
+
+            var instance = (T)(Activator.CreateInstance(type) ?? throw new Exception("instance is null"));
 
             return instance;
         }
 
-        public bool TryGetInstance<T>(string fullName, [NotNullWhen(true)] out T? instance) where T : IExtension
+        private bool TryGetTypeInfo<T>(
+            string fullName, 
+            [NotNullWhen(true)] out PackageController? packageController,
+            [NotNullWhen(true)] out Type? type) 
+            where T : IExtension
         {
-            instance = default(T);
+            type = default;
+            packageController = default;
 
-            _logger.LogDebug("Instantiate extension {ExtensionType}", fullName);
+            if (_packageControllerMap is null)
+                return false;
 
-            var types = _packageControllerMap is null
-                ? _builtinExtensions
-                : _builtinExtensions.Concat(_packageControllerMap.SelectMany(entry => entry.Value));
+            IEnumerable<(PackageController Controller, Type Type)> typeInfos = _packageControllerMap
+                .SelectMany(entry => entry.Value.Select(type => (entry.Key, type)));
 
-            var type = types
-                .Where(current => typeof(T).IsAssignableFrom(current) && current.FullName == fullName)
+            (packageController, type) = typeInfos
+                .Where(typeInfo => typeof(T).IsAssignableFrom(typeInfo.Type) && typeInfo.Type.FullName == fullName)
                 .FirstOrDefault();
 
             if (type is null)
-            {
-                _logger.LogWarning("Could not find extension {ExtensionType}", fullName);
                 return false;
-            }
-            else
-            {
-                instance = (T)(Activator.CreateInstance(type) ?? throw new Exception("instance is null"));
-                return true;
-            }
+
+            return true;
         }
 
         private ReadOnlyCollection<Type> ScanAssembly(Assembly assembly, IEnumerable<Type> types)

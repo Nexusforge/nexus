@@ -1588,12 +1588,22 @@
           },
           "contact": {
             "type": "string",
-            "description": "The contact.",
+            "description": "A nullable contact.",
             "nullable": true
           },
           "license": {
             "type": "string",
-            "description": "The license.",
+            "description": "A nullable license.",
+            "nullable": true
+          },
+          "sourceProjectUrl": {
+            "type": "string",
+            "description": "A nullable source project website URL.",
+            "nullable": true
+          },
+          "sourceRepositoryUrl": {
+            "type": "string",
+            "description": "A nullable source repository URL.",
             "nullable": true
           },
           "isReadable": {
@@ -1686,19 +1696,19 @@
         "properties": {
           "id": {
             "type": "string",
-            "description": "06f8eb30-5924-4a71-bdff-322f92343f5b",
+            "description": "The global unique identifier.",
             "format": "guid"
           },
           "type": {
             "type": "string",
-            "description": "export"
+            "description": "The job type"
           },
           "owner": {
             "type": "string",
-            "description": "test@nexus.localhost"
+            "description": "The owner of the job."
           },
           "parameters": {
-            "description": "Job parameters.",
+            "description": "The job parameters.",
             "nullable": true
           }
         }
@@ -1728,11 +1738,11 @@
           },
           "exceptionMessage": {
             "type": "string",
-            "description": "An optional exception message.",
+            "description": "The nullable exception message.",
             "nullable": true
           },
           "result": {
-            "description": "The optional result.",
+            "description": "The nullable result.",
             "nullable": true
           }
         }
@@ -1768,33 +1778,33 @@
         "properties": {
           "begin": {
             "type": "string",
-            "description": "2020-02-01T00:00:00Z",
+            "description": "The start date/time.",
             "format": "date-time"
           },
           "end": {
             "type": "string",
-            "description": "2020-02-02T00:00:00Z",
+            "description": "The end date/time.",
             "format": "date-time"
           },
           "filePeriod": {
             "type": "string",
-            "description": "00:00:00",
+            "description": "The file period.",
             "format": "duration"
           },
           "type": {
             "type": "string",
-            "description": "Nexus.Writers.Csv"
+            "description": "The writer type."
           },
           "resourcePaths": {
             "type": "array",
-            "description": "[\"/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean\", \"/IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean\"]",
+            "description": "The resource paths to export.",
             "items": {
               "type": "string"
             }
           },
           "configuration": {
             "type": "object",
-            "description": "{ \"RowIndexFormat\": \"Index\", \"SignificantFigures\": \"4\" }",
+            "description": "The configuration.",
             "additionalProperties": {
               "type": "string"
             }
@@ -1816,6 +1826,16 @@
             "additionalProperties": {
               "type": "string"
             }
+          },
+          "projectUrl": {
+            "type": "string",
+            "description": "An optional project website URL.",
+            "nullable": true
+          },
+          "repositoryUrl": {
+            "type": "string",
+            "description": "An optional source repository URL.",
+            "nullable": true
           }
         }
       },
@@ -1830,12 +1850,12 @@
           },
           "description": {
             "type": "string",
-            "description": "An optional description.",
+            "description": "A nullable description.",
             "nullable": true
           },
           "additionalInfo": {
             "type": "object",
-            "description": "An optional dictionary with additional information.",
+            "description": "A nullable dictionary with additional information.",
             "nullable": true,
             "additionalProperties": {
               "type": "string"
@@ -1863,6 +1883,16 @@
             "additionalProperties": {
               "type": "string"
             }
+          },
+          "projectUrl": {
+            "type": "string",
+            "description": "An optional project website URL.",
+            "nullable": true
+          },
+          "repositoryUrl": {
+            "type": "string",
+            "description": "An optional source repository URL.",
+            "nullable": true
           },
           "releasePattern": {
             "type": "string",

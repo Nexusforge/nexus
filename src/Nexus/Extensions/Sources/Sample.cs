@@ -1,6 +1,5 @@
 using Nexus.DataModel;
 using Nexus.Extensibility;
-using Nexus.Utilities;
 using System.Runtime.InteropServices;
 
 namespace Nexus.Sources
@@ -95,8 +94,8 @@ namespace Nexus.Sources
 
                     double[] dataDouble;
 
-                    var beginTime = begin.ToUnixTimeStamp();
-                    var endTime = end.ToUnixTimeStamp();
+                    var beginTime = ToUnixTimeStamp(begin);
+                    var endTime = ToUnixTimeStamp(end);
 
                     var elementCount = data.Length / representation.ElementSize;
                     var dt = representation.SamplePeriod.TotalSeconds;
@@ -181,6 +180,11 @@ namespace Nexus.Sources
             });
 
             return catalogBuilder.Build();
+        }
+
+        private double ToUnixTimeStamp(DateTime value)
+        {
+            return value.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
         }
 
         #endregion
