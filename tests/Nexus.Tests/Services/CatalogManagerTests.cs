@@ -99,7 +99,7 @@ namespace Services
             var claimsIdentityA = new ClaimsIdentity(
                new Claim[] {
                     new Claim(ClaimTypes.Name, usernameA),
-                    new Claim(NexusClaims.IS_ADMIN, "true")
+                    new Claim(ClaimTypes.Role, NexusRoles.ADMINISTRATOR)
                },
                "Fake authentication type");
 

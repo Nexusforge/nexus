@@ -217,9 +217,8 @@ namespace Nexus.Controllers
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
         [HttpGet("accept-license")]
-        public async Task<IActionResult>
-            AcceptLicenseAsync(
-                [BindRequired] string catalogId)
+        public async Task<IActionResult> AcceptLicenseAsync(
+            [BindRequired] string catalogId)
         {
     #warning Is this thread safe? Maybe yes, because of scoped EF context.
             catalogId = WebUtility.UrlDecode(catalogId);
@@ -291,7 +290,7 @@ namespace Nexus.Controllers
         /// <param name="claim">The claim to put.</param>
         [Authorize(Policy = Policies.RequireAdmin)]
         [HttpPut("{userId}/{claimId}")]
-        public async Task<ActionResult> PutClaimAsync(
+        public async Task<ActionResult> SetClaimAsync(
             string userId,
             Guid claimId,
             [FromBody] NexusClaim claim)

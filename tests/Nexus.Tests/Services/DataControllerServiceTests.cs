@@ -40,16 +40,16 @@ namespace Services
 
             var appState = new AppState() { CatalogState = catalogState };
 
-            var userConfiguration = new Dictionary<string, string>()
+            var requestConfiguration = new Dictionary<string, string>()
             {
                 ["foo"] = "bar",
                 ["foo2"] = "baz",
             };
 
-            var encodedUserConfiguration = Convert.ToBase64String(JsonSerializer.SerializeToUtf8Bytes(userConfiguration));
+            var encodedRequestConfiguration = Convert.ToBase64String(JsonSerializer.SerializeToUtf8Bytes(requestConfiguration));
 
             var httpContext = new DefaultHttpContext();
-            httpContext.Request.Headers.Add(DataControllerService.NexusConfigurationHeaderKey, encodedUserConfiguration);
+            httpContext.Request.Headers.Add(DataControllerService.NexusConfigurationHeaderKey, encodedRequestConfiguration);
 
             var httpContextAccessor = Mock.Of<IHttpContextAccessor>();
 
@@ -81,9 +81,9 @@ namespace Services
 
             Assert.Equal(expectedCatalog.Id, actualCatalog.Id);
 
-            var sortedExpected = new SortedDictionary<string, string>(userConfiguration);
+            var sortedExpected = new SortedDictionary<string, string>(requestConfiguration);
             var sortedActual = new SortedDictionary<string, string>(
-                ((DataSourceController)actual).UserConfiguration.ToDictionary(entry => entry.Key, entry => entry.Value));
+                ((DataSourceController)actual).RequestConfiguration.ToDictionary(entry => entry.Key, entry => entry.Value));
 
             Assert.True(sortedExpected.SequenceEqual(sortedActual));
         }

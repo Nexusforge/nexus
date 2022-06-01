@@ -60,6 +60,11 @@ public interface INexusClient
     ISourcesClient Sources { get; }
 
     /// <summary>
+    /// Gets the <see cref="ISystemClient"/>.
+    /// </summary>
+    ISystemClient System { get; }
+
+    /// <summary>
     /// Gets the <see cref="IUsersClient"/>.
     /// </summary>
     IUsersClient Users { get; }
@@ -109,6 +114,7 @@ public class NexusClient : INexusClient, IDisposable
     private JobsClient _jobs;
     private PackageReferencesClient _packageReferences;
     private SourcesClient _sources;
+    private SystemClient _system;
     private UsersClient _users;
     private WritersClient _writers;
 
@@ -138,6 +144,7 @@ public class NexusClient : INexusClient, IDisposable
         _jobs = new JobsClient(this);
         _packageReferences = new PackageReferencesClient(this);
         _sources = new SourcesClient(this);
+        _system = new SystemClient(this);
         _users = new UsersClient(this);
         _writers = new WritersClient(this);
 
@@ -165,6 +172,9 @@ public class NexusClient : INexusClient, IDisposable
 
     /// <inheritdoc />
     public ISourcesClient Sources => _sources;
+
+    /// <inheritdoc />
+    public ISystemClient System => _system;
 
     /// <inheritdoc />
     public IUsersClient Users => _users;
@@ -481,7 +491,7 @@ public interface ICatalogsClient
     /// <param name="catalogId">The catalog identifier.</param>
     /// <param name="catalogMetadata">The catalog metadata to put.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task PutMetadataAsync(string catalogId, CatalogMetadata catalogMetadata, CancellationToken cancellationToken = default);
+    Task SetMetadataAsync(string catalogId, CatalogMetadata catalogMetadata, CancellationToken cancellationToken = default);
 
 }
 
@@ -608,7 +618,7 @@ public class CatalogsClient : ICatalogsClient
     }
 
     /// <inheritdoc />
-    public Task PutMetadataAsync(string catalogId, CatalogMetadata catalogMetadata, CancellationToken cancellationToken = default)
+    public Task SetMetadataAsync(string catalogId, CatalogMetadata catalogMetadata, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/catalogs/{catalogId}/metadata");
@@ -818,7 +828,7 @@ public interface IPackageReferencesClient
     /// <param name="packageReferenceId">The identifier of the package reference.</param>
     /// <param name="packageReference">The package reference to put.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task PutAsync(Guid packageReferenceId, PackageReference packageReference, CancellationToken cancellationToken = default);
+    Task SetAsync(Guid packageReferenceId, PackageReference packageReference, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Deletes a package reference.
@@ -857,7 +867,7 @@ public class PackageReferencesClient : IPackageReferencesClient
     }
 
     /// <inheritdoc />
-    public Task PutAsync(Guid packageReferenceId, PackageReference packageReference, CancellationToken cancellationToken = default)
+    public Task SetAsync(Guid packageReferenceId, PackageReference packageReference, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/packagereferences/{packageReferenceId}");
@@ -916,7 +926,7 @@ public interface ISourcesClient
     /// <param name="username">The optional username. If not specified, the name of the current user will be used.</param>
     /// <param name="registration">The registration to put.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<StreamResponse> PutRegistrationAsync(Guid registrationId, DataSourceRegistration registration, string? username = default, CancellationToken cancellationToken = default);
+    Task<StreamResponse> SetRegistrationAsync(Guid registrationId, DataSourceRegistration registration, string? username = default, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Deletes a backend source.
@@ -967,7 +977,7 @@ public class SourcesClient : ISourcesClient
     }
 
     /// <inheritdoc />
-    public Task<StreamResponse> PutRegistrationAsync(Guid registrationId, DataSourceRegistration registration, string? username = default, CancellationToken cancellationToken = default)
+    public Task<StreamResponse> SetRegistrationAsync(Guid registrationId, DataSourceRegistration registration, string? username = default, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/sources/registrations/{registrationId}");
@@ -1002,6 +1012,58 @@ public class SourcesClient : ISourcesClient
 
         var url = urlBuilder.ToString();
         return _client.InvokeAsync<StreamResponse>("DELETE", url, "application/octet-stream", default, default, cancellationToken);
+    }
+
+}
+
+/// <summary>
+/// Provides methods to interact with system.
+/// </summary>
+public interface ISystemClient
+{
+    /// <summary>
+    /// Gets the system configuration.
+    /// </summary>
+    /// <param name="cancellationToken">The token to cancel the current operation.</param>
+    Task<IDictionary<string, string>> GetConfigurationAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sets the system configuration.
+    /// </summary>
+    /// <param name="string>"></param>
+    /// <param name="cancellationToken">The token to cancel the current operation.</param>
+    Task SetConfigurationAsync(IDictionary<string, string> configuration, CancellationToken cancellationToken = default);
+
+}
+
+/// <inheritdoc />
+public class SystemClient : ISystemClient
+{
+    private NexusClient _client;
+    
+    internal SystemClient(NexusClient client)
+    {
+        _client = client;
+    }
+
+    /// <inheritdoc />
+    public Task<IDictionary<string, string>> GetConfigurationAsync(CancellationToken cancellationToken = default)
+    {
+        var urlBuilder = new StringBuilder();
+        urlBuilder.Append("/api/v1/system/configuration");
+
+        var url = urlBuilder.ToString();
+        return _client.InvokeAsync<IDictionary<string, string>>("GET", url, "application/json", default, default, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task SetConfigurationAsync(IDictionary<string, string> configuration, CancellationToken cancellationToken = default)
+    {
+        var urlBuilder = new StringBuilder();
+        urlBuilder.Append("/api/v1/system/configuration");
+
+        var url = urlBuilder.ToString();
+        return _client.InvokeAsync<object>("PUT", url, "", "application/json", JsonContent.Create(configuration, options: Utilities.JsonOptions), cancellationToken);
     }
 
 }
@@ -1085,7 +1147,7 @@ public interface IUsersClient
     /// <param name="claimId">The identifier of claim.</param>
     /// <param name="claim">The claim to put.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<StreamResponse> PutClaimAsync(string userId, Guid claimId, NexusClaim claim, CancellationToken cancellationToken = default);
+    Task<StreamResponse> SetClaimAsync(string userId, Guid claimId, NexusClaim claim, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Deletes a claim.
@@ -1234,7 +1296,7 @@ public class UsersClient : IUsersClient
     }
 
     /// <inheritdoc />
-    public Task<StreamResponse> PutClaimAsync(string userId, Guid claimId, NexusClaim claim, CancellationToken cancellationToken = default)
+    public Task<StreamResponse> SetClaimAsync(string userId, Guid claimId, NexusClaim claim, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/users/{userId}/{claimId}");

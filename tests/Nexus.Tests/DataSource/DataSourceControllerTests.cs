@@ -45,7 +45,7 @@ namespace DataSource
                 Configuration: registrationConfiguration,
                 Publish: true);
 
-            var userConfiguration = new Dictionary<string, string>()
+            var requestConfiguration = new Dictionary<string, string>()
             {
                 ["foo"] = "bar",
                 ["foo2"] = "baz",
@@ -54,7 +54,7 @@ namespace DataSource
             var controller = new DataSourceController(
                 dataSource,
                 registration,
-                userConfiguration,
+                requestConfiguration,
                 default!,
                 default!,
                 default!,
@@ -83,7 +83,7 @@ namespace DataSource
             using var controller = new DataSourceController(
                 _fixture.DataSource,
                 _fixture.Registration,
-                _fixture.UserConfiguration,
+                _fixture.RequestConfiguration,
                 default!,
                 default!,
                 default!,
@@ -112,7 +112,7 @@ namespace DataSource
             using var controller = new DataSourceController(
                 _fixture.DataSource,
                 _fixture.Registration,
-                _fixture.UserConfiguration,
+                _fixture.RequestConfiguration,
                 default!,
                 default!,
                 default!,
@@ -133,7 +133,7 @@ namespace DataSource
             using var controller = new DataSourceController(
                 _fixture.DataSource,
                 _fixture.Registration,
-                _fixture.UserConfiguration,
+                _fixture.RequestConfiguration,
                 default!,
                 default!,
                 default!,
@@ -154,7 +154,7 @@ namespace DataSource
             using var controller = new DataSourceController(
                 _fixture.DataSource,
                 _fixture.Registration,
-                _fixture.UserConfiguration,
+                _fixture.RequestConfiguration,
                 default!,
                 default!,
                 default!,
@@ -258,7 +258,7 @@ namespace DataSource
             using var controller = new DataSourceController(
                 _fixture.DataSource,
                 _fixture.Registration,
-                _fixture.UserConfiguration,
+                _fixture.RequestConfiguration,
                 default!,
                 default!,
                 default!,
@@ -313,7 +313,7 @@ namespace DataSource
             using var controller = new DataSourceController(
                 _fixture.DataSource,
                 _fixture.Registration,
-                _fixture.UserConfiguration,
+                _fixture.RequestConfiguration,
                 processingService.Object,
                 default!,
                 new DataOptions(),

@@ -87,8 +87,8 @@ namespace Nexus.Sources
                     // check credentials
                     if (catalog.Id == RemoteCatalogId)
                     {
-                        if ((Context.Configuration.TryGetValue("user", out var user) && user != RemoteUsername) ||
-                            (Context.Configuration.TryGetValue("password", out var password) && password != RemotePassword))
+                        if ((Context.RequestConfiguration.TryGetValue("user", out var user) && user != RemoteUsername) ||
+                            (Context.RequestConfiguration.TryGetValue("password", out var password) && password != RemotePassword))
                             throw new Exception("The provided credentials are invalid.");
                     }
 

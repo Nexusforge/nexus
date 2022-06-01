@@ -404,7 +404,7 @@ namespace Nexus.Controllers
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpPut("{catalogId}/metadata")]
         public Task
-            PutMetadataAsync(
+            SetMetadataAsync(
                 string catalogId,
                 [FromBody] CatalogMetadata catalogMetadata,
                 CancellationToken cancellationToken)

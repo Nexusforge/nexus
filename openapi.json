@@ -432,7 +432,7 @@
           "Catalogs"
         ],
         "summary": "Puts the catalog metadata.",
-        "operationId": "Catalogs_PutMetadata",
+        "operationId": "Catalogs_SetMetadata",
         "parameters": [
           {
             "name": "catalogId",
@@ -752,7 +752,7 @@
           "PackageReferences"
         ],
         "summary": "Puts a package reference.",
-        "operationId": "PackageReferences_Put",
+        "operationId": "PackageReferences_Set",
         "parameters": [
           {
             "name": "packageReferenceId",
@@ -914,7 +914,7 @@
           "Sources"
         ],
         "summary": "Puts a backend source.",
-        "operationId": "Sources_PutRegistration",
+        "operationId": "Sources_SetRegistration",
         "parameters": [
           {
             "name": "registrationId",
@@ -1005,6 +1005,57 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/v1/system/configuration": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Gets the system configuration.",
+        "operationId": "System_GetConfiguration",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Sets the system configuration.",
+        "operationId": "System_SetConfiguration",
+        "requestBody": {
+          "x-name": "configuration",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
           }
         }
       }
@@ -1319,7 +1370,7 @@
           "Users"
         ],
         "summary": "Puts a claim.",
-        "operationId": "Users_PutClaim",
+        "operationId": "Users_SetClaim",
         "parameters": [
           {
             "name": "userId",

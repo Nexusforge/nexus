@@ -61,7 +61,7 @@ namespace Nexus.Controllers
         [HttpGet]
         public ActionResult<List<Job>> GetJobs()
         {
-            var isAdmin = User.HasClaim(NexusClaims.IS_ADMIN, "true");
+            var isAdmin = User.IsInRole(NexusRoles.ADMINISTRATOR);
             var username = User.Identity?.Name;
 
             if (username is null)
@@ -86,7 +86,7 @@ namespace Nexus.Controllers
         {
             if (_jobService.TryGetJob(jobId, out var jobControl))
             {
-                var isAdmin = User.HasClaim(NexusClaims.IS_ADMIN, "true");
+                var isAdmin = User.IsInRole(NexusRoles.ADMINISTRATOR);
                 var username = User.Identity?.Name;
 
                 if (username is null)
@@ -120,7 +120,7 @@ namespace Nexus.Controllers
         {
             if (_jobService.TryGetJob(jobId, out var jobControl))
             {
-                var isAdmin = User.HasClaim(NexusClaims.IS_ADMIN, "true");
+                var isAdmin = User.IsInRole(NexusRoles.ADMINISTRATOR);
                 var username = User.Identity?.Name;
 
                 if (username is null)

@@ -64,7 +64,8 @@ namespace Nexus.Extensibility
         public DataSourceController(
             IDataSource dataSource, 
             DataSourceRegistration registration,
-            IReadOnlyDictionary<string, string> userConfiguration,
+            IReadOnlyDictionary<string, string> systemConfiguration,
+            IReadOnlyDictionary<string, string> requestConfiguration,
             IProcessingService processingService,
             ICacheService cacheService,
             DataOptions dataOptions,
@@ -72,7 +73,8 @@ namespace Nexus.Extensibility
         {
             DataSource = dataSource;
             DataSourceRegistration = registration;
-            UserConfiguration = userConfiguration;
+            SystemConfiguration = systemConfiguration;
+            RequestConfiguration = requestConfiguration;
             Logger = logger;
 
             _processingService = processingService;
@@ -88,7 +90,9 @@ namespace Nexus.Extensibility
 
         private DataSourceRegistration DataSourceRegistration { get; }
 
-        internal IReadOnlyDictionary<string, string> UserConfiguration { get; }
+        internal IReadOnlyDictionary<string, string> SystemConfiguration { get; }
+
+        internal IReadOnlyDictionary<string, string> RequestConfiguration { get; }
 
         private ILogger Logger { get; }
 
@@ -103,17 +107,11 @@ namespace Nexus.Extensibility
         {
             _catalogCache = catalogCache;
 
-            var mergedConfiguration = DataSourceRegistration.Configuration
-                .ToDictionary(entry => entry.Key, entry => entry.Value);
-
-            foreach (var entry in UserConfiguration)
-            {
-                mergedConfiguration[entry.Key] = entry.Value;
-            }
-
             var context = new DataSourceContext(
                 ResourceLocator: DataSourceRegistration.ResourceLocator,
-                Configuration: mergedConfiguration,
+                SystemConfiguration: SystemConfiguration,
+                SourceConfiguration: DataSourceRegistration.Configuration.ToDictionary(entry => entry.Key, entry => entry.Value),
+                RequestConfiguration: RequestConfiguration,
                 Logger: logger);
 
             await DataSource.SetContextAsync(context, cancellationToken);

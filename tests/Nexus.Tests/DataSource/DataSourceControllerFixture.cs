@@ -16,11 +16,11 @@ namespace DataSource
                 Configuration: new Dictionary<string, string>(),
                 Publish: true);
 
-            UserConfiguration = new Dictionary<string, string>();
+            RequestConfiguration = new Dictionary<string, string>();
         }
 
         internal IDataSource DataSource { get; }
         internal DataSourceRegistration Registration { get; }
-        internal Dictionary<string, string> UserConfiguration { get; }  
+        internal Dictionary<string, string> RequestConfiguration { get; }  
     }
 }

@@ -222,6 +222,29 @@ namespace Nexus.Services
             }
         }
 
+        public async Task PutSystemConfigurationAsync(Dictionary<string, string> configuration)
+        {
+            await _projectSemaphore.WaitAsync();
+
+            try
+            {
+                var project = AppState.Project;
+
+                var newProject = project with
+                {
+                    SystemConfiguration = configuration
+                };
+
+                await SaveProjectAsync(newProject);
+
+                AppState.Project = newProject;
+            }
+            finally
+            {
+                _projectSemaphore.Release();
+            }
+        }
+
         private void LoadDataWriters()
         {
             const string OPTIONS_KEY = "UI:Options";

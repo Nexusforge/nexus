@@ -19,6 +19,7 @@ namespace Nexus.Core
         CatalogContainer Container);
 
     internal record NexusProject(
+        IReadOnlyDictionary<string, string> SystemConfiguration,
         IReadOnlyDictionary<Guid, PackageReference> PackageReferences,
         IReadOnlyDictionary<string, UserConfiguration> UserConfigurations);
 

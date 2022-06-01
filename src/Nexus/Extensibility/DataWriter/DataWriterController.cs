@@ -29,13 +29,15 @@ namespace Nexus.Extensibility
 
         public DataWriterController(
             IDataWriter dataWriter, 
-            Uri resourceLocator, 
-            Dictionary<string, string> configuration, 
+            Uri resourceLocator,
+            IReadOnlyDictionary<string, string> systemConfiguration,
+            IReadOnlyDictionary<string, string> requestConfiguration,
             ILogger<DataWriterController> logger)
         {
             DataWriter = dataWriter;
             ResourceLocator = resourceLocator;
-            Configuration = configuration;
+            SystemConfiguration = systemConfiguration;
+            RequestConfiguration = requestConfiguration;
             Logger = logger;
         }
 
@@ -43,11 +45,13 @@ namespace Nexus.Extensibility
 
         #region Properties
 
+        internal IReadOnlyDictionary<string, string> SystemConfiguration { get; }
+
+        internal IReadOnlyDictionary<string, string> RequestConfiguration { get; }
+
         private IDataWriter DataWriter { get; }
 
         private Uri ResourceLocator { get; }
-
-        private Dictionary<string, string> Configuration { get; }
 
         private ILogger Logger { get; }
 
@@ -61,7 +65,8 @@ namespace Nexus.Extensibility
         {
             var context = new DataWriterContext(
                 ResourceLocator: ResourceLocator,
-                Configuration: Configuration,
+                SystemConfiguration: SystemConfiguration,
+                RequestConfiguration: RequestConfiguration,
                 Logger: logger);
 
             await DataWriter.SetContextAsync(context, cancellationToken);

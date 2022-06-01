@@ -997,7 +997,7 @@ class CatalogsClient:
 
         return self._client._invoke_async(CatalogMetadata, "GET", url, "application/json", None, None)
 
-    def put_metadata(self, catalog_id: str, catalog_metadata: CatalogMetadata) -> Awaitable[None]:
+    def set_metadata(self, catalog_id: str, catalog_metadata: CatalogMetadata) -> Awaitable[None]:
         """
         Puts the catalog metadata.
 
@@ -1153,7 +1153,7 @@ class PackageReferencesClient:
 
         return self._client._invoke_async(dict[str, PackageReference], "GET", url, "application/json", None, None)
 
-    def put(self, package_reference_id: UUID, package_reference: PackageReference) -> Awaitable[None]:
+    def set(self, package_reference_id: UUID, package_reference: PackageReference) -> Awaitable[None]:
         """
         Puts a package reference.
 
@@ -1231,7 +1231,7 @@ class SourcesClient:
 
         return self._client._invoke_async(dict[str, DataSourceRegistration], "GET", url, "application/json", None, None)
 
-    def put_registration(self, registration_id: UUID, registration: DataSourceRegistration, username: Optional[str] = None) -> Awaitable[StreamResponse]:
+    def set_registration(self, registration_id: UUID, registration: DataSourceRegistration, username: Optional[str] = None) -> Awaitable[StreamResponse]:
         """
         Puts a backend source.
 
@@ -1272,6 +1272,37 @@ class SourcesClient:
         url += query
 
         return self._client._invoke_async(StreamResponse, "DELETE", url, "application/octet-stream", None, None)
+
+
+class SystemClient:
+    """Provides methods to interact with system."""
+
+    _client: NexusAsyncClient
+    
+    def __init__(self, client: NexusAsyncClient):
+        self._client = client
+
+    def get_configuration(self) -> Awaitable[dict[str, str]]:
+        """
+        Gets the system configuration.
+
+        Args:
+        """
+
+        url = "/api/v1/system/configuration"
+
+        return self._client._invoke_async(dict[str, str], "GET", url, "application/json", None, None)
+
+    def set_configuration(self, configuration: dict[str, str]) -> Awaitable[None]:
+        """
+        Sets the system configuration.
+
+        Args:
+        """
+
+        url = "/api/v1/system/configuration"
+
+        return self._client._invoke_async(type(None), "PUT", url, "", "application/json", json.dumps(configuration, cls=_MyEncoder))
 
 
 class UsersClient:
@@ -1420,7 +1451,7 @@ class UsersClient:
 
         return self._client._invoke_async(StreamResponse, "DELETE", url, "application/octet-stream", None, None)
 
-    def put_claim(self, user_id: str, claim_id: UUID, claim: NexusClaim) -> Awaitable[StreamResponse]:
+    def set_claim(self, user_id: str, claim_id: UUID, claim: NexusClaim) -> Awaitable[StreamResponse]:
         """
         Puts a claim.
 
@@ -1491,6 +1522,7 @@ class NexusAsyncClient:
     _jobs: JobsClient
     _packageReferences: PackageReferencesClient
     _sources: SourcesClient
+    _system: SystemClient
     _users: UsersClient
     _writers: WritersClient
 
@@ -1525,6 +1557,7 @@ class NexusAsyncClient:
         self._jobs = JobsClient(self)
         self._packageReferences = PackageReferencesClient(self)
         self._sources = SourcesClient(self)
+        self._system = SystemClient(self)
         self._users = UsersClient(self)
         self._writers = WritersClient(self)
 
@@ -1563,6 +1596,11 @@ class NexusAsyncClient:
     def sources(self) -> SourcesClient:
         """Gets the SourcesClient."""
         return self._sources
+
+    @property
+    def system(self) -> SystemClient:
+        """Gets the SystemClient."""
+        return self._system
 
     @property
     def users(self) -> UsersClient:

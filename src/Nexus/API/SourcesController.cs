@@ -86,7 +86,7 @@ namespace Nexus.Controllers
         /// <param name="username">The optional username. If not specified, the name of the current user will be used.</param>
         [HttpPut("registrations/{registrationId}")]
         public async Task<ActionResult>
-            PutRegistrationAsync(
+            SetRegistrationAsync(
             Guid registrationId,
             [FromBody] DataSourceRegistration registration,
             [FromQuery] string? username = default)
@@ -146,7 +146,7 @@ namespace Nexus.Controllers
             out string username,
             [NotNullWhen(returnValue: false)] out ActionResult? response)
         {
-            var isAdmin = User.HasClaim(NexusClaims.IS_ADMIN, "true");
+            var isAdmin = User.IsInRole(NexusRoles.ADMINISTRATOR);
             var currentUsername = User.Identity?.Name!;
 
             if (!(isAdmin || requestedUsername is null || requestedUsername == currentUsername))

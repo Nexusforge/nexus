@@ -108,6 +108,7 @@ namespace Nexus.Core
         public TimeSpan CookieLifetime { get; set; } = TimeSpan.FromDays(30);
         public TimeSpan AccessTokenLifetime { get; set; } = TimeSpan.FromHours(1);
         public TimeSpan RefreshTokenLifetime { get; set; } = TimeSpan.FromDays(30);
+        public TimeSpan SourceAccessTokenLifetime { get; set; } = TimeSpan.FromMinutes(10);
         public TimeSpan TokenAbuseDetectionPeriod { get; set; } = TimeSpan.FromDays(7);
         public List<OpenIdConnectProvider> OidcProviders { get; set; } = new();
     }

@@ -61,7 +61,7 @@ namespace Nexus.Controllers
         /// <param name="packageReference">The package reference to put.</param>
         [HttpPut("{packageReferenceId}")]
         public Task
-            PutAsync(
+            SetAsync(
             Guid packageReferenceId,
             [FromBody] PackageReference packageReference)
         {

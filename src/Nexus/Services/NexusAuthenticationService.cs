@@ -25,6 +25,9 @@ namespace Nexus.Services
 
         Task RevokeDescendantTokensAsync(
             RefreshToken token);
+
+        string Internal_GenerateDataSourceAccessToken(
+            NexusUser user);
     }
 
     internal class NexusAuthenticationService : INexusAuthenticationService
@@ -58,7 +61,7 @@ namespace Nexus.Services
             NexusUser user)
         {
             // new token pair
-            var newAccessToken = GenerateAccessToken(user);
+            var newAccessToken = GenerateAccessToken(user, _securityOptions.AccessTokenLifetime);
             var newRefreshToken = GenerateRefreshToken(user.Id);
 
             user.RefreshTokens.Add(newRefreshToken);
@@ -77,7 +80,7 @@ namespace Nexus.Services
             var user = token.Owner;
 
             // new token pair
-            var newAccessToken = GenerateAccessToken(token.Owner);
+            var newAccessToken = GenerateAccessToken(token.Owner, _securityOptions.AccessTokenLifetime);
             var newRefreshToken = RotateToken(token);
 
             user.RefreshTokens.Add(newRefreshToken);
@@ -115,11 +118,16 @@ namespace Nexus.Services
             await _dbService.UpdateUserAsync(token.Owner);
         }
 
+        public string Internal_GenerateDataSourceAccessToken(NexusUser user)
+        {
+            return GenerateAccessToken(user, _securityOptions.SourceAccessTokenLifetime);
+        }
+
         #endregion
 
         #region Helper Methods
 
-        private string GenerateAccessToken(NexusUser user)
+        private string GenerateAccessToken(NexusUser user, TimeSpan accessTokenLifeTime)
         {
             var mandatoryClaims = new[]
             {
@@ -140,7 +148,7 @@ namespace Nexus.Services
             {
                 Subject = claimsIdentity,
                 NotBefore = DateTime.UtcNow,
-                Expires = DateTime.UtcNow.Add(_securityOptions.AccessTokenLifetime),
+                Expires = DateTime.UtcNow.Add(accessTokenLifeTime),
                 SigningCredentials = _signingCredentials
             };
 

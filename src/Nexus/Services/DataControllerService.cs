@@ -31,7 +31,7 @@ namespace Nexus.Services
         private ICacheService _cacheService;
         private ILogger _logger;
         private ILoggerFactory _loggerFactory;
-        private Dictionary<string, string> _defaultUserConfiguration = new Dictionary<string, string>();
+        private Dictionary<string, string> _defaultRequestConfiguration = new Dictionary<string, string>();
 
         public DataControllerService(
             AppState appState,
@@ -59,13 +59,15 @@ namespace Nexus.Services
         {
             var logger1 = _loggerFactory.CreateLogger<DataSourceController>();
             var logger2 = _loggerFactory.CreateLogger($"{registration.Type} - {registration.ResourceLocator}");
+
             var dataSource = _extensionHive.GetInstance<IDataSource>(registration.Type);
-            var userConfiguration = GetUserConfiguration();
+            var requestConfiguration = GetRequestConfiguration();
 
             var controller = new DataSourceController(
-                dataSource, 
+                dataSource,
                 registration, 
-                userConfiguration,
+                systemConfiguration: _appState.Project.SystemConfiguration.ToDictionary(entry => entry.Key, entry => entry.Value),
+                requestConfiguration: requestConfiguration,
                 _processingService,
                 _cacheService,
                 _dataOptions,
@@ -85,35 +87,42 @@ namespace Nexus.Services
             var logger1 = _loggerFactory.CreateLogger<DataWriterController>();
             var logger2 = _loggerFactory.CreateLogger($"{exportParameters.Type} - {resourceLocator}");
             var dataWriter = _extensionHive.GetInstance<IDataWriter>(exportParameters.Type);
-            var controller = new DataWriterController(dataWriter, resourceLocator, exportParameters.Configuration, logger1);
+            var requestConfiguration = exportParameters.Configuration.ToDictionary(entry => entry.Key, entry => entry.Value);
+
+            var controller = new DataWriterController(
+                dataWriter, 
+                resourceLocator,
+                systemConfiguration: _appState.Project.SystemConfiguration.ToDictionary(entry => entry.Key, entry => entry.Value),
+                requestConfiguration: requestConfiguration,
+                logger1);
 
             await controller.InitializeAsync(logger2, cancellationToken);
 
             return controller;
         }
 
-        private Dictionary<string, string> GetUserConfiguration()
+        private Dictionary<string, string> GetRequestConfiguration()
         {
             var httpContext = _httpContextAccessor.HttpContext;
 
             if (httpContext is null)
-                return _defaultUserConfiguration;
+                return _defaultRequestConfiguration;
 
-            if (!httpContext.Request.Headers.TryGetValue(NexusConfigurationHeaderKey, out var encodedUserConfiguration))
-                return _defaultUserConfiguration;
+            if (!httpContext.Request.Headers.TryGetValue(NexusConfigurationHeaderKey, out var encodedRequestConfiguration))
+                return _defaultRequestConfiguration;
 
             try
             {
-                var userConfiguration = JsonSerializer
-                    .Deserialize<Dictionary<string, string>>(Convert.FromBase64String(encodedUserConfiguration.First()));
+                var requestConfiguration = JsonSerializer
+                    .Deserialize<Dictionary<string, string>>(Convert.FromBase64String(encodedRequestConfiguration.First()));
 
-                return userConfiguration is null
-                    ? _defaultUserConfiguration
-                    : userConfiguration;
+                return requestConfiguration is null
+                    ? _defaultRequestConfiguration
+                    : requestConfiguration;
             }
             catch
             {
-                return _defaultUserConfiguration;
+                return _defaultRequestConfiguration;
             }
         }
     }

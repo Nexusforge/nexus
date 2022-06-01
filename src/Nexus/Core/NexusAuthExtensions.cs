@@ -134,7 +134,7 @@ namespace Microsoft.Extensions.DependencyInjection
                                 var isFirstUser = !dbContext.Users.Any();
 
                                 if (isFirstUser)
-                                    newClaims[Guid.NewGuid()] = new NexusClaim(NexusClaims.IS_ADMIN, "true");
+                                    newClaims[Guid.NewGuid()] = new NexusClaim(ClaimTypes.Role, NexusRoles.ADMINISTRATOR);
 
                                 user.Claims = new ReadOnlyDictionary<Guid, NexusClaim>(newClaims);
                                 dbContext.Users.Add(user);
@@ -182,7 +182,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
                 options
                     .AddPolicy(Policies.RequireAdmin, policy => policy
-                    .RequireClaim(NexusClaims.IS_ADMIN, "true")
+                    .RequireRole(NexusRoles.ADMINISTRATOR)
                     .AddAuthenticationSchemes(authenticationSchemes));
             });
 

@@ -17,7 +17,7 @@ namespace Nexus.Utilities
                 if (catalogId == CatalogContainer.RootCatalogId)
                     return true;
 
-                var isAdmin = principal.HasClaim(claim => claim.Type == NexusClaims.IS_ADMIN && claim.Value == "true");
+                var isAdmin = principal.IsInRole(NexusRoles.ADMINISTRATOR);
                 var isOwner = owner?.FindFirstValue(Claims.Subject) == principal.FindFirstValue(Claims.Subject);
 
                 var canReadCatalog = principal.HasClaim(
@@ -25,7 +25,7 @@ namespace Nexus.Utilities
                     Regex.IsMatch(catalogId, claim.Value));
 
                 var canAccessGroup = catalogMetadata.GroupMemberships is not null && principal.HasClaim(
-                    claim => claim.Type == NexusClaims.CAN_ACCESS_GROUP &&
+                    claim => claim.Type == NexusClaims.CAN_READ_GROUP &&
                     catalogMetadata.GroupMemberships.Any(group => Regex.IsMatch(group, claim.Value)));
 
                 var implicitAccess = 
@@ -44,7 +44,7 @@ namespace Nexus.Utilities
 
             if (identity is not null && identity.IsAuthenticated)
             {
-                var isAdmin = principal.HasClaim(claim => claim.Type == NexusClaims.IS_ADMIN && claim.Value == "true");
+                var isAdmin = principal.IsInRole(NexusRoles.ADMINISTRATOR);
 
                 var canWriteCatalog = principal.HasClaim(claim => claim.Type == NexusClaims.CAN_WRITE_CATALOG &&
                                                         Regex.IsMatch(catalogId, claim.Value));

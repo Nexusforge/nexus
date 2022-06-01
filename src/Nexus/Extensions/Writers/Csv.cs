@@ -98,7 +98,7 @@ namespace Nexus.Writers
 
                 if (!_resourceMap.TryGetValue(resourceFilePath, out var resource))
                 {
-                    var rowIndexFormat = Context.Configuration.GetValueOrDefault("RowIndexFormat", "Index");
+                    var rowIndexFormat = Context.RequestConfiguration.GetValueOrDefault("RowIndexFormat", "Index");
                     var constraints = new Constraints(Required: true);
 
                     var timestampField = rowIndexFormat switch
@@ -208,8 +208,8 @@ namespace Nexus.Writers
                 var physicalId = catalog.Id.TrimStart('/').Replace('/', '_');
                 var root = Context.ResourceLocator.ToPath();
                 var filePath = Path.Combine(root, $"{physicalId}_{ToISO8601(_lastFileBegin)}_{_lastSamplePeriod.ToUnitString()}.csv");
-                var rowIndexFormat = Context.Configuration.GetValueOrDefault("RowIndexFormat", "Index");
-                var significantFigures = uint.Parse(Context.Configuration.GetValueOrDefault("SignificantFigures", "4"));
+                var rowIndexFormat = Context.RequestConfiguration.GetValueOrDefault("RowIndexFormat", "Index");
+                var significantFigures = uint.Parse(Context.RequestConfiguration.GetValueOrDefault("SignificantFigures", "4"));
 
                 using var streamWriter = new StreamWriter(File.Open(filePath, FileMode.Append, FileAccess.Write), Encoding.UTF8);
 

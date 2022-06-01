@@ -11,18 +11,18 @@ namespace Other
     {
         [Theory]
 
-        [InlineData("Basic", "true", new string[0], new string[0], true)]
-        [InlineData("Basic", "false", new string[] { "/D/E/F", "/A/B/C", "/G/H/I" }, new string[0], true)]
-        [InlineData("Basic", "false", new string[] { "^/A/B/.*" }, new string[0], true)]
-        [InlineData("Basic", "false", new string[0], new string[] { "A" }, true)]
+        [InlineData("Basic", true, new string[0], new string[0], true)]
+        [InlineData("Basic", false, new string[] { "/D/E/F", "/A/B/C", "/G/H/I" }, new string[0], true)]
+        [InlineData("Basic", false, new string[] { "^/A/B/.*" }, new string[0], true)]
+        [InlineData("Basic", false, new string[0], new string[] { "A" }, true)]
 
-        [InlineData("Basic", "false", new string[0], new string[0], false)]
-        [InlineData("Basic", "false", new string[] { "/D/E/F", "/A/B/C2", "/G/H/I" }, new string[0], false)]
-        [InlineData("Basic", "false", new string[0], new string[] { "A2" }, false)]
-        [InlineData(null, "true", new string[0], new string[0], false)]
+        [InlineData("Basic", false, new string[0], new string[0], false)]
+        [InlineData("Basic", false, new string[] { "/D/E/F", "/A/B/C2", "/G/H/I" }, new string[0], false)]
+        [InlineData("Basic", false, new string[0], new string[] { "A2" }, false)]
+        [InlineData(null, true, new string[0], new string[0], false)]
         public void CanDetermineCatalogAccessibility(
             string authenticationType, 
-            string isAdmin, 
+            bool isAdmin, 
             string[] canReadCatalog,
             string[] canAccessGroup,
             bool expected)
@@ -31,10 +31,14 @@ namespace Other
             var catalogId = "/A/B/C";
             var catalogMetadata = new CatalogMetadata(default, GroupMemberships: new[] { "A" }, default);
 
+            var adminClaim = isAdmin
+                ? new Claim[] { new Claim(ClaimTypes.Role, NexusRoles.ADMINISTRATOR) }
+                : new Claim[0];
+
             var principal = new ClaimsPrincipal(new ClaimsIdentity(
-                new Claim[] { new Claim(NexusClaims.IS_ADMIN, isAdmin) }
+                adminClaim
                 .Concat(canReadCatalog.Select(value => new Claim(NexusClaims.CAN_READ_CATALOG, value)))
-                .Concat(canAccessGroup.Select(value => new Claim(NexusClaims.CAN_ACCESS_GROUP, value))), authenticationType));
+                .Concat(canAccessGroup.Select(value => new Claim(NexusClaims.CAN_READ_GROUP, value))), authenticationType));
 
             // Act
             var actual = AuthorizationUtilities.IsCatalogReadable(catalogId, catalogMetadata, principal);
@@ -45,23 +49,27 @@ namespace Other
 
         [Theory]
 
-        [InlineData("Basic", "true", new string[0], true)]
-        [InlineData("Basic", "false", new string[] { "/D/E/F", "/A/B/C", "/G/H/I" }, true)]
-        [InlineData("Basic", "false", new string[] { "^/A/B/.*" }, true)]
+        [InlineData("Basic", true, new string[0], true)]
+        [InlineData("Basic", false, new string[] { "/D/E/F", "/A/B/C", "/G/H/I" }, true)]
+        [InlineData("Basic", false, new string[] { "^/A/B/.*" }, true)]
 
-        [InlineData("Basic", "false", new string[0], false)]
-        [InlineData(null, "true", new string[0], false)]
+        [InlineData("Basic", false, new string[0], false)]
+        [InlineData(null, true, new string[0], false)]
         public void CanDetermineCatalogEditability(
             string authenticationType,
-            string isAdmin,
+            bool isAdmin,
             string[] canWriteCatalog,
             bool expected)
         {
             // Arrange
             var catalogId = "/A/B/C";
 
+            var adminClaim = isAdmin
+                ? new Claim[] { new Claim(ClaimTypes.Role, NexusRoles.ADMINISTRATOR) }
+                : new Claim[0];
+
             var principal = new ClaimsPrincipal(new ClaimsIdentity(
-               new Claim[] { new Claim(NexusClaims.IS_ADMIN, isAdmin) }
+               adminClaim
                .Concat(canWriteCatalog.Select(value => new Claim(NexusClaims.CAN_WRITE_CATALOG, value))), authenticationType));
 
             // Act

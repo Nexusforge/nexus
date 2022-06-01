@@ -307,8 +307,8 @@ $@"    /// <summary>
                 ? "default"
                 : operation.RequestBody?.Content.Keys.First() switch
                 {
-                    "application/json" => $"JsonContent.Create({bodyParameter.Split(" ")[1]}, options: Utilities.JsonOptions)",
-                    "application/octet-stream" => $"new StreamContent({bodyParameter.Split(" ")[1]})",
+                    "application/json" => $"JsonContent.Create({bodyParameter.Split(" ")[^1]}, options: Utilities.JsonOptions)",
+                    "application/octet-stream" => $"new StreamContent({bodyParameter.Split(" ")[^1]})",
                     _ => throw new Exception($"The media type {operation.RequestBody!.Content.Keys.First()} is not supported.")
                 };
 

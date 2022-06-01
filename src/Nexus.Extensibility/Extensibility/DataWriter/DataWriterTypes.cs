@@ -7,11 +7,13 @@ namespace Nexus.Extensibility
     /// The starter package for a data writer.
     /// </summary>
     /// <param name="ResourceLocator">The resource locator.</param>
-    /// <param name="Configuration">The configuration.</param>
+    /// <param name="SystemConfiguration">The system configuration.</param>
+    /// <param name="RequestConfiguration">The writer configuration.</param>
     /// <param name="Logger">The logger.</param>
     public record DataWriterContext(
         Uri ResourceLocator,
-        Dictionary<string, string> Configuration,
+        IReadOnlyDictionary<string, string> SystemConfiguration,
+        IReadOnlyDictionary<string, string> RequestConfiguration,
         ILogger Logger);
 
     /// <summary>
