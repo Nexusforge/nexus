@@ -94,7 +94,7 @@
 
     public ResourceView()
     {
-        _handler = async (sender, e) => 
+        _handler = (sender, e) => 
         {
             if (e.PropertyName == nameof(AppState.CatalogItemsMap))
                 StateHasChanged();
