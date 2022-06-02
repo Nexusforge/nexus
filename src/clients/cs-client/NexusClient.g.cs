@@ -489,7 +489,7 @@ public interface ICatalogsClient
     /// Puts the catalog metadata.
     /// </summary>
     /// <param name="catalogId">The catalog identifier.</param>
-    /// <param name="catalogMetadata">The catalog metadata to put.</param>
+    /// <param name="catalogMetadata">The catalog metadata to set.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
     Task SetMetadataAsync(string catalogId, CatalogMetadata catalogMetadata, CancellationToken cancellationToken = default);
 
@@ -820,15 +820,14 @@ public interface IPackageReferencesClient
     /// Gets the list of package references.
     /// </summary>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<IDictionary<string, PackageReference>> GetAsync(CancellationToken cancellationToken = default);
+    Task<IList<PackageReference>> GetAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Puts a package reference.
     /// </summary>
-    /// <param name="packageReferenceId">The identifier of the package reference.</param>
-    /// <param name="packageReference">The package reference to put.</param>
+    /// <param name="packageReference">The package reference to set.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task SetAsync(Guid packageReferenceId, PackageReference packageReference, CancellationToken cancellationToken = default);
+    Task SetAsync(PackageReference packageReference, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Deletes a package reference.
@@ -857,21 +856,20 @@ public class PackageReferencesClient : IPackageReferencesClient
     }
 
     /// <inheritdoc />
-    public Task<IDictionary<string, PackageReference>> GetAsync(CancellationToken cancellationToken = default)
+    public Task<IList<PackageReference>> GetAsync(CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/packagereferences");
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<IDictionary<string, PackageReference>>("GET", url, "application/json", default, default, cancellationToken);
+        return _client.InvokeAsync<IList<PackageReference>>("GET", url, "application/json", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
-    public Task SetAsync(Guid packageReferenceId, PackageReference packageReference, CancellationToken cancellationToken = default)
+    public Task SetAsync(PackageReference packageReference, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/packagereferences/{packageReferenceId}");
-        urlBuilder.Replace("{packageReferenceId}", Uri.EscapeDataString(Convert.ToString(packageReferenceId, CultureInfo.InvariantCulture)!));
+        urlBuilder.Append("/api/v1/packagereferences");
 
         var url = urlBuilder.ToString();
         return _client.InvokeAsync<object>("PUT", url, "", "application/json", JsonContent.Create(packageReference, options: Utilities.JsonOptions), cancellationToken);
@@ -907,7 +905,7 @@ public class PackageReferencesClient : IPackageReferencesClient
 public interface ISourcesClient
 {
     /// <summary>
-    /// Gets the list of sources.
+    /// Gets the list of source descriptions.
     /// </summary>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
     Task<IList<ExtensionDescription>> GetDescriptionsAsync(CancellationToken cancellationToken = default);
@@ -917,16 +915,15 @@ public interface ISourcesClient
     /// </summary>
     /// <param name="username">The optional username. If not specified, the name of the current user will be used.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<IDictionary<string, DataSourceRegistration>> GetRegistrationsAsync(string? username = default, CancellationToken cancellationToken = default);
+    Task<IList<DataSourceRegistration>> GetRegistrationsAsync(string? username = default, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Puts a backend source.
     /// </summary>
-    /// <param name="registrationId">The identifier of the registration.</param>
     /// <param name="username">The optional username. If not specified, the name of the current user will be used.</param>
-    /// <param name="registration">The registration to put.</param>
+    /// <param name="registration">The registration to set.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<StreamResponse> SetRegistrationAsync(Guid registrationId, DataSourceRegistration registration, string? username = default, CancellationToken cancellationToken = default);
+    Task<StreamResponse> SetRegistrationAsync(DataSourceRegistration registration, string? username = default, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Deletes a backend source.
@@ -959,7 +956,7 @@ public class SourcesClient : ISourcesClient
     }
 
     /// <inheritdoc />
-    public Task<IDictionary<string, DataSourceRegistration>> GetRegistrationsAsync(string? username = default, CancellationToken cancellationToken = default)
+    public Task<IList<DataSourceRegistration>> GetRegistrationsAsync(string? username = default, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/sources/registrations");
@@ -973,15 +970,14 @@ public class SourcesClient : ISourcesClient
         urlBuilder.Append(query);
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<IDictionary<string, DataSourceRegistration>>("GET", url, "application/json", default, default, cancellationToken);
+        return _client.InvokeAsync<IList<DataSourceRegistration>>("GET", url, "application/json", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
-    public Task<StreamResponse> SetRegistrationAsync(Guid registrationId, DataSourceRegistration registration, string? username = default, CancellationToken cancellationToken = default)
+    public Task<StreamResponse> SetRegistrationAsync(DataSourceRegistration registration, string? username = default, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/sources/registrations/{registrationId}");
-        urlBuilder.Replace("{registrationId}", Uri.EscapeDataString(Convert.ToString(registrationId, CultureInfo.InvariantCulture)!));
+        urlBuilder.Append("/api/v1/sources/registrations");
 
         var queryValues = new Dictionary<string, string>()
         {
@@ -1145,7 +1141,7 @@ public interface IUsersClient
     /// </summary>
     /// <param name="userId">The identifier of the user.</param>
     /// <param name="claimId">The identifier of claim.</param>
-    /// <param name="claim">The claim to put.</param>
+    /// <param name="claim">The claim to set.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
     Task<StreamResponse> SetClaimAsync(string userId, Guid claimId, NexusClaim claim, CancellationToken cancellationToken = default);
 
@@ -1327,7 +1323,7 @@ public class UsersClient : IUsersClient
 public interface IWritersClient
 {
     /// <summary>
-    /// Gets the list of writers.
+    /// Gets the list of writer descriptions.
     /// </summary>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
     Task<IList<ExtensionDescription>> GetDescriptionsAsync(CancellationToken cancellationToken = default);
@@ -1630,14 +1626,16 @@ public enum RepresentationKind
 /// <param name="Title">The title.</param>
 /// <param name="Contact">A nullable contact.</param>
 /// <param name="License">A nullable license.</param>
-/// <param name="SourceProjectUrl">A nullable source project website URL.</param>
-/// <param name="SourceRepositoryUrl">A nullable source repository URL.</param>
 /// <param name="IsReadable">A boolean which indicates if the catalog is accessible.</param>
 /// <param name="IsWritable">A boolean which indicates if the catalog is editable.</param>
 /// <param name="IsReleased">A boolean which indicates if the catalog is released.</param>
 /// <param name="IsVisible">A boolean which indicates if the catalog is visible.</param>
 /// <param name="IsOwner">A boolean which indicates if the catalog is owned by the current user.</param>
-public record CatalogInfo(string Id, string Title, string? Contact, string? License, string? SourceProjectUrl, string? SourceRepositoryUrl, bool IsReadable, bool IsWritable, bool IsReleased, bool IsVisible, bool IsOwner);
+/// <param name="DataSourceInfoUrl">A nullable info URL of the data source.</param>
+/// <param name="DataSourceType">The data source type.</param>
+/// <param name="DataSourceRegistrationId">The data source registration identifier.</param>
+/// <param name="PackageReferenceId">The package reference identifier.</param>
+public record CatalogInfo(string Id, string Title, string? Contact, string? License, bool IsReadable, bool IsWritable, bool IsReleased, bool IsVisible, bool IsOwner, string? DataSourceInfoUrl, string DataSourceType, Guid DataSourceRegistrationId, Guid PackageReferenceId);
 
 /// <summary>
 /// A catalog time range.
@@ -1740,31 +1738,32 @@ public record ExportParameters(DateTime Begin, DateTime End, TimeSpan FilePeriod
 /// <summary>
 /// A package reference.
 /// </summary>
+/// <param name="Id">The unique identifier of the package reference.</param>
 /// <param name="Provider">The provider which loads the package.</param>
 /// <param name="Configuration">The configuration of the package reference.</param>
-/// <param name="ProjectUrl">An optional project website URL.</param>
-/// <param name="RepositoryUrl">An optional source repository URL.</param>
-public record PackageReference(string Provider, IDictionary<string, string> Configuration, string? ProjectUrl, string? RepositoryUrl);
+public record PackageReference(Guid Id, string Provider, IDictionary<string, string> Configuration);
 
 /// <summary>
 /// An extension description.
 /// </summary>
 /// <param name="Type">The extension type.</param>
 /// <param name="Description">A nullable description.</param>
+/// <param name="ProjectUrl">A nullable project website URL.</param>
+/// <param name="RepositoryUrl">A nullable source repository URL.</param>
 /// <param name="AdditionalInfo">A nullable dictionary with additional information.</param>
-public record ExtensionDescription(string Type, string? Description, IDictionary<string, string>? AdditionalInfo);
+public record ExtensionDescription(string Type, string? Description, string? ProjectUrl, string? RepositoryUrl, IDictionary<string, string>? AdditionalInfo);
 
 /// <summary>
 /// A data source registration.
 /// </summary>
+/// <param name="Id">The unique identifier of the data source registration.</param>
 /// <param name="Type">The type of the data source.</param>
 /// <param name="ResourceLocator">An URL which points to the data.</param>
 /// <param name="Configuration">Configuration parameters for the instantiated source.</param>
-/// <param name="ProjectUrl">An optional project website URL.</param>
-/// <param name="RepositoryUrl">An optional source repository URL.</param>
+/// <param name="InfoUrl">An optional info URL.</param>
 /// <param name="ReleasePattern">An optional regular expressions pattern to select the catalogs to be released. By default, all catalogs will be released.</param>
 /// <param name="VisibilityPattern">An optional regular expressions pattern to select the catalogs to be visible. By default, all catalogs will be visible.</param>
-public record DataSourceRegistration(string Type, Uri ResourceLocator, IDictionary<string, string> Configuration, string? ProjectUrl, string? RepositoryUrl, string ReleasePattern, string VisibilityPattern);
+public record DataSourceRegistration(Guid Id, string Type, Uri ResourceLocator, IDictionary<string, string> Configuration, string? InfoUrl, string ReleasePattern, string VisibilityPattern);
 
 /// <summary>
 /// Describes an OpenID connect provider.

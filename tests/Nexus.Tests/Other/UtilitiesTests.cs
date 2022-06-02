@@ -4,6 +4,7 @@ using Nexus.Utilities;
 using System.Security.Claims;
 using System.Text.Json;
 using Xunit;
+using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Other
 {
@@ -35,10 +36,14 @@ namespace Other
                 ? new Claim[] { new Claim(ClaimTypes.Role, NexusRoles.ADMINISTRATOR) }
                 : new Claim[0];
 
-            var principal = new ClaimsPrincipal(new ClaimsIdentity(
-                adminClaim
-                .Concat(canReadCatalog.Select(value => new Claim(NexusClaims.CAN_READ_CATALOG, value)))
-                .Concat(canAccessGroup.Select(value => new Claim(NexusClaims.CAN_READ_GROUP, value))), authenticationType));
+            var principal = new ClaimsPrincipal(
+                new ClaimsIdentity(
+                    claims: adminClaim
+                        .Concat(canReadCatalog.Select(value => new Claim(NexusClaims.CAN_READ_CATALOG, value)))
+                        .Concat(canAccessGroup.Select(value => new Claim(NexusClaims.CAN_READ_GROUP, value))),
+                    authenticationType,
+                    nameType: Claims.Name,
+                    roleType: Claims.Role));
 
             // Act
             var actual = AuthorizationUtilities.IsCatalogReadable(catalogId, catalogMetadata, principal);
@@ -68,9 +73,13 @@ namespace Other
                 ? new Claim[] { new Claim(ClaimTypes.Role, NexusRoles.ADMINISTRATOR) }
                 : new Claim[0];
 
-            var principal = new ClaimsPrincipal(new ClaimsIdentity(
-               adminClaim
-               .Concat(canWriteCatalog.Select(value => new Claim(NexusClaims.CAN_WRITE_CATALOG, value))), authenticationType));
+            var principal = new ClaimsPrincipal(
+                new ClaimsIdentity(
+                    claims: adminClaim
+                        .Concat(canWriteCatalog.Select(value => new Claim(NexusClaims.CAN_WRITE_CATALOG, value))), 
+                    authenticationType,
+                    nameType: Claims.Name,
+                    roleType: Claims.Role));
 
             // Act
             var actual = AuthorizationUtilities.IsCatalogWritable(catalogId, principal);

@@ -396,13 +396,15 @@ class CatalogInfo:
         title: The title.
         contact: A nullable contact.
         license: A nullable license.
-        source_project_url: A nullable source project website URL.
-        source_repository_url: A nullable source repository URL.
         is_readable: A boolean which indicates if the catalog is accessible.
         is_writable: A boolean which indicates if the catalog is editable.
         is_released: A boolean which indicates if the catalog is released.
         is_visible: A boolean which indicates if the catalog is visible.
         is_owner: A boolean which indicates if the catalog is owned by the current user.
+        data_source_info_url: A nullable info URL of the data source.
+        data_source_type: The data source type.
+        data_source_registration_id: The data source registration identifier.
+        package_reference_id: The package reference identifier.
     """
 
     id: str
@@ -416,12 +418,6 @@ class CatalogInfo:
 
     license: Optional[str]
     """A nullable license."""
-
-    source_project_url: Optional[str]
-    """A nullable source project website URL."""
-
-    source_repository_url: Optional[str]
-    """A nullable source repository URL."""
 
     is_readable: bool
     """A boolean which indicates if the catalog is accessible."""
@@ -437,6 +433,18 @@ class CatalogInfo:
 
     is_owner: bool
     """A boolean which indicates if the catalog is owned by the current user."""
+
+    data_source_info_url: Optional[str]
+    """A nullable info URL of the data source."""
+
+    data_source_type: str
+    """The data source type."""
+
+    data_source_registration_id: UUID
+    """The data source registration identifier."""
+
+    package_reference_id: UUID
+    """The package reference identifier."""
 
 
 @dataclass
@@ -611,23 +619,19 @@ class PackageReference:
     A package reference.
 
     Args:
+        id: The unique identifier of the package reference.
         provider: The provider which loads the package.
         configuration: The configuration of the package reference.
-        project_url: An optional project website URL.
-        repository_url: An optional source repository URL.
     """
+
+    id: UUID
+    """The unique identifier of the package reference."""
 
     provider: str
     """The provider which loads the package."""
 
     configuration: dict[str, str]
     """The configuration of the package reference."""
-
-    project_url: Optional[str]
-    """An optional project website URL."""
-
-    repository_url: Optional[str]
-    """An optional source repository URL."""
 
 
 @dataclass
@@ -638,6 +642,8 @@ class ExtensionDescription:
     Args:
         type: The extension type.
         description: A nullable description.
+        project_url: A nullable project website URL.
+        repository_url: A nullable source repository URL.
         additional_info: A nullable dictionary with additional information.
     """
 
@@ -646,6 +652,12 @@ class ExtensionDescription:
 
     description: Optional[str]
     """A nullable description."""
+
+    project_url: Optional[str]
+    """A nullable project website URL."""
+
+    repository_url: Optional[str]
+    """A nullable source repository URL."""
 
     additional_info: Optional[dict[str, str]]
     """A nullable dictionary with additional information."""
@@ -657,14 +669,17 @@ class DataSourceRegistration:
     A data source registration.
 
     Args:
+        id: The unique identifier of the data source registration.
         type: The type of the data source.
         resource_locator: An URL which points to the data.
         configuration: Configuration parameters for the instantiated source.
-        project_url: An optional project website URL.
-        repository_url: An optional source repository URL.
+        info_url: An optional info URL.
         release_pattern: An optional regular expressions pattern to select the catalogs to be released. By default, all catalogs will be released.
         visibility_pattern: An optional regular expressions pattern to select the catalogs to be visible. By default, all catalogs will be visible.
     """
+
+    id: UUID
+    """The unique identifier of the data source registration."""
 
     type: str
     """The type of the data source."""
@@ -675,11 +690,8 @@ class DataSourceRegistration:
     configuration: dict[str, str]
     """Configuration parameters for the instantiated source."""
 
-    project_url: Optional[str]
-    """An optional project website URL."""
-
-    repository_url: Optional[str]
-    """An optional source repository URL."""
+    info_url: Optional[str]
+    """An optional info URL."""
 
     release_pattern: str
     """An optional regular expressions pattern to select the catalogs to be released. By default, all catalogs will be released."""
@@ -1142,7 +1154,7 @@ class PackageReferencesClient:
     def __init__(self, client: NexusAsyncClient):
         self._client = client
 
-    def get(self) -> Awaitable[dict[str, PackageReference]]:
+    def get(self) -> Awaitable[list[PackageReference]]:
         """
         Gets the list of package references.
 
@@ -1151,18 +1163,16 @@ class PackageReferencesClient:
 
         url = "/api/v1/packagereferences"
 
-        return self._client._invoke_async(dict[str, PackageReference], "GET", url, "application/json", None, None)
+        return self._client._invoke_async(list[PackageReference], "GET", url, "application/json", None, None)
 
-    def set(self, package_reference_id: UUID, package_reference: PackageReference) -> Awaitable[None]:
+    def set(self, package_reference: PackageReference) -> Awaitable[None]:
         """
         Puts a package reference.
 
         Args:
-            package_reference_id: The identifier of the package reference.
         """
 
-        url = "/api/v1/packagereferences/{packageReferenceId}"
-        url = url.replace("{packageReferenceId}", quote(str(package_reference_id), safe=""))
+        url = "/api/v1/packagereferences"
 
         return self._client._invoke_async(type(None), "PUT", url, "", "application/json", json.dumps(package_reference, cls=_MyEncoder))
 
@@ -1203,7 +1213,7 @@ class SourcesClient:
 
     def get_descriptions(self) -> Awaitable[list[ExtensionDescription]]:
         """
-        Gets the list of sources.
+        Gets the list of source descriptions.
 
         Args:
         """
@@ -1212,7 +1222,7 @@ class SourcesClient:
 
         return self._client._invoke_async(list[ExtensionDescription], "GET", url, "application/json", None, None)
 
-    def get_registrations(self, username: Optional[str] = None) -> Awaitable[dict[str, DataSourceRegistration]]:
+    def get_registrations(self, username: Optional[str] = None) -> Awaitable[list[DataSourceRegistration]]:
         """
         Gets the list of backend sources.
 
@@ -1229,19 +1239,17 @@ class SourcesClient:
         query: str = "?" + "&".join(f"{key}={value}" for (key, value) in queryValues.items())
         url += query
 
-        return self._client._invoke_async(dict[str, DataSourceRegistration], "GET", url, "application/json", None, None)
+        return self._client._invoke_async(list[DataSourceRegistration], "GET", url, "application/json", None, None)
 
-    def set_registration(self, registration_id: UUID, registration: DataSourceRegistration, username: Optional[str] = None) -> Awaitable[StreamResponse]:
+    def set_registration(self, registration: DataSourceRegistration, username: Optional[str] = None) -> Awaitable[StreamResponse]:
         """
         Puts a backend source.
 
         Args:
-            registration_id: The identifier of the registration.
             username: The optional username. If not specified, the name of the current user will be used.
         """
 
-        url = "/api/v1/sources/registrations/{registrationId}"
-        url = url.replace("{registrationId}", quote(str(registration_id), safe=""))
+        url = "/api/v1/sources/registrations"
 
         queryValues: dict[str, str] = {
             "username": quote(_to_string(username), safe=""),
@@ -1492,7 +1500,7 @@ class WritersClient:
 
     def get_descriptions(self) -> Awaitable[list[ExtensionDescription]]:
         """
-        Gets the list of writers.
+        Gets the list of writer descriptions.
 
         Args:
         """

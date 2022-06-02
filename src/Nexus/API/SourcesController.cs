@@ -19,7 +19,7 @@ namespace Nexus.Controllers
     {
         // GET      /api/sources/descriptions
         // GET      /api/sources/registrations
-        // PUT      /api/sources/registrations/{registrationId}
+        // PUT      /api/sources/registrations
         // DELETE   /api/sources/registrations/{registrationId}
 
         #region Fields
@@ -45,7 +45,7 @@ namespace Nexus.Controllers
         #endregion
 
         /// <summary>
-        /// Gets the list of sources.
+        /// Gets the list of source descriptions.
         /// </summary>
         [HttpGet("descriptions")]
         public List<ExtensionDescription> GetDescriptions()
@@ -60,16 +60,16 @@ namespace Nexus.Controllers
         /// <param name="username">The optional username. If not specified, the name of the current user will be used.</param>
         /// <returns></returns>
         [HttpGet("registrations")]
-        public ActionResult<IReadOnlyDictionary<Guid, DataSourceRegistration>>
-            GetRegistrations([FromQuery] string? username = default)
+        public ActionResult<IEnumerable<DataSourceRegistration>> GetRegistrations(
+            [FromQuery] string? username = default)
         {
             if (TryAuthenticate(username, out var actualUsername, out var response))
             {
                 if (_appState.Project.UserConfigurations.TryGetValue(actualUsername, out var userConfiguration))
-                    return Ok(userConfiguration.DataSourceRegistrations);
+                    return Ok(userConfiguration.DataSourceRegistrations.Values);
 
                 else
-                    return new Dictionary<Guid, DataSourceRegistration>();
+                    return Ok(Enumerable.Empty<DataSourceRegistration>());
             }
 
             else
@@ -81,19 +81,16 @@ namespace Nexus.Controllers
         /// <summary>
         /// Puts a backend source.
         /// </summary>
-        /// <param name="registrationId">The identifier of the registration.</param>
-        /// <param name="registration">The registration to put.</param>
+        /// <param name="registration">The registration to set.</param>
         /// <param name="username">The optional username. If not specified, the name of the current user will be used.</param>
-        [HttpPut("registrations/{registrationId}")]
-        public async Task<ActionResult>
-            SetRegistrationAsync(
-            Guid registrationId,
+        [HttpPut("registrations")]
+        public async Task<ActionResult> SetRegistrationAsync(
             [FromBody] DataSourceRegistration registration,
             [FromQuery] string? username = default)
         {
             if (TryAuthenticate(username, out var actualUsername, out var response))
             {
-                await _appStateManager.PutDataSourceRegistrationAsync(actualUsername, registrationId, registration);
+                await _appStateManager.PutDataSourceRegistrationAsync(actualUsername, registration);
                 return Ok();
             }
 
@@ -109,8 +106,7 @@ namespace Nexus.Controllers
         /// <param name="registrationId">The identifier of the registration.</param>
         /// <param name="username">The optional username. If not specified, the name of the current user will be used.</param>
         [HttpDelete("registrations/{registrationId}")]
-        public async Task<ActionResult>
-            DeleteRegistrationAsync(
+        public async Task<ActionResult> DeleteRegistrationAsync(
             Guid registrationId,
             [FromQuery] string? username = default)
         {
@@ -126,17 +122,18 @@ namespace Nexus.Controllers
             }
         }
 
-        private List<ExtensionDescription> GetExtensionDescriptions(IEnumerable<Type> extensions)
+        private List<ExtensionDescription> GetExtensionDescriptions(
+            IEnumerable<Type> extensions)
         {
             return extensions.Select(type =>
             {
                 var attribute = type.GetCustomAttribute<ExtensionDescriptionAttribute>(inherit: false);
 
-                var description = attribute is null
-                    ? null
-                    : attribute.Description;
+                if (attribute is null)
+                    return new ExtensionDescription(type.FullName!, default, default, default, default);
 
-                return new ExtensionDescription(type.FullName ?? throw new Exception("fullname is null"), description, default);
+                else
+                    return new ExtensionDescription(type.FullName!, attribute.Description, attribute.ProjectUrl, attribute.RepositoryUrl, default);
             })
             .ToList();
         }

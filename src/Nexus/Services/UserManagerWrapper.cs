@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Nexus.Core;
 using System.Security.Claims;
+using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Nexus.Services
 {
@@ -37,7 +38,12 @@ namespace Nexus.Services
                 var claims = await userManager.GetClaimsAsync(user);
                 claims.Add(new Claim(ClaimTypes.Name, userId));
 
-                var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, "Fake authentication type"));
+                var principal = new ClaimsPrincipal(
+                    new ClaimsIdentity(
+                        claims,
+                        authenticationType: "Fake authentication type",
+                        nameType: Claims.Name,
+                        roleType: Claims.Role));
 
                 return principal;
             }

@@ -100,6 +100,8 @@ namespace Nexus.Controllers
                 return childContainers
                     .Select(childContainer =>
                     {
+#warning Create CatalogInfo along with CatalogContainer to improve performance and reduce GC pressure?
+
                         var id = childContainer.Id;
                         var title = childContainer.Title;
                         var contact = childContainer.Metadata.Contact;
@@ -108,14 +110,6 @@ namespace Nexus.Controllers
 
                         if (_databaseService.TryReadAttachment(childContainer.Id, "LICENSE.md", out var attachment))
                             license = new StreamReader(attachment).ReadToEnd();
-
-                        var sourceProjectUrl = !string.IsNullOrWhiteSpace(childContainer.DataSourceRegistration.ProjectUrl)
-                            ? childContainer.DataSourceRegistration.ProjectUrl
-                            : childContainer.PackageReference.ProjectUrl;
-
-                        var sourceRepositoryUrl = !string.IsNullOrWhiteSpace(childContainer.DataSourceRegistration.RepositoryUrl)
-                            ? childContainer.DataSourceRegistration.RepositoryUrl
-                            : childContainer.PackageReference.RepositoryUrl;
 
                         var isReadable = AuthorizationUtilities.IsCatalogReadable(childContainer.Id, childContainer.Metadata, childContainer.Owner, User);
                         var isWritable = AuthorizationUtilities.IsCatalogWritable(childContainer.Id, User);
@@ -133,13 +127,15 @@ namespace Nexus.Controllers
                             title,
                             contact,
                             license,
-                            sourceProjectUrl,
-                            sourceRepositoryUrl,
                             isReadable,
                             isWritable,
                             isReleased,
                             isVisible,
-                            isOwner
+                            isOwner,
+                            childContainer.DataSourceRegistration.InfoUrl,
+                            childContainer.DataSourceRegistration.Type,
+                            childContainer.DataSourceRegistration.Id,
+                            childContainer.PackageReference.Id
                         );
                     })
                     .ToArray();
@@ -224,14 +220,14 @@ namespace Nexus.Controllers
             {
                 var response = ProtectCatalogAsync<string[]>(catalogId, ensureReadable: true, ensureWritable: false, catalog =>
                 {
-                    return Task.FromResult((ActionResult<string[]>)_databaseService.EnumerateAttachments(catalogId).ToArray());
+                    return Task.FromResult<ActionResult<string[]>>(_databaseService.EnumerateAttachments(catalogId).ToArray());
                 }, cancellationToken);
 
                 return response;
             }
             catch (Exception ex)
             {
-                return Task.FromResult((ActionResult<string[]>)
+                return Task.FromResult<ActionResult<string[]>>(
                     UnprocessableEntity(ex.Message));
             }
         }
@@ -266,8 +262,7 @@ namespace Nexus.Controllers
                 }
                 catch (IOException ex)
                 {
-                    return (ActionResult)
-                        StatusCode(StatusCodes.Status423Locked, ex.Message);
+                    return StatusCode(StatusCodes.Status423Locked, ex.Message);
                 }
                 catch (Exception ex)
                 {
@@ -281,8 +276,7 @@ namespace Nexus.Controllers
                         //
                     }
 
-                    return (ActionResult)
-                        UnprocessableEntity(ex.Message);
+                    return UnprocessableEntity(ex.Message);
                 }
             }, cancellationToken);
 
@@ -310,17 +304,17 @@ namespace Nexus.Controllers
                 try
                 {
                     _databaseService.DeleteAttachment(catalogId, attachmentId);
-                    return Task.FromResult((ActionResult)
+                    return Task.FromResult<ActionResult>(
                         Ok());
                 }
                 catch (IOException ex)
                 {
-                    return Task.FromResult((ActionResult)
+                    return Task.FromResult<ActionResult>(
                         StatusCode(StatusCodes.Status423Locked, ex.Message));
                 }
                 catch (Exception ex)
                 {
-                    return Task.FromResult((ActionResult)
+                    return Task.FromResult<ActionResult>(
                         UnprocessableEntity(ex.Message));
                 }
             }, cancellationToken);
@@ -351,23 +345,23 @@ namespace Nexus.Controllers
                     if (_databaseService.TryReadAttachment(catalogId, attachmentId, out var attachmentStream))
                     {
                         Response.Headers.ContentLength = attachmentStream.Length;
-                        return Task.FromResult((ActionResult)
+                        return Task.FromResult<ActionResult>(
                             File(attachmentStream, "application/octet-stream", attachmentId));
                     }
                     else
                     {
-                        return Task.FromResult((ActionResult)
+                        return Task.FromResult<ActionResult>(
                             NotFound($"Could not find attachment {attachmentId} for catalog {catalogId}."));
                     }
                 }
                 catch (IOException ex)
                 {
-                    return Task.FromResult((ActionResult)
+                    return Task.FromResult<ActionResult>(
                         StatusCode(StatusCodes.Status423Locked, ex.Message));
                 }
                 catch (Exception ex)
                 {
-                    return Task.FromResult((ActionResult)
+                    return Task.FromResult<ActionResult>(
                         UnprocessableEntity(ex.Message));
                 }
             }, cancellationToken);
@@ -400,7 +394,7 @@ namespace Nexus.Controllers
         /// Puts the catalog metadata.
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="catalogMetadata">The catalog metadata to put.</param>
+        /// <param name="catalogMetadata">The catalog metadata to set.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpPut("{catalogId}/metadata")]
         public Task

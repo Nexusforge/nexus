@@ -34,7 +34,7 @@ namespace Nexus.Controllers
         #region Methods
 
         /// <summary>
-        /// Gets the list of writers.
+        /// Gets the list of writer descriptions.
         /// </summary>
         [HttpGet("descriptions")]
         public List<ExtensionDescription> GetDescriptions()

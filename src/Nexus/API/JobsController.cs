@@ -288,7 +288,7 @@ namespace Nexus.Controllers
                     return null;
                 });
 
-                return Task.FromResult((ActionResult)Accepted(GetAcceptUrl(job.Id), job));
+                return Task.FromResult<ActionResult>(Accepted(GetAcceptUrl(job.Id), job));
             }, cancellationToken);
 
             return (ActionResult<Job>)response;

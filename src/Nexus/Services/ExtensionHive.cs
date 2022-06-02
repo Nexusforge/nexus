@@ -77,10 +77,9 @@ namespace Nexus.Services
             }
 
             var nexusPackageReference = new PackageReference(
+                Id: PackageController.BUILTIN_ID,
                 Provider: PackageController.BUILTIN_PROVIDER,
-                Configuration: new Dictionary<string, string>(),
-                ProjectUrl: "https://github.com/Nexusforge/nexus",
-                RepositoryUrl: "https://github.com/Nexusforge/nexus/blob/master/src/Nexus/Extensions"
+                Configuration: new Dictionary<string, string>()
             );
 
             packageReferences = new List<PackageReference>() { nexusPackageReference }.Concat(packageReferences);

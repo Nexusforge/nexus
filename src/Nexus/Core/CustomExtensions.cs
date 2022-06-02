@@ -21,7 +21,7 @@ namespace Nexus.Core
 
                 var aggregateExceptions = tasks
                     .Where(task => task.IsFaulted && task.Exception is not null)
-                    .Select(task => task.Exception ?? throw new Exception("exception is null"))
+                    .Select(task => task.Exception!)
                     .ToArray();
 
                 var flattenedAggregateException = new AggregateException(aggregateExceptions).Flatten();

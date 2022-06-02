@@ -17,7 +17,8 @@ namespace Nexus.UI.Services
         {
             ClaimsIdentity identity;
 
-            const string nameClaim = "name";
+            const string NAME_CLAIM = "name";
+            const string ROLE_CLAIM = "role";
 
             try
             {
@@ -26,13 +27,13 @@ namespace Nexus.UI.Services
                 var claims = user
                     .Claims
                     .Select(entry => new Claim(entry.Value.Type, entry.Value.Value))
-                    .Concat(new[] { new Claim(nameClaim, user.Name) });
+                    .Concat(new[] { new Claim(NAME_CLAIM, user.Name) });
 
                 identity = new ClaimsIdentity(
                     claims, 
                     authenticationType: user.Id.Split(new[] { '@' }, count: 2)[1],
-                    nameType: nameClaim,
-                    roleType: "role");
+                    nameType: NAME_CLAIM,
+                    roleType: ROLE_CLAIM);
             }
             catch (Exception)
             {

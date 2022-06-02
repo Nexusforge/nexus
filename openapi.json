@@ -447,7 +447,7 @@
         ],
         "requestBody": {
           "x-name": "catalogMetadata",
-          "description": "The catalog metadata to put.",
+          "description": "The catalog metadata to set.",
           "content": {
             "application/json": {
               "schema": {
@@ -735,8 +735,8 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": {
+                  "type": "array",
+                  "items": {
                     "$ref": "#/components/schemas/PackageReference"
                   }
                 }
@@ -744,31 +744,16 @@
             }
           }
         }
-      }
-    },
-    "/api/v1/packagereferences/{packageReferenceId}": {
+      },
       "put": {
         "tags": [
           "PackageReferences"
         ],
         "summary": "Puts a package reference.",
         "operationId": "PackageReferences_Set",
-        "parameters": [
-          {
-            "name": "packageReferenceId",
-            "in": "path",
-            "required": true,
-            "description": "The identifier of the package reference.",
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
         "requestBody": {
           "x-name": "packageReference",
-          "description": "The package reference to put.",
+          "description": "The package reference to set.",
           "content": {
             "application/json": {
               "schema": {
@@ -777,14 +762,16 @@
             }
           },
           "required": true,
-          "x-position": 2
+          "x-position": 1
         },
         "responses": {
           "200": {
             "description": ""
           }
         }
-      },
+      }
+    },
+    "/api/v1/packagereferences/{packageReferenceId}": {
       "delete": {
         "tags": [
           "PackageReferences"
@@ -853,7 +840,7 @@
         "tags": [
           "Sources"
         ],
-        "summary": "Gets the list of sources.",
+        "summary": "Gets the list of source descriptions.",
         "operationId": "Sources_GetDescriptions",
         "responses": {
           "200": {
@@ -897,8 +884,8 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": {
+                  "type": "array",
+                  "items": {
                     "$ref": "#/components/schemas/DataSourceRegistration"
                   }
                 }
@@ -906,9 +893,7 @@
             }
           }
         }
-      }
-    },
-    "/api/v1/sources/registrations/{registrationId}": {
+      },
       "put": {
         "tags": [
           "Sources"
@@ -917,17 +902,6 @@
         "operationId": "Sources_SetRegistration",
         "parameters": [
           {
-            "name": "registrationId",
-            "in": "path",
-            "required": true,
-            "description": "The identifier of the registration.",
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          },
-          {
             "name": "username",
             "in": "query",
             "description": "The optional username. If not specified, the name of the current user will be used.",
@@ -935,12 +909,12 @@
               "type": "string",
               "nullable": true
             },
-            "x-position": 3
+            "x-position": 2
           }
         ],
         "requestBody": {
           "x-name": "registration",
-          "description": "The registration to put.",
+          "description": "The registration to set.",
           "content": {
             "application/json": {
               "schema": {
@@ -949,7 +923,7 @@
             }
           },
           "required": true,
-          "x-position": 2
+          "x-position": 1
         },
         "responses": {
           "200": {
@@ -964,7 +938,9 @@
             }
           }
         }
-      },
+      }
+    },
+    "/api/v1/sources/registrations/{registrationId}": {
       "delete": {
         "tags": [
           "Sources"
@@ -1396,7 +1372,7 @@
         ],
         "requestBody": {
           "x-name": "claim",
-          "description": "The claim to put.",
+          "description": "The claim to set.",
           "content": {
             "application/json": {
               "schema": {
@@ -1470,7 +1446,7 @@
         "tags": [
           "Writers"
         ],
-        "summary": "Gets the list of writers.",
+        "summary": "Gets the list of writer descriptions.",
         "operationId": "Writers_GetDescriptions",
         "responses": {
           "200": {
@@ -1647,16 +1623,6 @@
             "description": "A nullable license.",
             "nullable": true
           },
-          "sourceProjectUrl": {
-            "type": "string",
-            "description": "A nullable source project website URL.",
-            "nullable": true
-          },
-          "sourceRepositoryUrl": {
-            "type": "string",
-            "description": "A nullable source repository URL.",
-            "nullable": true
-          },
           "isReadable": {
             "type": "boolean",
             "description": "A boolean which indicates if the catalog is accessible."
@@ -1676,6 +1642,25 @@
           "isOwner": {
             "type": "boolean",
             "description": "A boolean which indicates if the catalog is owned by the current user."
+          },
+          "dataSourceInfoUrl": {
+            "type": "string",
+            "description": "A nullable info URL of the data source.",
+            "nullable": true
+          },
+          "dataSourceType": {
+            "type": "string",
+            "description": "The data source type."
+          },
+          "dataSourceRegistrationId": {
+            "type": "string",
+            "description": "The data source registration identifier.",
+            "format": "guid"
+          },
+          "packageReferenceId": {
+            "type": "string",
+            "description": "The package reference identifier.",
+            "format": "guid"
           }
         }
       },
@@ -1867,6 +1852,11 @@
         "description": "A package reference.",
         "additionalProperties": false,
         "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique identifier of the package reference.",
+            "format": "guid"
+          },
           "provider": {
             "type": "string",
             "description": "The provider which loads the package."
@@ -1877,16 +1867,6 @@
             "additionalProperties": {
               "type": "string"
             }
-          },
-          "projectUrl": {
-            "type": "string",
-            "description": "An optional project website URL.",
-            "nullable": true
-          },
-          "repositoryUrl": {
-            "type": "string",
-            "description": "An optional source repository URL.",
-            "nullable": true
           }
         }
       },
@@ -1904,6 +1884,16 @@
             "description": "A nullable description.",
             "nullable": true
           },
+          "projectUrl": {
+            "type": "string",
+            "description": "A nullable project website URL.",
+            "nullable": true
+          },
+          "repositoryUrl": {
+            "type": "string",
+            "description": "A nullable source repository URL.",
+            "nullable": true
+          },
           "additionalInfo": {
             "type": "object",
             "description": "A nullable dictionary with additional information.",
@@ -1919,6 +1909,11 @@
         "description": "A data source registration.",
         "additionalProperties": false,
         "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique identifier of the data source registration.",
+            "format": "guid"
+          },
           "type": {
             "type": "string",
             "description": "The type of the data source."
@@ -1935,14 +1930,9 @@
               "type": "string"
             }
           },
-          "projectUrl": {
+          "infoUrl": {
             "type": "string",
-            "description": "An optional project website URL.",
-            "nullable": true
-          },
-          "repositoryUrl": {
-            "type": "string",
-            "description": "An optional source repository URL.",
+            "description": "An optional info URL.",
             "nullable": true
           },
           "releasePattern": {

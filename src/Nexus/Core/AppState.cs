@@ -11,8 +11,8 @@ namespace Nexus.Core
 
         public AppState()
         {
-            var entryAssembly = Assembly.GetEntryAssembly() ?? throw new Exception("entry assembly is null");
-            var version = entryAssembly.GetName().Version ?? throw new Exception("version is null");
+            var entryAssembly = Assembly.GetEntryAssembly()!;
+            var version = entryAssembly.GetName().Version!;
 
             Version = version.ToString();
         }

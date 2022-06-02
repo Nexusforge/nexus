@@ -73,11 +73,12 @@ namespace Nexus.Services
             /* special case: root */
             if (parent.Id == CatalogContainer.RootCatalogId)
             {
-                /* load builtin backend source */
+                /* load builtin data source */
                 var builtinDataSourceRegistrations = new DataSourceRegistration[]
                 {
                     new DataSourceRegistration(
-                        Type: typeof(Sample).FullName ?? throw new Exception("full name is null"),
+                        Id: Sample.RegistrationId,
+                        Type: typeof(Sample).FullName!,
                         ResourceLocator: new Uri("memory://localhost"),
                         Configuration: new Dictionary<string, string>()),
                 };
@@ -207,23 +208,23 @@ namespace Nexus.Services
             // Background:
             //
             // Nexus allows catalogs to have child catalogs like folders in a file system. To simplify things,
-            // it is required that a catalog that comes from a certain backend source can only have child
-            // catalogs of the very same backend source.
+            // it is required that a catalog that comes from a certain data source can only have child
+            // catalogs of the very same data source.
             // 
             // In general, child catalogs will be loaded lazily. Therefore, for any catalog of the provided array that
-            // appears to be a child catalog, it can be assumed it comes from a backend source other than the one
+            // appears to be a child catalog, it can be assumed it comes from a data source other than the one
             // from the parent catalog. Depending on the user's rights, this method decides which one will survive.
             // 
             //
             // Example:
             //
             // The following combination of catalogs is allowed:
-            // Backend source 1: /a + /a/a + /a/b
-            // Backend source 2: /a2/c
+            // data source 1: /a + /a/a + /a/b
+            // data source 2: /a2/c
             //
             // The following combination of catalogs is forbidden:
-            // Backend source 1: /a + /a/a + /a/b
-            // Backend source 2: /a/c
+            // data source 1: /a + /a/a + /a/b
+            // data source 2: /a/c
 
             var catalogPrototypesToKeep = new List<CatalogPrototype>();
 

@@ -134,7 +134,7 @@ namespace Microsoft.Extensions.DependencyInjection
                                 var isFirstUser = !dbContext.Users.Any();
 
                                 if (isFirstUser)
-                                    newClaims[Guid.NewGuid()] = new NexusClaim(ClaimTypes.Role, NexusRoles.ADMINISTRATOR);
+                                    newClaims[Guid.NewGuid()] = new NexusClaim(Claims.Role, NexusRoles.ADMINISTRATOR);
 
                                 user.Claims = new ReadOnlyDictionary<Guid, NexusClaim>(newClaims);
                                 dbContext.Users.Add(user);
@@ -159,7 +159,12 @@ namespace Microsoft.Extensions.DependencyInjection
 
                             // app identity
                             var claims = user.Claims.Select(entry => new Claim(entry.Value.Type, entry.Value.Value));
-                            var appIdentity = new ClaimsIdentity(claims, authenticationType: context.Scheme.Name);
+
+                            var appIdentity = new ClaimsIdentity(
+                                claims, 
+                                authenticationType: context.Scheme.Name,
+                                nameType: Claims.Name,
+                                roleType: Claims.Role);
 
                             principal.AddIdentity(appIdentity);
                         }

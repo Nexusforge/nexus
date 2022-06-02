@@ -77,13 +77,15 @@ public class AppState : IAppState
             Title: default!, 
             Contact: default, 
             License: default,
-            SourceProjectUrl: default,
-            SourceRepositoryUrl: default,
             IsReadable: true,
             IsWritable: false, 
             IsReleased: true,
             IsVisible: true,
-            IsOwner: false);
+            IsOwner: false,
+            DataSourceInfoUrl: default,
+            DataSourceType: default!,
+            DataSourceRegistrationId: default,
+            PackageReferenceId: default);
 
         RootCatalog = new FakeResourceCatalogViewModel(rootInfo, "", client, this, childCatalogInfosTask);
 

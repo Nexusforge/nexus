@@ -45,6 +45,6 @@
     private bool IsAdmin(ClaimsPrincipal user)
     {
         return user
-            .HasClaim(claim => claim.Type == "IsAdmin" && claim.Value == "true");
+            .IsInRole("Administrator");
     }
 }

@@ -9,6 +9,7 @@ using Nexus.Sources;
 using Nexus.Utilities;
 using System.Security.Claims;
 using Xunit;
+using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Services
 {
@@ -97,11 +98,13 @@ namespace Services
             var usernameA = "UserA";
 
             var claimsIdentityA = new ClaimsIdentity(
-               new Claim[] {
+                claims: new Claim[] {
                     new Claim(ClaimTypes.Name, usernameA),
                     new Claim(ClaimTypes.Role, NexusRoles.ADMINISTRATOR)
-               },
-               "Fake authentication type");
+                },
+                authenticationType: "Fake authentication type",
+                nameType: Claims.Name,
+                roleType: Claims.Role);
 
             var userA = new ClaimsPrincipal(claimsIdentityA);
 
@@ -109,10 +112,12 @@ namespace Services
             var usernameB = "UserB";
 
             var claimsIdentityB = new ClaimsIdentity(
-               new Claim[] {
+                claims: new Claim[] {
                     new Claim(ClaimTypes.Name, usernameB),
-               },
-               "Fake authentication type");
+                },
+                authenticationType: "Fake authentication type",
+                nameType: Claims.Name,
+                roleType: Claims.Role);
 
             var userB = new ClaimsPrincipal(claimsIdentityB);
 

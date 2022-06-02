@@ -89,14 +89,18 @@ namespace Microsoft.Extensions.DependencyInjection
                 var subject = "f9208f50-cd54-4165-8041-b5cd19af45a4";
 
                 // principal
-                var principal = new ClaimsPrincipal(new[]
+                var claims = new[]
                 {
-                    new ClaimsIdentity(new[]
-                    {
-                        new Claim(Claims.Subject, subject),
-                        new Claim(Claims.Name, "Star Lord"),
-                    }, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme)
-                });
+                    new Claim(Claims.Subject, subject),
+                    new Claim(Claims.Name, "Star Lord"),
+                };
+
+                var principal = new ClaimsPrincipal(
+                    new ClaimsIdentity(
+                        claims,
+                        authenticationType: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+                        nameType: Claims.Name,
+                        roleType: Claims.Role));
 
                 // authorization
                 var authorizationsEnumerable = authorizationManager.FindAsync(
@@ -124,8 +128,7 @@ namespace Microsoft.Extensions.DependencyInjection
                         scopes: principal.GetScopes());
                 }
 
-                principal
-                    .SetAuthorizationId(await authorizationManager.GetIdAsync(authorization));
+                principal.SetAuthorizationId(await authorizationManager.GetIdAsync(authorization));
 
                 // claims
                 foreach (var claim in principal.Claims)

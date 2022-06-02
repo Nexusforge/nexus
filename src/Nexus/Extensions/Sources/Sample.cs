@@ -4,10 +4,15 @@ using System.Runtime.InteropServices;
 
 namespace Nexus.Sources
 {
-    [ExtensionDescription("Provides a sample database.")]
+    [ExtensionDescription(
+        "Provides catalogs with sample data.", 
+        "https://github.com/Nexusforge/nexus",
+        "https://github.com/Nexusforge/nexus/blob/master/src/Nexus/Extensions/Sources/Sample.cs")]
     internal class Sample : IDataSource
     {
         #region Fields
+
+        public static Guid RegistrationId = new Guid("c2c724ab-9002-4879-9cd9-2147844bee96");
 
         private static double[] DATA = new double[]
         {

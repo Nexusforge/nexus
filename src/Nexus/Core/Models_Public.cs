@@ -1,4 +1,5 @@
 using Nexus.DataModel;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -182,15 +183,13 @@ namespace Nexus.Core
     /// <summary>
     /// A package reference.
     /// </summary>
+    /// <param name="Id">The unique identifier of the package reference.</param>
     /// <param name="Provider">The provider which loads the package.</param>
     /// <param name="Configuration">The configuration of the package reference.</param>
-    /// <param name="ProjectUrl">An optional project website URL.</param>
-    /// <param name="RepositoryUrl">An optional source repository URL.</param>
     public record PackageReference(
+        Guid Id,
         string Provider,
-        Dictionary<string, string> Configuration,
-        string? ProjectUrl = default,
-        string? RepositoryUrl = default);
+        Dictionary<string, string> Configuration);
 
     /// <summary>
     /// A structure for export parameters.
@@ -214,11 +213,15 @@ namespace Nexus.Core
     /// </summary>
     /// <param name="Type">The extension type.</param>
     /// <param name="Description">A nullable description.</param>
+    /// <param name="ProjectUrl">A nullable project website URL.</param>
+    /// <param name="RepositoryUrl">A nullable source repository URL.</param>
     /// <param name="AdditionalInfo">A nullable dictionary with additional information.</param>
     public record ExtensionDescription(
         string Type, 
         string? Description,
-        Dictionary<string, string>? AdditionalInfo);
+        string? ProjectUrl,
+        string? RepositoryUrl,
+        IReadOnlyDictionary<string, string>? AdditionalInfo);
 
     /// <summary>
     /// A structure for catalog information.
@@ -227,25 +230,29 @@ namespace Nexus.Core
     /// <param name="Title">The title.</param>
     /// <param name="Contact">A nullable contact.</param>
     /// <param name="License">A nullable license.</param>
-    /// <param name="SourceProjectUrl">A nullable source project website URL.</param>
-    /// <param name="SourceRepositoryUrl">A nullable source repository URL.</param>
     /// <param name="IsReadable">A boolean which indicates if the catalog is accessible.</param>
     /// <param name="IsWritable">A boolean which indicates if the catalog is editable.</param>
     /// <param name="IsReleased">A boolean which indicates if the catalog is released.</param>
     /// <param name="IsVisible">A boolean which indicates if the catalog is visible.</param>
     /// <param name="IsOwner">A boolean which indicates if the catalog is owned by the current user.</param>
+    /// <param name="DataSourceInfoUrl">A nullable info URL of the data source.</param>
+    /// <param name="DataSourceType">The data source type.</param>
+    /// <param name="DataSourceRegistrationId">The data source registration identifier.</param>
+    /// <param name="PackageReferenceId">The package reference identifier.</param>
     public record CatalogInfo(
         string Id,
         string Title,
         string? Contact,
         string? License,
-        string? SourceProjectUrl,
-        string? SourceRepositoryUrl,
         bool IsReadable,
         bool IsWritable,
         bool IsReleased,
         bool IsVisible,
-        bool IsOwner);
+        bool IsOwner,
+        string? DataSourceInfoUrl,
+        string DataSourceType,
+        Guid DataSourceRegistrationId,
+        Guid PackageReferenceId);
 
     /// <summary>
     /// A structure for catalog metadata.
@@ -277,19 +284,19 @@ namespace Nexus.Core
     /// <summary>
     /// A data source registration.
     /// </summary>
+    /// <param name="Id">The unique identifier of the data source registration.</param>
     /// <param name="Type">The type of the data source.</param>
     /// <param name="ResourceLocator">An URL which points to the data.</param>
     /// <param name="Configuration">Configuration parameters for the instantiated source.</param>
-    /// <param name="ProjectUrl">An optional project website URL.</param>
-    /// <param name="RepositoryUrl">An optional source repository URL.</param>
+    /// <param name="InfoUrl">An optional info URL.</param>
     /// <param name="ReleasePattern">An optional regular expressions pattern to select the catalogs to be released. By default, all catalogs will be released.</param>
     /// <param name="VisibilityPattern">An optional regular expressions pattern to select the catalogs to be visible. By default, all catalogs will be visible.</param>
     public record DataSourceRegistration(
+        Guid Id,
         string Type,
         Uri ResourceLocator,
         IReadOnlyDictionary<string, string> Configuration,
-        string? ProjectUrl = default,
-        string? RepositoryUrl = default,
+        string? InfoUrl = default,
         string ReleasePattern = ".*",
         string VisibilityPattern = ".*");
 

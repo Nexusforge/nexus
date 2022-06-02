@@ -82,7 +82,6 @@ namespace Nexus.Services
         }
 
         public async Task PutPackageReferenceAsync(
-            Guid packageReferenceId,
             PackageReference packageReference)
         {
             await _projectSemaphore.WaitAsync();
@@ -94,7 +93,7 @@ namespace Nexus.Services
                 var newPackageReferences = project.PackageReferences
                     .ToDictionary(current => current.Key, current => current.Value);
 
-                newPackageReferences[packageReferenceId] = packageReference;
+                newPackageReferences[packageReference.Id] = packageReference;
 
                 var newProject = project with
                 {
@@ -140,7 +139,7 @@ namespace Nexus.Services
             }
         }
 
-        public async Task PutDataSourceRegistrationAsync(string username, Guid registrationId, DataSourceRegistration registration)
+        public async Task PutDataSourceRegistrationAsync(string username, DataSourceRegistration registration)
         {
             await _projectSemaphore.WaitAsync();
 
@@ -154,7 +153,7 @@ namespace Nexus.Services
                 var newDataSourceRegistrations = userConfiguration.DataSourceRegistrations
                     .ToDictionary(current => current.Key, current => current.Value);
 
-                newDataSourceRegistrations[registrationId] = registration;
+                newDataSourceRegistrations[registration.Id] = registration;
 
                 var newUserConfiguration = userConfiguration with
                 {
@@ -256,15 +255,8 @@ namespace Nexus.Services
             /* for each data writer */
             foreach (var dataWriterType in _extensionHive.GetExtensions<IDataWriter>())
             {
-                var fullName = dataWriterType.FullName ?? throw new Exception("full name is null");
+                var fullName = dataWriterType.FullName!;
                 var additionalInfo = new Dictionary<string, string>();
-
-                /* description */
-                var attribute = dataWriterType.GetCustomAttribute<ExtensionDescriptionAttribute>(inherit: false);
-
-                var description = attribute is null
-                    ? null
-                    : attribute.Description;
 
                 /* format name */
                 try
@@ -310,7 +302,23 @@ namespace Nexus.Services
                     counter++;
                 }
 
-                dataWriterDescriptions.Add(new ExtensionDescription(fullName, description, additionalInfo));
+                var attribute = dataWriterType.GetCustomAttribute<ExtensionDescriptionAttribute>(inherit: false);
+
+                if (attribute is null)
+                    dataWriterDescriptions.Add(new ExtensionDescription(
+                        fullName, 
+                        default, 
+                        default,
+                        default, 
+                        additionalInfo));
+
+                else
+                    dataWriterDescriptions.Add(new ExtensionDescription(
+                        fullName, 
+                        attribute.Description, 
+                        attribute.ProjectUrl, 
+                        attribute.RepositoryUrl, 
+                        additionalInfo));
             }
 
             AppState.DataWriterDescriptions = dataWriterDescriptions;

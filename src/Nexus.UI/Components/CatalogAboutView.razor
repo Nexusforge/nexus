@@ -1,7 +1,9 @@
 ﻿<UIIconButton Icon="information-outline" @onclick="OpenCatalogAboutModal" />
 
 <UIModal @bind-IsOpen="_isCatalogAboutModalOpen" Title="About" Width="400px" AutoHeight="true">
-    @if (string.IsNullOrWhiteSpace(Catalog.Info.SourceProjectUrl) && string.IsNullOrWhiteSpace(Catalog.Info.SourceRepositoryUrl))
+
+
+    @if (_extensionDescription is null)
     {
         <div class="h-full flex justify-center items-center text-gray-300">
             <span class="mr-3 text-4xl mdi mdi-pac-man"></span>
@@ -10,21 +12,37 @@
     }
     else
     {
-        <h1 class="uppercase tracking-widest p-1 pt-2">data source</h1>
-
+        <h1 class="uppercase tracking-widest p-1 my-2 border-b border-gray-200 text-cyan-700">data source</h1>
         <div class="flex flex-col">
-            @if (!string.IsNullOrWhiteSpace(Catalog.Info.SourceProjectUrl))
+
+            <span class="p-1">@Catalog.Info.DataSourceType</span>
+
+            @if (!string.IsNullOrWhiteSpace(_extensionDescription.Description))
             {
-                <a class="text-cyan-700 hover:text-orange-500 p-1" href="@Catalog.Info.SourceProjectUrl" target="_blank">
-                    <span class="mdi mdi-web text-xl mr-1"></span>
+                <span class="p-1 text-sm">@_extensionDescription.Description</span>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(Catalog.Info.DataSourceInfoUrl))
+            {
+                <a class="text-gray-700 text-sm hover:text-orange-500 p-1" href="@Catalog.Info.DataSourceInfoUrl" target="_blank">
+                    <span class="mdi mdi-information-outline text-lg mr-1"></span>
+                    <span>Info Website</span>
+                </a>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(_extensionDescription.ProjectUrl))
+            {
+                <a class="text-cyan-700 text-sm hover:text-orange-500 p-1" href="@_extensionDescription.ProjectUrl" target="_blank">
+                    <span class="mdi mdi-web text-lg mr-1"></span>
                     <span>Project Website</span>
                 </a>
             }
-            @if (!string.IsNullOrWhiteSpace(Catalog.Info.SourceRepositoryUrl))
+
+            @if (!string.IsNullOrWhiteSpace(_extensionDescription.RepositoryUrl))
             {
-                <a class="text-cyan-700 hover:text-orange-500 p-1" href="@Catalog.Info.SourceRepositoryUrl" target="_blank">
-                    <span class="mdi mdi-source-branch text-xl mr-1"></span>
-                    <span>Repository</span>
+                <a class="text-cyan-700 text-sm hover:text-orange-500 p-1" href="@_extensionDescription.RepositoryUrl" target="_blank">
+                    <span class="mdi mdi-source-branch text-lg mr-1"></span>
+                    <span>Source Repository</span>
                 </a>
             }
         </div>
@@ -33,13 +51,36 @@
 
 @code {
     private bool _isCatalogAboutModalOpen;
+    private ExtensionDescription? _extensionDescription;
+    private IList<ExtensionDescription>? _extensionDescriptions;
 
     [Parameter]
     public ResourceCatalogViewModel Catalog { get; set; } = default!;
 
-   
+    [Inject]
+    public IAppState AppState { get; set; } = default!;
+
+    [Inject]
+    public INexusClient Client { get; set; } = default!;
+
     private void OpenCatalogAboutModal()
     {
         _isCatalogAboutModalOpen = true;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                _extensionDescriptions = await Client.Sources.GetDescriptionsAsync();
+                _extensionDescription = _extensionDescriptions.FirstOrDefault(current => current.Type == Catalog.Info.DataSourceType);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                AppState.AddError(ex);
+            }
+            
+            StateHasChanged();
+        });
     }
 }

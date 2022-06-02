@@ -15,7 +15,9 @@ namespace Nexus.PackageManagement
     {
         #region Fields
 
+        public static Guid BUILTIN_ID = new Guid("97d297d2-df6f-4c85-9d07-86bc64a041a6");
         public const string BUILTIN_PROVIDER = "nexus";
+
         private const int MAX_PAGES = 20;
         private const int PER_PAGE = 100;
 

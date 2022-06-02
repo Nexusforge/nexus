@@ -57,7 +57,7 @@ namespace Nexus.Controllers
         /// <returns></returns>
 
         [HttpGet]
-        public async Task<IActionResult> GetStreamAsync(
+        public async Task<ActionResult> GetStreamAsync(
             [BindRequired] string resourcePath,
             [BindRequired] DateTime begin,
             [BindRequired] DateTime end,
