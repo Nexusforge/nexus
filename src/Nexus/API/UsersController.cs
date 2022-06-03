@@ -259,7 +259,7 @@ namespace Nexus.Controllers
         /// Gets a list of users.
         /// </summary>
         /// <returns></returns>
-        [Authorize(Policy = Policies.RequireAdmin)]
+        [Authorize(Policy = NexusPolicies.RequireAdmin)]
         [HttpGet]
         public async Task<ActionResult<List<NexusUser>>> GetUsersAsync()
         {
@@ -273,7 +273,7 @@ namespace Nexus.Controllers
         /// Deletes a user.
         /// </summary>
         /// <param name="userId">The identifier of the user.</param>
-        [Authorize(Policy = Policies.RequireAdmin)]
+        [Authorize(Policy = NexusPolicies.RequireAdmin)]
         [HttpDelete("{userId}")]
         public async Task<ActionResult> DeleteUserAsync(
             string userId)
@@ -288,7 +288,7 @@ namespace Nexus.Controllers
         /// <param name="userId">The identifier of the user.</param>
         /// <param name="claimId">The identifier of claim.</param>
         /// <param name="claim">The claim to set.</param>
-        [Authorize(Policy = Policies.RequireAdmin)]
+        [Authorize(Policy = NexusPolicies.RequireAdmin)]
         [HttpPut("{userId}/{claimId}")]
         public async Task<ActionResult> SetClaimAsync(
             string userId,
@@ -318,7 +318,7 @@ namespace Nexus.Controllers
         /// </summary>
         /// <param name="userId">The identifier of the user.</param>
         /// <param name="claimId">The identifier of the claim.</param>
-        [Authorize(Policy = Policies.RequireAdmin)]
+        [Authorize(Policy = NexusPolicies.RequireAdmin)]
         [HttpDelete("{userId}/{claimId}")]
         public async Task<ActionResult> DeleteClaimAsync(
             string userId, 

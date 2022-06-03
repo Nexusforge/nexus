@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 namespace Nexus.Sources
 {
     [ExtensionDescription(
-        "Provides catalogs with sample data.", 
+        "Provides catalogs with sample data.",
         "https://github.com/Nexusforge/nexus",
         "https://github.com/Nexusforge/nexus/blob/master/src/Nexus/Extensions/Sources/Sample.cs")]
     internal class Sample : IDataSource
@@ -18,7 +18,7 @@ namespace Nexus.Sources
         {
             6.5, 6.7, 7.9, 8.1, 7.5, 7.6, 7.0, 6.5, 6.0, 5.9,
             5.8, 5.2, 4.6, 5.0, 5.1, 4.9, 5.3, 5.8, 5.9, 6.1,
-            5.9, 6.3, 6.5, 6.9, 7.1, 6.9, 7.1, 7.2, 7.6, 7.9, 
+            5.9, 6.3, 6.5, 6.9, 7.1, 6.9, 7.1, 7.2, 7.6, 7.9,
             8.2, 8.1, 8.2, 8.0, 7.5, 7.7, 7.6, 8.0, 7.5, 7.2,
             6.8, 6.5, 6.6, 6.6, 6.7, 6.2, 5.9, 5.7, 5.9, 6.3,
             6.6, 6.7, 6.9, 6.5, 6.0, 5.8, 5.3, 5.8, 6.1, 6.8
@@ -43,13 +43,17 @@ namespace Nexus.Sources
 
         #region Methods
 
-        public Task SetContextAsync(DataSourceContext context, CancellationToken cancellationToken)
+        public Task SetContextAsync(
+            DataSourceContext context,
+            CancellationToken cancellationToken)
         {
             Context = context;
             return Task.CompletedTask;
         }
 
-        public Task<CatalogRegistration[]> GetCatalogRegistrationsAsync(string path, CancellationToken cancellationToken)
+        public Task<CatalogRegistration[]> GetCatalogRegistrationsAsync(
+            string path,
+            CancellationToken cancellationToken)
         {
             if (path == "/")
                 return Task.FromResult(new CatalogRegistration[]
@@ -62,22 +66,35 @@ namespace Nexus.Sources
                 return Task.FromResult(new CatalogRegistration[0]);
         }
 
-        public Task<ResourceCatalog> GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
+        public Task<ResourceCatalog> GetCatalogAsync(
+            string catalogId,
+            CancellationToken cancellationToken)
         {
             return Task.FromResult(Sample.LoadCatalog(catalogId));
         }
 
-        public Task<(DateTime Begin, DateTime End)> GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
+        public Task<(DateTime Begin, DateTime End)> GetTimeRangeAsync(
+            string catalogId,
+            CancellationToken cancellationToken)
         {
             return Task.FromResult((DateTime.MinValue, DateTime.MaxValue));
         }
 
-        public Task<double> GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken)
+        public Task<double> GetAvailabilityAsync(
+            string catalogId,
+            DateTime begin,
+            DateTime end,
+            CancellationToken cancellationToken)
         {
             return Task.FromResult(1.0);
         }
 
-        public async Task ReadAsync(DateTime begin, DateTime end, ReadRequest[] requests, IProgress<double> progress, CancellationToken cancellationToken)
+        public async Task ReadAsync(
+            DateTime begin,
+            DateTime end,
+            ReadRequest[] requests,
+            IProgress<double> progress,
+            CancellationToken cancellationToken)
         {
             var tasks = requests.Select(request =>
             {
@@ -150,7 +167,8 @@ namespace Nexus.Sources
             }
         }
 
-        internal static ResourceCatalog LoadCatalog(string catalogId)
+        internal static ResourceCatalog LoadCatalog(
+            string catalogId)
         {
             var resourceBuilderA = new ResourceBuilder(id: "T1")
                 .WithUnit("°C")
@@ -187,7 +205,8 @@ namespace Nexus.Sources
             return catalogBuilder.Build();
         }
 
-        private double ToUnixTimeStamp(DateTime value)
+        private double ToUnixTimeStamp(
+            DateTime value)
         {
             return value.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
         }

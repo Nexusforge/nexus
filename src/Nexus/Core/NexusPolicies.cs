@@ -1,6 +1,6 @@
 ﻿namespace Nexus.Core
 {
-    internal static class Policies
+    internal static class NexusPolicies
     {
         public const string RequireAdmin = "RequireAdmin";
     }

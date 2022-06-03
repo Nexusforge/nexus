@@ -88,7 +88,7 @@ namespace Nexus.Controllers
         [HttpGet("{catalogId}/child-catalog-infos")]
         public async Task<ActionResult<CatalogInfo[]>>
             GetChildCatalogInfosAsync(
-            string catalogId, 
+            string catalogId,
             CancellationToken cancellationToken)
         {
             catalogId = WebUtility.UrlDecode(catalogId);
@@ -117,7 +117,7 @@ namespace Nexus.Controllers
                         var isReleased = childContainer.Owner is null ||
                             isWritable && Regex.IsMatch(id, childContainer.DataSourceRegistration.ReleasePattern);
 
-                        var isVisible = 
+                        var isVisible =
                             isReadable && Regex.IsMatch(id, childContainer.DataSourceRegistration.VisibilityPattern);
 
                         var isOwner = childContainer.Owner?.FindFirstValue(Claims.Subject) == User.FindFirstValue(Claims.Subject);
@@ -216,20 +216,12 @@ namespace Nexus.Controllers
         {
             catalogId = WebUtility.UrlDecode(catalogId);
 
-            try
+            var response = ProtectCatalogAsync(catalogId, ensureReadable: true, ensureWritable: false, catalog =>
             {
-                var response = ProtectCatalogAsync<string[]>(catalogId, ensureReadable: true, ensureWritable: false, catalog =>
-                {
-                    return Task.FromResult<ActionResult<string[]>>(_databaseService.EnumerateAttachments(catalogId).ToArray());
-                }, cancellationToken);
+                return Task.FromResult<ActionResult<string[]>>(_databaseService.EnumerateAttachments(catalogId).ToArray());
+            }, cancellationToken);
 
-                return response;
-            }
-            catch (Exception ex)
-            {
-                return Task.FromResult<ActionResult<string[]>>(
-                    UnprocessableEntity(ex.Message));
-            }
+            return response;
         }
 
         /// <summary>
@@ -264,7 +256,7 @@ namespace Nexus.Controllers
                 {
                     return StatusCode(StatusCodes.Status423Locked, ex.Message);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     try
                     {
@@ -276,7 +268,7 @@ namespace Nexus.Controllers
                         //
                     }
 
-                    return UnprocessableEntity(ex.Message);
+                    throw;
                 }
             }, cancellationToken);
 
@@ -311,11 +303,6 @@ namespace Nexus.Controllers
                 {
                     return Task.FromResult<ActionResult>(
                         StatusCode(StatusCodes.Status423Locked, ex.Message));
-                }
-                catch (Exception ex)
-                {
-                    return Task.FromResult<ActionResult>(
-                        UnprocessableEntity(ex.Message));
                 }
             }, cancellationToken);
 
@@ -358,11 +345,6 @@ namespace Nexus.Controllers
                 {
                     return Task.FromResult<ActionResult>(
                         StatusCode(StatusCodes.Status423Locked, ex.Message));
-                }
-                catch (Exception ex)
-                {
-                    return Task.FromResult<ActionResult>(
-                        UnprocessableEntity(ex.Message));
                 }
             }, cancellationToken);
 
@@ -411,7 +393,7 @@ namespace Nexus.Controllers
 
                 if (!canEdit)
                     return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to modify the catalog {catalogId}.");
-                
+
                 await catalogContainer.UpdateMetadataAsync(catalogMetadata);
 
                 return new object();
@@ -429,7 +411,7 @@ namespace Nexus.Controllers
             CancellationToken cancellationToken)
         {
             var root = _appState.CatalogState.Root;
-            
+
             var catalogContainer = catalogId == CatalogContainer.RootCatalogId
                 ? root
                 : await root.TryFindCatalogContainerAsync(catalogId, cancellationToken);

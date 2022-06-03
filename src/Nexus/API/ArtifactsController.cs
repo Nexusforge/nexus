@@ -42,22 +42,15 @@ namespace Nexus.Controllers
             Download(
                 string artifactId)
         {
-            try
+            if (_databaseService.TryReadArtifact(artifactId, out var artifactStream))
             {
-                if (_databaseService.TryReadArtifact(artifactId, out var artifactStream))
-                {
-                    Response.Headers.ContentLength = artifactStream.Length;
-                    return File(artifactStream, "application/octet-stream"); // do not set filname here, otherwise <a download="abc.pdf" /> will not work!
-                }
-
-                else
-                {
-                    return NotFound($"Could not find artifact {artifactId}.");
-                }   
+                Response.Headers.ContentLength = artifactStream.Length;
+                return File(artifactStream, "application/octet-stream"); // do not set filname here, otherwise <a download="abc.pdf" /> will not work!
             }
-            catch (Exception ex)
+
+            else
             {
-                return UnprocessableEntity(ex.Message);
+                return NotFound($"Could not find artifact {artifactId}.");
             }
         }
 

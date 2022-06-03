@@ -241,7 +241,7 @@ namespace Nexus.Controllers
         /// <summary>
         /// Creates a new load packages job.
         /// </summary>
-        [Authorize(Policy = Policies.RequireAdmin)]
+        [Authorize(Policy = NexusPolicies.RequireAdmin)]
         [HttpPost("load-packages")]
         public ActionResult<Job> LoadPackages()
         {

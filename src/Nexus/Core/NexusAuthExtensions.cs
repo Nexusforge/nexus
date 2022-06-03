@@ -136,6 +136,8 @@ namespace Microsoft.Extensions.DependencyInjection
                                 if (isFirstUser)
                                     newClaims[Guid.NewGuid()] = new NexusClaim(Claims.Role, NexusRoles.ADMINISTRATOR);
 
+                                newClaims[Guid.NewGuid()] = new NexusClaim(Claims.Role, NexusRoles.USER);
+
                                 user.Claims = new ReadOnlyDictionary<Guid, NexusClaim>(newClaims);
                                 dbContext.Users.Add(user);
                             }
@@ -151,7 +153,7 @@ namespace Microsoft.Extensions.DependencyInjection
                             // oicd identity
                             var oidcIdentity = (ClaimsIdentity)principal.Identity!;
                             var subClaim = oidcIdentity.FindFirst(Claims.Subject);
-                            
+
                             if (subClaim is not null)
                                 oidcIdentity.RemoveClaim(subClaim);
 
@@ -161,7 +163,7 @@ namespace Microsoft.Extensions.DependencyInjection
                             var claims = user.Claims.Select(entry => new Claim(entry.Value.Type, entry.Value.Value));
 
                             var appIdentity = new ClaimsIdentity(
-                                claims, 
+                                claims,
                                 authenticationType: context.Scheme.Name,
                                 nameType: Claims.Name,
                                 roleType: Claims.Role);
@@ -182,13 +184,14 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 options.DefaultPolicy = new AuthorizationPolicyBuilder()
                     .RequireAuthenticatedUser()
+                    .RequireRole(NexusRoles.USER)
                     .AddAuthenticationSchemes(authenticationSchemes)
                     .Build();
 
                 options
-                    .AddPolicy(Policies.RequireAdmin, policy => policy
-                    .RequireRole(NexusRoles.ADMINISTRATOR)
-                    .AddAuthenticationSchemes(authenticationSchemes));
+                    .AddPolicy(NexusPolicies.RequireAdmin, policy => policy
+                        .RequireRole(NexusRoles.ADMINISTRATOR)
+                        .AddAuthenticationSchemes(authenticationSchemes));
             });
 
             return services;

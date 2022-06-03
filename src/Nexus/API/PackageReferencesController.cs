@@ -8,7 +8,7 @@ namespace Nexus.Controllers
     /// <summary>
     /// Provides access to package references.
     /// </summary>
-    [Authorize(Policy = Policies.RequireAdmin)]
+    [Authorize(Policy = NexusPolicies.RequireAdmin)]
     [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]

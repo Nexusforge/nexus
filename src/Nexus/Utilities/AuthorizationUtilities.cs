@@ -25,7 +25,7 @@ namespace Nexus.Utilities
                     Regex.IsMatch(catalogId, claim.Value));
 
                 var canAccessGroup = catalogMetadata.GroupMemberships is not null && principal.HasClaim(
-                    claim => claim.Type == NexusClaims.CAN_READ_GROUP &&
+                    claim => claim.Type == NexusClaims.CAN_READ_CATALOG_GROUP &&
                     catalogMetadata.GroupMemberships.Any(group => Regex.IsMatch(group, claim.Value)));
 
                 var implicitAccess = 

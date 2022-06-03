@@ -40,7 +40,7 @@ namespace Other
                 new ClaimsIdentity(
                     claims: adminClaim
                         .Concat(canReadCatalog.Select(value => new Claim(NexusClaims.CAN_READ_CATALOG, value)))
-                        .Concat(canAccessGroup.Select(value => new Claim(NexusClaims.CAN_READ_GROUP, value))),
+                        .Concat(canAccessGroup.Select(value => new Claim(NexusClaims.CAN_READ_CATALOG_GROUP, value))),
                     authenticationType,
                     nameType: Claims.Name,
                     roleType: Claims.Role));
