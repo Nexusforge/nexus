@@ -44,6 +44,7 @@ namespace Nexus.Extensibility
             DateTime end,
             TimeSpan samplePeriod, 
             CatalogItemRequestPipeWriter[] catalogItemRequestPipeWriters,
+            ReadDataHandler readDataHandler,
             IProgress<double> progress, 
             CancellationToken cancellationToken);
     }
@@ -220,6 +221,7 @@ namespace Nexus.Extensibility
             DateTime end,
             TimeSpan samplePeriod,
             CatalogItemRequestPipeWriter[] catalogItemRequestPipeWriters,
+            ReadDataHandler readDataHandler,
             IProgress<double> progress,
             CancellationToken cancellationToken)
         {
@@ -276,7 +278,8 @@ namespace Nexus.Extensibility
                     end, 
                     samplePeriod,
                     originalReadUnits,
-                    originalProgress, 
+                    readDataHandler,
+                    originalProgress,
                     cancellationToken);
 
                 readingTasks.Add(originalTask);
@@ -307,6 +310,7 @@ namespace Nexus.Extensibility
                         begin, 
                         end, 
                         processingReadUnit,
+                        readDataHandler,
                         processingProgress,
                         cancellationToken);
 
@@ -331,19 +335,28 @@ namespace Nexus.Extensibility
             DateTime end, 
             TimeSpan samplePeriod,
             ReadUnit[] originalUnits,
+            ReadDataHandler readDataHandler,
             IProgress<double> progress,
             CancellationToken cancellationToken)
         {
             var readRequests = originalUnits
-                    .Select(readUnit => readUnit.ReadRequest)
-                    .ToArray();
+                .Select(readUnit => readUnit.ReadRequest)
+                .ToArray();
 
-            await DataSource.ReadAsync(
-                begin,
-                end,
-                readRequests,
-                progress,
-                cancellationToken);
+            try
+            {
+                await DataSource.ReadAsync(
+                    begin,
+                    end,
+                    readRequests,
+                    readDataHandler,
+                    progress,
+                    cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Read original data period {Begin} to {End} failed", begin, end);
+            }
 
             var targetElementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, samplePeriod);
             var targetByteCount = sizeof(double) * targetElementCount;
@@ -391,6 +404,7 @@ namespace Nexus.Extensibility
            DateTime begin,
            DateTime end,
            ReadUnit readUnit,
+           ReadDataHandler readDataHandler,
            IProgress<double> progress,
            CancellationToken cancellationToken)
         {
@@ -408,87 +422,95 @@ namespace Nexus.Extensibility
 
             var targetBuffer = new CastMemoryManager<byte, double>(buffer).Memory;
 
-            /* load data from cache */
-            Logger.LogTrace("Load data from cache");
-
-            List<Interval> uncachedIntervals;
-
-            if (ignoreCache)
+            try
             {
-                uncachedIntervals = new List<Interval> { new Interval(begin, end) };
-            }
+                /* load data from cache */
+                Logger.LogTrace("Load data from cache");
 
-            else
-            {
-                uncachedIntervals = await _cacheService.ReadAsync(
-                    readUnit.CatalogItemRequest.Item,
-                    begin,
-                    targetBuffer,
-                    cancellationToken);
-            }
+                List<Interval> uncachedIntervals;
 
-            /* load and process remaining data from source */
-            Logger.LogTrace("Load and process {PeriodCount} uncached periods from source", uncachedIntervals.Count);
-
-            var readRequest = readUnit.ReadRequest;
-            var elementSize = baseItem.Representation.ElementSize;
-            var sourceSamplePeriod = baseItem.Representation.SamplePeriod;
-            var targetSamplePeriod = item.Representation.SamplePeriod;
-
-            var blockSize = item.Representation.Kind == RepresentationKind.Resampled
-                ? (int)(sourceSamplePeriod.Ticks / targetSamplePeriod.Ticks)
-                : (int)(targetSamplePeriod.Ticks / sourceSamplePeriod.Ticks);
-
-            foreach (var interval in uncachedIntervals)
-            {
-                var samplePeriod = item.Representation.SamplePeriod;
-                var baseSamplePeriod = baseItem.Representation.SamplePeriod;
-
-                var offset = interval.Begin - begin;
-                var length = interval.End - interval.Begin;
-
-                var slicedTargetBuffer = targetBuffer.Slice(
-                    start: NexusUtilities.Scale(offset, samplePeriod),
-                    length: NexusUtilities.Scale(length, samplePeriod));
-
-                var slicedReadRequest = readRequest with
+                if (ignoreCache)
                 {
-                    Data = readRequest.Data.Slice(
-                        start: NexusUtilities.Scale(offset, baseSamplePeriod) * elementSize, 
-                        length: NexusUtilities.Scale(length, baseSamplePeriod) * elementSize),
+                    uncachedIntervals = new List<Interval> { new Interval(begin, end) };
+                }
 
-                    Status = readRequest.Status.Slice(
-                        start: NexusUtilities.Scale(offset, baseSamplePeriod), 
-                        length: NexusUtilities.Scale(length, baseSamplePeriod)),
-                };
+                else
+                {
+                    uncachedIntervals = await _cacheService.ReadAsync(
+                        readUnit.CatalogItemRequest.Item,
+                        begin,
+                        targetBuffer,
+                        cancellationToken);
+                }
 
-                /* read */
-                await DataSource.ReadAsync(
-                    interval.Begin,
-                    interval.End,
-                    new[] { slicedReadRequest },
-                    progress,
-                    cancellationToken);
+                /* load and process remaining data from source */
+                Logger.LogTrace("Load and process {PeriodCount} uncached periods from source", uncachedIntervals.Count);
 
-                /* process */
-                _processingService.Process(
-                    baseItem.Representation.DataType,
-                    item.Representation.Kind,
-                    slicedReadRequest.Data,
-                    slicedReadRequest.Status,
-                    targetBuffer: slicedTargetBuffer,
-                    blockSize);
+                var readRequest = readUnit.ReadRequest;
+                var elementSize = baseItem.Representation.ElementSize;
+                var sourceSamplePeriod = baseItem.Representation.SamplePeriod;
+                var targetSamplePeriod = item.Representation.SamplePeriod;
+
+                var blockSize = item.Representation.Kind == RepresentationKind.Resampled
+                    ? (int)(sourceSamplePeriod.Ticks / targetSamplePeriod.Ticks)
+                    : (int)(targetSamplePeriod.Ticks / sourceSamplePeriod.Ticks);
+
+                foreach (var interval in uncachedIntervals)
+                {
+                    var samplePeriod = item.Representation.SamplePeriod;
+                    var baseSamplePeriod = baseItem.Representation.SamplePeriod;
+
+                    var offset = interval.Begin - begin;
+                    var length = interval.End - interval.Begin;
+
+                    var slicedTargetBuffer = targetBuffer.Slice(
+                        start: NexusUtilities.Scale(offset, samplePeriod),
+                        length: NexusUtilities.Scale(length, samplePeriod));
+
+                    var slicedReadRequest = readRequest with
+                    {
+                        Data = readRequest.Data.Slice(
+                            start: NexusUtilities.Scale(offset, baseSamplePeriod) * elementSize,
+                            length: NexusUtilities.Scale(length, baseSamplePeriod) * elementSize),
+
+                        Status = readRequest.Status.Slice(
+                            start: NexusUtilities.Scale(offset, baseSamplePeriod),
+                            length: NexusUtilities.Scale(length, baseSamplePeriod)),
+                    };
+
+                    /* read */
+                    await DataSource.ReadAsync(
+                        interval.Begin,
+                        interval.End,
+                        new[] { slicedReadRequest },
+                        readDataHandler,
+                        progress,
+                        cancellationToken);
+
+                    /* process */
+                    _processingService.Process(
+                        baseItem.Representation.DataType,
+                        item.Representation.Kind,
+                        slicedReadRequest.Data,
+                        slicedReadRequest.Status,
+                        targetBuffer: slicedTargetBuffer,
+                        blockSize);
+                }
+
+                /* update cache */
+                if (!ignoreCache)
+                {
+                    await _cacheService.UpdateAsync(
+                        readUnit.CatalogItemRequest.Item,
+                        begin,
+                        targetBuffer,
+                        uncachedIntervals,
+                        cancellationToken);
+                }
             }
-
-            /* update cache */
-            if (!ignoreCache)
+            catch (Exception ex)
             {
-                await _cacheService.UpdateAsync(
-                    readUnit.CatalogItemRequest.Item,
-                    begin,
-                    targetBuffer,
-                    uncachedIntervals,
-                    cancellationToken);
+                Logger.LogError(ex, "Read processing data period {Begin} to {End} failed", begin, end);
             }
 
             /* update progress */
@@ -551,6 +573,7 @@ namespace Nexus.Extensibility
             DateTime end,
             TimeSpan samplePeriod,
             DataReadingGroup[] readingGroups,
+            ReadDataHandler readDataHandler,
             DataOptions dataOptions,
             IProgress<double>? progress,
             ILogger<DataSourceController> logger,
@@ -715,6 +738,7 @@ namespace Nexus.Extensibility
                                 currentEnd,
                                 samplePeriod,
                                 catalogItemRequestPipeWriters,
+                                readDataHandler,
                                 dataSourceProgress,
                                 cancellationToken);
                         }

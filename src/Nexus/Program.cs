@@ -5,6 +5,8 @@ using Nexus.Core;
 using Nexus.Services;
 using Serilog;
 using System.Globalization;
+using System.Security.Claims;
+using System.Security.Principal;
 using System.Text.Json;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
@@ -125,6 +127,7 @@ void AddServices(
 
     services.AddScoped<IDBService, DbService>();
     services.AddScoped<INexusAuthenticationService, NexusAuthenticationService>();
+    services.AddScoped(provider => provider.GetService<IHttpContextAccessor>()!.HttpContext!.User);
 
     services.AddSingleton<AppState>();
     services.AddSingleton<AppStateManager>();
@@ -135,7 +138,6 @@ void AddServices(
     services.AddSingleton<ICacheService, CacheService>();
     services.AddSingleton<IDatabaseService, DatabaseService>();
     services.AddSingleton<IExtensionHive, ExtensionHive>();
-    services.AddSingleton<IUserManagerWrapper, UserManagerWrapper>();
 
     services.Configure<GeneralOptions>(configuration.GetSection(GeneralOptions.Section));
     services.Configure<DataOptions>(configuration.GetSection(DataOptions.Section));

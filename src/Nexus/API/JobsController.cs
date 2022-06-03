@@ -226,7 +226,7 @@ namespace Nexus.Controllers
             {
                 var jobControl = _jobService.AddJob(job, dataService.WriteProgress, async (jobControl, cts) =>
                 {
-                    var result = await dataService.ExportAsync(parameters, catalogItemRequests, job.Id, cts.Token);
+                    var result = await dataService.ExportAsync(job.Id, catalogItemRequests, dataService.ReadAsDoubleArrayAsync, parameters, cts.Token);
                     return result;
                 });
 

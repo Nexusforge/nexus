@@ -1,9 +1,12 @@
 ﻿using Microsoft.Extensions.Options;
 using Nexus.Core;
 using Nexus.Extensibility;
+using Nexus.Utilities;
 using System.ComponentModel.DataAnnotations;
 using System.IO.Compression;
 using System.IO.Pipelines;
+using System.Security.Claims;
+using System.Security.Principal;
 
 namespace Nexus.Services
 {
@@ -12,10 +15,23 @@ namespace Nexus.Services
         Progress<double> ReadProgress { get; }
         Progress<double> WriteProgress { get; }
 
+        Task<Stream> ReadAsStreamAsync(
+           string resourcePath,
+           DateTime begin,
+           DateTime end,
+           CancellationToken cancellationToken);
+
+        Task<double[]> ReadAsDoubleArrayAsync(
+           string resourcePath,
+           DateTime begin,
+           DateTime end,
+           CancellationToken cancellationToken);
+
         Task<string> ExportAsync(
-            ExportParameters exportParameters,
-            IEnumerable<CatalogItemRequest> catalogItemRequests, 
             Guid exportId,
+            IEnumerable<CatalogItemRequest> catalogItemRequests,
+            ReadDataHandler readDataHandler,
+            ExportParameters exportParameters,
             CancellationToken cancellationToken);
     }
 
@@ -23,7 +39,9 @@ namespace Nexus.Services
     {
         #region Fields
 
+        private AppState _appState;
         private DataOptions _dataOptions;
+        private ClaimsPrincipal _user;
         private ILogger _logger;
         private ILoggerFactory _loggerFactory;
         private IDatabaseService _databaseService;
@@ -34,12 +52,16 @@ namespace Nexus.Services
         #region Constructors
 
         public DataService(
+            AppState appState,
+            ClaimsPrincipal user,
             IDataControllerService dataControllerService,
             IDatabaseService databaseService,
             IOptions<DataOptions> dataOptions,
             ILogger<DataService> logger,
             ILoggerFactory loggerFactory)
         {
+            _user = user;
+            _appState = appState;
             _dataControllerService = dataControllerService;
             _databaseService = databaseService;
             _dataOptions = dataOptions.Value;
@@ -62,10 +84,76 @@ namespace Nexus.Services
 
         #region Methods
 
+        public async Task<Stream> ReadAsStreamAsync(
+           string resourcePath,
+           DateTime begin,
+           DateTime end,
+           CancellationToken cancellationToken)
+        {
+            begin = DateTime.SpecifyKind(begin, DateTimeKind.Utc);
+            end = DateTime.SpecifyKind(end, DateTimeKind.Utc);
+
+            // find representation
+            var root = _appState.CatalogState.Root;
+            var catalogItemRequest = await root.TryFindAsync(resourcePath, cancellationToken);
+
+            if (catalogItemRequest is null)
+                throw new Exception($"Could not find resource path {resourcePath}.");
+
+            var catalogContainer = catalogItemRequest.Container;
+
+            // security check
+            if (!AuthorizationUtilities.IsCatalogReadable(catalogContainer.Id, catalogContainer.Metadata, catalogContainer.Owner, _user))
+                throw new Exception($"The current user is not permitted to access the catalog {catalogContainer.Id}.");
+
+            // controller
+            using var controller = await _dataControllerService.GetDataSourceControllerAsync(
+                catalogContainer.DataSourceRegistration,
+                cancellationToken);
+
+            // read data
+            var stream = controller.ReadAsStream(
+                begin,
+                end,
+                catalogItemRequest,
+                readDataHandler: ReadAsDoubleArrayAsync,
+                _dataOptions,
+                _loggerFactory.CreateLogger<DataSourceController>(),
+                cancellationToken);
+
+            return stream;
+        }
+
+        public async Task<double[]> ReadAsDoubleArrayAsync(
+           string resourcePath,
+           DateTime begin,
+           DateTime end,
+           CancellationToken cancellationToken)
+        {
+            var stream = await ReadAsStreamAsync(
+                resourcePath,
+                begin, 
+                end, 
+                cancellationToken);
+
+            var result = new double[stream.Length / 8];
+            var byteBuffer = new CastMemoryManager<double, byte>(result).Memory;
+
+            int bytesRead;
+
+            while ((bytesRead = await stream.ReadAsync(byteBuffer, cancellationToken)) > 0)
+            {
+                byteBuffer = byteBuffer.Slice(bytesRead);
+            }
+
+            return result;
+        }
+
         public async Task<string> ExportAsync(
-            ExportParameters exportParameters,
-            IEnumerable<CatalogItemRequest> catalogItemRequests,
             Guid exportId,
+            IEnumerable<CatalogItemRequest> catalogItemRequests,
+            ReadDataHandler readDataHandler,
+            ExportParameters exportParameters,
             CancellationToken cancellationToken)
         {
             if (!catalogItemRequests.Any() || exportParameters.Begin == exportParameters.End)
@@ -112,7 +200,7 @@ namespace Nexus.Services
             // write data files
             try
             {
-                var exportContext = new ExportContext(samplePeriod, catalogItemRequests, exportParameters);
+                var exportContext = new ExportContext(samplePeriod, catalogItemRequests, readDataHandler, exportParameters);
                 await CreateFilesAsync(exportContext, controller, cancellationToken);
             }
             finally
@@ -188,6 +276,7 @@ namespace Nexus.Services
                 exportParameters.End,
                 exportContext.SamplePeriod,
                 readingGroups.ToArray(),
+                exportContext.ReadDataHandler,
                 _dataOptions,
                 ReadProgress,
                 logger,

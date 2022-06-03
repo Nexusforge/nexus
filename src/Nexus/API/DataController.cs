@@ -1,11 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.Extensions.Options;
-using Nexus.Core;
-using Nexus.Extensibility;
 using Nexus.Services;
-using Nexus.Utilities;
 using System.ComponentModel.DataAnnotations;
 using System.Net;
 
@@ -24,25 +20,16 @@ namespace Nexus.Controllers
 
         #region Fields
 
-        private DataOptions _dataOptions;
-        private AppState _appState;
-        private IDataControllerService _dataControllerService;
-        private ILoggerFactory _loggerFactory;
+        private IDataService _dataService;
 
         #endregion
 
         #region Constructors
 
         public DataController(
-            AppState appState,
-            IOptions<DataOptions> dataOptions,
-            IDataControllerService dataControllerService,
-            ILoggerFactory loggerFactory)
+            IDataService dataService)
         {
-            _appState = appState;
-            _dataOptions = dataOptions.Value;
-            _dataControllerService = dataControllerService;
-            _loggerFactory = loggerFactory;
+            _dataService = dataService;
         }
 
         #endregion
@@ -69,31 +56,7 @@ namespace Nexus.Controllers
 
             try
             {
-                // find representation
-                var root = _appState.CatalogState.Root;
-                var catalogItemRequest = await root.TryFindAsync(resourcePath, cancellationToken);
-
-                if (catalogItemRequest is null)
-                    return NotFound($"Could not find resource path {resourcePath}.");
-
-                var catalogContainer = catalogItemRequest.Container;
-
-                // security check
-                if (!AuthorizationUtilities.IsCatalogReadable(catalogContainer.Id, catalogContainer.Metadata, catalogContainer.Owner, User))
-                    return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to access the catalog {catalogContainer.Id}.");
-
-                // controller
-                using var controller = await _dataControllerService.GetDataSourceControllerAsync(
-                    catalogContainer.DataSourceRegistration,
-                    cancellationToken);
-
-                // read data
-                var stream = controller.ReadAsStream(
-                    begin, 
-                    end,
-                    catalogItemRequest,
-                    _dataOptions,
-                    _loggerFactory.CreateLogger<DataSourceController>());
+                var stream = await _dataService.ReadAsStreamAsync(resourcePath, begin, end, cancellationToken);
 
                 Response.Headers.ContentLength = stream.Length;
                 return File(stream, "application/octet-stream", "data.bin");
@@ -101,6 +64,14 @@ namespace Nexus.Controllers
             catch (ValidationException ex)
             {
                 return UnprocessableEntity(ex.Message);
+            }
+            catch (Exception ex) when (ex.Message.StartsWith("Could not find resource path"))
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex) when (ex.Message.StartsWith("The current user is not permitted to access the catalog"))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
             }
         }
     }

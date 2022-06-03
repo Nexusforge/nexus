@@ -67,6 +67,7 @@ namespace Nexus.Extensibility
         /// <param name="begin">The beginning of the period to read.</param>
         /// <param name="end">The end of the period to read.</param>
         /// <param name="requests">The array of read requests.</param>
+        /// <param name="readData">A delegate to asynchronously read data from Nexus.</param>
         /// <param name="progress">An object to report the read progress.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         /// <returns>The task.</returns>
@@ -74,6 +75,7 @@ namespace Nexus.Extensibility
             DateTime begin,
             DateTime end,
             ReadRequest[] requests,
+            ReadDataHandler readData,
             IProgress<double> progress,
             CancellationToken cancellationToken);
     }

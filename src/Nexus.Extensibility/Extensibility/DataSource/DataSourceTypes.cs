@@ -28,4 +28,18 @@ namespace Nexus.Extensibility
         CatalogItem CatalogItem,
         Memory<byte> Data,
         Memory<byte> Status);
+
+    /// <summary>
+    /// Reads the requested data.
+    /// </summary>
+    /// <param name="resourcePath">The path to the resource data to stream.</param>
+    /// <param name="begin">Start date/time.</param>
+    /// <param name="end">End date/time.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns></returns>
+    public delegate Task<double[]> ReadDataHandler(
+        string resourcePath,
+        DateTime begin,
+        DateTime end,
+        CancellationToken cancellationToken);
 }

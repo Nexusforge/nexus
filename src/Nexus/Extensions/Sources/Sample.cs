@@ -93,6 +93,7 @@ namespace Nexus.Sources
             DateTime begin,
             DateTime end,
             ReadRequest[] requests,
+            ReadDataHandler readData,
             IProgress<double> progress,
             CancellationToken cancellationToken)
         {

@@ -505,7 +505,7 @@ namespace Nexus.Extensibility
         }
 
         async Task
-            IDataSource.ReadAsync(DateTime begin, DateTime end, ReadRequest[] requests, IProgress<double> progress, CancellationToken cancellationToken)
+            IDataSource.ReadAsync(DateTime begin, DateTime end, ReadRequest[] requests, ReadDataHandler readData, IProgress<double> progress, CancellationToken cancellationToken)
         {
             if (begin >= end)
                 throw new ArgumentException("The start time must be before the end time.");

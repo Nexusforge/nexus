@@ -38,6 +38,7 @@ namespace Nexus.Core
     internal record ExportContext(
         TimeSpan SamplePeriod,
         IEnumerable<CatalogItemRequest> CatalogItemRequests,
+        ReadDataHandler ReadDataHandler,
         ExportParameters ExportParameters);
 
     internal record JobControl(

@@ -6,6 +6,7 @@ using Nexus.Sources;
 using Nexus.Utilities;
 using System.Security.Claims;
 using System.Text.Json;
+using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Nexus.Services
 {
@@ -33,9 +34,8 @@ namespace Nexus.Services
         private AppState _appState;
         private IDataControllerService _dataControllerService;
         private IDatabaseService _databaseService;
-        private IUserManagerWrapper _userManagerWrapper;
+        private IServiceProvider _serviceProvider;
         private IExtensionHive _extensionHive;
-        private SecurityOptions _securityOptions;
         private ILogger<CatalogManager> _logger;
 
         #endregion
@@ -46,17 +46,15 @@ namespace Nexus.Services
             AppState appState,
             IDataControllerService dataControllerService, 
             IDatabaseService databaseService,
-            IUserManagerWrapper userManagerWrapper,
+            IServiceProvider serviceProvider,
             IExtensionHive extensionHive,
-            IOptions<SecurityOptions> securityOptions,
             ILogger<CatalogManager> logger)
         {
             _appState = appState;
             _dataControllerService = dataControllerService;
             _databaseService = databaseService;
-            _userManagerWrapper = userManagerWrapper;
+            _serviceProvider = serviceProvider;
             _extensionHive = extensionHive;
-            _securityOptions = securityOptions.Value;
             _logger = logger;
         }
 
@@ -107,13 +105,27 @@ namespace Nexus.Services
                     }
                 }
 
+                using var scope = _serviceProvider.CreateScope();
+                var dbService = scope.ServiceProvider.GetRequiredService<IDBService>();
+
                 /* => for each user with existing config */
-                foreach (var (username, userConfiguration) in _appState.Project.UserConfigurations)
+                foreach (var (userId, userConfiguration) in _appState.Project.UserConfigurations)
                 {
-                    var user = await _userManagerWrapper.GetClaimsPrincipalAsync(username);
+                    // get owner
+                    var user = await dbService.FindUserAsync(userId);
 
                     if (user is null)
                         continue;
+
+                    var claims = user.Claims.Values.Select(claim => new Claim(claim.Type, claim.Value)).ToList();
+                    claims.Add(new Claim(ClaimTypes.Name, userId));
+
+                    var owner = new ClaimsPrincipal(
+                        new ClaimsIdentity(
+                            claims,
+                            authenticationType: "Fake authentication type",
+                            nameType: Claims.Name,
+                            roleType: Claims.Role));
 
                     /* for each data source registration */
                     foreach (var registration in userConfiguration.DataSourceRegistrations.Values)
@@ -129,13 +141,13 @@ namespace Nexus.Services
                                 catalogPrototypes.Add(new CatalogPrototype(
                                     catalogRegistration, 
                                     registration,
-                                    packageReference, 
-                                    user));
+                                    packageReference,
+                                    owner));
                             }
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogWarning(ex, "Unable to process data source registration for user {Username}", username);
+                            _logger.LogWarning(ex, "Unable to process data source registration for user {Username}", user.Name);
                         }
                     }
                 }
