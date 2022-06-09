@@ -111,7 +111,7 @@ class IDataSource(IExtension, ABC):
     """
 
     @abstractmethod
-    def set_context_async(self, context: DataSourceContext):
+    def set_context_async(self, context: DataSourceContext) -> Awaitable:
         """
         Invoked by Nexus right after construction to provide the context.
 
