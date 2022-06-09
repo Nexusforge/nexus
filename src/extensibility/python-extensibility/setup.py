@@ -41,7 +41,7 @@ with open("../../../src/Directory.Build.props", "r") as fh:
 
 setuptools.setup(
     name="nexus-extensibility",
-    version=str(os.getenv("VERSION")),
+    version=str(os.getenv("PYPI_VERSION")),
     description="Type definitions to implement data sources for the Nexus system.",
     long_description=long_description,
     long_description_content_type="text/markdown",
