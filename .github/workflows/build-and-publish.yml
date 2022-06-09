@@ -80,7 +80,6 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: artifacts
-          retention-days: 5
           path: |
             artifacts/packages/
             artifacts/images/
