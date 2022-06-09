@@ -93,7 +93,7 @@ class CatalogRegistration:
     title: str
     """The catalog title."""
 
-    is_transient: bool
+    is_transient: bool = False
     """A boolean which indicates if the catalog and its children should be reloaded on each request."""
 
 ################# DATA MODEL ###############

@@ -11,8 +11,8 @@ class ExtensibilityUtilities(ABC):
     def create_buffers(representation: Representation, begin: datetime, end: datetime) -> Tuple[memoryview, memoryview]:
         element_count = ExtensibilityUtilities._calculate_element_count(begin, end, representation.sample_period)
 
-        data = bytearray([0] * element_count * representation.element_size)
-        status = bytearray([0] * element_count * representation.element_size)
+        data = bytearray(element_count * representation.element_size)
+        status = bytearray(element_count * representation.element_size)
 
         return (memoryview(data), memoryview(status))
 
