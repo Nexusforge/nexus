@@ -169,7 +169,7 @@ class IDataSource(IExtension, ABC):
         end: datetime,
         requests: list[ReadRequest], 
         read_data: ReadDataHandler,
-        report_progress: Callable[[float], None]) -> Awaitable[float]:
+        report_progress: Callable[[float], None]):
         """
         Performs a number of read requests.
 

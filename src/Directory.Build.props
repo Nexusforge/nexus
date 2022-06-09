@@ -25,7 +25,7 @@
   <PropertyGroup>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://nexusforge.github.io/Nexus/</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/Nexusforge/Nexus</RepositoryUrl>
+    <RepositoryUrl>https://github.com/Nexusforge/nexus</RepositoryUrl>
   </PropertyGroup>
 
 </Project>
