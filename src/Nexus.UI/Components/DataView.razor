@@ -1,0 +1,198 @@
+﻿@using System.Runtime.InteropServices
+@using System.Buffers
+@implements IDisposable
+
+@inject IAppState AppState
+@inject INexusClient Client
+
+@if (_sizeLimitExceeded)
+{
+    <div class="h-2/3 flex flex-col justify-center items-center mx-auto text-gray-300">
+        <span class="font-bold text-2xl">¯\_(ツ)_/¯</span>
+        <span class="mt-5 text-3xl ">Size limit (20 MB) exeeded</span>
+    </div>
+}
+else
+{
+    @if (_lineSeriesData is null)
+    {
+        <div class="h-full flex justify-center items-center mx-auto">
+            <UIProgress Progress="_progress" Radius="25" />
+            <span class="ml-3 text-gray-400">Loading data ...</span>
+        </div>
+    }
+    else
+    {
+        <div class="h-full p-5">
+            <Chart LineSeriesData="_lineSeriesData" BeginAtZero="AppState.BeginAtZero" />
+        </div>
+    }
+}
+
+@code {
+
+    private PropertyChangedEventHandler _handler;
+    private bool _sizeLimitExceeded;
+    private bool _isLoading;
+    private double _progress;
+    private LineSeriesData? _lineSeriesData;
+    private CancellationTokenSource? _cts;
+
+    public DataView()
+    {
+        _handler = (sender, e) =>
+        {
+            if (e.PropertyName == nameof(AppState.BeginAtZero))
+                StateHasChanged();
+
+            else if (e.PropertyName == nameof(AppState.Settings.CanVisualize))
+                _ = LoadDataAsync();
+        };
+    }
+
+    protected override Task OnInitializedAsync()
+    {
+        AppState.PropertyChanged += _handler;
+        AppState.Settings.PropertyChanged += _handler;
+
+        return LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        var receivedBytes = 0L;
+        var byteCount = AppState.Settings.GetTotalByteCount();
+
+        if (byteCount > 20 * 1000 * 1000)
+        {
+            _sizeLimitExceeded = true;
+            StateHasChanged();
+            return;
+        }
+
+        _sizeLimitExceeded = false;
+        _progress = 0;
+        _lineSeriesData = null;
+        _isLoading = true;
+        _cts = new CancellationTokenSource();
+
+        StateHasChanged();
+
+        _ = Task.Run(async () =>
+        {
+            while (_isLoading)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(500));
+                _progress = receivedBytes / (double)byteCount;
+                StateHasChanged();
+            }
+        });
+
+        try
+        {
+            var begin = AppState.Settings.Begin;
+            var end = AppState.Settings.End;
+            var lineSeriesSet = new List<LineSeries>();
+
+            foreach (var catalogItem in AppState.Settings.SelectedCatalogItems.ToList())
+            {
+                foreach (var kind in catalogItem.Kinds)
+                {
+                    var resourcePath = catalogItem.GetResourcePath(kind, AppState.Settings.SamplePeriod.Value);
+
+                    var response = await Client.Data
+                        .GetStreamAsync(resourcePath, begin, end, _cts!.Token);
+
+                    var data = await ReadAsDoubleAsync(response, progress => receivedBytes += progress, _cts!.Token);
+                    var resource = catalogItem.BaseItem.Resource;
+                    var kindAsString = Utilities.KindToString(kind);
+
+                    var name = kindAsString is null
+                        ? resource.Id
+                        : $"{resource.Id} ({kindAsString})";
+
+                    var unit = Utilities.GetPropertyStringValue(resource.Properties, CatalogItemViewModel.UNIT_KEY) ?? string.Empty;
+
+                    lineSeriesSet.Add(new LineSeries(name, unit, AppState.Settings.SamplePeriod.Value, data));
+                }
+            }
+
+            _lineSeriesData = new LineSeriesData(begin, end, lineSeriesSet);   
+        }
+        catch (OperationCanceledException)
+        {
+            //
+        }
+        catch (Exception ex)
+        {
+            AppState.AddError(ex);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task<double[]> ReadAsDoubleAsync(
+        StreamResponse response,
+        Action<long> reportProgress, 
+        CancellationToken cancellationToken = default)
+    {
+        var elementCount = Utilities.GetElementCount(
+            AppState.Settings.Begin, 
+            AppState.Settings.End, 
+            AppState.Settings.SamplePeriod.Value);
+
+        var doubleBuffer = new double[elementCount];
+        var byteBuffer = new CastMemoryManager<double, byte>(doubleBuffer).Memory;
+        var stream = await response.GetStreamAsync(cancellationToken);
+        var remainingBuffer = byteBuffer;
+
+        while (!remainingBuffer.IsEmpty)
+        {
+            var bytesRead = await stream.ReadAsync(remainingBuffer, cancellationToken);
+
+            if (bytesRead == 0)
+                throw new Exception("The stream ended early.");
+
+            remainingBuffer = remainingBuffer.Slice(bytesRead);
+            reportProgress(bytesRead);
+        }
+
+        return doubleBuffer;
+    }
+
+    internal class CastMemoryManager<TFrom, TTo> : MemoryManager<TTo>
+        where TFrom : struct
+        where TTo : struct
+    {
+        private readonly Memory<TFrom> _from;
+
+        public CastMemoryManager(Memory<TFrom> from) => _from = from;
+
+        public override Span<TTo> GetSpan() => MemoryMarshal.Cast<TFrom, TTo>(_from.Span);
+
+        protected override void Dispose(bool disposing)
+        {
+            //
+        }
+
+        public override MemoryHandle Pin(int elementIndex = 0) => throw new NotSupportedException();
+
+        public override void Unpin() => throw new NotSupportedException();
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+
+        AppState.PropertyChanged -= _handler;
+        AppState.Settings.PropertyChanged -= _handler;
+    }
+}
+
+
+
+

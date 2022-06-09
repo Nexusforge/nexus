@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Nexus.Core;
 using Nexus.Extensibility;
 using Nexus.Services;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace Nexus.Controllers
@@ -18,7 +19,7 @@ namespace Nexus.Controllers
     {
         // GET      /api/sources/descriptions
         // GET      /api/sources/registrations
-        // PUT      /api/sources/registrations/{registrationId}
+        // PUT      /api/sources/registrations
         // DELETE   /api/sources/registrations/{registrationId}
 
         #region Fields
@@ -44,10 +45,10 @@ namespace Nexus.Controllers
         #endregion
 
         /// <summary>
-        /// Gets the list of sources.
+        /// Gets the list of source descriptions.
         /// </summary>
         [HttpGet("descriptions")]
-        public ExtensionDescription[] GetSourceDescriptions()
+        public List<ExtensionDescription> GetDescriptions()
         {
             var result = GetExtensionDescriptions(_extensionHive.GetExtensions<IDataSource>());
             return result;
@@ -56,64 +57,106 @@ namespace Nexus.Controllers
         /// <summary>
         /// Gets the list of backend sources.
         /// </summary>
+        /// <param name="username">The optional username. If not specified, the name of the current user will be used.</param>
         /// <returns></returns>
         [HttpGet("registrations")]
-        public IReadOnlyDictionary<Guid, DataSourceRegistration>
-            GetSourceRegistrations()
+        public ActionResult<IEnumerable<DataSourceRegistration>> GetRegistrations(
+            [FromQuery] string? username = default)
         {
-            var username = User.Identity?.Name;
+            if (TryAuthenticate(username, out var actualUsername, out var response))
+            {
+                if (_appState.Project.UserConfigurations.TryGetValue(actualUsername, out var userConfiguration))
+                    return Ok(userConfiguration.DataSourceRegistrations.Values);
 
-            if (username is null)
-                throw new Exception("This should never happen.");
-
-            if (_appState.Project.UserConfigurations.TryGetValue(username, out var userConfiguration))
-                return userConfiguration.DataSourceRegistrations;
+                else
+                    return Ok(Enumerable.Empty<DataSourceRegistration>());
+            }
 
             else
-                return new Dictionary<Guid, DataSourceRegistration>();
+            {
+                return response;
+            }
         }
 
         /// <summary>
         /// Puts a backend source.
         /// </summary>
-        /// <param name="registrationId">The identifier of the registration.</param>
-        /// <param name="registration">The registration to put.</param>
-        [HttpPut("registrations/{registrationId}")]
-        public Task
-            PutSourceRegistrationAsync(
-            Guid registrationId,
-            [FromBody] DataSourceRegistration registration)
+        /// <param name="registration">The registration to set.</param>
+        /// <param name="username">The optional username. If not specified, the name of the current user will be used.</param>
+        [HttpPut("registrations")]
+        public async Task<ActionResult> SetRegistrationAsync(
+            [FromBody] DataSourceRegistration registration,
+            [FromQuery] string? username = default)
         {
-            var username = User.Identity?.Name!;
-            return _appStateManager.PutDataSourceRegistrationAsync(username, registrationId, registration);
+            if (TryAuthenticate(username, out var actualUsername, out var response))
+            {
+                await _appStateManager.PutDataSourceRegistrationAsync(actualUsername, registration);
+                return Ok();
+            }
+
+            else
+            {
+                return response;
+            }
         }
 
         /// <summary>
         /// Deletes a backend source.
         /// </summary>
         /// <param name="registrationId">The identifier of the registration.</param>
+        /// <param name="username">The optional username. If not specified, the name of the current user will be used.</param>
         [HttpDelete("registrations/{registrationId}")]
-        public Task
-            DeleteSourceRegistrationAsync(
-            Guid registrationId)
+        public async Task<ActionResult> DeleteRegistrationAsync(
+            Guid registrationId,
+            [FromQuery] string? username = default)
         {
-            var username = User.Identity?.Name!;
-            return _appStateManager.DeleteDataSourceRegistrationAsync(username, registrationId);
+            if (TryAuthenticate(username, out var actualUsername, out var response))
+            {
+                await _appStateManager.DeleteDataSourceRegistrationAsync(actualUsername, registrationId);
+                return Ok();
+            }
+
+            else
+            {
+                return response;
+            }
         }
 
-        private ExtensionDescription[] GetExtensionDescriptions(IEnumerable<Type> extensions)
+        private List<ExtensionDescription> GetExtensionDescriptions(
+            IEnumerable<Type> extensions)
         {
             return extensions.Select(type =>
             {
                 var attribute = type.GetCustomAttribute<ExtensionDescriptionAttribute>(inherit: false);
 
-                var description = attribute is null
-                    ? null
-                    : attribute.Description;
+                if (attribute is null)
+                    return new ExtensionDescription(type.FullName!, default, default, default, default);
 
-                return new ExtensionDescription(type.FullName ?? throw new Exception("fullname is null"), description);
+                else
+                    return new ExtensionDescription(type.FullName!, attribute.Description, attribute.ProjectUrl, attribute.RepositoryUrl, default);
             })
-            .ToArray();
+            .ToList();
+        }
+
+        private bool TryAuthenticate(
+            string? requestedUsername,
+            out string username,
+            [NotNullWhen(returnValue: false)] out ActionResult? response)
+        {
+            var isAdmin = User.IsInRole(NexusRoles.ADMINISTRATOR);
+            var currentUsername = User.Identity?.Name!;
+
+            if (!(isAdmin || requestedUsername is null || requestedUsername == currentUsername))
+                response = StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to get source registrations of user {requestedUsername}.");
+
+            else
+                response = null;
+
+            username = requestedUsername is null
+                ? currentUsername
+                : requestedUsername;
+            
+            return response is null;
         }
     }
 }

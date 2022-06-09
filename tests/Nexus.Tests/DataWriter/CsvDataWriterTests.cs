@@ -30,7 +30,8 @@ namespace DataWriter
 
             var context = new DataWriterContext(
                 ResourceLocator: new Uri(targetFolder),
-                Configuration: new Dictionary<string, string>()
+                SystemConfiguration: default!,
+                RequestConfiguration: new Dictionary<string, string>()
                 {
                     ["RowIndexFormat"] = rowIndexFormat,
                     ["SignificantFigures"] = "7"
@@ -100,7 +101,7 @@ namespace DataWriter
                         "Unix" => ("Unix time", "1577838799.00000", string.Format(nfi, "{0:N5}", (begin.AddSeconds(value) - new DateTime(1970, 01, 01)).TotalSeconds)),
                         "Excel" => ("Excel time", "43831.023136574", string.Format(nfi, "{0:N9}", begin.AddSeconds(value).ToOADate())),
                         "ISO 8601" => ("ISO 8601 time", "2020-01-01T00:33:19.0000000Z", begin.AddSeconds(value).ToString("o")),
-                        _ => throw new Exception($"Row index format '{rowIndexFormat}' is not supported.")
+                        _ => throw new Exception($"Row index format {rowIndexFormat} is not supported.")
                     };
                 })
                 .ToArray();
@@ -140,7 +141,7 @@ namespace DataWriter
                 "# date_time: 2020-01-01T00-00-00Z",
                 "# sample_period: 1_s",
                 "# catalog_id: /A/B/C",
-                $"{expected[0].Item1},resource1_1_s_mean (°C),resource1_1_s_max (°C)",
+                $"{expected[0].Item1},resource1_1_s (°C),resource1_10_s (°C)",
                 $"{expected[0].Item3},2486.686,-0.7557958",
                 $"{expected[1].Item3},1107.44,-0.4584072",
                 $"{expected[2].Item3},4670.107,-0.001267695",
@@ -164,7 +165,7 @@ namespace DataWriter
                 "# date_time: 2020-01-01T00-00-00Z",
                 "# sample_period: 1_s",
                 "# catalog_id: /D/E/F",
-                $"{expected[0].Item1},resource3_1_s_std (m/s)",
+                $"{expected[0].Item1},resource3_1_s (m/s)",
                 $"{expected[0].Item3},1.573993",
                 $"{expected[1].Item3},0.4618637",
                 $"{expected[2].Item3},1.094448",

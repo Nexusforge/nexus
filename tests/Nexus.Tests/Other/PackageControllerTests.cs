@@ -45,6 +45,7 @@ namespace Other
                 var version = "v1.0.0-unit.test";
 
                 var packageReference = new PackageReference(
+                    Id: Guid.NewGuid(),
                     Provider: "local",
                     Configuration: new Dictionary<string, string>()
                     {
@@ -151,6 +152,7 @@ namespace Other
             try
             {
                 var packageReference = new PackageReference(
+                    Id: Guid.NewGuid(),
                     Provider: "local",
                     Configuration: new Dictionary<string, string>()
                     {
@@ -200,6 +202,7 @@ namespace Other
             try
             {
                 var packageReference = new PackageReference(
+                    Id: Guid.NewGuid(),
                     Provider: "local",
                     Configuration: new Dictionary<string, string>()
                     {
@@ -255,6 +258,7 @@ namespace Other
             };
 
             var packageReference = new PackageReference(
+                Id: Guid.NewGuid(),
                 Provider: "github-releases",
                 Configuration: new Dictionary<string, string>()
                 {
@@ -307,6 +311,7 @@ namespace Other
                 };
 
                 var packageReference = new PackageReference(
+                    Id: Guid.NewGuid(),
                     Provider: "github-releases",
                     Configuration: new Dictionary<string, string>()
                     {
@@ -353,6 +358,7 @@ namespace Other
             };
 
             var packageReference = new PackageReference(
+                Id: Guid.NewGuid(),
                 Provider: "gitlab-releases-v4",
                 Configuration: new Dictionary<string, string>()
                 {
@@ -394,6 +400,7 @@ namespace Other
             try
             {
                 var packageReference = new PackageReference(
+                    Id: Guid.NewGuid(),
                     Provider: "gitlab-releases-v4",
                     Configuration: new Dictionary<string, string>()
                     {
@@ -441,6 +448,7 @@ namespace Other
             };
 
             var packageReference = new PackageReference(
+                Id: Guid.NewGuid(),
                 Provider: "gitlab-packages-generic-v4",
                 Configuration: new Dictionary<string, string>()
                 {
@@ -483,6 +491,7 @@ namespace Other
             try
             {
                 var packageReference = new PackageReference(
+                    Id: Guid.NewGuid(),
                     Provider: "gitlab-packages-generic-v4",
                     Configuration: new Dictionary<string, string>()
                     {

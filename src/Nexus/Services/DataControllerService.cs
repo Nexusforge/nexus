@@ -1,4 +1,5 @@
-﻿using Nexus.Core;
+﻿using Microsoft.Extensions.Options;
+using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using System.Collections.Concurrent;
@@ -23,22 +24,31 @@ namespace Nexus.Services
         public const string NexusConfigurationHeaderKey = "Nexus-Configuration";
 
         private AppState _appState;
+        private DataOptions _dataOptions;
         private IHttpContextAccessor _httpContextAccessor;
         private IExtensionHive _extensionHive;
+        private IProcessingService _processingService;
+        private ICacheService _cacheService;
         private ILogger _logger;
         private ILoggerFactory _loggerFactory;
-        private Dictionary<string, string> _defaultUserConfiguration = new Dictionary<string, string>();
+        private Dictionary<string, string> _defaultRequestConfiguration = new Dictionary<string, string>();
 
         public DataControllerService(
             AppState appState,
             IHttpContextAccessor httpContextAccessor,
             IExtensionHive extensionHive,
+            IProcessingService processingService,
+            ICacheService cacheService,
+            IOptions<DataOptions> dataOptions,
             ILogger<DataControllerService> logger,
             ILoggerFactory loggerFactory)
         {
             _appState = appState;
             _httpContextAccessor = httpContextAccessor;
             _extensionHive = extensionHive;
+            _processingService = processingService;
+            _cacheService = cacheService;
+            _dataOptions = dataOptions.Value;
             _logger = logger;
             _loggerFactory = loggerFactory;
         }
@@ -49,9 +59,19 @@ namespace Nexus.Services
         {
             var logger1 = _loggerFactory.CreateLogger<DataSourceController>();
             var logger2 = _loggerFactory.CreateLogger($"{registration.Type} - {registration.ResourceLocator}");
+
             var dataSource = _extensionHive.GetInstance<IDataSource>(registration.Type);
-            var userConfiguration = GetUserConfiguration();
-            var controller = new DataSourceController(dataSource, registration, userConfiguration, logger1);
+            var requestConfiguration = GetRequestConfiguration();
+
+            var controller = new DataSourceController(
+                dataSource,
+                registration, 
+                systemConfiguration: _appState.Project.SystemConfiguration.ToDictionary(entry => entry.Key, entry => entry.Value),
+                requestConfiguration: requestConfiguration,
+                _processingService,
+                _cacheService,
+                _dataOptions,
+                logger1);
 
             var actualCatalogCache = _appState.CatalogState.Cache.GetOrAdd(
                 registration,
@@ -67,35 +87,42 @@ namespace Nexus.Services
             var logger1 = _loggerFactory.CreateLogger<DataWriterController>();
             var logger2 = _loggerFactory.CreateLogger($"{exportParameters.Type} - {resourceLocator}");
             var dataWriter = _extensionHive.GetInstance<IDataWriter>(exportParameters.Type);
-            var controller = new DataWriterController(dataWriter, resourceLocator, exportParameters.Configuration, logger1);
+            var requestConfiguration = exportParameters.Configuration.ToDictionary(entry => entry.Key, entry => entry.Value);
+
+            var controller = new DataWriterController(
+                dataWriter, 
+                resourceLocator,
+                systemConfiguration: _appState.Project.SystemConfiguration.ToDictionary(entry => entry.Key, entry => entry.Value),
+                requestConfiguration: requestConfiguration,
+                logger1);
 
             await controller.InitializeAsync(logger2, cancellationToken);
 
             return controller;
         }
 
-        private Dictionary<string, string> GetUserConfiguration()
+        private Dictionary<string, string> GetRequestConfiguration()
         {
             var httpContext = _httpContextAccessor.HttpContext;
 
             if (httpContext is null)
-                return _defaultUserConfiguration;
+                return _defaultRequestConfiguration;
 
-            if (!httpContext.Request.Headers.TryGetValue(NexusConfigurationHeaderKey, out var encodedUserConfiguration))
-                return _defaultUserConfiguration;
+            if (!httpContext.Request.Headers.TryGetValue(NexusConfigurationHeaderKey, out var encodedRequestConfiguration))
+                return _defaultRequestConfiguration;
 
             try
             {
-                var userConfiguration = JsonSerializer
-                    .Deserialize<Dictionary<string, string>>(Convert.FromBase64String(encodedUserConfiguration.First()));
+                var requestConfiguration = JsonSerializer
+                    .Deserialize<Dictionary<string, string>>(Convert.FromBase64String(encodedRequestConfiguration.First()));
 
-                return userConfiguration is null
-                    ? _defaultUserConfiguration
-                    : userConfiguration;
+                return requestConfiguration is null
+                    ? _defaultRequestConfiguration
+                    : requestConfiguration;
             }
             catch
             {
-                return _defaultUserConfiguration;
+                return _defaultRequestConfiguration;
             }
         }
     }

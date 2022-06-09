@@ -4,6 +4,7 @@ using Nexus.Utilities;
 using System.Security.Claims;
 using System.Text.Json;
 using Xunit;
+using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Other
 {
@@ -11,33 +12,41 @@ namespace Other
     {
         [Theory]
 
-        [InlineData("Basic", "true", "", "", true)]
-        [InlineData("Basic", "false", "/D/E/F;/A/B/C;/G/H/I", "", true)]
-        [InlineData("Basic", "false", "^/A/B/.*", "", true)]
-        [InlineData("Basic", "false", "", "A", true)]
+        [InlineData("Basic", true, new string[0], new string[0], true)]
+        [InlineData("Basic", false, new string[] { "/D/E/F", "/A/B/C", "/G/H/I" }, new string[0], true)]
+        [InlineData("Basic", false, new string[] { "^/A/B/.*" }, new string[0], true)]
+        [InlineData("Basic", false, new string[0], new string[] { "A" }, true)]
 
-        [InlineData("Basic", "false", "", "", false)]
-        [InlineData("Basic", "false", "/D/E/F;/A/B/C2;/G/H/I", "", false)]
-        [InlineData("Basic", "false", "", "A2", false)]
-        [InlineData(null, "true", "", "", false)]
+        [InlineData("Basic", false, new string[0], new string[0], false)]
+        [InlineData("Basic", false, new string[] { "/D/E/F", "/A/B/C2", "/G/H/I" }, new string[0], false)]
+        [InlineData("Basic", false, new string[0], new string[] { "A2" }, false)]
+        [InlineData(null, true, new string[0], new string[0], false)]
         public void CanDetermineCatalogAccessibility(
             string authenticationType, 
-            string isAdmin, 
-            string canAccessCatalog,
-            string canAccessGroup,
+            bool isAdmin, 
+            string[] canReadCatalog,
+            string[] canAccessGroup,
             bool expected)
         {
             // Arrange
             var catalogId = "/A/B/C";
-            var catalogMetadata = new CatalogMetadata(default, default, GroupMemberships: new[] { "A" }, default);
+            var catalogMetadata = new CatalogMetadata(default, GroupMemberships: new[] { "A" }, default);
 
-            var principal = new ClaimsPrincipal(new ClaimsIdentity(
-                new Claim[] { new Claim(NexusClaims.IS_ADMIN, isAdmin) }
-                .Concat(canAccessCatalog.Split(";").Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => new Claim(NexusClaims.CAN_ACCESS_CATALOG, value)))
-                .Concat(canAccessGroup.Split(";").Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => new Claim(NexusClaims.CAN_ACCESS_GROUP, value))), authenticationType));
+            var adminClaim = isAdmin
+                ? new Claim[] { new Claim(Claims.Role, NexusRoles.ADMINISTRATOR) }
+                : new Claim[0];
+
+            var principal = new ClaimsPrincipal(
+                new ClaimsIdentity(
+                    claims: adminClaim
+                        .Concat(canReadCatalog.Select(value => new Claim(NexusClaims.CAN_READ_CATALOG, value)))
+                        .Concat(canAccessGroup.Select(value => new Claim(NexusClaims.CAN_READ_CATALOG_GROUP, value))),
+                    authenticationType,
+                    nameType: Claims.Name,
+                    roleType: Claims.Role));
 
             // Act
-            var actual = AuthorizationUtilities.IsCatalogAccessible(catalogId, catalogMetadata, principal);
+            var actual = AuthorizationUtilities.IsCatalogReadable(catalogId, catalogMetadata, default!, principal);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -45,55 +54,35 @@ namespace Other
 
         [Theory]
 
-        [InlineData("Basic", "true", "", true)]
-        [InlineData("Basic", "false", "/D/E/F;/A/B/C;/G/H/I", true)]
-        [InlineData("Basic", "false", "^/A/B/.*", true)]
+        [InlineData("Basic", true, new string[0], true)]
+        [InlineData("Basic", false, new string[] { "/D/E/F", "/A/B/C", "/G/H/I" }, true)]
+        [InlineData("Basic", false, new string[] { "^/A/B/.*" }, true)]
 
-        [InlineData("Basic", "false", "", false)]
-        [InlineData(null, "true", "", false)]
+        [InlineData("Basic", false, new string[0], false)]
+        [InlineData(null, true, new string[0], false)]
         public void CanDetermineCatalogEditability(
             string authenticationType,
-            string isAdmin,
-            string canEditCatalog,
+            bool isAdmin,
+            string[] canWriteCatalog,
             bool expected)
         {
             // Arrange
             var catalogId = "/A/B/C";
 
-            var principal = new ClaimsPrincipal(new ClaimsIdentity(
-               new Claim[] { new Claim(NexusClaims.IS_ADMIN, isAdmin) }
-               .Concat(canEditCatalog.Split(";").Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => new Claim(NexusClaims.CAN_EDIT_CATALOG, value))), authenticationType));
+            var adminClaim = isAdmin
+                ? new Claim[] { new Claim(Claims.Role, NexusRoles.ADMINISTRATOR) }
+                : new Claim[0];
+
+            var principal = new ClaimsPrincipal(
+                new ClaimsIdentity(
+                    claims: adminClaim
+                        .Concat(canWriteCatalog.Select(value => new Claim(NexusClaims.CAN_WRITE_CATALOG, value))), 
+                    authenticationType,
+                    nameType: Claims.Name,
+                    roleType: Claims.Role));
 
             // Act
-            var actual = AuthorizationUtilities.IsCatalogEditable(principal, catalogId);
-
-            // Assert
-            Assert.Equal(expected, actual);
-        }
-
-        [Theory]
-
-        [InlineData("Basic", "true", true, true)]         //    admin,     hidden
-        [InlineData("Basic", "false", false, true)]       // no admin, not hidden
-
-        [InlineData("Basic", "false", true, false)]       // no admin,     hidden
-        [InlineData(null, "true", true, false)]           // not authenticated
-        public void CanDetermineCatalogVisibility(
-            string authenticationType,
-            string isAdmin,
-            bool isHidden,
-            bool expected)
-        {
-            // Arrange
-            var catalogMetadata = new CatalogMetadata(default, isHidden, default, default);
-
-            var principal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]
-            {
-                new Claim(NexusClaims.IS_ADMIN, isAdmin)
-            }, authenticationType));
-
-            // Act
-            var actual = AuthorizationUtilities.IsCatalogVisible(principal, catalogMetadata);
+            var actual = AuthorizationUtilities.IsCatalogWritable(catalogId, principal);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -250,11 +239,11 @@ namespace Other
         public void CanDetermineSizeOfNexusDataType()
         {
             // Arrange
-            var values = NexusCoreUtilities.GetEnumValues<NexusDataType>();
+            var values = NexusUtilities.GetEnumValues<NexusDataType>();
             var expected = new[] { 1, 2, 4, 8, 1, 2, 4, 8, 4, 8 };
 
             // Act
-            var actual = values.Select(value => NexusCoreUtilities.SizeOf(value));
+            var actual = values.Select(value => NexusUtilities.SizeOf(value));
 
             // Assert
             Assert.Equal(expected, actual);

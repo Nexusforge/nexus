@@ -1,9 +1,26 @@
 ﻿using Nexus.Core;
+using Nexus.DataModel;
 using Nexus.Utilities;
 using System.ComponentModel.DataAnnotations;
 
 namespace Nexus.Extensibility
 {
+    internal interface IDataWriterController : IDisposable
+    {
+        Task InitializeAsync(
+            ILogger logger,
+            CancellationToken cancellationToken);
+
+        Task WriteAsync(
+            DateTime begin,
+            DateTime end, 
+            TimeSpan samplePeriod, 
+            TimeSpan filePeriod, 
+            CatalogItemRequestPipeReader[] catalogItemRequestPipeReaders,
+            IProgress<double> progress,
+            CancellationToken cancellationToken);
+    }
+
 #warning Add "CheckFileSize" method (e.g. for Famos).
 
     internal class DataWriterController : IDataWriterController
@@ -12,13 +29,15 @@ namespace Nexus.Extensibility
 
         public DataWriterController(
             IDataWriter dataWriter, 
-            Uri resourceLocator, 
-            Dictionary<string, string> configuration, 
+            Uri resourceLocator,
+            IReadOnlyDictionary<string, string> systemConfiguration,
+            IReadOnlyDictionary<string, string> requestConfiguration,
             ILogger<DataWriterController> logger)
         {
             DataWriter = dataWriter;
             ResourceLocator = resourceLocator;
-            Configuration = configuration;
+            SystemConfiguration = systemConfiguration;
+            RequestConfiguration = requestConfiguration;
             Logger = logger;
         }
 
@@ -26,11 +45,13 @@ namespace Nexus.Extensibility
 
         #region Properties
 
+        internal IReadOnlyDictionary<string, string> SystemConfiguration { get; }
+
+        internal IReadOnlyDictionary<string, string> RequestConfiguration { get; }
+
         private IDataWriter DataWriter { get; }
 
         private Uri ResourceLocator { get; }
-
-        private Dictionary<string, string> Configuration { get; }
 
         private ILogger Logger { get; }
 
@@ -38,11 +59,14 @@ namespace Nexus.Extensibility
 
         #region Methods
 
-        public async Task InitializeAsync(ILogger logger, CancellationToken cancellationToken)
+        public async Task InitializeAsync(
+            ILogger logger,
+            CancellationToken cancellationToken)
         {
             var context = new DataWriterContext(
                 ResourceLocator: ResourceLocator,
-                Configuration: Configuration,
+                SystemConfiguration: SystemConfiguration,
+                RequestConfiguration: RequestConfiguration,
                 Logger: logger);
 
             await DataWriter.SetContextAsync(context, cancellationToken);
@@ -53,17 +77,17 @@ namespace Nexus.Extensibility
             DateTime end,
             TimeSpan samplePeriod,
             TimeSpan filePeriod,
-            CatalogItemPipeReader[] catalogItemPipeReaders,
+            CatalogItemRequestPipeReader[] catalogItemRequestPipeReaders,
             IProgress<double>? progress,
             CancellationToken cancellationToken)
         {
             /* validation */
-            if (!catalogItemPipeReaders.Any())
+            if (!catalogItemRequestPipeReaders.Any())
                 return;
 
-            foreach (var catalogItemPipeReader in catalogItemPipeReaders)
+            foreach (var catalogItemRequestPipeReader in catalogItemRequestPipeReaders)
             {
-                if (catalogItemPipeReader.CatalogItem.Representation.SamplePeriod != samplePeriod)
+                if (catalogItemRequestPipeReader.Request.Item.Representation.SamplePeriod != samplePeriod)
                     throw new ValidationException("All representations must be of the same sample period.");
             }
 
@@ -85,19 +109,18 @@ namespace Nexus.Extensibility
                 var baseProgress = consumedPeriod.Ticks / (double)totalPeriod.Ticks;
                 var relativeProgressFactor = currentPeriod.Ticks / (double)totalPeriod.Ticks;
                 var relativeProgress = progressValue * relativeProgressFactor;
-
                 progress?.Report(baseProgress + relativeProgress);
             };
 
             /* catalog items */
-            var catalogItems = catalogItemPipeReaders
-                .Select(catalogItemPipeReader => catalogItemPipeReader.CatalogItem)
+            var catalogItems = catalogItemRequestPipeReaders
+                .Select(catalogItemRequestPipeReader => catalogItemRequestPipeReader.Request.Item)
                 .ToArray();
 
             /* go */
             var lastFileBegin = default(DateTime);
 
-            await NexusCoreUtilities.FileLoopAsync(begin, end, filePeriod,
+            await NexusUtilities.FileLoopAsync(begin, end, filePeriod,
                 async (fileBegin, fileOffset, duration) =>
             {
                 /* Concept: It never happens that the data of a read operation is spreaded over 
@@ -139,11 +162,11 @@ namespace Nexus.Extensibility
                 while (remainingPeriod > TimeSpan.Zero)
                 {
                     /* read */
-                    var readResultTasks = catalogItemPipeReaders
-                        .Select(catalogItemPipeReader => catalogItemPipeReader.DataReader.ReadAsync(cancellationToken))
+                    var readResultTasks = catalogItemRequestPipeReaders
+                        .Select(catalogItemRequestPipeReader => catalogItemRequestPipeReader.DataReader.ReadAsync(cancellationToken))
                         .ToArray();
 
-                    var readResults = await NexusCoreUtilities.WhenAll(readResultTasks);
+                    var readResults = await NexusUtilities.WhenAll(readResultTasks);
                     var bufferPeriod = readResults.Min(readResult => readResult.Buffer.First.Cast<byte, double>().Length) * samplePeriod;
 
                     if (bufferPeriod == default)
@@ -153,12 +176,31 @@ namespace Nexus.Extensibility
                     currentPeriod = new TimeSpan(Math.Min(remainingPeriod.Ticks, bufferPeriod.Ticks));
                     var currentLength = (int)(currentPeriod.Ticks / samplePeriod.Ticks);
 
-                    var requests = catalogItemPipeReaders.Zip(readResults).Select(zipped =>
+                    var requests = catalogItemRequestPipeReaders.Zip(readResults).Select(zipped =>
                     {
-                        var (catalogItemPipeReader, readResult) = zipped;
+                        var (catalogItemRequestPipeReader, readResult) = zipped;
+
+                        var request = catalogItemRequestPipeReader.Request;
+                        var catalogItem = request.Item;
+
+                        if (request.BaseItem is not null)
+                        {
+                            var originalResource = request.Item.Resource;
+
+                            var newResource = new ResourceBuilder(originalResource.Id)
+                                .WithProperty(DataModelExtensions.BasePath, request.BaseItem.ToPath())
+                                .Build();
+
+                            var augmentedResource = originalResource.Merge(newResource);
+
+                            catalogItem = request.Item with
+                            {
+                                Resource = augmentedResource
+                            };
+                        }
 
                         var writeRequest = new WriteRequest(
-                            catalogItemPipeReader.CatalogItem,
+                            catalogItem,
                             readResult.Buffer.First.Cast<byte, double>().Slice(0, currentLength));
 
                         return writeRequest;
@@ -171,7 +213,7 @@ namespace Nexus.Extensibility
                         cancellationToken);
 
                     /* advance */
-                    foreach (var ((_, dataReader), readResult) in catalogItemPipeReaders.Zip(readResults))
+                    foreach (var ((_, dataReader), readResult) in catalogItemRequestPipeReaders.Zip(readResults))
                     {
                         dataReader.AdvanceTo(readResult.Buffer.GetPosition(currentLength * sizeof(double)));
                     }
@@ -181,20 +223,23 @@ namespace Nexus.Extensibility
                     consumedFilePeriod += currentPeriod;
                     remainingPeriod -= currentPeriod;
 
-                    progress?.Report(consumedFilePeriod.Ticks / (double)duration.Ticks);
+                    progress?.Report(consumedPeriod.Ticks / (double)totalPeriod.Ticks);
                 }
             });
 
             /* close */
             await DataWriter.CloseAsync(cancellationToken);
 
-            foreach (var (_, dataReader) in catalogItemPipeReaders)
+            foreach (var (_, dataReader) in catalogItemRequestPipeReaders)
             {
                 await dataReader.CompleteAsync();
             }
         }
 
-        private static void ValidateParameters(DateTime begin, TimeSpan samplePeriod, TimeSpan filePeriod)
+        private static void ValidateParameters(
+            DateTime begin,
+            TimeSpan samplePeriod,
+            TimeSpan filePeriod)
         {
             if (begin.Ticks % samplePeriod.Ticks != 0)
                 throw new ValidationException("The begin parameter must be a multiple of the sample period.");

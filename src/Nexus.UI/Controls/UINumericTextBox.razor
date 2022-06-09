@@ -1,0 +1,47 @@
+﻿@typeparam T
+
+<div class="mb-7 pt-3 pb-2 px-3 relative @(_hasFocus ? "border-b-2 border-orange-500" : "border-b border-white") hover:border-orange-500">
+
+    <label class="absolute bottom-8 text-xs @(string.IsNullOrWhiteSpace(Value.ToString()) ? "text-transparent" : "text-gray-300")">@Label</label>
+
+    <input @bind="Value" @onfocus="() => _hasFocus = true" @onblur="() => _hasFocus = false"
+        class="w-full pt-2 focus:outline-none text-gray-200 placeholder-gray-400 bg-transparent" 
+        type="number"
+        min="@Minimum"
+        max="@Maximum"
+        placeholder="@Label">
+</div>
+
+@code {
+
+    private bool _hasFocus;
+
+    private T _value = default!;
+
+    [Parameter]
+    public T Value
+    {
+        get => _value;
+        set
+        {
+            if (!value.Equals(_value)) {
+                _value = value;
+
+                if (ValueChanged.HasDelegate)
+                    ValueChanged.InvokeAsync(value);
+            }
+        }
+    }
+
+    [Parameter]
+    public EventCallback<T> ValueChanged { get; set; }
+
+    [Parameter]
+    public string Label { get; set; } = default!;
+
+    [Parameter]
+    public int Minimum { get; set; }
+
+    [Parameter]
+    public int Maximum { get; set; }
+}

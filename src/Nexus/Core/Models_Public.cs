@@ -58,7 +58,7 @@ namespace Nexus.Core
         /// <summary>
         /// A boolean that indicates if the token has been revoked.
         /// </summary>
-        public bool IsRevoked => Revoked != null;
+        public bool IsRevoked => Revoked is not null;
 
         /// <summary>
         /// A boolean that indicates if the token is active.
@@ -70,7 +70,7 @@ namespace Nexus.Core
         /// </summary>
         [Required]
         [JsonIgnore]
-        public NexusUser Owner { get; set; } = null!;
+        public NexusUser Owner { get; set; } = default!;
     }
 
     /// <summary>
@@ -97,7 +97,7 @@ namespace Nexus.Core
         #region Claims
 
         // - Do not use normal Claim here because the Claim type all its
-        // properties would become part of the generated OpenAPI client!
+        // properties would become part of the generated clients!
 
         // - It is difficult to use dictionaries in a database, so below
         // is a workaorund using the JsonSerializer.
@@ -171,23 +171,34 @@ namespace Nexus.Core
         string RefreshToken);
 
     /// <summary>
+    /// Describes an OpenID connect provider.
+    /// </summary>
+    /// <param name="Scheme">The scheme.</param>
+    /// <param name="DisplayName">The display name.</param>
+    public record AuthenticationSchemeDescription(
+        string Scheme,
+        string DisplayName);
+
+    /// <summary>
     /// A package reference.
     /// </summary>
+    /// <param name="Id">The unique identifier of the package reference.</param>
     /// <param name="Provider">The provider which loads the package.</param>
     /// <param name="Configuration">The configuration of the package reference.</param>
     public record PackageReference(
+        Guid Id,
         string Provider,
         Dictionary<string, string> Configuration);
 
     /// <summary>
     /// A structure for export parameters.
     /// </summary>
-    /// <param name="Begin"><example>2020-02-01T00:00:00Z</example></param>
-    /// <param name="End"><example>2020-02-02T00:00:00Z</example></param>
-    /// <param name="FilePeriod"><example>00:00:00</example></param>
-    /// <param name="Type"><example>Nexus.Writers.Csv</example></param>
-    /// <param name="ResourcePaths"><example>["/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean", "/IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean"]</example></param>
-    /// <param name="Configuration"><example>{ "RowIndexFormat": "Index", "SignificantFigures": "4" }</example></param>
+    /// <param name="Begin">The start date/time.</param>
+    /// <param name="End">The end date/time.</param>
+    /// <param name="FilePeriod">The file period.</param>
+    /// <param name="Type">The writer type.</param>
+    /// <param name="ResourcePaths">The resource paths to export.</param>
+    /// <param name="Configuration">The configuration.</param>
     public record ExportParameters(
         DateTime Begin,
         DateTime End,
@@ -200,21 +211,56 @@ namespace Nexus.Core
     /// An extension description.
     /// </summary>
     /// <param name="Type">The extension type.</param>
-    /// <param name="Description">An optional description.</param>
+    /// <param name="Description">A nullable description.</param>
+    /// <param name="ProjectUrl">A nullable project website URL.</param>
+    /// <param name="RepositoryUrl">A nullable source repository URL.</param>
+    /// <param name="AdditionalInfo">A nullable dictionary with additional information.</param>
     public record ExtensionDescription(
         string Type, 
-        string? Description);
+        string? Description,
+        string? ProjectUrl,
+        string? RepositoryUrl,
+        IReadOnlyDictionary<string, string>? AdditionalInfo);
+
+    /// <summary>
+    /// A structure for catalog information.
+    /// </summary>
+    /// <param name="Id">The identifier.</param>
+    /// <param name="Title">The title.</param>
+    /// <param name="Contact">A nullable contact.</param>
+    /// <param name="License">A nullable license.</param>
+    /// <param name="IsReadable">A boolean which indicates if the catalog is accessible.</param>
+    /// <param name="IsWritable">A boolean which indicates if the catalog is editable.</param>
+    /// <param name="IsReleased">A boolean which indicates if the catalog is released.</param>
+    /// <param name="IsVisible">A boolean which indicates if the catalog is visible.</param>
+    /// <param name="IsOwner">A boolean which indicates if the catalog is owned by the current user.</param>
+    /// <param name="DataSourceInfoUrl">A nullable info URL of the data source.</param>
+    /// <param name="DataSourceType">The data source type.</param>
+    /// <param name="DataSourceRegistrationId">The data source registration identifier.</param>
+    /// <param name="PackageReferenceId">The package reference identifier.</param>
+    public record CatalogInfo(
+        string Id,
+        string Title,
+        string? Contact,
+        string? License,
+        bool IsReadable,
+        bool IsWritable,
+        bool IsReleased,
+        bool IsVisible,
+        bool IsOwner,
+        string? DataSourceInfoUrl,
+        string DataSourceType,
+        Guid DataSourceRegistrationId,
+        Guid PackageReferenceId);
 
     /// <summary>
     /// A structure for catalog metadata.
     /// </summary>
     /// <param name="Contact">The contact.</param>
-    /// <param name="IsHidden">A boolean which indicates if the catalog should be hidden.</param>
     /// <param name="GroupMemberships">A list of groups the catalog is part of.</param>
     /// <param name="Overrides">Overrides for the catalog.</param>
     public record CatalogMetadata(
         string? Contact,
-        bool IsHidden,
         string[]? GroupMemberships,
         ResourceCatalog? Overrides);
 
@@ -232,30 +278,34 @@ namespace Nexus.Core
     /// </summary>
     /// <param name="Data">The actual availability data.</param>
     public record CatalogAvailability(
-        IReadOnlyDictionary<DateTime, double> Data);
+        double[] Data);
 
     /// <summary>
-    /// A backend source.
+    /// A data source registration.
     /// </summary>
-    /// <param name="Type">The type of the backend source.</param>
+    /// <param name="Id">The unique identifier of the data source registration.</param>
+    /// <param name="Type">The type of the data source.</param>
     /// <param name="ResourceLocator">An URL which points to the data.</param>
     /// <param name="Configuration">Configuration parameters for the instantiated source.</param>
-    /// <param name="Publish">A boolean which indicates if the found catalogs should be available for everyone.</param>
-    /// <param name="Disable">A boolean which indicates if this backend source should be ignored.</param>
+    /// <param name="InfoUrl">An optional info URL.</param>
+    /// <param name="ReleasePattern">An optional regular expressions pattern to select the catalogs to be released. By default, all catalogs will be released.</param>
+    /// <param name="VisibilityPattern">An optional regular expressions pattern to select the catalogs to be visible. By default, all catalogs will be visible.</param>
     public record DataSourceRegistration(
+        Guid Id,
         string Type,
         Uri ResourceLocator,
         IReadOnlyDictionary<string, string> Configuration,
-        bool Publish,
-        bool Disable = false);
+        string? InfoUrl = default,
+        string ReleasePattern = ".*",
+        string VisibilityPattern = ".*");
 
     /// <summary>
     /// Description of a job.
     /// </summary>
-    /// <param name="Id"><example>06f8eb30-5924-4a71-bdff-322f92343f5b</example></param>
-    /// <param name="Owner"><example>test@nexus.localhost</example></param>
-    /// <param name="Type"><example>export</example></param>
-    /// <param name="Parameters">Job parameters.</param>
+    /// <param name="Id">The global unique identifier.</param>
+    /// <param name="Owner">The owner of the job.</param>
+    /// <param name="Type">The job type</param>
+    /// <param name="Parameters">The job parameters.</param>
     public record Job(
         Guid Id,
         string Type,
@@ -268,21 +318,12 @@ namespace Nexus.Core
     /// <param name="Start">The start date/time.</param>
     /// <param name="Status">The status.</param>
     /// <param name="Progress">The progress from 0 to 1.</param>
-    /// <param name="ExceptionMessage">An optional exception message.</param>
-    /// <param name="Result">The optional result.</param>
+    /// <param name="ExceptionMessage">The nullable exception message.</param>
+    /// <param name="Result">The nullable result.</param>
     public record JobStatus(
         DateTime Start,
         TaskStatus Status,
         double Progress,
         string? ExceptionMessage,
         object? Result);
-
-    /// <summary>
-    /// Describes an OpenID connect provider.
-    /// </summary>
-    /// <param name="Scheme">The scheme.</param>
-    /// <param name="DisplayName">The display name.</param>
-    public record AuthenticationSchemeDescription(
-        string Scheme,
-        string DisplayName);
 }

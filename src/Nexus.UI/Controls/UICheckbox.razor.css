@@ -1,0 +1,32 @@
+﻿[type="checkbox"] {
+    position: relative;
+    left: 15px;
+    top: -4px;
+    z-index: 0;
+    -webkit-appearance: none;
+}
+  
+[type="checkbox"] + label {
+    position: absolute;
+    font-size: 14px;
+}
+
+[type="checkbox"] + label::before {
+    margin-top: 3px;
+    width: 15px;
+    height: 15px;
+    border: 2px solid #ffffff;
+    background-color: transparent;
+    display: block;
+    content: "";
+    float: left;
+    margin-right: 0.5rem;
+    z-index: 5;
+    position: relative;
+}
+
+[type="checkbox"]:checked+label::before {
+    box-shadow: inset 0px 0px 0px 3px rgb(22, 78, 99);
+    border-color: rgb(202, 115, 0);
+    background-color: rgb(202, 115, 0);
+}

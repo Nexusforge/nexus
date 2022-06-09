@@ -10,6 +10,6 @@ namespace Nexus.Core
             //
         }
 
-        public DbSet<NexusUser> Users { get; set; } = null!;
+        public DbSet<NexusUser> Users { get; set; } = default!;
     }
 }

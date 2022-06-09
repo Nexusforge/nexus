@@ -1,9 +1,11 @@
-﻿using Nexus.Core;
-using Nexus.DataModel;
+﻿using Microsoft.Extensions.Options;
+using Nexus.Core;
 using Nexus.Extensibility;
+using Nexus.Utilities;
 using System.ComponentModel.DataAnnotations;
 using System.IO.Compression;
 using System.IO.Pipelines;
+using System.Security.Claims;
 
 namespace Nexus.Services
 {
@@ -12,16 +14,36 @@ namespace Nexus.Services
         Progress<double> ReadProgress { get; }
         Progress<double> WriteProgress { get; }
 
-        Task<string> ExportAsync(ExportParameters exportParameters, Dictionary<CatalogContainer, IEnumerable<CatalogItem>> catalogItemsMap, Guid exportId, CancellationToken cancellationToken);
+        Task<Stream> ReadAsStreamAsync(
+           string resourcePath,
+           DateTime begin,
+           DateTime end,
+           CancellationToken cancellationToken);
+
+        Task<double[]> ReadAsDoubleArrayAsync(
+           string resourcePath,
+           DateTime begin,
+           DateTime end,
+           CancellationToken cancellationToken);
+
+        Task<string> ExportAsync(
+            Guid exportId,
+            IEnumerable<CatalogItemRequest> catalogItemRequests,
+            ReadDataHandler readDataHandler,
+            ExportParameters exportParameters,
+            CancellationToken cancellationToken);
     }
 
     internal class DataService : IDataService
     {
         #region Fields
 
+        private AppState _appState;
+        private DataOptions _dataOptions;
+        private ClaimsPrincipal _user;
         private ILogger _logger;
         private ILoggerFactory _loggerFactory;
-        private IDatabaseManager _databaseManager;
+        private IDatabaseService _databaseService;
         private IDataControllerService _dataControllerService;
 
         #endregion
@@ -29,13 +51,19 @@ namespace Nexus.Services
         #region Constructors
 
         public DataService(
+            AppState appState,
+            ClaimsPrincipal user,
             IDataControllerService dataControllerService,
-            IDatabaseManager databaseManager,
+            IDatabaseService databaseService,
+            IOptions<DataOptions> dataOptions,
             ILogger<DataService> logger,
             ILoggerFactory loggerFactory)
         {
+            _user = user;
+            _appState = appState;
             _dataControllerService = dataControllerService;
-            _databaseManager = databaseManager;
+            _databaseService = databaseService;
+            _dataOptions = dataOptions.Value;
             _logger = logger;
             _loggerFactory = loggerFactory;
 
@@ -55,18 +83,84 @@ namespace Nexus.Services
 
         #region Methods
 
+        public async Task<Stream> ReadAsStreamAsync(
+           string resourcePath,
+           DateTime begin,
+           DateTime end,
+           CancellationToken cancellationToken)
+        {
+            begin = DateTime.SpecifyKind(begin, DateTimeKind.Utc);
+            end = DateTime.SpecifyKind(end, DateTimeKind.Utc);
+
+            // find representation
+            var root = _appState.CatalogState.Root;
+            var catalogItemRequest = await root.TryFindAsync(resourcePath, cancellationToken);
+
+            if (catalogItemRequest is null)
+                throw new Exception($"Could not find resource path {resourcePath}.");
+
+            var catalogContainer = catalogItemRequest.Container;
+
+            // security check
+            if (!AuthorizationUtilities.IsCatalogReadable(catalogContainer.Id, catalogContainer.Metadata, catalogContainer.Owner, _user))
+                throw new Exception($"The current user is not permitted to access the catalog {catalogContainer.Id}.");
+
+            // controller
+            using var controller = await _dataControllerService.GetDataSourceControllerAsync(
+                catalogContainer.DataSourceRegistration,
+                cancellationToken);
+
+            // read data
+            var stream = controller.ReadAsStream(
+                begin,
+                end,
+                catalogItemRequest,
+                readDataHandler: ReadAsDoubleArrayAsync,
+                _dataOptions,
+                _loggerFactory.CreateLogger<DataSourceController>(),
+                cancellationToken);
+
+            return stream;
+        }
+
+        public async Task<double[]> ReadAsDoubleArrayAsync(
+           string resourcePath,
+           DateTime begin,
+           DateTime end,
+           CancellationToken cancellationToken)
+        {
+            var stream = await ReadAsStreamAsync(
+                resourcePath,
+                begin, 
+                end, 
+                cancellationToken);
+
+            var result = new double[stream.Length / 8];
+            var byteBuffer = new CastMemoryManager<double, byte>(result).Memory;
+
+            int bytesRead;
+
+            while ((bytesRead = await stream.ReadAsync(byteBuffer, cancellationToken)) > 0)
+            {
+                byteBuffer = byteBuffer.Slice(bytesRead);
+            }
+
+            return result;
+        }
+
         public async Task<string> ExportAsync(
-            ExportParameters exportParameters,
-            Dictionary<CatalogContainer, IEnumerable<CatalogItem>> catalogItemsMap,
             Guid exportId,
+            IEnumerable<CatalogItemRequest> catalogItemRequests,
+            ReadDataHandler readDataHandler,
+            ExportParameters exportParameters,
             CancellationToken cancellationToken)
         {
-            if (!catalogItemsMap.Any() || exportParameters.Begin == exportParameters.End)
+            if (!catalogItemRequests.Any() || exportParameters.Begin == exportParameters.End)
                 return string.Empty;
 
             // find sample period
-            var samplePeriods = catalogItemsMap.SelectMany(entry => entry.Value)
-                .Select(catalogItem => catalogItem.Representation.SamplePeriod)
+            var samplePeriods = catalogItemRequests
+                .Select(catalogItemRequest => catalogItemRequest.Item.Representation.SamplePeriod)
                 .Distinct()
                 .ToList();
 
@@ -80,8 +174,8 @@ namespace Nexus.Services
                 throw new ValidationException("The file period must be a multiple of the sample period.");
 
             // start
-            var zipFileName = $"Nexus_{exportParameters.Begin.ToString("yyyy-MM-ddTHH-mm-ss")}_{samplePeriod.ToUnitString()}_{exportId.ToString().Substring(0, 8)}.zip";
-            var zipArchiveStream = _databaseManager.WriteArtifact(zipFileName);
+            var zipFileName = $"{Guid.NewGuid()}.zip";
+            var zipArchiveStream = _databaseService.WriteArtifact(zipFileName);
             using var zipArchive = new ZipArchive(zipArchiveStream, ZipArchiveMode.Create);
 
             // create tmp/target directory
@@ -89,7 +183,9 @@ namespace Nexus.Services
             Directory.CreateDirectory(tmpFolderPath);
 
             // copy available licenses
-            var catalogIds = catalogItemsMap.Keys.Select(catalogContainer => catalogContainer.Id);
+            var catalogIds = catalogItemRequests
+                .Select(request => request.Container.Id)
+                .Distinct();
 
             foreach (var catalogId in catalogIds)
             {
@@ -103,7 +199,7 @@ namespace Nexus.Services
             // write data files
             try
             {
-                var exportContext = new ExportContext(samplePeriod, catalogItemsMap, exportParameters);
+                var exportContext = new ExportContext(samplePeriod, catalogItemRequests, readDataHandler, exportParameters);
                 await CreateFilesAsync(exportContext, controller, cancellationToken);
             }
             finally
@@ -114,14 +210,14 @@ namespace Nexus.Services
             // write zip archive
             WriteZipArchiveEntries(zipArchive, tmpFolderPath, cancellationToken);
 
-            return $"api/artifacts/{zipFileName}";
+            return zipFileName;
         }
 
         private void CopyLicenseIfAvailable(string catalogId, string targetFolder)
         {
             var enumeratonOptions = new EnumerationOptions() { MatchCasing = MatchCasing.CaseInsensitive };
 
-            if (_databaseManager.TryReadFirstAttachment(catalogId, "license.md", enumeratonOptions, out var licenseStream))
+            if (_databaseService.TryReadFirstAttachment(catalogId, "license.md", enumeratonOptions, out var licenseStream))
             {
                 try
                 {
@@ -147,23 +243,23 @@ namespace Nexus.Services
             CancellationToken cancellationToken)
         {
             /* reading groups */
-            var catalogItemPipeReaders = new List<CatalogItemPipeReader>();
+            var catalogItemRequestPipeReaders = new List<CatalogItemRequestPipeReader>();
             var readingGroups = new List<DataReadingGroup>();
 
-            foreach (var entry in exportContext.CatalogItemsMap)
+            foreach (var group in exportContext.CatalogItemRequests.GroupBy(request => request.Container))
             {
-                var registration = entry.Key.DataSourceRegistration;
+                var registration = group.Key.DataSourceRegistration;
                 var dataSourceController = await _dataControllerService.GetDataSourceControllerAsync(registration, cancellationToken);
-                var catalogItemPipeWriters = new List<CatalogItemPipeWriter>();
+                var catalogItemRequestPipeWriters = new List<CatalogItemRequestPipeWriter>();
 
-                foreach (var catalogItem in entry.Value)
+                foreach (var catalogItemRequest in group)
                 {
                     var pipe = new Pipe();
-                    catalogItemPipeWriters.Add(new CatalogItemPipeWriter(catalogItem, pipe.Writer, null));
-                    catalogItemPipeReaders.Add(new CatalogItemPipeReader(catalogItem, pipe.Reader));
+                    catalogItemRequestPipeWriters.Add(new CatalogItemRequestPipeWriter(catalogItemRequest, pipe.Writer));
+                    catalogItemRequestPipeReaders.Add(new CatalogItemRequestPipeReader(catalogItemRequest, pipe.Reader));
                 }
 
-                readingGroups.Add(new DataReadingGroup(dataSourceController, catalogItemPipeWriters.ToArray()));
+                readingGroups.Add(new DataReadingGroup(dataSourceController, catalogItemRequestPipeWriters.ToArray()));
             }
 
             /* cancellation */
@@ -179,6 +275,8 @@ namespace Nexus.Services
                 exportParameters.End,
                 exportContext.SamplePeriod,
                 readingGroups.ToArray(),
+                exportContext.ReadDataHandler,
+                _dataOptions,
                 ReadProgress,
                 logger,
                 cts.Token);
@@ -195,7 +293,7 @@ namespace Nexus.Services
                 exportParameters.End,
                 exportContext.SamplePeriod,
                 filePeriod,
-                catalogItemPipeReaders.ToArray(),
+                catalogItemRequestPipeReaders.ToArray(),
                 WriteProgress,
                 cts.Token
             );
@@ -220,11 +318,14 @@ namespace Nexus.Services
 
         private void WriteZipArchiveEntries(ZipArchive zipArchive, string sourceFolderPath, CancellationToken cancellationToken)
         {
+            ((IProgress<double>)WriteProgress).Report(0);
+
             try
             {
                 // write zip archive entries
                 var filePaths = Directory.GetFiles(sourceFolderPath, "*", SearchOption.AllDirectories);
                 var fileCount = filePaths.Count();
+                var currentCount = 0;
 
                 foreach (string filePath in filePaths)
                 {
@@ -238,6 +339,9 @@ namespace Nexus.Services
                     using var zipArchiveEntryStream = zipArchiveEntry.Open();
 
                     fileStream.CopyTo(zipArchiveEntryStream);
+
+                    currentCount++;
+                    ((IProgress<double>)WriteProgress).Report(currentCount / (double)fileCount);
                 }
             }
             finally

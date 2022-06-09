@@ -1,0 +1,84 @@
+﻿@implements IDisposable
+@inject IAppState AppState
+
+<div class="group flex items-center">
+    @if (Job.Status is not null && Job.Status.Status >= Api.TaskStatus.RanToCompletion)
+    {
+        if (Job.Status.Status == Api.TaskStatus.RanToCompletion)
+        {
+            <div class="group-hover:hidden text-cyan-400">
+                <UIIconButton Icon="check" DarkMode="true" />
+            </div>
+            <div class="hidden group-hover:block text-cyan-400">
+                <a download="@GetDownloadName()" href="api/v1/artifacts/@Job.Status.Result">
+                    <UIIconButton Icon="download" DarkMode="true" />
+                </a>
+            </div>
+        }
+        else if (Job.Status.Status == Api.TaskStatus.Canceled)
+        {
+            <div class="text-gray-500">
+                <UIIconButton Icon="cancel" DarkMode="true" />
+            </div>
+        }
+        else if (Job.Status.Status == Api.TaskStatus.Faulted)
+        {
+            <div class="text-orange-600">
+                <UIIconButton Icon="flash" DarkMode="true" @onclick="OpenErrorMessageModal" />
+            </div>
+            <UIModal Title="Exception Details" AutoHeight="true" Width="400px" @bind-IsOpen="_isErrorMessageModalOpen">
+                <div class="bg-gray-100 rounded-lg p-3 text-gray-500 text-sm">
+                    @Job.Status.ExceptionMessage
+                </div>
+            </UIModal>
+        }
+    }
+    else
+    {
+        <div class="group-hover:hidden">
+            <UIProgress Progress="Job.Progress" Radius="25" DarkMode="true" />
+        </div>
+        <div class="hidden group-hover:block">
+            <UIIconButton Icon="close" DarkMode="true" @onclick="() => AppState.CancelJob(Job)" />
+        </div>
+    }
+</div>
+
+@code {
+
+    private PropertyChangedEventHandler _handler;
+    private bool _isErrorMessageModalOpen;
+    
+    public JobView()
+    {
+        _handler = (sender, e) =>
+        {
+            if (e.PropertyName == nameof(Job.Status))
+                StateHasChanged();
+        };
+    }
+
+    [Parameter] 
+    public JobViewModel Job { get; set; } = default!;
+
+
+    protected override void OnInitialized()
+    {
+        Job.PropertyChanged += _handler;
+    }
+
+    private void OpenErrorMessageModal()
+    {
+        _isErrorMessageModalOpen = true;
+    }
+
+    private string GetDownloadName()
+    {
+        return $"Nexus_{Job.Parameters.Begin.ToString("yyyy-MM-ddTHH-mm-ss")}_{AppState.Settings.SamplePeriod.Value.ToUnitString(withUnderScore: true)}.zip";
+    }
+
+    public void Dispose()
+    {
+        Job.PropertyChanged -= _handler;
+    }
+}

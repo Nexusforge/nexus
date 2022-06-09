@@ -27,18 +27,22 @@ namespace DataWriter
             var filePeriod = TimeSpan.FromMinutes(30);
 
             var catalogItems = _fixture.Catalogs
-                .SelectMany(catalog => catalog.Resources
-                .SelectMany(resource => resource.Representations
-                .Select(representation => new CatalogItem(catalog, resource, new Representation(representation.DataType, samplePeriod: TimeSpan.FromMinutes(10), detail: "mean")))))
+               .SelectMany(catalog => catalog.Resources
+               .SelectMany(resource => resource.Representations
+               .Select(representation => new CatalogItem(catalog, resource, new Representation(representation.DataType, samplePeriod: TimeSpan.FromMinutes(10))))))
+               .ToArray();
+
+            var catalogItemRequests = catalogItems
+                .Select(catalogItem => new CatalogItemRequest(catalogItem, default, default!))
                 .ToArray();
 
-            var pipes = catalogItems
-                .Select(catalogItem => new Pipe())
+            var pipes = catalogItemRequests
+                .Select(catalogItemRequest => new Pipe())
                 .ToArray();
 
-            var catalogItemPipeReaders = catalogItems
+            var catalogItemRequestPipeReaders = catalogItemRequests
                 .Zip(pipes)
-                .Select((value) => new CatalogItemPipeReader(value.First, value.Second.Reader))
+                .Select((value) => new CatalogItemRequestPipeReader(value.First, value.Second.Reader))
                 .ToArray();
 
             var random = new Random(Seed: 1);
@@ -90,8 +94,13 @@ namespace DataWriter
 
             // instantiate controller
             var resourceLocator = new Uri("file:///empty");
-            var configuration = new Dictionary<string, string>();
-            var controller = new DataWriterController(dataWriter, resourceLocator, configuration, NullLogger<DataWriterController>.Instance);
+
+            var controller = new DataWriterController(
+                dataWriter, 
+                resourceLocator,
+                default!,
+                default!, 
+                NullLogger<DataWriterController>.Instance);
 
             await controller.InitializeAsync(default!, CancellationToken.None);
 
@@ -128,7 +137,7 @@ namespace DataWriter
             });
 
             // write data
-            var writing = controller.WriteAsync(begin, end, samplePeriod, filePeriod, catalogItemPipeReaders, default, CancellationToken.None);
+            var writing = controller.WriteAsync(begin, end, samplePeriod, filePeriod, catalogItemRequestPipeReaders, default, CancellationToken.None);
 
             // wait for completion
             await Task.WhenAll(writing, reading);

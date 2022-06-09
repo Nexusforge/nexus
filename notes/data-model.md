@@ -72,7 +72,7 @@ var resource = new ResourceBuilder(id: "resource1")
 
 # Properties
 
-The `ResourceCatalog` and `Resource` contain a `IReadOnlyDictionary<string, string> Properties` property. This dictionary acts as a container for e.g. metadata. The values can be any string like simple text or markdown text. It is possible to nest properties by storing a colon-limited list of path segments. Consider the following hierarchical `json` object:
+The `ResourceCatalog` and `Resource` contain a `JsonElement Properties` property. It acts as a container for e.g. metadata. The content must be a JSON object as shown in the following example:
 
 ```json
 {
@@ -90,30 +90,16 @@ The `ResourceCatalog` and `Resource` contain a `IReadOnlyDictionary<string, stri
 }
 ```
 
-To represent this structure in the `Properties` property of a resource, you would do the following:
-
-```cs
-var resource = new ResourceBuilder(id: "resource1")
-    .WithProperty("Type", "Falcon 9")
-    .WithProperty("RelevantCoordinates:0:Longitude", "28.4858401")
-    .WithProperty("RelevantCoordinates:0:Latitude", "-80.5424245")
-    .WithProperty("RelevantCoordinates:1:Longitude", "28.4716636")
-    .WithProperty("RelevantCoordinates:1:Latitude", "-80.5377597")
-    .Build();
-```
-
-_This convention is borrowed from [IConfiguration](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-6.0&tabs=linux#hierarchical-configuration-data-1) to represent hierarchical metadata._
-
 # Special Properties
 
 The Nexus GUI uses some predefined properties and diplays them directly. The property keys are:
 
 **ResourceCatalog**
 
-- Description = Long description of the catalog. Will be rendered as Markdown.
+- `Description`: Long description of the catalog. Will be rendered as Markdown.
 
 **Resource**
 
-- Unit = Unit of the resource.
-- Description = Single-line description of the resource.
-- Groups = A list of groups the resource is part of.
+- `Unit`: Unit of the resource.
+- `Description`: Single-line description of the resource.
+- `Groups`: An array of groups the resource is part of.

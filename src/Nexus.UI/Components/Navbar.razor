@@ -1,0 +1,50 @@
+﻿@using System.Security.Claims
+
+<div class="z-0 w-full py-3 pr-3 flex justify-between items-center text-slate-500 bg-gray-200 shadow-md">
+
+    <a href="">
+        <img class="ml-6 w-16 sm:w-28" src="text.svg" />
+    </a>
+
+    <div class="flex items-center">
+        <ErrorsView />
+        <a class="text-sm font-semibold px-3 py-0.5 rounded text-cyan-700 hover:text-orange-500" href="api" target="_blank">
+            API
+        </a>
+        @if (_authenticationState is not null)
+        {
+            @if (IsAdmin(_authenticationState.User))
+            {
+                <span class="mx-3 text-xs font-semibold px-2.5 py-0.5 rounded bg-orange-500 text-gray-100">
+                    admin
+                </span>
+            }
+            <UserSettingsView />
+        }
+        <span class="mx-3 w-9 h-9 flex justify-center items-center text-2xl mdi mdi-menu xl:hidden cursor-pointer hover:text-orange-500"
+            @onclick="OpenHamburgerMenu">
+        </span>
+    </div>
+</div>
+
+@code {
+
+    private AuthenticationState _authenticationState = default!;
+
+    [CascadingParameter]
+    public Task<AuthenticationState> GetAuthenticationStateTask { get; set; } = default!;
+
+    [Parameter]
+    public Action OpenHamburgerMenu { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _authenticationState = await GetAuthenticationStateTask;
+    }
+
+    private bool IsAdmin(ClaimsPrincipal user)
+    {
+        return user
+            .IsInRole("Administrator");
+    }
+}

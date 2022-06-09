@@ -1,6 +1,7 @@
 ﻿using Nexus.Core;
 using Nexus.Extensibility;
 using Nexus.Utilities;
+using System.Reflection;
 
 namespace Nexus.Services
 {
@@ -10,7 +11,7 @@ namespace Nexus.Services
 
         private IExtensionHive _extensionHive;
         private ICatalogManager _catalogManager;
-        private IDatabaseManager _databaseManager;
+        private IDatabaseService _databaseService;
         private ILogger<AppStateManager> _logger;
         private SemaphoreSlim _reloadPackagesSemaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
         private SemaphoreSlim _projectSemaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
@@ -23,13 +24,13 @@ namespace Nexus.Services
             AppState appState,
             IExtensionHive extensionHive,
             ICatalogManager catalogManager,
-            IDatabaseManager databaseManager,
+            IDatabaseService databaseService,
             ILogger<AppStateManager> logger)
         {
             AppState = appState;
             _extensionHive = extensionHive;
             _catalogManager = catalogManager;
-            _databaseManager = databaseManager;
+            _databaseService = databaseService;
             _logger = logger;
         }
 
@@ -57,7 +58,7 @@ namespace Nexus.Services
                 {
                     /* create fresh app state */
                     AppState.CatalogState = new CatalogState(
-                        Root: CatalogContainer.CreateRoot(_catalogManager, _databaseManager),
+                        Root: CatalogContainer.CreateRoot(_catalogManager, _databaseService),
                         Cache: new CatalogCache()
                     );
 
@@ -69,7 +70,7 @@ namespace Nexus.Services
                         .ContinueWith(task =>
                         {
                             LoadDataWriters();
-                            AppState.ReloadPackagesTask = null;
+                            AppState.ReloadPackagesTask = default;
                             return Task.CompletedTask;
                         }, TaskScheduler.Default);
                 }
@@ -81,7 +82,6 @@ namespace Nexus.Services
         }
 
         public async Task PutPackageReferenceAsync(
-            Guid packageReferenceId,
             PackageReference packageReference)
         {
             await _projectSemaphore.WaitAsync();
@@ -93,7 +93,7 @@ namespace Nexus.Services
                 var newPackageReferences = project.PackageReferences
                     .ToDictionary(current => current.Key, current => current.Value);
 
-                newPackageReferences[packageReferenceId] = packageReference;
+                newPackageReferences[packageReference.Id] = packageReference;
 
                 var newProject = project with
                 {
@@ -139,7 +139,7 @@ namespace Nexus.Services
             }
         }
 
-        public async Task PutDataSourceRegistrationAsync(string username, Guid registrationId, DataSourceRegistration registration)
+        public async Task PutDataSourceRegistrationAsync(string username, DataSourceRegistration registration)
         {
             await _projectSemaphore.WaitAsync();
 
@@ -153,7 +153,7 @@ namespace Nexus.Services
                 var newDataSourceRegistrations = userConfiguration.DataSourceRegistrations
                     .ToDictionary(current => current.Key, current => current.Value);
 
-                newDataSourceRegistrations[registrationId] = registration;
+                newDataSourceRegistrations[registration.Id] = registration;
 
                 var newUserConfiguration = userConfiguration with
                 {
@@ -221,19 +221,47 @@ namespace Nexus.Services
             }
         }
 
+        public async Task PutSystemConfigurationAsync(Dictionary<string, string> configuration)
+        {
+            await _projectSemaphore.WaitAsync();
+
+            try
+            {
+                var project = AppState.Project;
+
+                var newProject = project with
+                {
+                    SystemConfiguration = configuration
+                };
+
+                await SaveProjectAsync(newProject);
+
+                AppState.Project = newProject;
+            }
+            finally
+            {
+                _projectSemaphore.Release();
+            }
+        }
+
         private void LoadDataWriters()
         {
-            var dataWriterInfoMap = new Dictionary<string, (string FormatName, OptionAttribute[] Options)>();
+            const string OPTIONS_KEY = "UI:Options";
+            const string FORMAT_NAME_KEY = "UI:FormatName";
+            const string TYPE_KEY = "Type";
 
+            var dataWriterDescriptions = new List<ExtensionDescription>();
+
+            /* for each data writer */
             foreach (var dataWriterType in _extensionHive.GetExtensions<IDataWriter>())
             {
-                var fullName = dataWriterType.FullName ?? throw new Exception("full name is null");
+                var fullName = dataWriterType.FullName!;
+                var additionalInfo = new Dictionary<string, string>();
 
-                string formatName;
-
+                /* format name */
                 try
                 {
-                    formatName = dataWriterType.GetFirstAttribute<DataWriterFormatNameAttribute>().FormatName;
+                    additionalInfo[FORMAT_NAME_KEY] = dataWriterType.GetFirstAttribute<DataWriterFormatNameAttribute>().FormatName;
                 }
                 catch
                 {
@@ -241,19 +269,64 @@ namespace Nexus.Services
                     continue;
                 }
 
-                var options = dataWriterType
-                    .GetCustomAttributes<OptionAttribute>()
-                    .ToArray();
+                var counter = 0;
 
-                dataWriterInfoMap[fullName] = (formatName, options);
+                /* for each option */
+                foreach (var option in dataWriterType.GetCustomAttributes<OptionAttribute>())
+                {
+                    additionalInfo[$"{OPTIONS_KEY}:{counter}:{nameof(option.ConfigurationKey)}"] = option.ConfigurationKey;
+                    additionalInfo[$"{OPTIONS_KEY}:{counter}:{nameof(option.Label)}"] = option.Label;
+
+                    if (option is DataWriterIntegerNumberInputOptionAttribute integerNumberInput)
+                    {
+                        additionalInfo[$"{OPTIONS_KEY}:{counter}:{TYPE_KEY}"] = "IntegerNumberInput";
+                        additionalInfo[$"{OPTIONS_KEY}:{counter}:{nameof(integerNumberInput.DefaultValue)}"] = integerNumberInput.DefaultValue.ToString();
+                        additionalInfo[$"{OPTIONS_KEY}:{counter}:{nameof(integerNumberInput.Minmum)}"] = integerNumberInput.Minmum.ToString();
+                        additionalInfo[$"{OPTIONS_KEY}:{counter}:{nameof(integerNumberInput.Maximum)}"] = integerNumberInput.Maximum.ToString();
+                    }
+
+                    else if (option is DataWriterSelectOptionAttribute select)
+                    {
+                        additionalInfo[$"{OPTIONS_KEY}:{counter}:{TYPE_KEY}"] = "Select";
+                        additionalInfo[$"{OPTIONS_KEY}:{counter}:{nameof(select.DefaultValue)}"] = select.DefaultValue.ToString();
+
+                        var counter2 = 0;
+
+                        foreach (var entry in select.KeyValueMap)
+                        {
+                            additionalInfo[$"{OPTIONS_KEY}:{counter}:{nameof(select.KeyValueMap)}:{counter2}:{entry.Key}"] = entry.Value;
+                            counter2++;
+                        }
+                    }
+
+                    counter++;
+                }
+
+                var attribute = dataWriterType.GetCustomAttribute<ExtensionDescriptionAttribute>(inherit: false);
+
+                if (attribute is null)
+                    dataWriterDescriptions.Add(new ExtensionDescription(
+                        fullName, 
+                        default, 
+                        default,
+                        default, 
+                        additionalInfo));
+
+                else
+                    dataWriterDescriptions.Add(new ExtensionDescription(
+                        fullName, 
+                        attribute.Description, 
+                        attribute.ProjectUrl, 
+                        attribute.RepositoryUrl, 
+                        additionalInfo));
             }
 
-            AppState.DataWriterInfoMap = dataWriterInfoMap;
+            AppState.DataWriterDescriptions = dataWriterDescriptions;
         }
 
         private Task SaveProjectAsync(NexusProject project)
         {
-            using var stream = _databaseManager.WriteProject();
+            using var stream = _databaseService.WriteProject();
             return JsonSerializerHelper.SerializeIntendedAsync(stream, project);
         }
 

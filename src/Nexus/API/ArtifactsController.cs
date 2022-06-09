@@ -17,16 +17,16 @@ namespace Nexus.Controllers
 
         #region Fields
 
-        public IDatabaseManager _databaseManager;
+        public IDatabaseService _databaseService;
 
         #endregion
 
         #region Constructors
 
         public ArtifactsController(
-            IDatabaseManager databaseManager)
+            IDatabaseService databaseService)
         {
-            _databaseManager = databaseManager;
+            _databaseService = databaseService;
         }
 
         #endregion
@@ -39,13 +39,13 @@ namespace Nexus.Controllers
         /// <param name="artifactId">The artifact identifier.</param>
         [HttpGet("{artifactId}")]
         public ActionResult
-            DownloadArtifact(
+            Download(
                 string artifactId)
         {
-            if (_databaseManager.TryReadArtifact(artifactId, out var artifactStream))
+            if (_databaseService.TryReadArtifact(artifactId, out var artifactStream))
             {
                 Response.Headers.ContentLength = artifactStream.Length;
-                return File(artifactStream, "application/octet-stream", artifactId);
+                return File(artifactStream, "application/octet-stream"); // do not set filname here, otherwise <a download="abc.pdf" /> will not work!
             }
 
             else

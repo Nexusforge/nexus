@@ -15,6 +15,9 @@ namespace Nexus.PackageManagement
     {
         #region Fields
 
+        public static Guid BUILTIN_ID = new Guid("97d297d2-df6f-4c85-9d07-86bc64a041a6");
+        public const string BUILTIN_PROVIDER = "nexus";
+
         private const int MAX_PAGES = 20;
         private const int PER_PAGE = 100;
 
@@ -51,6 +54,10 @@ namespace Nexus.PackageManagement
 
             switch (PackageReference.Provider)
             {
+                case BUILTIN_PROVIDER:
+                    result = new string[] { "current" };
+                    break;
+
                 case "local":
                     result = await DiscoverLocalAsync(cancellationToken);
                     break;
@@ -81,25 +88,36 @@ namespace Nexus.PackageManagement
             if (_loadContext is not null)
                 throw new Exception("The extension is already loaded.");
 
-            var restoreFolderPath = await RestoreAsync(restoreRoot, cancellationToken);
-            var depsJsonExtension = ".deps.json";
+            Assembly assembly;
 
-            var depsJsonFilePath = Directory
-                .EnumerateFiles(restoreFolderPath, $"*{depsJsonExtension}", SearchOption.AllDirectories)
-                .SingleOrDefault();
+            if (PackageReference.Provider == BUILTIN_PROVIDER)
+            {
+                assembly = Assembly.GetExecutingAssembly();
+                _loadContext = new PackageLoadContext(assembly.Location);
+            }
+            
+            else
+            {
+                var restoreFolderPath = await RestoreAsync(restoreRoot, cancellationToken);
+                var depsJsonExtension = ".deps.json";
 
-            if (depsJsonFilePath is null)
-                throw new Exception($"Could not determine the location of the .deps.json file in folder {restoreFolderPath}.");
+                var depsJsonFilePath = Directory
+                    .EnumerateFiles(restoreFolderPath, $"*{depsJsonExtension}", SearchOption.AllDirectories)
+                    .SingleOrDefault();
 
-            var entryDllPath = depsJsonFilePath.Substring(0, depsJsonFilePath.Length - depsJsonExtension.Length) + ".dll";
+                if (depsJsonFilePath is null)
+                    throw new Exception($"Could not determine the location of the .deps.json file in folder {restoreFolderPath}.");
 
-            if (entryDllPath is null)
-                throw new Exception($"Could not determine the location of the entry DLL file in folder {restoreFolderPath}.");
+                var entryDllPath = depsJsonFilePath.Substring(0, depsJsonFilePath.Length - depsJsonExtension.Length) + ".dll";
 
-            _loadContext = new PackageLoadContext(entryDllPath);
+                if (entryDllPath is null)
+                    throw new Exception($"Could not determine the location of the entry DLL file in folder {restoreFolderPath}.");
 
-            var assemblyName = new AssemblyName(Path.GetFileNameWithoutExtension(entryDllPath));
-            var assembly = _loadContext.LoadFromAssemblyName(assemblyName);
+                _loadContext = new PackageLoadContext(entryDllPath);
+
+                var assemblyName = new AssemblyName(Path.GetFileNameWithoutExtension(entryDllPath));
+                assembly = _loadContext.LoadFromAssemblyName(assemblyName);
+            }
 
             return assembly;
         }
@@ -111,7 +129,7 @@ namespace Nexus.PackageManagement
 
             _loadContext.Unload();
             var weakReference = new WeakReference(_loadContext, trackResurrection: true);
-            _loadContext = null;
+            _loadContext = default;
 
             return weakReference;
         }
@@ -144,7 +162,7 @@ namespace Nexus.PackageManagement
                 //    break;
 
                 default:
-                    throw new ArgumentException($"The provider '{PackageReference.Provider}' is not supported.");
+                    throw new ArgumentException($"The provider {PackageReference.Provider} is not supported.");
             }
 
             return restoreFolderPath;
@@ -168,7 +186,7 @@ namespace Nexus.PackageManagement
                 var folderName = Path.GetFileName(folderPath);
 
                 Directory.CreateDirectory(Path.Combine(target, folderName));
-                PackageController.CloneFolder(folderPath, Path.Combine(target, folderName));
+                CloneFolder(folderPath, Path.Combine(target, folderName));
             }
 
             foreach (var file in Directory.GetFiles(source))
@@ -177,7 +195,11 @@ namespace Nexus.PackageManagement
             }
         }
 
-        public static async Task DownloadAndExtractAsync(string assetName, string assetUrl, string targetPath, Dictionary<string, string> headers, CancellationToken cancellationToken)
+        private static async Task DownloadAndExtractAsync(
+            string assetName,
+            string assetUrl,
+            string targetPath,
+            Dictionary<string, string> headers)
         {
             // get download stream
             async Task<HttpResponseMessage> GetAssetResponseAsync()
@@ -232,7 +254,7 @@ namespace Nexus.PackageManagement
                 throw new ArgumentException("The 'Path' parameter is missing in the extension reference.");
 
             if (!Directory.Exists(path))
-                throw new DirectoryNotFoundException($"The extension path '{path}' does not exist.");
+                throw new DirectoryNotFoundException($"The extension path {path} does not exist.");
 
             foreach (var folderPath in Directory.EnumerateDirectories(path))
             {
@@ -263,7 +285,7 @@ namespace Nexus.PackageManagement
                 var sourcePath = Path.Combine(path, version);
 
                 if (!Directory.Exists(sourcePath))
-                    throw new DirectoryNotFoundException($"The source path '{sourcePath}' does not exist.");
+                    throw new DirectoryNotFoundException($"The source path {sourcePath} does not exist.");
 
                 var pathHash = new Guid(path.Hash()).ToString();
                 var targetPath = Path.Combine(restoreRoot, pathHash, version);
@@ -271,7 +293,7 @@ namespace Nexus.PackageManagement
                 if (!Directory.Exists(targetPath) || !Directory.EnumerateFileSystemEntries(targetPath).Any())
                 {
                     _logger.LogDebug("Restore package from source {Source} to {Target}", sourcePath, targetPath);
-                    PackageController.CloneFolder(sourcePath, targetPath);
+                    CloneFolder(sourcePath, targetPath);
                 }
                 else
                 {
@@ -401,7 +423,7 @@ namespace Nexus.PackageManagement
                     headers["Accept"] = "application/octet-stream";
 
                     _logger.LogDebug("Restore package from source {Source} to {Target}", assetBrowserUrl, targetPath);
-                    await PackageController.DownloadAndExtractAsync(assetBrowserUrl, assetUrl, targetPath, headers, cancellationToken);
+                    await DownloadAndExtractAsync(assetBrowserUrl, assetUrl, targetPath, headers);
                 }
                 else
                 {
@@ -441,7 +463,7 @@ namespace Nexus.PackageManagement
             if (!string.IsNullOrWhiteSpace(token))
                 headers["PRIVATE-TOKEN"] = token;
 
-            await foreach (var gitlabPackage in PackageController.GetGitLabPackagesGenericAsync(server, projectPath, package, headers, cancellationToken))
+            await foreach (var gitlabPackage in GetGitLabPackagesGenericAsync(server, projectPath, package, headers, cancellationToken))
             {
                 var packageVersion = gitlabPackage.GetProperty("version").GetString() ?? throw new Exception("version is null");
                 result.Add(packageVersion);
@@ -529,7 +551,7 @@ namespace Nexus.PackageManagement
                     // download package file (https://docs.gitlab.com/ee/user/packages/generic_packages/index.html#download-package-file)
                     var assetUrl = $"{server}/api/v4/projects/{encodedProjectPath}/packages/generic/{package}/{version}/{fileName}";
                     _logger.LogDebug("Restore package from source {Source} to {Target}", assetUrl, targetPath);
-                    await PackageController.DownloadAndExtractAsync(fileName, assetUrl, targetPath, headers, cancellationToken);
+                    await DownloadAndExtractAsync(fileName, assetUrl, targetPath, headers);
                 }
                 else
                 {
@@ -715,7 +737,7 @@ namespace Nexus.PackageManagement
         //        {
         //            var assetUrl = new Uri(asset.GetProperty("direct_asset_url").GetString());
         //            _logger.LogDebug("Restore package from source {Source}", assetUrl);
-        //            await PackageController.DownloadAndExtractAsync(fileName, assetUrl, targetPath, headers, cancellationToken);
+        //            await DownloadAndExtractAsync(fileName, assetUrl, targetPath, headers, cancellationToken);
         //        }
         //        else
         //        {

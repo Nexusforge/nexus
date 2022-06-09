@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -7,6 +8,8 @@ using Microsoft.Extensions.Options;
 using Nexus.Core;
 using Nexus.Services;
 using System.Collections.ObjectModel;
+using System.Net;
+using System.Security.Claims;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Nexus.Controllers
@@ -30,9 +33,11 @@ namespace Nexus.Controllers
         // [authenticated]
         // GET      /api/users/me
         // POST     /api/users/generate-tokens
+        // POST     /api/users/accept-license?catalogId=X
 
         // [privileged]
         // GET      /api/users
+        // DELETE   /api/users/{userId}
         // PUT      /api/users/{userId}/{claimId}
         // DELETE   /api/users/{userId}/{claimId}
 
@@ -85,7 +90,7 @@ namespace Nexus.Controllers
         /// <param name="scheme">The authentication scheme to challenge.</param>
         /// <param name="returnUrl">The URL to return after successful authentication.</param>
         [AllowAnonymous]
-        [HttpGet("authenticate")]
+        [HttpPost("authenticate")]
         public ChallengeResult Authenticate(
             [BindRequired] string scheme,
             [BindRequired] string returnUrl)
@@ -102,16 +107,15 @@ namespace Nexus.Controllers
         /// Logs out the user.
         /// </summary>
         [AllowAnonymous]
-        [HttpGet("signout")]
+        [HttpPost("signout")]
         public async Task<RedirectResult> SignOutAsync(
             [BindRequired] string returnUrl)
         {
-            // If called SignOut with a scheme, the user is forwarded to the identity providers
-            // logout page. But that doesn't seem to be required here. Simply log out of Nexus.
-            //
-            // return SignOut(properties, scheme);
+            var properties = new AuthenticationProperties() { RedirectUri = returnUrl };
+            var scheme = User.Identity!.AuthenticationType!;
 
-            await HttpContext.SignOutAsync();
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            await HttpContext.SignOutAsync(scheme);
 
             return Redirect(returnUrl);
         }
@@ -181,7 +185,7 @@ namespace Nexus.Controllers
         [HttpGet("me")]
         public async Task<ActionResult<NexusUser>> GetMeAsync()
         {
-            var userId = User.FindFirst(Claims.Subject)!.Value;          
+            var userId = User.FindFirst(Claims.Subject)!.Value;
             var user = await _dbService.FindUserAsync(userId);
 
             if (user is null)
@@ -191,10 +195,11 @@ namespace Nexus.Controllers
         }
 
         /// <summary>
-        /// Generates a set of tokens.
+        /// Generates a refresh token.
         /// </summary>
-        [HttpPost("generate-tokens")]
-        public async Task<ActionResult<TokenPair>> GenerateTokensAsync()
+        [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
+        [HttpPost("generate-refresh-token")]
+        public async Task<ActionResult<string>> GenerateRefreshTokenAsync()
         {
             var userId = User.FindFirst(Claims.Subject)!.Value;
             var user = await _dbService.FindUserAsync(userId);
@@ -204,7 +209,46 @@ namespace Nexus.Controllers
 
             var tokenPair = await _authService.GenerateTokenPairAsync(user);
 
-            return tokenPair;
+            return tokenPair.RefreshToken;
+        }
+
+        /// <summary>
+        /// Accepts the license of the specified catalog.
+        /// </summary>
+        /// <param name="catalogId">The catalog identifier.</param>
+        [HttpGet("accept-license")]
+        public async Task<ActionResult> AcceptLicenseAsync(
+            [BindRequired] string catalogId)
+        {
+    #warning Is this thread safe? Maybe yes, because of scoped EF context.
+            catalogId = WebUtility.UrlDecode(catalogId);
+
+            var userId = User.FindFirst(Claims.Subject)!.Value;
+            var user = await _dbService.FindUserAsync(userId);
+
+            if (user is null)
+                return NotFound($"Could not find user {userId}.");
+
+            var newClaims = user.Claims
+                .ToDictionary(current => current.Key, current => current.Value);
+
+            var claimId = Guid.NewGuid();
+            newClaims[claimId] = new NexusClaim(NexusClaims.CAN_READ_CATALOG, catalogId);
+            user.Claims = new ReadOnlyDictionary<Guid, NexusClaim>(newClaims);
+
+            await _dbService.UpdateUserAsync(user);
+
+            foreach (var identity in User.Identities)
+            {
+                if (identity is not null)
+                    identity.AddClaim(new Claim(NexusClaims.CAN_READ_CATALOG, catalogId));
+            }
+
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, User);
+
+            var redirectUrl = "/" + WebUtility.UrlEncode(catalogId);
+
+            return Redirect(redirectUrl);
         }
 
         #endregion
@@ -215,7 +259,7 @@ namespace Nexus.Controllers
         /// Gets a list of users.
         /// </summary>
         /// <returns></returns>
-        [Authorize(Policy = Policies.RequireAdmin)]
+        [Authorize(Policy = NexusPolicies.RequireAdmin)]
         [HttpGet]
         public async Task<ActionResult<List<NexusUser>>> GetUsersAsync()
         {
@@ -226,16 +270,29 @@ namespace Nexus.Controllers
         }
 
         /// <summary>
+        /// Deletes a user.
+        /// </summary>
+        /// <param name="userId">The identifier of the user.</param>
+        [Authorize(Policy = NexusPolicies.RequireAdmin)]
+        [HttpDelete("{userId}")]
+        public async Task<ActionResult> DeleteUserAsync(
+            string userId)
+        {
+            await _dbService.DeleteUserAsync(userId);
+            return Ok();
+        }
+
+        /// <summary>
         /// Puts a claim.
         /// </summary>
         /// <param name="userId">The identifier of the user.</param>
         /// <param name="claimId">The identifier of claim.</param>
-        /// <param name="claim">The claim to put.</param>
-        [Authorize(Policy = Policies.RequireAdmin)]
+        /// <param name="claim">The claim to set.</param>
+        [Authorize(Policy = NexusPolicies.RequireAdmin)]
         [HttpPut("{userId}/{claimId}")]
-        public async Task<ActionResult> PutClaimAsync(
+        public async Task<ActionResult> SetClaimAsync(
             string userId,
-            Guid claimId, 
+            Guid claimId,
             [FromBody] NexusClaim claim)
         {
 #warning Is this thread safe? Maybe yes, because of scoped EF context.
@@ -261,7 +318,7 @@ namespace Nexus.Controllers
         /// </summary>
         /// <param name="userId">The identifier of the user.</param>
         /// <param name="claimId">The identifier of the claim.</param>
-        [Authorize(Policy = Policies.RequireAdmin)]
+        [Authorize(Policy = NexusPolicies.RequireAdmin)]
         [HttpDelete("{userId}/{claimId}")]
         public async Task<ActionResult> DeleteClaimAsync(
             string userId, 

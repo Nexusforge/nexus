@@ -105,7 +105,7 @@ void AddServices(
     });
 
     // authentication
-    services.AddNexusAuth(securityOptions);
+    services.AddNexusAuth(pathsOptions, securityOptions);
 
     // Open API
     services.AddNexusOpenApi();
@@ -125,17 +125,20 @@ void AddServices(
 
     services.AddScoped<IDBService, DbService>();
     services.AddScoped<INexusAuthenticationService, NexusAuthenticationService>();
+    services.AddScoped(provider => provider.GetService<IHttpContextAccessor>()!.HttpContext!.User);
 
     services.AddSingleton<AppState>();
     services.AddSingleton<AppStateManager>();
     services.AddSingleton<IJobService, JobService>();
     services.AddSingleton<IDataControllerService, DataControllerService>();
     services.AddSingleton<ICatalogManager, CatalogManager>();
-    services.AddSingleton<IDatabaseManager, DatabaseManager>();
+    services.AddSingleton<IProcessingService, ProcessingService>();
+    services.AddSingleton<ICacheService, CacheService>();
+    services.AddSingleton<IDatabaseService, DatabaseService>();
     services.AddSingleton<IExtensionHive, ExtensionHive>();
-    services.AddSingleton<IUserManagerWrapper, UserManagerWrapper>();
 
     services.Configure<GeneralOptions>(configuration.GetSection(GeneralOptions.Section));
+    services.Configure<DataOptions>(configuration.GetSection(DataOptions.Section));
     services.Configure<PathsOptions>(configuration.GetSection(PathsOptions.Section));
     services.Configure<SecurityOptions>(configuration.GetSection(SecurityOptions.Section));
     services.Configure<ServerOptions>(configuration.GetSection(ServerOptions.Section));
@@ -200,7 +203,7 @@ async Task InitializeAppAsync(
 {
     var appState = serviceProvider.GetRequiredService<AppState>();
     var appStateManager = serviceProvider.GetRequiredService<AppStateManager>();
-    var databaseManager = serviceProvider.GetRequiredService<IDatabaseManager>();
+    var databaseService = serviceProvider.GetRequiredService<IDatabaseService>();
 
     // database
     using var scope = serviceProvider.CreateScope();
@@ -209,11 +212,12 @@ async Task InitializeAppAsync(
     await userContext.Database.EnsureCreatedAsync();
 
     // project
-    if (databaseManager.TryReadProject(out var project))
+    if (databaseService.TryReadProject(out var project))
         appState.Project = JsonSerializer.Deserialize<NexusProject>(project) ?? throw new Exception("project is null");
     
     else
         appState.Project = new NexusProject(
+            new Dictionary<string, string>(),
             new Dictionary<Guid, PackageReference>(),
             new Dictionary<string, UserConfiguration>());
 

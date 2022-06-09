@@ -17,13 +17,9 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0" />
     <PackageReference Include="NSwag.AspNetCore" Version="13.15.10" />
     <PackageReference Include="OpenIddict" Version="3.1.1" />
-	<PackageReference Include="OpenIddict.AspNetCore" Version="3.1.1" />
+	  <PackageReference Include="OpenIddict.AspNetCore" Version="3.1.1" />
     <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="3.1.1" />
     <PackageReference Include="Serilog.AspNetCore" Version="5.0.0" />
     <PackageReference Include="Serilog.Enrichers.ClientInfo" Version="1.1.4" />
@@ -38,16 +34,25 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Nexus.BlazorWasm\Nexus.BlazorWasm.csproj" />
-    <ProjectReference Include="..\Nexus.Extensibility\Nexus.Extensibility.csproj" />
+    <ProjectReference Include="..\Nexus.UI\Nexus.UI.csproj" />
+    <ProjectReference Include="..\extensibility\cs-extensibility\cs-extensibility.csproj" />
 	  
     <!-- 
       Probably because of the way how Blazor is compiled, when publishing, 
-      the folder artfifacts/bin/Nexus.OpenApiClient/Release does not exist. 
-      As a workaround, add a direct reference to the OpenApiClient project here.
+      the folder artfifacts/bin/Nexus.Api/Release does not exist. 
+      As a workaround, add a direct reference to the Client project here.
     -->
-    <ProjectReference Include="..\Nexus.OpenApiClient\Nexus.OpenApiClient.csproj" />
+	  <ProjectReference Include="..\clients\cs-client\cs-client.csproj" />
 
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="appsettings.Development.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Update="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

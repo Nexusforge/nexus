@@ -1,0 +1,51 @@
+﻿html, body {
+    font-family: Inter var,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;
+}
+
+.styled-scrollbars {
+    scrollbar-color: #164e63 #9ca3af;
+    scrollbar-width: thin;
+}
+    .styled-scrollbars::-webkit-scrollbar {
+        width: 5px;
+        height: 5px;
+    }
+    .styled-scrollbars::-webkit-scrollbar-thumb {
+        background: #9ca3af;
+    }
+    .styled-scrollbars::-webkit-scrollbar-track {
+        background: #164e63;
+    }
+
+#app {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+:root {
+    --md-color-text-link: rgb(14, 116, 144);
+    --md-pre-code-foreground: rgb(43, 43, 43);
+    --md-code-foreground: rgb(215, 186, 125);
+    --md-code-background: rgba(153, 153, 153, 0.2);
+    --md-table-header: rgba(0, 0, 0, 0.69);
+    --md-border: rgb(156 163 175);
+}
+
+.nexus-hover-parent:hover > .nexus-hover-hide {
+    display: none;
+}
+ 
+.nexus-hover-parent:hover > .nexus-hover-flex {
+    display: flex;
+}
+
+.nexus-pill::before {
+    display: block;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    content: attr(placeholder);
+    height: 0;
+    overflow: hidden;
+    visibility: hidden;
+}

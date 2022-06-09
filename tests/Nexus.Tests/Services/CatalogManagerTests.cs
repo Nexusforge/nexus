@@ -1,5 +1,5 @@
-﻿using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Nexus.Core;
 using Nexus.DataModel;
@@ -7,8 +7,9 @@ using Nexus.Extensibility;
 using Nexus.Services;
 using Nexus.Sources;
 using Nexus.Utilities;
-using System.Security.Claims;
+using System.Collections.ObjectModel;
 using Xunit;
+using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Services
 {
@@ -44,11 +45,11 @@ namespace Services
 
                             return (type, path) switch
                             {
-                                ("A", "/") => Task.FromResult(new CatalogRegistration[] { new CatalogRegistration("/A"), new CatalogRegistration("/B/A") }),
-                                ("A", "/A/") => Task.FromResult(new CatalogRegistration[] { new CatalogRegistration("/A/B"), new CatalogRegistration("/A/B/C"), new CatalogRegistration("/A/C/A") }),
-                                ("B", "/") => Task.FromResult(new CatalogRegistration[] { new CatalogRegistration("/A"), new CatalogRegistration("/B/B"), new CatalogRegistration("/B/B2") }),
-                                ("C", "/") => Task.FromResult(new CatalogRegistration[] { new CatalogRegistration("/C/A") }),
-                                ("Nexus.Sources." + nameof(InMemory), "/") => Task.FromResult(new CatalogRegistration[0]),
+                                ("A", "/") => Task.FromResult(new CatalogRegistration[] { new CatalogRegistration("/A", string.Empty), new CatalogRegistration("/B/A", string.Empty) }),
+                                ("A", "/A/") => Task.FromResult(new CatalogRegistration[] { new CatalogRegistration("/A/B", string.Empty), new CatalogRegistration("/A/B/C", string.Empty), new CatalogRegistration("/A/C/A", string.Empty) }),
+                                ("B", "/") => Task.FromResult(new CatalogRegistration[] { new CatalogRegistration("/A", string.Empty), new CatalogRegistration("/B/B", string.Empty), new CatalogRegistration("/B/B2", string.Empty) }),
+                                ("C", "/") => Task.FromResult(new CatalogRegistration[] { new CatalogRegistration("/C/A", string.Empty) }),
+                                ("Nexus.Sources." + nameof(Sample), "/") => Task.FromResult(new CatalogRegistration[0]),
                                 _ => throw new Exception("Unsupported combination.")
                             };
                         });
@@ -57,13 +58,13 @@ namespace Services
                 });
 
             /* appState */
-            var registrationA = new DataSourceRegistration(Type: "A", new Uri("", UriKind.Relative), new Dictionary<string, string>(), Publish: true);
-            var registrationB = new DataSourceRegistration(Type: "B", new Uri("", UriKind.Relative), new Dictionary<string, string>(), Publish: true);
-            var registrationC = new DataSourceRegistration(Type: "C", new Uri("", UriKind.Relative), new Dictionary<string, string>(), Publish: false);
+            var registrationA = new DataSourceRegistration(Id: Guid.NewGuid(), Type: "A", new Uri("", UriKind.Relative), new Dictionary<string, string>());
+            var registrationB = new DataSourceRegistration(Id: Guid.NewGuid(), Type: "B", new Uri("", UriKind.Relative), new Dictionary<string, string>());
+            var registrationC = new DataSourceRegistration(Id: Guid.NewGuid(), Type: "C", new Uri("", UriKind.Relative), new Dictionary<string, string>());
 
             var appState = new AppState()
             {
-                Project = new NexusProject(default!, new Dictionary<string, UserConfiguration>()
+                Project = new NexusProject(default!, default!, new Dictionary<string, UserConfiguration>()
                 {
                     ["UserA"] = new UserConfiguration(new Dictionary<Guid, DataSourceRegistration>() 
                     { 
@@ -77,11 +78,11 @@ namespace Services
                 })
             };
 
-            // databaseManager
-            var databaseManager = Mock.Of<IDatabaseManager>();
+            // databaseService
+            var databaseService = Mock.Of<IDatabaseService>();
 
-            Mock.Get(databaseManager)
-               .Setup(databaseManager => databaseManager.TryReadCatalogMetadata(
+            Mock.Get(databaseService)
+               .Setup(databaseService => databaseService.TryReadCatalogMetadata(
                    It.IsAny<string>(),
                    out It.Ref<string?>.IsAny))
                .Returns(new GobbleReturns((string catalogId, out string catalogMetadataString) =>
@@ -90,54 +91,79 @@ namespace Services
                    return true;
                }));
 
-            /* userManagerWrapper */
-            var userManagerWrapper = Mock.Of<IUserManagerWrapper>();
+            /* serviceProvider / dbService */
+            var dbService = Mock.Of<IDBService>();
+            var scope = Mock.Of<IServiceScope>();
+            var scopeFactory = Mock.Of<IServiceScopeFactory>();
+            var serviceProvider = Mock.Of<IServiceProvider>();
+
+            Mock.Get(scope)
+              .SetupGet(scope => scope.ServiceProvider)
+              .Returns(serviceProvider);
+
+            Mock.Get(scopeFactory)
+              .Setup(scopeFactory => scopeFactory.CreateScope())
+              .Returns(scope);
+
+            Mock.Get(serviceProvider)
+              .Setup(serviceProvider => serviceProvider.GetService(
+                  It.Is<Type>(value => value == typeof(IDBService))))
+              .Returns(dbService);
+
+            Mock.Get(serviceProvider)
+              .Setup(serviceProvider => serviceProvider.GetService(
+                  It.Is<Type>(value => value == typeof(IServiceScopeFactory))))
+              .Returns(scopeFactory);
 
             /* => user A */
             var usernameA = "UserA";
 
-            var claimsIdentityA = new ClaimsIdentity(
-               new Claim[] {
-                    new Claim(ClaimTypes.Name, usernameA),
-                    new Claim(NexusClaims.IS_ADMIN, "true")
-               },
-               "Fake authentication type");
-
-            var userA = new ClaimsPrincipal(claimsIdentityA);
+            var userA = new NexusUser()
+            {
+                Name = usernameA,
+                Claims = new ReadOnlyDictionary<Guid, NexusClaim>(new Dictionary<Guid, NexusClaim>
+                {
+                    [Guid.NewGuid()] = new NexusClaim(Claims.Name, usernameA),
+                    [Guid.NewGuid()] = new NexusClaim(Claims.Role, NexusRoles.ADMINISTRATOR)
+                })
+            };
 
             /* => user B */
             var usernameB = "UserB";
 
-            var claimsIdentityB = new ClaimsIdentity(
-               new Claim[] {
-                    new Claim(ClaimTypes.Name, usernameB),
-               },
-               "Fake authentication type");
+            var userB = new NexusUser()
+            {
+                Name = usernameB,
+                Claims = new ReadOnlyDictionary<Guid, NexusClaim>(new Dictionary<Guid, NexusClaim>
+                {
+                    [Guid.NewGuid()] = new NexusClaim(Claims.Name, usernameB),
+                })
+            };
 
-            var userB = new ClaimsPrincipal(claimsIdentityB);
-
-            Mock.Get(userManagerWrapper)
-               .Setup(userManagerWrapper => userManagerWrapper.GetClaimsPrincipalAsync(It.IsAny<string>()))
-               .Returns<string>(username =>
+            Mock.Get(dbService)
+               .Setup(dbService => dbService.FindUserAsync(It.IsAny<string>()))
+               .Returns<string>(userId =>
                {
-                   return username switch
+                   var result = userId switch
                    {
-                       "UserA"  => Task.FromResult((ClaimsPrincipal?)userA),
-                       "UserB"  => Task.FromResult((ClaimsPrincipal?)userB),
-                       _        => Task.FromResult<ClaimsPrincipal?>(default)
+                       "UserA"  => Task.FromResult<NexusUser?>(userA),
+                       "UserB"  => Task.FromResult<NexusUser?>(userB),
+                       _        => Task.FromResult<NexusUser?>(default)
                    };
+
+                   return result;
                });
 
-            /* security options */
-            var securityOptions = Options.Create(new SecurityOptions());
+            /* extensionHive */
+            var extensionHive = Mock.Of<IExtensionHive>();
 
             /* catalogManager */
             var catalogManager = new CatalogManager(
                 appState,
                 dataControllerService,
-                databaseManager,
-                userManagerWrapper,
-                securityOptions,
+                databaseService,
+                serviceProvider,
+                extensionHive,
                 NullLogger<CatalogManager>.Instance);
 
             // act
@@ -150,38 +176,38 @@ namespace Services
 
             Assert.Contains(
                 rootCatalogContainers,
-                container => container.Id == "/A" && container.DataSourceRegistration == registrationA && container.Owner == userA);
+                container => container.Id == "/A" && container.DataSourceRegistration == registrationA && container.Owner!.Identity!.Name! == userA.Name);
 
             Assert.Contains(
                 rootCatalogContainers,
-                container => container.Id == "/B/A" && container.DataSourceRegistration == registrationA && container.Owner == userA);
+                container => container.Id == "/B/A" && container.DataSourceRegistration == registrationA && container.Owner!.Identity!.Name! == userA.Name);
 
             Assert.Contains(
                 rootCatalogContainers,
-                container => container.Id == "/B/B" && container.DataSourceRegistration == registrationB && container.Owner == userB);
+                container => container.Id == "/B/B" && container.DataSourceRegistration == registrationB && container.Owner!.Identity!.Name! == userB.Name);
 
             Assert.Contains(
                 rootCatalogContainers,
-                container => container.Id == "/B/B2" && container.DataSourceRegistration == registrationB && container.Owner == userB);
+                container => container.Id == "/B/B2" && container.DataSourceRegistration == registrationB && container.Owner!.Identity!.Name! == userB.Name);
 
             Assert.Contains(
                 rootCatalogContainers,
-                container => container.Id == "/C/A" && container.DataSourceRegistration == registrationC && container.Owner == userB);
+                container => container.Id == "/C/A" && container.DataSourceRegistration == registrationC && container.Owner!.Identity!.Name! == userB.Name);
 
             // assert 'A'
             Assert.Equal(2, ACatalogContainers.Length);
 
             Assert.Contains(
                 ACatalogContainers,
-                container => container.Id == "/A/B" && container.DataSourceRegistration == registrationA && container.Owner == userA);
+                container => container.Id == "/A/B" && container.DataSourceRegistration == registrationA && container.Owner!.Identity!.Name! == userA.Name);
 
             Assert.Contains(
                 ACatalogContainers,
-                container => container.Id == "/A/C/A" && container.DataSourceRegistration == registrationA && container.Owner == userA);
+                container => container.Id == "/A/C/A" && container.DataSourceRegistration == registrationA && container.Owner!.Identity!.Name! == userA.Name);
         }
 
         [Fact]
-        public async Task CanLoadCatalogInfos()
+        public async Task CanLoadLazyCatalogInfos()
         {
             // Arrange
 
@@ -217,7 +243,6 @@ namespace Services
             /* catalog metadata */
             var catalogMetadata = new CatalogMetadata(
                 default, 
-                default, 
                 default,
                 Overrides: new ResourceCatalogBuilder(id: "/A")
                     .WithDescription("v2")
@@ -225,31 +250,32 @@ namespace Services
 
             /* backend sources */
             var registration = new DataSourceRegistration(
+                Id: Guid.NewGuid(),
                 Type: "A", 
                 ResourceLocator: new Uri("A", UriKind.Relative),
-                Configuration: default!,
-                Publish: true);
+                Configuration: default!);
 
             /* catalog container */
             var catalogContainer = new CatalogContainer(
-                new CatalogRegistration("/A"),
+                new CatalogRegistration("/A", string.Empty),
                 default!, 
                 registration,
-                catalogMetadata, 
                 default!,
-                default!, 
+                catalogMetadata,
+                default!,
+                default!,
                 dataControllerService);
 
             // Act
-            var catalogInfo = await catalogContainer.GetCatalogInfoAsync(CancellationToken.None);
+            var lazyCatalogInfo = await catalogContainer.GetLazyCatalogInfoAsync(CancellationToken.None);
 
             // Assert
-            var actualJsonString = JsonSerializerHelper.SerializeIntended(catalogInfo.Catalog);
+            var actualJsonString = JsonSerializerHelper.SerializeIntended(lazyCatalogInfo.Catalog);
             var expectedJsonString = JsonSerializerHelper.SerializeIntended(expectedCatalog);
 
             Assert.Equal(actualJsonString, expectedJsonString);
-            Assert.Equal(new DateTime(2020, 01, 01), catalogInfo.Begin);
-            Assert.Equal(new DateTime(2020, 01, 02), catalogInfo.End);
+            Assert.Equal(new DateTime(2020, 01, 01), lazyCatalogInfo.Begin);
+            Assert.Equal(new DateTime(2020, 01, 02), lazyCatalogInfo.End);
         }
     }
 }

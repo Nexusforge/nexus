@@ -1,4 +1,3 @@
-﻿using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using System.Globalization;
@@ -16,10 +15,14 @@ using System.Text.Json.Serialization;
 
 namespace Nexus.Writers
 {
-    [DataWriterFormatName("CSV with Table Schema (*.csv)")]
+    [DataWriterFormatName("CSV + Schema (*.csv)")]
     [DataWriterSelectOption("RowIndexFormat", "Row index format", "Excel", new string[] { "Excel", "Index", "Unix", "ISO 8601" }, new string[] { "Excel time", "Index-based", "Unix time" })]
     [DataWriterIntegerNumberInputOption("SignificantFigures", "Significant figures", 4, 0, int.MaxValue)]
-    [ExtensionDescription("Writes data into CSV files.")]
+
+    [ExtensionDescription(
+        "Writes data into CSV files.",
+        "https://github.com/Nexusforge/nexus",
+        "https://github.com/Nexusforge/nexus/blob/master/src/Nexus/Extensions/Writers/Csv.cs")]
     internal class Csv : IDataWriter, IDisposable
     {
         #region "Fields"
@@ -60,7 +63,7 @@ namespace Nexus.Writers
 
         #region Properties
 
-        private DataWriterContext Context { get; set; } = null!;
+        private DataWriterContext Context { get; set; } = default!;
 
         #endregion
 
@@ -99,7 +102,7 @@ namespace Nexus.Writers
 
                 if (!_resourceMap.TryGetValue(resourceFilePath, out var resource))
                 {
-                    var rowIndexFormat = Context.Configuration.GetValueOrDefault("RowIndexFormat", "Index");
+                    var rowIndexFormat = Context.RequestConfiguration.GetValueOrDefault("RowIndexFormat", "Index");
                     var constraints = new Constraints(Required: true);
 
                     var timestampField = rowIndexFormat switch
@@ -108,7 +111,7 @@ namespace Nexus.Writers
                         "Unix" => new Field("Unix time", "number", constraints, default),
                         "Excel" => new Field("Excel time", "number", constraints, default),
                         "ISO 8601" => new Field("ISO 8601 time", "datetime", constraints, default),
-                        _ => throw new NotSupportedException($"The row index format '{rowIndexFormat}' is not supported.")
+                        _ => throw new NotSupportedException($"The row index format {rowIndexFormat} is not supported.")
                     };
 
                     var layout = new Layout()
@@ -148,7 +151,7 @@ namespace Nexus.Writers
                 }
 
                 /* data */
-                var dataFileName = $"{physicalId}_{fileBegin.ToISO8601()}_{samplePeriod.ToUnitString()}.csv";
+                var dataFileName = $"{physicalId}_{ToISO8601(fileBegin)}_{samplePeriod.ToUnitString()}.csv";
                 var dataFilePath = Path.Combine(root, dataFileName);
 
                 if (!File.Exists(dataFilePath))
@@ -159,7 +162,7 @@ namespace Nexus.Writers
 
                     /* header values */
 #warning use .ToString("o") instead?
-                    stringBuilder.Append($"# date_time: {fileBegin.ToISO8601()}");
+                    stringBuilder.Append($"# date_time: {ToISO8601(fileBegin)}");
                     AppendWindowsNewLine(stringBuilder);
 
                     stringBuilder.Append($"# sample_period: {samplePeriod.ToUnitString()}");
@@ -208,9 +211,9 @@ namespace Nexus.Writers
                 var writeRequests = requestGroup.ToArray();
                 var physicalId = catalog.Id.TrimStart('/').Replace('/', '_');
                 var root = Context.ResourceLocator.ToPath();
-                var filePath = Path.Combine(root, $"{physicalId}_{_lastFileBegin.ToISO8601()}_{_lastSamplePeriod.ToUnitString()}.csv");
-                var rowIndexFormat = Context.Configuration.GetValueOrDefault("RowIndexFormat", "Index");
-                var significantFigures = uint.Parse(Context.Configuration.GetValueOrDefault("SignificantFigures", "4"));
+                var filePath = Path.Combine(root, $"{physicalId}_{ToISO8601(_lastFileBegin)}_{_lastSamplePeriod.ToUnitString()}.csv");
+                var rowIndexFormat = Context.RequestConfiguration.GetValueOrDefault("RowIndexFormat", "Index");
+                var significantFigures = uint.Parse(Context.RequestConfiguration.GetValueOrDefault("SignificantFigures", "4"));
 
                 using var streamWriter = new StreamWriter(File.Open(filePath, FileMode.Append, FileAccess.Write), Encoding.UTF8);
 
@@ -247,7 +250,7 @@ namespace Nexus.Writers
                             break;
 
                         default:
-                            throw new NotSupportedException($"The row index format '{rowIndexFormat}' is not supported.");
+                            throw new NotSupportedException($"The row index format {rowIndexFormat} is not supported.");
                     }
 
                     for (int i = 0; i < writeRequests.Length; i++)
@@ -290,8 +293,12 @@ namespace Nexus.Writers
         {
             string? unit = default;
 
-            catalogItem.Resource.Properties?
-                .TryGetValue(DataModelExtensions.Unit, out unit);
+            if (catalogItem.Resource.Properties is not null && 
+                catalogItem.Resource.Properties.Value.TryGetProperty(DataModelExtensions.Unit, out var unitElement) &&
+                unitElement.ValueKind == JsonValueKind.String)
+            {
+                unit = unitElement.GetString();
+            }
 
             var fieldName = $"{catalogItem.Resource.Id}_{catalogItem.Representation.Id}";
 
@@ -300,6 +307,11 @@ namespace Nexus.Writers
                 : $" ({unit})";
 
             return fieldName;
+        }
+
+        private string ToISO8601(DateTime dateTime)
+        {
+            return dateTime.ToUniversalTime().ToString("yyyy-MM-ddTHH-mm-ssZ");
         }
 
         #endregion

@@ -1,4 +1,6 @@
-﻿namespace Nexus.Writers
+using System.Text.Json;
+
+namespace Nexus.Writers
 {
     internal record struct Layout(
         int[] HeaderRows);
@@ -10,12 +12,12 @@
         string Name,
         string Type,
         Constraints Constraints,
-        IReadOnlyDictionary<string, string>? Properties);
+        JsonElement? Properties);
 
     internal record struct Schema(
         string PrimaryKey,
         Field[] Fields,
-        IReadOnlyDictionary<string, string>? Properties);
+        JsonElement? Properties);
 
     internal record struct CsvResource(
         string Encoding,

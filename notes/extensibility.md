@@ -24,7 +24,7 @@ An `IDataSource` which provides user-specific catalogs would register these as `
 
 The credentials should not be stored by the Nexus instance and instead be provided by the user. This can be accomplished by extending the client HTTP request with a custom header called `Nexus-Configuration`. The value of that header should be a base64 JSON string which represents a string-only dictionary.
 
-For example, you have the following JSON dictionary with user credentials for the next Nexus OpenAPI request.
+For example, you have the following JSON dictionary with user credentials for the next Nexus API request.
 
 ```json
 {
@@ -49,11 +49,11 @@ When this header is available, the instantiated `IDataSource` gets a merged conf
 
 **Package Reference Duplicates**
 
-There might be duplicate package references. This is not issue because all extensions are loaded into a separate load context.
+There might be duplicate package references. This is not an issue because all extensions are loaded into a separate load context.
 
 **Backend Source Duplicates**
 
-When a backend source is registered twice this will most likely lead to duplicate catalogs. Duplicates will be ignored with a log warning. Catalogs provided by backend sources registerd by administrators will win over other catalogs. Also catalogs that are already registered will win over new catalogs.
+When a backend source is registered twice this will most likely lead to duplicate catalogs. Duplicates will be ignored with a log warning. Catalogs provided by backend sources registered by administrators will win over other catalogs. Also catalogs that are already registered will win over new catalogs.
 
 **Add / Remove Package Reference**
 
@@ -61,7 +61,7 @@ Recreate `CatalogState`.
 
 **Add / Remove Backend Source**
 
-Recreate `CatalogState` but reuse `CatalogInfo`.
+Recreate `CatalogState` but reuse `LazyCatalogInfo`.
 
 **Loading Child Catalogs**
 

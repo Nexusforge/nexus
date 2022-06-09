@@ -1,0 +1,34 @@
+﻿<div class="relative select-none">
+
+    <input @bind="IsChecked" @bind:event="oninput"
+        type=checkbox
+        id="@Label">
+    <label for="@Label" class="text-white">@Label</label>
+
+</div>
+
+@code {
+
+    private bool _isChecked;
+
+    [Parameter]
+    public bool IsChecked
+    {
+        get => _isChecked;
+        set
+        {
+            if (value != _isChecked) {
+                _isChecked = value;
+
+                if (IsCheckedChanged.HasDelegate)
+                    IsCheckedChanged.InvokeAsync(value);
+            }
+        }
+    }
+
+    [Parameter]
+    public EventCallback<bool> IsCheckedChanged { get; set; }
+
+    [Parameter]
+    public string Label { get; set; } = default!;
+}

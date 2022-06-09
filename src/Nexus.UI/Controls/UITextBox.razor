@@ -1,0 +1,77 @@
+﻿@typeparam T
+
+<div class="mb-7 pt-3 pb-2 px-3 relative @(_hasFocus ? "border-b-2 border-orange-500" : $"border-b {BorderColor}") hover:border-orange-500">
+
+    <label class="absolute bottom-8 text-xs @(_hasFocus || !string.IsNullOrWhiteSpace(Value?.ToString()) ? LabelColor : "text-transparent")">@Label</label>
+
+    <div class="w-full pt-2 flex @TextColor">
+        <input @bind="Value" @bind:event="@GetBindType()" @onfocus="() => _hasFocus = true" @onblur="() => _hasFocus = false"
+            class="flex-1 w-full focus:outline-none @PlaceHolderColor bg-transparent focus:placeholder:placeholder-transparent"
+            type="text" 
+            placeholder="@Label">
+        @if (Icon is not null)
+        {
+            <span class="ml-1 text-2xl mdi mdi-@(Icon) @(OnIconClick.HasDelegate ? "cursor-pointer" : "")" @onclick="OnIconClick"></span>
+        }
+    </div>
+
+</div>
+
+@code {
+
+    private bool _hasFocus;
+
+    private T _value = default!;
+
+    private string LabelColor => DarkMode ? "text-gray-300" : "text-gray-400";
+    private string BorderColor => DarkMode ? "border-white" : "border-gray-400";
+    private string TextColor => DarkMode ? "text-gray-200" : "text-gray-500";
+    private string PlaceHolderColor => DarkMode ? "placeholder-gray-200" : "placeholder-gray-400";
+
+    [Parameter]
+    public T Value
+    {
+        get => _value;
+        set
+        {
+            if (
+                value is null && _value is not null ||
+                _value is null && value is not null ||
+                value is not null && !value.Equals(_value)) 
+            {
+                _value = value;
+
+                if (ValueChanged.HasDelegate)
+                    ValueChanged.InvokeAsync(value);
+            }
+        }
+    }
+
+    [Parameter]
+    public bool OnInput { get; set; }
+
+    [Parameter]
+    public EventCallback<T> ValueChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<MouseEventArgs> OnIconClick { get; set; }
+
+    [Parameter]
+    public string Label { get; set; } = default!;
+
+    [Parameter]
+    public string? Icon { get; set; }
+
+    [Parameter]
+    public bool DarkMode { get; set; } = true;
+
+    private string GetBindType()
+    {
+        return OnInput 
+            ? "oninput"
+            : "onchange";
+    }
+}
+
+
+

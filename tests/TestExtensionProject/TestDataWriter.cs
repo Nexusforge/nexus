@@ -3,7 +3,7 @@ using Nexus.Extensibility;
 
 namespace TestExtensionProject
 {
-    [ExtensionDescription("A data writer for unit tests.")]
+    [ExtensionDescription("A data writer for unit tests.", default!, default!)]
     public class TestDataWriter : IDataWriter
     {
         public Task CloseAsync(CancellationToken cancellationToken)

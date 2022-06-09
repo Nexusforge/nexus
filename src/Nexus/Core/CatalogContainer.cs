@@ -9,35 +9,40 @@ namespace Nexus.Core
     [DebuggerDisplay("{Id,nq}")]
     internal class CatalogContainer
     {
+        public const string RootCatalogId = "/";
+
         private SemaphoreSlim _semaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
-        private CatalogInfo? _catalogInfo;
+        private LazyCatalogInfo? _lazyCatalogInfo;
         private CatalogContainer[]? _childCatalogContainers;
         private ICatalogManager _catalogManager;
-        private IDatabaseManager _databaseManager;
+        private IDatabaseService _databaseService;
         private IDataControllerService _dataControllerService;
 
         public CatalogContainer(
             CatalogRegistration catalogRegistration,
             ClaimsPrincipal? owner,
             DataSourceRegistration dataSourceRegistration,
+            PackageReference packageReference,
             CatalogMetadata metadata,
             ICatalogManager catalogManager,
-            IDatabaseManager databaseManager,
+            IDatabaseService databaseService,
             IDataControllerService dataControllerService)
         {
             Id = catalogRegistration.Path;
+            Title = catalogRegistration.Title;
             IsTransient = catalogRegistration.IsTransient;
             Owner = owner;
             DataSourceRegistration = dataSourceRegistration;
+            PackageReference = packageReference;
             Metadata = metadata;
 
             _catalogManager = catalogManager;
-            _databaseManager = databaseManager;
+            _databaseService = databaseService;
             _dataControllerService = dataControllerService;
         }
 
         public string Id { get; }
-
+        public string Title { get; }
         public bool IsTransient { get; }
 
         public ClaimsPrincipal? Owner { get; }
@@ -45,12 +50,20 @@ namespace Nexus.Core
         public string PhysicalName => Id.TrimStart('/').Replace('/', '_');
 
         public DataSourceRegistration DataSourceRegistration { get; }
+        public PackageReference PackageReference { get; }
 
         public CatalogMetadata Metadata { get; internal set; }
 
-        public static CatalogContainer CreateRoot(ICatalogManager catalogManager, IDatabaseManager databaseManager)
+        public static CatalogContainer CreateRoot(ICatalogManager catalogManager, IDatabaseService databaseService)
         {
-            return new CatalogContainer(new CatalogRegistration("/"), null!, null!, null!, catalogManager, databaseManager, null!);
+            return new CatalogContainer(
+                new CatalogRegistration(RootCatalogId, string.Empty), 
+                default!, 
+                default!,
+                default!,
+                default!, 
+                catalogManager,
+                databaseService, default!);
         }
 
         public async Task<IEnumerable<CatalogContainer>> GetChildCatalogContainersAsync(
@@ -71,20 +84,21 @@ namespace Nexus.Core
             }
         }
 
-        public async Task<CatalogInfo> GetCatalogInfoAsync(CancellationToken cancellationToken)
+#warning Use Lazy instead?
+        public async Task<LazyCatalogInfo> GetLazyCatalogInfoAsync(CancellationToken cancellationToken)
         {
             await _semaphore.WaitAsync();
 
             try
             {
-                await EnsureCatalogInfoAsync(cancellationToken);
+                await EnsureLazyCatalogInfoAsync(cancellationToken);
 
-                var catalogInfo = _catalogInfo;
+                var lazyCatalogInfo = _lazyCatalogInfo;
 
-                if (catalogInfo is null)
+                if (lazyCatalogInfo is null)
                     throw new Exception("this should never happen");
 
-                return catalogInfo;
+                return lazyCatalogInfo;
             }
             finally
             {
@@ -99,14 +113,14 @@ namespace Nexus.Core
             try
             {
                 // persist
-                using var stream = _databaseManager.WriteCatalogMetadata(Id);
+                using var stream = _databaseService.WriteCatalogMetadata(Id);
                 await JsonSerializerHelper.SerializeIntendedAsync(stream, metadata);
 
                 // assign
                 Metadata = metadata;
 
                 // trigger merging of catalog and catalog overrides
-                _catalogInfo = null;
+                _lazyCatalogInfo = default;
             }
             finally
             {
@@ -114,9 +128,9 @@ namespace Nexus.Core
             }
         }
 
-        private async Task EnsureCatalogInfoAsync(CancellationToken cancellationToken)
+        private async Task EnsureLazyCatalogInfoAsync(CancellationToken cancellationToken)
         {
-            if (IsTransient || _catalogInfo is null)
+            if (IsTransient || _lazyCatalogInfo is null)
             {
                 var catalogBegin = default(DateTime);
                 var catalogEnd = default(DateTime);
@@ -125,26 +139,26 @@ namespace Nexus.Core
                 var catalog = await controller.GetCatalogAsync(Id, cancellationToken);
 
                 // get begin and end of project
-                var timeRangeResult = await controller.GetTimeRangeAsync(catalog.Id, cancellationToken);
+                var catalogTimeRange = await controller.GetTimeRangeAsync(catalog.Id, cancellationToken);
 
                 // merge time range
                 if (catalogBegin == DateTime.MinValue)
-                    catalogBegin = timeRangeResult.Begin;
+                    catalogBegin = catalogTimeRange.Begin;
 
                 else
-                    catalogBegin = new DateTime(Math.Min(catalogBegin.Ticks, timeRangeResult.Begin.Ticks));
+                    catalogBegin = new DateTime(Math.Min(catalogBegin.Ticks, catalogTimeRange.Begin.Ticks), DateTimeKind.Utc);
 
                 if (catalogEnd == DateTime.MinValue)
-                    catalogEnd = timeRangeResult.End;
+                    catalogEnd = catalogTimeRange.End;
 
                 else
-                    catalogEnd = new DateTime(Math.Max(catalogEnd.Ticks, timeRangeResult.End.Ticks));
+                    catalogEnd = new DateTime(Math.Max(catalogEnd.Ticks, catalogTimeRange.End.Ticks), DateTimeKind.Utc);
 
                 // merge catalog
                 if (Metadata?.Overrides is not null)
-                    catalog = catalog.Merge(Metadata.Overrides, MergeMode.NewWins);
+                    catalog = catalog.Merge(Metadata.Overrides);
 
-                _catalogInfo = new CatalogInfo(catalogBegin, catalogEnd, catalog);
+                _lazyCatalogInfo = new LazyCatalogInfo(catalogBegin, catalogEnd, catalog);
             }
         }
     }

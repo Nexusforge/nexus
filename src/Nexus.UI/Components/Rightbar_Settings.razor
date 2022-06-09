@@ -1,0 +1,101 @@
+﻿@implements IDisposable
+@inject IAppState AppState
+
+<div>
+
+    <UISelect 
+        Label="File Period"
+        Items="_items"
+        IsEditable="true"
+        @bind-SelectedItem="AppState.Settings.FilePeriod">
+    </UISelect>
+
+    @if (AppState.Settings.ExtensionDescriptions is not null)
+    {
+        <UISelect 
+            Label="File Type"
+            Items="AppState.Settings.Items"
+            @bind-SelectedItem="AppState.Settings.FileType">
+        </UISelect>
+
+        @if (AppState.Settings.Options is not null)
+        {
+            @foreach (var entry in AppState.Settings.Options)
+            {
+                @if (entry.Key == "IntegerNumberInput" &&
+                    entry.Value.TryGetValue("ConfigurationKey", out var configurationKey) &&
+                    entry.Value.TryGetValue("Label", out var label) &&
+                    entry.Value.TryGetValue("DefaultValue", out var defaultValueString) &&
+                    entry.Value.TryGetValue("Minmum", out var minmumString) &&
+                    entry.Value.TryGetValue("Maximum", out var maximumString) &&
+                    int.TryParse(defaultValueString, out var defaultValue) &&
+                    int.TryParse(minmumString, out var minimum) &&
+                    int.TryParse(maximumString, out var maximum))
+                {
+                    <UIOption Key="@configurationKey" DefaultValue="defaultValue" Store="AppState.Settings.Configuration">
+                        <ChildContent>
+                            <UINumericTextBox 
+                                @bind-Value="@context.Value"
+                                Label="@label"
+                                Minimum="minimum"
+                                Maximum="maximum">
+                            </UINumericTextBox>
+                        </ChildContent>
+                    </UIOption>
+                }
+                else if (entry.Key == "Select" &&
+                    entry.Value.TryGetValue("ConfigurationKey", out var configurationKey2) &&
+                    entry.Value.TryGetValue("Label", out var label2) &&
+                    entry.Value.TryGetValue("DefaultValue", out var defaultValue2))
+                {
+                    <UIOption Key="@configurationKey2" DefaultValue="defaultValue2" Store="AppState.Settings.Configuration">
+                        <UISelect 
+                            @bind-SelectedItem="@context.Value"
+                            Items="AppState.Settings.GetOptionItems(entry.Value)"
+                            Label="@label2">
+                        </UISelect>
+                    </UIOption>
+                }
+            }
+        }
+    }
+
+</div>
+
+@code {
+
+    private PropertyChangedEventHandler _handler;
+
+    public Rightbar_Settings()
+    {
+        _handler = (sender, e) => 
+        {
+            if (e.PropertyName == nameof(AppState.ExportParameters))
+                StateHasChanged();
+        };
+    }
+
+    private Dictionary<Period, string> _items = new Dictionary<Period, string>()
+    {
+        [new Period(TimeSpan.Zero)] = "Single File",
+        [new Period(TimeSpan.FromMinutes(1))] = "1 min",
+        [new Period(TimeSpan.FromMinutes(10))] = "10 min",
+        [new Period(TimeSpan.FromHours(1))] = "1 h",
+        [new Period(TimeSpan.FromHours(24))] = "1 d"
+    };
+
+    protected override void OnInitialized()
+    {
+        AppState.PropertyChanged += _handler;
+    }
+
+    protected override Task OnInitializedAsync()
+    {
+        return AppState.Settings.InitializeTask.Value;
+    }
+
+    public void Dispose()
+    {
+        AppState.PropertyChanged -= _handler;
+    }
+}

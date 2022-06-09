@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Moq;
 using Nexus.Core;
 using Nexus.Extensibility;
@@ -22,33 +23,37 @@ namespace Services
 
             Mock.Get(extensionHive)
               .Setup(extensionHive => extensionHive.GetInstance<IDataSource>(It.IsAny<string>()))
-              .Returns(new InMemory());
+              .Returns(new Sample());
 
             var registration = new DataSourceRegistration(
+                Id: Guid.NewGuid(),
                 Type: default!, 
                 new Uri("A", UriKind.Relative), 
-                Configuration: new Dictionary<string, string>(),
-                Publish: true);
+                Configuration: new Dictionary<string, string>());
 
-            var expectedCatalog = InMemory.LoadCatalog("/A/B/C");
+            var expectedCatalog = Sample.LoadCatalog("/A/B/C");
 
             var catalogState = new CatalogState(
                 Root: default!,
                 Cache: new CatalogCache()
             );
 
-            var appState = new AppState() { CatalogState = catalogState };
+            var appState = new AppState()
+            {
+                Project = new NexusProject(new Dictionary<string, string>(), default!, default!),
+                CatalogState = catalogState
+            };
 
-            var userConfiguration = new Dictionary<string, string>()
+            var requestConfiguration = new Dictionary<string, string>()
             {
                 ["foo"] = "bar",
                 ["foo2"] = "baz",
             };
 
-            var encodedUserConfiguration = Convert.ToBase64String(JsonSerializer.SerializeToUtf8Bytes(userConfiguration));
+            var encodedRequestConfiguration = Convert.ToBase64String(JsonSerializer.SerializeToUtf8Bytes(requestConfiguration));
 
             var httpContext = new DefaultHttpContext();
-            httpContext.Request.Headers.Add(DataControllerService.NexusConfigurationHeaderKey, encodedUserConfiguration);
+            httpContext.Request.Headers.Add(DataControllerService.NexusConfigurationHeaderKey, encodedRequestConfiguration);
 
             var httpContextAccessor = Mock.Of<IHttpContextAccessor>();
 
@@ -66,7 +71,10 @@ namespace Services
                 appState, 
                 httpContextAccessor,
                 extensionHive,
-                default!, 
+                default!,
+                default!,
+                Options.Create(new DataOptions()),
+                default!,
                 loggerFactory);
 
             // Act
@@ -77,9 +85,9 @@ namespace Services
 
             Assert.Equal(expectedCatalog.Id, actualCatalog.Id);
 
-            var sortedExpected = new SortedDictionary<string, string>(userConfiguration);
+            var sortedExpected = new SortedDictionary<string, string>(requestConfiguration);
             var sortedActual = new SortedDictionary<string, string>(
-                ((DataSourceController)actual).UserConfiguration.ToDictionary(entry => entry.Key, entry => entry.Value));
+                ((DataSourceController)actual).RequestConfiguration.ToDictionary(entry => entry.Key, entry => entry.Value));
 
             Assert.True(sortedExpected.SequenceEqual(sortedActual));
         }
@@ -88,6 +96,11 @@ namespace Services
         public async Task CanCreateAndInitializeDataWriterController()
         {
             // Arrange
+            var appState = new AppState()
+            {
+                Project = new NexusProject(new Dictionary<string, string>(), default!, default!)
+            };
+
             var extensionHive = Mock.Of<IExtensionHive>();
 
             Mock.Get(extensionHive)
@@ -96,11 +109,23 @@ namespace Services
 
             var loggerFactory = Mock.Of<ILoggerFactory>();
             var resourceLocator = new Uri("A", UriKind.Relative);
-            var exportParameters = new ExportParameters(default, default, default, default!, default!, default!);
+            var exportParameters = new ExportParameters(default, default, default, default!, default!, new Dictionary<string, string>());
 
             // Act
-            var dataControllerService = new DataControllerService(new AppState(), default!, extensionHive, default!, loggerFactory);
-            var actual = await dataControllerService.GetDataWriterControllerAsync(resourceLocator, exportParameters, CancellationToken.None);
+            var dataControllerService = new DataControllerService(
+                appState, 
+                default!,
+                extensionHive,
+                default!,
+                default!,
+                Options.Create(new DataOptions()),
+                default!,
+                loggerFactory);
+
+            var actual = await dataControllerService.GetDataWriterControllerAsync(
+                resourceLocator, 
+                exportParameters, 
+                CancellationToken.None);
 
             // Assert
             /* nothing to assert */

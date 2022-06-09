@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using Nexus.Core;
 using Nexus.DataModel;
@@ -26,24 +27,24 @@ namespace Services
             var samplePeriod = TimeSpan.FromSeconds(1);
             var exportId = Guid.NewGuid();
 
-            var registration1 = new DataSourceRegistration(Type: "A", new Uri("a", UriKind.Relative), new Dictionary<string, string>(), default);
-            var registration2 = new DataSourceRegistration(Type: "B", new Uri("a", UriKind.Relative), new Dictionary<string, string>(), default);
+            var registration1 = new DataSourceRegistration(Id: Guid.NewGuid(), Type: "A", new Uri("a", UriKind.Relative), new Dictionary<string, string>(), default);
+            var registration2 = new DataSourceRegistration(Id: Guid.NewGuid(), Type: "B", new Uri("a", UriKind.Relative), new Dictionary<string, string>(), default);
 
             // DI services
             var dataSourceController1 = Mock.Of<IDataSourceController>();
             var dataSourceController2 = Mock.Of<IDataSourceController>();
 
             var dataWriterController = Mock.Of<IDataWriterController>();
-            Uri tmpUri = null!;
+            Uri tmpUri = default!;
 
             Mock.Get(dataWriterController)
-               .Setup(s => s.WriteAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<TimeSpan>(), It.IsAny<CatalogItemPipeReader[]>(), It.IsAny<IProgress<double>>(), It.IsAny<CancellationToken>()))
-               .Callback<DateTime, DateTime, TimeSpan, TimeSpan, CatalogItemPipeReader[], IProgress<double>, CancellationToken>(
-                (begin, end, samplePeriod, filePeriod, catalogItemPipeReaders, progress, cancellationToken) =>
+               .Setup(s => s.WriteAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<TimeSpan>(), It.IsAny<CatalogItemRequestPipeReader[]>(), It.IsAny<IProgress<double>>(), It.IsAny<CancellationToken>()))
+               .Callback<DateTime, DateTime, TimeSpan, TimeSpan, CatalogItemRequestPipeReader[], IProgress<double>, CancellationToken>(
+                (begin, end, samplePeriod, filePeriod, catalogItemRequestPipeReaders, progress, cancellationToken) =>
                 {
-                    foreach (var catalogItemPipeReaderGroup in catalogItemPipeReaders.GroupBy(x => x.CatalogItem.Catalog))
+                    foreach (var catalogItemRequestPipeReaderGroup in catalogItemRequestPipeReaders.GroupBy(x => x.Request.Item.Catalog))
                     {
-                        var prefix = catalogItemPipeReaderGroup.Key.Id.TrimStart('/').Replace('/', '_');
+                        var prefix = catalogItemRequestPipeReaderGroup.Key.Id.TrimStart('/').Replace('/', '_');
                         var filePath = Path.Combine(tmpUri.LocalPath, $"{prefix}.dat");
                         File.Create(filePath).Dispose();
                     }
@@ -73,10 +74,10 @@ namespace Services
                     return Task.FromResult(dataWriterController);
                 });
 
-            var databaseManager = Mock.Of<IDatabaseManager>();
+            var databaseService = Mock.Of<IDatabaseService>();
 
-            Mock.Get(databaseManager)
-                .Setup(databaseManager => databaseManager.TryReadFirstAttachment(
+            Mock.Get(databaseService)
+                .Setup(databaseService => databaseService.TryReadFirstAttachment(
                     It.IsAny<string>(),
                     It.IsAny<string>(),
                     It.IsAny<EnumerationOptions>(), 
@@ -87,8 +88,8 @@ namespace Services
                 }))
                 .Returns(true);
 
-            Mock.Get(databaseManager)
-                .Setup(databaseManager => databaseManager.WriteArtifact(It.IsAny<string>()))
+            Mock.Get(databaseService)
+                .Setup(databaseService => databaseService.WriteArtifact(It.IsAny<string>()))
                 .Returns<string>((fileName) => File.OpenWrite(Path.Combine(root, fileName)));
 
             var logger = Mock.Of<ILogger<DataService>>();
@@ -101,15 +102,17 @@ namespace Services
                 .Returns(logger2);
 
             // catalog items
-            var representation1 = new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: samplePeriod, detail: "E");
+            var representation1 = new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: samplePeriod);
             var resource1 = new Resource(id: "Resource1");
             var catalog1 = new ResourceCatalog(id: "/A/B/C");
             var catalogItem1 = new CatalogItem(catalog1, resource1, representation1);
+            var catalogContainer1 = new CatalogContainer(new CatalogRegistration(catalog1.Id, string.Empty), default!, registration1, default!, default!, default!, default!, default!);
 
-            var representation2 = new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: samplePeriod, detail: "J");
+            var representation2 = new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: samplePeriod);
             var resource2 = new Resource(id: "Resource2");
             var catalog2 = new ResourceCatalog(id: "/F/G/H");
             var catalogItem2 = new CatalogItem(catalog2, resource2, representation2);
+            var catalogContainer2 = new CatalogContainer(new CatalogRegistration(catalog2.Id, string.Empty), default!, registration2, default!, default!, default!, default!, default!);
 
             // export parameters
             var exportParameters = new ExportParameters(
@@ -121,19 +124,26 @@ namespace Services
                 Configuration: new Dictionary<string, string>());
 
             // data service
-            var dataService = new DataService(dataControllerService, databaseManager, logger, loggerFactory);
+            var dataService = new DataService(
+                default!,
+                default!,
+                dataControllerService, 
+                databaseService,
+                Options.Create(new DataOptions()),
+                logger, 
+                loggerFactory);
 
             // act
             try
             {
-                var catalogItemsMap = new Dictionary<CatalogContainer, IEnumerable<CatalogItem>>()
+                var catalogItemRequests = new[]
                 {
-                    [new CatalogContainer(new CatalogRegistration(catalog1.Id), default!, registration1, default!, default!, default!, default!)] = new[] { catalogItem1 },
-                    [new CatalogContainer(new CatalogRegistration(catalog2.Id), default!, registration2, default!, default!, default!, default!)] = new[] { catalogItem2 }
+                    new CatalogItemRequest(catalogItem1, default, catalogContainer1),
+                    new CatalogItemRequest(catalogItem2, default, catalogContainer2)
                 };
 
                 var relativeDownloadUrl = await dataService
-                    .ExportAsync(exportParameters, catalogItemsMap, Guid.NewGuid(), CancellationToken.None);
+                    .ExportAsync(Guid.NewGuid(), catalogItemRequests, default!, exportParameters, CancellationToken.None);
 
                 // assert
                 var zipFile = Path.Combine(root, relativeDownloadUrl.Split('/').Last());

@@ -46,6 +46,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
                     options
                         .SetAuthorizationEndpointUris("/connect/authorize")
+                        .SetLogoutEndpointUris("/connect/logout")
                         .SetTokenEndpointUris("/connect/token");
 
                     options
@@ -55,8 +56,9 @@ namespace Microsoft.Extensions.DependencyInjection
 
                     options
                         .UseAspNetCore()
-                        .EnableTokenEndpointPassthrough()
-                        .EnableAuthorizationEndpointPassthrough();
+                        .EnableAuthorizationEndpointPassthrough()
+                        .EnableLogoutEndpointPassthrough()
+                        .EnableTokenEndpointPassthrough();
                 });
 
                 services.AddHostedService<HostedService>();
@@ -87,14 +89,18 @@ namespace Microsoft.Extensions.DependencyInjection
                 var subject = "f9208f50-cd54-4165-8041-b5cd19af45a4";
 
                 // principal
-                var principal = new ClaimsPrincipal(new[]
+                var claims = new[]
                 {
-                    new ClaimsIdentity(new[]
-                    {
-                        new Claim(Claims.Subject, subject),
-                        new Claim(Claims.Name, "Star Lord"),
-                    }, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme)
-                });
+                    new Claim(Claims.Subject, subject),
+                    new Claim(Claims.Name, "Star Lord"),
+                };
+
+                var principal = new ClaimsPrincipal(
+                    new ClaimsIdentity(
+                        claims,
+                        authenticationType: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+                        nameType: Claims.Name,
+                        roleType: Claims.Role));
 
                 // authorization
                 var authorizationsEnumerable = authorizationManager.FindAsync(
@@ -122,8 +128,7 @@ namespace Microsoft.Extensions.DependencyInjection
                         scopes: principal.GetScopes());
                 }
 
-                principal
-                    .SetAuthorizationId(await authorizationManager.GetIdAsync(authorization));
+                principal.SetAuthorizationId(await authorizationManager.GetIdAsync(authorization));
 
                 // claims
                 foreach (var claim in principal.Claims)
@@ -191,17 +196,20 @@ namespace Microsoft.Extensions.DependencyInjection
 
             if (await manager.FindByClientIdAsync("nexus", cancellationToken) is null)
             {
+#warning https://localhost:8443 should not be hardcoded
                 await manager.CreateAsync(new OpenIddictApplicationDescriptor
                 {
                     ClientId = "nexus",
                     ClientSecret = "nexus-secret",
                     DisplayName = "Nexus",
                     RedirectUris = { new Uri("https://localhost:8443/signin-oidc/nexus") },
+                    PostLogoutRedirectUris = { new Uri("https://localhost:8443/signout-oidc/nexus") },
                     Permissions =
                     {
                         // endpoints
                         Permissions.Endpoints.Authorization,
                         Permissions.Endpoints.Token,
+                        Permissions.Endpoints.Logout,
                         
                         // grant types
                         Permissions.GrantTypes.AuthorizationCode,

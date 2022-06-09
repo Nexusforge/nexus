@@ -1,0 +1,75 @@
+﻿@implements IDisposable
+@inject IAppState AppState
+@inject INexusClient Client
+
+<UIButton
+    Icon="cloud-download-outline" 
+    Label="@GetLabel()" 
+    OnClick="ExportAsync"
+    Disabled="!AppState.Settings.CanExport">
+</UIButton>
+
+@code
+{
+    private PropertyChangedEventHandler _handler;
+
+    public Rightbar_Actions()
+    {
+        _handler = (sender, e) => 
+        {
+            if (e.PropertyName == nameof(AppState.Settings.CanExport))
+                StateHasChanged();
+        };
+    }
+
+    protected override void OnInitialized()
+    {
+        AppState.Settings.PropertyChanged += _handler;
+    }
+
+    private async Task ExportAsync()
+    {
+        var exportParameters = AppState.Settings.GetExportParameters();
+
+        try
+        {
+            var job = await Client.Jobs.ExportAsync(exportParameters, CancellationToken.None);
+            AppState.AddJob(new JobViewModel(job, exportParameters, Client, ex => AppState.AddError(ex)));
+        }
+        catch (Exception ex)
+        {
+            AppState.AddError(ex);
+        }
+    }
+
+    private string GetLabel()
+    {
+        var byteCount = AppState.Settings.GetTotalByteCount();
+
+        if (byteCount > 0)
+            return FormatByteCount(byteCount);
+
+        else
+            return string.Empty;
+    }
+
+    private string FormatByteCount(long byteCount)
+    {
+        if (byteCount >= 1000 * 1000 * 1000)
+            return $"{(double)byteCount / 1000 / 1000 / 1000:G3} GB";
+
+        else if (byteCount >= 1000 * 1000)
+            return $"{(double)byteCount / 1000 / 1000:G3} MB";
+
+        else if (byteCount >= 1000)
+            return $"{(double)byteCount / 1000:G3} kB";
+
+        else
+            return $"{(double)byteCount:F0} B";
+    }
+
+    public void Dispose()
+    {
+        AppState.Settings.PropertyChanged -= _handler;
+    }
+}

@@ -1,5 +1,4 @@
 .vs/
-.vscode/
 artifacts/
 
 doc/_site
@@ -10,3 +9,4 @@ doc/api/*
 
 *.suo
 *.user
+*.pyc

@@ -1,4 +1,5 @@
-﻿using Nexus.DataModel;
+﻿using Nexus.Core;
+using Nexus.DataModel;
 using Nexus.Utilities;
 using System.IO.Pipelines;
 
@@ -10,46 +11,67 @@ namespace Nexus.Extensibility
             this IDataSourceController controller,
             DateTime begin,
             DateTime end,
-            CatalogItem catalogItem,
-            ILogger<DataSourceController> logger)
+            CatalogItemRequest request,
+            ReadDataHandler readDataHandler,
+            DataOptions dataOptions,
+            ILogger<DataSourceController> logger,
+            CancellationToken cancellationToken)
         {
             // DataSourceDoubleStream is only required to enable the browser to determine the download progress.
             // Otherwise the PipeReader.AsStream() would be sufficient.
 
-            var samplePeriod = catalogItem.Representation.SamplePeriod;
+            var samplePeriod = request.Item.Representation.SamplePeriod;
             var elementCount = ExtensibilityUtilities.CalculateElementCount(begin, end, samplePeriod);
-            var totalLength = elementCount * NexusCoreUtilities.SizeOf(NexusDataType.FLOAT64);
+            var totalLength = elementCount * NexusUtilities.SizeOf(NexusDataType.FLOAT64);
             var pipe = new Pipe();
+            var stream = new DataSourceDoubleStream(totalLength, pipe.Reader);
 
-            _ = controller.ReadSingleAsync(
+            var task = controller.ReadSingleAsync(
                 begin,
                 end,
-                catalogItem,
+                request,
                 pipe.Writer,
-                statusWriter: default,
+                readDataHandler,
+                dataOptions,
                 progress: default,
                 logger,
-                CancellationToken.None);
+                cancellationToken);
 
-            return new DataSourceDoubleStream(totalLength, pipe.Reader);
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+#pragma warning disable VSTHRD003 // Vermeiden Sie das Warten auf fremde Aufgaben
+                    await task;
+#pragma warning restore VSTHRD003 // Vermeiden Sie das Warten auf fremde Aufgaben
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Streaming failed");
+                    stream.Cancel();
+                }
+            });
+
+            return stream;
         }
 
         public static Task ReadSingleAsync(
             this IDataSourceController controller,
             DateTime begin,
             DateTime end,
-            CatalogItem catalogItem,
+            CatalogItemRequest request,
             PipeWriter dataWriter,
-            PipeWriter? statusWriter,
+            ReadDataHandler readDataHandler,
+            DataOptions dataOptions,
             IProgress<double>? progress,
             ILogger<DataSourceController> logger,
             CancellationToken cancellationToken)
         {
-            var samplePeriod = catalogItem.Representation.SamplePeriod;
+            var samplePeriod = request.Item.Representation.SamplePeriod;
 
-            var readingGroup = new DataReadingGroup(controller, new CatalogItemPipeWriter[]
+            var readingGroup = new DataReadingGroup(controller, new CatalogItemRequestPipeWriter[]
             {
-                new CatalogItemPipeWriter(catalogItem, dataWriter, statusWriter)
+                new CatalogItemRequestPipeWriter(request, dataWriter)
             });
 
             return DataSourceController.ReadAsync(
@@ -57,6 +79,8 @@ namespace Nexus.Extensibility
                 end,
                 samplePeriod,
                 new DataReadingGroup[] { readingGroup },
+                readDataHandler,
+                dataOptions,
                 progress,
                 logger,
                 cancellationToken);

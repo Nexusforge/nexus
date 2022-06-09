@@ -1,9 +1,11 @@
-using Microsoft.Extensions.Options;
 using Nexus.Core;
 using Nexus.DataModel;
+using Nexus.Extensibility;
 using Nexus.Sources;
+using Nexus.Utilities;
 using System.Security.Claims;
 using System.Text.Json;
+using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Nexus.Services
 {
@@ -18,7 +20,11 @@ namespace Nexus.Services
     {
         #region Types
 
-        record CatalogPrototype(CatalogRegistration Registration, DataSourceRegistration DataSourceRegistration, ClaimsPrincipal? Owner);
+        record CatalogPrototype(
+            CatalogRegistration Registration,
+            DataSourceRegistration DataSourceRegistration,
+            PackageReference PackageReference, 
+            ClaimsPrincipal? Owner);
 
         #endregion
 
@@ -26,9 +32,9 @@ namespace Nexus.Services
 
         private AppState _appState;
         private IDataControllerService _dataControllerService;
-        private IDatabaseManager _databaseManager;
-        private IUserManagerWrapper _userManagerWrapper;
-        private SecurityOptions _securityOptions;
+        private IDatabaseService _databaseService;
+        private IServiceProvider _serviceProvider;
+        private IExtensionHive _extensionHive;
         private ILogger<CatalogManager> _logger;
 
         #endregion
@@ -38,16 +44,16 @@ namespace Nexus.Services
         public CatalogManager(
             AppState appState,
             IDataControllerService dataControllerService, 
-            IDatabaseManager databaseManager,
-            IUserManagerWrapper userManagerWrapper,
-            IOptions<SecurityOptions> securityOptions,
+            IDatabaseService databaseService,
+            IServiceProvider serviceProvider,
+            IExtensionHive extensionHive,
             ILogger<CatalogManager> logger)
         {
             _appState = appState;
             _dataControllerService = dataControllerService;
-            _databaseManager = databaseManager;
-            _userManagerWrapper = userManagerWrapper;
-            _securityOptions = securityOptions.Value;
+            _databaseService = databaseService;
+            _serviceProvider = serviceProvider;
+            _extensionHive = extensionHive;
             _logger = logger;
         }
 
@@ -62,60 +68,91 @@ namespace Nexus.Services
             CatalogContainer[] catalogContainers;
 
             /* special case: root */
-            if (parent.Id == "/")
+            if (parent.Id == CatalogContainer.RootCatalogId)
             {
-                /* load builtin backend source */
+                /* load builtin data source */
                 var builtinDataSourceRegistrations = new DataSourceRegistration[]
                 {
                     new DataSourceRegistration(
-                        Type: typeof(InMemory).FullName ?? throw new Exception("full name is null"),
+                        Id: Sample.RegistrationId,
+                        Type: typeof(Sample).FullName!,
                         ResourceLocator: new Uri("memory://localhost"),
-                        Configuration: new Dictionary<string, string>(),
-                        Publish: true),
+                        Configuration: new Dictionary<string, string>()),
                 };
 
                 /* load all catalog identifiers */
-                var path = "/";
+                var path = CatalogContainer.RootCatalogId;
                 var catalogPrototypes = new List<CatalogPrototype>();
 
-                /* => for the built-in backend sources */
+                /* => for the built-in data source registrations */
 
 #warning Load Parallel?
-                /* for each backend source */
+                /* for each data source registration */
                 foreach (var registration in builtinDataSourceRegistrations)
                 {
                     using var controller = await _dataControllerService.GetDataSourceControllerAsync(registration, cancellationToken);
                     var catalogRegistrations = await controller.GetCatalogRegistrationsAsync(path, cancellationToken);
+                    var packageReference = _extensionHive.GetPackageReference<IDataSource>(registration.Type);
 
                     foreach (var catalogRegistration in catalogRegistrations)
                     {
-                        catalogPrototypes.Add(new CatalogPrototype(catalogRegistration, registration, null));
+                        catalogPrototypes.Add(new CatalogPrototype(
+                            catalogRegistration, 
+                            registration, 
+                            packageReference, 
+                            null));
                     }
                 }
 
-                /* => for each user with existing config file */
-                foreach (var (username, userConfiguration) in _appState.Project.UserConfigurations)
+                using var scope = _serviceProvider.CreateScope();
+                var dbService = scope.ServiceProvider.GetRequiredService<IDBService>();
+
+                /* => for each user with existing config */
+                foreach (var (userId, userConfiguration) in _appState.Project.UserConfigurations)
                 {
-                    var user = await _userManagerWrapper.GetClaimsPrincipalAsync(username);
+                    // get owner
+                    var user = await dbService.FindUserAsync(userId);
 
                     if (user is null)
                         continue;
 
-                    /* for each backend source */
+                    var claims = user.Claims.Values.Select(claim => new Claim(claim.Type, claim.Value)).ToList();
+                    claims.Add(new Claim(Claims.Name, userId));
+
+                    var owner = new ClaimsPrincipal(
+                        new ClaimsIdentity(
+                            claims,
+                            authenticationType: "Fake authentication type",
+                            nameType: Claims.Name,
+                            roleType: Claims.Role));
+
+                    /* for each data source registration */
                     foreach (var registration in userConfiguration.DataSourceRegistrations.Values)
                     {
-                        using var controller = await _dataControllerService.GetDataSourceControllerAsync(registration, cancellationToken);
-                        var catalogIds = await controller.GetCatalogRegistrationsAsync(path, cancellationToken);
-
-                        foreach (var catalogId in catalogIds)
+                        try
                         {
-                            catalogPrototypes.Add(new CatalogPrototype(catalogId, registration, user));
+                            using var controller = await _dataControllerService.GetDataSourceControllerAsync(registration, cancellationToken);
+                            var catalogRegistrations = await controller.GetCatalogRegistrationsAsync(path, cancellationToken);
+                            var packageReference = _extensionHive.GetPackageReference<IDataSource>(registration.Type);
+
+                            foreach (var catalogRegistration in catalogRegistrations)
+                            {
+                                catalogPrototypes.Add(new CatalogPrototype(
+                                    catalogRegistration, 
+                                    registration,
+                                    packageReference,
+                                    owner));
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "Unable to process data source registration for user {Username}", user.Name);
                         }
                     }
                 }
 
                 catalogContainers = ProcessCatalogPrototypes(catalogPrototypes.ToArray());
-                _logger.LogInformation("Found {CatalogCount} top level catalogs.", catalogContainers.Length);
+                _logger.LogInformation("Found {CatalogCount} top level catalogs", catalogContainers.Length);
             }
 
             /* all other catalogs */
@@ -124,11 +161,16 @@ namespace Nexus.Services
                 using var controller = await _dataControllerService
                     .GetDataSourceControllerAsync(parent.DataSourceRegistration, cancellationToken);
 
+                /* Why trailing slash? 
+                 * Because we want the "directory content" (see the "ls /home/karl/" example here:
+                 * https://stackoverflow.com/questions/980255/should-a-directory-path-variable-end-with-a-trailing-slash)
+                 */
+
                 var catalogRegistrations = await controller
                     .GetCatalogRegistrationsAsync(parent.Id + "/", cancellationToken);
 
                 var prototypes = catalogRegistrations
-                    .Select(catalogId => new CatalogPrototype(catalogId, parent.DataSourceRegistration, parent.Owner));
+                    .Select(catalogId => new CatalogPrototype(catalogId, parent.DataSourceRegistration, parent.PackageReference, parent.Owner));
 
                 catalogContainers = ProcessCatalogPrototypes(prototypes.ToArray());
             }
@@ -148,20 +190,21 @@ namespace Nexus.Services
                 /* create catalog metadata */
                 CatalogMetadata catalogMetadata;
 
-                if (_databaseManager.TryReadCatalogMetadata(prototype.Registration.Path, out var jsonString2))
+                if (_databaseService.TryReadCatalogMetadata(prototype.Registration.Path, out var jsonString2))
                     catalogMetadata = JsonSerializer.Deserialize<CatalogMetadata>(jsonString2) ?? throw new Exception("catalogMetadata is null");
 
                 else
-                    catalogMetadata = new CatalogMetadata(default, default, default, default);
+                    catalogMetadata = new CatalogMetadata(default, default, default);
 
                 /* create catalog container */
                 var catalogContainer = new CatalogContainer(
                     prototype.Registration,
                     prototype.Owner,
                     prototype.DataSourceRegistration,
+                    prototype.PackageReference,
                     catalogMetadata,
                     this,
-                    _databaseManager,
+                    _databaseService,
                     _dataControllerService);
 
                 return catalogContainer;
@@ -176,23 +219,23 @@ namespace Nexus.Services
             // Background:
             //
             // Nexus allows catalogs to have child catalogs like folders in a file system. To simplify things,
-            // it is required that a catalog that comes from a certain backend source can only have child
-            // catalogs of the very same backend source.
+            // it is required that a catalog that comes from a certain data source can only have child
+            // catalogs of the very same data source.
             // 
             // In general, child catalogs will be loaded lazily. Therefore, for any catalog of the provided array that
-            // appears to be a child catalog, it can be assumed it comes from a backend source other than the one
+            // appears to be a child catalog, it can be assumed it comes from a data source other than the one
             // from the parent catalog. Depending on the user's rights, this method decides which one will survive.
             // 
             //
             // Example:
             //
             // The following combination of catalogs is allowed:
-            // Backend source 1: /a + /a/a + /a/b
-            // Backend source 2: /a2/c
+            // data source 1: /a + /a/a + /a/b
+            // data source 2: /a2/c
             //
             // The following combination of catalogs is forbidden:
-            // Backend source 1: /a + /a/a + /a/b
-            // Backend source 2: /a/c
+            // data source 1: /a + /a/a + /a/b
+            // data source 2: /a/c
 
             var catalogPrototypesToKeep = new List<CatalogPrototype>();
 
@@ -204,8 +247,8 @@ namespace Nexus.Services
                             var currentCatalogId = current.Registration.Path + '/';
                             var prototypeCatalogId = catalogPrototype.Registration.Path + '/';
 
-                            return currentCatalogId.StartsWith(prototypeCatalogId) ||
-                                   prototypeCatalogId.StartsWith(currentCatalogId);
+                            return currentCatalogId.StartsWith(prototypeCatalogId, StringComparison.OrdinalIgnoreCase) ||
+                                   prototypeCatalogId.StartsWith(currentCatalogId, StringComparison.OrdinalIgnoreCase);
                         });
 
                 /* nothing found */
@@ -218,12 +261,13 @@ namespace Nexus.Services
                 else
                 {
                     var owner = catalogPrototype.Owner;
-                    var ownerIsAdmin = owner is null || owner.HasClaim(NexusClaims.IS_ADMIN, "true");
+                    var ownerCanWrite = owner is null || AuthorizationUtilities.IsCatalogWritable(catalogPrototype.Registration.Path, owner);
 
-                    var otherOwner = catalogPrototypesToKeep[referenceIndex].Owner;
-                    var otherOwnerIsAdmin = otherOwner is null || otherOwner.HasClaim(NexusClaims.IS_ADMIN, "true");
+                    var otherPrototype = catalogPrototypesToKeep[referenceIndex];
+                    var otherOwner = otherPrototype.Owner;
+                    var otherOwnerCanWrite = otherOwner is null || AuthorizationUtilities.IsCatalogWritable(otherPrototype.Registration.Path, otherOwner);
 
-                    if (!otherOwnerIsAdmin && ownerIsAdmin)
+                    if (!otherOwnerCanWrite && ownerCanWrite)
                     {
                         _logger.LogWarning("Duplicate catalog {CatalogId}", catalogPrototypesToKeep[referenceIndex]);
                         catalogPrototypesToKeep[referenceIndex] = catalogPrototype;

@@ -1,0 +1,160 @@
+﻿@implements IDisposable
+@inject IAppState AppState
+
+<div class="flex w-full h-full">
+
+    <div class="flex flex-col p-2 select-none w-36 sm:w-72">
+
+        <UITextBox
+            @bind-Value="AppState.SearchString"
+            Label="Search"
+            Icon="@_searchIcon"
+            OnIconClick="() => AppState.SearchString = default"
+            OnInput="true"
+            DarkMode="false">
+        </UITextBox>
+
+        <div class="overflow-y-auto">
+            @if (AppState.CatalogItemsMap is not null)
+            {
+                @foreach (var entry in AppState.CatalogItemsMap)
+                {
+                    @if (entry.Value == AppState.CatalogItems)
+                    {
+                        <div class="flex justify-between items-end py-0.5 px-1 cursor-pointer">
+                            <span class="font-bold text-orange-500">@entry.Key</span>
+                            <span class="text-sm text-gray-500">@entry.Value.Count</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="group flex justify-between items-end py-0.5 px-1 cursor-pointer"
+                            @onclick="() => SelectCatalogItems(entry.Value)">
+                            <span class="group-hover:text-cyan-500 font-bold text-cyan-700">@entry.Key</span>
+                            <span class="text-sm text-gray-500">@entry.Value.Count</span>
+                        </div>
+                    }
+                }
+            }
+        </div>
+    </div>
+
+    <div class="flex-1 p-2 h-full">
+        <div class="overflow-y-auto select-none h-full">
+            @if (AppState.CatalogItems is not null)
+            {
+                <Virtualize Context="catalogItemPair" ItemsProvider="LoadItems" @ref="_virtualizeComponent">
+                    <div class="flex flex-wrap">
+
+                        @foreach (var catalogItem in catalogItemPair)
+                        {
+                            <div class="w-full md:w-1/2 xl:w-full 2xl:w-1/4 group grid grid-cols-[1fr,auto] grid-rows-[auto,auto] px-1 cursor-pointer mb-2 hover:bg-gray-50"
+                                @onclick="() => AppState.Settings.ToggleCatalogItemSelection(catalogItem)">
+
+                                <div class="pt-1 min-w-0 flex items-center col-start-1 row-start-1 @(AppState.Settings.IsSelected(catalogItem) ? "text-orange-500" : "text-cyan-700 group-hover:text-cyan-500")">
+                                    <span class="font-bold truncate">
+                                        @catalogItem.Resource.Id&nbsp;:&nbsp;@Utilities.ToUnitString(catalogItem.Representation.SamplePeriod)
+                                    </span>
+                                    <span class="text-gray-500 whitespace-nowrap mx-2">@catalogItem.Unit</span>
+
+                                    @if (catalogItem.Warning is not null)
+                                    {
+                                        <UITooltip Tooltip="@catalogItem.Warning">
+                                            <span class="mdi mdi-alert ml-2 mr-1 text-orange-500"></span>
+                                            <span class="hidden sm:inline text-orange-500">@catalogItem.Warning</span>
+                                        </UITooltip>
+                                    }
+                                </div>
+
+                                <div class="pb-1 col-start-1 row-start-2 min-w-0">
+                                    <UIOverflowTooltip Tooltip="@catalogItem.Description" Class="text-sm truncate">
+                                        @catalogItem.Description
+                                    </UIOverflowTooltip>
+                                </div>
+
+                                <div class="col-start-2 row-start-1 row-span-2 hidden group-hover:block my-auto">
+                                    <MetadataView Properties="catalogItem.Resource.Properties" />
+                                </div>
+
+                            </div>
+                        }
+                    </div>
+                </Virtualize>
+            }
+        </div>
+    </div>
+
+</div>
+
+@code {
+
+    private Virtualize<List<CatalogItemViewModel>>? _virtualizeComponent;
+    private PropertyChangedEventHandler _handler;
+    private string _searchIcon = "magnify";
+
+    public ResourceView()
+    {
+        _handler = (sender, e) => 
+        {
+            if (e.PropertyName == nameof(AppState.CatalogItemsMap))
+                StateHasChanged();
+
+            else if (e.PropertyName == nameof(AppState.SearchString))
+            {
+                _searchIcon = string.IsNullOrWhiteSpace(AppState.SearchString)
+                    ? "magnify"
+                    : "close";
+            }
+
+            else if (e.PropertyName == nameof(AppState.Settings.SelectedCatalogItems))
+                StateHasChanged();
+        };
+    }
+
+    private async Task SelectCatalogItems(List<CatalogItemViewModel> catalogItems)
+    {
+        AppState.CatalogItems = catalogItems;
+
+        if (_virtualizeComponent is not null)
+            await _virtualizeComponent.RefreshDataAsync();
+
+        StateHasChanged();
+    }
+
+    private ValueTask<ItemsProviderResult<List<CatalogItemViewModel>>> LoadItems(ItemsProviderRequest request)
+    {
+        var groupSize = 4;
+        var total = (int)Math.Ceiling(AppState.CatalogItems!.Count / (double)groupSize);
+
+        var source = AppState.CatalogItems!
+            .Skip(request.StartIndex * groupSize)
+            .Take(request.Count * groupSize);
+
+        var index = 0;
+        
+        var groups = source
+            .GroupBy(item =>
+            {
+                var result = index / groupSize;
+                index++;
+                return result;
+            })
+            .Select(group => group.ToList())
+            .ToList();
+
+        return ValueTask.FromResult(new ItemsProviderResult<List<CatalogItemViewModel>>(groups, total));
+    }
+
+    protected override void OnInitialized()
+    {
+        AppState.PropertyChanged += _handler;
+        AppState.Settings.PropertyChanged +=  _handler;
+    }
+
+    public void Dispose()
+    {
+        AppState.PropertyChanged -= _handler;
+        AppState.Settings.PropertyChanged -= _handler;
+    }
+}
+

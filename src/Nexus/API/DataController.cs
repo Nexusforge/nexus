@@ -1,10 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Nexus.Core;
-using Nexus.Extensibility;
 using Nexus.Services;
-using Nexus.Utilities;
 using System.ComponentModel.DataAnnotations;
 using System.Net;
 
@@ -19,24 +16,20 @@ namespace Nexus.Controllers
     [Route("api/v{version:apiVersion}/[controller]")]
     internal class DataController : ControllerBase
     {
+        // GET      /api/data
+
         #region Fields
 
-        private AppState _appState;
-        private IDataControllerService _dataControllerService;
-        private ILoggerFactory _loggerFactory;
+        private IDataService _dataService;
 
         #endregion
 
         #region Constructors
 
         public DataController(
-            AppState appState,
-            IDataControllerService dataControllerService,
-            ILoggerFactory loggerFactory)
+            IDataService dataService)
         {
-            _appState = appState;
-            _dataControllerService = dataControllerService;
-            _loggerFactory = loggerFactory;
+            _dataService = dataService;
         }
 
         #endregion
@@ -44,55 +37,26 @@ namespace Nexus.Controllers
         /// <summary>
         /// Gets the requested data.
         /// </summary>
-        /// <param name="catalogId">The catalog identifier.</param>
-        /// <param name="resourceId">The resource identifier.</param>
-        /// <param name="representationId">The representation identifier.</param>
+        /// <param name="resourcePath">The path to the resource data to stream.</param>
         /// <param name="begin">Start date/time.</param>
         /// <param name="end">End date/time.</param>
         /// <param name="cancellationToken">A cancellation token.</param>
         /// <returns></returns>
 
         [HttpGet]
-        public async Task<IActionResult> GetStreamAsync(
-            [BindRequired] string catalogId,
-            [BindRequired] string resourceId,
-            [BindRequired] string representationId,
+        public async Task<ActionResult> GetStreamAsync(
+            [BindRequired] string resourcePath,
             [BindRequired] DateTime begin,
             [BindRequired] DateTime end,
             [BindRequired] CancellationToken cancellationToken)
         {
-            catalogId = WebUtility.UrlDecode(catalogId);
-            resourceId = WebUtility.UrlDecode(resourceId);
-            representationId = WebUtility.UrlDecode(representationId);
-
+            resourcePath = WebUtility.UrlDecode(resourcePath);
             begin = DateTime.SpecifyKind(begin, DateTimeKind.Utc);
             end = DateTime.SpecifyKind(end, DateTimeKind.Utc);
 
             try
             {
-                // find representation
-                var root = _appState.CatalogState.Root;
-
-                var resourcePath = $"{catalogId}/{resourceId}/{representationId}";
-
-                var (catalogContainer, catalogItem) = await root.TryFindAsync(resourcePath, cancellationToken);
-
-                if (catalogContainer is null || catalogItem is null)
-                    return NotFound($"Could not find resource path {resourcePath}.");
-
-                var catalog = catalogItem.Catalog;
-
-                // security check
-                if (!AuthorizationUtilities.IsCatalogAccessible(catalogContainer.Id, catalogContainer.Metadata, User))
-                    return StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to access the catalog {catalog.Id}.");
-
-                // controller
-                using var controller = await _dataControllerService.GetDataSourceControllerAsync(
-                    catalogContainer.DataSourceRegistration,
-                    cancellationToken);
-
-                // read data
-                var stream = controller.ReadAsStream(begin, end, catalogItem, _loggerFactory.CreateLogger<DataSourceController>());
+                var stream = await _dataService.ReadAsStreamAsync(resourcePath, begin, end, cancellationToken);
 
                 Response.Headers.ContentLength = stream.Length;
                 return File(stream, "application/octet-stream", "data.bin");
@@ -100,6 +64,14 @@ namespace Nexus.Controllers
             catch (ValidationException ex)
             {
                 return UnprocessableEntity(ex.Message);
+            }
+            catch (Exception ex) when (ex.Message.StartsWith("Could not find resource path"))
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex) when (ex.Message.StartsWith("The current user is not permitted to access the catalog"))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
             }
         }
     }

@@ -2,12 +2,14 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using Nexus.Core;
 using System.Collections.ObjectModel;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net;
 using System.Security.Claims;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
@@ -26,9 +28,13 @@ namespace Microsoft.Extensions.DependencyInjection
 
         public static IServiceCollection AddNexusAuth(
             this IServiceCollection services,
+            PathsOptions pathsOptions,
             SecurityOptions securityOptions)
         {
             JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
+
+            services.AddDataProtection()
+                .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(pathsOptions.Config, "data-protection-keys")));
 
             var builder = services
 
@@ -37,12 +43,22 @@ namespace Microsoft.Extensions.DependencyInjection
                     options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                 })
 
-                .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme)
+                .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
+                {
+                    options.ExpireTimeSpan = securityOptions.CookieLifetime;
+                    options.SlidingExpiration = false;
+
+                    options.Events.OnRedirectToAccessDenied = context => {
+                        context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
+                        return Task.CompletedTask;
+                    };
+                })
 
                 .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
                 {
                     options.TokenValidationParameters = new TokenValidationParameters()
                     {
+                        NameClaimType = Claims.Name,
                         ClockSkew = TimeSpan.Zero,
                         ValidateAudience = false,
                         ValidateIssuer = false,
@@ -65,6 +81,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     options.ClientSecret = provider.ClientSecret;
 
                     options.CallbackPath = $"/signin-oidc/{provider.Scheme}";
+                    options.SignedOutCallbackPath = $"/signout-oidc/{provider.Scheme}";
                     options.ResponseType = OpenIdConnectResponseType.Code;
 
                     options.TokenValidationParameters.AuthenticationType = provider.Scheme;
@@ -93,14 +110,14 @@ namespace Microsoft.Extensions.DependencyInjection
                             var userId = principal.FindFirstValue(Claims.Subject)
                                 ?? throw new Exception("The subject claim is missing. This should never happen.");
 
-                            var userName = principal.FindFirstValue(Claims.Name)
+                            var username = principal.FindFirstValue(Claims.Name)
                                 ?? throw new Exception("The name claim is required.");
 
-                            var userContext = context.HttpContext.RequestServices.GetRequiredService<UserDbContext>();
+                            var dbContext = context.HttpContext.RequestServices.GetRequiredService<UserDbContext>();
                             var uniqueUserId = $"{Uri.EscapeDataString(userId)}@{Uri.EscapeDataString(context.Scheme.Name)}";
 
                             // user
-                            var user = await userContext.Users
+                            var user = await dbContext.Users
                                 .SingleOrDefaultAsync(user => user.Id == uniqueUserId);
 
                             if (user is null)
@@ -110,31 +127,33 @@ namespace Microsoft.Extensions.DependencyInjection
                                 user = new NexusUser()
                                 {
                                     Id = uniqueUserId,
-                                    Name = userName,
+                                    Name = username,
                                     RefreshTokens = new List<RefreshToken>()
                                 };
 
-                                var isFirstUser = !userContext.Users.Any();
+                                var isFirstUser = !dbContext.Users.Any();
 
                                 if (isFirstUser)
-                                    newClaims[Guid.NewGuid()] = new NexusClaim(NexusClaims.IS_ADMIN, "true");
+                                    newClaims[Guid.NewGuid()] = new NexusClaim(Claims.Role, NexusRoles.ADMINISTRATOR);
+
+                                newClaims[Guid.NewGuid()] = new NexusClaim(Claims.Role, NexusRoles.USER);
 
                                 user.Claims = new ReadOnlyDictionary<Guid, NexusClaim>(newClaims);
-                                userContext.Users.Add(user);
+                                dbContext.Users.Add(user);
                             }
 
                             else
                             {
                                 // user name may change, so update it
-                                user.Name = userName;
+                                user.Name = username;
                             }
 
-                            await userContext.SaveChangesAsync();
+                            await dbContext.SaveChangesAsync();
 
                             // oicd identity
                             var oidcIdentity = (ClaimsIdentity)principal.Identity!;
                             var subClaim = oidcIdentity.FindFirst(Claims.Subject);
-                            
+
                             if (subClaim is not null)
                                 oidcIdentity.RemoveClaim(subClaim);
 
@@ -142,7 +161,12 @@ namespace Microsoft.Extensions.DependencyInjection
 
                             // app identity
                             var claims = user.Claims.Select(entry => new Claim(entry.Value.Type, entry.Value.Value));
-                            var appIdentity = new ClaimsIdentity(claims, authenticationType: context.Scheme.Name);
+
+                            var appIdentity = new ClaimsIdentity(
+                                claims,
+                                authenticationType: context.Scheme.Name,
+                                nameType: Claims.Name,
+                                roleType: Claims.Role);
 
                             principal.AddIdentity(appIdentity);
                         }
@@ -160,13 +184,14 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 options.DefaultPolicy = new AuthorizationPolicyBuilder()
                     .RequireAuthenticatedUser()
+                    .RequireRole(NexusRoles.USER)
                     .AddAuthenticationSchemes(authenticationSchemes)
                     .Build();
 
                 options
-                    .AddPolicy(Policies.RequireAdmin, policy => policy
-                    .RequireClaim(NexusClaims.IS_ADMIN, "true")
-                    .AddAuthenticationSchemes(authenticationSchemes));
+                    .AddPolicy(NexusPolicies.RequireAdmin, policy => policy
+                        .RequireRole(NexusRoles.ADMINISTRATOR)
+                        .AddAuthenticationSchemes(authenticationSchemes));
             });
 
             return services;

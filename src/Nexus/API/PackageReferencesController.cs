@@ -8,14 +8,14 @@ namespace Nexus.Controllers
     /// <summary>
     /// Provides access to package references.
     /// </summary>
-    [Authorize(Policy = Policies.RequireAdmin)]
+    [Authorize(Policy = NexusPolicies.RequireAdmin)]
     [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
     internal class PackageReferencesController : ControllerBase
     {
         // GET      /api/packagereferences
-        // PUT      /api/packagereferences/{packageReferenceId}
+        // PUT      /api/packagereferences
         // DELETE   /api/packagereferences/{packageReferenceId}
         // GET      /api/packagereferences/{packageReferenceId}/versions
 
@@ -48,24 +48,20 @@ namespace Nexus.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet]
-        public IReadOnlyDictionary<Guid, PackageReference>
-            GetPackageReferences()
+        public IEnumerable<PackageReference> Get()
         {
-            return _appState.Project.PackageReferences;
+            return _appState.Project.PackageReferences.Values;
         }
 
         /// <summary>
         /// Puts a package reference.
         /// </summary>
-        /// <param name="packageReferenceId">The identifier of the package reference.</param>
-        /// <param name="packageReference">The package reference to put.</param>
-        [HttpPut("{packageReferenceId}")]
-        public Task
-            PutPackageReferencesAsync(
-            Guid packageReferenceId,
+        /// <param name="packageReference">The package reference to set.</param>
+        [HttpPut]
+        public Task SetAsync(
             [FromBody] PackageReference packageReference)
         {
-            return _appStateManager.PutPackageReferenceAsync(packageReferenceId, packageReference);
+            return _appStateManager.PutPackageReferenceAsync(packageReference);
         }
 
         /// <summary>
@@ -73,8 +69,7 @@ namespace Nexus.Controllers
         /// </summary>
         /// <param name="packageReferenceId">The ID of the package reference.</param>
         [HttpDelete("{packageReferenceId}")]
-        public Task
-            DeletePackageReferencesAsync(
+        public Task DeleteAsync(
             Guid packageReferenceId)
         {
             return _appStateManager.DeletePackageReferenceAsync(packageReferenceId);
@@ -86,8 +81,7 @@ namespace Nexus.Controllers
         /// <param name="packageReferenceId">The ID of the package reference.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         [HttpGet("{packageReferenceId}/versions")]
-        public async Task<ActionResult<string[]>>
-            GetPackageVersionsAsync(
+        public async Task<ActionResult<string[]>> GetVersionsAsync(
             Guid packageReferenceId,
             CancellationToken cancellationToken)
         {

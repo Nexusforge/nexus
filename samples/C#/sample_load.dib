@@ -1,0 +1,126 @@
+#!markdown
+
+# TODO
+- test and improve F# plot sample
+- get unit and other properties from Nexus more easily
+- using var seems to be broken (i.e. for the client and the stream response)
+
+#!csharp
+
+// https://github.com/dotnet/interactive/issues/698
+#i "nuget: https://www.myget.org/F/apollo3zehn-dev/api/v3/index.json"
+#r "nuget: Nexus.Api, 1.0.0-beta.1.216"
+
+#!markdown
+
+Create client and authenticate
+
+#!csharp
+
+using Nexus.Api;
+
+var refreshToken = "<refresh-token>";
+
+var uri = new Uri("https://localhost:8443");
+var client = new NexusClient(uri);
+await client.SignInAsync(refreshToken);
+
+#!markdown
+
+Get data from sample catalog `/SAMPLE/LOCAL` and `/SAMPLE/REMOTE`
+
+#!csharp
+
+using System.IO;
+
+var begin = new DateTime(2020, 02, 01, 0, 0, 0, DateTimeKind.Utc);
+var end = new DateTime(2020, 02, 01, 0, 2, 0, DateTimeKind.Utc);
+
+// Get T1 data
+
+/* Example: Transmit additional configuration which is understood only by the sample data source. */
+double[] t1Data;
+
+using (var disposable = client.AttachConfiguration(
+    ("user", "test"), 
+    ("password", "1234")))
+{
+    var response1 = await client.Data
+        .GetStreamAsync("/SAMPLE/REMOTE/T1/1_s", begin, end);
+
+    t1Data = await response1.ReadAsDoubleAsync();
+}
+
+// Get T1 average data
+var response3 = await client.Data
+    .GetStreamAsync("/SAMPLE/LOCAL/T1/5_s_mean", begin, end);
+
+var t1MeanData = await response3.ReadAsDoubleAsync();
+
+// timestamps
+var timestamps = Enumerable
+    .Range(0, t1Data.Length)
+    .Select(x => begin.AddSeconds(x))
+    .ToArray();
+
+var timestamps_mean = Enumerable
+    .Range(0, t1MeanData.Length)
+    .Select(x => begin.AddSeconds(5*x))
+    .ToArray();
+
+#!csharp
+
+// metadata
+var metadata = await client.Catalogs.GetAsync("/SAMPLE/LOCAL");
+var t1Metadata = metadata.Resources.First(resource => resource.Id == "T1");
+var t1Description = t1Metadata.Properties["Description"];
+var t1Unit = t1Metadata.Properties["Unit"];
+
+#!fsharp
+
+#r "nuget: Plotly.NET, 2.0.0-preview.17"
+#r "nuget: Plotly.NET.Interactive, 2.0.0-preview.17"
+
+#!markdown
+
+Plot data
+
+#!fsharp
+
+#!share --from csharp timestamps
+#!share --from csharp timestamps_mean
+#!share --from csharp t1Data
+#!share --from csharp t1MeanData
+#!share --from csharp t1Description
+#!share --from csharp t1Unit
+
+// wait for https://github.com/dotnet/interactive/issues/1848 to be solved
+
+open Plotly.NET
+
+let t1Chart =
+    Chart.Line(timestamps, t1Data, Name=t1Description)
+        |> Chart.withAxisAnchor(Y=2)
+
+let t1_meanChart =
+    Chart.Line(timestamps_mean, t1MeanData, Name=t1Description)
+        |> Chart.withAxisAnchor(Y=2)
+
+let twoXAxes = 
+    [
+        t1Chart
+        t1_meanChart
+    ]
+    |> Chart.combine
+    |> Chart.withYAxisStyle(
+        $"axis 1 / {t1Unit}",
+        Side=StyleParam.Side.Left,
+        Id=StyleParam.SubPlotId.YAxis 1
+    )
+    |> Chart.withYAxisStyle(
+        $"axis 2 / {t1Unit}",
+        Side=StyleParam.Side.Right,
+        Id=StyleParam.SubPlotId.YAxis 2,
+        Overlaying=StyleParam.LinearAxisId.Y 1
+    )
+    |> Chart.show

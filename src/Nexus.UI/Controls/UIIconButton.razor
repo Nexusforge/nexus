@@ -1,0 +1,29 @@
+﻿<div class="flex-none flex justify-center items-center rounded-full w-12 h-12 @TextColor hover:@BackgroundHoverColor hover:@TextHoverColor cursor-pointer select-none"
+    @onclick="OnClick">
+    <span class="text-xl mdi mdi-@Icon"></span>
+</div>
+
+@code 
+{
+    [Parameter]
+    public string Icon { get; set; } = default!;
+
+    [Parameter]
+    public bool DarkMode { get; set; } = false;
+
+    [Parameter]
+    public bool IsSelected { get; set; }
+
+    [Parameter]
+    public EventCallback<MouseEventArgs> OnClick { get; set; }
+
+    private string BackgroundHoverColor => DarkMode ? "bg-cyan-800" : "bg-gray-200";
+
+    private string TextColor => IsSelected 
+        ? DarkMode ? "text-inherit" : "text-orange-500"
+        : DarkMode ? "text-inherit" : "text-gray-400";
+
+    private string TextHoverColor => IsSelected 
+        ? DarkMode ? "text-inherit" : "text-orange-500"
+        : DarkMode ? "text-inherit" : "text-cyan-700";
+}

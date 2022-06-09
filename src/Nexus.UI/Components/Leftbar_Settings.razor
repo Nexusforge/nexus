@@ -1,0 +1,50 @@
+﻿@implements IDisposable
+@inject IAppState AppState
+
+<div>
+    <UIDatePicker 
+        Label="From (UTC)" 
+        @bind-Value="AppState.Settings.Begin" />
+
+    <UIDatePicker 
+        Label="To (UTC)" 
+        @bind-Value="AppState.Settings.End" />
+
+    <UISelect 
+        Label="Sample Period"
+        IsEditable="true"
+        Items="_items"
+        @bind-SelectedItem="AppState.Settings.SamplePeriod" />
+</div>
+
+@code {
+
+    private PropertyChangedEventHandler _handler;
+
+    private Dictionary<Period, string> _items = new Dictionary<Period, string>()
+    {
+        [new Period(TimeSpan.FromSeconds(1))] = "1 s",
+        [new Period(TimeSpan.FromMinutes(1))] = "1 min",
+        [new Period(TimeSpan.FromMinutes(10))] = "10 min"
+    };
+
+    public Leftbar_Settings()
+    {
+        _handler = (sender, e) =>
+        {
+            if (e.PropertyName == nameof(AppState.ExportParameters))
+                StateHasChanged();
+        };
+    }
+
+    protected override void OnInitialized()
+    {
+        AppState.PropertyChanged += _handler;
+    }
+
+    public void Dispose()
+    {
+        AppState.PropertyChanged -= _handler;
+    }
+}
+

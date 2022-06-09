@@ -2,9 +2,8 @@
 {
     internal static class NexusClaims
     {
-        public const string IS_ADMIN = "IsAdmin";
-        public const string CAN_ACCESS_CATALOG = "CanAccessCatalog";
-        public const string CAN_ACCESS_GROUP = "CanAccessGroup";
-        public const string CAN_EDIT_CATALOG = "CanEditCatalog";
+        public const string CAN_READ_CATALOG = "CanReadCatalog";
+        public const string CAN_WRITE_CATALOG = "CanWriteCatalog";
+        public const string CAN_READ_CATALOG_GROUP = "CanReadCatalogGroup";
     }
 }

@@ -1,0 +1,23 @@
+﻿ <button
+    type="@(IsSubmitButton ? "submit" : "button")"
+    class="mx-auto px-4 w-max p-1 rounded border border-gray-300 bg-white flex justify-center items-center text-cyan-700 hover:text-orange-500"
+    @onclick="OnClick">
+
+    <span class="mr-3 mdi mdi-@Icon"></span> @Label
+
+</button>
+
+@code {
+
+    [Parameter]
+    public EventCallback<MouseEventArgs> OnClick { get; set; }
+
+    [Parameter]
+    public string Icon { get; set; } = default!;
+
+    [Parameter]
+    public string Label { get; set; } = default!;
+
+    [Parameter]
+    public bool IsSubmitButton { get; set; }
+}

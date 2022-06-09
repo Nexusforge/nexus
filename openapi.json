@@ -18,7 +18,7 @@
           "Artifacts"
         ],
         "summary": "Gets the specified artifact.",
-        "operationId": "Artifacts_DownloadArtifact",
+        "operationId": "Artifacts_Download",
         "parameters": [
           {
             "name": "artifactId",
@@ -52,7 +52,7 @@
           "Catalogs"
         ],
         "summary": "Gets the specified catalog.",
-        "operationId": "Catalogs_GetCatalog",
+        "operationId": "Catalogs_Get",
         "parameters": [
           {
             "name": "catalogId",
@@ -79,13 +79,13 @@
         }
       }
     },
-    "/api/v1/catalogs/{catalogId}/child-catalog-ids": {
+    "/api/v1/catalogs/{catalogId}/child-catalog-infos": {
       "get": {
         "tags": [
           "Catalogs"
         ],
-        "summary": "Gets a list of child catalog identifiers for the provided parent catalog identifier.",
-        "operationId": "Catalogs_GetChildCatalogIds",
+        "summary": "Gets a list of child catalog info for the provided parent catalog identifier.",
+        "operationId": "Catalogs_GetChildCatalogInfos",
         "parameters": [
           {
             "name": "catalogId",
@@ -106,7 +106,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "string"
+                    "$ref": "#/components/schemas/CatalogInfo"
                   }
                 }
               }
@@ -154,7 +154,7 @@
           "Catalogs"
         ],
         "summary": "Gets the specified catalog availability.",
-        "operationId": "Catalogs_GetCatalogAvailability",
+        "operationId": "Catalogs_GetAvailability",
         "parameters": [
           {
             "name": "catalogId",
@@ -169,7 +169,8 @@
           {
             "name": "begin",
             "in": "query",
-            "description": "Start date.",
+            "required": true,
+            "description": "Start date/time.",
             "schema": {
               "type": "string",
               "format": "date-time"
@@ -179,12 +180,24 @@
           {
             "name": "end",
             "in": "query",
-            "description": "End date.",
+            "required": true,
+            "description": "End date/time.",
             "schema": {
               "type": "string",
               "format": "date-time"
             },
             "x-position": 3
+          },
+          {
+            "name": "step",
+            "in": "query",
+            "required": true,
+            "description": "Step period.",
+            "schema": {
+              "type": "string",
+              "format": "duration"
+            },
+            "x-position": 4
           }
         ],
         "responses": {
@@ -201,13 +214,150 @@
         }
       }
     },
+    "/api/v1/catalogs/{catalogId}/attachments": {
+      "get": {
+        "tags": [
+          "Catalogs"
+        ],
+        "summary": "Gets all attachments for the specified catalog.",
+        "operationId": "Catalogs_GetAttachments",
+        "parameters": [
+          {
+            "name": "catalogId",
+            "in": "path",
+            "required": true,
+            "description": "The catalog identifier.",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/catalogs/{catalogId}/attachments/{attachmentId}": {
+      "put": {
+        "tags": [
+          "Catalogs"
+        ],
+        "summary": "Uploads the specified attachment.",
+        "operationId": "Catalogs_UploadAttachment",
+        "parameters": [
+          {
+            "name": "catalogId",
+            "in": "path",
+            "required": true,
+            "description": "The catalog identifier.",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "attachmentId",
+            "in": "path",
+            "required": true,
+            "description": "The attachment identifier.",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 2
+          }
+        ],
+        "requestBody": {
+          "x-name": "content",
+          "description": "The binary file content.",
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary",
+                "nullable": false
+              }
+            }
+          },
+          "required": true,
+          "x-position": 3
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Catalogs"
+        ],
+        "summary": "Deletes the specified attachment.",
+        "operationId": "Catalogs_DeleteAttachment",
+        "parameters": [
+          {
+            "name": "catalogId",
+            "in": "path",
+            "required": true,
+            "description": "The catalog identifier.",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "attachmentId",
+            "in": "path",
+            "required": true,
+            "description": "The attachment identifier.",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/catalogs/{catalogId}/attachments/{attachmentId}/content": {
       "get": {
         "tags": [
           "Catalogs"
         ],
         "summary": "Gets the specified attachment.",
-        "operationId": "Catalogs_DownloadAttachement",
+        "operationId": "Catalogs_GetAttachmentStream",
         "parameters": [
           {
             "name": "catalogId",
@@ -251,7 +401,7 @@
           "Catalogs"
         ],
         "summary": "Gets the catalog metadata.",
-        "operationId": "Catalogs_GetCatalogMetadata",
+        "operationId": "Catalogs_GetMetadata",
         "parameters": [
           {
             "name": "catalogId",
@@ -282,7 +432,7 @@
           "Catalogs"
         ],
         "summary": "Puts the catalog metadata.",
-        "operationId": "Catalogs_PutCatalogMetadata",
+        "operationId": "Catalogs_SetMetadata",
         "parameters": [
           {
             "name": "catalogId",
@@ -297,7 +447,7 @@
         ],
         "requestBody": {
           "x-name": "catalogMetadata",
-          "description": "The catalog metadata to put.",
+          "description": "The catalog metadata to set.",
           "content": {
             "application/json": {
               "schema": {
@@ -324,34 +474,14 @@
         "operationId": "Data_GetStream",
         "parameters": [
           {
-            "name": "catalogId",
+            "name": "resourcePath",
             "in": "query",
             "required": true,
-            "description": "The catalog identifier.",
+            "description": "The path to the resource data to stream.",
             "schema": {
               "type": "string"
             },
             "x-position": 1
-          },
-          {
-            "name": "resourceId",
-            "in": "query",
-            "required": true,
-            "description": "The resource identifier.",
-            "schema": {
-              "type": "string"
-            },
-            "x-position": 2
-          },
-          {
-            "name": "representationId",
-            "in": "query",
-            "required": true,
-            "description": "The representation identifier.",
-            "schema": {
-              "type": "string"
-            },
-            "x-position": 3
           },
           {
             "name": "begin",
@@ -362,7 +492,7 @@
               "type": "string",
               "format": "date-time"
             },
-            "x-position": 4
+            "x-position": 2
           },
           {
             "name": "end",
@@ -373,7 +503,7 @@
               "type": "string",
               "format": "date-time"
             },
-            "x-position": 5
+            "x-position": 3
           }
         ],
         "responses": {
@@ -384,6 +514,97 @@
                 "schema": {
                   "type": "string",
                   "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/jobs": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Gets a list of jobs.",
+        "operationId": "Jobs_GetJobs",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Job"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/{jobId}": {
+      "delete": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Cancels the specified job.",
+        "operationId": "Jobs_CancelJob",
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/{jobId}/status": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Gets the status of the specified job.",
+        "operationId": "Jobs_GetJobStatus",
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobStatus"
                 }
               }
             }
@@ -446,90 +667,54 @@
         }
       }
     },
-    "/api/v1/jobs": {
-      "get": {
+    "/api/v1/jobs/clear-cache": {
+      "post": {
         "tags": [
           "Jobs"
         ],
-        "summary": "Gets a list of jobs.",
-        "operationId": "Jobs_GetJobs",
+        "summary": "Clears the catalog cache for the specified period of time.",
+        "operationId": "Jobs_ClearCache",
+        "parameters": [
+          {
+            "name": "catalogId",
+            "in": "query",
+            "required": true,
+            "description": "The catalog identifier.",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "begin",
+            "in": "query",
+            "required": true,
+            "description": "Start date/time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "x-position": 2
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": true,
+            "description": "End date/time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "x-position": 3
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Job"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/jobs/{jobId}/status": {
-      "get": {
-        "tags": [
-          "Jobs"
-        ],
-        "summary": "Gets the status of the specified job.",
-        "operationId": "Jobs_GetJobStatus",
-        "parameters": [
-          {
-            "name": "jobId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/JobStatus"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/jobs/{jobId}": {
-      "delete": {
-        "tags": [
-          "Jobs"
-        ],
-        "summary": "Cancels the specified job.",
-        "operationId": "Jobs_DeleteJob",
-        "parameters": [
-          {
-            "name": "jobId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/octet-stream": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
+                  "$ref": "#/components/schemas/Job"
                 }
               }
             }
@@ -543,15 +728,15 @@
           "PackageReferences"
         ],
         "summary": "Gets the list of package references.",
-        "operationId": "PackageReferences_GetPackageReferences",
+        "operationId": "PackageReferences_Get",
         "responses": {
           "200": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": {
+                  "type": "array",
+                  "items": {
                     "$ref": "#/components/schemas/PackageReference"
                   }
                 }
@@ -559,31 +744,16 @@
             }
           }
         }
-      }
-    },
-    "/api/v1/packagereferences/{packageReferenceId}": {
+      },
       "put": {
         "tags": [
           "PackageReferences"
         ],
         "summary": "Puts a package reference.",
-        "operationId": "PackageReferences_PutPackageReferences",
-        "parameters": [
-          {
-            "name": "packageReferenceId",
-            "in": "path",
-            "required": true,
-            "description": "The identifier of the package reference.",
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
+        "operationId": "PackageReferences_Set",
         "requestBody": {
           "x-name": "packageReference",
-          "description": "The package reference to put.",
+          "description": "The package reference to set.",
           "content": {
             "application/json": {
               "schema": {
@@ -592,20 +762,22 @@
             }
           },
           "required": true,
-          "x-position": 2
+          "x-position": 1
         },
         "responses": {
           "200": {
             "description": ""
           }
         }
-      },
+      }
+    },
+    "/api/v1/packagereferences/{packageReferenceId}": {
       "delete": {
         "tags": [
           "PackageReferences"
         ],
         "summary": "Deletes a package reference.",
-        "operationId": "PackageReferences_DeletePackageReferences",
+        "operationId": "PackageReferences_Delete",
         "parameters": [
           {
             "name": "packageReferenceId",
@@ -632,7 +804,7 @@
           "PackageReferences"
         ],
         "summary": "Gets package versions.",
-        "operationId": "PackageReferences_GetPackageVersions",
+        "operationId": "PackageReferences_GetVersions",
         "parameters": [
           {
             "name": "packageReferenceId",
@@ -668,8 +840,8 @@
         "tags": [
           "Sources"
         ],
-        "summary": "Gets the list of sources.",
-        "operationId": "Sources_GetSourceDescriptions",
+        "summary": "Gets the list of source descriptions.",
+        "operationId": "Sources_GetDescriptions",
         "responses": {
           "200": {
             "description": "",
@@ -693,15 +865,27 @@
           "Sources"
         ],
         "summary": "Gets the list of backend sources.",
-        "operationId": "Sources_GetSourceRegistrations",
+        "operationId": "Sources_GetRegistrations",
+        "parameters": [
+          {
+            "name": "username",
+            "in": "query",
+            "description": "The optional username. If not specified, the name of the current user will be used.",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 1
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": {
+                  "type": "array",
+                  "items": {
                     "$ref": "#/components/schemas/DataSourceRegistration"
                   }
                 }
@@ -709,31 +893,28 @@
             }
           }
         }
-      }
-    },
-    "/api/v1/sources/registrations/{registrationId}": {
+      },
       "put": {
         "tags": [
           "Sources"
         ],
         "summary": "Puts a backend source.",
-        "operationId": "Sources_PutSourceRegistration",
+        "operationId": "Sources_SetRegistration",
         "parameters": [
           {
-            "name": "registrationId",
-            "in": "path",
-            "required": true,
-            "description": "The identifier of the registration.",
+            "name": "username",
+            "in": "query",
+            "description": "The optional username. If not specified, the name of the current user will be used.",
             "schema": {
               "type": "string",
-              "format": "guid"
+              "nullable": true
             },
-            "x-position": 1
+            "x-position": 2
           }
         ],
         "requestBody": {
           "x-name": "registration",
-          "description": "The registration to put.",
+          "description": "The registration to set.",
           "content": {
             "application/json": {
               "schema": {
@@ -742,20 +923,30 @@
             }
           },
           "required": true,
-          "x-position": 2
+          "x-position": 1
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
           }
         }
-      },
+      }
+    },
+    "/api/v1/sources/registrations/{registrationId}": {
       "delete": {
         "tags": [
           "Sources"
         ],
         "summary": "Deletes a backend source.",
-        "operationId": "Sources_DeleteSourceRegistration",
+        "operationId": "Sources_DeleteRegistration",
         "parameters": [
           {
             "name": "registrationId",
@@ -767,8 +958,77 @@
               "format": "guid"
             },
             "x-position": 1
+          },
+          {
+            "name": "username",
+            "in": "query",
+            "description": "The optional username. If not specified, the name of the current user will be used.",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 2
           }
         ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/configuration": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Gets the system configuration.",
+        "operationId": "System_GetConfiguration",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Sets the system configuration.",
+        "operationId": "System_SetConfiguration",
+        "requestBody": {
+          "x-name": "configuration",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
         "responses": {
           "200": {
             "description": ""
@@ -801,7 +1061,7 @@
       }
     },
     "/api/v1/users/authenticate": {
-      "get": {
+      "post": {
         "tags": [
           "Users"
         ],
@@ -845,7 +1105,7 @@
       }
     },
     "/api/v1/users/signout": {
-      "get": {
+      "post": {
         "tags": [
           "Users"
         ],
@@ -967,20 +1227,54 @@
         }
       }
     },
-    "/api/v1/users/generate-tokens": {
+    "/api/v1/users/generate-refresh-token": {
       "post": {
         "tags": [
           "Users"
         ],
-        "summary": "Generates a set of tokens.",
-        "operationId": "Users_GenerateTokens",
+        "summary": "Generates a refresh token.",
+        "operationId": "Users_GenerateRefreshToken",
         "responses": {
           "200": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/TokenPair"
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/accept-license": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Accepts the license of the specified catalog.",
+        "operationId": "Users_AcceptLicense",
+        "parameters": [
+          {
+            "name": "catalogId",
+            "in": "query",
+            "required": true,
+            "description": "The catalog identifier.",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
                 }
               }
             }
@@ -1012,13 +1306,47 @@
         }
       }
     },
+    "/api/v1/users/{userId}": {
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Deletes a user.",
+        "operationId": "Users_DeleteUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "description": "The identifier of the user.",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/users/{userId}/{claimId}": {
       "put": {
         "tags": [
           "Users"
         ],
         "summary": "Puts a claim.",
-        "operationId": "Users_PutClaim",
+        "operationId": "Users_SetClaim",
         "parameters": [
           {
             "name": "userId",
@@ -1044,7 +1372,7 @@
         ],
         "requestBody": {
           "x-name": "claim",
-          "description": "The claim to put.",
+          "description": "The claim to set.",
           "content": {
             "application/json": {
               "schema": {
@@ -1118,8 +1446,8 @@
         "tags": [
           "Writers"
         ],
-        "summary": "Gets the list of writers.",
-        "operationId": "Writers_GetWriterDescriptions",
+        "summary": "Gets the list of writer descriptions.",
+        "operationId": "Writers_GetDescriptions",
         "responses": {
           "200": {
             "description": "",
@@ -1150,12 +1478,8 @@
             "description": "Gets the identifier."
           },
           "properties": {
-            "type": "object",
-            "description": "Gets the map of properties.",
-            "nullable": true,
-            "additionalProperties": {
-              "type": "string"
-            }
+            "description": "Gets the properties.",
+            "nullable": true
           },
           "resources": {
             "type": "array",
@@ -1177,12 +1501,8 @@
             "description": "Gets the identifier."
           },
           "properties": {
-            "type": "object",
-            "description": "Gets the map of properties.",
-            "nullable": true,
-            "additionalProperties": {
-              "type": "string"
-            }
+            "description": "Gets the properties.",
+            "nullable": true
           },
           "representations": {
             "type": "array",
@@ -1200,7 +1520,7 @@
         "additionalProperties": false,
         "properties": {
           "dataType": {
-            "description": "Gets the data type.",
+            "description": "The data type.",
             "oneOf": [
               {
                 "$ref": "#/components/schemas/NexusDataType"
@@ -1209,17 +1529,8 @@
           },
           "samplePeriod": {
             "type": "string",
-            "description": "Gets the sample period.",
+            "description": "The sample period.",
             "format": "duration"
-          },
-          "detail": {
-            "type": "string",
-            "description": "Gets the detail.",
-            "nullable": true
-          },
-          "isPrimary": {
-            "type": "boolean",
-            "description": "Gets a value which indicates the primary representation to be used for aggregations. The value of this property is only relevant for resources with multiple representations."
           }
         }
       },
@@ -1251,6 +1562,70 @@
           "FLOAT64"
         ]
       },
+      "CatalogInfo": {
+        "type": "object",
+        "description": "A structure for catalog information.",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The identifier."
+          },
+          "title": {
+            "type": "string",
+            "description": "The title."
+          },
+          "contact": {
+            "type": "string",
+            "description": "A nullable contact.",
+            "nullable": true
+          },
+          "license": {
+            "type": "string",
+            "description": "A nullable license.",
+            "nullable": true
+          },
+          "isReadable": {
+            "type": "boolean",
+            "description": "A boolean which indicates if the catalog is accessible."
+          },
+          "isWritable": {
+            "type": "boolean",
+            "description": "A boolean which indicates if the catalog is editable."
+          },
+          "isReleased": {
+            "type": "boolean",
+            "description": "A boolean which indicates if the catalog is released."
+          },
+          "isVisible": {
+            "type": "boolean",
+            "description": "A boolean which indicates if the catalog is visible."
+          },
+          "isOwner": {
+            "type": "boolean",
+            "description": "A boolean which indicates if the catalog is owned by the current user."
+          },
+          "dataSourceInfoUrl": {
+            "type": "string",
+            "description": "A nullable info URL of the data source.",
+            "nullable": true
+          },
+          "dataSourceType": {
+            "type": "string",
+            "description": "The data source type."
+          },
+          "dataSourceRegistrationId": {
+            "type": "string",
+            "description": "The data source registration identifier.",
+            "format": "guid"
+          },
+          "packageReferenceId": {
+            "type": "string",
+            "description": "The package reference identifier.",
+            "format": "guid"
+          }
+        }
+      },
       "CatalogTimeRange": {
         "type": "object",
         "description": "A catalog time range.",
@@ -1274,9 +1649,9 @@
         "additionalProperties": false,
         "properties": {
           "data": {
-            "type": "object",
+            "type": "array",
             "description": "The actual availability data.",
-            "additionalProperties": {
+            "items": {
               "type": "number",
               "format": "double"
             }
@@ -1292,10 +1667,6 @@
             "type": "string",
             "description": "The contact.",
             "nullable": true
-          },
-          "isHidden": {
-            "type": "boolean",
-            "description": "A boolean which indicates if the catalog should be hidden."
           },
           "groupMemberships": {
             "type": "array",
@@ -1323,60 +1694,20 @@
         "properties": {
           "id": {
             "type": "string",
-            "description": "06f8eb30-5924-4a71-bdff-322f92343f5b",
+            "description": "The global unique identifier.",
             "format": "guid"
           },
           "type": {
             "type": "string",
-            "description": "export"
+            "description": "The job type"
           },
           "owner": {
             "type": "string",
-            "description": "test@nexus.localhost"
+            "description": "The owner of the job."
           },
           "parameters": {
-            "description": "Job parameters.",
+            "description": "The job parameters.",
             "nullable": true
-          }
-        }
-      },
-      "ExportParameters": {
-        "type": "object",
-        "description": "A structure for export parameters.",
-        "additionalProperties": false,
-        "properties": {
-          "begin": {
-            "type": "string",
-            "description": "2020-02-01T00:00:00Z",
-            "format": "date-time"
-          },
-          "end": {
-            "type": "string",
-            "description": "2020-02-02T00:00:00Z",
-            "format": "date-time"
-          },
-          "filePeriod": {
-            "type": "string",
-            "description": "00:00:00",
-            "format": "duration"
-          },
-          "type": {
-            "type": "string",
-            "description": "Nexus.Writers.Csv"
-          },
-          "resourcePaths": {
-            "type": "array",
-            "description": "[\"/IN_MEMORY/TEST/ACCESSIBLE/T1/1_s_mean\", \"/IN_MEMORY/TEST/ACCESSIBLE/V1/1_s_mean\"]",
-            "items": {
-              "type": "string"
-            }
-          },
-          "configuration": {
-            "type": "object",
-            "description": "{ \"RowIndexFormat\": \"Index\", \"SignificantFigures\": \"4\" }",
-            "additionalProperties": {
-              "type": "string"
-            }
           }
         }
       },
@@ -1405,11 +1736,11 @@
           },
           "exceptionMessage": {
             "type": "string",
-            "description": "An optional exception message.",
+            "description": "The nullable exception message.",
             "nullable": true
           },
           "result": {
-            "description": "The optional result.",
+            "description": "The nullable result.",
             "nullable": true
           }
         }
@@ -1438,11 +1769,56 @@
           "Faulted"
         ]
       },
+      "ExportParameters": {
+        "type": "object",
+        "description": "A structure for export parameters.",
+        "additionalProperties": false,
+        "properties": {
+          "begin": {
+            "type": "string",
+            "description": "The start date/time.",
+            "format": "date-time"
+          },
+          "end": {
+            "type": "string",
+            "description": "The end date/time.",
+            "format": "date-time"
+          },
+          "filePeriod": {
+            "type": "string",
+            "description": "The file period.",
+            "format": "duration"
+          },
+          "type": {
+            "type": "string",
+            "description": "The writer type."
+          },
+          "resourcePaths": {
+            "type": "array",
+            "description": "The resource paths to export.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "configuration": {
+            "type": "object",
+            "description": "The configuration.",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "PackageReference": {
         "type": "object",
         "description": "A package reference.",
         "additionalProperties": false,
         "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique identifier of the package reference.",
+            "format": "guid"
+          },
           "provider": {
             "type": "string",
             "description": "The provider which loads the package."
@@ -1467,19 +1843,42 @@
           },
           "description": {
             "type": "string",
-            "description": "An optional description.",
+            "description": "A nullable description.",
             "nullable": true
+          },
+          "projectUrl": {
+            "type": "string",
+            "description": "A nullable project website URL.",
+            "nullable": true
+          },
+          "repositoryUrl": {
+            "type": "string",
+            "description": "A nullable source repository URL.",
+            "nullable": true
+          },
+          "additionalInfo": {
+            "type": "object",
+            "description": "A nullable dictionary with additional information.",
+            "nullable": true,
+            "additionalProperties": {
+              "type": "string"
+            }
           }
         }
       },
       "DataSourceRegistration": {
         "type": "object",
-        "description": "A backend source.",
+        "description": "A data source registration.",
         "additionalProperties": false,
         "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique identifier of the data source registration.",
+            "format": "guid"
+          },
           "type": {
             "type": "string",
-            "description": "The type of the backend source."
+            "description": "The type of the data source."
           },
           "resourceLocator": {
             "type": "string",
@@ -1493,13 +1892,18 @@
               "type": "string"
             }
           },
-          "publish": {
-            "type": "boolean",
-            "description": "A boolean which indicates if the found catalogs should be available for everyone."
+          "infoUrl": {
+            "type": "string",
+            "description": "An optional info URL.",
+            "nullable": true
           },
-          "disable": {
-            "type": "boolean",
-            "description": "A boolean which indicates if this backend source should be ignored."
+          "releasePattern": {
+            "type": "string",
+            "description": "An optional regular expressions pattern to select the catalogs to be released. By default, all catalogs will be released."
+          },
+          "visibilityPattern": {
+            "type": "string",
+            "description": "An optional regular expressions pattern to select the catalogs to be visible. By default, all catalogs will be visible."
           }
         }
       },

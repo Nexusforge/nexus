@@ -1,5 +1,4 @@
 using Nexus.DataModel;
-using Nexus.Extensibility;
 using System.Collections.Concurrent;
 using System.Reflection;
 
@@ -11,8 +10,8 @@ namespace Nexus.Core
 
         public AppState()
         {
-            var entryAssembly = Assembly.GetEntryAssembly() ?? throw new Exception("entry assembly is null");
-            var version = entryAssembly.GetName().Version ?? throw new Exception("version is null");
+            var entryAssembly = Assembly.GetEntryAssembly()!;
+            var version = entryAssembly.GetName().Version!;
 
             Version = version.ToString();
         }
@@ -29,11 +28,11 @@ namespace Nexus.Core
         public Task? ReloadPackagesTask { get; set; }
 
         // these properties will be set during host startup
-        public NexusProject Project { get; set; } = null!;
+        public NexusProject Project { get; set; } = default!;
 
-        public CatalogState CatalogState { get; set; } = null!;
+        public CatalogState CatalogState { get; set; } = default!;
 
-        public Dictionary<string, (string FormatName, OptionAttribute[] Options)> DataWriterInfoMap { get; set; } = null!;
+        public List<ExtensionDescription> DataWriterDescriptions { get; set; } = default!;
 
         #endregion
     }

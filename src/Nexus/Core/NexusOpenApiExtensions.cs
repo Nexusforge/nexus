@@ -13,7 +13,8 @@ namespace Microsoft.Extensions.DependencyInjection
             this IServiceCollection services)
         {
             // https://github.com/dotnet/aspnet-api-versioning/tree/master/samples/aspnetcore/SwaggerSample
-            services.AddControllers()
+            services
+                .AddControllers(options => options.InputFormatters.Add(new StreamInputFormatter()))
                 .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()))
                 .ConfigureApplicationPartManager(
                     manager =>

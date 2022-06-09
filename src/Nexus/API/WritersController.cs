@@ -1,9 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Nexus.Core;
-using Nexus.Extensibility;
-using Nexus.Services;
-using System.Reflection;
 
 namespace Nexus.Controllers
 {
@@ -20,16 +17,16 @@ namespace Nexus.Controllers
 
         #region Fields
 
-        private IExtensionHive _extensionHive;
+        private AppState _appState;
 
         #endregion
 
         #region Constructors
 
         public WritersController(
-            IExtensionHive extensionHive)
+            AppState appState)
         {
-            _extensionHive = extensionHive;
+            _appState = appState;
         }
 
         #endregion
@@ -37,28 +34,12 @@ namespace Nexus.Controllers
         #region Methods
 
         /// <summary>
-        /// Gets the list of writers.
+        /// Gets the list of writer descriptions.
         /// </summary>
         [HttpGet("descriptions")]
-        public ExtensionDescription[] GetWriterDescriptions()
+        public List<ExtensionDescription> GetDescriptions()
         {
-            var result = GetExtensionDescriptions(_extensionHive.GetExtensions<IDataWriter>());
-            return result;
-        }
-
-        private ExtensionDescription[] GetExtensionDescriptions(IEnumerable<Type> extensions)
-        {
-            return extensions.Select(type =>
-            {
-                var attribute = type.GetCustomAttribute<ExtensionDescriptionAttribute>(inherit: false);
-
-                var description = attribute is null
-                    ? null
-                    : attribute.Description;
-
-                return new ExtensionDescription(type.FullName ?? throw new Exception("fullname is null"), description);
-            })
-            .ToArray();
+            return _appState.DataWriterDescriptions;
         }
 
         #endregion

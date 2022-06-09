@@ -1,0 +1,32 @@
+﻿<div class="rounded flex justify-center border
+    @(Disabled ? "cursor-not-allowed border-cyan-600 text-gray-400" : "cursor-pointer border-cyan-400 text-gray-200 hover:text-white hover:bg-cyan-700")"
+    @onclick="OnClickInternalAsync">
+    <button type="button" class="uppercase tracking-wide flex items-center @(Disabled ? "disabled cursor-not-allowed" : "")">
+        <span class="mdi mdi-@Icon mr-3 text-xl"></span>
+        <span>@Label</span>
+    </button>
+</div>
+
+@code {
+
+    [Parameter]
+    public EventCallback<MouseEventArgs> OnClick { get; set; }
+
+    [Parameter]
+    public string Icon { get; set; } = default!;
+
+    [Parameter]
+    public string Label { get; set; } = default!;
+
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    private Task OnClickInternalAsync()
+    {
+        if (!Disabled && OnClick.HasDelegate)
+            return OnClick.InvokeAsync();
+
+        else
+            return Task.CompletedTask;
+    }
+}

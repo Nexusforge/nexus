@@ -1,0 +1,129 @@
+﻿@inject IAppState AppState
+
+<div class="h-full flex flex-col">
+    <h1 class="py-0.5 font-bold text-cyan-700">
+        @Utilities.ToSpaceFilledCatalogId(Catalog.Id)
+        @* Fake icon for correct height *@
+        <span class="text-xl mdi mdi-chevron-down invisible"></span>
+    </h1>
+
+    <div class="flex-1 overflow-auto text-gray-500">
+        @if (_readme is not null)
+        {
+            <MarkdownRenderer MarkdownString="@_readme"></MarkdownRenderer>
+        }
+        else
+        {
+            <span class="text-sm">@Catalog.Info.Title</span>
+        }
+    </div>
+
+    @if (Catalog is RealResourceCatalogViewModel && Catalog.Info.IsReadable)
+    {
+        <div class="flex justify-between items-center flex-wrap text-gray-400">
+            <div class="text-sm">
+                @if (_timeRange is not null)
+                {
+                    <span class="hidden xl:inline mdi mdi-timer-outline mr-1"></span>
+                    <span class="">@_timeRange.Begin.ToString("yyyy-MM-dd")</span>
+                    <span class="mx-2">-</span>
+                    <span class="hidden xl:inline mdi mdi-timer-off-outline mr-1"></span>
+                    <span class="">@_timeRange.End.ToString("yyyy-MM-dd")</span>
+                }
+            </div>
+            <div class="flex">
+                <UITooltip Tooltip="Availability">
+                    @if (AppState.ViewState == ViewState.Normal)
+                    {
+                        <UIIconButton Icon="poll" @onclick="ToggleAvailabilityChart" />    
+                    }
+                    else
+                    {
+                        <UIIconButton Icon="poll" IsSelected="true" @onclick="ToggleAvailabilityChart" />
+                    }
+                </UITooltip>
+
+                @if (Catalog.Info.License is not null)
+                {
+                    <UITooltip Tooltip="License">
+                        <UIIconButton Icon="format-section" @onclick="OpenLicenseModal" />
+                    </UITooltip>
+                }
+
+                @if (Catalog.Catalog is not null)
+                {
+                    <UITooltip Tooltip="Metadata">
+                        <MetadataView Properties="Catalog.Catalog!.Properties" />
+                    </UITooltip>
+                }
+
+                <UITooltip Tooltip="Attachments">
+                    <AttachmentView Catalog="Catalog" />
+                </UITooltip>
+
+                <UITooltip Tooltip="Information">
+                    <CatalogAboutView Catalog="Catalog" />
+                </UITooltip>
+            </div>
+        </div>
+    }
+</div>
+
+<UIModal @bind-IsOpen="_isLicenseModalOpen" Title="License" Width="600px">
+    @if (Catalog.Info.License is not null)
+    {
+        <MarkdownRenderer MarkdownString="@Catalog.Info.License"></MarkdownRenderer>
+    }
+</UIModal>
+
+@code {
+    [Parameter]
+    public ResourceCatalogViewModel Catalog { get; set; } = default!;
+
+    private bool _isLicenseModalOpen;
+    private CatalogTimeRange? _timeRange;
+
+    private string? _readme;
+
+    protected override void OnParametersSet()
+    {
+        if (Catalog.Info.IsReadable)
+        {
+            _ = Task.Run(async () =>
+            {
+                _timeRange = await Catalog.TimeRangeTask.Value;
+                StateHasChanged();
+            });
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    _readme = await Catalog.ReadmeTask.Value;
+                    StateHasChanged();
+                }
+                catch
+                {
+                    //
+                }
+            });
+        }
+    }
+
+    private void OpenLicenseModal()
+    {
+        _isLicenseModalOpen = true;
+    }
+
+    private void ToggleAvailabilityChart()
+    {
+        if (AppState.ViewState == ViewState.Normal)
+            AppState.ViewState = ViewState.Availability;
+
+        else
+            AppState.ViewState = ViewState.Normal;
+    }
+}
+
+
+
