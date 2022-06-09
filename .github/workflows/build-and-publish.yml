@@ -108,12 +108,14 @@ jobs:
       - name: Docker Load Image
         run: docker image import artifacts/images/nexus_image.tar ghcr.io/nexusforge/nexus:${{ needs.build.outputs.version }}
 
-      - name: Nuget package (Github Registry)
-        run: dotnet nuget push 'artifacts/packages/*.nupkg' --api-key ${GITHUB_TOKEN} --source https://nuget.pkg.github.com/nexusforge/index.json
+      # GitHub Package Registry is broken by design: https://github.community/t/download-from-github-package-registry-without-authentication/14407/138
+      - name: Nuget package (MyGet)
+        run: dotnet nuget push 'artifacts/packages/*.nupkg' --api-key ${MYGET_API_KEY} --source https://www.myget.org/F/apollo3zehn-dev/api/v3/index.json"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MYGET_API_KEY: ${{ secrets.MYGET_API_KEY }}
 
-      - name: Python package (Github Registry)
+      # GitHub Package Registry does not support Python packages: https://github.community/t/pypi-compatible-github-package-registry/14615
+      - name: Python package (MyGet)
         run: 'for filePath in artifacts/packages/*.whl; do curl -k -X POST https://www.myget.org/F/apollo3zehn-dev/python/upload -H "Authorization: Bearer ${MYGET_API_KEY}" -F "data=@$filePath"; done'
         env:
           MYGET_API_KEY: ${{ secrets.MYGET_API_KEY }}
