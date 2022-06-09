@@ -1,14 +1,17 @@
 {
   "include": [
     "src/clients/python-client",
-    "tests/clients/python-client-tests"
+    "src/extensibility/python-extensibility",
+    "tests/clients/python-client-tests",
+    "tests/extensibility/python-extensibility-tests"
   ],
   "stubPath": "",
   "executionEnvironments":[
     {
       "root": ".",
       "extraPaths": [
-        "src/clients/python-client"
+        "src/clients/python-client",
+        "src/extensibility/python-extensibility"
       ]
     }
   ]

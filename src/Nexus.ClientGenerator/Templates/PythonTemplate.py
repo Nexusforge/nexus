@@ -4,10 +4,8 @@ from __future__ import annotations
 import base64
 import dataclasses
 import json
-from msilib.schema import Error
 import os
 import re
-from signal import raise_signal
 import typing
 from array import array
 from dataclasses import dataclass
@@ -15,7 +13,8 @@ from datetime import datetime, timedelta
 from enum import Enum
 from json import JSONEncoder
 from pathlib import Path
-from typing import Any, AsyncIterable, Awaitable, Iterable, Optional, Tuple, Type, TypeVar, Union
+from typing import (Any, AsyncIterable, Awaitable, Iterable, Optional, Tuple,
+                    Type, TypeVar, Union)
 from urllib.parse import quote
 from uuid import UUID
 
@@ -261,7 +260,7 @@ class {{1}}:
     _nexus_configuration_header_key: str = "{{2}}"
     _authorization_header_key: str = "{{3}}"
 
-    _token_folder_path: str = os.path.join(str(Path.home()), ".nexusapi", "tokens")
+    _token_folder_path: str = os.path.join(str(Path.home()), ".nexus-api", "tokens")
 
     _token_pair: Optional[TokenPair]
     _http_client: AsyncClient

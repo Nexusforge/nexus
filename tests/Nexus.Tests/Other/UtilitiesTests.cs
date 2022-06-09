@@ -33,7 +33,7 @@ namespace Other
             var catalogMetadata = new CatalogMetadata(default, GroupMemberships: new[] { "A" }, default);
 
             var adminClaim = isAdmin
-                ? new Claim[] { new Claim(ClaimTypes.Role, NexusRoles.ADMINISTRATOR) }
+                ? new Claim[] { new Claim(Claims.Role, NexusRoles.ADMINISTRATOR) }
                 : new Claim[0];
 
             var principal = new ClaimsPrincipal(
@@ -46,7 +46,7 @@ namespace Other
                     roleType: Claims.Role));
 
             // Act
-            var actual = AuthorizationUtilities.IsCatalogReadable(catalogId, catalogMetadata, principal);
+            var actual = AuthorizationUtilities.IsCatalogReadable(catalogId, catalogMetadata, default!, principal);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -70,7 +70,7 @@ namespace Other
             var catalogId = "/A/B/C";
 
             var adminClaim = isAdmin
-                ? new Claim[] { new Claim(ClaimTypes.Role, NexusRoles.ADMINISTRATOR) }
+                ? new Claim[] { new Claim(Claims.Role, NexusRoles.ADMINISTRATOR) }
                 : new Claim[0];
 
             var principal = new ClaimsPrincipal(

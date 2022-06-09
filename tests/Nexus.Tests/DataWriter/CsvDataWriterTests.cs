@@ -30,7 +30,8 @@ namespace DataWriter
 
             var context = new DataWriterContext(
                 ResourceLocator: new Uri(targetFolder),
-                Configuration: new Dictionary<string, string>()
+                SystemConfiguration: default!,
+                RequestConfiguration: new Dictionary<string, string>()
                 {
                     ["RowIndexFormat"] = rowIndexFormat,
                     ["SignificantFigures"] = "7"

@@ -1026,7 +1026,7 @@ public interface ISystemClient
     /// <summary>
     /// Sets the system configuration.
     /// </summary>
-    /// <param name="string>"></param>
+    /// <param name="configuration"></param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
     Task SetConfigurationAsync(IDictionary<string, string> configuration, CancellationToken cancellationToken = default);
 
@@ -1479,17 +1479,17 @@ internal class DisposableConfiguration : IDisposable
 /// <summary>
 /// A catalog is a top level element and holds a list of resources.
 /// </summary>
-/// <param name="Id">The identifier.</param>
-/// <param name="Properties">The map of properties.</param>
-/// <param name="Resources">The list of representations.</param>
+/// <param name="Id">Gets the identifier.</param>
+/// <param name="Properties">Gets the properties.</param>
+/// <param name="Resources">Gets the list of representations.</param>
 public record ResourceCatalog(string Id, JsonElement? Properties, IList<Resource>? Resources);
 
 /// <summary>
 /// A resource is part of a resource catalog and holds a list of representations.
 /// </summary>
-/// <param name="Id">The identifier.</param>
-/// <param name="Properties">The map of properties.</param>
-/// <param name="Representations">The list of representations.</param>
+/// <param name="Id">Gets the identifier.</param>
+/// <param name="Properties">Gets the properties.</param>
+/// <param name="Representations">Gets the list of representations.</param>
 public record Resource(string Id, JsonElement? Properties, IList<Representation>? Representations);
 
 /// <summary>
@@ -1497,8 +1497,7 @@ public record Resource(string Id, JsonElement? Properties, IList<Representation>
 /// </summary>
 /// <param name="DataType">The data type.</param>
 /// <param name="SamplePeriod">The sample period.</param>
-/// <param name="Kind">The representation kind.</param>
-public record Representation(NexusDataType DataType, TimeSpan SamplePeriod, RepresentationKind Kind);
+public record Representation(NexusDataType DataType, TimeSpan SamplePeriod);
 
 /// <summary>
 /// Specifies the Nexus data type.
@@ -1554,68 +1553,6 @@ public enum NexusDataType
     /// FLOAT64
     /// </summary>
     FLOAT64
-}
-
-
-/// <summary>
-/// Specifies the representation kind.
-/// </summary>
-public enum RepresentationKind
-{
-    /// <summary>
-    /// Original
-    /// </summary>
-    Original,
-
-    /// <summary>
-    /// Resampled
-    /// </summary>
-    Resampled,
-
-    /// <summary>
-    /// Mean
-    /// </summary>
-    Mean,
-
-    /// <summary>
-    /// MeanPolarDeg
-    /// </summary>
-    MeanPolarDeg,
-
-    /// <summary>
-    /// Min
-    /// </summary>
-    Min,
-
-    /// <summary>
-    /// Max
-    /// </summary>
-    Max,
-
-    /// <summary>
-    /// Std
-    /// </summary>
-    Std,
-
-    /// <summary>
-    /// Rms
-    /// </summary>
-    Rms,
-
-    /// <summary>
-    /// MinBitwise
-    /// </summary>
-    MinBitwise,
-
-    /// <summary>
-    /// MaxBitwise
-    /// </summary>
-    MaxBitwise,
-
-    /// <summary>
-    /// Sum
-    /// </summary>
-    Sum
 }
 
 

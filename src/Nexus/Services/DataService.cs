@@ -6,7 +6,6 @@ using System.ComponentModel.DataAnnotations;
 using System.IO.Compression;
 using System.IO.Pipelines;
 using System.Security.Claims;
-using System.Security.Principal;
 
 namespace Nexus.Services
 {

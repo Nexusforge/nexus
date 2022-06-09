@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Options;
 using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
@@ -118,7 +117,7 @@ namespace Nexus.Services
                         continue;
 
                     var claims = user.Claims.Values.Select(claim => new Claim(claim.Type, claim.Value)).ToList();
-                    claims.Add(new Claim(ClaimTypes.Name, userId));
+                    claims.Add(new Claim(Claims.Name, userId));
 
                     var owner = new ClaimsPrincipal(
                         new ClaimsIdentity(

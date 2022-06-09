@@ -27,8 +27,8 @@ namespace Services
             var samplePeriod = TimeSpan.FromSeconds(1);
             var exportId = Guid.NewGuid();
 
-            var registration1 = new DataSourceRegistration(Type: "A", new Uri("a", UriKind.Relative), new Dictionary<string, string>(), default);
-            var registration2 = new DataSourceRegistration(Type: "B", new Uri("a", UriKind.Relative), new Dictionary<string, string>(), default);
+            var registration1 = new DataSourceRegistration(Id: Guid.NewGuid(), Type: "A", new Uri("a", UriKind.Relative), new Dictionary<string, string>(), default);
+            var registration2 = new DataSourceRegistration(Id: Guid.NewGuid(), Type: "B", new Uri("a", UriKind.Relative), new Dictionary<string, string>(), default);
 
             // DI services
             var dataSourceController1 = Mock.Of<IDataSourceController>();
@@ -106,13 +106,13 @@ namespace Services
             var resource1 = new Resource(id: "Resource1");
             var catalog1 = new ResourceCatalog(id: "/A/B/C");
             var catalogItem1 = new CatalogItem(catalog1, resource1, representation1);
-            var catalogContainer1 = new CatalogContainer(new CatalogRegistration(catalog1.Id, string.Empty), default!, registration1, default!, default!, default!, default!);
+            var catalogContainer1 = new CatalogContainer(new CatalogRegistration(catalog1.Id, string.Empty), default!, registration1, default!, default!, default!, default!, default!);
 
             var representation2 = new Representation(dataType: NexusDataType.FLOAT32, samplePeriod: samplePeriod);
             var resource2 = new Resource(id: "Resource2");
             var catalog2 = new ResourceCatalog(id: "/F/G/H");
             var catalogItem2 = new CatalogItem(catalog2, resource2, representation2);
-            var catalogContainer2 = new CatalogContainer(new CatalogRegistration(catalog2.Id, string.Empty), default!, registration2, default!, default!, default!, default!);
+            var catalogContainer2 = new CatalogContainer(new CatalogRegistration(catalog2.Id, string.Empty), default!, registration2, default!, default!, default!, default!, default!);
 
             // export parameters
             var exportParameters = new ExportParameters(
@@ -125,6 +125,8 @@ namespace Services
 
             // data service
             var dataService = new DataService(
+                default!,
+                default!,
                 dataControllerService, 
                 databaseService,
                 Options.Create(new DataOptions()),
@@ -141,7 +143,7 @@ namespace Services
                 };
 
                 var relativeDownloadUrl = await dataService
-                    .ExportAsync(exportParameters, catalogItemRequests, Guid.NewGuid(), CancellationToken.None);
+                    .ExportAsync(Guid.NewGuid(), catalogItemRequests, default!, exportParameters, CancellationToken.None);
 
                 // assert
                 var zipFile = Path.Combine(root, relativeDownloadUrl.Split('/').Last());

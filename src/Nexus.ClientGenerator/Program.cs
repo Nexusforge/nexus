@@ -73,7 +73,7 @@ namespace Nexus.ClientGenerator
                 ClientName: "NexusAsyncClient",
                 ExceptionType: "NexusException");
 
-            var pythonOutputPath = $"{solutionRoot}src/clients/python-client/nexusapi/_nexusapi.py";
+            var pythonOutputPath = $"{solutionRoot}src/clients/python-client/nexus_api/_nexus_api.py";
             var pythonGenerator = new PythonGenerator();
             var pythonCode = pythonGenerator.Generate(document, pythonSettings);
 

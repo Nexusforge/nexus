@@ -275,7 +275,7 @@ public class AppState : IAppState
 
             if (resource.Properties is null)
             {
-                groupNames = new List<string>() { "General" };
+                groupNames = new List<string>() { "default" };
             }
 
             else

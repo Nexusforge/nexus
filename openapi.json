@@ -1475,15 +1475,15 @@
         "properties": {
           "id": {
             "type": "string",
-            "description": "The identifier."
+            "description": "Gets the identifier."
           },
           "properties": {
-            "description": "The map of properties.",
+            "description": "Gets the properties.",
             "nullable": true
           },
           "resources": {
             "type": "array",
-            "description": "The list of representations.",
+            "description": "Gets the list of representations.",
             "nullable": true,
             "items": {
               "$ref": "#/components/schemas/Resource"
@@ -1498,15 +1498,15 @@
         "properties": {
           "id": {
             "type": "string",
-            "description": "The identifier."
+            "description": "Gets the identifier."
           },
           "properties": {
-            "description": "The map of properties.",
+            "description": "Gets the properties.",
             "nullable": true
           },
           "representations": {
             "type": "array",
-            "description": "The list of representations.",
+            "description": "Gets the list of representations.",
             "nullable": true,
             "items": {
               "$ref": "#/components/schemas/Representation"
@@ -1531,14 +1531,6 @@
             "type": "string",
             "description": "The sample period.",
             "format": "duration"
-          },
-          "kind": {
-            "description": "The representation kind.",
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/RepresentationKind"
-              }
-            ]
           }
         }
       },
@@ -1568,36 +1560,6 @@
           "INT64",
           "FLOAT32",
           "FLOAT64"
-        ]
-      },
-      "RepresentationKind": {
-        "type": "string",
-        "description": "Specifies the representation kind.",
-        "x-enumNames": [
-          "Original",
-          "Resampled",
-          "Mean",
-          "MeanPolarDeg",
-          "Min",
-          "Max",
-          "Std",
-          "Rms",
-          "MinBitwise",
-          "MaxBitwise",
-          "Sum"
-        ],
-        "enum": [
-          "Original",
-          "Resampled",
-          "Mean",
-          "MeanPolarDeg",
-          "Min",
-          "Max",
-          "Std",
-          "Rms",
-          "MinBitwise",
-          "MaxBitwise",
-          "Sum"
         ]
       },
       "CatalogInfo": {

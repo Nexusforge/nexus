@@ -19,10 +19,6 @@ with open("../../../src/Directory.Build.props", "r") as fh:
 
     match = re.match(".*" + \
         "<Authors>(?P<authors>.*)<\\/Authors>.*" + \
-        "<Major>(?P<major>.*)<\\/Major>.*" + \
-        "<Minor>(?P<minor>.*)<\\/Minor>.*" + \
-        "<Revision>(?P<revision>.*)<\\/Revision>.*" + \
-        "<VersionSuffix>(?P<version_suffix>.*)<\\/VersionSuffix>.*" + \
         "<PackageLicenseExpression>(?P<package_license_expression>.*)<\\/PackageLicenseExpression>.*" + \
         "<PackageProjectUrl>(?P<package_project_url>.*)<\\/PackageProjectUrl>.*" + \
         "<RepositoryUrl>(?P<repository_url>.*)<\\/RepositoryUrl>.*", \
@@ -32,27 +28,6 @@ with open("../../../src/Directory.Build.props", "r") as fh:
 
     # author
     author = match.group("authors")
-
-    # version
-    major = match.group("major")
-    minor = match.group("minor")
-    revision = match.group("revision")
-    version_suffix = match.group("version_suffix")
-    build = os.getenv("APPVEYOR_BUILD_NUMBER")
-    isFinalBuild = os.getenv("APPVEYOR_REPO_TAG") == "true"
-
-    if isFinalBuild:
-        # "final": PEP440 does not support SemVer versioning (https://semver.org/#spec-item-9)
-        build = None
-
-    version = f"{major}.{minor}.{revision}"
-
-    if version_suffix:
-        version = f"{version}-{version_suffix}"
-
-        if build:
-            # PEP440 does not support SemVer versioning (https://semver.org/#spec-item-9)
-            version = f"{version}{int(build):03d}"
 
     # others
     license = match.group("package_license_expression")
@@ -65,15 +40,15 @@ with open("../../../src/Directory.Build.props", "r") as fh:
 # which again normalizes the version.
 
 setuptools.setup(
-    name="nexusapi",
-    version=version,
+    name="nexus-api",
+    version=str(os.getenv("PYPI_VERSION")),
     description="Client for the Nexus system.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author=author,
     url="https://github.com/Nexusforge/nexus",
     packages=[
-        "nexusapi"
+        "nexus_api"
     ],
     project_urls={
         "Project": project_url,
@@ -90,7 +65,7 @@ setuptools.setup(
         "any"
     ],
     package_dir={
-        "nexusapi": os.path.join(source_dir, "nexusapi")
+        "nexus_api": os.path.join(source_dir, "nexus_api")
     },
     python_requires=">=3.9",
     install_requires=[

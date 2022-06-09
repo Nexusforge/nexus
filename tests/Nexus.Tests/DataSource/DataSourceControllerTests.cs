@@ -22,68 +22,13 @@ namespace DataSource
         }
 
         [Fact]
-        internal async Task CanMergeConfiguration()
-        {
-            // Arrange
-            DataSourceContext dataSourceContext = default!;
-
-            var dataSource = Mock.Of<IDataSource>();
-
-            Mock.Get(dataSource)
-              .Setup(dataSource => dataSource.SetContextAsync(It.IsAny<DataSourceContext>(), It.IsAny<CancellationToken>()))
-              .Callback<DataSourceContext, CancellationToken>((context, cancellationToken) => dataSourceContext = context);
-
-            var registrationConfiguration = new Dictionary<string, string>()
-            {
-                ["foo"] = "to_be_overriden",
-                ["foo3"] = "bat",
-            };
-
-            var registration = new DataSourceRegistration(
-                Type: default!,
-                ResourceLocator: default!,
-                Configuration: registrationConfiguration,
-                Publish: true);
-
-            var requestConfiguration = new Dictionary<string, string>()
-            {
-                ["foo"] = "bar",
-                ["foo2"] = "baz",
-            };
-
-            var controller = new DataSourceController(
-                dataSource,
-                registration,
-                requestConfiguration,
-                default!,
-                default!,
-                default!,
-                NullLogger<DataSourceController>.Instance);
-
-            var expectedConfiguration = new Dictionary<string, string>()
-            {
-                ["foo"] = "bar",
-                ["foo2"] = "baz",
-                ["foo3"] = "bat",
-            };
-
-            // Act
-            await controller.InitializeAsync(default!, default!, default);
-            var actualConfiguration = dataSourceContext.Configuration;
-
-            // Assert
-            Assert.True(
-                new SortedDictionary<string, string>(expectedConfiguration)
-                .SequenceEqual(new SortedDictionary<string, string>(actualConfiguration)));
-        }
-
-        [Fact]
         internal async Task CanGetAvailability()
         {
             using var controller = new DataSourceController(
                 _fixture.DataSource,
                 _fixture.Registration,
-                _fixture.RequestConfiguration,
+                default!,
+                default!,
                 default!,
                 default!,
                 default!,
@@ -91,19 +36,18 @@ namespace DataSource
 
             await controller.InitializeAsync(default!, default!, CancellationToken.None);
 
-            var catalogId = Sample.AccessibleCatalogId;
+            var catalogId = Sample.LocalCatalogId;
             var begin = new DateTime(2020, 01, 01, 00, 00, 00, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 03, 00, 00, 00, DateTimeKind.Utc);
-            var actual = await controller.GetAvailabilityAsync(catalogId, begin, end, CancellationToken.None);
+            var actual = await controller.GetAvailabilityAsync(catalogId, begin, end, TimeSpan.FromDays(1), CancellationToken.None);
 
-            var expectedData = new Dictionary<DateTime, double>()
+            var expectedData = new double[]
             {
-                [new DateTime(2020, 01, 01)] = 0.90000134808942744,
-                [new DateTime(2020, 01, 02)] = 0.96041512538698282,
+                1,
+                1
             };
 
-            var actualConverted = actual.Data.ToDictionary(entry => entry.Key, entry => entry.Value);
-            Assert.True(expectedData.SequenceEqual(new SortedDictionary<DateTime, double>(actualConverted)));
+            Assert.True(expectedData.SequenceEqual(actual.Data));
         }
 
         [Fact]
@@ -112,7 +56,8 @@ namespace DataSource
             using var controller = new DataSourceController(
                 _fixture.DataSource,
                 _fixture.Registration,
-                _fixture.RequestConfiguration,
+                default!,
+                default!,
                 default!,
                 default!,
                 default!,
@@ -120,7 +65,7 @@ namespace DataSource
 
             await controller.InitializeAsync(default!, default!, CancellationToken.None);
 
-            var catalogId = Sample.AccessibleCatalogId;
+            var catalogId = Sample.LocalCatalogId;
             var actual = await controller.GetTimeRangeAsync(catalogId, CancellationToken.None);
 
             Assert.Equal(DateTime.MinValue, actual.Begin);
@@ -133,7 +78,8 @@ namespace DataSource
             using var controller = new DataSourceController(
                 _fixture.DataSource,
                 _fixture.Registration,
-                _fixture.RequestConfiguration,
+                default!,
+                default!,
                 default!,
                 default!,
                 default!,
@@ -142,7 +88,7 @@ namespace DataSource
             await controller.InitializeAsync(default!, default!, CancellationToken.None);
 
             var day = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
-            var catalogId = Sample.AccessibleCatalogId;
+            var catalogId = Sample.LocalCatalogId;
             var actual = await controller.IsDataOfDayAvailableAsync(catalogId, day, CancellationToken.None);
 
             Assert.True(actual);
@@ -154,7 +100,8 @@ namespace DataSource
             using var controller = new DataSourceController(
                 _fixture.DataSource,
                 _fixture.Registration,
-                _fixture.RequestConfiguration,
+                default!,
+                default!,
                 default!,
                 default!,
                 default!,
@@ -167,16 +114,16 @@ namespace DataSource
             var samplePeriod = TimeSpan.FromSeconds(1);
 
             // resource 1
-            var resourcePath1 = $"{Sample.AccessibleCatalogId}/V1/1_s";
-            var catalogItem1 = (await controller.GetCatalogAsync(Sample.AccessibleCatalogId, CancellationToken.None)).Find(resourcePath1);
+            var resourcePath1 = $"{Sample.LocalCatalogId}/V1/1_s";
+            var catalogItem1 = (await controller.GetCatalogAsync(Sample.LocalCatalogId, CancellationToken.None)).Find(resourcePath1);
             var catalogItemRequest1 = new CatalogItemRequest(catalogItem1, default, default!);
 
             var pipe1 = new Pipe();
             var dataWriter1 = pipe1.Writer;
 
             // resource 2
-            var resourcePath2 = $"{Sample.AccessibleCatalogId}/T1/1_s";
-            var catalogItem2 = (await controller.GetCatalogAsync(Sample.AccessibleCatalogId, CancellationToken.None)).Find(resourcePath2);
+            var resourcePath2 = $"{Sample.LocalCatalogId}/T1/1_s";
+            var catalogItem2 = (await controller.GetCatalogAsync(Sample.LocalCatalogId, CancellationToken.None)).Find(resourcePath2);
             var catalogItemRequest2 = new CatalogItemRequest(catalogItem2, default, default!);
 
             var pipe2 = new Pipe();
@@ -195,17 +142,13 @@ namespace DataSource
             };
 
             double[] result1 = new double[86401];
-            double[] result2 = new double[86401];
 
-            var writing = Task.Run(async () =>
+            var writing1 = Task.Run(async () =>
             {
                 Memory<byte> resultBuffer1 = result1.AsMemory().Cast<double, byte>();
                 var stream1 = pipe1.Reader.AsStream();
 
-                Memory<byte> resultBuffer2 = result2.AsMemory().Cast<double, byte>();
-                var stream2 = pipe2.Reader.AsStream();
-
-                while (resultBuffer1.Length > 0 || resultBuffer2.Length > 0)
+                while (resultBuffer1.Length > 0)
                 {
                     // V1
                     var readBytes1 = await stream1.ReadAsync(resultBuffer1);
@@ -214,7 +157,18 @@ namespace DataSource
                         throw new Exception("The stream stopped early.");
 
                     resultBuffer1 = resultBuffer1.Slice(readBytes1);
+                }
+            });
 
+            double[] result2 = new double[86401];
+
+            var writing2 = Task.Run(async () =>
+            {
+                Memory<byte> resultBuffer2 = result2.AsMemory().Cast<double, byte>();
+                var stream2 = pipe2.Reader.AsStream();
+
+                while (resultBuffer2.Length > 0)
+                {
                     // T1
                     var readBytes2 = await stream2.ReadAsync(resultBuffer2);
 
@@ -230,21 +184,22 @@ namespace DataSource
                 end,
                 samplePeriod,
                 readingGroups,
+                default!,
                 new DataOptions() { ReadChunkSize = 20000 },
                 progress: default,
                 NullLogger<DataSourceController>.Instance,
                 CancellationToken.None);
 
-            await Task.WhenAll(writing, reading);
+            await Task.WhenAll(writing1, writing2, reading);
 
-            // /SAMPLE/ACCESSIBLE/V1/1_s
+            // /SAMPLE/LOCAL/V1/1_s
             Assert.Equal(6.5, result1[0], precision: 1);
             Assert.Equal(6.7, result1[10 * 60 + 1], precision: 1);
             Assert.Equal(7.9, result1[01 * 60 * 60 + 2], precision: 1);
             Assert.Equal(8.1, result1[02 * 60 * 60 + 3], precision: 1);
             Assert.Equal(7.5, result1[10 * 60 * 60 + 4], precision: 1);
 
-            // /SAMPLE/ACCESSIBLE/T1/1_s
+            // /SAMPLE/LOCAL/T1/1_s
             Assert.Equal(6.5, result2[0], precision: 1);
             Assert.Equal(6.7, result2[10 * 60 + 1], precision: 1);
             Assert.Equal(7.9, result2[01 * 60 * 60 + 2], precision: 1);
@@ -258,7 +213,8 @@ namespace DataSource
             using var controller = new DataSourceController(
                 _fixture.DataSource,
                 _fixture.Registration,
-                _fixture.RequestConfiguration,
+                default!,
+                default!,
                 default!,
                 default!,
                 default!,
@@ -268,16 +224,18 @@ namespace DataSource
 
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 02, 0, 0, 1, DateTimeKind.Utc);
-            var resourcePath = "/SAMPLE/ACCESSIBLE/T1/1_s";
-            var catalogItem = (await controller.GetCatalogAsync(Sample.AccessibleCatalogId, CancellationToken.None)).Find(resourcePath);
+            var resourcePath = "/SAMPLE/LOCAL/T1/1_s";
+            var catalogItem = (await controller.GetCatalogAsync(Sample.LocalCatalogId, CancellationToken.None)).Find(resourcePath);
             var catalogItemRequest = new CatalogItemRequest(catalogItem, default, default!);
 
             var stream = controller.ReadAsStream(
                 begin,
                 end,
                 catalogItemRequest,
+                default!,
                 new DataOptions() { ReadChunkSize = 10000 },
-                NullLogger<DataSourceController>.Instance);
+                NullLogger<DataSourceController>.Instance,
+                CancellationToken.None);
 
             double[] result = new double[86401];
 
@@ -313,7 +271,8 @@ namespace DataSource
             using var controller = new DataSourceController(
                 _fixture.DataSource,
                 _fixture.Registration,
-                _fixture.RequestConfiguration,
+                default!,
+                default!,
                 processingService.Object,
                 default!,
                 new DataOptions(),
@@ -324,7 +283,7 @@ namespace DataSource
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 01, 0, 0, 2, DateTimeKind.Utc);
             var pipe = new Pipe();
-            var baseItem = (await controller.GetCatalogAsync(Sample.AccessibleCatalogId, CancellationToken.None)).Find("/SAMPLE/ACCESSIBLE/T1/1_s");
+            var baseItem = (await controller.GetCatalogAsync(Sample.LocalCatalogId, CancellationToken.None)).Find("/SAMPLE/LOCAL/T1/1_s");
 
             var item = baseItem with
             {
@@ -339,6 +298,7 @@ namespace DataSource
                 end,
                 catalogItemRequest,
                 pipe.Writer,
+                default!,
                 new DataOptions(),
                 new Progress<double>(),
                 NullLogger<DataSourceController>.Instance,
@@ -407,10 +367,12 @@ namespace DataSource
                    It.IsAny<DateTime>(),
                    It.IsAny<DateTime>(),
                    It.IsAny<ReadRequest[]>(),
+                   It.IsAny<ReadDataHandler>(),
                    It.IsAny<IProgress<double>>(),
                    It.IsAny<CancellationToken>())
                )
-               .Callback<DateTime, DateTime, ReadRequest[], IProgress<double>, CancellationToken>((currentBegin, currentEnd, requests, progress, cancellationToken) =>
+               .Callback<DateTime, DateTime, ReadRequest[], ReadDataHandler, IProgress<double>, CancellationToken>(
+                (currentBegin, currentEnd, requests, readDataHandler, progress, cancellationToken) =>
                {
                    var request = requests[0];
                    var intData = MemoryMarshal.Cast<byte, int>(request.Data.Span);
@@ -496,12 +458,18 @@ namespace DataSource
                 .Returns(Task.FromResult(uncachedIntervals));
 
             /* DataSourceController */
-            var registration = new DataSourceRegistration("a", new Uri("http://xyz"), new Dictionary<string, string>(), default);
+            var registration = new DataSourceRegistration(
+                Id: Guid.NewGuid(),
+                "a", 
+                new Uri("http://xyz"), 
+                new Dictionary<string, string>(), 
+                default);
 
             var dataSourceController = new DataSourceController(
                 dataSource,
                 registration,
-                new Dictionary<string, string>(),
+                default!,
+                default!,
                 processingService,
                 cacheService.Object,
                 new DataOptions(),
@@ -517,6 +485,7 @@ namespace DataSource
                 end, 
                 samplePeriod,
                 catalogItemRequestPipeWriters,
+                default!,
                 new Progress<double>(),
                 CancellationToken.None);
 

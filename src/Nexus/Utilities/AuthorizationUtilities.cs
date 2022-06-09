@@ -18,7 +18,7 @@ namespace Nexus.Utilities
                     return true;
 
                 var isAdmin = principal.IsInRole(NexusRoles.ADMINISTRATOR);
-                var isOwner = owner?.FindFirstValue(Claims.Subject) == principal.FindFirstValue(Claims.Subject);
+                var isOwner = owner is not null && owner?.FindFirstValue(Claims.Subject) == principal.FindFirstValue(Claims.Subject);
 
                 var canReadCatalog = principal.HasClaim(
                     claim => claim.Type == NexusClaims.CAN_READ_CATALOG &&

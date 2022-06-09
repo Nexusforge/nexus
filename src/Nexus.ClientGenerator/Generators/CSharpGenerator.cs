@@ -215,7 +215,7 @@ $@"    /// <summary>
             }
 
             if (operation.RequestBody is not null && body is not null)
-                sourceTextBuilder.AppendLine($"    /// <param name=\"{body.Split(" ")[1]}\">{operation.RequestBody.Description}</param>");
+                sourceTextBuilder.AppendLine($"    /// <param name=\"{body.Split(" ")[^1]}\">{operation.RequestBody.Description}</param>");
 
             sourceTextBuilder.AppendLine($"    /// <param name=\"cancellationToken\">The token to cancel the current operation.</param>");
 

@@ -56,6 +56,7 @@ namespace Services
                 var version = "v1.0.0-unit.test";
 
                 var packageReference = new PackageReference(
+                    Id: Guid.NewGuid(),
                     Provider: "local",
                     Configuration: new Dictionary<string, string>()
                     {
@@ -73,13 +74,10 @@ namespace Services
                 await hive.LoadPackagesAsync(packageReferences, new Progress<double>(), CancellationToken.None);
 
                 // instantiate
-                Assert.True(hive.TryGetInstance<IDataSource>("TestExtensionProject.TestDataSource", out var dataSource));
-                Assert.NotNull(dataSource);
+                hive.GetInstance<IDataSource>("TestExtensionProject.TestDataSource");
+                hive.GetInstance<IDataWriter>("TestExtensionProject.TestDataWriter");
 
-                Assert.True(hive.TryGetInstance<IDataWriter>("TestExtensionProject.TestDataWriter", out var dataWriter));
-                Assert.NotNull(dataWriter);
-
-                Assert.False(hive.TryGetInstance<IDataSource>("TestExtensionProject.TestDataWriter", out var _));
+                Assert.Throws<Exception>(() => hive.GetInstance<IDataSource>("TestExtensionProject.TestDataWriter"));
             }
             finally
             {

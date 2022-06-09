@@ -1,12 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <AssemblyName>Nexus.Api</AssemblyName>
     <TargetFramework>$(TargetFrameworkVersion)</TargetFramework>
   </PropertyGroup>
 
   <PropertyGroup>
     <Description>Client for the Nexus system.</Description>
-    <PackageId>Nexus.Api</PackageId>
     <PackageTags>Nexus time-series data lake</PackageTags>
     <PackageIcon>icon.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>

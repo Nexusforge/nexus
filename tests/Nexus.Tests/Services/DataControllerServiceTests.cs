@@ -26,10 +26,10 @@ namespace Services
               .Returns(new Sample());
 
             var registration = new DataSourceRegistration(
+                Id: Guid.NewGuid(),
                 Type: default!, 
                 new Uri("A", UriKind.Relative), 
-                Configuration: new Dictionary<string, string>(),
-                Publish: true);
+                Configuration: new Dictionary<string, string>());
 
             var expectedCatalog = Sample.LoadCatalog("/A/B/C");
 
@@ -38,7 +38,11 @@ namespace Services
                 Cache: new CatalogCache()
             );
 
-            var appState = new AppState() { CatalogState = catalogState };
+            var appState = new AppState()
+            {
+                Project = new NexusProject(new Dictionary<string, string>(), default!, default!),
+                CatalogState = catalogState
+            };
 
             var requestConfiguration = new Dictionary<string, string>()
             {
@@ -92,6 +96,11 @@ namespace Services
         public async Task CanCreateAndInitializeDataWriterController()
         {
             // Arrange
+            var appState = new AppState()
+            {
+                Project = new NexusProject(new Dictionary<string, string>(), default!, default!)
+            };
+
             var extensionHive = Mock.Of<IExtensionHive>();
 
             Mock.Get(extensionHive)
@@ -100,11 +109,11 @@ namespace Services
 
             var loggerFactory = Mock.Of<ILoggerFactory>();
             var resourceLocator = new Uri("A", UriKind.Relative);
-            var exportParameters = new ExportParameters(default, default, default, default!, default!, default!);
+            var exportParameters = new ExportParameters(default, default, default, default!, default!, new Dictionary<string, string>());
 
             // Act
             var dataControllerService = new DataControllerService(
-                new AppState(), 
+                appState, 
                 default!,
                 extensionHive,
                 default!,
@@ -113,7 +122,10 @@ namespace Services
                 default!,
                 loggerFactory);
 
-            var actual = await dataControllerService.GetDataWriterControllerAsync(resourceLocator, exportParameters, CancellationToken.None);
+            var actual = await dataControllerService.GetDataWriterControllerAsync(
+                resourceLocator, 
+                exportParameters, 
+                CancellationToken.None);
 
             // Assert
             /* nothing to assert */

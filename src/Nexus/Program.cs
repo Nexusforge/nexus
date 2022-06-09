@@ -5,8 +5,6 @@ using Nexus.Core;
 using Nexus.Services;
 using Serilog;
 using System.Globalization;
-using System.Security.Claims;
-using System.Security.Principal;
 using System.Text.Json;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 

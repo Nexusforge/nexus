@@ -9,31 +9,32 @@ namespace Services
 {
     public class ProcessingServiceTests
     {
-        [InlineData(RepresentationKind.Min,         0.90, new int[] { 0, 1, 2, 3, -4, 5, 6, 7, 0, 2, 97, 13 },  new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, -4)]
-        [InlineData(RepresentationKind.Min,         0.99, new int[] { 0, 1, 2, 3, -4, 5, 6, 7, 0, 2, 97, 13 },  new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, double.NaN)]
+        [InlineData("Min",         0.90, new int[] { 0, 1, 2, 3, -4, 5, 6, 7, 0, 2, 97, 13 },  new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, -4)]
+        [InlineData("Min",         0.99, new int[] { 0, 1, 2, 3, -4, 5, 6, 7, 0, 2, 97, 13 },  new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, double.NaN)]
 
-        [InlineData(RepresentationKind.Max,         0.90, new int[] { 0, 1, 2, 3, -4, 5, 6, 7, 0, 2, 97, 13 },  new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, 97)]
-        [InlineData(RepresentationKind.Max,         0.99, new int[] { 0, 1, 2, 3, -4, 5, 6, 7, 0, 2, 97, 13 },  new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, double.NaN)]
+        [InlineData("Max",         0.90, new int[] { 0, 1, 2, 3, -4, 5, 6, 7, 0, 2, 97, 13 },  new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, 97)]
+        [InlineData("Max",         0.99, new int[] { 0, 1, 2, 3, -4, 5, 6, 7, 0, 2, 97, 13 },  new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, double.NaN)]
 
-        [InlineData(RepresentationKind.Mean,        0.90, new int[] { 0, 1, 2, 3, -4, 5, 6, 7, 0, 2, 97, 13 },  new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, 12)]
-        [InlineData(RepresentationKind.Mean,        0.99, new int[] { 0, 1, 2, 3, -4, 5, 6, 7, 0, 2, 97, 13 },  new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, double.NaN)]
+        [InlineData("Mean",        0.90, new int[] { 0, 1, 2, 3, -4, 5, 6, 7, 0, 2, 97, 13 },  new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, 12)]
+        [InlineData("Mean",        0.99, new int[] { 0, 1, 2, 3, -4, 5, 6, 7, 0, 2, 97, 13 },  new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, double.NaN)]
 
-        [InlineData(RepresentationKind.MeanPolarDeg,     0.90, new int[] { 0, 1, 2, 3, -4, 5, 6, 7, 0, 2, 97, 13 },  new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, 9.25)]
-        [InlineData(RepresentationKind.MeanPolarDeg,     0.99, new int[] { 0, 1, 2, 3, -4, 5, 6, 7, 0, 2, 97, 13 },  new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, double.NaN)]
+        [InlineData("MeanPolarDeg",     0.90, new int[] { 0, 1, 2, 3, -4, 5, 6, 7, 0, 2, 97, 13 },  new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, 9.25)]
+        [InlineData("MeanPolarDeg",     0.99, new int[] { 0, 1, 2, 3, -4, 5, 6, 7, 0, 2, 97, 13 },  new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, double.NaN)]
 
-        [InlineData(RepresentationKind.Sum,         0.90, new int[] { 0, 1, 2, 3, -4, 5, 6, 7, 0, 2, 97, 13 },  new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, 132)]
-        [InlineData(RepresentationKind.Sum,         0.99, new int[] { 0, 1, 2, 3, -4, 5, 6, 7, 0, 2, 97, 13 },  new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, double.NaN)]
+        [InlineData("Sum",         0.90, new int[] { 0, 1, 2, 3, -4, 5, 6, 7, 0, 2, 97, 13 },  new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, 132)]
+        [InlineData("Sum",         0.99, new int[] { 0, 1, 2, 3, -4, 5, 6, 7, 0, 2, 97, 13 },  new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, double.NaN)]
 
-        [InlineData(RepresentationKind.MinBitwise,  0.90, new int[] { 2, 2, 2, 3, 2, 3, 65, 2, 98, 14 },        new byte[] { 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, 2)]
-        [InlineData(RepresentationKind.MinBitwise,  0.99, new int[] { 2, 2, 2, 3, 2, 3, 65, 2, 98, 14 },        new byte[] { 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, double.NaN)]
+        [InlineData("MinBitwise",  0.90, new int[] { 2, 2, 2, 3, 2, 3, 65, 2, 98, 14 },        new byte[] { 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, 2)]
+        [InlineData("MinBitwise",  0.99, new int[] { 2, 2, 2, 3, 2, 3, 65, 2, 98, 14 },        new byte[] { 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, double.NaN)]
 
-        [InlineData(RepresentationKind.MaxBitwise,  0.90, new int[] { 2, 2, 2, 3, 2, 3, 65, 2, 98, 14 },        new byte[] { 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, 111)]
-        [InlineData(RepresentationKind.MaxBitwise,  0.99, new int[] { 2, 2, 2, 3, 2, 3, 65, 2, 98, 14 },        new byte[] { 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, double.NaN)]
+        [InlineData("MaxBitwise",  0.90, new int[] { 2, 2, 2, 3, 2, 3, 65, 2, 98, 14 },        new byte[] { 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, 111)]
+        [InlineData("MaxBitwise",  0.99, new int[] { 2, 2, 2, 3, 2, 3, 65, 2, 98, 14 },        new byte[] { 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, double.NaN)]
 
         [Theory]
-        public void CanAggregateSingle(RepresentationKind kind, double nanThreshold, int[] data, byte[] status, double expected)
+        public void CanAggregateSingle(string kindString, double nanThreshold, int[] data, byte[] status, double expected)
         {
             // Arrange
+            var kind = Enum.Parse<RepresentationKind>(kindString);
             var options = Options.Create(new DataOptions() { AggregationNaNThreshold = nanThreshold });
             var processingService = new ProcessingService(options);
             var blockSize = data.Length;

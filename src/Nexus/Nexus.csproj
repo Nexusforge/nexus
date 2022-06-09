@@ -35,7 +35,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Nexus.UI\Nexus.UI.csproj" />
-    <ProjectReference Include="..\Nexus.Extensibility\Nexus.Extensibility.csproj" />
+    <ProjectReference Include="..\extensibility\cs-extensibility\cs-extensibility.csproj" />
 	  
     <!-- 
       Probably because of the way how Blazor is compiled, when publishing, 

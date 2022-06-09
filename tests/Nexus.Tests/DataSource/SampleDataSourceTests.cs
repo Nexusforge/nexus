@@ -3,6 +3,7 @@ using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using Nexus.Sources;
+using System.Text.Json;
 using Xunit;
 
 namespace DataSource
@@ -17,19 +18,20 @@ namespace DataSource
 
             var context = new DataSourceContext(
                 ResourceLocator: new Uri("memory://localhost"),
-                Configuration: new Dictionary<string, string>(),
+                SystemConfiguration: default!,
+                SourceConfiguration: default!,
+                RequestConfiguration: new Dictionary<string, string>(),
                 Logger: NullLogger.Instance);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
             // act
-            var actual = await dataSource.GetCatalogAsync(Sample.AccessibleCatalogId, CancellationToken.None);
+            var actual = await dataSource.GetCatalogAsync(Sample.LocalCatalogId, CancellationToken.None);
 
             // assert
             var actualIds = actual.Resources!.Select(resource => resource.Id).ToList();
-            var actualUnits = actual.Resources!.Select(resource => resource.Properties?.GetValueOrDefault("Unit")).ToList();
-            var actualGroups = actual.Resources!.SelectMany(
-                resource => resource.Properties!.Where(current => current.Key.StartsWith("Groups"))).Select(current => current.Value).ToList();
+            var actualUnits = actual.Resources!.Select(resource => GetPropertyOrDefault(resource.Properties, "Unit")).ToList();
+            var actualGroups = actual.Resources!.SelectMany(resource => GetArrayOrDefault(resource.Properties, "Groups"));
             var actualDataTypes = actual.Resources!.SelectMany(resource => resource.Representations!.Select(representation => representation.DataType)).ToList();
 
             var expectedIds = new List<string>() { "T1", "V1", "unix_time1", "unix_time2" };
@@ -41,6 +43,30 @@ namespace DataSource
             Assert.True(expectedUnits.SequenceEqual(actualUnits));
             Assert.True(expectedGroups.SequenceEqual(actualGroups));
             Assert.True(expectedDataTypes.SequenceEqual(actualDataTypes));
+
+            string? GetPropertyOrDefault(JsonElement? element, string propertyName)
+            {
+                if (!element.HasValue)
+                    return default;
+
+                if (element.Value.TryGetProperty(propertyName, out var result))
+                    return result.GetString();
+
+                else
+                    return default;
+            }
+
+            string[] GetArrayOrDefault(JsonElement? element, string propertyName)
+            {
+                if (!element.HasValue)
+                    return new string[0];
+
+                if (element.Value.TryGetProperty(propertyName, out var result))
+                    return result.EnumerateArray().Select(current => current.GetString()!).ToArray();
+
+                else
+                    return new string[0];
+            }
         }
 
         [Fact]
@@ -50,7 +76,9 @@ namespace DataSource
 
             var context = new DataSourceContext(
                 ResourceLocator: new Uri("memory://localhost"),
-                Configuration: new Dictionary<string, string>(),
+                SystemConfiguration: default!,
+                SourceConfiguration: default!,
+                RequestConfiguration: new Dictionary<string, string>(),
                 Logger: NullLogger.Instance);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
@@ -68,14 +96,16 @@ namespace DataSource
 
             var context = new DataSourceContext(
                 ResourceLocator: new Uri("memory://localhost"),
-                Configuration: new Dictionary<string, string>(),
+                SystemConfiguration: default!,
+                SourceConfiguration: default!,
+                RequestConfiguration: new Dictionary<string, string>(),
                 Logger: NullLogger.Instance);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
             var begin = new DateTime(2020, 01, 02, 00, 00, 00, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 03, 00, 00, 00, DateTimeKind.Utc);
-            var expected = new Random((int)begin.Ticks).NextDouble() / 10 + 0.9;
+            var expected = 1;
             var actual = await dataSource.GetAvailabilityAsync("/A/B/C", begin, end, CancellationToken.None);
 
             Assert.Equal(expected, actual);
@@ -88,12 +118,14 @@ namespace DataSource
 
             var context = new DataSourceContext(
                 ResourceLocator: new Uri("memory://localhost"),
-                Configuration: new Dictionary<string, string>(),
+                SystemConfiguration: default!,
+                SourceConfiguration: default!,
+                RequestConfiguration: new Dictionary<string, string>(),
                 Logger: NullLogger.Instance);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
 
-            var catalog = await dataSource.GetCatalogAsync(Sample.AccessibleCatalogId, CancellationToken.None);
+            var catalog = await dataSource.GetCatalogAsync(Sample.LocalCatalogId, CancellationToken.None);
             var resource = catalog.Resources!.First();
             var representation = resource.Representations!.First();
             var catalogItem = new CatalogItem(catalog, resource, representation);
@@ -103,7 +135,15 @@ namespace DataSource
             var (data, status) = ExtensibilityUtilities.CreateBuffers(representation, begin, end);
 
             var request = new ReadRequest(catalogItem, data, status);
-            await dataSource.ReadAsync(begin, end, new[] { request }, new Progress<double>(), CancellationToken.None);
+
+            await dataSource.ReadAsync(
+                begin, 
+                end, 
+                new[] { request },
+                default!,
+                new Progress<double>(), 
+                CancellationToken.None);
+
             var doubleData = data.Cast<byte, double>();
 
             Assert.Equal(6.5, doubleData.Span[0], precision: 1);

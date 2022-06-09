@@ -1,4 +1,3 @@
-using Nexus.Api;
 using Nexus.UI.Core;
 
 namespace Nexus.UI.ViewModels;

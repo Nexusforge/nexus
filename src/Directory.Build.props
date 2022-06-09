@@ -14,23 +14,18 @@
     <Authors>https://github.com/Nexusforge</Authors>
     <Company>https://github.com/Nexusforge</Company>
     <Copyright>Nexusforge</Copyright>
+    <Product>Nexus</Product>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <Major>1</Major>
-    <Minor>0</Minor>
-    <Revision>0</Revision>
-    <VersionSuffix>beta.1</VersionSuffix>
+  <PropertyGroup Condition="$(Version) != ''">
+    <AssemblyVersion>$(Version.Split('.')[0]).0.0.0</AssemblyVersion>
+    <FileVersion>$(Version.Split('.')[0]).$(Version.Split('.')[1]).$(Version.Split('.')[2].Split('-')[0]).0</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://nexusforge.github.io/Nexus/</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Nexusforge/Nexus</RepositoryUrl>
-  </PropertyGroup>
-  
-  <PropertyGroup>
-    <GetPackageVersionDependsOn>$(GetPackageVersionDependsOn);CreateMetadata</GetPackageVersionDependsOn>
   </PropertyGroup>
 
 </Project>

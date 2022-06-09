@@ -3,7 +3,7 @@ using Nexus.Extensibility;
 
 namespace TestExtensionProject
 {
-    [ExtensionDescription("A data source for unit tests.")]
+    [ExtensionDescription("A data source for unit tests.", default!, default!)]
     public class TestDataSource : IDataSource
     {
         public Task SetContextAsync(DataSourceContext context, CancellationToken cancellationToken)
@@ -31,7 +31,7 @@ namespace TestExtensionProject
             throw new NotImplementedException(nameof(GetAvailabilityAsync));
         }
 
-        public Task ReadAsync(DateTime begin, DateTime end, ReadRequest[] requests, IProgress<double> progress, CancellationToken cancellationToken)
+        public Task ReadAsync(DateTime begin, DateTime end, ReadRequest[] requests, ReadDataHandler readData, IProgress<double> progress, CancellationToken cancellationToken)
         {
             throw new NotImplementedException(nameof(ReadAsync));
         }

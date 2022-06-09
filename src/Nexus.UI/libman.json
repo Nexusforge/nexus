@@ -23,7 +23,7 @@
     },
     {
       "library": "@highlightjs/cdn-assets@11.5.1",
-      "destination": "wwwroot\\lib\\highlightjs/cdn-assets",
+      "destination": "wwwroot/lib/highlightjs/cdn-assets",
       "files": [
         "highlight.min.js",
         "styles/stackoverflow-light.min.css",

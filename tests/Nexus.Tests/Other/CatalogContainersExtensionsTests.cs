@@ -25,27 +25,27 @@ namespace Other
                    {
                        "/" => new CatalogContainer[]
                        {
-                           new CatalogContainer(new CatalogRegistration("/A", string.Empty), default!, default!, default!, catalogManager, default!, default!),
+                           new CatalogContainer(new CatalogRegistration("/A", string.Empty), default!, default!, default!, default!, catalogManager, default!, default!),
                        },
                        "/A" => new CatalogContainer[] 
                        { 
-                           new CatalogContainer(new CatalogRegistration("/A/C", string.Empty), default!, default!, default!, catalogManager, default!, default!),
-                           new CatalogContainer(new CatalogRegistration("/A/B", string.Empty), default!, default!, default!, catalogManager, default!, default!),
-                           new CatalogContainer(new CatalogRegistration("/A/D", string.Empty), default!, default!, default!, catalogManager, default!, default!)
+                           new CatalogContainer(new CatalogRegistration("/A/C", string.Empty), default!, default!,  default!, default!, catalogManager, default!, default!),
+                           new CatalogContainer(new CatalogRegistration("/A/B", string.Empty), default!, default!, default!, default!, catalogManager, default!, default!),
+                           new CatalogContainer(new CatalogRegistration("/A/D", string.Empty), default!, default!, default!, default!, catalogManager, default!, default!)
                        },
                        "/A/B" => new CatalogContainer[]
                        {
-                           new CatalogContainer(new CatalogRegistration("/A/B/D", string.Empty), default!, default!, default!, catalogManager, default!, default!),
-                           new CatalogContainer(new CatalogRegistration("/A/B/C", string.Empty), default!, default!, default!, catalogManager, default!, default!)
+                           new CatalogContainer(new CatalogRegistration("/A/B/D", string.Empty), default!, default!, default!, default!, catalogManager, default!, default!),
+                           new CatalogContainer(new CatalogRegistration("/A/B/C", string.Empty), default!, default!, default!, default!, catalogManager, default!, default!)
                        },
                        "/A/D" => new CatalogContainer[]
                        {
-                           new CatalogContainer(new CatalogRegistration("/A/D/F", string.Empty), default!, default!, default!, catalogManager, default!, default!),
-                           new CatalogContainer(new CatalogRegistration("/A/D/E", string.Empty), default!, default!, default!, catalogManager, default!, default!)
+                           new CatalogContainer(new CatalogRegistration("/A/D/F", string.Empty), default!, default!, default!, default!, catalogManager, default!, default!),
+                           new CatalogContainer(new CatalogRegistration("/A/D/E", string.Empty), default!, default!, default!, default!, catalogManager, default!, default!)
                        },
                        "/A/F" => new CatalogContainer[]
                        {
-                           new CatalogContainer(new CatalogRegistration("/A/F/H", string.Empty), default!, default!, default!, catalogManager, default!, default!)
+                           new CatalogContainer(new CatalogRegistration("/A/F/H", string.Empty), default!, default!, default!, default!, catalogManager, default!, default!)
                        },
                        _ => throw new Exception("Unsupported combination.")
                    });
@@ -118,7 +118,7 @@ namespace Other
                   {
                       "/" => new CatalogContainer[]
                       {
-                        new CatalogContainer(new CatalogRegistration("/A/B/C", string.Empty), default!, default!, default!, default!, default!, dataControllerService),
+                        new CatalogContainer(new CatalogRegistration("/A/B/C", string.Empty), default!, default!, default!, default!, default!, default!, dataControllerService),
                       },
                       _ => throw new Exception("Unsupported combination.")
                   });

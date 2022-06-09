@@ -11,16 +11,14 @@ namespace DataSource
             DataSource = new Sample();
 
             Registration = new DataSourceRegistration(
+                Id: Guid.NewGuid(),
                 Type: typeof(Sample).FullName!, 
                 ResourceLocator: new Uri("memory://localhost"),
-                Configuration: new Dictionary<string, string>(),
-                Publish: true);
-
-            RequestConfiguration = new Dictionary<string, string>();
+                Configuration: new Dictionary<string, string>());
         }
 
         internal IDataSource DataSource { get; }
-        internal DataSourceRegistration Registration { get; }
-        internal Dictionary<string, string> RequestConfiguration { get; }  
+
+        internal DataSourceRegistration Registration { get; } 
     }
 }

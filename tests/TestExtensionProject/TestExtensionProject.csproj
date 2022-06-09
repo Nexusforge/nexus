@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Nexus.Extensibility\Nexus.Extensibility.csproj">
+	<ProjectReference Include="..\..\src\extensibility\cs-extensibility\cs-extensibility.csproj">
       <Private>false</Private>
       <ExcludeAssets>runtime</ExcludeAssets>
     </ProjectReference>
