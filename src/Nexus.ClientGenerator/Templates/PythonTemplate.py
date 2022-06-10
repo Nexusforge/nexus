@@ -326,7 +326,7 @@ class {{1}}:
                 
         await self._refresh_token_async(actual_refresh_token)
 
-    def attach_configuration(self, configuration: dict[str, str]) -> Any:
+    def attach_configuration(self, configuration: Any) -> Any:
         """Attaches configuration data to subsequent Nexus API requests."""
 
         encoded_json = base64.b64encode(json.dumps(configuration).encode("utf-8")).decode("utf-8")
@@ -461,11 +461,3 @@ class {{1}}:
     async def __aexit__(self, exc_type, exc_value, exc_traceback):
         if (self._http_client is not None):
             await self._http_client.aclose()
-
-    # "extension" methods
-    def attach_configuration2(self, *configuration: Tuple[str, str]) -> Any:
-        """Attaches configuration data to subsequent Nexus API requests."""
-
-        dict_configuration = { key: value for key, value in configuration }
-        return self.attach_configuration(dict_configuration)
-        

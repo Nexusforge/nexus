@@ -172,10 +172,10 @@ namespace Nexus.Api.Tests
             var client = new NexusClient(httpClient);
 
             // -> configuration
-            var configuration = new Dictionary<string, string>
+            var configuration = new
             {
-                ["foo1"] = "bar1",
-                ["foo2"] = "bar2"
+                foo1 = "bar1",
+                foo2 = "bar2"
             };
 
             // Act

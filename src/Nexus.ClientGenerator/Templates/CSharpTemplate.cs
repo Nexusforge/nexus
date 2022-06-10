@@ -43,7 +43,7 @@ public interface I{{1}}
     /// Attaches configuration data to subsequent Nexus API requests.
     /// </summary>
     /// <param name="configuration">The configuration data.</param>
-    IDisposable AttachConfiguration(IDictionary<string, string> configuration);
+    IDisposable AttachConfiguration(object configuration);
 
     /// <summary>
     /// Clears configuration data for all subsequent Nexus API requests.
@@ -118,7 +118,7 @@ public class {{1}} : I{{1}}, IDisposable
     }
 
     /// <inheritdoc />
-    public IDisposable AttachConfiguration(IDictionary<string, string> configuration)
+    public IDisposable AttachConfiguration(object configuration)
     {
         var encodedJson = Convert.ToBase64String(JsonSerializer.SerializeToUtf8Bytes(configuration));
 
