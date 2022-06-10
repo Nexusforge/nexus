@@ -567,7 +567,7 @@ class ExportParameters:
     resource_paths: list[str]
     """The resource paths to export."""
 
-    configuration: dict[str, str]
+    configuration: Optional[object]
     """The configuration."""
 
 
@@ -645,7 +645,7 @@ class DataSourceRegistration:
     resource_locator: str
     """An URL which points to the data."""
 
-    configuration: dict[str, str]
+    configuration: Optional[object]
     """Configuration parameters for the instantiated source."""
 
     info_url: Optional[str]
@@ -1248,7 +1248,7 @@ class SystemClient:
     def __init__(self, client: NexusAsyncClient):
         self._client = client
 
-    def get_configuration(self) -> Awaitable[dict[str, str]]:
+    def get_configuration(self) -> Awaitable[Optional[object]]:
         """
         Gets the system configuration.
 
@@ -1257,9 +1257,9 @@ class SystemClient:
 
         url = "/api/v1/system/configuration"
 
-        return self._client._invoke_async(dict[str, str], "GET", url, "application/json", None, None)
+        return self._client._invoke_async(Optional[object], "GET", url, "application/json", None, None)
 
-    def set_configuration(self, configuration: dict[str, str]) -> Awaitable[None]:
+    def set_configuration(self, configuration: object) -> Awaitable[None]:
         """
         Sets the system configuration.
 

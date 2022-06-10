@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Nexus.DataModel;
+using System.Text.Json;
 
 namespace Nexus.Extensibility
 {
@@ -13,9 +14,9 @@ namespace Nexus.Extensibility
     /// <param name="Logger">The logger.</param>
     public record DataSourceContext(
         Uri ResourceLocator, 
-        IReadOnlyDictionary<string, string> SystemConfiguration,
-        IReadOnlyDictionary<string, string> SourceConfiguration,
-        IReadOnlyDictionary<string, string> RequestConfiguration,
+        JsonElement? SystemConfiguration,
+        JsonElement? SourceConfiguration,
+        JsonElement? RequestConfiguration,
         ILogger Logger);
 
     /// <summary>

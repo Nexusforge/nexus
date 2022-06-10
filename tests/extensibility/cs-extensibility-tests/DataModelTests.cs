@@ -256,7 +256,12 @@ namespace Nexus.Extensibility.Tests
 
             var resource = new Resource(id: "Resource1", representations: new List<Representation>() { representation });
             var catalog = new ResourceCatalog(id: "/A/B/C", resources: new List<Resource>() { resource });
-            var catalogItem = new CatalogItem(catalog, resource, representation);
+
+            var catalogItem = new CatalogItem(
+                catalog with { Resources = default },
+                resource with { Representations = default },
+                representation);
+
             var foundCatalogItem = catalog.Find(catalogItem.ToPath());
 
             Assert.Equal(catalogItem, foundCatalogItem);
@@ -271,7 +276,12 @@ namespace Nexus.Extensibility.Tests
 
             var resource = new Resource(id: "Resource1", representations: new List<Representation>() { representation });
             var catalog = new ResourceCatalog(id: "/A/B/C", resources: new List<Resource>() { resource });
-            var catalogItem = new CatalogItem(catalog, resource, representation);
+
+            var catalogItem = new CatalogItem(
+                catalog with { Resources = default },
+                resource with { Representations = default },
+                representation);
+
             var success = catalog.TryFind(catalogItem.ToPath(), out var foundCatalogItem1);
 
             Assert.Equal(catalogItem, foundCatalogItem1);

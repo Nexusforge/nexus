@@ -462,7 +462,7 @@ namespace DataSource
                 Id: Guid.NewGuid(),
                 "a", 
                 new Uri("http://xyz"), 
-                new Dictionary<string, string>(), 
+                default,
                 default);
 
             var dataSourceController = new DataSourceController(

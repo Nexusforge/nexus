@@ -96,7 +96,7 @@ public class AppState : IAppState
             FilePeriod: default,
             Type: string.Empty,
             ResourcePaths: new List<string>(),
-            Configuration: new Dictionary<string, string>()
+            Configuration: default
         );
     }
 

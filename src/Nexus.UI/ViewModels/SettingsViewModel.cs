@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Text.Json;
 using Microsoft.JSInterop;
 using Nexus.Api;
 using Nexus.UI.Core;
@@ -113,7 +114,7 @@ public class SettingsViewModel : INotifyPropertyChanged
         }
     }
     
-    public IDictionary<string, string> Configuration => _appState.ExportParameters.Configuration;
+    public IDictionary<string, string> Configuration => new Dictionary<string, string>();
 
     public IReadOnlyList<CatalogItemSelectionViewModel> SelectedCatalogItems => _selectedCatalogItems;
 
@@ -183,7 +184,11 @@ public class SettingsViewModel : INotifyPropertyChanged
             .SelectMany(item => item.Kinds.Select(kind => item.GetResourcePath(kind, samplePeriod)))
             .ToList();
 
-        var actualParameters = _appState.ExportParameters with { ResourcePaths = resourcePaths };
+        var actualParameters = _appState.ExportParameters with 
+        { 
+            ResourcePaths = resourcePaths,
+            Configuration = JsonSerializer.SerializeToElement(_appState.ExportParameters.Configuration)
+        };
 
         return actualParameters;
     }

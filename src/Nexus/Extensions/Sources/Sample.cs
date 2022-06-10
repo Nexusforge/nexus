@@ -1,6 +1,8 @@
 using Nexus.DataModel;
 using Nexus.Extensibility;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 
 namespace Nexus.Sources
 {
@@ -110,8 +112,8 @@ namespace Nexus.Sources
                     // check credentials
                     if (catalog.Id == RemoteCatalogId)
                     {
-                        if ((Context.RequestConfiguration.TryGetValue("user", out var user) && user != RemoteUsername) ||
-                            (Context.RequestConfiguration.TryGetValue("password", out var password) && password != RemotePassword))
+                        if ((TryGetStringValue("user", out var user) && user != RemoteUsername) ||
+                            (TryGetStringValue("password", out var password) && password != RemotePassword))
                             throw new Exception("The provided credentials are invalid.");
                     }
 
@@ -204,6 +206,19 @@ namespace Nexus.Sources
             });
 
             return catalogBuilder.Build();
+        }
+
+        private bool TryGetStringValue(string propertyName, [NotNullWhen(returnValue: true)] out string? value)
+        {
+            value = default;
+            var requestConfiguration = Context.RequestConfiguration!.Value;
+
+            if (requestConfiguration.ValueKind == JsonValueKind.Object &&
+                requestConfiguration.TryGetProperty(propertyName, out var propertyValue) &&
+                propertyValue.ValueKind == JsonValueKind.String)
+                value = propertyValue.GetString();
+
+            return value != default;
         }
 
         private double ToUnixTimeStamp(

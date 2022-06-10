@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from array import array
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Awaitable, Callable, List, Protocol, Tuple
+from typing import Any, Awaitable, Callable, List, Optional, Protocol, Tuple
 from urllib.parse import ParseResult
 
 from ._data_model import CatalogItem, CatalogRegistration, ResourceCatalog
@@ -54,13 +54,13 @@ class DataSourceContext:
     resource_locator: ParseResult
     """The unique identifier of the package reference."""
 
-    system_configuration: dict[str, str]
+    system_configuration: Optional[Any]
     """The system configuration."""
 
-    source_configuration: dict[str, str]
+    source_configuration: Optional[Any]
     """The source configuration."""
 
-    request_configuration: dict[str, str]
+    request_configuration: Optional[Any]
     """The request configuration."""
 
     logger: ILogger

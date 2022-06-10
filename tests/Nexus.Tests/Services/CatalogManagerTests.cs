@@ -58,9 +58,9 @@ namespace Services
                 });
 
             /* appState */
-            var registrationA = new DataSourceRegistration(Id: Guid.NewGuid(), Type: "A", new Uri("", UriKind.Relative), new Dictionary<string, string>());
-            var registrationB = new DataSourceRegistration(Id: Guid.NewGuid(), Type: "B", new Uri("", UriKind.Relative), new Dictionary<string, string>());
-            var registrationC = new DataSourceRegistration(Id: Guid.NewGuid(), Type: "C", new Uri("", UriKind.Relative), new Dictionary<string, string>());
+            var registrationA = new DataSourceRegistration(Id: Guid.NewGuid(), Type: "A", new Uri("", UriKind.Relative), default);
+            var registrationB = new DataSourceRegistration(Id: Guid.NewGuid(), Type: "B", new Uri("", UriKind.Relative), default);
+            var registrationC = new DataSourceRegistration(Id: Guid.NewGuid(), Type: "C", new Uri("", UriKind.Relative), default);
 
             var appState = new AppState()
             {

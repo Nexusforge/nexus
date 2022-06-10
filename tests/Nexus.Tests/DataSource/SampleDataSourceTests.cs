@@ -20,7 +20,7 @@ namespace DataSource
                 ResourceLocator: new Uri("memory://localhost"),
                 SystemConfiguration: default!,
                 SourceConfiguration: default!,
-                RequestConfiguration: new Dictionary<string, string>(),
+                RequestConfiguration: default,
                 Logger: NullLogger.Instance);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
@@ -78,7 +78,7 @@ namespace DataSource
                 ResourceLocator: new Uri("memory://localhost"),
                 SystemConfiguration: default!,
                 SourceConfiguration: default!,
-                RequestConfiguration: new Dictionary<string, string>(),
+                RequestConfiguration: default,
                 Logger: NullLogger.Instance);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
@@ -98,7 +98,7 @@ namespace DataSource
                 ResourceLocator: new Uri("memory://localhost"),
                 SystemConfiguration: default!,
                 SourceConfiguration: default!,
-                RequestConfiguration: new Dictionary<string, string>(),
+                RequestConfiguration: default,
                 Logger: NullLogger.Instance);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);
@@ -120,7 +120,7 @@ namespace DataSource
                 ResourceLocator: new Uri("memory://localhost"),
                 SystemConfiguration: default!,
                 SourceConfiguration: default!,
-                RequestConfiguration: new Dictionary<string, string>(),
+                RequestConfiguration: default,
                 Logger: NullLogger.Instance);
 
             await dataSource.SetContextAsync(context, CancellationToken.None);

@@ -58,7 +58,7 @@ namespace Services
                 var packageReference = new PackageReference(
                     Id: Guid.NewGuid(),
                     Provider: "local",
-                    Configuration: new Dictionary<string, string>()
+                    Configuration: new Dictionary<string, string>
                     {
                         // required
                         ["Path"] = extensionFolderPath,

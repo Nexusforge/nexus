@@ -27,8 +27,8 @@ namespace Services
             var samplePeriod = TimeSpan.FromSeconds(1);
             var exportId = Guid.NewGuid();
 
-            var registration1 = new DataSourceRegistration(Id: Guid.NewGuid(), Type: "A", new Uri("a", UriKind.Relative), new Dictionary<string, string>(), default);
-            var registration2 = new DataSourceRegistration(Id: Guid.NewGuid(), Type: "B", new Uri("a", UriKind.Relative), new Dictionary<string, string>(), default);
+            var registration1 = new DataSourceRegistration(Id: Guid.NewGuid(), Type: "A", new Uri("a", UriKind.Relative), default, default);
+            var registration2 = new DataSourceRegistration(Id: Guid.NewGuid(), Type: "B", new Uri("a", UriKind.Relative), default, default);
 
             // DI services
             var dataSourceController1 = Mock.Of<IDataSourceController>();
@@ -121,7 +121,7 @@ namespace Services
                 FilePeriod: TimeSpan.FromSeconds(10),
                 Type: "A",
                 ResourcePaths: new[] { catalogItem1.ToPath(), catalogItem2.ToPath() },
-                Configuration: new Dictionary<string, string>());
+                Configuration: default);
 
             // data service
             var dataService = new DataService(

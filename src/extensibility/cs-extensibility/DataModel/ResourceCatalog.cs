@@ -130,7 +130,11 @@ namespace Nexus.DataModel
             if (representation is null)
                 return false;
 
-            catalogItem = new CatalogItem(this, resource, representation);
+            catalogItem = new CatalogItem(
+                this with { Resources = default },
+                resource with { Representations = default },
+                representation);
+
             return true;
         }
 

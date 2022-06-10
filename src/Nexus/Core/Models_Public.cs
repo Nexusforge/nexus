@@ -205,7 +205,7 @@ namespace Nexus.Core
         TimeSpan FilePeriod,
         string Type,
         string[] ResourcePaths,
-        Dictionary<string, string> Configuration);
+        JsonElement? Configuration);
 
     /// <summary>
     /// An extension description.
@@ -294,7 +294,7 @@ namespace Nexus.Core
         Guid Id,
         string Type,
         Uri ResourceLocator,
-        IReadOnlyDictionary<string, string> Configuration,
+        JsonElement? Configuration,
         string? InfoUrl = default,
         string ReleasePattern = ".*",
         string VisibilityPattern = ".*");

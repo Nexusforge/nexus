@@ -1,6 +1,7 @@
 using Nexus.DataModel;
 using Nexus.Extensibility;
 using System.IO.Pipelines;
+using System.Text.Json;
 
 namespace Nexus.Core
 {
@@ -19,7 +20,7 @@ namespace Nexus.Core
         CatalogContainer Container);
 
     internal record NexusProject(
-        IReadOnlyDictionary<string, string> SystemConfiguration,
+        JsonElement? SystemConfiguration,
         IReadOnlyDictionary<Guid, PackageReference> PackageReferences,
         IReadOnlyDictionary<string, UserConfiguration> UserConfigurations);
 

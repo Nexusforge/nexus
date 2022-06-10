@@ -29,7 +29,7 @@ namespace Services
                 Id: Guid.NewGuid(),
                 Type: default!, 
                 new Uri("A", UriKind.Relative), 
-                Configuration: new Dictionary<string, string>());
+                Configuration: default);
 
             var expectedCatalog = Sample.LoadCatalog("/A/B/C");
 
@@ -40,11 +40,11 @@ namespace Services
 
             var appState = new AppState()
             {
-                Project = new NexusProject(new Dictionary<string, string>(), default!, default!),
+                Project = new NexusProject(default, default!, default!),
                 CatalogState = catalogState
             };
 
-            var requestConfiguration = new Dictionary<string, string>()
+            var requestConfiguration = new Dictionary<string, string>
             {
                 ["foo"] = "bar",
                 ["foo2"] = "baz",
@@ -85,11 +85,10 @@ namespace Services
 
             Assert.Equal(expectedCatalog.Id, actualCatalog.Id);
 
-            var sortedExpected = new SortedDictionary<string, string>(requestConfiguration);
-            var sortedActual = new SortedDictionary<string, string>(
-                ((DataSourceController)actual).RequestConfiguration.ToDictionary(entry => entry.Key, entry => entry.Value));
+            var expectedConfig = JsonSerializer.Serialize(requestConfiguration);
+            var actualConfig = JsonSerializer.Serialize(((DataSourceController)actual).RequestConfiguration);
 
-            Assert.True(sortedExpected.SequenceEqual(sortedActual));
+            Assert.Equal(expectedConfig, actualConfig);
         }
 
         [Fact]
@@ -98,7 +97,7 @@ namespace Services
             // Arrange
             var appState = new AppState()
             {
-                Project = new NexusProject(new Dictionary<string, string>(), default!, default!)
+                Project = new NexusProject(default, default!, default!)
             };
 
             var extensionHive = Mock.Of<IExtensionHive>();
@@ -109,7 +108,7 @@ namespace Services
 
             var loggerFactory = Mock.Of<ILoggerFactory>();
             var resourceLocator = new Uri("A", UriKind.Relative);
-            var exportParameters = new ExportParameters(default, default, default, default!, default!, new Dictionary<string, string>());
+            var exportParameters = new ExportParameters(default, default, default, default!, default!, default);
 
             // Act
             var dataControllerService = new DataControllerService(

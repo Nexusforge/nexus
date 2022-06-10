@@ -2,6 +2,7 @@
 using Nexus.DataModel;
 using Nexus.Utilities;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 
 namespace Nexus.Extensibility
 {
@@ -30,8 +31,8 @@ namespace Nexus.Extensibility
         public DataWriterController(
             IDataWriter dataWriter, 
             Uri resourceLocator,
-            IReadOnlyDictionary<string, string> systemConfiguration,
-            IReadOnlyDictionary<string, string> requestConfiguration,
+            JsonElement? systemConfiguration,
+            JsonElement? requestConfiguration,
             ILogger<DataWriterController> logger)
         {
             DataWriter = dataWriter;
@@ -45,9 +46,9 @@ namespace Nexus.Extensibility
 
         #region Properties
 
-        internal IReadOnlyDictionary<string, string> SystemConfiguration { get; }
+        private JsonElement? SystemConfiguration { get; }
 
-        internal IReadOnlyDictionary<string, string> RequestConfiguration { get; }
+        private JsonElement? RequestConfiguration { get; }
 
         private IDataWriter DataWriter { get; }
 

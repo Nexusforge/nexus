@@ -102,7 +102,7 @@ namespace Nexus.Writers
 
                 if (!_resourceMap.TryGetValue(resourceFilePath, out var resource))
                 {
-                    var rowIndexFormat = Context.RequestConfiguration.GetValueOrDefault("RowIndexFormat", "Index");
+                    var rowIndexFormat = GetStringValueOrDefault("RowIndexFormat", "Index");
                     var constraints = new Constraints(Required: true);
 
                     var timestampField = rowIndexFormat switch
@@ -212,8 +212,8 @@ namespace Nexus.Writers
                 var physicalId = catalog.Id.TrimStart('/').Replace('/', '_');
                 var root = Context.ResourceLocator.ToPath();
                 var filePath = Path.Combine(root, $"{physicalId}_{ToISO8601(_lastFileBegin)}_{_lastSamplePeriod.ToUnitString()}.csv");
-                var rowIndexFormat = Context.RequestConfiguration.GetValueOrDefault("RowIndexFormat", "Index");
-                var significantFigures = uint.Parse(Context.RequestConfiguration.GetValueOrDefault("SignificantFigures", "4"));
+                var rowIndexFormat = GetStringValueOrDefault("RowIndexFormat", "Index");
+                var significantFigures = uint.Parse(GetStringValueOrDefault("SignificantFigures", "4"));
 
                 using var streamWriter = new StreamWriter(File.Open(filePath, FileMode.Append, FileAccess.Write), Encoding.UTF8);
 
@@ -312,6 +312,19 @@ namespace Nexus.Writers
         private string ToISO8601(DateTime dateTime)
         {
             return dateTime.ToUniversalTime().ToString("yyyy-MM-ddTHH-mm-ssZ");
+        }
+
+        private string GetStringValueOrDefault(string propertyName, string defaultValue)
+        {
+            var value = defaultValue;
+            var requestConfiguration = Context.RequestConfiguration!.Value;
+
+            if (requestConfiguration.ValueKind == JsonValueKind.Object &&
+                requestConfiguration.TryGetProperty(propertyName, out var propertyValue) &&
+                propertyValue.ValueKind == JsonValueKind.String)
+                value = propertyValue.GetString() ?? value;
+
+            return value;
         }
 
         #endregion

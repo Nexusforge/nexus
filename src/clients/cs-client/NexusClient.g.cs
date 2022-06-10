@@ -1021,14 +1021,14 @@ public interface ISystemClient
     /// Gets the system configuration.
     /// </summary>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<IDictionary<string, string>> GetConfigurationAsync(CancellationToken cancellationToken = default);
+    Task<JsonElement?> GetConfigurationAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Sets the system configuration.
     /// </summary>
     /// <param name="configuration"></param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task SetConfigurationAsync(IDictionary<string, string> configuration, CancellationToken cancellationToken = default);
+    Task SetConfigurationAsync(JsonElement configuration, CancellationToken cancellationToken = default);
 
 }
 
@@ -1043,17 +1043,17 @@ public class SystemClient : ISystemClient
     }
 
     /// <inheritdoc />
-    public Task<IDictionary<string, string>> GetConfigurationAsync(CancellationToken cancellationToken = default)
+    public Task<JsonElement?> GetConfigurationAsync(CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/system/configuration");
 
         var url = urlBuilder.ToString();
-        return _client.InvokeAsync<IDictionary<string, string>>("GET", url, "application/json", default, default, cancellationToken);
+        return _client.InvokeAsync<JsonElement?>("GET", url, "application/json", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
-    public Task SetConfigurationAsync(IDictionary<string, string> configuration, CancellationToken cancellationToken = default)
+    public Task SetConfigurationAsync(JsonElement configuration, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/system/configuration");
@@ -1670,7 +1670,7 @@ public enum TaskStatus
 /// <param name="Type">The writer type.</param>
 /// <param name="ResourcePaths">The resource paths to export.</param>
 /// <param name="Configuration">The configuration.</param>
-public record ExportParameters(DateTime Begin, DateTime End, TimeSpan FilePeriod, string Type, IList<string> ResourcePaths, IDictionary<string, string> Configuration);
+public record ExportParameters(DateTime Begin, DateTime End, TimeSpan FilePeriod, string Type, IList<string> ResourcePaths, JsonElement? Configuration);
 
 /// <summary>
 /// A package reference.
@@ -1700,7 +1700,7 @@ public record ExtensionDescription(string Type, string? Description, string? Pro
 /// <param name="InfoUrl">An optional info URL.</param>
 /// <param name="ReleasePattern">An optional regular expressions pattern to select the catalogs to be released. By default, all catalogs will be released.</param>
 /// <param name="VisibilityPattern">An optional regular expressions pattern to select the catalogs to be visible. By default, all catalogs will be visible.</param>
-public record DataSourceRegistration(Guid Id, string Type, Uri ResourceLocator, IDictionary<string, string> Configuration, string? InfoUrl, string ReleasePattern, string VisibilityPattern);
+public record DataSourceRegistration(Guid Id, string Type, Uri ResourceLocator, JsonElement? Configuration, string? InfoUrl, string ReleasePattern, string VisibilityPattern);
 
 /// <summary>
 /// Describes an OpenID connect provider.

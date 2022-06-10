@@ -2,6 +2,7 @@
 using Nexus.Extensibility;
 using Nexus.Utilities;
 using System.Reflection;
+using System.Text.Json;
 
 namespace Nexus.Services
 {
@@ -221,7 +222,7 @@ namespace Nexus.Services
             }
         }
 
-        public async Task PutSystemConfigurationAsync(Dictionary<string, string> configuration)
+        public async Task PutSystemConfigurationAsync(JsonElement? configuration)
         {
             await _projectSemaphore.WaitAsync();
 

@@ -47,7 +47,7 @@ namespace Other
                 var packageReference = new PackageReference(
                     Id: Guid.NewGuid(),
                     Provider: "local",
-                    Configuration: new Dictionary<string, string>()
+                    Configuration: new Dictionary<string, string>
                     {
                         // required
                         ["Path"] = extensionFolderPath,
@@ -154,7 +154,7 @@ namespace Other
                 var packageReference = new PackageReference(
                     Id: Guid.NewGuid(),
                     Provider: "local",
-                    Configuration: new Dictionary<string, string>()
+                    Configuration: new Dictionary<string, string>
                     {
                         ["Path"] = root,
                     }
@@ -204,7 +204,7 @@ namespace Other
                 var packageReference = new PackageReference(
                     Id: Guid.NewGuid(),
                     Provider: "local",
-                    Configuration: new Dictionary<string, string>()
+                    Configuration: new Dictionary<string, string>
                     {
                         // required
                         ["Path"] = extensionRoot,
@@ -260,7 +260,7 @@ namespace Other
             var packageReference = new PackageReference(
                 Id: Guid.NewGuid(),
                 Provider: "github-releases",
-                Configuration: new Dictionary<string, string>()
+                Configuration: new Dictionary<string, string>
                 {
                     // required
                     ["ProjectPath"] = "nexusforge/github-releases-provider-test-project",
@@ -313,7 +313,7 @@ namespace Other
                 var packageReference = new PackageReference(
                     Id: Guid.NewGuid(),
                     Provider: "github-releases",
-                    Configuration: new Dictionary<string, string>()
+                    Configuration: new Dictionary<string, string>
                     {
                         // required
                         ["ProjectPath"] = "nexusforge/github-releases-provider-test-project",
@@ -360,7 +360,7 @@ namespace Other
             var packageReference = new PackageReference(
                 Id: Guid.NewGuid(),
                 Provider: "gitlab-releases-v4",
-                Configuration: new Dictionary<string, string>()
+                Configuration: new Dictionary<string, string>
                 {
                     // required
                     ["Server"] = "https://gitlab.com",
@@ -402,7 +402,7 @@ namespace Other
                 var packageReference = new PackageReference(
                     Id: Guid.NewGuid(),
                     Provider: "gitlab-releases-v4",
-                    Configuration: new Dictionary<string, string>()
+                    Configuration: new Dictionary<string, string>
                     {
                         // required
                         ["Server"] = "https://gitlab.com",
@@ -450,7 +450,7 @@ namespace Other
             var packageReference = new PackageReference(
                 Id: Guid.NewGuid(),
                 Provider: "gitlab-packages-generic-v4",
-                Configuration: new Dictionary<string, string>()
+                Configuration: new Dictionary<string, string>
                 {
                     // required
                     ["Server"] = "https://gitlab.com",
@@ -493,7 +493,7 @@ namespace Other
                 var packageReference = new PackageReference(
                     Id: Guid.NewGuid(),
                     Provider: "gitlab-packages-generic-v4",
-                    Configuration: new Dictionary<string, string>()
+                    Configuration: new Dictionary<string, string>
                     {
                         // required
                         ["Server"] = "https://gitlab.com",

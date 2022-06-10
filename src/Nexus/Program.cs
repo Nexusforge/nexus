@@ -217,7 +217,7 @@ async Task InitializeAppAsync(
     
     else
         appState.Project = new NexusProject(
-            new Dictionary<string, string>(),
+            default,
             new Dictionary<Guid, PackageReference>(),
             new Dictionary<string, UserConfiguration>());
 

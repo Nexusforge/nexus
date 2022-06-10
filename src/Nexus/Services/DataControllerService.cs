@@ -31,7 +31,6 @@ namespace Nexus.Services
         private ICacheService _cacheService;
         private ILogger _logger;
         private ILoggerFactory _loggerFactory;
-        private Dictionary<string, string> _defaultRequestConfiguration = new Dictionary<string, string>();
 
         public DataControllerService(
             AppState appState,
@@ -66,7 +65,7 @@ namespace Nexus.Services
             var controller = new DataSourceController(
                 dataSource,
                 registration, 
-                systemConfiguration: _appState.Project.SystemConfiguration.ToDictionary(entry => entry.Key, entry => entry.Value),
+                systemConfiguration: _appState.Project.SystemConfiguration?.Clone(),
                 requestConfiguration: requestConfiguration,
                 _processingService,
                 _cacheService,
@@ -87,12 +86,12 @@ namespace Nexus.Services
             var logger1 = _loggerFactory.CreateLogger<DataWriterController>();
             var logger2 = _loggerFactory.CreateLogger($"{exportParameters.Type} - {resourceLocator}");
             var dataWriter = _extensionHive.GetInstance<IDataWriter>(exportParameters.Type);
-            var requestConfiguration = exportParameters.Configuration.ToDictionary(entry => entry.Key, entry => entry.Value);
+            var requestConfiguration = exportParameters.Configuration;
 
             var controller = new DataWriterController(
                 dataWriter, 
                 resourceLocator,
-                systemConfiguration: _appState.Project.SystemConfiguration.ToDictionary(entry => entry.Key, entry => entry.Value),
+                systemConfiguration: _appState.Project.SystemConfiguration?.Clone(),
                 requestConfiguration: requestConfiguration,
                 logger1);
 
@@ -101,29 +100,20 @@ namespace Nexus.Services
             return controller;
         }
 
-        private Dictionary<string, string> GetRequestConfiguration()
+        private JsonElement? GetRequestConfiguration()
         {
             var httpContext = _httpContextAccessor.HttpContext;
 
-            if (httpContext is null)
-                return _defaultRequestConfiguration;
-
-            if (!httpContext.Request.Headers.TryGetValue(NexusConfigurationHeaderKey, out var encodedRequestConfiguration))
-                return _defaultRequestConfiguration;
-
-            try
+            if (httpContext is not null &&
+                httpContext.Request.Headers.TryGetValue(NexusConfigurationHeaderKey, out var encodedRequestConfiguration))
             {
                 var requestConfiguration = JsonSerializer
-                    .Deserialize<Dictionary<string, string>>(Convert.FromBase64String(encodedRequestConfiguration.First()));
+                    .Deserialize<JsonElement>(Convert.FromBase64String(encodedRequestConfiguration.First()));
 
-                return requestConfiguration is null
-                    ? _defaultRequestConfiguration
-                    : requestConfiguration;
+                return requestConfiguration;
             }
-            catch
-            {
-                return _defaultRequestConfiguration;
-            }
+
+            return default;
         }
     }
 }

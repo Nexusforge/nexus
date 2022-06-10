@@ -5,6 +5,8 @@ using Nexus.Writers;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Xunit;
 
 namespace DataWriter
@@ -31,11 +33,11 @@ namespace DataWriter
             var context = new DataWriterContext(
                 ResourceLocator: new Uri(targetFolder),
                 SystemConfiguration: default!,
-                RequestConfiguration: new Dictionary<string, string>()
+                RequestConfiguration: new JsonObject()
                 {
                     ["RowIndexFormat"] = rowIndexFormat,
                     ["SignificantFigures"] = "7"
-                },
+                }.Deserialize<JsonElement>(),
                 Logger: NullLogger.Instance);
 
             await dataWriter.SetContextAsync(context, CancellationToken.None);

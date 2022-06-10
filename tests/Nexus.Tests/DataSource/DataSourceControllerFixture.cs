@@ -14,7 +14,7 @@ namespace DataSource
                 Id: Guid.NewGuid(),
                 Type: typeof(Sample).FullName!, 
                 ResourceLocator: new Uri("memory://localhost"),
-                Configuration: new Dictionary<string, string>());
+                Configuration: default);
         }
 
         internal IDataSource DataSource { get; }

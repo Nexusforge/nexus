@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Nexus.Core;
 using Nexus.Services;
+using System.Text.Json;
 
 namespace Nexus.Controllers
 {
@@ -42,7 +43,7 @@ namespace Nexus.Controllers
         /// Gets the system configuration.
         /// </summary>
         [HttpGet("configuration")]
-        public IReadOnlyDictionary<string, string> GetConfiguration()
+        public JsonElement? GetConfiguration()
         {
             return _appState.Project.SystemConfiguration;
         }
@@ -51,7 +52,7 @@ namespace Nexus.Controllers
         /// Sets the system configuration.
         /// </summary>
         [HttpPut("configuration")]
-        public Task SetConfigurationAsync(Dictionary<string, string> configuration)
+        public Task SetConfigurationAsync(JsonElement? configuration)
         {
             return _appStateManager.PutSystemConfigurationAsync(configuration);
         }

@@ -5,6 +5,7 @@ using Nexus.Utilities;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 
 namespace Nexus.Extensibility
 {
@@ -65,8 +66,8 @@ namespace Nexus.Extensibility
         public DataSourceController(
             IDataSource dataSource, 
             DataSourceRegistration registration,
-            IReadOnlyDictionary<string, string> systemConfiguration,
-            IReadOnlyDictionary<string, string> requestConfiguration,
+            JsonElement? systemConfiguration,
+            JsonElement? requestConfiguration,
             IProcessingService processingService,
             ICacheService cacheService,
             DataOptions dataOptions,
@@ -91,9 +92,9 @@ namespace Nexus.Extensibility
 
         private DataSourceRegistration DataSourceRegistration { get; }
 
-        internal IReadOnlyDictionary<string, string> SystemConfiguration { get; }
+        private JsonElement? SystemConfiguration { get; }
 
-        internal IReadOnlyDictionary<string, string> RequestConfiguration { get; }
+        internal JsonElement? RequestConfiguration { get; }
 
         private ILogger Logger { get; }
 
@@ -111,7 +112,7 @@ namespace Nexus.Extensibility
             var context = new DataSourceContext(
                 ResourceLocator: DataSourceRegistration.ResourceLocator,
                 SystemConfiguration: SystemConfiguration,
-                SourceConfiguration: DataSourceRegistration.Configuration.ToDictionary(entry => entry.Key, entry => entry.Value),
+                SourceConfiguration: DataSourceRegistration.Configuration?.Clone(),
                 RequestConfiguration: RequestConfiguration,
                 Logger: logger);
 

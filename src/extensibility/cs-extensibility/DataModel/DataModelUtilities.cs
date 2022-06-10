@@ -92,12 +92,25 @@ namespace Nexus.DataModel
             if (!properties2.HasValue)
                 return properties1;
 
-            if (properties1.Value.ValueKind != JsonValueKind.Object || properties2.Value.ValueKind != JsonValueKind.Object)
-                throw new InvalidOperationException($"The JSON elements to merge must be a JSON object. Instead it is {properties1.Value.ValueKind}.");
+            JsonNode mergedProperties;
 
-            var mergedProperties = new JsonObject();
-            MergeObjects(mergedProperties, properties1.Value, properties2.Value);
-                
+            if (properties1.Value.ValueKind == JsonValueKind.Object && properties2.Value.ValueKind == JsonValueKind.Object)
+            {
+                mergedProperties = new JsonObject();
+                MergeObjects((JsonObject)mergedProperties, properties1.Value, properties2.Value);
+            }
+
+            else if (properties1.Value.ValueKind == JsonValueKind.Array && properties2.Value.ValueKind == JsonValueKind.Array)
+            {
+                mergedProperties = new JsonArray();
+                MergeArrays((JsonArray)mergedProperties, properties1.Value, properties2.Value);
+            }
+
+            else
+            {
+                return properties1;
+            }
+
             return JsonSerializer.SerializeToElement(mergedProperties);
         }
 
