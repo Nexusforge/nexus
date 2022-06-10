@@ -33,7 +33,7 @@ namespace Nexus.DataModel
         {
             Id = id;
             Properties = properties;
-            Resources = resources;
+            Representations = representations;
         }
 
         #endregion
