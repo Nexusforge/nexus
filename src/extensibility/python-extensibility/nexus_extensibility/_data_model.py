@@ -1,12 +1,11 @@
 # https://stackoverflow.com/questions/33533148/how-do-i-type-hint-a-method-with-the-type-of-the-enclosing-class
 from __future__ import annotations
-from dataclasses import dataclass
-import enum
 
-import json
+import enum
 import re
+from dataclasses import dataclass
 from datetime import timedelta
-from typing import List, Optional, Pattern, cast
+from typing import Any, List, Optional, Pattern, cast
 
 from ._data_model_extensions import to_unit_string
 
@@ -262,7 +261,7 @@ class ResourceCatalogBuilder:
         self._properties: Optional[object] = None
         self._resources: Optional[List[Resource]] = None
 
-    def WithProperty(self, key: str, value: str) -> ResourceCatalogBuilder:
+    def with_property(self, key: str, value: Any) -> ResourceCatalogBuilder:
         """
         Adds a property.
         
@@ -278,16 +277,16 @@ class ResourceCatalogBuilder:
 
         return self
 
-    def WithDescription(self, description: str) -> ResourceCatalogBuilder:
+    def with_description(self, description: str) -> ResourceCatalogBuilder:
         """
         Adds a description.
         
             Args:
                 description: The description to add.
         """
-        return self.WithProperty(_DESCRIPTION, description)
+        return self.with_property(_DESCRIPTION, description)
 
-    def AddResource(self, resource: Resource) -> ResourceCatalogBuilder:
+    def add_resource(self, resource: Resource) -> ResourceCatalogBuilder:
         """
         Adds a resource.
         
@@ -302,7 +301,7 @@ class ResourceCatalogBuilder:
 
         return self
 
-    def AddResources(self, resources: List[Resource]) -> ResourceCatalogBuilder:
+    def add_resources(self, resources: List[Resource]) -> ResourceCatalogBuilder:
         """
         Adds a list of resources.
         
@@ -318,7 +317,7 @@ class ResourceCatalogBuilder:
 
         return self
 
-    def Build(self) -> ResourceCatalog:
+    def build(self) -> ResourceCatalog:
         """
         Builds the resource catalog.
         """
@@ -340,7 +339,7 @@ class ResourceBuilder:
         self._properties: Optional[object] = None
         self._representations: Optional[List[Representation]] = None
 
-    def WithProperty(self, key: str, value: str) -> ResourceBuilder:
+    def with_property(self, key: str, value: Any) -> ResourceBuilder:
         """
         Adds a property.
         
@@ -356,43 +355,43 @@ class ResourceBuilder:
 
         return self
 
-    def WithUnit(self, unit: str) -> ResourceBuilder:
+    def with_unit(self, unit: str) -> ResourceBuilder:
         """
         Adds a unit.
         
             Args:
                 unit: The unit to add.
         """
-        return self.WithProperty(_UNIT, unit)
+        return self.with_property(_UNIT, unit)
 
-    def WithDescription(self, description: str) -> ResourceBuilder:
+    def with_description(self, description: str) -> ResourceBuilder:
         """
         Adds a description.
         
             Args:
                 description: The description to add.
         """
-        return self.WithProperty(_DESCRIPTION, description)
+        return self.with_property(_DESCRIPTION, description)
 
-    def WithWarning(self, warning: str) -> ResourceBuilder:
+    def with_warning(self, warning: str) -> ResourceBuilder:
         """
         Adds a warning.
         
             Args:
                 warning: The warning to add.
         """
-        return self.WithProperty(_WARNING, warning)
+        return self.with_property(_WARNING, warning)
 
-    def WithGroups(self, groups: List[str]) -> ResourceBuilder:
+    def with_groups(self, groups: List[str]) -> ResourceBuilder:
         """
         Adds groups.
         
             Args:
                 groups: The groups to add.
         """
-        return self.WithProperty(_GROUPS, json.dumps(groups))
+        return self.with_property(_GROUPS, groups)
 
-    def AddRepresentation(self, representation: Representation) -> ResourceBuilder:
+    def add_representation(self, representation: Representation) -> ResourceBuilder:
         """
         Adds a representation.
         
@@ -407,7 +406,7 @@ class ResourceBuilder:
 
         return self
 
-    def AddRepresentations(self, representations: List[Representation]) -> ResourceBuilder:
+    def add_representations(self, representations: List[Representation]) -> ResourceBuilder:
         """
         Adds a list of representations.
         
@@ -423,7 +422,7 @@ class ResourceBuilder:
 
         return self
 
-    def Build(self) -> Resource:
+    def build(self) -> Resource:
         """
         Builds the resource.
         """
