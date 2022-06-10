@@ -15,6 +15,7 @@ namespace Nexus.DataModel
 
         private static Regex _idValidator = new Regex(@"^(?:\/[a-zA-Z][a-zA-Z0-9_]*)+$");
 
+        private string _id = default!;
         private JsonElement? _properties;
         private IReadOnlyList<Resource>? _resources;
 
@@ -31,16 +32,9 @@ namespace Nexus.DataModel
         /// <exception cref="ArgumentException">Thrown when the resource identifier is not valid.</exception>
         public ResourceCatalog(string id, JsonElement? properties = default, IReadOnlyList<Resource>? resources = default)
         {
-            if (!_idValidator.IsMatch(id))
-                throw new ArgumentException($"The resource catalog identifier {id} is not valid.");
-
             Id = id;
-
-            if (resources is not null)
-                ValidateResources(resources);
-
-            _properties = properties;
-            _resources = resources;
+            Properties = properties;
+            Resources = resources;
         }
 
         #endregion
@@ -50,7 +44,21 @@ namespace Nexus.DataModel
         /// <summary>
         /// Gets the identifier.
         /// </summary>
-        public string Id { get; }
+        public string Id
+        {
+            get
+            {
+                return _id;
+            }
+
+            init
+            {
+                if (!_idValidator.IsMatch(value))
+                    throw new ArgumentException($"The resource catalog identifier {value} is not valid.");
+
+                _id = value;
+            }
+        }
 
         /// <summary>
         /// Gets the properties.
@@ -58,7 +66,7 @@ namespace Nexus.DataModel
         public JsonElement? Properties
         {
             get => _properties;
-            internal init => _properties = value;
+            init => _properties = value;
         }
 
         /// <summary>
@@ -71,7 +79,7 @@ namespace Nexus.DataModel
                 return _resources;
             }
 
-            internal init
+            init
             {
                 if (value is not null)
                     ValidateResources(value);
