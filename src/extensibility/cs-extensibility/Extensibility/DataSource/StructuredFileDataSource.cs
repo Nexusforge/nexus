@@ -53,6 +53,8 @@ namespace Nexus.Extensibility
 
         private DataSourceContext Context { get; set; } = default!;
 
+        private ILogger Logger { get; set; } = default!;
+
         private FileSourceProvider FileSourceProvider { get; set; } = default!;
 
         #endregion
@@ -122,8 +124,8 @@ namespace Nexus.Extensibility
                     {
                         cancellationToken.ThrowIfCancellationRequested();
 
-                        using var scope = Context.Logger.BeginScope(fileSource);
-                        Context.Logger.LogDebug("Analyzing file source");
+                        using var scope = Logger.BeginScope(fileSource);
+                        Logger.LogDebug("Analyzing file source");
 
                         // first
                         var firstDateTime = StructuredFileDataSource
@@ -156,12 +158,12 @@ namespace Nexus.Extensibility
                         if (lastDateTime > maxDateTime)
                             maxDateTime = lastDateTime;
 
-                        Context.Logger.LogDebug("Analyzing file source resulted in begin = {FirstDateTime} and end = {LastDateTime}", firstDateTime, lastDateTime);
+                        Logger.LogDebug("Analyzing file source resulted in begin = {FirstDateTime} and end = {LastDateTime}", firstDateTime, lastDateTime);
                     }
                 }
                 else
                 {
-                    Context.Logger.LogDebug("Folder {Root} does not exist, return default time range", Root);
+                    Logger.LogDebug("Folder {Root} does not exist, return default time range", Root);
                 }
 
                 return (minDateTime, maxDateTime);
@@ -197,8 +199,8 @@ namespace Nexus.Extensibility
 
                     foreach (var fileSource in fileSources)
                     {
-                        using var scope = Context.Logger.BeginScope(fileSource);
-                        Context.Logger.LogDebug("Analyzing file source");
+                        using var scope = Logger.BeginScope(fileSource);
+                        Logger.LogDebug("Analyzing file source");
 
                         cancellationToken.ThrowIfCancellationRequested();
 
@@ -217,7 +219,7 @@ namespace Nexus.Extensibility
                             var availabilityTask = GetFileAvailabilityAsync(file.FilePath, cancellationToken);
 
                             _ = availabilityTask.ContinueWith(
-                                x => Context.Logger.LogDebug(availabilityTask.Exception, "Could not process file {FilePath}", file.FilePath),
+                                x => Logger.LogDebug(availabilityTask.Exception, "Could not process file {FilePath}", file.FilePath),
                                 TaskContinuationOptions.OnlyOnFaulted
                             );
 
@@ -236,7 +238,7 @@ namespace Nexus.Extensibility
                 else
                 {
                     availability = 0.0;
-                    Context.Logger.LogDebug("Folder {Root} does not exist, return default availabilit.", Root);
+                    Logger.LogDebug("Folder {Root} does not exist, return default availabilit.", Root);
                 }
 
                 return availability;
@@ -315,7 +317,7 @@ namespace Nexus.Extensibility
                     var remainingFilePeriod = fileSource.FilePeriod - consumedFilePeriod;
 
                     currentPeriod = TimeSpan.FromTicks(Math.Min(remainingFilePeriod.Ticks, remainingPeriod.Ticks));
-                    Context.Logger.LogTrace("Process period {CurrentBegin} to {CurrentEnd}", currentBegin, currentBegin + currentPeriod);
+                    Logger.LogTrace("Process period {CurrentBegin} to {CurrentEnd}", currentBegin, currentBegin + currentPeriod);
 
                     fileBlock = (int)(currentPeriod.Ticks / samplePeriod.Ticks);
 
@@ -325,7 +327,7 @@ namespace Nexus.Extensibility
                     {
                         if (File.Exists(filePath))
                         {
-                            Context.Logger.LogTrace("Process file {FilePath}", filePath);
+                            Logger.LogTrace("Process file {FilePath}", filePath);
 
                             try
                             {
@@ -351,19 +353,19 @@ namespace Nexus.Extensibility
                             }
                             catch (Exception ex)
                             {
-                                Context.Logger.LogDebug(ex, "Could not process file {FilePath}", filePath);
+                                Logger.LogDebug(ex, "Could not process file {FilePath}", filePath);
                             }
                         }
                         else
                         {
-                            Context.Logger.LogDebug("File {FilePath} does not exist", filePath);
+                            Logger.LogDebug("File {FilePath} does not exist", filePath);
                         }
                     }
                 }
                 /* there was an incomplete file, skip the incomplete part */
                 else if (CB_PLUS_FP <= fileBegin && fileBegin < end)
                 {
-                    Context.Logger.LogDebug("Skipping period {FileBegin} to {CurrentBegin}", fileBegin, currentBegin);
+                    Logger.LogDebug("Skipping period {FileBegin} to {CurrentBegin}", fileBegin, currentBegin);
                     currentPeriod = fileBegin - currentBegin;
                     fileBlock = (int)(currentPeriod.Ticks / samplePeriod.Ticks);
                 }
@@ -471,10 +473,11 @@ namespace Nexus.Extensibility
         #region Public API as seen by Nexus and unit tests
 
         async Task 
-            IDataSource.SetContextAsync(DataSourceContext context, CancellationToken cancellationToken)
+            IDataSource.SetContextAsync(DataSourceContext context, ILogger logger, CancellationToken cancellationToken)
         {
             Root = context.ResourceLocator.ToPath();
             Context = context;
+            Logger = logger;
 
             await SetContextAsync(context, cancellationToken);
             FileSourceProvider = await GetFileSourceProviderAsync(cancellationToken);
@@ -517,12 +520,12 @@ namespace Nexus.Extensibility
 
             foreach (var (catalogItem, dataBuffer, statusBuffer) in requests)
             {
-                using var scope = Context.Logger.BeginScope(new Dictionary<string, object>()
+                using var scope = Logger.BeginScope(new Dictionary<string, object>()
                 {
                     ["ResourcePath"] = catalogItem.ToPath()
                 });
 
-                Context.Logger.LogDebug("Read catalog item");
+                Logger.LogDebug("Read catalog item");
 
                 try
                 {
@@ -530,7 +533,7 @@ namespace Nexus.Extensibility
                 }
                 catch (Exception ex)
                 {
-                    Context.Logger.LogError(ex, "Could not read catalog item");
+                    Logger.LogError(ex, "Could not read catalog item");
                 }
 
                 progress.Report(++counter / requests.Length);

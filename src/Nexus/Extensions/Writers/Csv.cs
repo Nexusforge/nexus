@@ -69,7 +69,10 @@ namespace Nexus.Writers
 
         #region "Methods"
 
-        public Task SetContextAsync(DataWriterContext context, CancellationToken cancellationToken)
+        public Task SetContextAsync(
+            DataWriterContext context, 
+            ILogger logger, 
+            CancellationToken cancellationToken)
         {
             Context = context;
             return Task.CompletedTask;

@@ -113,10 +113,9 @@ namespace Nexus.Extensibility
                 ResourceLocator: DataSourceRegistration.ResourceLocator,
                 SystemConfiguration: SystemConfiguration,
                 SourceConfiguration: DataSourceRegistration.Configuration?.Clone(),
-                RequestConfiguration: RequestConfiguration,
-                Logger: logger);
+                RequestConfiguration: RequestConfiguration);
 
-            await DataSource.SetContextAsync(context, cancellationToken);
+            await DataSource.SetContextAsync(context, logger, cancellationToken);
         }
 
         public async Task<CatalogRegistration[]> GetCatalogRegistrationsAsync(

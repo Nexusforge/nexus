@@ -47,6 +47,7 @@ namespace Nexus.Sources
 
         public Task SetContextAsync(
             DataSourceContext context,
+            ILogger logger,
             CancellationToken cancellationToken)
         {
             Context = context;

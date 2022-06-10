@@ -19,10 +19,9 @@ namespace Nexus.Extensibility.Tests
                 ResourceLocator: new Uri(Path.Combine(Directory.GetCurrentDirectory(), "DATABASES/F")),
                 SystemConfiguration: default!,
                 SourceConfiguration: default!,
-                RequestConfiguration: default!,
-                Logger: NullLogger.Instance);
+                RequestConfiguration: default!);
 
-            await dataSource.SetContextAsync(context, CancellationToken.None);
+            await dataSource.SetContextAsync(context, NullLogger.Instance, CancellationToken.None);
 
             var methodInfo = dataSource
                 .GetType()
@@ -61,10 +60,9 @@ namespace Nexus.Extensibility.Tests
                 ResourceLocator: new Uri(Path.Combine(Directory.GetCurrentDirectory(), root)),
                 SystemConfiguration: default!,
                 SourceConfiguration: default!,
-                RequestConfiguration: default!,
-                Logger: NullLogger.Instance);
+                RequestConfiguration: default!);
 
-            await dataSource.SetContextAsync(context, CancellationToken.None);
+            await dataSource.SetContextAsync(context, NullLogger.Instance, CancellationToken.None);
 
             var actual = await dataSource.GetTimeRangeAsync("/A/B/C", CancellationToken.None);
 
@@ -93,10 +91,9 @@ namespace Nexus.Extensibility.Tests
                 ResourceLocator: new Uri(Path.Combine(Directory.GetCurrentDirectory(), root)),
                 SystemConfiguration: default!,
                 SourceConfiguration: default!,
-                RequestConfiguration: default!,
-                Logger: NullLogger.Instance);
+                RequestConfiguration: default!);
 
-            await dataSource.SetContextAsync(context, CancellationToken.None);
+            await dataSource.SetContextAsync(context, NullLogger.Instance, CancellationToken.None);
 
             var actual = await dataSource.GetAvailabilityAsync("/A/B/C", begin, end, CancellationToken.None);
 
@@ -113,13 +110,6 @@ namespace Nexus.Extensibility.Tests
 
             var dataSource = new StructuredFileDataSourceTester() as IDataSource;
 
-            var context = new DataSourceContext(
-                ResourceLocator: new Uri(string.Empty, UriKind.Relative),
-                SystemConfiguration: default!,
-                SourceConfiguration: default!,
-                RequestConfiguration: default!,
-                Logger: NullLogger.Instance);
-
             await Assert.ThrowsAsync<ArgumentException>(() => 
                 dataSource.GetAvailabilityAsync("/A/B/C", begin, end, CancellationToken.None));
         }
@@ -135,10 +125,9 @@ namespace Nexus.Extensibility.Tests
                 ResourceLocator: new Uri(Path.Combine(Directory.GetCurrentDirectory(), "DATABASES/TESTDATA")),
                 SystemConfiguration: default!,
                 SourceConfiguration: default!,
-                RequestConfiguration: default!,
-                Logger: NullLogger.Instance);
+                RequestConfiguration: default!);
 
-            await dataSource.SetContextAsync(context, CancellationToken.None);
+            await dataSource.SetContextAsync(context, NullLogger.Instance, CancellationToken.None);
 
             var catalog = await dataSource.GetCatalogAsync("/A/B/C", CancellationToken.None);
             var resource = catalog.Resources!.First();
@@ -197,10 +186,9 @@ namespace Nexus.Extensibility.Tests
                 ResourceLocator: new Uri(Path.Combine(Directory.GetCurrentDirectory(), "DATABASES/TESTDATA")),
                 SystemConfiguration: default!,
                 SourceConfiguration: default!,
-                RequestConfiguration: default!,
-                Logger: NullLogger.Instance);
+                RequestConfiguration: default!);
 
-            await dataSource.SetContextAsync(context, CancellationToken.None);
+            await dataSource.SetContextAsync(context, NullLogger.Instance, CancellationToken.None);
 
             var catalog = await dataSource.GetCatalogAsync("/A/B/C", CancellationToken.None);
             var resource = catalog.Resources!.First();

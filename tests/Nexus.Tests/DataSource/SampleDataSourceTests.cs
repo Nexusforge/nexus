@@ -20,10 +20,9 @@ namespace DataSource
                 ResourceLocator: new Uri("memory://localhost"),
                 SystemConfiguration: default!,
                 SourceConfiguration: default!,
-                RequestConfiguration: default,
-                Logger: NullLogger.Instance);
+                RequestConfiguration: default);
 
-            await dataSource.SetContextAsync(context, CancellationToken.None);
+            await dataSource.SetContextAsync(context, NullLogger.Instance, CancellationToken.None);
 
             // act
             var actual = await dataSource.GetCatalogAsync(Sample.LocalCatalogId, CancellationToken.None);
@@ -78,10 +77,9 @@ namespace DataSource
                 ResourceLocator: new Uri("memory://localhost"),
                 SystemConfiguration: default!,
                 SourceConfiguration: default!,
-                RequestConfiguration: default,
-                Logger: NullLogger.Instance);
+                RequestConfiguration: default);
 
-            await dataSource.SetContextAsync(context, CancellationToken.None);
+            await dataSource.SetContextAsync(context, NullLogger.Instance, CancellationToken.None);
 
             var actual = await dataSource.GetTimeRangeAsync("/IN_MEMORY/TEST/ACCESSIBLE", CancellationToken.None);
 
@@ -98,10 +96,9 @@ namespace DataSource
                 ResourceLocator: new Uri("memory://localhost"),
                 SystemConfiguration: default!,
                 SourceConfiguration: default!,
-                RequestConfiguration: default,
-                Logger: NullLogger.Instance);
+                RequestConfiguration: default);
 
-            await dataSource.SetContextAsync(context, CancellationToken.None);
+            await dataSource.SetContextAsync(context, NullLogger.Instance, CancellationToken.None);
 
             var begin = new DateTime(2020, 01, 02, 00, 00, 00, DateTimeKind.Utc);
             var end = new DateTime(2020, 01, 03, 00, 00, 00, DateTimeKind.Utc);
@@ -120,10 +117,9 @@ namespace DataSource
                 ResourceLocator: new Uri("memory://localhost"),
                 SystemConfiguration: default!,
                 SourceConfiguration: default!,
-                RequestConfiguration: default,
-                Logger: NullLogger.Instance);
+                RequestConfiguration: default);
 
-            await dataSource.SetContextAsync(context, CancellationToken.None);
+            await dataSource.SetContextAsync(context, NullLogger.Instance, CancellationToken.None);
 
             var catalog = await dataSource.GetCatalogAsync(Sample.LocalCatalogId, CancellationToken.None);
             var resource = catalog.Resources!.First();

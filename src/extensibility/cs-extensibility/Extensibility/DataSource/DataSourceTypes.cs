@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Nexus.DataModel;
+﻿using Nexus.DataModel;
 using System.Text.Json;
 
 namespace Nexus.Extensibility
@@ -11,13 +10,11 @@ namespace Nexus.Extensibility
     /// <param name="SystemConfiguration">The system configuration.</param>
     /// <param name="SourceConfiguration">The source configuration.</param>
     /// <param name="RequestConfiguration">The request configuration.</param>
-    /// <param name="Logger">The logger.</param>
     public record DataSourceContext(
         Uri ResourceLocator, 
         JsonElement? SystemConfiguration,
         JsonElement? SourceConfiguration,
-        JsonElement? RequestConfiguration,
-        ILogger Logger);
+        JsonElement? RequestConfiguration);
 
     /// <summary>
     /// A read request.

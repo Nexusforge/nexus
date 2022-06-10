@@ -1,4 +1,5 @@
-﻿using Nexus.DataModel;
+﻿using Microsoft.Extensions.Logging;
+using Nexus.DataModel;
 using Nexus.Extensibility;
 
 namespace TestExtensionProject
@@ -16,7 +17,7 @@ namespace TestExtensionProject
             throw new NotImplementedException(nameof(OpenAsync));
         }
 
-        public Task SetContextAsync(DataWriterContext context, CancellationToken cancellationToken)
+        public Task SetContextAsync(DataWriterContext context, ILogger logger, CancellationToken cancellationToken)
         {
             throw new NotImplementedException(nameof(SetContextAsync));
         }

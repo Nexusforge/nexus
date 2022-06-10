@@ -1,4 +1,5 @@
-﻿using Nexus.DataModel;
+﻿using Microsoft.Extensions.Logging;
+using Nexus.DataModel;
 using Nexus.Extensibility;
 
 namespace TestExtensionProject
@@ -6,7 +7,7 @@ namespace TestExtensionProject
     [ExtensionDescription("A data source for unit tests.", default!, default!)]
     public class TestDataSource : IDataSource
     {
-        public Task SetContextAsync(DataSourceContext context, CancellationToken cancellationToken)
+        public Task SetContextAsync(DataSourceContext context, ILogger logger, CancellationToken cancellationToken)
         {
             throw new NotImplementedException(nameof(SetContextAsync));
         }

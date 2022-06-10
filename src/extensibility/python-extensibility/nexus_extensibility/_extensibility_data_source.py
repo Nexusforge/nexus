@@ -48,7 +48,6 @@ class DataSourceContext:
         system_configuration: The system configuration.
         source_configuration: The source configuration.
         request_configuration: The request configuration.
-        logger: The logger.
     """
 
     resource_locator: ParseResult
@@ -62,9 +61,6 @@ class DataSourceContext:
 
     request_configuration: Optional[Any]
     """The request configuration."""
-
-    logger: ILogger
-    """The logger."""
 
 @dataclass
 class ReadRequest:
@@ -111,12 +107,13 @@ class IDataSource(IExtension, ABC):
     """
 
     @abstractmethod
-    def set_context_async(self, context: DataSourceContext) -> Awaitable:
+    def set_context_async(self, context: DataSourceContext, logger: ILogger) -> Awaitable:
         """
         Invoked by Nexus right after construction to provide the context.
 
         Args:
             context: The context.
+            logger: The logger.
         """
         pass
 

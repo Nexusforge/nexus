@@ -37,10 +37,9 @@ namespace DataWriter
                 {
                     ["RowIndexFormat"] = rowIndexFormat,
                     ["SignificantFigures"] = "7"
-                }.Deserialize<JsonElement>(),
-                Logger: NullLogger.Instance);
+                }.Deserialize<JsonElement>());
 
-            await dataWriter.SetContextAsync(context, CancellationToken.None);
+            await dataWriter.SetContextAsync(context, NullLogger.Instance, CancellationToken.None);
 
             var begin = new DateTime(2020, 01, 01, 0, 0, 0, DateTimeKind.Utc);
             var samplePeriod = TimeSpan.FromSeconds(1);

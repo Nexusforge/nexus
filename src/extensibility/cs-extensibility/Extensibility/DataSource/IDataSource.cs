@@ -1,4 +1,5 @@
-﻿using Nexus.DataModel;
+﻿using Microsoft.Extensions.Logging;
+using Nexus.DataModel;
 
 namespace Nexus.Extensibility
 {
@@ -11,10 +12,12 @@ namespace Nexus.Extensibility
         /// Invoked by Nexus right after construction to provide the context.
         /// </summary>
         /// <param name="context">The <paramref name="context"/>.</param>
+        /// <param name="logger">The logger.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         /// <returns>The task.</returns>
         Task SetContextAsync(
             DataSourceContext context,
+            ILogger logger,
             CancellationToken cancellationToken);
 
         /// <summary>

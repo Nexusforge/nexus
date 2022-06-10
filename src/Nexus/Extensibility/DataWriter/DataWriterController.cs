@@ -67,10 +67,9 @@ namespace Nexus.Extensibility
             var context = new DataWriterContext(
                 ResourceLocator: ResourceLocator,
                 SystemConfiguration: SystemConfiguration,
-                RequestConfiguration: RequestConfiguration,
-                Logger: logger);
+                RequestConfiguration: RequestConfiguration);
 
-            await DataWriter.SetContextAsync(context, cancellationToken);
+            await DataWriter.SetContextAsync(context, logger, cancellationToken);
         }
 
         public async Task WriteAsync(
