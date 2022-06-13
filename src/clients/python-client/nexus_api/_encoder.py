@@ -19,14 +19,14 @@ class JsonEncoderOptions:
     property_name_decoder: Callable[[str], str] = lambda value: value
 
     encoders: dict[Type, Callable[[Any], Any]] = field(default_factory=lambda: {
-        datetime:   lambda value: value.isoformat() + "Z",
+        datetime:   lambda value: value.isoformat().replace("+00:00", "Z"),
         timedelta:  lambda value: _encode_timedelta(value),
         Enum:       lambda value: value.name,
         UUID:       lambda value: str(value)
     })
 
     decoders: dict[Type, Callable[[Type, Any], Any]] = field(default_factory=lambda: {
-        datetime:   lambda       _, value: datetime.strptime(value[:-1], "%Y-%m-%dT%H:%M:%S.%f"),
+        datetime:   lambda       _, value: datetime.fromisoformat(value.replace("Z", "+00:00")),
         timedelta:  lambda       _, value: _decode_timedelta(value),
         Enum:       lambda typeCls, value: cast(Type[Enum], typeCls)[value],
         UUID:       lambda       _, value: UUID(value)

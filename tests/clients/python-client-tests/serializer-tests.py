@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import IntEnum
 import json
 from typing import Any, Optional, Type
@@ -39,7 +39,7 @@ def can_encode_dataclass_test():
         int_value=1, 
         float_value=1.1, 
         str_value="1", 
-        datetime_value=datetime(2020, 1, 2, 3, 4, 5, microsecond=678901),
+        datetime_value=datetime(2020, 1, 2, 3, 4, 5, microsecond=678901, tzinfo = timezone.utc),
         timedelta_value=timedelta(days=1,hours=2,minutes=3,seconds=4,milliseconds=5,microseconds=6),
         enum_value=TestEnum.A,
         nested_value=TestClassNested(uuid_value=UUID("9842d4b6-0b89-4b56-ad0f-acb5b8be8112")))
@@ -110,7 +110,7 @@ def can_decode_dataclass_test():
         int_value=1, 
         float_value=1.1, 
         str_value="1", 
-        datetime_value=datetime(2020, 1, 2, 3, 4, 5, microsecond=678901),
+        datetime_value=datetime(2020, 1, 2, 3, 4, 5, microsecond=678901, tzinfo=timezone.utc),
         timedelta_value=timedelta(days=1,hours=2,minutes=3,seconds=4,milliseconds=5,microseconds=6),
         enum_value=TestEnum.A,
         nested_value=TestClassNested(uuid_value=UUID("9842d4b6-0b89-4b56-ad0f-acb5b8be8112")))
