@@ -38,7 +38,7 @@ class ILogger(ABC):
     def log(self, log_level: LogLevel, message: str):
         pass
 
-@dataclass
+@dataclass(frozen=True)
 class DataSourceContext:
     """
     The starter package for a data source.
@@ -62,7 +62,7 @@ class DataSourceContext:
     request_configuration: Optional[Any]
     """The request configuration."""
 
-@dataclass
+@dataclass(frozen=True)
 class ReadRequest:
     """
     A read request.

@@ -242,13 +242,13 @@ $@"class {augmentedClassName}:
                 ? "None"
                 : operation.RequestBody?.Content.Keys.First() switch
                 {
-                    "application/json" => $"json.dumps({bodyParameter.Split(":")[0]}, cls=_MyEncoder)",
+                    "application/json" => $"json.dumps(JsonEncoder.encode({bodyParameter.Split(":")[0]}, _json_encoder_options))",
                     "application/octet-stream" => bodyParameter.Split(":")[0],
                     _ => throw new Exception($"The media type {operation.RequestBody!.Content.Keys.First()} is not supported.")
                 };
 
             sourceTextBuilder.AppendLine();
-            sourceTextBuilder.AppendLine($"        return self._client._invoke_async({returnType}, \"{operationType.ToString().ToUpper()}\", url, {acceptHeaderValue}, {contentTypeValue}, {content})");
+            sourceTextBuilder.AppendLine($"        return self._client._invoke({returnType}, \"{operationType.ToString().ToUpper()}\", url, {acceptHeaderValue}, {contentTypeValue}, {content})");
         }
 
         private void AppendModelSourceText(
@@ -283,7 +283,7 @@ $@"    {Shared.ToSnakeCase(current.Value).ToUpper()} = ""{Shared.ToSnakeCase(cur
             {
                 sourceTextBuilder
                     .AppendLine(
-$@"@dataclass
+$@"@dataclass(frozen=True)
 class {modelName}:");
 
                 sourceTextBuilder.AppendLine(

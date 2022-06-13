@@ -2,23 +2,23 @@
 from __future__ import annotations
 
 import base64
-import dataclasses
 import json
 import os
-import re
 import typing
 from array import array
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-from json import JSONEncoder
 from pathlib import Path
-from typing import (Any, AsyncIterable, Awaitable, Iterable, Optional,
-                    Type, TypeVar, Union)
+from typing import (Any, AsyncIterable, Awaitable, Iterable, Optional, Type,
+                    TypeVar, Union)
 from urllib.parse import quote
 from uuid import UUID
 
 from httpx import AsyncClient, Request, Response, codes
+
+from ._encoder import (JsonEncoder, JsonEncoderOptions, to_camel_case,
+                      to_snake_case)
 
 # 0 = Namespace
 # 1 = ClientName
@@ -33,158 +33,6 @@ from httpx import AsyncClient, Request, Response, codes
 # 10 = SubClientInterfaceProperties
 
 T = TypeVar("T")
-snake_case_pattern = re.compile('((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))')
-timespan_pattern = re.compile('^(?:([0-9]+)\\.)?([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\\.([0-9]+))?$')
-
-class _MyEncoder(JSONEncoder):
-
-    def default(self, o: Any):
-        return self._convert(o)
-
-    def _convert(self, value: Any) -> Any:
-
-        result: Any
-
-        # date/time
-        if isinstance(value, datetime):
-            result = value.isoformat()
-
-        # timedelta
-        elif isinstance(value, timedelta):
-            hours, remainder = divmod(value.seconds, 3600)
-            minutes, seconds = divmod(remainder, 60)
-            result = f"{int(value.days)}.{int(hours):02}:{int(minutes):02}:{int(seconds):02}.{value.microseconds}"
-
-        # enum
-        elif isinstance(value, Enum):
-            result = value.value
-
-        # dataclass
-        elif dataclasses.is_dataclass(value):
-            result = {}
-
-            for (key, local_value) in value.__dict__.items():
-                result[self._to_camel_case(key)] = self._convert(local_value)
-
-        # else
-        else:
-            result = value
-
-        return result
-
-    def _to_camel_case(self, value: str) -> str:
-        components = value.split("_")
-        return components[0] + ''.join(x.title() for x in components[1:])
-
-def _decode(cls: Type[T], data: Any) -> T:
-
-    if data is None:
-        return typing.cast(T, None)
-
-    origin = typing.cast(Type, typing.get_origin(cls))
-    args = typing.get_args(cls)
-
-    if origin is not None:
-
-        # Optional
-        if origin is Union and type(None) in args:
-
-            baseType = args[0]
-            instance3 = _decode(baseType, data)
-
-            return typing.cast(T, instance3)
-
-        # list
-        elif issubclass(origin, list):
-
-            listType = args[0]
-            instance1: list = list()
-
-            for value in data:
-                instance1.append(_decode(listType, value))
-
-            return typing.cast(T, instance1)
-        
-        # dict
-        elif issubclass(origin, dict):
-
-            keyType = args[0]
-            valueType = args[1]
-
-            instance2: dict = dict()
-
-            for key, value in data.items():
-                key = snake_case_pattern.sub(r'_\1', key).lower()
-                instance2[_decode(keyType, key)] = _decode(valueType, value)
-
-            return typing.cast(T, instance2)
-
-        # default
-        else:
-            raise Exception(f"Type {str(origin)} cannot be deserialized.")
-
-    # datetime
-    elif issubclass(cls, datetime):
-        return typing.cast(T, datetime.strptime(data[:-1], "%Y-%m-%dT%H:%M:%S.%f"))
-
-    # timedelta
-    elif issubclass(cls, timedelta):
-        # ^(?:([0-9]+)\.)?([0-9]Nexus-Configuration):([0-9]Nexus-Configuration):([0-9]Nexus-Configuration)(?:\.([0-9]+))?$
-        # 12:08:07
-        # 12:08:07.1250000
-        # 3000.00:08:07
-        # 3000.00:08:07.1250000
-        match = timespan_pattern.match(data)
-
-        if match:
-            days = int(match.group(1)) if match.group(1) else 0
-            hours = int(match.group(2)) if match.group(2) else 0
-            minutes = int(match.group(3)) if match.group(3) else 0
-            seconds = int(match.group(4)) if match.group(4) else 0
-            milliseconds = int(match.group(5)) if match.group(5) else 0
-
-            return typing.cast(T, timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds, milliseconds=milliseconds))
-
-        else:
-            raise Exception(f"Unable to deserialize {data} into value of type timedelta.")
-
-    # UUID
-    elif issubclass(cls, UUID):
-        return typing.cast(T, UUID(data))
-       
-    # dataclass
-    elif dataclasses.is_dataclass(cls):
-
-        p = []
-
-        for name, value in data.items():
-
-            type_hints = typing.get_type_hints(cls)
-            name = snake_case_pattern.sub(r'_\1', name).lower()
-            parameter_type = typing.cast(Type, type_hints.get(name))
-            value = _decode(parameter_type, value)
-
-            p.append(value)
-
-        parameters_count = len(p)
-
-        if (parameters_count == 0): return cls()
-        if (parameters_count == 1): return cls(p[0])
-        if (parameters_count == 2): return cls(p[0], p[1])
-        if (parameters_count == 3): return cls(p[0], p[1], p[2])
-        if (parameters_count == 4): return cls(p[0], p[1], p[2], p[3])
-        if (parameters_count == 5): return cls(p[0], p[1], p[2], p[3], p[4])
-        if (parameters_count == 6): return cls(p[0], p[1], p[2], p[3], p[4], p[5])
-        if (parameters_count == 7): return cls(p[0], p[1], p[2], p[3], p[4], p[5], p[6])
-        if (parameters_count == 8): return cls(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7])
-        if (parameters_count == 9): return cls(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8])
-        if (parameters_count == 10): return cls(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9])
-
-        raise Exception("Dataclasses with more than 10 parameters cannot be deserialized.")
-
-    # default
-    else:
-        return data
 
 def _to_string(value: Any) -> str:
 
@@ -193,6 +41,11 @@ def _to_string(value: Any) -> str:
 
     else:
         return str(value)
+
+_json_encoder_options: JsonEncoderOptions = JsonEncoderOptions(
+    property_name_encoder=to_camel_case,
+    property_name_decoder=to_snake_case
+)
 
 class StreamResponse:
     """A stream response."""
@@ -315,16 +168,17 @@ class {{1}}:
         if Path(self._token_file_path).is_file():
             with open(self._token_file_path) as json_file:
                 jsonObject = json.load(json_file)
-                actual_refresh_token = _decode(str, jsonObject)
+                actual_refresh_token = JsonEncoder.decode(str, jsonObject, _json_encoder_options)
 
         else:
             Path(self._token_folder_path).mkdir(parents=True, exist_ok=True)
 
             with open(self._token_file_path, "w") as json_file:
-                json.dump(refresh_token, json_file, indent=4, cls=_MyEncoder)
+                encoded = JsonEncoder.encode(refresh_token, _json_encoder_options)
+                json.dump(encoded, json_file, indent=4)
                 actual_refresh_token = refresh_token
                 
-        await self._refresh_token_async(actual_refresh_token)
+        await self._refresh_token(actual_refresh_token)
 
     def attach_configuration(self, configuration: Any) -> Any:
         """Attaches configuration data to subsequent Nexus API requests."""
@@ -344,7 +198,7 @@ class {{1}}:
         if self._nexus_configuration_header_key in self._http_client.headers:
             del self._http_client.headers[self._nexus_configuration_header_key]
 
-    async def _invoke_async(self, typeOfT: Type[T], method: str, relative_url: str, accept_header_value: Optional[str], content_type_value: Optional[str], content: Union[None, str, bytes, Iterable[bytes], AsyncIterable[bytes]]) -> T:
+    async def _invoke(self, typeOfT: Type[T], method: str, relative_url: str, accept_header_value: Optional[str], content_type_value: Optional[str], content: Union[None, str, bytes, Iterable[bytes], AsyncIterable[bytes]]) -> T:
 
         # prepare request
         request = self._build_request_message(method, relative_url, content, content_type_value, accept_header_value)
@@ -366,7 +220,7 @@ class {{1}}:
                     if "The token expired at" in www_authenticate_header:
 
                         try:
-                            await self._refresh_token_async(self._token_pair.refresh_token)
+                            await self._refresh_token(self._token_pair.refresh_token)
 
                             new_request = self._build_request_message(method, relative_url, content, content_type_value, accept_header_value)
                             new_response = await self._http_client.send(new_request)
@@ -404,7 +258,7 @@ class {{1}}:
             else:
 
                 jsonObject = json.loads(response.text)
-                return_value = _decode(typeOfT, jsonObject)
+                return_value = JsonEncoder.decode(typeOfT, jsonObject, _json_encoder_options)
 
                 if return_value is None:
                     raise NexusException(f"N01", "Response data could not be deserialized.")
@@ -427,7 +281,7 @@ class {{1}}:
 
         return request_message
 
-    async def _refresh_token_async(self, refresh_token):
+    async def _refresh_token(self, refresh_token):
         # see https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/dev/src/Microsoft.IdentityModel.Tokens/Validators.cs#L390
 
         refresh_request = RefreshTokenRequest(refresh_token)
@@ -437,7 +291,8 @@ class {{1}}:
             Path(self._token_folder_path).mkdir(parents=True, exist_ok=True)
             
             with open(self._token_file_path, "w") as json_file:
-                json.dump(token_pair.refresh_token, json_file, indent=4, cls=_MyEncoder)
+                encoded = JsonEncoder.encode(token_pair.refresh_token, _json_encoder_options)
+                json.dump(encoded, json_file, indent=4)
 
         authorizationHeaderValue = f"Bearer {token_pair.access_token}"
 

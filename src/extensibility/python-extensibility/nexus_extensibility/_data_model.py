@@ -52,7 +52,7 @@ class NexusDataType(enum.IntEnum):
     FLOAT64 = 0x340
     """64-bit floating-point number."""
 
-@dataclass
+@dataclass(frozen=True)
 class CatalogItem:
     """
     A catalog item consists of a catalog, a resource and a representation.
@@ -75,7 +75,7 @@ class CatalogItem:
     def to_path(self) -> str:
         return f"{self.catalog.id}/{self.resource.id}/{self.representation.id}"
 
-@dataclass
+@dataclass(frozen=True)
 class CatalogRegistration:
     """
     A catalog registration.
@@ -97,99 +97,62 @@ class CatalogRegistration:
 
 ################# DATA MODEL ###############
 
+_nexus_data_type_values: set[int] = set(item.value for item in NexusDataType) 
+
+@dataclass(frozen=True)
 class Representation:
     """
     A representation is part of a resource.
     """
 
-    _nexus_data_type_values: set[int] = set(item.value for item in NexusDataType) 
-
-    def __init__(self, data_type: NexusDataType, sample_period: timedelta):
-        """
-        Initializes a new instance of a Representation
-        
-            Args:
-                data_type: The data type.
-                sample_period: The sample period.
-        """
-
+    def __post_init__(self):
         # data type
-        if not data_type in Representation._nexus_data_type_values:
-            raise Exception(f"The identifier {data_type} is not valid.")
-
-        self._data_type: NexusDataType = data_type
+        if not self.data_type in _nexus_data_type_values:
+            raise Exception(f"The identifier {self.data_type} is not valid.")
 
         # sample period
-        if sample_period == timedelta(0):
-            raise Exception(f"The sample period {sample_period} is not valid.")
+        if self.sample_period == timedelta(0):
+            raise Exception(f"The sample period {self.sample_period} is not valid.")
 
-        self._sample_period: timedelta = sample_period
+    data_type: NexusDataType
+    """The data type."""
 
-        # id
-        self._id: str = to_unit_string(sample_period)
-
-    @property
-    def data_type(self) -> NexusDataType:
-        """The data type."""
-        return self._data_type
-
-    @property
-    def sample_period(self) -> timedelta:
-        """The sample period."""
-        return self._sample_period
+    sample_period: timedelta
+    """The sample period."""
 
     @property
     def id(self) -> str:
         """The identifer of the representation. It is constructed using the sample period."""
-        return self._id
+        return to_unit_string(self.sample_period)
 
     @property
     def element_size(self) -> int:
         """The number of bits per element."""
         return (int(self.data_type) and 0xFF) >> 3
 
+_resource_id_validator : Pattern[str] = re.compile(r"[a-zA-Z][a-zA-Z0-9_]*$")
+
+@dataclass(frozen=True)
 class Resource:
     """
     A resource is part of a resource catalog and holds a list of representations.
     """
 
-    _id_validator : Pattern[str] = re.compile(r"[a-zA-Z][a-zA-Z0-9_]*$")
+    def __post_init__(self):
+        if not _resource_id_validator.match(self.id):
+            raise Exception(f"The resource catalog identifier {self.id} is not valid.")
 
-    def __init__(self, id: str, properties: Optional[object] = None, representations: Optional[List[Representation]] = None):
-        """
-        Initializes a new instance of the Resource
-        
-            Args:
-                id: The resource identifier.
-                properties: The properties.
-                representations: The list of representations.
-        """
+        if self.representations is not None:
+            self._validate_representations(self.representations)
 
-        if not self._id_validator.match(id):
-            raise Exception(f"The resource catalog identifier {id} is not valid.")
+    id: str
+    """Gets the identifier."""
 
-        self._id: str = id
-        self._properties: Optional[object] = properties
+    properties: Optional[object] = None
+    """Gets the properties."""
 
-        if representations is not None:
-            self._validate_representations(representations)
-
-        self._representations: Optional[List[Representation]] = representations
-
-    @property
-    def id(self) -> str:
-        """Gets the identifier."""
-        return self._id
-
-    @property
-    def properties(self) -> Optional[object]:
-        """Gets the properties."""
-        return self._properties
-
-    @property
-    def representations(self) -> Optional[List[Representation]]:
-        """Gets list of representations."""
-        return self._representations
+    representations: Optional[List[Representation]] = None
+    """Gets list of representations."""
 
     def _validate_representations(self, representations: List[Representation]):
         unique_ids = set([representation.id for representation in representations])
@@ -197,47 +160,29 @@ class Resource:
         if len(unique_ids) != len(representations):
             raise Exception("There are multiple representations with the same identifier.")
 
+_resource_catalog_id_validator : Pattern[str] = re.compile(r"(?:\/[a-zA-Z][a-zA-Z0-9_]*)+$")
+
+@dataclass(frozen=True)
 class ResourceCatalog:
     """
     A catalog is a top level element and holds a list of resources.
     """
 
-    _id_validator : Pattern[str] = re.compile(r"(?:\/[a-zA-Z][a-zA-Z0-9_]*)+$")
+    def __post_init__(self):
+        if not _resource_catalog_id_validator.match(self.id):
+            raise Exception(f"The resource catalog identifier {self.id} is not valid.")
 
-    def __init__(self, id: str, properties: Optional[object] = None, resources: Optional[List[Resource]] = None):
-        """
-        Initializes a new instance of the ResourceCatalog
-        
-            Args:
-                id: The catalog identifier.
-                properties: The properties.
-                resource: The list of resources.
-        """
-        if not self._id_validator.match(id):
-            raise Exception(f"The resource catalog identifier {id} is not valid.")
+        if self.resources is not None:
+            self._validate_resources(self.resources)
 
-        self._id: str = id
-        self._properties: Optional[object] = properties
+    id: str
+    """Gets the identifier."""
 
-        if resources is not None:
-            self._validate_resources(resources)
+    properties: Optional[object] = None
+    """Gets the properties."""
 
-        self._resources: Optional[List[Resource]] = resources
-
-    @property
-    def id(self) -> str:
-        """Gets the identifier."""
-        return self._id
-
-    @property
-    def properties(self) -> Optional[object]:
-        """Gets the properties."""
-        return self._properties
-
-    @property
-    def resources(self) -> Optional[List[Resource]]:
-        """Gets the list of resources."""
-        return self._resources
+    resources: Optional[List[Resource]]  = None
+    """Gets the list of resources."""
 
     def _validate_resources(self, resources: List[Resource]):
         unique_ids = set([resource.id for resource in resources])
