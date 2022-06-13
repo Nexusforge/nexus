@@ -44,8 +44,12 @@ class JsonEncoder:
     @staticmethod
     def _try_encode(value: Any, options: JsonEncoderOptions) -> Any:
 
+        # None
+        if value is None:
+            return typing.cast(T, None)
+
         # list/tuple
-        if isinstance(value, list) or isinstance(value, tuple):
+        elif isinstance(value, list) or isinstance(value, tuple):
             value = [JsonEncoder._try_encode(current, options) for current in value]
         
         # dict
@@ -129,8 +133,10 @@ class JsonEncoder:
                 type_hints = typing.get_type_hints(typeCls)
                 key = options.property_name_decoder(key)
                 parameter_type = typing.cast(Type, type_hints.get(key))
-                value = JsonEncoder._decode(parameter_type, value, options)
-                parameters[key] = value
+                
+                if (parameter_type is not None):
+                    value = JsonEncoder._decode(parameter_type, value, options)
+                    parameters[key] = value
 
             return typeCls(**parameters)
 
