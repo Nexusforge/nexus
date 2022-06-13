@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from json import JSONEncoder
 from pathlib import Path
-from typing import (Any, AsyncIterable, Awaitable, Iterable, Optional, Tuple,
+from typing import (Any, AsyncIterable, Awaitable, Iterable, Optional,
                     Type, TypeVar, Union)
 from urllib.parse import quote
 from uuid import UUID
@@ -161,8 +161,8 @@ def _decode(cls: Type[T], data: Any) -> T:
 
             type_hints = typing.get_type_hints(cls)
             name = snake_case_pattern.sub(r'_\1', name).lower()
-            parameterType = typing.cast(Type, type_hints.get(name))
-            value = _decode(parameterType, value)
+            parameter_type = typing.cast(Type, type_hints.get(name))
+            value = _decode(parameter_type, value)
 
             p.append(value)
 
