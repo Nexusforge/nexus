@@ -143,6 +143,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: artifacts
+          path: artifacts
 
       - name: Docker Load Image
         run: docker image load --input artifacts/images/nexus_image.tar nexusforge/nexus:${{ needs.build.outputs.version }}
