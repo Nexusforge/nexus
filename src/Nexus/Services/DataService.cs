@@ -20,7 +20,7 @@ namespace Nexus.Services
            DateTime end,
            CancellationToken cancellationToken);
 
-        Task<double[]> ReadAsDoubleArrayAsync(
+        Task<ReadOnlyMemory<double>> ReadAsDoubleArrayAsync(
            string resourcePath,
            DateTime begin,
            DateTime end,
@@ -123,7 +123,7 @@ namespace Nexus.Services
             return stream;
         }
 
-        public async Task<double[]> ReadAsDoubleArrayAsync(
+        public async Task<ReadOnlyMemory<double>> ReadAsDoubleArrayAsync(
            string resourcePath,
            DateTime begin,
            DateTime end,
