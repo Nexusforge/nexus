@@ -1,4 +1,5 @@
 using Nexus.Utilities;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -44,11 +45,11 @@ namespace Nexus.Core
             return new CastMemoryManager<TFrom, To>(buffer).Memory;
         }
 
-        public static Memory<To> Cast<TFrom, To>(this ReadOnlyMemory<TFrom> buffer)
+        public static ReadOnlyMemory<To> Cast<TFrom, To>(this ReadOnlyMemory<TFrom> buffer)
             where TFrom : unmanaged
             where To : unmanaged
         {
-            return new ReadonlyCastMemoryManager<TFrom, To>(buffer).Memory;
+            return new CastMemoryManager<TFrom, To>(MemoryMarshal.AsMemory(buffer)).Memory;
         }
 
         public static DateTime RoundDown(this DateTime dateTime, TimeSpan timeSpan)

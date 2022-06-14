@@ -5,6 +5,7 @@ using Nexus.Core;
 using Nexus.DataModel;
 using Nexus.Utilities;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace Nexus.Services
 {
@@ -52,7 +53,7 @@ namespace Nexus.Services
             Memory<double> targetBuffer,
             int blockSize) where T : unmanaged
         {
-            var Tdata = new ReadonlyCastMemoryManager<byte, T>(data).Memory;
+            var Tdata = new CastMemoryManager<byte, T>(data).Memory;
 
             switch (kind)
             {

@@ -227,11 +227,9 @@ namespace Other
 
             // Act
             var actual = new CastMemoryManager<byte, int>(values).Memory;
-            var actualReadonly = new ReadonlyCastMemoryManager<byte, int>(new ReadOnlyMemory<byte>(values)).Memory;
 
             // Assert
             Assert.True(expected.SequenceEqual(actual.ToArray()));
-            Assert.True(expected.SequenceEqual(actualReadonly.ToArray()));
         }
 
 
