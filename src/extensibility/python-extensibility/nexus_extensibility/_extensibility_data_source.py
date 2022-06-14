@@ -87,7 +87,7 @@ class ReadDataHandler(Protocol):
     A handler to read data.
     """
 
-    def __call__(self, resource_path: str, begin: datetime, end: datetime) -> Awaitable[array]:
+    def __call__(self, resource_path: str, begin: datetime, end: datetime) -> Awaitable[memoryview]:
         """
         Reads the requested data.
 

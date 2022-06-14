@@ -35,7 +35,7 @@ namespace Nexus.Extensibility
     /// <param name="end">End date/time.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns></returns>
-    public delegate Task<double[]> ReadDataHandler(
+    public delegate Task<ReadOnlyMemory<double>> ReadDataHandler(
         string resourcePath,
         DateTime begin,
         DateTime end,
