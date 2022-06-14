@@ -107,7 +107,7 @@ class IDataSource(IExtension, ABC):
     """
 
     @abstractmethod
-    def set_context_async(self, context: DataSourceContext, logger: ILogger) -> Awaitable:
+    def set_context(self, context: DataSourceContext, logger: ILogger) -> Awaitable:
         """
         Invoked by Nexus right after construction to provide the context.
 
@@ -118,7 +118,7 @@ class IDataSource(IExtension, ABC):
         pass
 
     @abstractmethod
-    def get_catalog_registrations_async(self, path: str) -> Awaitable[List[CatalogRegistration]]:
+    def get_catalog_registrations(self, path: str) -> Awaitable[List[CatalogRegistration]]:
         """
         Gets the catalog registrations that are located under path.
 
@@ -128,7 +128,7 @@ class IDataSource(IExtension, ABC):
         pass
 
     @abstractmethod
-    def get_catalog_async(self, catalog_id: str) -> Awaitable[ResourceCatalog]:
+    def get_catalog(self, catalog_id: str) -> Awaitable[ResourceCatalog]:
         """
         Gets the requested ResourceCatalog.
 
@@ -138,7 +138,7 @@ class IDataSource(IExtension, ABC):
         pass
 
     @abstractmethod
-    def get_time_range_async(self, catalog_id: str) -> Awaitable[Tuple[datetime, datetime]]:
+    def get_time_range(self, catalog_id: str) -> Awaitable[Tuple[datetime, datetime]]:
         """
         Gets the time range of the ResourceCatalog.
 
@@ -148,7 +148,7 @@ class IDataSource(IExtension, ABC):
         pass
 
     @abstractmethod
-    def get_availability_async(self, catalogId: str, begin: datetime, end: datetime) -> Awaitable[float]:
+    def get_availability(self, catalogId: str, begin: datetime, end: datetime) -> Awaitable[float]:
         """
         Gets the availability of the ResourceCatalog.
 
@@ -160,7 +160,7 @@ class IDataSource(IExtension, ABC):
         pass
 
     @abstractmethod
-    def read_async(
+    def read(
         self,
         begin: datetime, 
         end: datetime,
