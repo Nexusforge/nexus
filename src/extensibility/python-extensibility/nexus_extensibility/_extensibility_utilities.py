@@ -12,7 +12,7 @@ class ExtensibilityUtilities(ABC):
         element_count = ExtensibilityUtilities._calculate_element_count(begin, end, representation.sample_period)
 
         data = bytearray(element_count * representation.element_size)
-        status = bytearray(element_count * representation.element_size)
+        status = bytearray(element_count)
 
         return (memoryview(data), memoryview(status))
 

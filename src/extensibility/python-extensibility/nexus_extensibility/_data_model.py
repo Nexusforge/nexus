@@ -128,7 +128,7 @@ class Representation:
     @property
     def element_size(self) -> int:
         """The number of bits per element."""
-        return (int(self.data_type) and 0xFF) >> 3
+        return (int(self.data_type) & 0xFF) >> 3
 
 _resource_id_validator : Pattern[str] = re.compile(r"[a-zA-Z][a-zA-Z0-9_]*$")
 
