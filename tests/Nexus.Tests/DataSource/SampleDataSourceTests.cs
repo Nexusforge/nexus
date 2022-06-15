@@ -29,8 +29,8 @@ namespace DataSource
 
             // assert
             var actualIds = actual.Resources!.Select(resource => resource.Id).ToList();
-            var actualUnits = actual.Resources!.Select(resource => GetPropertyOrDefault(resource.Properties, "Unit")).ToList();
-            var actualGroups = actual.Resources!.SelectMany(resource => GetArrayOrDefault(resource.Properties, "Groups"));
+            var actualUnits = actual.Resources!.Select(resource => GetPropertyOrDefault(resource.Properties, "unit")).ToList();
+            var actualGroups = actual.Resources!.SelectMany(resource => GetArrayOrDefault(resource.Properties, "groups"));
             var actualDataTypes = actual.Resources!.SelectMany(resource => resource.Representations!.Select(representation => representation.DataType)).ToList();
 
             var expectedIds = new List<string>() { "T1", "V1", "unix_time1", "unix_time2" };

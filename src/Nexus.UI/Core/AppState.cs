@@ -53,7 +53,7 @@ public class AppState : IAppState
     private List<(DateTime, Exception)> _errors = new List<(DateTime, Exception)>();
     private bool _beginAtZero;
     private string? _searchString;
-    private const string GROUP_KEY = "Groups";
+    private const string GROUP_KEY = "groups";
 
     #endregion
 

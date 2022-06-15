@@ -10,11 +10,11 @@ namespace Nexus.DataModel
     {
         #region Fluent API
 
-        internal const string Description = "Description";
-        internal const string Warning = "Warning";
-        internal const string Unit = "Unit";
-        internal const string Groups = "Groups";
-        internal const string BasePath = "BasePath";
+        internal const string Description = "description";
+        internal const string Warning = "warning";
+        internal const string Unit = "unit";
+        internal const string Groups = "groups";
+        internal const string BasePath = "base-path";
 
         /// <summary>
         /// Adds a description.

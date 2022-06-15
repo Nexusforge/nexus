@@ -5,9 +5,9 @@ namespace Nexus.UI.ViewModels;
 
 public class CatalogItemViewModel
 {
-    public const string DESCRIPTION_KEY = "Description";
-    private const string WARNING_KEY = "Warning";
-    public const string UNIT_KEY = "Unit";
+    public const string DESCRIPTION_KEY = "description";
+    private const string WARNING_KEY = "warning";
+    public const string UNIT_KEY = "unit";
 
     public CatalogItemViewModel(ResourceCatalog resourceCatalog, Resource resource, Representation representation)
     {

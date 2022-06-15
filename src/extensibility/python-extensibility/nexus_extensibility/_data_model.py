@@ -9,10 +9,10 @@ from typing import Any, List, Optional, Pattern, cast
 
 from ._data_model_extensions import to_unit_string
 
-_DESCRIPTION = "Description"
-_WARNING = "Warning"
-_UNIT = "Unit"
-_GROUPS = "Groups"
+_DESCRIPTION = "description"
+_WARNING = "warning"
+_UNIT = "unit"
+_GROUPS = "groups"
 
 # TODO: Make object and list readonly, e.g. by using tuple instead of list 
 # or adapt this solution: https://stackoverflow.com/questions/19022868/how-to-make-dictionary-read-only-in-python

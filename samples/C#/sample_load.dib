@@ -73,8 +73,8 @@ var timestamps_mean = Enumerable
 // metadata
 var metadata = await client.Catalogs.GetAsync("/SAMPLE/LOCAL");
 var t1Metadata = metadata.Resources.First(resource => resource.Id == "T1");
-var t1Description = t1Metadata.Properties["Description"];
-var t1Unit = t1Metadata.Properties["Unit"];
+var t1Description = t1Metadata.Properties["description"];
+var t1Unit = t1Metadata.Properties["unit"];
 
 #!fsharp
 
