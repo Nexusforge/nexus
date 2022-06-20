@@ -47,6 +47,7 @@ jobs:
           python -m pip install frictionless build wheel httpx pytest pytest-asyncio
           dotnet tool install -g Microsoft.Web.LibraryManager.Cli
           dotnet --info
+          dotnet workload search maui
           dotnet workload install --temp-dir tmp wasm-tools
 
       - name: Docker Setup
