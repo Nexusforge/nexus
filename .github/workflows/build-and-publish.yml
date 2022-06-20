@@ -43,11 +43,11 @@ jobs:
 
       - name: Install
         run: |
-         npm install -g pyright
-         python -m pip install frictionless build wheel httpx pytest pytest-asyncio
-         dotnet tool install -g Microsoft.Web.LibraryManager.Cli
-         dotnet workload list
-         dotnet workload install --temp-dir tmp wasm-tools
+          npm install -g pyright
+          python -m pip install frictionless build wheel httpx pytest pytest-asyncio
+          dotnet tool install -g Microsoft.Web.LibraryManager.Cli
+          dotnet workload search wasm
+          dotnet workload install --temp-dir tmp wasm-tools
 
       - name: Docker Setup
         id: buildx
@@ -55,10 +55,10 @@ jobs:
 
       - name: Build
         run: |
-         (cd src/Nexus.UI && libman restore)
-         dotnet publish -c Release -o app /p:Version=${{ env.VERSION }} /p:GeneratePackage=true src/Nexus/Nexus.csproj
-         python -m build --wheel --outdir artifacts/packages --no-isolation src/clients/python-client
-         python -m build --wheel --outdir artifacts/packages --no-isolation src/extensibility/python-extensibility
+          (cd src/Nexus.UI && libman restore)
+          dotnet publish -c Release -o app /p:Version=${{ env.VERSION }} /p:GeneratePackage=true src/Nexus/Nexus.csproj
+          python -m build --wheel --outdir artifacts/packages --no-isolation src/clients/python-client
+          python -m build --wheel --outdir artifacts/packages --no-isolation src/extensibility/python-extensibility
 
       - name: Docker Build
         uses: docker/build-push-action@v2
@@ -68,14 +68,14 @@ jobs:
 
       - name: API
         run: |
-         dotnet run --project src/Nexus.ClientGenerator/Nexus.ClientGenerator.csproj -- ./ openapi_new.json
-         diff --strip-trailing-cr openapi.json openapi_new.json
+          dotnet run --project src/Nexus.ClientGenerator/Nexus.ClientGenerator.csproj -- ./ openapi_new.json
+          diff --strip-trailing-cr openapi.json openapi_new.json
 
       - name: Test
         run: |
-         dotnet test -c Release /p:BuildProjectReferences=false
-         pyright
-         pytest
+          dotnet test -c Release /p:BuildProjectReferences=false
+          pyright
+          pytest
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
