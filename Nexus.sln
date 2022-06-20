@@ -34,11 +34,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nexus.Benchmarks", "benchma
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestExtensionProject", "tests\TestExtensionProject\TestExtensionProject.csproj", "{395E2F06-D665-4EEA-9BD7-2A2F8BCE4B7F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "cs-client", "src\clients\cs-client\cs-client.csproj", "{FD8E5EA0-674B-492D-8D1E-1D0B8374B71D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dotnet-client", "src\clients\dotnet-client\dotnet-client.csproj", "{FD8E5EA0-674B-492D-8D1E-1D0B8374B71D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nexus.UI", "src\Nexus.UI\Nexus.UI.csproj", "{121840FD-19CC-4C48-86DE-AF0B6C70A089}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "cs-client-tests", "tests\clients\cs-client-tests\cs-client-tests.csproj", "{AFCE2F13-F54D-439A-B796-DC3F32E1A12B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dotnet-client-tests", "tests\clients\dotnet-client-tests\dotnet-client-tests.csproj", "{AFCE2F13-F54D-439A-B796-DC3F32E1A12B}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nexus.ClientGenerator", "src\Nexus.ClientGenerator\Nexus.ClientGenerator.csproj", "{E12BE061-CCEF-48AF-8442-BC23A1C4D3F2}"
 EndProject
@@ -48,11 +48,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "clients", "clients", "{328E
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "extensibility", "extensibility", "{1C0BDA12-25B4-42F8-87B5-C3B3BEF417B2}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "cs-extensibility", "src\extensibility\cs-extensibility\cs-extensibility.csproj", "{322CA18D-4C04-41DB-9D17-283FC53849CA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dotnet-extensibility", "src\extensibility\dotnet-extensibility\dotnet-extensibility.csproj", "{322CA18D-4C04-41DB-9D17-283FC53849CA}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "extensibility", "extensibility", "{6B7A5EC5-213A-44CC-B279-3E0C33082FC8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "cs-extensibility-tests", "tests\extensibility\cs-extensibility-tests\cs-extensibility-tests.csproj", "{25A65150-BC9F-4F92-9078-18ABA7444C21}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dotnet-extensibility-tests", "tests\extensibility\dotnet-extensibility-tests\dotnet-extensibility-tests.csproj", "{25A65150-BC9F-4F92-9078-18ABA7444C21}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

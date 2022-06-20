@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\clients\cs-client\cs-client.csproj" />
+    <ProjectReference Include="..\..\..\src\clients\dotnet-client\dotnet-client.csproj" />
   </ItemGroup>
 
 </Project>

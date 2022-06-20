@@ -61,7 +61,7 @@ namespace Nexus.ClientGenerator
                 ClientName: "NexusClient",
                 ExceptionType: "NexusException");
 
-            var csharpOutputPath = $"{solutionRoot}src/clients/cs-client/NexusClient.g.cs";
+            var csharpOutputPath = $"{solutionRoot}src/clients/dotnet-client/NexusClient.g.cs";
             var csharpGenerator = new CSharpGenerator();
             var csharpCode = csharpGenerator.Generate(document, csharpSettings);
 
