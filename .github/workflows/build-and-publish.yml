@@ -60,10 +60,9 @@ jobs:
           python -m build --wheel --outdir artifacts/packages --no-isolation src/extensibility/python-extensibility
 
       - name: Docker Build
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          outputs: type=tar,dest=artifacts/images/nexus_image.tar
+        run: |
+          docker build -t ghcr.io/nexusforge/nexus:${{ env.VERSION }} .
+          docker save --output artifacts/images/nexus_image.tar ghcr.io/nexusforge/nexus:${{ env.VERSION }}
 
       - name: API
         run: |
@@ -105,7 +104,7 @@ jobs:
           path: artifacts
 
       - name: Docker Load Image
-        run: docker image import artifacts/images/nexus_image.tar ghcr.io/nexusforge/nexus:${{ needs.build.outputs.version }}
+        run: docker load --input artifacts/images/nexus_image.tar
 
       # GitHub Package Registry is broken by design: https://github.community/t/download-from-github-package-registry-without-authentication/14407/138
       - name: Nuget package (MyGet)
@@ -146,7 +145,7 @@ jobs:
           path: artifacts
 
       - name: Docker Load Image
-        run: docker image load --input artifacts/images/nexus_image.tar nexusforge/nexus:${{ needs.build.outputs.version }}
+        run: docker load --input artifacts/images/nexus_image.tar
       - name: Annotation Tag
         run: python build/create_tag_body.py
 

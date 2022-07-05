@@ -1,7 +1,7 @@
 %% settings
-scheme          = 'http';
+scheme          = 'https';
 host            = 'localhost';
-port         	= 8080;
+port         	= 5001;
 username        = 'test@nexus.org';
 password        = '#test0/User1'; % password = input('Please enter your password: ')
 targetFolder    = 'data';

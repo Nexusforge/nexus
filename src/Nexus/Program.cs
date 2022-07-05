@@ -20,10 +20,6 @@ var generalOptions = configuration
     .GetSection(GeneralOptions.Section)
     .Get<GeneralOptions>();
 
-var serverOptions = configuration
-    .GetSection(ServerOptions.Section)
-    .Get<ServerOptions>();
-
 var securityOptions = configuration
     .GetSection(SecurityOptions.Section)
     .Get<SecurityOptions>();
@@ -70,8 +66,7 @@ try
     await InitializeAppAsync(app.Services, pathsOptions, securityOptions, app.Logger);
 
     // Run
-    var baseUrl = $"{serverOptions.HttpScheme}://{serverOptions.HttpAddress}:{serverOptions.HttpPort}";
-    app.Run(baseUrl);
+    app.Run();
 }
 catch (Exception ex)
 {
@@ -90,6 +85,7 @@ void AddServices(
     SecurityOptions securityOptions)
 {
     // database
+    Directory.CreateDirectory(pathsOptions.Config);
     var filePath = Path.Combine(pathsOptions.Config, "users.db");
 
     services.AddDbContext<UserDbContext>(
@@ -141,7 +137,6 @@ void AddServices(
     services.Configure<DataOptions>(configuration.GetSection(DataOptions.Section));
     services.Configure<PathsOptions>(configuration.GetSection(PathsOptions.Section));
     services.Configure<SecurityOptions>(configuration.GetSection(SecurityOptions.Section));
-    services.Configure<ServerOptions>(configuration.GetSection(ServerOptions.Section));
 }
 
 void ConfigurePipeline(WebApplication app)
@@ -207,7 +202,7 @@ async Task InitializeAppAsync(
 
     // database
     using var scope = serviceProvider.CreateScope();
-    var userContext = scope.ServiceProvider.GetRequiredService<UserDbContext>();
+    using var userContext = scope.ServiceProvider.GetRequiredService<UserDbContext>();
 
     await userContext.Database.EnsureCreatedAsync();
 

@@ -189,21 +189,21 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             using var scope = _serviceProvider.CreateScope();
 
-            var context = scope.ServiceProvider.GetRequiredService<DbContext>();
+            using var context = scope.ServiceProvider.GetRequiredService<DbContext>();
             await context.Database.EnsureCreatedAsync(cancellationToken);
 
             var manager = scope.ServiceProvider.GetRequiredService<IOpenIddictApplicationManager>();
 
             if (await manager.FindByClientIdAsync("nexus", cancellationToken) is null)
             {
-#warning https://localhost:8443 should not be hardcoded
+#warning https://localhost:5001 should not be hardcoded
                 await manager.CreateAsync(new OpenIddictApplicationDescriptor
                 {
                     ClientId = "nexus",
                     ClientSecret = "nexus-secret",
                     DisplayName = "Nexus",
-                    RedirectUris = { new Uri("https://localhost:8443/signin-oidc/nexus") },
-                    PostLogoutRedirectUris = { new Uri("https://localhost:8443/signout-oidc/nexus") },
+                    RedirectUris = { new Uri("https://localhost:5001/signin-oidc/nexus") },
+                    PostLogoutRedirectUris = { new Uri("https://localhost:5001/signout-oidc/nexus") },
                     Permissions =
                     {
                         // endpoints

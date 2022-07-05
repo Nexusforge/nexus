@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             Scheme = "nexus",
             DisplayName = "Nexus",
-            Authority = "https://localhost:8443",
+            Authority = "https://localhost:5001",
             ClientId = "nexus",
             ClientSecret = "nexus-secret"
         };

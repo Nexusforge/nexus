@@ -17,7 +17,7 @@ namespace Nexus.Core
 
             var builder = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.json");
-
+            
             if (!string.IsNullOrWhiteSpace(environmentName))
             {
                 builder
@@ -31,6 +31,9 @@ namespace Nexus.Core
 
             if (settingsPath.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
                 builder.AddJsonFile(settingsPath, optional: true, /* for serilog */ reloadOnChange: true);
+
+            else if (settingsPath.EndsWith(".ini", StringComparison.OrdinalIgnoreCase))
+                builder.AddIniFile(settingsPath, optional: true, /* for serilog */ reloadOnChange: true);
 
             builder
                 .AddEnvironmentVariables(prefix: "NEXUS_")
@@ -52,14 +55,6 @@ namespace Nexus.Core
         public bool DisableCache { get; set; }
         public uint ReadChunkSize { get; set; } = 209_715_200;
         public double AggregationNaNThreshold { get; set; } = 0.99;
-    }
-
-    internal record ServerOptions() : NexusOptionsBase
-    {
-        public const string Section = "Server";
-        public string? HttpScheme { get; set; } = "https";
-        public string? HttpAddress { get; set; } = "0.0.0.0";
-        public int HttpPort { get; set; } = 8443;
     }
 
     internal record PathsOptions() : NexusOptionsBase

@@ -10,7 +10,6 @@ namespace Other
 
         [InlineData(GeneralOptions.Section, typeof(GeneralOptions))]
         [InlineData(DataOptions.Section, typeof(DataOptions))]
-        [InlineData(ServerOptions.Section, typeof(ServerOptions))]
         [InlineData(PathsOptions.Section, typeof(PathsOptions))]
         [InlineData(SecurityOptions.Section, typeof(SecurityOptions))]
         [Theory]
@@ -33,10 +32,10 @@ namespace Other
                 .BuildConfiguration(new string[0]);
 
             var options = configuration
-                .GetSection(ServerOptions.Section)
-                .Get<ServerOptions>();
+                .GetSection(DataOptions.Section)
+                .Get<DataOptions>();
 
-            Assert.Equal(8443, options.HttpPort);
+            Assert.Equal(0.99, options.AggregationNaNThreshold);
         }
 
         [Fact]
@@ -50,12 +49,12 @@ namespace Other
                     .BuildConfiguration(new string[0]);
 
                 var options = configuration
-                    .GetSection(ServerOptions.Section)
-                    .Get<ServerOptions>();
+                    .GetSection(DataOptions.Section)
+                    .Get<DataOptions>();
 
                 Environment.SetEnvironmentVariable("NEXUS_PATHS__SETTINGS", null);
 
-                Assert.Equal(26, options.HttpPort);
+                Assert.Equal(0.90, options.AggregationNaNThreshold);
             }
         }
 
@@ -64,48 +63,57 @@ namespace Other
         {
             lock (_lock)
             {
-                Environment.SetEnvironmentVariable("NEXUS_PATHS__SETTINGS", "appsettings.ini");
-                Environment.SetEnvironmentVariable("NEXUS_SERVER__HTTPPORT", "27");
+                Environment.SetEnvironmentVariable("NEXUS_PATHS__SETTINGS", "myappsettings.ini");
 
-                var configuration = NexusOptionsBase
+                var configuration1 = NexusOptionsBase
                    .BuildConfiguration(new string[0]);
 
-                var options = configuration
-                    .GetSection(ServerOptions.Section)
-                    .Get<ServerOptions>();
+                var options1 = configuration1
+                    .GetSection(DataOptions.Section)
+                    .Get<DataOptions>();
+
+                Environment.SetEnvironmentVariable("NEXUS_DATA__AGGREGATIONNANTHRESHOLD", "0.90");
+
+                var configuration2 = NexusOptionsBase
+                   .BuildConfiguration(new string[0]);
+
+                var options2 = configuration2
+                    .GetSection(DataOptions.Section)
+                    .Get<DataOptions>();
 
                 Environment.SetEnvironmentVariable("NEXUS_PATHS__SETTINGS", null);
-                Environment.SetEnvironmentVariable("NEXUS_SERVER__HTTPPORT", null);
+                Environment.SetEnvironmentVariable("NEXUS_DATA__AGGREGATIONNANTHRESHOLD", null);
 
-                Assert.Equal(27, options.HttpPort);
+                Assert.Equal(0.80, options1.AggregationNaNThreshold);
+                Assert.Equal(0.90, options2.AggregationNaNThreshold);
             }
         }
 
-        [InlineData("SERVER:HTTPPORT=28")]
-        [InlineData("/SERVER:HTTPPORT=28")]
-        [InlineData("--SERVER:HTTPPORT=28")]
+        [InlineData("DATA:AGGREGATIONNANTHRESHOLD=0.99")]
+        [InlineData("/DATA:AGGREGATIONNANTHRESHOLD=0.99")]
+        [InlineData("--DATA:AGGREGATIONNANTHRESHOLD=0.99")]
 
-        [InlineData("server:httpport=28")]
-        [InlineData("/server:httpport=28")]
-        [InlineData("--server:httpport=28")]
+        [InlineData("data:aggregationnanthreshold=0.99")]
+        [InlineData("/data:aggregationnanthreshold=0.99")]
+        [InlineData("--data:aggregationnanthreshold=0.99")]
 
         [Theory]
-        public void CanOverrideEnvironmentVariable_With_CommandLineParameter1(string arg)
+        public void CanOverrideEnvironmentVariable_With_CommandLineParameter(string arg)
         {
             lock (_lock)
             {
-                Environment.SetEnvironmentVariable("NEXUS_SERVER__HTTPPORT", "27");
+                Environment.SetEnvironmentVariable("NEXUS_DATA__AGGREGATIONNANTHRESHOLD", "0.90");
 
                 var configuration = NexusOptionsBase
                     .BuildConfiguration(new string[] { arg });
 
                 var options = configuration
-                    .GetSection(ServerOptions.Section)
-                    .Get<ServerOptions>();
+                    .GetSection(DataOptions.Section)
+                    .Get<DataOptions>();
 
-                Environment.SetEnvironmentVariable("NEXUS_SERVER__HTTPPORT", null);
+                Environment.SetEnvironmentVariable("NEXUS_DATA__AGGREGATIONNANTHRESHOLD", null);
 
-                Assert.Equal(28, options.HttpPort);
+                Assert.Equal(0.99, options.AggregationNaNThreshold);
             }
         }
     }

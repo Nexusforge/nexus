@@ -1,4 +1,4 @@
-$hostName = "http://localhost:8080"
+$hostName = "https://localhost:5001"
 
 # get token
 $credentials = @{

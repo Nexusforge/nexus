@@ -1,5 +1,5 @@
 ﻿{
-  "Server": {
-    "HttpPort": "26"
+  "Data": {
+    "AggregationNaNThreshold": "0.90"
   }
 }
