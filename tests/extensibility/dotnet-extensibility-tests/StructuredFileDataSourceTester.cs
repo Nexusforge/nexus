@@ -1,4 +1,5 @@
-﻿using Nexus.DataModel;
+﻿using Microsoft.Extensions.Logging;
+using Nexus.DataModel;
 using System.Text.Json;
 
 namespace Nexus.Extensibility.Tests
@@ -37,7 +38,7 @@ namespace Nexus.Extensibility.Tests
 
         #region Methods
 
-        protected override async Task SetContextAsync(DataSourceContext context, CancellationToken cancellationToken)
+        protected override async Task SetContextAsync(DataSourceContext context, ILogger logger, CancellationToken cancellationToken)
         {
             Context = context;
 
