@@ -53,7 +53,7 @@ namespace Nexus.Extensibility
 
         private DataSourceContext Context { get; set; } = default!;
 
-        private ILogger Logger { get; set; } = default!;
+        public ILogger Logger { get; set; } = default!;
 
         private FileSourceProvider FileSourceProvider { get; set; } = default!;
 
@@ -65,10 +65,11 @@ namespace Nexus.Extensibility
         /// Invoked by Nexus right after construction to provide the context.
         /// </summary>
         /// <param name="context">The <paramref name="context"/>.</param>
+        /// <param name="logger">A logger.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         /// <returns>The task.</returns>
         protected abstract Task
-            SetContextAsync(DataSourceContext context, CancellationToken cancellationToken);
+            SetContextAsync(DataSourceContext context, ILogger logger, CancellationToken cancellationToken);
 
         /// <summary>
         /// Gets the file source provider that in turn provides information about the file structure within the database.
@@ -479,7 +480,7 @@ namespace Nexus.Extensibility
             Context = context;
             Logger = logger;
 
-            await SetContextAsync(context, cancellationToken);
+            await SetContextAsync(context, logger, cancellationToken);
             FileSourceProvider = await GetFileSourceProviderAsync(cancellationToken);
         }
 
