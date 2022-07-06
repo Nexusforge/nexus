@@ -5,7 +5,6 @@ using Nexus.Sources;
 using Nexus.Utilities;
 using System.Security.Claims;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Nexus.Services
