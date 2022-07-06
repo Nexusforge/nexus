@@ -53,7 +53,7 @@ namespace Nexus.Extensibility
 
         private DataSourceContext Context { get; set; } = default!;
 
-        public ILogger Logger { get; set; } = default!;
+        private ILogger Logger { get; set; } = default!;
 
         private FileSourceProvider FileSourceProvider { get; set; } = default!;
 
