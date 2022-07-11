@@ -44,18 +44,21 @@
             @if (AppState.CatalogItems is not null)
             {
                 <Virtualize Context="catalogItemPair" ItemsProvider="LoadItems" @ref="_virtualizeComponent">
-                    <div class="flex flex-wrap">
+                    <div class="flex flex-wrap gap-2">
 
                         @foreach (var catalogItem in catalogItemPair)
                         {
-                            <div class="w-full md:w-1/2 xl:w-full 2xl:w-1/4 group grid grid-cols-[1fr,auto] grid-rows-[auto,auto] px-1 cursor-pointer mb-2 hover:bg-gray-50"
+                            <div class="w-full md:w-1/2 xl:w-full 2xl:w-1/4 group grid grid-cols-[1fr,auto] grid-rows-[auto,auto] px-2 cursor-pointer mb-2 hover:bg-gray-50 hover:shadow-lg"
                                 @onclick="() => AppState.Settings.ToggleCatalogItemSelection(catalogItem)">
 
                                 <div class="pt-1 min-w-0 flex items-center col-start-1 row-start-1 @(AppState.Settings.IsSelected(catalogItem) ? "text-orange-500" : "text-cyan-700 group-hover:text-cyan-500")">
                                     <span class="font-bold truncate">
-                                        @catalogItem.Resource.Id&nbsp;:&nbsp;@Utilities.ToUnitString(catalogItem.Representation.SamplePeriod)
+                                        @catalogItem.Resource.Id
                                     </span>
-                                    <span class="text-gray-500 whitespace-nowrap mx-2">@catalogItem.Unit</span>
+                                    <span class="whitespace-nowrap mx-2 text-gray-400">@catalogItem.Unit</span>
+                                    <span class="ml-auto whitespace-nowrap text-gray-400">
+                                        @Utilities.ToUnitString(catalogItem.Representation.SamplePeriod)
+                                    </span>
 
                                     @if (catalogItem.Warning is not null)
                                     {
@@ -67,13 +70,16 @@
                                 </div>
 
                                 <div class="pb-1 col-start-1 row-start-2 min-w-0">
-                                    <UIOverflowTooltip Tooltip="@catalogItem.Description" Class="text-sm truncate">
-                                        @catalogItem.Description
+                                    <UIOverflowTooltip Tooltip="@catalogItem.Description" Class="text-sm truncate text-gray-400">
+                                        @if (string.IsNullOrWhiteSpace(@catalogItem.Description))
+                                        {
+                                            <span>&nbsp;</span>
+                                        }
+                                        else
+                                        {
+                                            @catalogItem.Description
+                                        }
                                     </UIOverflowTooltip>
-                                </div>
-
-                                <div class="col-start-2 row-start-1 row-span-2 hidden group-hover:block my-auto">
-                                    <MetadataView Properties="catalogItem.Resource.Properties" />
                                 </div>
 
                             </div>
