@@ -47,6 +47,7 @@ namespace Nexus.Core
     {
         public const string Section = "General";
         public string? ApplicationName { get; set; } = "Nexus";
+        public string? HelpLink { get; set; }
     }
 
     internal record DataOptions() : NexusOptionsBase

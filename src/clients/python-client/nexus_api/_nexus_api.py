@@ -1101,6 +1101,17 @@ class SystemClient:
     def __init__(self, client: NexusAsyncClient):
         self._client = client
 
+    def get_help_link(self) -> Awaitable[str]:
+        """
+        Gets the configured help link.
+
+        Args:
+        """
+
+        url = "/api/v1/system/help-link"
+
+        return self._client._invoke(str, "GET", url, "application/json", None, None)
+
     def get_configuration(self) -> Awaitable[Optional[object]]:
         """
         Gets the system configuration.

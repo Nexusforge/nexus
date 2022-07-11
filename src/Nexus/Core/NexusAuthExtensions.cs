@@ -59,6 +59,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     options.TokenValidationParameters = new TokenValidationParameters()
                     {
                         NameClaimType = Claims.Name,
+                        RoleClaimType = Claims.Role,
                         ClockSkew = TimeSpan.Zero,
                         ValidateAudience = false,
                         ValidateIssuer = false,
@@ -113,7 +114,7 @@ namespace Microsoft.Extensions.DependencyInjection
                             var username = principal.FindFirstValue(Claims.Name)
                                 ?? throw new Exception("The name claim is required.");
 
-                            var dbContext = context.HttpContext.RequestServices.GetRequiredService<UserDbContext>();
+                            using var dbContext = context.HttpContext.RequestServices.GetRequiredService<UserDbContext>();
                             var uniqueUserId = $"{Uri.EscapeDataString(userId)}@{Uri.EscapeDataString(context.Scheme.Name)}";
 
                             // user
@@ -150,7 +151,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
                             await dbContext.SaveChangesAsync();
 
-                            // oicd identity
+                            // oidc identity
                             var oidcIdentity = (ClaimsIdentity)principal.Identity!;
                             var subClaim = oidcIdentity.FindFirst(Claims.Subject);
 

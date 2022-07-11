@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Nexus.Core;
 using Nexus.Services;
 using System.Text.Json;
@@ -22,6 +23,7 @@ namespace Nexus.Controllers
 
         private AppState _appState;
         private AppStateManager _appStateManager;
+        private GeneralOptions _generalOptions;
 
         #endregion
 
@@ -29,8 +31,10 @@ namespace Nexus.Controllers
 
         public SystemController(
             AppState appState,
-            AppStateManager appStateManager)
+            AppStateManager appStateManager,
+            IOptions<GeneralOptions> generalOptions)
         {
+            _generalOptions = generalOptions.Value;
             _appState = appState;
             _appStateManager = appStateManager;
         }
@@ -38,6 +42,15 @@ namespace Nexus.Controllers
         #endregion
 
         #region Methods
+
+        /// <summary>
+        /// Gets the configured help link.
+        /// </summary>
+        [HttpGet("help-link")]
+        public string? GetHelpLink()
+        {
+            return _generalOptions.HelpLink;
+        }
 
         /// <summary>
         /// Gets the system configuration.

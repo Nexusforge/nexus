@@ -1,4 +1,6 @@
-﻿@using System.Security.Claims
+﻿@inject INexusClient Client;
+
+@using System.Security.Claims
 
 <div class="z-0 w-full py-3 pr-3 flex justify-between items-center text-slate-500 bg-gray-200 shadow-md">
 
@@ -21,6 +23,11 @@
             }
             <UserSettingsView />
         }
+        @if (_helpLink is not null)
+        {
+            <a href="@_helpLink" target="_blank" class="w-9 h-9 mdi mdi-help flex justify-center items-center rounded-full text-cyan-600 border bg-gray-300 hover:text-orange-500"></a>
+        }
+
         <span class="mx-3 w-9 h-9 flex justify-center items-center text-2xl mdi mdi-menu xl:hidden cursor-pointer hover:text-orange-500"
             @onclick="OpenHamburgerMenu">
         </span>
@@ -30,6 +37,7 @@
 @code {
 
     private AuthenticationState _authenticationState = default!;
+    private string? _helpLink;
 
     [CascadingParameter]
     public Task<AuthenticationState> GetAuthenticationStateTask { get; set; } = default!;
@@ -40,6 +48,7 @@
     protected override async Task OnInitializedAsync()
     {
         _authenticationState = await GetAuthenticationStateTask;
+        _helpLink = await Client.System.GetHelpLinkAsync();
     }
 
     private bool IsAdmin(ClaimsPrincipal user)

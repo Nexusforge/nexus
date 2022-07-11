@@ -14,26 +14,27 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "publish",
-            "command": "dotnet",
-            "type": "process",
-            "args": [
-                "publish",
-                "${workspaceFolder}/src/Nexus/Nexus.csproj",
-                "/property:GenerateFullPaths=true",
-                "/consoleloggerparameters:NoSummary"
-            ],
-            "problemMatcher": "$msCompile"
-        },
-        {
             "label": "watch",
             "command": "dotnet",
             "type": "process",
             "args": [
                 "watch",
-                "run",
+                "-v",
                 "--project",
                 "${workspaceFolder}/src/Nexus/Nexus.csproj"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "generate API client",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "run",
+                "--project",
+                "${workspaceFolder}/src/Nexus.ClientGenerator/Nexus.ClientGenerator.csproj",
+                "--",
+                "./"
             ],
             "problemMatcher": "$msCompile"
         }

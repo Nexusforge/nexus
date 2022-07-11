@@ -21,9 +21,6 @@ namespace Microsoft.Extensions.DependencyInjection
                 options.UseOpenIddict();
             });
 
-            // MVC
-            services.AddMvcCore();
-
             // OpenIddict
             services.AddOpenIddict()
 

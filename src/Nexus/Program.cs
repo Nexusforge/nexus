@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
 using Nexus.Core;
 using Nexus.Services;
@@ -98,6 +99,18 @@ void AddServices(
 #warning replace this with proper external configuration
         options.KnownNetworks.Clear();
         options.KnownProxies.Clear();
+    });
+
+    // MVC
+    services.AddMvcCore(options =>
+    {
+        // do not return "204 No Content" when returning null (return empty JSON instead)
+        var noContentFormatter = options.OutputFormatters
+            .OfType<HttpNoContentOutputFormatter>()
+            .FirstOrDefault();
+
+        if (noContentFormatter is not null)
+            noContentFormatter.TreatNullValueAsNoContent = false;
     });
 
     // authentication

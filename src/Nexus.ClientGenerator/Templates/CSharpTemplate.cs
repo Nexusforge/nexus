@@ -210,12 +210,15 @@ public class {{1}} : I{{1}}, IDisposable
             else
             {
                 var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-                var returnValue = await JsonSerializer.DeserializeAsync<T>(stream, Utilities.JsonOptions);
 
-                if (returnValue is null)
-                    throw new {{8}}($"N01", "Response data could not be deserialized.");
-
-                return returnValue;
+                try
+                {
+                    return await JsonSerializer.DeserializeAsync<T>(stream, Utilities.JsonOptions);    
+                }
+                catch (Exception ex)
+                {
+                    throw new {{8}}($"N01", "Response data could not be deserialized.", ex);
+                }
             }
         }
         finally
@@ -382,6 +385,11 @@ public class StreamResponse : IDisposable
 public class {{8}} : Exception
 {
     internal {{8}}(string statusCode, string message) : base(message)
+    {
+        StatusCode = statusCode;
+    }
+
+    internal {{8}}(string statusCode, string message, Exception innerException) : base(message, innerException)
     {
         StatusCode = statusCode;
     }

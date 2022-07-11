@@ -300,12 +300,15 @@ public class NexusClient : INexusClient, IDisposable
             else
             {
                 var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-                var returnValue = await JsonSerializer.DeserializeAsync<T>(stream, Utilities.JsonOptions);
 
-                if (returnValue is null)
-                    throw new NexusException($"N01", "Response data could not be deserialized.");
-
-                return returnValue;
+                try
+                {
+                    return await JsonSerializer.DeserializeAsync<T>(stream, Utilities.JsonOptions);    
+                }
+                catch (Exception ex)
+                {
+                    throw new NexusException($"N01", "Response data could not be deserialized.", ex);
+                }
             }
         }
         finally
@@ -1018,6 +1021,12 @@ public class SourcesClient : ISourcesClient
 public interface ISystemClient
 {
     /// <summary>
+    /// Gets the configured help link.
+    /// </summary>
+    /// <param name="cancellationToken">The token to cancel the current operation.</param>
+    Task<string> GetHelpLinkAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets the system configuration.
     /// </summary>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
@@ -1040,6 +1049,16 @@ public class SystemClient : ISystemClient
     internal SystemClient(NexusClient client)
     {
         _client = client;
+    }
+
+    /// <inheritdoc />
+    public Task<string> GetHelpLinkAsync(CancellationToken cancellationToken = default)
+    {
+        var urlBuilder = new StringBuilder();
+        urlBuilder.Append("/api/v1/system/help-link");
+
+        var url = urlBuilder.ToString();
+        return _client.InvokeAsync<string>("GET", url, "application/json", default, default, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -1451,6 +1470,11 @@ public class StreamResponse : IDisposable
 public class NexusException : Exception
 {
     internal NexusException(string statusCode, string message) : base(message)
+    {
+        StatusCode = statusCode;
+    }
+
+    internal NexusException(string statusCode, string message, Exception innerException) : base(message, innerException)
     {
         StatusCode = statusCode;
     }
