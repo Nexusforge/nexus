@@ -6,9 +6,9 @@ import asyncio
 from datetime import datetime, timedelta, timezone
 
 # settings
-scheme = "https"
+scheme = "http"
 host = "localhost"
-port = 5001
+port = 5000
 username = "test@nexus.org"
 password = "#test0/User1" # password = input("Please enter your password: ")
 target_folder = "data"

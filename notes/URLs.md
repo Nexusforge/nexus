@@ -12,7 +12,7 @@ overriding address(es) '"http://+:80"'. Binding to endpoints defined via IConfig
 
 # Solution
 
-- `launchSettings.json` defines the URL https://localhost:5001 which is used by VSCode and Visual Studio during development. No HTTP is required.
+- `launchSettings.json` defines the URL http://localhost:5000 which is used by VSCode and Visual Studio during development.
 
 - When running in a docker container, the default URL http://+:80 is just fine because normally you would use a reverse proxy in front of Nexus which terminates the TLS connection.
 

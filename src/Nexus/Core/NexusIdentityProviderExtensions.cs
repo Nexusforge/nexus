@@ -51,11 +51,16 @@ namespace Microsoft.Extensions.DependencyInjection
                             Scopes.OpenId, 
                             Scopes.Profile);
 
-                    options
+                    var aspNetCoreBuilder = options
                         .UseAspNetCore()
                         .EnableAuthorizationEndpointPassthrough()
                         .EnableLogoutEndpointPassthrough()
                         .EnableTokenEndpointPassthrough();
+
+                    var environmentName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+
+                    if (environmentName == "Development")
+                        aspNetCoreBuilder.DisableTransportSecurityRequirement();
                 });
 
                 services.AddHostedService<HostedService>();
@@ -193,14 +198,14 @@ namespace Microsoft.Extensions.DependencyInjection
 
             if (await manager.FindByClientIdAsync("nexus", cancellationToken) is null)
             {
-#warning https://localhost:5001 should not be hardcoded
+#warning http://localhost:5000 should not be hardcoded
                 await manager.CreateAsync(new OpenIddictApplicationDescriptor
                 {
                     ClientId = "nexus",
                     ClientSecret = "nexus-secret",
                     DisplayName = "Nexus",
-                    RedirectUris = { new Uri("https://localhost:5001/signin-oidc/nexus") },
-                    PostLogoutRedirectUris = { new Uri("https://localhost:5001/signout-oidc/nexus") },
+                    RedirectUris = { new Uri("http://localhost:5000/signin-oidc/nexus") },
+                    PostLogoutRedirectUris = { new Uri("http://localhost:5000/signout-oidc/nexus") },
                     Permissions =
                     {
                         // endpoints

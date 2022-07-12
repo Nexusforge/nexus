@@ -192,6 +192,12 @@ void ConfigurePipeline(WebApplication app)
     // routing (for REST API)
     app.UseRouting();
 
+    // workaround for chrome/edge browser: https://stackoverflow.com/a/69764358
+    app.UseCookiePolicy(new CookiePolicyOptions
+    {
+        Secure = CookieSecurePolicy.Always
+    });
+
     // default authentication
     app.UseAuthentication();
 
