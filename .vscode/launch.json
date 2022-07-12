@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": ".NET Core Launch (web)",
+            "name": "Launch Nexus",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
@@ -12,6 +12,40 @@
             "stopAtEntry": false,
             "env": {
                 "ASPNETCORE_ENVIRONMENT": "Development"
+            }
+        },
+        {
+            /* How to debug into remote Nexus Docker container via SSH
+             * 1. Install SSH on container
+             * - sudo docker exec nexus bash -c "apt update; apt install openssh-server -y; apt install nano -y"
+             * - sudo docker exec nexus sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/g' /etc/ssh/sshd_config
+             * - sudo docker exec nexus service ssh start
+             * - sudo docker exec -it nexus passwd
+             *   - password for testing purpose only: eJW2PJvrngD6gNv3
+             * 
+             * 2. Configure docker so that port 22 is exposed (e.g. to port 2222), then test the connection:
+             * - ssh root@<docker host> -p 2222
+             *
+             * 3. follow the instructions
+             * - https://github.com/OmniSharp/omnisharp-vscode/wiki/Attaching-to-remote-processes
+             */
+            "name": "Attach to Nexus (Docker)",
+            "type": "coreclr",
+            "request": "attach",
+            "processId": "${command:pickRemoteProcess}",
+            "pipeTransport": {
+                "pipeProgram": "ssh",
+                "pipeArgs": [ "-T", "root@<docker host>", "-p", "2222" ], // replace <docker host>
+                "debuggerPath": "~/vsdbg/vsdbg",
+                "pipeCwd": "${workspaceRoot}",
+                "quoteArgs": true
+            },
+            "justMyCode": false,
+            "sourceFileMap": {
+                /* Note: The absolute path comes from GitHub Actions.
+                 * Change it if Nexus has been built somewhere else.
+                 */
+                "/home/runner/work/nexus/nexus": "${workspaceRoot}"
             }
         }
     ],

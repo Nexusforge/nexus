@@ -184,7 +184,7 @@ namespace Nexus.Extensibility
 
             for (int i = 0; i < count; i++)
             {
-                var currentEnd = currentBegin += step;
+                var currentEnd = currentBegin + step;
                 var j = i; /* capture loop variable */
 
                 tasks.Add(Task.Run(async () =>
