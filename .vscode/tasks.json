@@ -37,6 +37,17 @@
                 "./"
             ],
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "workaround-run",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "run",
+                "--project",
+                "${workspaceFolder}/src/Nexus/Nexus.csproj"
+            ],
+            "problemMatcher": "$msCompile"
         }
     ]
 }

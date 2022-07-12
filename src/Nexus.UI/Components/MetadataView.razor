@@ -2,9 +2,7 @@
 @using System.Text.Encodings.Web
 @inject IJSInProcessRuntime JSRuntime
 
-<UIIconButton Icon="code-json" @onclick="OpenMetadataModal" />
-
-<UIModal @bind-IsOpen="_isMetadataModalOpen" Title="Metadata" Width="600px">
+<UIModal @bind-IsOpen="BoundValue" Title="Metadata" Width="600px">
     <div class="h-full">
         @if (Properties.HasValue)
         {
@@ -26,16 +24,27 @@
 
 @code {
 
-    private static JsonSerializerOptions _options = new JsonSerializerOptions() 
-    { 
+    private static JsonSerializerOptions _options = new JsonSerializerOptions()
+    {
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
         WriteIndented = true
     };
 
-    private bool _isMetadataModalOpen;
+    [Parameter]
+    public bool IsOpen { get; set; }
 
     [Parameter]
     public JsonElement? Properties { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<bool> IsOpenChanged { get; set; }
+
+    @* https://github.com/dotnet/AspNetCore.Docs/issues/17921 *@
+    private bool BoundValue
+    {
+        get => IsOpen;
+        set => IsOpenChanged.InvokeAsync(value);
+    }
 
     private MarkupString GetHighlightedCode()
     {
@@ -44,10 +53,4 @@
 
         return new MarkupString(highlightedCode);
     }
-
-    private void OpenMetadataModal()
-    {
-        _isMetadataModalOpen = true;
-    }
 }
-

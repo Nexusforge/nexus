@@ -1,42 +1,51 @@
-﻿<div class="relative">
-    <div class="
-        before:absolute
-        before:opacity-70
-        before:block
-        before:rounded
-        before:m-2
-        before:p-2
-        before:whitespace-normal
-        before:text-white
-        before:z-40
-        before:transition
-        before:duration-300
-        before:delay-500
-        before:content-[attr(data-text)] 
-        before:ease-in-out 
-        before:opacity-0
-        before:transition
-        before:duration-300
-        before:delay-500
-        before:ease-in-out 
-        before:top-6
-        before:-left-2
-        before:text-xs
-        before:pointer-events-none
-        hover:before:bg-black
-        hover:before:opacity-80
-        @Class"
-        data-text="@Tooltip">
+﻿@if (Tooltip is null)
+{
+    <div class="@Class">
         @ChildContent
     </div>
-</div>
+}
+else
+{
+    <div class="relative">
+        <div class="
+            before:absolute
+            before:opacity-70
+            before:block
+            before:rounded
+            before:m-2
+            before:p-2
+            before:whitespace-normal
+            before:text-white
+            before:z-40
+            before:transition
+            before:duration-300
+            before:delay-500
+            before:content-[attr(data-text)] 
+            before:ease-in-out 
+            before:opacity-0
+            before:transition
+            before:duration-300
+            before:delay-500
+            before:ease-in-out 
+            before:top-6
+            before:-left-2
+            before:text-xs
+            before:pointer-events-none
+            hover:before:bg-black
+            hover:before:opacity-80
+            @Class"
+            data-text="@Tooltip">
+            @ChildContent
+        </div>
+    </div>
+}
 
 @code {
     [Parameter]
     public string Class { get; set; } = default!;
         
     [Parameter]
-    public string Tooltip { get; set; } = default!;
+    public string? Tooltip { get; set; } = default!;
 
     [Parameter]
     public RenderFragment ChildContent { get; set; } = default!;

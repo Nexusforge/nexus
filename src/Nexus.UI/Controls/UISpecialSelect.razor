@@ -2,7 +2,7 @@
 
 <div class="text-xs font-semibold rounded bg-teal-600 text-gray-300 hover:bg-teal-500">
 
-    <div class="px-2.5 py-1" @onmouseup="ToggleIsOpen" onclick="event.stopPropagation()">
+    <div id="@_id" class="px-2.5 py-1" @onmouseup="ToggleIsOpen">
         @Label
     </div>
 
@@ -23,6 +23,7 @@
 
 @code {
 
+    private Guid _id = Guid.NewGuid();
     private DotNetObjectReference<UISpecialSelect<T>> _dotNetHelper;
     private bool _isOpen;
 
@@ -44,7 +45,7 @@
     public IDictionary<T, string> Items { get; set; } = default!;
 
     [JSInvokable]
-    public void OnClick()
+    public void OnClickExceptSelf()
     {
         _isOpen = false;
         StateHasChanged();
@@ -61,6 +62,6 @@
         _isOpen = !_isOpen;
 
         if (_isOpen)
-            JSRuntime.InvokeVoid("nexus.util.addClickEvent", _dotNetHelper);
+            JSRuntime.InvokeVoid("nexus.util.addClickExceptSelfEvent", _id, _dotNetHelper);
     }
 }

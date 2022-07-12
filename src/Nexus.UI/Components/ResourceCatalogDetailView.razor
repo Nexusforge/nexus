@@ -53,7 +53,8 @@
                 @if (Catalog.Catalog is not null)
                 {
                     <UITooltip Tooltip="Metadata">
-                        <MetadataView Properties="Catalog.Catalog!.Properties" />
+                        <UIIconButton Icon="code-json" @onclick="OpenMetadataModal" />
+                        <MetadataView Properties="Catalog.Catalog!.Properties" @bind-IsOpen="_isMetadataModalOpen" />
                     </UITooltip>
                 }
 
@@ -80,6 +81,7 @@
     [Parameter]
     public ResourceCatalogViewModel Catalog { get; set; } = default!;
 
+    private bool _isMetadataModalOpen;
     private bool _isLicenseModalOpen;
     private CatalogTimeRange? _timeRange;
 
@@ -108,6 +110,11 @@
                 }
             });
         }
+    }
+
+    private void OpenMetadataModal()
+    {
+        _isLicenseModalOpen = true;
     }
 
     private void OpenLicenseModal()

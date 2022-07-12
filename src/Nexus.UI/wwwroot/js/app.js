@@ -28,6 +28,26 @@ nexus.util.addMouseUpEvent = function (dotNetHelper) {
     });
 }
 
+nexus.util.addClickExceptSelfEvent = function (id, dotNetHelper) {
+
+    window.addEventListener("click", e => 
+    {
+        var container = document.getElementById(id);
+
+        if (container.contains(e.target)) {
+            /* re-register event listener */
+            nexus.util.addClickExceptSelfEvent(id, dotNetHelper)
+        }
+        else {
+            /* invoke callback */
+            dotNetHelper.invokeMethodAsync("OnClickExceptSelf")
+        }
+    }, {
+        /* fire only once */
+        once: true
+    });
+}
+
 nexus.util.addClickEvent = function (dotNetHelper) {
 
     window.addEventListener("click", e => dotNetHelper.invokeMethodAsync("OnClick"), {

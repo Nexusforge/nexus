@@ -114,7 +114,7 @@ public class SettingsViewModel : INotifyPropertyChanged
         }
     }
     
-    public IDictionary<string, string> Configuration => new Dictionary<string, string>();
+    public IDictionary<string, string> Configuration { get; } = new Dictionary<string, string>();
 
     public IReadOnlyList<CatalogItemSelectionViewModel> SelectedCatalogItems => _selectedCatalogItems;
 

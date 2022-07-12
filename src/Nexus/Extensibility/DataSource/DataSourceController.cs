@@ -156,6 +156,11 @@ namespace Nexus.Extensibility
             Logger.LogDebug("Load catalog {CatalogId}", catalogId);
 
             var catalog = await DataSource.GetCatalogAsync(catalogId, cancellationToken);
+            
+            catalog = catalog with 
+            { 
+                Resources = catalog.Resources?.OrderBy(resource => resource.Id).ToList() 
+            };
 
             /* GetOrAdd is not working because it requires a synchronous delegate */
             _catalogCache.TryAdd(catalogId, catalog);

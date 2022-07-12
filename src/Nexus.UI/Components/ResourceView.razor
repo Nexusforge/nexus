@@ -44,11 +44,12 @@
             @if (AppState.CatalogItems is not null)
             {
                 <Virtualize Context="catalogItemPair" ItemsProvider="LoadItems" @ref="_virtualizeComponent">
-                    <div class="flex flex-wrap gap-2">
+                    <div class="flex flex-wrap">
 
                         @foreach (var catalogItem in catalogItemPair)
                         {
                             <div class="w-full md:w-1/2 xl:w-full 2xl:w-1/4 group grid grid-cols-[1fr,auto] grid-rows-[auto,auto] px-2 cursor-pointer mb-2 hover:bg-gray-50 hover:shadow-lg"
+                                @oncontextmenu="eventArgs => OpenContextMenu(eventArgs, catalogItem)" @oncontextmenu:preventDefault
                                 @onclick="() => AppState.Settings.ToggleCatalogItemSelection(catalogItem)">
 
                                 <div class="pt-1 min-w-0 flex items-center col-start-1 row-start-1 @(AppState.Settings.IsSelected(catalogItem) ? "text-orange-500" : "text-cyan-700 group-hover:text-cyan-500")">
@@ -92,11 +93,30 @@
 
 </div>
 
+<UIContextMenu @bind-IsOpen="_isContextMenuOpen" Top="_contextMenuTop" Left="_contextMenuLeft">
+    <div class="bg-white w-60 border border-gray-300 rounded flex flex-col text-sm py-2 px-2 text-gray-500 shadow-lg">
+        <div class="flex items-center hover:bg-gray-100 py-1 px-2 rounded cursor-pointer" @onclick="OpenMetadataModal">
+            <span class="text-xl mdi mdi-code-json text-black mr-2"></span>
+            <span>Metadata viewer</span>
+        </div>
+    </div>
+</UIContextMenu>
+
+@if (_contextMenuCatalogItem is not null)
+{
+    <MetadataView Properties="_contextMenuCatalogItem.Resource.Properties" @bind-IsOpen="_isMetadataViewOpen" />
+}
+
 @code {
 
     private Virtualize<List<CatalogItemViewModel>>? _virtualizeComponent;
     private PropertyChangedEventHandler _handler;
     private string _searchIcon = "magnify";
+    private bool _isMetadataViewOpen = false;
+    private bool _isContextMenuOpen = false;
+    private double _contextMenuTop;
+    private double _contextMenuLeft;
+    private CatalogItemViewModel? _contextMenuCatalogItem;
 
     public ResourceView()
     {
@@ -149,6 +169,19 @@
             .ToList();
 
         return ValueTask.FromResult(new ItemsProviderResult<List<CatalogItemViewModel>>(groups, total));
+    }
+
+    private void OpenMetadataModal()
+    {
+        _isMetadataViewOpen = true;
+    }
+
+    private void OpenContextMenu(MouseEventArgs args, CatalogItemViewModel catalogItem)
+    {
+        _contextMenuLeft = args.PageX;
+        _contextMenuTop = args.PageY;
+        _contextMenuCatalogItem = catalogItem;
+        _isContextMenuOpen = true;
     }
 
     protected override void OnInitialized()
