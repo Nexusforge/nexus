@@ -14,7 +14,7 @@ else
 {
     <div id="@Catalog.Id" class="flex flex-col cursor-pointer select-none">
 
-        <a class="flex p-0.5 items-center"
+        <a class="flex p-0.5 items-center group"
             href="catalogs/@(Catalog.IsSelected ? default! : Utilities.EscapeDataString(Catalog.Id))"
             @onclick="Catalog.IsSelected ? () => Catalog.IsOpen = !Catalog.IsOpen : default!">
             <span class="
@@ -29,7 +29,7 @@ else
             </span>
 
             <div class="flex items-center">
-                <span class="font-bold @(Catalog.Info.IsReadable ? "text-cyan-700" : "text-gray-500") @(Catalog.IsSelected ? "text-orange-500" : "")">
+                <span class="font-bold @(Catalog.Info.IsReadable ? "text-cyan-700" : "text-gray-500") @(Catalog.IsSelected ? "text-orange-500" : "group-hover:text-cyan-500")">
                     @Catalog.DisplayName
                 </span>
 

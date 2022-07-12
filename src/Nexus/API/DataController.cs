@@ -51,8 +51,8 @@ namespace Nexus.Controllers
             [BindRequired] CancellationToken cancellationToken)
         {
             resourcePath = WebUtility.UrlDecode(resourcePath);
-            begin = DateTime.SpecifyKind(begin, DateTimeKind.Utc);
-            end = DateTime.SpecifyKind(end, DateTimeKind.Utc);
+            begin = begin.ToUniversalTime();
+            end = end.ToUniversalTime();
 
             try
             {

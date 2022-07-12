@@ -184,6 +184,8 @@ namespace Nexus.Controllers
                 CancellationToken cancellationToken)
         {
             catalogId = WebUtility.UrlDecode(catalogId);
+            begin = begin.ToUniversalTime();
+            end = end.ToUniversalTime();
 
             if (begin >= end)
                 return UnprocessableEntity("The end date/time must be before the begin date/time.");
