@@ -26,8 +26,8 @@
              * 2. Configure docker so that port 22 is exposed (e.g. to port 2222), then test the connection:
              * - ssh root@<docker host> -p 2222
              *
-             * 3. follow the instructions
-             * - https://github.com/OmniSharp/omnisharp-vscode/wiki/Attaching-to-remote-processes
+             * 3. follow the vsdbg instructions (run it on the docker container, but install curl or wget before)
+             * - https://github.com/OmniSharp/omnisharp-vscode/wiki/Attaching-to-remote-processes#installing-vsdbg-on-the-server
              */
             "name": "Attach to Nexus (Docker)",
             "type": "coreclr",

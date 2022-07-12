@@ -185,13 +185,14 @@ namespace Nexus.Extensibility
             for (int i = 0; i < count; i++)
             {
                 var currentEnd = currentBegin + step;
-                var j = i; /* capture loop variable */
+                var currentBegin_captured = currentBegin;
+                var i_captured = i;
 
                 tasks.Add(Task.Run(async () =>
                 {
 
-                    var availability = await DataSource.GetAvailabilityAsync(catalogId, currentBegin, currentEnd, cancellationToken);
-                    availabilities[j] = availability;
+                    var availability = await DataSource.GetAvailabilityAsync(catalogId, currentBegin_captured, currentEnd, cancellationToken);
+                    availabilities[i_captured] = availability;
                 }));
                 
                 currentBegin = currentEnd;
