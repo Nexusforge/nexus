@@ -1,12 +1,24 @@
-﻿ <button
-    type="@(IsSubmitButton ? "submit" : "button")"
-    class="mx-auto px-4 w-max p-1 rounded border border-gray-300 bg-white flex justify-center items-center text-cyan-700 hover:text-orange-500"
-    @onclick="OnClick">
+﻿@if (IsSubmitButton)
+{
+    <button
+        type="submit"
+        class="mx-auto px-4 w-max p-1 rounded border border-gray-300 bg-white flex justify-center items-center text-cyan-700 hover:text-orange-500"
+        @onclick="OnClick">
 
-    <span class="mr-3 mdi mdi-@Icon"></span> @Label
+        <span class="mr-3 mdi mdi-@Icon"></span> @Label
 
-</button>
+    </button>
+}
+else {
+    @* use div for all other cases (to make file input work) *@
+    <div
+        class="cursor-pointer mx-auto px-4 w-max p-1 rounded border border-gray-300 bg-white flex justify-center items-center text-cyan-700 hover:text-orange-500"
+        @onclick="OnClick">
 
+        <span class="mr-3 mdi mdi-@Icon"></span> @Label
+    </div>
+}
+  
 @code {
 
     [Parameter]
