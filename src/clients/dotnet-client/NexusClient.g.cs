@@ -1586,6 +1586,7 @@ public enum NexusDataType
 /// <param name="Id">The identifier.</param>
 /// <param name="Title">The title.</param>
 /// <param name="Contact">A nullable contact.</param>
+/// <param name="Readme">A nullable readme.</param>
 /// <param name="License">A nullable license.</param>
 /// <param name="IsReadable">A boolean which indicates if the catalog is accessible.</param>
 /// <param name="IsWritable">A boolean which indicates if the catalog is editable.</param>
@@ -1596,7 +1597,7 @@ public enum NexusDataType
 /// <param name="DataSourceType">The data source type.</param>
 /// <param name="DataSourceRegistrationId">The data source registration identifier.</param>
 /// <param name="PackageReferenceId">The package reference identifier.</param>
-public record CatalogInfo(string Id, string Title, string? Contact, string? License, bool IsReadable, bool IsWritable, bool IsReleased, bool IsVisible, bool IsOwner, string? DataSourceInfoUrl, string DataSourceType, Guid DataSourceRegistrationId, Guid PackageReferenceId);
+public record CatalogInfo(string Id, string Title, string? Contact, string? Readme, string? License, bool IsReadable, bool IsWritable, bool IsReleased, bool IsVisible, bool IsOwner, string? DataSourceInfoUrl, string DataSourceType, Guid DataSourceRegistrationId, Guid PackageReferenceId);
 
 /// <summary>
 /// A catalog time range.

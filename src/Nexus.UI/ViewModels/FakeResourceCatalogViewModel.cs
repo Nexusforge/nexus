@@ -68,7 +68,8 @@ public class FakeResourceCatalogViewModel : ResourceCatalogViewModel
                 var childInfo = new CatalogInfo(
                     Id: childId,
                     Title: default!, 
-                    Contact: default, 
+                    Contact: default,
+                    Readme: default,
                     License: default,
                     IsReadable: true,
                     IsWritable: false, 

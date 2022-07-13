@@ -9,6 +9,8 @@ from typing import Any, List, Optional, Pattern, cast
 
 from ._data_model_extensions import to_unit_string
 
+_README = "readme"
+_LICENSE = "license"
 _DESCRIPTION = "description"
 _WARNING = "warning"
 _UNIT = "unit"
@@ -222,14 +224,23 @@ class ResourceCatalogBuilder:
 
         return self
 
-    def with_description(self, description: str) -> ResourceCatalogBuilder:
+    def with_readme(self, readme: str) -> ResourceCatalogBuilder:
         """
-        Adds a description.
+        Adds a readme.
         
             Args:
-                description: The description to add.
+                description: The markdown readme to add.
         """
-        return self.with_property(_DESCRIPTION, description)
+        return self.with_property(_README, readme)
+
+    def with_license(self, license: str) -> ResourceCatalogBuilder:
+        """
+        Adds a license.
+        
+            Args:
+                license: The markdown license to add.
+        """
+        return self.with_property(_LICENSE, license)
 
     def add_resource(self, resource: Resource) -> ResourceCatalogBuilder:
         """

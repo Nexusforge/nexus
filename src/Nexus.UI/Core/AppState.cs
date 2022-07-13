@@ -75,7 +75,8 @@ public class AppState : IAppState
         var rootInfo = new CatalogInfo(
             Id: ResourceCatalogViewModel.ROOT_CATALOG_ID,
             Title: default!, 
-            Contact: default, 
+            Contact: default,
+            Readme: default,
             License: default,
             IsReadable: true,
             IsWritable: false, 

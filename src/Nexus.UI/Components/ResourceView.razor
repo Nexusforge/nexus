@@ -57,17 +57,15 @@
                                         @catalogItem.Resource.Id
                                     </span>
                                     <span class="whitespace-nowrap mx-2 text-gray-400">@catalogItem.Unit</span>
-                                    <span class="ml-auto whitespace-nowrap text-gray-400">
-                                        @Utilities.ToUnitString(catalogItem.Representation.SamplePeriod)
-                                    </span>
-
                                     @if (catalogItem.Warning is not null)
                                     {
                                         <UITooltip Tooltip="@catalogItem.Warning">
                                             <span class="mdi mdi-alert ml-2 mr-1 text-orange-500"></span>
-                                            <span class="hidden sm:inline text-orange-500">@catalogItem.Warning</span>
                                         </UITooltip>
                                     }
+                                    <span class="ml-auto whitespace-nowrap text-gray-400">
+                                        @Utilities.ToUnitString(catalogItem.Representation.SamplePeriod)
+                                    </span>
                                 </div>
 
                                 <div class="pb-1 col-start-1 row-start-2 min-w-0">

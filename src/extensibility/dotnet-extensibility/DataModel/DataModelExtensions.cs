@@ -10,6 +10,8 @@ namespace Nexus.DataModel
     {
         #region Fluent API
 
+        internal const string Readme = "readme";
+        internal const string License = "license";
         internal const string Description = "description";
         internal const string Warning = "warning";
         internal const string Unit = "unit";
@@ -17,14 +19,25 @@ namespace Nexus.DataModel
         internal const string BasePath = "base-path";
 
         /// <summary>
-        /// Adds a description.
+        /// Adds a readme.
         /// </summary>
         /// <param name="catalogBuilder">The catalog builder.</param>
-        /// <param name="description">The description to add.</param>
+        /// <param name="readme">The markdown readme to add.</param>
         /// <returns>A resource catalog builder.</returns>
-        public static ResourceCatalogBuilder WithDescription(this ResourceCatalogBuilder catalogBuilder, string description)
+        public static ResourceCatalogBuilder WithReadme(this ResourceCatalogBuilder catalogBuilder, string readme)
         {
-            return catalogBuilder.WithProperty(Description, description);
+            return catalogBuilder.WithProperty(Readme, readme);
+        }
+
+        /// <summary>
+        /// Adds a license.
+        /// </summary>
+        /// <param name="catalogBuilder">The catalog builder.</param>
+        /// <param name="license">The markdown license to add.</param>
+        /// <returns>A resource catalog builder.</returns>
+        public static ResourceCatalogBuilder WithLicense(this ResourceCatalogBuilder catalogBuilder, string license)
+        {
+            return catalogBuilder.WithProperty(License, license);
         }
 
         /// <summary>

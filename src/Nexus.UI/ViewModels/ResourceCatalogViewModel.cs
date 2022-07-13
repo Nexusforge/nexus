@@ -33,11 +33,9 @@ public abstract class ResourceCatalogViewModel
 
     protected Lazy<Task<List<ResourceCatalogViewModel>>> ChildrenTask { get; set; } = default!;
 
-    protected Lazy<Task<ResourceCatalog>> CatalogTask { get; set; } = default!;
+    public Lazy<Task<ResourceCatalog>> CatalogTask { get; set; } = default!;
 
     public Lazy<Task<CatalogTimeRange>> TimeRangeTask { get; set; } = default!;
-
-    public Lazy<Task<string>> ReadmeTask { get; set; } = default!;
 
     public async Task SelectCatalogAsync(string catalogId)
     {

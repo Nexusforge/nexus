@@ -3,14 +3,14 @@
 
 <div class="group text-gray-200 cursor-pointer hover:bg-cyan-800 p-2 pt-1 rounded select-none">
     <div>
-        <span class="text-sm text-gray-400">@Utilities.ToSpaceFilledCatalogId(SelectedItem.BaseItem.Catalog.Id)&nbsp;/&nbsp;</span>
         <span class="text-sm">@SelectedItem.BaseItem.Resource.Id</span>
+        <span class="text-xs text-gray-400 ml-2">@Utilities.ToSpaceFilledCatalogId(SelectedItem.BaseItem.Catalog.Id)</span>
     </div>
     <div class="flex flex-wrap gap-1">
 
         @foreach (var kind in SelectedItem.Kinds)
         {
-            <div class="nexus-pill nexus-hover-parent min-w-[6em] h-6 text-xs text-white font-bold rounded @(IsValid(kind) ? "bg-teal-600" : "bg-rose-700") flex flex-col" placeholder="@kind">
+            <div class="nexus-pill nexus-hover-parent min-w-[6em] h-6 text-xs text-white rounded @(IsValid(kind) ? "bg-teal-600" : "bg-rose-700") flex flex-col" placeholder="@kind">
                 <div class="nexus-hover-hide py-1 text-center">@kind</div>
                 <div class="hidden flex-1 flex nexus-hover-flex">
                     <div @onclick="() => CopyToClipboard(kind)" class="flex-1 hover:@(IsValid(kind) ? "bg-teal-500" : "bg-rose-600") rounded-l mdi mdi-content-copy flex justify-center items-center"></div>

@@ -226,8 +226,16 @@ namespace Nexus.Controllers
             {
                 var jobControl = _jobService.AddJob(job, dataService.WriteProgress, async (jobControl, cts) =>
                 {
-                    var result = await dataService.ExportAsync(job.Id, catalogItemRequests, dataService.ReadAsDoubleArrayAsync, parameters, cts.Token);
-                    return result;
+                    try
+                    {
+                        var result = await dataService.ExportAsync(job.Id, catalogItemRequests, dataService.ReadAsDoubleArrayAsync, parameters, cts.Token);    
+                        return result;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Unable to export the requested data.");
+                        throw new Exception("Unable to export the requested data.", ex);
+                    }
                 });
 
                 return Accepted(GetAcceptUrl(job.Id), job);
@@ -252,8 +260,16 @@ namespace Nexus.Controllers
 
             var jobControl = _jobService.AddJob(job, progress, async (jobControl, cts) =>
             {
-                await _appStateManager.LoadPackagesAsync(progress, cts.Token);
-                return null;
+                try
+                {
+                    await _appStateManager.LoadPackagesAsync(progress, cts.Token);
+                    return null;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Unable to load the packages.");
+                    throw new Exception("Unable to load the packages.", ex);
+                }
             });
 
             var response = (ActionResult<Job>)Accepted(GetAcceptUrl(job.Id), job);
@@ -284,8 +300,16 @@ namespace Nexus.Controllers
 
                 var jobControl = _jobService.AddJob(job, progress, async (jobControl, cts) =>
                 {
-                    await cacheService.ClearAsync(catalogId, begin, end, progress, cts.Token);
-                    return null;
+                    try
+                    {
+                        await cacheService.ClearAsync(catalogId, begin, end, progress, cts.Token);
+                        return null;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Unable to clear the cache.");
+                        throw new Exception("Unable to clear the cache.", ex);
+                    }
                 });
 
                 return Task.FromResult<ActionResult>(Accepted(GetAcceptUrl(job.Id), job));

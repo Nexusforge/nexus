@@ -228,6 +228,7 @@ namespace Nexus.Core
     /// <param name="Id">The identifier.</param>
     /// <param name="Title">The title.</param>
     /// <param name="Contact">A nullable contact.</param>
+    /// <param name="Readme">A nullable readme.</param>
     /// <param name="License">A nullable license.</param>
     /// <param name="IsReadable">A boolean which indicates if the catalog is accessible.</param>
     /// <param name="IsWritable">A boolean which indicates if the catalog is editable.</param>
@@ -242,6 +243,7 @@ namespace Nexus.Core
         string Id,
         string Title,
         string? Contact,
+        string? Readme,
         string? License,
         bool IsReadable,
         bool IsWritable,
