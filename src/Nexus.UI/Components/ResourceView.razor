@@ -19,7 +19,7 @@
             {
                 @foreach (var entry in AppState.CatalogItemsMap)
                 {
-                    @if (entry.Value == AppState.CatalogItems)
+                    @if (entry.Value == AppState.CatalogItemsGroup)
                     {
                         <div class="flex justify-between items-end py-0.5 px-1 cursor-pointer">
                             <span class="font-bold text-orange-500">@entry.Key</span>
@@ -29,7 +29,7 @@
                     else
                     {
                         <div class="group flex justify-between items-end py-0.5 px-1 cursor-pointer"
-                            @onclick="() => SelectCatalogItems(entry.Value)">
+                            @onclick="() => SelectCatalogItemsGroup(entry.Value)">
                             <span class="group-hover:text-cyan-500 font-bold text-cyan-700">@entry.Key</span>
                             <span class="text-sm text-gray-500">@entry.Value.Count</span>
                         </div>
@@ -41,7 +41,7 @@
 
     <div class="flex-1 p-2 h-full">
         <div class="overflow-y-auto select-none h-full">
-            @if (AppState.CatalogItems is not null)
+            @if (AppState.CatalogItemsGroup is not null)
             {
                 <Virtualize Context="catalogItemPair" ItemsProvider="LoadItems" @ref="_virtualizeComponent">
                     <div class="flex flex-wrap">
@@ -123,7 +123,12 @@
         _handler = (sender, e) => 
         {
             if (e.PropertyName == nameof(AppState.CatalogItemsMap))
+            {
                 StateHasChanged();
+                    
+                if (_virtualizeComponent is not null)
+                    _ = _virtualizeComponent.RefreshDataAsync();
+            }
 
             else if (e.PropertyName == nameof(AppState.SearchString))
             {
@@ -136,31 +141,31 @@
             }
 
             else if (e.PropertyName == nameof(AppState.Settings.SelectedCatalogItems))
+            {
                 StateHasChanged();
+            }
         };
     }
 
-    private async Task SelectCatalogItems(List<CatalogItemViewModel> catalogItems)
+    private void SelectCatalogItemsGroup(List<CatalogItemViewModel> catalogItems)
     {
-        AppState.CatalogItems = catalogItems;
+        AppState.CatalogItemsGroup = catalogItems;
 
         if (_virtualizeComponent is not null)
-            await _virtualizeComponent.RefreshDataAsync();
-
-        StateHasChanged();
+            _ = _virtualizeComponent.RefreshDataAsync();
     }
 
     private ValueTask<ItemsProviderResult<List<CatalogItemViewModel>>> LoadItems(ItemsProviderRequest request)
     {
-        var catalogItems = AppState.CatalogItems;
+        var catalogItemsGroup = AppState.CatalogItemsGroup;
 
-        if (catalogItems is null)
+        if (catalogItemsGroup is null)
             return ValueTask.FromResult(new ItemsProviderResult<List<CatalogItemViewModel>>(Enumerable.Empty<List<CatalogItemViewModel>>(), 0));
 
         var groupSize = 4;
-        var total = (int)Math.Ceiling(AppState.CatalogItems!.Count / (double)groupSize);
+        var total = (int)Math.Ceiling(AppState.CatalogItemsGroup!.Count / (double)groupSize);
 
-        var source = AppState.CatalogItems!
+        var source = AppState.CatalogItemsGroup!
             .Skip(request.StartIndex * groupSize)
             .Take(request.Count * groupSize);
 
