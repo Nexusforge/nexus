@@ -83,13 +83,16 @@ namespace Nexus.DataModel
 
         public static JsonElement? MergeProperties(JsonElement? properties1, JsonElement? properties2)
         {
-            if (!(properties1.HasValue && properties2.HasValue))
+            var properties1IsNotOK = properties1 is null || properties1.Value.ValueKind == JsonValueKind.Undefined;
+            var properties2IsNotOK = properties2 is null || properties2.Value.ValueKind == JsonValueKind.Undefined;
+
+            if (properties1IsNotOK && properties2IsNotOK)
                 return default;
 
-            if (!properties1.HasValue)
+            if (properties1IsNotOK)
                 return properties2;
 
-            if (!properties2.HasValue)
+            if (properties2IsNotOK)
                 return properties1;
 
             JsonNode mergedProperties;
