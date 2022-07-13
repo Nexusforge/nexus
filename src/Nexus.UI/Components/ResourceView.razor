@@ -29,7 +29,7 @@
                     else
                     {
                         <div class="group flex justify-between items-end py-0.5 px-1 cursor-pointer"
-                            @onclick="() => SelectCatalogItemsGroup(entry.Value)">
+                            @onclick="() => SelectCatalogItemsGroupAsync(entry.Value)">
                             <span class="group-hover:text-cyan-500 font-bold text-cyan-700">@entry.Key</span>
                             <span class="text-sm text-gray-500">@entry.Value.Count</span>
                         </div>
@@ -120,14 +120,15 @@
 
     public ResourceView()
     {
-        _handler = (sender, e) => 
+        _handler = async (sender, e) => 
         {
             if (e.PropertyName == nameof(AppState.CatalogItemsMap))
-            {
-                StateHasChanged();
-                    
+            {                   
                 if (_virtualizeComponent is not null)
-                    _ = _virtualizeComponent.RefreshDataAsync();
+                {
+                    await _virtualizeComponent.RefreshDataAsync();
+                    StateHasChanged();
+                }
             }
 
             else if (e.PropertyName == nameof(AppState.SearchString))
@@ -137,7 +138,7 @@
                     : "close";
 
                 if (_virtualizeComponent is not null)
-                    _ = _virtualizeComponent.RefreshDataAsync();
+                    await _virtualizeComponent.RefreshDataAsync();
             }
 
             else if (e.PropertyName == nameof(AppState.Settings.SelectedCatalogItems))
@@ -147,12 +148,12 @@
         };
     }
 
-    private void SelectCatalogItemsGroup(List<CatalogItemViewModel> catalogItems)
+    private async Task SelectCatalogItemsGroupAsync(List<CatalogItemViewModel> catalogItems)
     {
         AppState.CatalogItemsGroup = catalogItems;
 
         if (_virtualizeComponent is not null)
-            _ = _virtualizeComponent.RefreshDataAsync();
+            await _virtualizeComponent.RefreshDataAsync();
     }
 
     private ValueTask<ItemsProviderResult<List<CatalogItemViewModel>>> LoadItems(ItemsProviderRequest request)
@@ -163,9 +164,9 @@
             return ValueTask.FromResult(new ItemsProviderResult<List<CatalogItemViewModel>>(Enumerable.Empty<List<CatalogItemViewModel>>(), 0));
 
         var groupSize = 4;
-        var total = (int)Math.Ceiling(AppState.CatalogItemsGroup!.Count / (double)groupSize);
+        var total = (int)Math.Ceiling(catalogItemsGroup.Count / (double)groupSize);
 
-        var source = AppState.CatalogItemsGroup!
+        var source = catalogItemsGroup
             .Skip(request.StartIndex * groupSize)
             .Take(request.Count * groupSize);
 

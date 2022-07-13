@@ -239,7 +239,7 @@ public class AppState : IAppState
 
         else
         {
-            CatalogItemsMap = GroupCatalogItems(SelectedCatalog.Catalog);
+            CatalogItemsMap = GroupCatalogItems(SelectedCatalog.Catalog);          
             CatalogItemsGroup = CatalogItemsMap?.Values.FirstOrDefault();
         }
 
