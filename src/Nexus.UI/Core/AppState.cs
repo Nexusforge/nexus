@@ -292,12 +292,12 @@ public class AppState : IAppState
 
                 else
                 {
-                    groupNames = new List<string>() { "General" };
+                    groupNames = new List<string>() { "default" };
                 }
             }
 
             if (!groupNames.Any())
-                groupNames = new List<string>() { "General" };
+                groupNames = new List<string>() { "default" };
 
             foreach (var groupName in groupNames)
             {

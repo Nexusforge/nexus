@@ -53,7 +53,7 @@
                                 @onclick="() => AppState.Settings.ToggleCatalogItemSelection(catalogItem)">
 
                                 <div class="pt-1 min-w-0 flex items-center col-start-1 row-start-1 @(AppState.Settings.IsSelected(catalogItem) ? "text-orange-500" : "text-cyan-700 group-hover:text-cyan-500")">
-                                    <span class="font-bold truncate">
+                                    <span class="font-semibold truncate">
                                         @catalogItem.Resource.Id
                                     </span>
                                     <span class="whitespace-nowrap mx-2 text-gray-400">@catalogItem.Unit</span>
@@ -130,6 +130,9 @@
                 _searchIcon = string.IsNullOrWhiteSpace(AppState.SearchString)
                     ? "magnify"
                     : "close";
+
+                if (_virtualizeComponent is not null)
+                    _ = _virtualizeComponent.RefreshDataAsync();
             }
 
             else if (e.PropertyName == nameof(AppState.Settings.SelectedCatalogItems))
@@ -149,6 +152,11 @@
 
     private ValueTask<ItemsProviderResult<List<CatalogItemViewModel>>> LoadItems(ItemsProviderRequest request)
     {
+        var catalogItems = AppState.CatalogItems;
+
+        if (catalogItems is null)
+            return ValueTask.FromResult(new ItemsProviderResult<List<CatalogItemViewModel>>(Enumerable.Empty<List<CatalogItemViewModel>>(), 0));
+
         var groupSize = 4;
         var total = (int)Math.Ceiling(AppState.CatalogItems!.Count / (double)groupSize);
 

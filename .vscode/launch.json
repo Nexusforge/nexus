@@ -35,7 +35,7 @@
             "processId": "${command:pickRemoteProcess}",
             "pipeTransport": {
                 "pipeProgram": "ssh",
-                "pipeArgs": [ "-T", "root@<docker host>", "-p", "2222" ], // replace <docker host>
+                "pipeArgs": [ "-T", "root@ensyno.iwes.fraunhofer.de", "-p", "2222" ], // replace <docker host>
                 "debuggerPath": "~/vsdbg/vsdbg",
                 "pipeCwd": "${workspaceRoot}",
                 "quoteArgs": true
