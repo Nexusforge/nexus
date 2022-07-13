@@ -45,7 +45,14 @@
 
     private string GetDate()
     {
-        return Value.ToString("yyyy-MM-ddTHH:mm:ss");
+        // To prevent warning: 
+        // > The specified value "2020-01-01T00:00:00" does not conform to the required format. 
+        // > The format is "yyyy-MM-ddThh:mm" followed by optional ":ss" or ":ss.SSS".
+        if (Value.Second != 0)
+            return Value.ToString("yyyy-MM-ddTHH:mm:ss");
+
+        else
+            return Value.ToString("yyyy-MM-ddTHH:mm");
     }
 
     private void OnFocus()

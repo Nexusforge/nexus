@@ -190,7 +190,6 @@ namespace Nexus.Extensibility
 
                 tasks.Add(Task.Run(async () =>
                 {
-
                     var availability = await DataSource.GetAvailabilityAsync(catalogId, currentBegin_captured, currentEnd, cancellationToken);
                     availabilities[i_captured] = availability;
                 }));

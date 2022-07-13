@@ -147,7 +147,7 @@ public class SettingsViewModel : INotifyPropertyChanged
                 SelectedCatalogItems.Any() &&
                 SelectedCatalogItems.All(item => item.IsValid(SamplePeriod));
 
-            if (!canVisualize)
+            if (!canVisualize && _appState.ViewState == ViewState.Data)
                 _appState.ViewState = ViewState.Normal;
 
             return canVisualize;
