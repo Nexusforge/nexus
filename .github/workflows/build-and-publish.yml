@@ -84,6 +84,7 @@ jobs:
         with:
           name: artifacts
           path: |
+            artifacts/*.txt
             artifacts/packages/
             artifacts/images/
 
