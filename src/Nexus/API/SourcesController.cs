@@ -5,6 +5,8 @@ using Nexus.Extensibility;
 using Nexus.Services;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Security.Claims;
+using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Nexus.Controllers
 {
@@ -57,13 +59,13 @@ namespace Nexus.Controllers
         /// <summary>
         /// Gets the list of backend sources.
         /// </summary>
-        /// <param name="username">The optional username. If not specified, the name of the current user will be used.</param>
+        /// <param name="userId">The optional user identifier. If not specified, the name of the current user will be used.</param>
         /// <returns></returns>
         [HttpGet("registrations")]
         public ActionResult<IEnumerable<DataSourceRegistration>> GetRegistrations(
-            [FromQuery] string? username = default)
+            [FromQuery] string? userId = default)
         {
-            if (TryAuthenticate(username, out var actualUsername, out var response))
+            if (TryAuthenticate(userId, out var actualUsername, out var response))
             {
                 if (_appState.Project.UserConfigurations.TryGetValue(actualUsername, out var userConfiguration))
                     return Ok(userConfiguration.DataSourceRegistrations.Values);
@@ -82,13 +84,13 @@ namespace Nexus.Controllers
         /// Puts a backend source.
         /// </summary>
         /// <param name="registration">The registration to set.</param>
-        /// <param name="username">The optional username. If not specified, the name of the current user will be used.</param>
+        /// <param name="userId">The optional user identifier. If not specified, the name of the current user will be used.</param>
         [HttpPut("registrations")]
         public async Task<ActionResult> SetRegistrationAsync(
             [FromBody] DataSourceRegistration registration,
-            [FromQuery] string? username = default)
+            [FromQuery] string? userId = default)
         {
-            if (TryAuthenticate(username, out var actualUsername, out var response))
+            if (TryAuthenticate(userId, out var actualUsername, out var response))
             {
                 await _appStateManager.PutDataSourceRegistrationAsync(actualUsername, registration);
                 return Ok();
@@ -104,13 +106,13 @@ namespace Nexus.Controllers
         /// Deletes a backend source.
         /// </summary>
         /// <param name="registrationId">The identifier of the registration.</param>
-        /// <param name="username">The optional username. If not specified, the name of the current user will be used.</param>
+        /// <param name="userId">The optional user identifier. If not specified, the name of the current user will be used.</param>
         [HttpDelete("registrations/{registrationId}")]
         public async Task<ActionResult> DeleteRegistrationAsync(
             Guid registrationId,
-            [FromQuery] string? username = default)
+            [FromQuery] string? userId = default)
         {
-            if (TryAuthenticate(username, out var actualUsername, out var response))
+            if (TryAuthenticate(userId, out var actualUsername, out var response))
             {
                 await _appStateManager.DeleteDataSourceRegistrationAsync(actualUsername, registrationId);
                 return Ok();
@@ -139,22 +141,22 @@ namespace Nexus.Controllers
         }
 
         private bool TryAuthenticate(
-            string? requestedUsername,
-            out string username,
+            string? requestedId,
+            out string userId,
             [NotNullWhen(returnValue: false)] out ActionResult? response)
         {
             var isAdmin = User.IsInRole(NexusRoles.ADMINISTRATOR);
-            var currentUsername = User.Identity?.Name!;
+            var currentId = User.FindFirstValue(Claims.Subject);
 
-            if (!(isAdmin || requestedUsername is null || requestedUsername == currentUsername))
-                response = StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to get source registrations of user {requestedUsername}.");
+            if (!(isAdmin || requestedId is null || requestedId == currentId))
+                response = StatusCode(StatusCodes.Status403Forbidden, $"The current user is not permitted to get source registrations of user {requestedId}.");
 
             else
                 response = null;
 
-            username = requestedUsername is null
-                ? currentUsername
-                : requestedUsername;
+            userId = requestedId is null
+                ? currentId
+                : requestedId;
             
             return response is null;
         }
