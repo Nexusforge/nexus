@@ -109,12 +109,18 @@ namespace Nexus.Controllers
                         string? readme = default!;
 
                         if (_databaseService.TryReadAttachment(childContainer.Id, "README.md", out var readmeStream))
-                            readme = new StreamReader(readmeStream).ReadToEnd();
+                        {
+                            using var reader = new StreamReader(readmeStream);
+                            readme = reader.ReadToEnd();
+                        }
 
                         string? license = default!;
 
                         if (_databaseService.TryReadAttachment(childContainer.Id, "LICENSE.md", out var licenseStream))
-                            license = new StreamReader(licenseStream).ReadToEnd();
+                        {
+                            using var reader = new StreamReader(licenseStream);
+                            license = reader.ReadToEnd();
+                        }
 
                         var isReadable = AuthorizationUtilities.IsCatalogReadable(childContainer.Id, childContainer.Metadata, childContainer.Owner, User);
                         var isWritable = AuthorizationUtilities.IsCatalogWritable(childContainer.Id, User);

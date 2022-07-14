@@ -325,10 +325,10 @@ namespace Nexus.Services
             AppState.DataWriterDescriptions = dataWriterDescriptions;
         }
 
-        private Task SaveProjectAsync(NexusProject project)
+        private async Task SaveProjectAsync(NexusProject project)
         {
             using var stream = _databaseService.WriteProject();
-            return JsonSerializerHelper.SerializeIntendedAsync(stream, project);
+            await JsonSerializerHelper.SerializeIntendedAsync(stream, project);
         }
 
         #endregion
