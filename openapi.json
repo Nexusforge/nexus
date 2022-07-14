@@ -868,9 +868,9 @@
         "operationId": "Sources_GetRegistrations",
         "parameters": [
           {
-            "name": "username",
+            "name": "userId",
             "in": "query",
-            "description": "The optional username. If not specified, the name of the current user will be used.",
+            "description": "The optional user identifier. If not specified, the name of the current user will be used.",
             "schema": {
               "type": "string",
               "nullable": true
@@ -902,9 +902,9 @@
         "operationId": "Sources_SetRegistration",
         "parameters": [
           {
-            "name": "username",
+            "name": "userId",
             "in": "query",
-            "description": "The optional username. If not specified, the name of the current user will be used.",
+            "description": "The optional user identifier. If not specified, the name of the current user will be used.",
             "schema": {
               "type": "string",
               "nullable": true
@@ -960,9 +960,9 @@
             "x-position": 1
           },
           {
-            "name": "username",
+            "name": "userId",
             "in": "query",
-            "description": "The optional username. If not specified, the name of the current user will be used.",
+            "description": "The optional user identifier. If not specified, the name of the current user will be used.",
             "schema": {
               "type": "string",
               "nullable": true

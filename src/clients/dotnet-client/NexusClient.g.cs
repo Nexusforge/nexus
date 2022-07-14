@@ -916,25 +916,25 @@ public interface ISourcesClient
     /// <summary>
     /// Gets the list of backend sources.
     /// </summary>
-    /// <param name="username">The optional username. If not specified, the name of the current user will be used.</param>
+    /// <param name="userId">The optional user identifier. If not specified, the name of the current user will be used.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<IList<DataSourceRegistration>> GetRegistrationsAsync(string? username = default, CancellationToken cancellationToken = default);
+    Task<IList<DataSourceRegistration>> GetRegistrationsAsync(string? userId = default, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Puts a backend source.
     /// </summary>
-    /// <param name="username">The optional username. If not specified, the name of the current user will be used.</param>
+    /// <param name="userId">The optional user identifier. If not specified, the name of the current user will be used.</param>
     /// <param name="registration">The registration to set.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<StreamResponse> SetRegistrationAsync(DataSourceRegistration registration, string? username = default, CancellationToken cancellationToken = default);
+    Task<StreamResponse> SetRegistrationAsync(DataSourceRegistration registration, string? userId = default, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Deletes a backend source.
     /// </summary>
     /// <param name="registrationId">The identifier of the registration.</param>
-    /// <param name="username">The optional username. If not specified, the name of the current user will be used.</param>
+    /// <param name="userId">The optional user identifier. If not specified, the name of the current user will be used.</param>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<StreamResponse> DeleteRegistrationAsync(Guid registrationId, string? username = default, CancellationToken cancellationToken = default);
+    Task<StreamResponse> DeleteRegistrationAsync(Guid registrationId, string? userId = default, CancellationToken cancellationToken = default);
 
 }
 
@@ -959,14 +959,14 @@ public class SourcesClient : ISourcesClient
     }
 
     /// <inheritdoc />
-    public Task<IList<DataSourceRegistration>> GetRegistrationsAsync(string? username = default, CancellationToken cancellationToken = default)
+    public Task<IList<DataSourceRegistration>> GetRegistrationsAsync(string? userId = default, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/sources/registrations");
 
         var queryValues = new Dictionary<string, string>()
         {
-            ["username"] = Uri.EscapeDataString(Convert.ToString(username, CultureInfo.InvariantCulture)),
+            ["userId"] = Uri.EscapeDataString(Convert.ToString(userId, CultureInfo.InvariantCulture)),
         };
 
         var query = "?" + string.Join('&', queryValues.Select(entry => $"{entry.Key}={entry.Value}"));
@@ -977,14 +977,14 @@ public class SourcesClient : ISourcesClient
     }
 
     /// <inheritdoc />
-    public Task<StreamResponse> SetRegistrationAsync(DataSourceRegistration registration, string? username = default, CancellationToken cancellationToken = default)
+    public Task<StreamResponse> SetRegistrationAsync(DataSourceRegistration registration, string? userId = default, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/sources/registrations");
 
         var queryValues = new Dictionary<string, string>()
         {
-            ["username"] = Uri.EscapeDataString(Convert.ToString(username, CultureInfo.InvariantCulture)),
+            ["userId"] = Uri.EscapeDataString(Convert.ToString(userId, CultureInfo.InvariantCulture)),
         };
 
         var query = "?" + string.Join('&', queryValues.Select(entry => $"{entry.Key}={entry.Value}"));
@@ -995,7 +995,7 @@ public class SourcesClient : ISourcesClient
     }
 
     /// <inheritdoc />
-    public Task<StreamResponse> DeleteRegistrationAsync(Guid registrationId, string? username = default, CancellationToken cancellationToken = default)
+    public Task<StreamResponse> DeleteRegistrationAsync(Guid registrationId, string? userId = default, CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
         urlBuilder.Append("/api/v1/sources/registrations/{registrationId}");
@@ -1003,7 +1003,7 @@ public class SourcesClient : ISourcesClient
 
         var queryValues = new Dictionary<string, string>()
         {
-            ["username"] = Uri.EscapeDataString(Convert.ToString(username, CultureInfo.InvariantCulture)),
+            ["userId"] = Uri.EscapeDataString(Convert.ToString(userId, CultureInfo.InvariantCulture)),
         };
 
         var query = "?" + string.Join('&', queryValues.Select(entry => $"{entry.Key}={entry.Value}"));

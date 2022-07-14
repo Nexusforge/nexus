@@ -1037,18 +1037,18 @@ class SourcesClient:
 
         return self._client._invoke(list[ExtensionDescription], "GET", url, "application/json", None, None)
 
-    def get_registrations(self, username: Optional[str] = None) -> Awaitable[list[DataSourceRegistration]]:
+    def get_registrations(self, user_id: Optional[str] = None) -> Awaitable[list[DataSourceRegistration]]:
         """
         Gets the list of backend sources.
 
         Args:
-            username: The optional username. If not specified, the name of the current user will be used.
+            user_id: The optional user identifier. If not specified, the name of the current user will be used.
         """
 
         url = "/api/v1/sources/registrations"
 
         queryValues: dict[str, str] = {
-            "username": quote(_to_string(username), safe=""),
+            "userId": quote(_to_string(user_id), safe=""),
         }
 
         query: str = "?" + "&".join(f"{key}={value}" for (key, value) in queryValues.items())
@@ -1056,18 +1056,18 @@ class SourcesClient:
 
         return self._client._invoke(list[DataSourceRegistration], "GET", url, "application/json", None, None)
 
-    def set_registration(self, registration: DataSourceRegistration, username: Optional[str] = None) -> Awaitable[StreamResponse]:
+    def set_registration(self, registration: DataSourceRegistration, user_id: Optional[str] = None) -> Awaitable[StreamResponse]:
         """
         Puts a backend source.
 
         Args:
-            username: The optional username. If not specified, the name of the current user will be used.
+            user_id: The optional user identifier. If not specified, the name of the current user will be used.
         """
 
         url = "/api/v1/sources/registrations"
 
         queryValues: dict[str, str] = {
-            "username": quote(_to_string(username), safe=""),
+            "userId": quote(_to_string(user_id), safe=""),
         }
 
         query: str = "?" + "&".join(f"{key}={value}" for (key, value) in queryValues.items())
@@ -1075,20 +1075,20 @@ class SourcesClient:
 
         return self._client._invoke(StreamResponse, "PUT", url, "application/octet-stream", "application/json", json.dumps(JsonEncoder.encode(registration, _json_encoder_options)))
 
-    def delete_registration(self, registration_id: UUID, username: Optional[str] = None) -> Awaitable[StreamResponse]:
+    def delete_registration(self, registration_id: UUID, user_id: Optional[str] = None) -> Awaitable[StreamResponse]:
         """
         Deletes a backend source.
 
         Args:
             registration_id: The identifier of the registration.
-            username: The optional username. If not specified, the name of the current user will be used.
+            user_id: The optional user identifier. If not specified, the name of the current user will be used.
         """
 
         url = "/api/v1/sources/registrations/{registrationId}"
         url = url.replace("{registrationId}", quote(str(registration_id), safe=""))
 
         queryValues: dict[str, str] = {
-            "username": quote(_to_string(username), safe=""),
+            "userId": quote(_to_string(user_id), safe=""),
         }
 
         query: str = "?" + "&".join(f"{key}={value}" for (key, value) in queryValues.items())
