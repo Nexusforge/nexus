@@ -7,6 +7,8 @@ tag = os.getenv('GITHUB_REF_NAME')
 if tag is None:
     raise Exception("GITHUB_REF_NAME is not defined")
 
+os.mkdir("artifacts")
+
 with open("artifacts/tag_body.txt", "w") as file:
 
     output = subprocess.check_output(["git", "tag", "-l", "--format='%(contents)'", tag], stdin=None, stderr=None, shell=False)
