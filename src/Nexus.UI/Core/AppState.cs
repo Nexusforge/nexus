@@ -19,7 +19,7 @@ public interface IAppState : INotifyPropertyChanged
     ResourceCatalogViewModel RootCatalog { get; }
     ResourceCatalogViewModel? SelectedCatalog { get; set; }
     SortedDictionary<string, List<CatalogItemViewModel>>? CatalogItemsMap { get; }
-    List<CatalogItemViewModel>? CatalogItems { get; set; }
+    List<CatalogItemViewModel>? CatalogItemsGroup { get; set; }
 
     IReadOnlyList<(DateTime, Exception)> Errors { get; }
     bool HasUnreadErrors { get; set; }
@@ -75,7 +75,8 @@ public class AppState : IAppState
         var rootInfo = new CatalogInfo(
             Id: ResourceCatalogViewModel.ROOT_CATALOG_ID,
             Title: default!, 
-            Contact: default, 
+            Contact: default,
+            Readme: default,
             License: default,
             IsReadable: true,
             IsWritable: false, 
@@ -157,7 +158,7 @@ public class AppState : IAppState
 
     public SortedDictionary<string, List<CatalogItemViewModel>>? CatalogItemsMap { get; private set; }
     
-    public List<CatalogItemViewModel>? CatalogItems { get; set; }
+    public List<CatalogItemViewModel>? CatalogItemsGroup { get; set; }
 
     public IReadOnlyList<(DateTime, Exception)> Errors => _errors;
 
@@ -192,7 +193,7 @@ public class AppState : IAppState
                 _searchString = value;
                 
                 CatalogItemsMap = GroupCatalogItems(SelectedCatalog!.Catalog!);
-                CatalogItems = CatalogItemsMap?.Values.FirstOrDefault();
+                CatalogItemsGroup = CatalogItemsMap?.Values.FirstOrDefault();
 
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SearchString)));
             }
@@ -234,13 +235,13 @@ public class AppState : IAppState
         if (SelectedCatalog is null || SelectedCatalog.Catalog is null)
         {
             CatalogItemsMap = default;
-            CatalogItems = default;
+            CatalogItemsGroup = default;
         }
 
         else
         {
-            CatalogItemsMap = GroupCatalogItems(SelectedCatalog.Catalog);
-            CatalogItems = CatalogItemsMap?.Values.FirstOrDefault();
+            CatalogItemsMap = GroupCatalogItems(SelectedCatalog.Catalog);          
+            CatalogItemsGroup = CatalogItemsMap?.Values.FirstOrDefault();
         }
 
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CatalogItemsMap)));

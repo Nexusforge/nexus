@@ -214,7 +214,7 @@ namespace Services
             /* expected catalogs */
             var expectedCatalog = new ResourceCatalogBuilder(id: "/A")
                 .AddResource(new ResourceBuilder(id: "A").AddRepresentation(new Representation(NexusDataType.INT16, TimeSpan.FromSeconds(1))).Build())
-                .WithDescription("v2")
+                .WithReadme("v2")
                 .Build();
 
             /* expected time range response */
@@ -245,7 +245,7 @@ namespace Services
                 default, 
                 default,
                 Overrides: new ResourceCatalogBuilder(id: "/A")
-                    .WithDescription("v2")
+                    .WithReadme("v2")
                     .Build());
 
             /* backend sources */

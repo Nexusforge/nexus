@@ -71,9 +71,9 @@
 </div>
 
 <UIModal @bind-IsOpen="_isLicenseModalOpen" Title="License" Width="600px">
-    @if (Catalog.Info.License is not null)
+    @if (_license is not null)
     {
-        <MarkdownRenderer MarkdownString="@Catalog.Info.License"></MarkdownRenderer>
+        <MarkdownRenderer MarkdownString="@_license"></MarkdownRenderer>
     }
 </UIModal>
 
@@ -86,6 +86,7 @@
     private CatalogTimeRange? _timeRange;
 
     private string? _readme;
+    private string? _license;
 
     protected override void OnParametersSet()
     {
@@ -96,25 +97,24 @@
                 _timeRange = await Catalog.TimeRangeTask.Value;
                 StateHasChanged();
             });
-
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    _readme = await Catalog.ReadmeTask.Value;
-                    StateHasChanged();
-                }
-                catch
-                {
-                    //
-                }
-            });
         }
+
+        _ = Task.Run(async () =>
+        {
+            var catalog = await Catalog.CatalogTask.Value;
+            var alternativeReadme = Utilities.GetPropertyStringValue(catalog.Properties, CatalogItemViewModel.README_KEY);
+            var alternativeLicense = Utilities.GetPropertyStringValue(catalog.Properties, CatalogItemViewModel.LICENSE_KEY);
+
+            _readme = Catalog.Info.Readme ?? alternativeReadme;
+            _license = Catalog.Info.License ?? alternativeLicense;
+
+            StateHasChanged();
+        });
     }
 
     private void OpenMetadataModal()
     {
-        _isLicenseModalOpen = true;
+        _isMetadataModalOpen = true;
     }
 
     private void OpenLicenseModal()

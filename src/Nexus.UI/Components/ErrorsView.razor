@@ -19,7 +19,7 @@
         @foreach (var error in AppState.Errors.Reverse())
         {
             <div class="p-2 m-3 rounded-lg bg-gray-100 overflow-x-auto text-gray-600">
-                <span class="mdi mdi-alert text-red-800 text-sm"></span>
+                <span class="mdi mdi-alert text-red-800"></span>
                 <span class="font-bold text-sm">
                     @error.Item1.ToLocalTime().ToString("HH:mm:ss")
                 </span>

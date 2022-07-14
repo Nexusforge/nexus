@@ -206,6 +206,7 @@ class CatalogInfo:
         id: The identifier.
         title: The title.
         contact: A nullable contact.
+        readme: A nullable readme.
         license: A nullable license.
         is_readable: A boolean which indicates if the catalog is accessible.
         is_writable: A boolean which indicates if the catalog is editable.
@@ -226,6 +227,9 @@ class CatalogInfo:
 
     contact: Optional[str]
     """A nullable contact."""
+
+    readme: Optional[str]
+    """A nullable readme."""
 
     license: Optional[str]
     """A nullable license."""

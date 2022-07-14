@@ -5,6 +5,8 @@ namespace Nexus.UI.ViewModels;
 
 public class CatalogItemViewModel
 {
+    public const string README_KEY = "readme";
+    public const string LICENSE_KEY = "license";
     public const string DESCRIPTION_KEY = "description";
     private const string WARNING_KEY = "warning";
     public const string UNIT_KEY = "unit";

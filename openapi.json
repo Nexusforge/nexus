@@ -1593,6 +1593,11 @@
             "description": "A nullable contact.",
             "nullable": true
           },
+          "readme": {
+            "type": "string",
+            "description": "A nullable readme.",
+            "nullable": true
+          },
           "license": {
             "type": "string",
             "description": "A nullable license.",

@@ -150,10 +150,10 @@ public static class Utilities
     {
         string? result = default;
 
-        if (properties is not null && properties.Value.TryGetProperty(key, out var warningElement) && 
-            warningElement.ValueKind == JsonValueKind.String)
+        if (properties is not null && properties.Value.TryGetProperty(key, out var element) && 
+            element.ValueKind == JsonValueKind.String)
         {
-            result = warningElement.GetString();
+            result = element.GetString();
         }
 
         return result;

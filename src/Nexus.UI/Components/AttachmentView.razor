@@ -126,11 +126,10 @@
                     continue;
                 }
 
-                using var stream = file.OpenReadStream(maxAllowedSize: long.MaxValue);
-                currentStream = stream;
-
                 try
                 {
+                    using var stream = file.OpenReadStream(maxAllowedSize: long.MaxValue);
+                    currentStream = stream;
                     await Client.Catalogs.UploadAttachmentAsync(Catalog.Id, file.Name, stream, cts.Token);
                 }
                 catch (Exception ex)
@@ -144,6 +143,7 @@
         catch (Exception)
         {
             cts.Cancel();
+            throw;
         }
         finally
         {
