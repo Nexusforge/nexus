@@ -33,6 +33,10 @@ jobs:
           echo "VERSION=$(python build/print_version.py       ${{ github.run_number }} ${{ env.IS_RELEASE }} false)" >> $GITHUB_ENV
           echo "PYPI_VERSION=$(python build/print_version.py  ${{ github.run_number }} ${{ env.IS_RELEASE }} true)"  >> $GITHUB_ENV
 
+      - name: Extract annotation tag
+        if: ${{ env.IS_RELEASE == 'true' }}
+        run: python build/create_tag_body.py
+
       - name: Set up Python 
         uses: actions/setup-python@v3
         with:
@@ -146,13 +150,11 @@ jobs:
 
       - name: Docker Load Image
         run: docker load --input artifacts/images/nexus_image.tar
-      - name: Annotation Tag
-        run: python build/create_tag_body.py
 
       - name: GitHub Release Artifacts
         uses: softprops/action-gh-release@v1
         with:
-          body_path: tag_body.txt
+          body_path: artifacts/tag_body.txt
 
       - name: Nuget package (Nuget)
         run: dotnet nuget push 'artifacts/packages/*.nupkg' --api-key ${NUGET_API_KEY} --source https://api.nuget.org/v3/index.json
