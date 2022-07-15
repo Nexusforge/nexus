@@ -41,13 +41,14 @@ namespace Other
                        "/A/D" => new CatalogContainer[]
                        {
                            new CatalogContainer(new CatalogRegistration("/A/D/F", string.Empty), default!, default!, default!, default!, catalogManager, default!, default!),
-                           new CatalogContainer(new CatalogRegistration("/A/D/E", string.Empty), default!, default!, default!, default!, catalogManager, default!, default!)
+                           new CatalogContainer(new CatalogRegistration("/A/D/E", string.Empty), default!, default!, default!, default!, catalogManager, default!, default!),
+                           new CatalogContainer(new CatalogRegistration("/A/D/E2", string.Empty), default!, default!, default!, default!, catalogManager, default!, default!)
                        },
                        "/A/F" => new CatalogContainer[]
                        {
                            new CatalogContainer(new CatalogRegistration("/A/F/H", string.Empty), default!, default!, default!, default!, catalogManager, default!, default!)
                        },
-                       _ => throw new Exception("Unsupported combination.")
+                       _ => throw new Exception($"Unsupported combination {container.Id}.")
                    });
                });
 
@@ -56,6 +57,7 @@ namespace Other
             // act
             var catalogContainerA = await root.TryFindCatalogContainerAsync("/A/B/C", CancellationToken.None);
             var catalogContainerB = await root.TryFindCatalogContainerAsync("/A/D/E", CancellationToken.None);
+            var catalogContainerB2 = await root.TryFindCatalogContainerAsync("/A/D/E2", CancellationToken.None);
             var catalogContainerC = await root.TryFindCatalogContainerAsync("/A/F/G", CancellationToken.None);
 
             // assert
@@ -64,6 +66,9 @@ namespace Other
 
             Assert.NotNull(catalogContainerB);
             Assert.Equal("/A/D/E", catalogContainerB?.Id);
+
+            Assert.NotNull(catalogContainerB2);
+            Assert.Equal("/A/D/E2", catalogContainerB2?.Id);
 
             Assert.Null(catalogContainerC);
         }

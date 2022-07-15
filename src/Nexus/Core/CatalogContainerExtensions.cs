@@ -100,16 +100,20 @@ namespace Nexus.Core
             CancellationToken cancellationToken)
         {
             var childCatalogContainers = await parent.GetChildCatalogContainersAsync(cancellationToken);
+            var catalogIdWithTrailingSlash = catalogId + "/"; /* the slashes are important to correctly find /A/D/E2 in the tests */
 
             var catalogContainer = childCatalogContainers
-                .FirstOrDefault(catalogContainer => catalogId.StartsWith(catalogContainer.Id));
+                .FirstOrDefault(current => catalogIdWithTrailingSlash.StartsWith(current.Id + "/"));
 
+            /* nothing found */
             if (catalogContainer is null)
                 return default;
 
+            /* catalogContainer is searched one */
             else if (catalogContainer.Id == catalogId)
                 return catalogContainer;
 
+            /* catalogContainer is (grand)-parent of searched one */
             else
                 return await catalogContainer.TryFindCatalogContainerAsync(catalogId, cancellationToken);
         }
