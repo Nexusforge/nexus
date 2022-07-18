@@ -53,6 +53,7 @@ namespace Nexus.Services
 
             try
             {
+#warning make atomic
                 var reloadPackagesTask = AppState.ReloadPackagesTask;
 
                 if (reloadPackagesTask is null)

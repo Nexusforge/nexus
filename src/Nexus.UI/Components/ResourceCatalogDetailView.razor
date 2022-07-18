@@ -22,7 +22,7 @@
     {
         <div class="flex justify-between items-center flex-wrap text-gray-400">
             <div class="text-sm">
-                @if (_timeRange is not null)
+                @if (_timeRange is not null && _timeRange.Begin != DateTime.MinValue && _timeRange.End != DateTime.MaxValue)
                 {
                     <span class="hidden xl:inline mdi mdi-timer-outline mr-1"></span>
                     <span class="">@_timeRange.Begin.ToString("yyyy-MM-dd")</span>

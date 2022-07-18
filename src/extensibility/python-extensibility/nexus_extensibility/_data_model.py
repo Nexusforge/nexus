@@ -220,7 +220,7 @@ class ResourceCatalogBuilder:
         if self._properties is None:
             self._properties = {}
 
-        cast(dict, self._properties)[key] = value
+        cast(dict[str, Any], self._properties)[key] = value
 
         return self
 
@@ -307,7 +307,7 @@ class ResourceBuilder:
         if self._properties is None:
             self._properties = {}
 
-        cast(dict, self._properties)[key] = value
+        cast(dict[str, Any], self._properties)[key] = value
 
         return self
 

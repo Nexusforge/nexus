@@ -65,7 +65,7 @@ namespace Nexus.Extensibility
 
         private ILogger Logger { get; set; } = default!;
 
-        private FileSourceProvider FileSourceProvider { get; set; } = default!;
+        private Func<string, Dictionary<string, FileSource>> FileSourceProvider { get; set; } = default!;
 
         #endregion
 
@@ -82,11 +82,11 @@ namespace Nexus.Extensibility
             SetContextAsync(DataSourceContext context, ILogger logger, CancellationToken cancellationToken);
 
         /// <summary>
-        /// Gets the file source provider that in turn provides information about the file structure within the database.
+        /// Gets the file source provider that provides information about the file structure within the database.
         /// </summary>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         /// <returns>The task.</returns>
-        protected abstract Task<FileSourceProvider>
+        protected abstract Task<Func<string, Dictionary<string, FileSource>>>
             GetFileSourceProviderAsync(CancellationToken cancellationToken);
 
         /// <summary>
@@ -131,7 +131,7 @@ namespace Nexus.Extensibility
 
                 if (Directory.Exists(Root))
                 {
-                    foreach (var fileSource in FileSourceProvider.All[catalogId])
+                    foreach (var (key, fileSource) in FileSourceProvider(catalogId))
                     {
                         cancellationToken.ThrowIfCancellationRequested();
 
@@ -206,9 +206,9 @@ namespace Nexus.Extensibility
                 if (Directory.Exists(Root))
                 {
                     var summedAvailability = 0.0;
-                    var fileSources = FileSourceProvider.All[catalogId];
+                    var fileSources = FileSourceProvider(catalogId);
 
-                    foreach (var fileSource in fileSources)
+                    foreach (var (key, fileSource) in fileSources)
                     {
                         using var scope = Logger.BeginScope(fileSource);
                         Logger.LogDebug("Analyzing file source");
@@ -244,7 +244,7 @@ namespace Nexus.Extensibility
                         summedAvailability += actual / total;
                     }
 
-                    availability = summedAvailability / fileSources.Length;
+                    availability = summedAvailability / fileSources.Count;
                 }
                 else
                 {
@@ -284,7 +284,8 @@ namespace Nexus.Extensibility
             var representation = catalogItem.Representation;
             var catalog = catalogItem.Catalog;
             var samplePeriod = representation.SamplePeriod;
-            var fileSource = FileSourceProvider.Single(catalogItem);
+            var fileSourceId = catalogItem.Resource.Properties.GetStringValue(FileSourceKey)!;
+            var fileSource = FileSourceProvider(catalogItem.Catalog.Id)[fileSourceId];
             var fileLength = fileSource.FilePeriod.Ticks / samplePeriod.Ticks;
 
             var bufferOffset = 0;

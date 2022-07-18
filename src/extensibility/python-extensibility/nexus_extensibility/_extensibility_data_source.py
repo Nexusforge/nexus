@@ -1,6 +1,5 @@
 import enum
 from abc import ABC, abstractmethod
-from array import array
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Awaitable, Callable, List, Optional, Protocol, Tuple
@@ -107,7 +106,7 @@ class IDataSource(IExtension, ABC):
     """
 
     @abstractmethod
-    def set_context(self, context: DataSourceContext, logger: ILogger) -> Awaitable:
+    def set_context(self, context: DataSourceContext, logger: ILogger) -> Awaitable[None]:
         """
         Invoked by Nexus right after construction to provide the context.
 
@@ -148,7 +147,7 @@ class IDataSource(IExtension, ABC):
         pass
 
     @abstractmethod
-    def get_availability(self, catalogId: str, begin: datetime, end: datetime) -> Awaitable[float]:
+    def get_availability(self, catalog_id: str, begin: datetime, end: datetime) -> Awaitable[float]:
         """
         Gets the availability of the ResourceCatalog.
 
@@ -166,7 +165,7 @@ class IDataSource(IExtension, ABC):
         end: datetime,
         requests: list[ReadRequest], 
         read_data: ReadDataHandler,
-        report_progress: Callable[[float], None]) -> Awaitable:
+        report_progress: Callable[[float], None]) -> Awaitable[None]:
         """
         Performs a number of read requests.
 
@@ -177,3 +176,51 @@ class IDataSource(IExtension, ABC):
             read_data: A delegate to asynchronously read data from Nexus.
             report_progress: A callable to report the read progress between 0.0 and 1.0.
         """
+        pass
+
+class SimpleDataSource(IDataSource, ABC):
+    """
+    A simple implementation of a data source.
+    """
+
+    Context: DataSourceContext
+    """Gets the data source context. This property is not accessible from within class constructors as it will bet set later."""
+
+    Logger: ILogger
+    """Gets the data logger. This property is not accessible from within class constructors as it will bet set later."""
+
+    def __init__(self, catalogRegistrations: List[CatalogRegistration]):
+        """
+        Initializes a new instance of the SimpleDataSource
+        
+            Args:
+                catalogRegistrations: A list of catalog registrations.
+        """
+        self._catalogRegistrations = catalogRegistrations
+
+    async def set_context(self, context: DataSourceContext, logger: ILogger):
+        self.Context = context
+        self.Logger = logger
+
+    async def get_catalog_registrations(self, path: str) -> List[CatalogRegistration]:
+        return self._catalogRegistrations
+
+    @abstractmethod
+    def get_catalog(self, catalog_id: str) -> Awaitable[ResourceCatalog]:
+        pass
+
+    async def get_time_range(self, catalog_id: str) -> Tuple[datetime, datetime]:
+        return (datetime.min, datetime.max)
+
+    async def get_availability(self, catalog_id: str, begin: datetime, end: datetime) -> float:
+        return float("NaN")
+
+    @abstractmethod
+    def read(
+        self,
+        begin: datetime, 
+        end: datetime,
+        requests: list[ReadRequest], 
+        read_data: ReadDataHandler,
+        report_progress: Callable[[float], None]) -> Awaitable[None]:
+        pass

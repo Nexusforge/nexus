@@ -1,16 +1,8 @@
-﻿using Nexus.DataModel;
+﻿using System.Text.Json;
+using Nexus.DataModel;
 
 namespace Nexus.Extensibility
 {
-    /// <summary>
-    /// A file source provider provides information about the data file within a database.
-    /// </summary>
-    /// <param name="Single">A function that takes a catalog item and returns the corresponding file source information.</param>
-    /// <param name="All">A function that takes a catalog identifier and that returns all file sources that belong to that catalog.</param>
-    public record FileSourceProvider(
-        Func<CatalogItem, FileSource> Single, 
-        Dictionary<string, FileSource[]> All);
-
     /// <summary>
     /// A structure to hold information about a file-based database.
     /// </summary>
@@ -20,13 +12,15 @@ namespace Nexus.Extensibility
     /// <param name="FileDateTimeSelector">An optional date/time selector which is mandatory when the preselector is provided. In case of a file named like "20200101_13_my-id_1234.dat", and a preselector of "(.{11})_my-id", the selector should be like "yyyyMMdd_HH".</param>
     /// <param name="FilePeriod">The period per file.</param>
     /// <param name="UtcOffset">The utc offset of the file.</param>
+    /// <param name="AdditionalProperties">Additional properties to be used by the data source implementation.</param>
     public record FileSource(
         string[] PathSegments,
         string FileTemplate,
         string? FileDateTimePreselector,
         string? FileDateTimeSelector,
         TimeSpan FilePeriod,
-        TimeSpan UtcOffset
+        TimeSpan UtcOffset,
+        JsonElement? AdditionalProperties
     );
 
     /// <summary>

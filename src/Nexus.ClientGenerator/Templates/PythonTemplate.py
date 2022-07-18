@@ -281,7 +281,7 @@ class {{1}}:
 
         return request_message
 
-    async def _refresh_token(self, refresh_token):
+    async def _refresh_token(self, refresh_token: str):
         # see https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/blob/dev/src/Microsoft.IdentityModel.Tokens/Validators.cs#L390
 
         refresh_request = RefreshTokenRequest(refresh_token)
