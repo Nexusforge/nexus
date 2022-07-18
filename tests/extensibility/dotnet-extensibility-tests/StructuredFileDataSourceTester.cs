@@ -6,12 +6,6 @@ namespace Nexus.Extensibility.Tests
 {
     public class StructuredFileDataSourceTester : StructuredFileDataSource
     {
-        #region Types
-
-        public record CatalogDescription(Dictionary<string, FileSource> Config);
-
-        #endregion
-
         #region Fields
 
         private bool _overrideFindFilePathsWithNoDateTime;
@@ -30,7 +24,7 @@ namespace Nexus.Extensibility.Tests
 
         #region Properties
 
-        public Dictionary<string, CatalogDescription> Config { get; private set; } = default!;
+        public Dictionary<string, Dictionary<string, FileSource>> Config { get; private set; } = default!;
 
         private DataSourceContext Context { get; set; } = default!;
 
@@ -48,18 +42,12 @@ namespace Nexus.Extensibility.Tests
                 throw new Exception($"The configuration file does not exist on path {configFilePath}.");
 
             var jsonString = await File.ReadAllTextAsync(configFilePath, cancellationToken);
-            Config = JsonSerializer.Deserialize<Dictionary<string, CatalogDescription>>(jsonString)!;
+            Config = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, FileSource>>>(jsonString)!;
         }
 
-        protected override Task<FileSourceProvider> GetFileSourceProviderAsync(CancellationToken cancellationToken)
+        protected override Task<Func<string, Dictionary<string, FileSource>>> GetFileSourceProviderAsync(CancellationToken cancellationToken)
         {
-            var all = Config.ToDictionary(
-                config => config.Key,
-                config => config.Value.Config.Values.Cast<FileSource>().ToArray());
-
-            return Task.FromResult(new FileSourceProvider(
-                All: all,
-                Single: catalogItem => all[catalogItem.Catalog.Id].First()));
+            return Task.FromResult<Func<string, Dictionary<string, FileSource>>>(catalogId => Config[catalogId]);
         }
 
         protected override Task<CatalogRegistration[]> GetCatalogRegistrationsAsync(string path, CancellationToken cancellationToken)
@@ -73,7 +61,13 @@ namespace Nexus.Extensibility.Tests
                     dataType: NexusDataType.INT64,
                     samplePeriod: TimeSpan.FromSeconds(1));
 
-            var resource = new Resource(id: "Resource1", representations: new List<Representation>() { representation });
+            var fileSourceId = Config.First().Value.First().Key;
+
+            var resource = new ResourceBuilder(id: "Resource1")
+                .WithProperty(StructuredFileDataSource.FileSourceKey, fileSourceId)
+                .AddRepresentation(representation)
+                .Build();
+
             var catalog = new ResourceCatalog(id: "/A/B/C", resources: new List<Resource>() { resource });
 
             return Task.FromResult(catalog);

@@ -1,17 +1,15 @@
 {
   "/A/B/C": {
-    "Config": {
-      "default": {
-        "PathSegments": [
-          "'DATA'",
-          "yyyy-MM"
-        ],
-        "FileTemplate": "yyyyMMdd_HH_x_????.dat",
-        "FileDateTimePreselector": "(.{11})",
-        "FileDateTimeSelector": "yyyyMMdd_HH",
-        "FilePeriod": "01:00:00",
-        "UtcOffset": "00:00:00"
-      }
+    "default": {
+      "PathSegments": [
+        "'DATA'",
+        "yyyy-MM"
+      ],
+      "FileTemplate": "yyyyMMdd_HH_x_????.dat",
+      "FileDateTimePreselector": "(.{11})",
+      "FileDateTimeSelector": "yyyyMMdd_HH",
+      "FilePeriod": "01:00:00",
+      "UtcOffset": "00:00:00"
     }
   }
 }

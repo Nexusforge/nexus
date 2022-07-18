@@ -32,7 +32,7 @@ namespace Nexus.Extensibility.Tests
             if (methodInfo is null)
                 throw new Exception("method info is null");
 
-            var config = tester.Config.Values.First().Config.Values.First();
+            var config = tester.Config.Values.First().Values.First();
 
             var args = new object[] { config, default! };
             methodInfo.Invoke(dataSource, args);
