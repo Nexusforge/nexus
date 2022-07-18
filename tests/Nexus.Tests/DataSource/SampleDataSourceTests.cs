@@ -29,8 +29,8 @@ namespace DataSource
 
             // assert
             var actualIds = actual.Resources!.Select(resource => resource.Id).ToList();
-            var actualUnits = actual.Resources!.Select(resource => GetPropertyOrDefault(resource.Properties, "unit")).ToList();
-            var actualGroups = actual.Resources!.SelectMany(resource => GetArrayOrDefault(resource.Properties, "groups"));
+            var actualUnits = actual.Resources!.Select(resource => resource.Properties.GetStringValue("unit")).ToList();
+            var actualGroups = actual.Resources!.SelectMany(resource => resource.Properties.GetStringArray("groups") ?? new string[0]);
             var actualDataTypes = actual.Resources!.SelectMany(resource => resource.Representations!.Select(representation => representation.DataType)).ToList();
 
             var expectedIds = new List<string>() { "T1", "V1", "unix_time1", "unix_time2" };
@@ -42,30 +42,6 @@ namespace DataSource
             Assert.True(expectedUnits.SequenceEqual(actualUnits));
             Assert.True(expectedGroups.SequenceEqual(actualGroups));
             Assert.True(expectedDataTypes.SequenceEqual(actualDataTypes));
-
-            string? GetPropertyOrDefault(JsonElement? element, string propertyName)
-            {
-                if (!element.HasValue)
-                    return default;
-
-                if (element.Value.TryGetProperty(propertyName, out var result))
-                    return result.GetString();
-
-                else
-                    return default;
-            }
-
-            string[] GetArrayOrDefault(JsonElement? element, string propertyName)
-            {
-                if (!element.HasValue)
-                    return new string[0];
-
-                if (element.Value.TryGetProperty(propertyName, out var result))
-                    return result.EnumerateArray().Select(current => current.GetString()!).ToArray();
-
-                else
-                    return new string[0];
-            }
         }
 
         [Fact]

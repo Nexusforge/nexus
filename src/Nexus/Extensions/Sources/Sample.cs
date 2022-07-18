@@ -113,8 +113,10 @@ namespace Nexus.Sources
                     // check credentials
                     if (catalog.Id == RemoteCatalogId)
                     {
-                        if ((TryGetStringValue("user", out var user) && user != RemoteUsername) ||
-                            (TryGetStringValue("password", out var password) && password != RemotePassword))
+                        var user = Context.RequestConfiguration.GetStringValue("user");
+                        var password = Context.RequestConfiguration.GetStringValue("password");
+
+                        if (user != RemoteUsername || password != RemotePassword)
                             throw new Exception("The provided credentials are invalid.");
                     }
 
@@ -207,19 +209,6 @@ namespace Nexus.Sources
             });
 
             return catalogBuilder.Build();
-        }
-
-        private bool TryGetStringValue(string propertyName, [NotNullWhen(returnValue: true)] out string? value)
-        {
-            value = default;
-            var requestConfiguration = Context.RequestConfiguration!.Value;
-
-            if (requestConfiguration.ValueKind == JsonValueKind.Object &&
-                requestConfiguration.TryGetProperty(propertyName, out var propertyValue) &&
-                propertyValue.ValueKind == JsonValueKind.String)
-                value = propertyValue.GetString();
-
-            return value != default;
         }
 
         private double ToUnixTimeStamp(

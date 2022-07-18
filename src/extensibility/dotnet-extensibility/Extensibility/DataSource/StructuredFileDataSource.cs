@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Nexus.DataModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace Nexus.Extensibility
@@ -43,6 +44,15 @@ namespace Nexus.Extensibility
         // that file.
         //
         // (6) Only file URLs are supported
+
+        #region 
+
+        /// <summary>
+        /// The key for the file source property.
+        /// </summary>
+        public const string FileSourceKey = "file-source";
+
+        #endregion
 
         #region Properties
 
@@ -490,10 +500,23 @@ namespace Nexus.Extensibility
             return GetCatalogRegistrationsAsync(path, cancellationToken);
         }
 
-        Task<ResourceCatalog> 
+        async Task<ResourceCatalog> 
             IDataSource.GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
         {
-            return GetCatalogAsync(catalogId, cancellationToken);
+            var catalog = await GetCatalogAsync(catalogId, cancellationToken);
+
+            if (catalog.Resources is not null)
+            {
+                foreach (var resource in catalog.Resources)
+                {
+                    if (!(resource.Properties.HasValue &&
+                        resource.Properties.Value.TryGetProperty(FileSourceKey, out var fileSourceProperty) &&
+                        fileSourceProperty.ValueKind == JsonValueKind.String))
+                        throw new Exception($"The resource {resource.Id} is missing the file source property.");
+                }
+            }
+
+            return catalog;
         }
 
         Task<(DateTime Begin, DateTime End)> 

@@ -105,7 +105,7 @@ namespace Nexus.Writers
 
                 if (!_resourceMap.TryGetValue(resourceFilePath, out var resource))
                 {
-                    var rowIndexFormat = GetStringValueOrDefault("RowIndexFormat", "Index");
+                    var rowIndexFormat = Context.RequestConfiguration.GetStringValue("RowIndexFormat") ?? "Index";
                     var constraints = new Constraints(Required: true);
 
                     var timestampField = rowIndexFormat switch
@@ -202,6 +202,8 @@ namespace Nexus.Writers
                 .GroupBy(request => request.CatalogItem.Catalog)
                 .ToList();
 
+            var rowIndexFormat = Context.RequestConfiguration.GetStringValue("RowIndexFormat") ?? "Index";
+            var significantFigures = Context.RequestConfiguration.GetStringValue("SignificantFigures") ?? "4";
             var groupIndex = 0;
             var consumedLength = 0UL;
             var stringBuilder = new StringBuilder();
@@ -215,8 +217,6 @@ namespace Nexus.Writers
                 var physicalId = catalog.Id.TrimStart('/').Replace('/', '_');
                 var root = Context.ResourceLocator.ToPath();
                 var filePath = Path.Combine(root, $"{physicalId}_{ToISO8601(_lastFileBegin)}_{_lastSamplePeriod.ToUnitString()}.csv");
-                var rowIndexFormat = GetStringValueOrDefault("RowIndexFormat", "Index");
-                var significantFigures = uint.Parse(GetStringValueOrDefault("SignificantFigures", "4"));
 
                 using var streamWriter = new StreamWriter(File.Open(filePath, FileMode.Append, FileAccess.Write), Encoding.UTF8);
 
@@ -294,14 +294,8 @@ namespace Nexus.Writers
 
         private string GetFieldName(CatalogItem catalogItem)
         {
-            string? unit = default;
-
-            if (catalogItem.Resource.Properties is not null && 
-                catalogItem.Resource.Properties.Value.TryGetProperty(DataModelExtensions.Unit, out var unitElement) &&
-                unitElement.ValueKind == JsonValueKind.String)
-            {
-                unit = unitElement.GetString();
-            }
+            var unit = catalogItem.Resource.Properties
+                .GetStringValue(DataModelExtensions.Unit);
 
             var fieldName = $"{catalogItem.Resource.Id}_{catalogItem.Representation.Id}";
 
@@ -315,19 +309,6 @@ namespace Nexus.Writers
         private string ToISO8601(DateTime dateTime)
         {
             return dateTime.ToUniversalTime().ToString("yyyy-MM-ddTHH-mm-ssZ");
-        }
-
-        private string GetStringValueOrDefault(string propertyName, string defaultValue)
-        {
-            var value = defaultValue;
-            var requestConfiguration = Context.RequestConfiguration!.Value;
-
-            if (requestConfiguration.ValueKind == JsonValueKind.Object &&
-                requestConfiguration.TryGetProperty(propertyName, out var propertyValue) &&
-                propertyValue.ValueKind == JsonValueKind.String)
-                value = propertyValue.GetString() ?? value;
-
-            return value;
         }
 
         #endregion

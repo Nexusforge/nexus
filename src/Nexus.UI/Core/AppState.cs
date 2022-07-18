@@ -272,33 +272,10 @@ public class AppState : IAppState
             if (resource.Representations is null || !ResourceMatchesFilter(resource))
                 continue;
 
-            List<string> groupNames;
-
-            if (resource.Properties is null)
-            {
-                groupNames = new List<string>() { "default" };
-            }
-
-            else
-            {
-                if (resource.Properties.Value.TryGetProperty(GROUP_KEY, out var groupElement) && 
-                    groupElement.ValueKind == JsonValueKind.Array)
-                {
-                    groupNames = groupElement
-                        .EnumerateArray()
-                        .Where(current => current.ValueKind == JsonValueKind.String)
-                        .Select(current => current.GetString()!)
-                        .ToList();
-                }
-
-                else
-                {
-                    groupNames = new List<string>() { "default" };
-                }
-            }
+            var groupNames = resource.Properties.GetStringArray(GROUP_KEY) ?? new string[] { "default" };
 
             if (!groupNames.Any())
-                groupNames = new List<string>() { "default" };
+                groupNames = new string[] { "default" };
 
             foreach (var groupName in groupNames)
             {
@@ -328,14 +305,7 @@ public class AppState : IAppState
         if (string.IsNullOrWhiteSpace(SearchString))
             return true;
 
-        string? description = default;
-
-        if (resource.Properties is not null && 
-            resource.Properties.Value.TryGetProperty(CatalogItemViewModel.DESCRIPTION_KEY, out var descriptionElement) &&
-            descriptionElement.ValueKind == JsonValueKind.String)
-        {
-            description = descriptionElement.GetString();
-        };
+        var description = Utilities.GetStringValue(resource.Properties, CatalogItemViewModel.DESCRIPTION_KEY);
 
         if (resource.Id.Contains(SearchString, StringComparison.OrdinalIgnoreCase) ||
             description is not null && description.Contains(SearchString, StringComparison.OrdinalIgnoreCase))

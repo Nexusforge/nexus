@@ -146,16 +146,29 @@ public static class Utilities
         return kind;
     }
 
-    public static string? GetPropertyStringValue(JsonElement? properties, string key)
+    public static string? GetStringValue(JsonElement? properties, string propertyName)
     {
-        string? result = default;
+        if (properties.HasValue && 
+            properties.Value.ValueKind == JsonValueKind.Object &&
+            properties.Value.TryGetProperty(propertyName, out var propertyValue) &&
+            propertyValue.ValueKind == JsonValueKind.String)
+            return propertyValue.GetString()!;
 
-        if (properties is not null && properties.Value.TryGetProperty(key, out var element) && 
-            element.ValueKind == JsonValueKind.String)
-        {
-            result = element.GetString();
-        }
+        return default;
+    }
 
-        return result;
+    public static string[]? GetStringArray(this JsonElement? element, string propertyName)
+    {
+        if (element.HasValue && 
+            element.Value.ValueKind == JsonValueKind.Object &&
+            element.Value.TryGetProperty(propertyName, out var propertyValue) &&
+            propertyValue.ValueKind == JsonValueKind.Array)
+            return propertyValue
+                .EnumerateArray()
+                .Where(current => current.ValueKind == JsonValueKind.String)
+                .Select(current => current.GetString()!)
+                .ToArray();
+
+        return default;
     }
 }
