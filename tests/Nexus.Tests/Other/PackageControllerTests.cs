@@ -263,7 +263,7 @@ namespace Other
                 Configuration: new Dictionary<string, string>
                 {
                     // required
-                    ["ProjectPath"] = "nexusforge/github-releases-provider-test-project",
+                    ["ProjectPath"] = "malstroem-labs/github-releases-provider-test-project",
 
                     // optional token with scope(s): repo
                     ["Token"] = Encoding.ASCII.GetString(token)
@@ -293,7 +293,7 @@ namespace Other
 
             // create restore folder
             var restoreRoot = Path.Combine(Path.GetTempPath(), $"Nexus.Tests.{Guid.NewGuid()}");
-            var restoreFolderPath = Path.Combine(restoreRoot, "github-releases", $"nexusforge_github-releases-provider-test-project", version);
+            var restoreFolderPath = Path.Combine(restoreRoot, "github-releases", $"malstroem-labs_github-releases-provider-test-project", version);
             Directory.CreateDirectory(restoreRoot);
 
             try
@@ -316,7 +316,7 @@ namespace Other
                     Configuration: new Dictionary<string, string>
                     {
                         // required
-                        ["ProjectPath"] = "nexusforge/github-releases-provider-test-project",
+                        ["ProjectPath"] = "malstroem-labs/github-releases-provider-test-project",
                         ["Tag"] = "v1.0.1",
                         ["AssetSelector"] = assetSelector,
 
@@ -364,7 +364,7 @@ namespace Other
                 {
                     // required
                     ["Server"] = "https://gitlab.com",
-                    ["ProjectPath"] = "nexusforge/Test-Group/my-awesome-test-project",
+                    ["ProjectPath"] = "malstroem-labs/Test-Group/my-awesome-test-project",
 
                     // optional token with scope(s): read_api
                     ["Token"] = "doQyXYqgmFxS1LUsupue"
@@ -394,7 +394,7 @@ namespace Other
 
             // create restore folder
             var restoreRoot = Path.Combine(Path.GetTempPath(), $"Nexus.Tests.{Guid.NewGuid()}");
-            var restoreFolderPath = Path.Combine(restoreRoot, "gitlab-releases-v4", $"nexusforge_test-group_my-awesome-test-project", version);
+            var restoreFolderPath = Path.Combine(restoreRoot, "gitlab-releases-v4", $"malstroem-labs_test-group_my-awesome-test-project", version);
             Directory.CreateDirectory(restoreRoot);
 
             try
@@ -406,7 +406,7 @@ namespace Other
                     {
                         // required
                         ["Server"] = "https://gitlab.com",
-                        ["ProjectPath"] = "nexusforge/Test-Group/my-awesome-test-project",
+                        ["ProjectPath"] = "malstroem-labs/Test-Group/my-awesome-test-project",
                         ["Tag"] = "v1.0.1",
                         ["AssetSelector"] = assetSelector,
 
@@ -454,7 +454,7 @@ namespace Other
                 {
                     // required
                     ["Server"] = "https://gitlab.com",
-                    ["ProjectPath"] = "nexusforge/Test-Group/my-awesome-test-project",
+                    ["ProjectPath"] = "malstroem-labs/Test-Group/my-awesome-test-project",
                     ["Package"] = "test-package",
 
                     // optional token with scope(s): read_api
@@ -485,7 +485,7 @@ namespace Other
 
             // create restore folder
             var restoreRoot = Path.Combine(Path.GetTempPath(), $"Nexus.Tests.{Guid.NewGuid()}");
-            var restoreFolderPath = Path.Combine(restoreRoot, "gitlab-packages-generic-v4", $"nexusforge_test-group_my-awesome-test-project", version);
+            var restoreFolderPath = Path.Combine(restoreRoot, "gitlab-packages-generic-v4", $"malstroem-labs_test-group_my-awesome-test-project", version);
             Directory.CreateDirectory(restoreRoot);
 
             try
@@ -497,7 +497,7 @@ namespace Other
                     {
                         // required
                         ["Server"] = "https://gitlab.com",
-                        ["ProjectPath"] = "nexusforge/Test-Group/my-awesome-test-project",
+                        ["ProjectPath"] = "malstroem-labs/Test-Group/my-awesome-test-project",
                         ["Package"] = "test-package",
                         ["Version"] = "v1.0.1",
                         ["AssetSelector"] = assetSelector,

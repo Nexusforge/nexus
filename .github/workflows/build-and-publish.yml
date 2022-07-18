@@ -65,8 +65,8 @@ jobs:
 
       - name: Docker Build
         run: |
-          docker build -t ghcr.io/nexusforge/nexus:${{ env.VERSION }} .
-          docker save --output artifacts/images/nexus_image.tar ghcr.io/nexusforge/nexus:${{ env.VERSION }}
+          docker build -t ghcr.io/malstroem-labs/nexus:${{ env.VERSION }} .
+          docker save --output artifacts/images/nexus_image.tar ghcr.io/malstroem-labs/nexus:${{ env.VERSION }}
 
       - name: API
         run: |
@@ -131,7 +131,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Docker Push
-        run: docker push ghcr.io/nexusforge/nexus:${{ needs.build.outputs.version }}
+        run: docker push ghcr.io/malstroem-labs/nexus:${{ needs.build.outputs.version }}
 
   publish_release:
 
@@ -174,4 +174,4 @@ jobs:
           password: ${{ secrets.DOCKER_API_KEY }}
 
       - name: Docker Push
-        run: docker push nexusforge/nexus:${{ needs.build.outputs.version }}
+        run: docker push malstroem-labs/nexus:${{ needs.build.outputs.version }}

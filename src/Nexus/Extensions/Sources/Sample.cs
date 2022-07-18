@@ -8,8 +8,8 @@ namespace Nexus.Sources
 {
     [ExtensionDescription(
         "Provides catalogs with sample data.",
-        "https://github.com/Nexusforge/nexus",
-        "https://github.com/Nexusforge/nexus/blob/master/src/Nexus/Extensions/Sources/Sample.cs")]
+        "https://github.com/malstroem-labs/nexus",
+        "https://github.com/malstroem-labs/nexus/blob/master/src/Nexus/Extensions/Sources/Sample.cs")]
     internal class Sample : IDataSource
     {
         #region Fields

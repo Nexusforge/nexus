@@ -1,6 +1,6 @@
 # Nexus
 
-[![GitHub Actions](https://github.com/nexusforge/nexus/actions/workflows/build-and-publish.yml/badge.svg?branch=master)](https://github.com/Nexusforge/nexus/actions)
+[![GitHub Actions](https://github.com/malstroem-labs/nexus/actions/workflows/build-and-publish.yml/badge.svg?branch=master)](https://github.com/malstroem-labs/nexus/actions)
 
 Nexus is an extensible user interface for your time-series data lake with REST API support. 
 

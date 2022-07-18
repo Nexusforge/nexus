@@ -46,7 +46,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     author=author,
-    url="https://github.com/Nexusforge/nexus",
+    url="https://github.com/malstroem-labs/nexus",
     packages=[
         "nexus_api"
     ],

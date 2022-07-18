@@ -21,8 +21,8 @@ namespace Nexus.Writers
 
     [ExtensionDescription(
         "Writes data into CSV files.",
-        "https://github.com/Nexusforge/nexus",
-        "https://github.com/Nexusforge/nexus/blob/master/src/Nexus/Extensions/Writers/Csv.cs")]
+        "https://github.com/malstroem-labs/nexus",
+        "https://github.com/malstroem-labs/nexus/blob/master/src/Nexus/Extensions/Writers/Csv.cs")]
     internal class Csv : IDataWriter, IDisposable
     {
         #region "Fields"

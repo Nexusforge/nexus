@@ -11,9 +11,9 @@
   </PropertyGroup>
     
   <PropertyGroup>
-    <Authors>https://github.com/Nexusforge</Authors>
-    <Company>https://github.com/Nexusforge</Company>
-    <Copyright>Nexusforge</Copyright>
+    <Authors>https://github.com/malstroem-labs</Authors>
+    <Company>https://github.com/malstroem-labs</Company>
+    <Copyright>malstroem-labs</Copyright>
     <Product>Nexus</Product>
   </PropertyGroup>
 
@@ -24,8 +24,8 @@
 
   <PropertyGroup>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://nexusforge.github.io/Nexus/</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/Nexusforge/nexus</RepositoryUrl>
+    <PackageProjectUrl>https://malstroem-labs.github.io/Nexus/</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/malstroem-labs/nexus</RepositoryUrl>
   </PropertyGroup>
 
 </Project>
