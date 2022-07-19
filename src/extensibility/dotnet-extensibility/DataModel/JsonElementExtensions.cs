@@ -19,7 +19,7 @@ namespace Nexus.DataModel
             if (element.HasValue && 
                 element.Value.ValueKind == JsonValueKind.Object &&
                 element.Value.TryGetProperty(propertyName, out var propertyValue) &&
-                propertyValue.ValueKind == JsonValueKind.String)
+                (propertyValue.ValueKind == JsonValueKind.String || propertyValue.ValueKind == JsonValueKind.Null))
                 return propertyValue.GetString();
 
             return default;
@@ -39,7 +39,7 @@ namespace Nexus.DataModel
                 propertyValue.ValueKind == JsonValueKind.Array)
                 return propertyValue
                     .EnumerateArray()
-                    .Where(current => current.ValueKind == JsonValueKind.String)
+                    .Where(current => current.ValueKind == JsonValueKind.String || propertyValue.ValueKind == JsonValueKind.Null)
                     .Select(current => current.GetString())
                     .ToArray();
 
