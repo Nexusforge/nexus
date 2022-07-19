@@ -61,9 +61,15 @@ namespace Nexus.Extensibility
         /// </summary>
         protected string Root { get; private set; } = default!;
 
-        private DataSourceContext Context { get; set; } = default!;
+        /// <summary>
+        /// Gets the data source context. This property is not accessible from within class constructors as it will bet set later.
+        /// </summary>
+        protected DataSourceContext Context { get; private set; } = default!;
 
-        private ILogger Logger { get; set; } = default!;
+        /// <summary>
+        /// Gets the data logger. This property is not accessible from within class constructors as it will bet set later.
+        /// </summary>
+        protected ILogger Logger { get; private set; } = default!;
 
         private Func<string, Dictionary<string, FileSource>> FileSourceProvider { get; set; } = default!;
 

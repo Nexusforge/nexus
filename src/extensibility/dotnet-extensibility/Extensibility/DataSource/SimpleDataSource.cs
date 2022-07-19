@@ -32,12 +32,12 @@ namespace Nexus.Extensibility
         /// <summary>
         /// Gets the data source context. This property is not accessible from within class constructors as it will bet set later.
         /// </summary>
-        public DataSourceContext Context { get; private set; } = default!;
+        protected DataSourceContext Context { get; private set; } = default!;
 
         /// <summary>
         /// Gets the data logger. This property is not accessible from within class constructors as it will bet set later.
         /// </summary>
-        public ILogger Logger { get; private set; } = default!;
+        protected ILogger Logger { get; private set; } = default!;
 
         #endregion
 
