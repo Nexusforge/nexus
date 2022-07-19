@@ -129,7 +129,7 @@ namespace Nexus.Controllers
                             isWritable && Regex.IsMatch(id, childContainer.DataSourceRegistration.ReleasePattern);
 
                         var isVisible =
-                            isReadable && Regex.IsMatch(id, childContainer.DataSourceRegistration.VisibilityPattern);
+                            isReadable || Regex.IsMatch(id, childContainer.DataSourceRegistration.VisibilityPattern);
 
                         var isOwner = childContainer.Owner?.FindFirstValue(Claims.Subject) == User.FindFirstValue(Claims.Subject);
 
