@@ -82,8 +82,11 @@ namespace Nexus.Extensibility
         /// </summary>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         /// <returns>The task.</returns>
-        protected abstract Task
-            InitializeAsync(CancellationToken cancellationToken);
+        protected virtual Task
+            InitializeAsync(CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
 
         /// <summary>
         /// Gets the file source provider that provides information about the file structure within the database.

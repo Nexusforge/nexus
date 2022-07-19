@@ -8,25 +8,6 @@ namespace Nexus.Extensibility
     /// </summary>
     public abstract class SimpleDataSource : IDataSource
     {
-        #region Fields
-
-        private CatalogRegistration[] _catalogRegistrations;
-
-        #endregion
-
-        #region Constructors
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SimpleDataSource"/>.
-        /// </summary>
-        /// <param name="catalogRegistrations">A list of catalog registrations.</param>
-        public SimpleDataSource(CatalogRegistration[] catalogRegistrations)
-        {
-            _catalogRegistrations = catalogRegistrations;
-        }
-
-        #endregion
-
         #region Properties
 
         /// <summary>
@@ -44,7 +25,7 @@ namespace Nexus.Extensibility
         #region Methods
 
         /// <inheritdoc />
-        public virtual Task SetContextAsync(
+        public Task SetContextAsync(
             DataSourceContext context, 
             ILogger logger, 
             CancellationToken cancellationToken)
@@ -56,16 +37,9 @@ namespace Nexus.Extensibility
         }
 
         /// <inheritdoc />
-        public Task<CatalogRegistration[]> GetCatalogRegistrationsAsync(
+        public abstract Task<CatalogRegistration[]> GetCatalogRegistrationsAsync(
             string path,
-            CancellationToken cancellationToken)
-        {
-            if (path == "/")
-                return Task.FromResult(_catalogRegistrations);
-
-            else
-                return Task.FromResult(new CatalogRegistration[0]);
-        }
+            CancellationToken cancellationToken);
 
         /// <inheritdoc />
         public abstract Task<ResourceCatalog> GetCatalogAsync(
