@@ -189,21 +189,13 @@ class SimpleDataSource(IDataSource, ABC):
     Logger: ILogger
     """Gets the data logger. This property is not accessible from within class constructors as it will bet set later."""
 
-    def __init__(self, catalogRegistrations: List[CatalogRegistration]):
-        """
-        Initializes a new instance of the SimpleDataSource
-        
-            Args:
-                catalogRegistrations: A list of catalog registrations.
-        """
-        self._catalogRegistrations = catalogRegistrations
-
     async def set_context(self, context: DataSourceContext, logger: ILogger):
         self.Context = context
         self.Logger = logger
 
+    @abstractmethod
     async def get_catalog_registrations(self, path: str) -> List[CatalogRegistration]:
-        return self._catalogRegistrations
+        pass
 
     @abstractmethod
     def get_catalog(self, catalog_id: str) -> Awaitable[ResourceCatalog]:
