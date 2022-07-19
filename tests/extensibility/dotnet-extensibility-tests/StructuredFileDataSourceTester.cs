@@ -26,16 +26,12 @@ namespace Nexus.Extensibility.Tests
 
         public Dictionary<string, Dictionary<string, FileSource>> Config { get; private set; } = default!;
 
-        private DataSourceContext Context { get; set; } = default!;
-
         #endregion
 
         #region Methods
 
-        protected override async Task SetContextAsync(DataSourceContext context, ILogger logger, CancellationToken cancellationToken)
+        protected override async Task InitializeAsync(CancellationToken cancellationToken)
         {
-            Context = context;
-
             var configFilePath = Path.Combine(Root, "config.json");
 
             if (!File.Exists(configFilePath))
