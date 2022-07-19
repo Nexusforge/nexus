@@ -5,7 +5,7 @@ import enum
 import re
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Any, List, Optional, Pattern, cast
+from typing import Any, ClassVar, List, Optional, Pattern, cast
 
 from ._data_model_extensions import to_unit_string
 
@@ -132,16 +132,23 @@ class Representation:
         """The number of bits per element."""
         return (int(self.data_type) & 0xFF) >> 3
 
-_resource_id_validator : Pattern[str] = re.compile(r"[a-zA-Z][a-zA-Z0-9_]*$")
-
 @dataclass(frozen=True)
 class Resource:
     """
     A resource is part of a resource catalog and holds a list of representations.
     """
 
+    valid_id_expression : ClassVar[Pattern[str]] = re.compile(r"[a-zA-Z_][a-zA-Z_0-9]*$")
+    """Gets a regular expression to validate a resource identifier."""
+
+    invalid_id_chars_expression : ClassVar[Pattern[str]] = re.compile(r"[^a-zA-Z_0-9]")
+    """Gets a regular expression to find invalid characters in a resource identifier."""
+
+    invalid_id_start_chars_expression: ClassVar[Pattern[str]] = re.compile(r"^[^a-zA-Z_]+")
+    """Gets a regular expression to find invalid start characters in a resource identifier."""
+
     def __post_init__(self):
-        if not _resource_id_validator.match(self.id):
+        if not Resource.valid_id_expression.match(self.id):
             raise Exception(f"The resource catalog identifier {self.id} is not valid.")
 
         if self.representations is not None:
@@ -162,16 +169,17 @@ class Resource:
         if len(unique_ids) != len(representations):
             raise Exception("There are multiple representations with the same identifier.")
 
-_resource_catalog_id_validator : Pattern[str] = re.compile(r"(?:\/[a-zA-Z][a-zA-Z0-9_]*)+$")
-
 @dataclass(frozen=True)
 class ResourceCatalog:
     """
     A catalog is a top level element and holds a list of resources.
     """
 
+    valid_id_expression : ClassVar[Pattern[str]] = re.compile(r"(?:\/[a-zA-Z_][a-zA-Z_0-9]*)+$")
+    """Gets a regular expression to validate a resource catalog identifier."""
+
     def __post_init__(self):
-        if not _resource_catalog_id_validator.match(self.id):
+        if not ResourceCatalog.valid_id_expression.match(self.id):
             raise Exception(f"The resource catalog identifier {self.id} is not valid.")
 
         if self.resources is not None:

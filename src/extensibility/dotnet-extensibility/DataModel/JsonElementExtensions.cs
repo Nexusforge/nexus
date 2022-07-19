@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 
-namespace Nexus.Extensibility
+namespace Nexus.DataModel
 {
 #warning Remove as soon as there is framework level support (may take a while)
     /// <summary>

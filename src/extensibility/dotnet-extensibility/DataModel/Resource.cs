@@ -12,8 +12,6 @@ namespace Nexus.DataModel
     {
         #region Fields
 
-        private static Regex _idValidator = new Regex(@"^[a-zA-Z][a-zA-Z0-9_]*$");
-
         private string _id = default!;
         private JsonElement? _properties;
         private IReadOnlyList<Representation>? _representations;
@@ -41,6 +39,21 @@ namespace Nexus.DataModel
         #region Properties
 
         /// <summary>
+        /// Gets a regular expression to validate a resource identifier.
+        /// </summary>
+        public static Regex ValidIdExpression = new Regex(@"^[a-zA-Z_][a-zA-Z_0-9]*$");
+
+        /// <summary>
+        /// Gets a regular expression to find invalid characters in a resource identifier.
+        /// </summary>
+        public static Regex InvalidIdCharsExpression { get; } = new Regex(@"[^a-zA-Z_0-9]", RegexOptions.Compiled);
+
+        /// <summary>
+        /// Gets a regular expression to find invalid start characters in a resource identifier.
+        /// </summary>
+        public static Regex InvalidIdStartCharsExpression { get; } = new Regex(@"^[^a-zA-Z_]+", RegexOptions.Compiled);
+
+        /// <summary>
         /// Gets the identifier.
         /// </summary>
         public string Id
@@ -52,7 +65,7 @@ namespace Nexus.DataModel
 
             init
             {
-                if (!_idValidator.IsMatch(value))
+                if (!ValidIdExpression.IsMatch(value))
                     throw new ArgumentException($"The resource identifier {value} is not valid.");
 
                 _id = value;

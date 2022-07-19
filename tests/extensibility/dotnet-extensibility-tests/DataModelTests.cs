@@ -17,6 +17,7 @@ namespace Nexus.Extensibility.Tests
 
         // valid
         [InlineData("/a", true)]
+        [InlineData("/_a", true)]
         [InlineData("/ab_c", true)]
         [InlineData("/a9_b/c__99", true)]
 
@@ -38,13 +39,13 @@ namespace Nexus.Extensibility.Tests
         [Theory]
 
         // valid
+        [InlineData("_temp", true)]
         [InlineData("temp", true)]
         [InlineData("Temp", true)]
         [InlineData("Temp_1", true)]
 
         // invalid
         [InlineData("", false)]
-        [InlineData("_temp", false)]
         [InlineData("1temp", false)]
         [InlineData("teßp", false)]
         [InlineData("ª♫", false)]

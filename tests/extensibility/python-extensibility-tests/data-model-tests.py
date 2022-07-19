@@ -9,6 +9,7 @@ from nexus_extensibility import (NexusDataType, Representation, Resource,
     "id, is_valid", 
     [
         ("/a", True),
+        ("_a", True),
         ("/ab_c", True),
         ("/a9_b/c__99", True),
 
@@ -31,12 +32,12 @@ def can_validate_catalog_id_test(id: str, is_valid: bool):
 @pytest.mark.parametrize(
     "id, is_valid", 
     [
+        ("_temp", True),
         ("temp", True),
         ("Temp", True),
         ("Temp_1", True),
 
         ("", False),
-        ("_temp", False),
         ("1temp", False),
         ("teßp", False),
         ("ª♫", False),
