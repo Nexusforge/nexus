@@ -28,6 +28,7 @@ namespace Nexus.Extensibility
     /// </summary>
     /// <param name="FilePath">The path of the file to read.</param>
     /// <param name="CatalogItem">The catalog item to read.</param>
+    /// <param name="FileSource">The associated file source.</param>
     /// <param name="Data">The data buffer.</param>
     /// <param name="Status">The status buffer.</param>
     /// <param name="FileBegin">The begin date/time of the file.</param>
@@ -37,6 +38,7 @@ namespace Nexus.Extensibility
     public record ReadInfo(
         string FilePath,
         CatalogItem CatalogItem,
+        FileSource FileSource,
         Memory<byte> Data,
         Memory<byte> Status,
         DateTime FileBegin,

@@ -352,6 +352,7 @@ namespace Nexus.Extensibility
                                 var readInfo = new ReadInfo(
                                     filePath,
                                     catalogItem,
+                                    fileSource,
                                     slicedData,
                                     slicedStatus,
                                     fileBegin,
