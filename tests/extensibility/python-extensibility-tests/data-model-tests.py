@@ -9,7 +9,7 @@ from nexus_extensibility import (NexusDataType, Representation, Resource,
     "id, is_valid", 
     [
         ("/a", True),
-        ("_a", True),
+        ("/_a", True),
         ("/ab_c", True),
         ("/a9_b/c__99", True),
 
