@@ -78,14 +78,12 @@ namespace Nexus.Extensibility
         #region Protected API as seen by subclass
 
         /// <summary>
-        /// Invoked by Nexus right after construction to provide the context.
+        /// Invoked by Nexus right after construction.
         /// </summary>
-        /// <param name="context">The <paramref name="context"/>.</param>
-        /// <param name="logger">A logger.</param>
         /// <param name="cancellationToken">A token to cancel the current operation.</param>
         /// <returns>The task.</returns>
         protected abstract Task
-            SetContextAsync(DataSourceContext context, ILogger logger, CancellationToken cancellationToken);
+            InitializeAsync(CancellationToken cancellationToken);
 
         /// <summary>
         /// Gets the file source provider that provides information about the file structure within the database.
@@ -498,7 +496,7 @@ namespace Nexus.Extensibility
             Context = context;
             Logger = logger;
 
-            await SetContextAsync(context, logger, cancellationToken);
+            await InitializeAsync(cancellationToken);
             FileSourceProvider = await GetFileSourceProviderAsync(cancellationToken);
         }
 
