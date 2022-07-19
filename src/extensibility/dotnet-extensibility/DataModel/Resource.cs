@@ -41,7 +41,7 @@ namespace Nexus.DataModel
         /// <summary>
         /// Gets a regular expression to validate a resource identifier.
         /// </summary>
-        public static Regex ValidIdExpression = new Regex(@"^[a-zA-Z_][a-zA-Z_0-9]*$");
+        public static Regex ValidIdExpression { get; } = new Regex(@"^[a-zA-Z_][a-zA-Z_0-9]*$");
 
         /// <summary>
         /// Gets a regular expression to find invalid characters in a resource identifier.
