@@ -107,8 +107,7 @@ namespace Nexus.Services
             Directory.CreateDirectory(_pathsOptions.Config);
 
             var filePath = Path.Combine(_pathsOptions.Config, "project.json");
-
-            return File.Open(filePath, FileMode.Truncate, FileAccess.Write);
+            return File.Open(filePath, FileMode.Create, FileAccess.Write);
         }
 
         /* /catalogs/catalog_id/... */

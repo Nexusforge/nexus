@@ -254,27 +254,24 @@ namespace Nexus.Services
             foreach (var dataWriterType in _extensionHive.GetExtensions<IDataWriter>())
             {
                 var fullName = dataWriterType.FullName!;
+                var attribute = dataWriterType.GetCustomAttribute<DataWriterDescriptionAttribute>();
 
-                JsonElement additionalInformation;
-
-                try
-                {
-                    additionalInformation = dataWriterType.GetFirstAttribute<DataWriterDescriptionAttribute>().Description;
-                }
-                catch
+                if (attribute is null)
                 {
                     _logger.LogWarning("Data writer {DataWriter} has no description attribute", fullName);
                     continue;
                 }
+
+                var additionalInformation = attribute.Description;
 
                 if (!(additionalInformation.ValueKind == JsonValueKind.Object && 
                       additionalInformation.TryGetProperty("label", out var labelProperty) && 
                       labelProperty.ValueKind == JsonValueKind.String))
                     throw new Exception($"The description of data writer {fullName} has no label property");
 
-                var attribute = dataWriterType.GetCustomAttribute<ExtensionDescriptionAttribute>(inherit: false);
+                var attribute2 = dataWriterType.GetCustomAttribute<ExtensionDescriptionAttribute>(inherit: false);
 
-                if (attribute is null)
+                if (attribute2 is null)
                     dataWriterDescriptions.Add(new ExtensionDescription(
                         fullName, 
                         default, 
@@ -285,9 +282,9 @@ namespace Nexus.Services
                 else
                     dataWriterDescriptions.Add(new ExtensionDescription(
                         fullName, 
-                        attribute.Description, 
-                        attribute.ProjectUrl, 
-                        attribute.RepositoryUrl, 
+                        attribute2.Description, 
+                        attribute2.ProjectUrl, 
+                        attribute2.RepositoryUrl, 
                         additionalInformation));
             }
 
