@@ -111,7 +111,7 @@ else
                         ? resource.Id
                         : $"{resource.Id} ({kindAsString})";
 
-                    var unit = Utilities.GetStringValue(resource.Properties, CatalogItemViewModel.UNIT_KEY) ?? string.Empty;
+                    var unit = resource.Properties.GetStringValue(CatalogItemViewModel.UNIT_KEY) ?? string.Empty;
 
                     lineSeriesSet.Add(new LineSeries(name, unit, AppState.Settings.SamplePeriod.Value, data));
                 }

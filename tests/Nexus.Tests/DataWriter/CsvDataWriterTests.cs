@@ -21,10 +21,10 @@ namespace DataWriter
         }
 
         [Theory]
-        [InlineData("Index")]
-        [InlineData("Unix")]
-        [InlineData("Excel")]
-        [InlineData("ISO 8601")]
+        [InlineData("index")]
+        [InlineData("unix")]
+        [InlineData("excel")]
+        [InlineData("iso-8601")]
         public async Task CanWriteFiles(string rowIndexFormat)
         {
             var targetFolder = _fixture.GetTargetFolder();
@@ -35,8 +35,8 @@ namespace DataWriter
                 SystemConfiguration: default!,
                 RequestConfiguration: new JsonObject()
                 {
-                    ["RowIndexFormat"] = rowIndexFormat,
-                    ["SignificantFigures"] = "7"
+                    ["row-index-format"] = rowIndexFormat,
+                    ["significant-figures"] = "7"
                 }.Deserialize<JsonElement>());
 
             await dataWriter.SetContextAsync(context, NullLogger.Instance, CancellationToken.None);
@@ -98,10 +98,10 @@ namespace DataWriter
                 {
                     return rowIndexFormat switch
                     {
-                        "Index" => ("index", "1999", string.Format(nfi, "{0:N0}", value)),
-                        "Unix" => ("Unix time", "1577838799.00000", string.Format(nfi, "{0:N5}", (begin.AddSeconds(value) - new DateTime(1970, 01, 01)).TotalSeconds)),
-                        "Excel" => ("Excel time", "43831.023136574", string.Format(nfi, "{0:N9}", begin.AddSeconds(value).ToOADate())),
-                        "ISO 8601" => ("ISO 8601 time", "2020-01-01T00:33:19.0000000Z", begin.AddSeconds(value).ToString("o")),
+                        "index" => ("Index", "1999", string.Format(nfi, "{0:N0}", value)),
+                        "unix" => ("Unix time", "1577838799.00000", string.Format(nfi, "{0:N5}", (begin.AddSeconds(value) - new DateTime(1970, 01, 01)).TotalSeconds)),
+                        "excel" => ("Excel time", "43831.023136574", string.Format(nfi, "{0:N9}", begin.AddSeconds(value).ToOADate())),
+                        "iso-8601" => ("ISO 8601 time", "2020-01-01T00:33:19.0000000Z", begin.AddSeconds(value).ToString("o")),
                         _ => throw new Exception($"Row index format {rowIndexFormat} is not supported.")
                     };
                 })

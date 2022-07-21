@@ -67,7 +67,7 @@ Recreate `CatalogState` but reuse `LazyCatalogInfo`.
 
 Update `CatalogState`.
 
-The `IDataSource` interface offers the method `GetCatalogRegistrations(string path)`. This method should return the direct child catalogs (if any). When, for instance, the path is `/`, the returned identifiers could be `/a/b` and `/c`. When a user then clicks on the catalog `/a/b` from within the GUI, `GetCatalogRegistrations` is called again, now with the path `/a/b` and this time the `IDataSource` instance might return the catalog identifier `/a/b/c`.
+The `IDataSource` interface offers the method `GetCatalogRegistrations(string path)`. This method should return the direct child catalogs (if any). When, for instance, the path is `/`, the returned identifiers could be `/a/b` and `/c`. When a user then clicks on the catalog `/a/b` from within the UI, `GetCatalogRegistrations` is called again, now with the path `/a/b` and this time the `IDataSource` instance might return the catalog identifier `/a/b/c`.
 
 When, alternatively, the REST API is used to access the not yet known catalog `/a/b/c`, the `IDataSource` of the next higher known catalog is consulted to provide child catalog identifiers. This process is repeated until the requested catalog is found and loaded.
 

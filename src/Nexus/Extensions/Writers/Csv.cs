@@ -15,9 +15,7 @@ using System.Text.Json.Serialization;
 
 namespace Nexus.Writers
 {
-    [DataWriterFormatName("CSV + Schema (*.csv)")]
-    [DataWriterSelectOption("RowIndexFormat", "Row index format", "Excel", new string[] { "Excel", "Index", "Unix", "ISO 8601" }, new string[] { "Excel time", "Index-based", "Unix time" })]
-    [DataWriterIntegerNumberInputOption("SignificantFigures", "Significant figures", 4, 0, int.MaxValue)]
+    [DataWriterDescription(DESCRIPTION)]
 
     [ExtensionDescription(
         "Writes data into CSV files.",
@@ -26,6 +24,34 @@ namespace Nexus.Writers
     internal class Csv : IDataWriter, IDisposable
     {
         #region "Fields"
+
+        private const string DESCRIPTION = @"
+{
+  ""label"": ""CSV + Schema (*.csv)"",
+  ""options"": [
+    {
+      ""type"": ""select"",
+      ""configuration-key"": ""row-index-format"",
+      ""label"": ""Row index format"",
+      ""default"": ""excel"",
+      ""items"": {
+        ""excel"": ""Excel time"",
+        ""index"": ""Index-based"",
+        ""unix"": ""Unix time"",
+        ""iso-8601"": ""ISO 8601""
+      }
+    },
+    {
+      ""type"": ""input-integer"",
+      ""configuration-key"": ""significant-figures"",
+      ""label"": ""Significant figures"",
+      ""default"": 4,
+      ""minimum"": 0,
+      ""maximum"": 2147483647
+    }
+  ]
+}
+        ";
 
         private double _unixStart;
         private double _excelStart;
@@ -105,15 +131,15 @@ namespace Nexus.Writers
 
                 if (!_resourceMap.TryGetValue(resourceFilePath, out var resource))
                 {
-                    var rowIndexFormat = Context.RequestConfiguration.GetStringValue("RowIndexFormat") ?? "Index";
+                    var rowIndexFormat = Context.RequestConfiguration.GetStringValue("row-index-format") ?? "index";
                     var constraints = new Constraints(Required: true);
 
                     var timestampField = rowIndexFormat switch
                     {
-                        "Index" => new Field("index", "integer", constraints, default),
-                        "Unix" => new Field("Unix time", "number", constraints, default),
-                        "Excel" => new Field("Excel time", "number", constraints, default),
-                        "ISO 8601" => new Field("ISO 8601 time", "datetime", constraints, default),
+                        "index" => new Field("Index", "integer", constraints, default),
+                        "unix" => new Field("Unix time", "number", constraints, default),
+                        "excel" => new Field("Excel time", "number", constraints, default),
+                        "iso-8601" => new Field("ISO 8601 time", "datetime", constraints, default),
                         _ => throw new NotSupportedException($"The row index format {rowIndexFormat} is not supported.")
                     };
 
@@ -202,8 +228,8 @@ namespace Nexus.Writers
                 .GroupBy(request => request.CatalogItem.Catalog)
                 .ToList();
 
-            var rowIndexFormat = Context.RequestConfiguration.GetStringValue("RowIndexFormat") ?? "Index";
-            var significantFigures = Context.RequestConfiguration.GetStringValue("SignificantFigures") ?? "4";
+            var rowIndexFormat = Context.RequestConfiguration.GetStringValue("row-index-format") ?? "index";
+            var significantFigures = Context.RequestConfiguration.GetStringValue("significant-figures") ?? "4";
             var groupIndex = 0;
             var consumedLength = 0UL;
             var stringBuilder = new StringBuilder();
@@ -236,19 +262,19 @@ namespace Nexus.Writers
 
                     switch (rowIndexFormat)
                     {
-                        case "Index":
+                        case "index":
                             stringBuilder.Append($"{string.Format(_nfi, "{0:N0}", offset + rowIndex)},");
                             break;
 
-                        case "Unix":
+                        case "unix":
                             stringBuilder.Append($"{string.Format(_nfi, "{0:N5}", unixStart + rowIndex * unixScalingFactor)},");
                             break;
 
-                        case "Excel":
+                        case "excel":
                             stringBuilder.Append($"{string.Format(_nfi, "{0:N9}", excelStart + rowIndex * excelScalingFactor)},");
                             break;
 
-                        case "ISO 8601":
+                        case "iso-8601":
                             stringBuilder.Append($"{(dateTimeStart + (rowIndex * _lastSamplePeriod)).ToString("o")},");
                             break;
 

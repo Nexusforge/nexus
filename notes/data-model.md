@@ -92,7 +92,7 @@ The `ResourceCatalog` and `Resource` contain a `JsonElement Properties` property
 
 # Special Properties
 
-The Nexus GUI uses some predefined properties and diplays them directly. The property keys are:
+The Nexus UI uses some predefined properties and diplays them directly. The property keys are:
 
 **ResourceCatalog**
 

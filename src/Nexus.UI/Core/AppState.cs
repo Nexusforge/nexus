@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Text.Json;
 using Microsoft.JSInterop;
 using Nexus.Api;
 using Nexus.UI.Services;
@@ -48,7 +47,7 @@ public class AppState : IAppState
     private ToastService _toastService;
     private ResourceCatalogViewModel? _selectedCatalog;
     private ViewState _viewState = ViewState.Normal;
-    private ExportParameters _exportParameters;
+    private ExportParameters _exportParameters = default!;
     private INexusClient _client;
     private List<(DateTime, Exception)> _errors = new List<(DateTime, Exception)>();
     private bool _beginAtZero;
@@ -305,7 +304,7 @@ public class AppState : IAppState
         if (string.IsNullOrWhiteSpace(SearchString))
             return true;
 
-        var description = Utilities.GetStringValue(resource.Properties, CatalogItemViewModel.DESCRIPTION_KEY);
+        var description = resource.Properties.GetStringValue(CatalogItemViewModel.DESCRIPTION_KEY);
 
         if (resource.Id.Contains(SearchString, StringComparison.OrdinalIgnoreCase) ||
             description is not null && description.Contains(SearchString, StringComparison.OrdinalIgnoreCase))

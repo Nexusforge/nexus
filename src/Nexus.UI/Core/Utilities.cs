@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Nexus.Api;
@@ -146,13 +147,40 @@ public static class Utilities
         return kind;
     }
 
-    public static string? GetStringValue(JsonElement? properties, string propertyName)
+    public static bool TryGetIntegerValue(
+        this JsonElement properties, string propertyName, [NotNullWhen(returnValue: true)] out int? value)
     {
-        if (properties.HasValue && 
-            properties.Value.ValueKind == JsonValueKind.Object &&
-            properties.Value.TryGetProperty(propertyName, out var propertyValue) &&
+        value = default;
+
+        if (properties.ValueKind == JsonValueKind.Object &&
+            properties.TryGetProperty(propertyName, out var propertyValue) &&
+            propertyValue.ValueKind == JsonValueKind.Number)
+            value = propertyValue.GetInt32();
+
+        return value is not null;
+    }
+
+    public static bool TryGetStringValue(
+        this JsonElement properties, string propertyName, [NotNullWhen(returnValue: true)] out string? value)
+    {
+        value = properties.GetStringValue(propertyName);
+        return value is not null;
+    }
+
+    public static string? GetStringValue(this JsonElement properties, string propertyName)
+    {
+        if (properties.ValueKind == JsonValueKind.Object &&
+            properties.TryGetProperty(propertyName, out var propertyValue) &&
             propertyValue.ValueKind == JsonValueKind.String)
             return propertyValue.GetString()!;
+
+        return default;
+    }
+
+    public static string? GetStringValue(this JsonElement? properties, string propertyName)
+    {
+        if (properties.HasValue)
+            return properties.Value.GetStringValue(propertyName);
 
         return default;
     }
@@ -168,6 +196,19 @@ public static class Utilities
                 .Where(current => current.ValueKind == JsonValueKind.String)
                 .Select(current => current.GetString()!)
                 .ToArray();
+
+        return default;
+    }
+
+    public static Dictionary<string, string>? GetStringDictionary(this JsonElement element, string propertyName)
+    {
+        if (element.ValueKind == JsonValueKind.Object &&
+            element.TryGetProperty(propertyName, out var propertyValue) &&
+            propertyValue.ValueKind == JsonValueKind.Object)
+            return propertyValue
+                .EnumerateObject()
+                .Where(current => current.Value.ValueKind == JsonValueKind.String)
+                .ToDictionary(current => current.Name, current => current.Value.GetString()!);
 
         return default;
     }

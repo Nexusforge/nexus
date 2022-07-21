@@ -214,13 +214,13 @@ namespace Nexus.Core
     /// <param name="Description">A nullable description.</param>
     /// <param name="ProjectUrl">A nullable project website URL.</param>
     /// <param name="RepositoryUrl">A nullable source repository URL.</param>
-    /// <param name="AdditionalInfo">A nullable dictionary with additional information.</param>
+    /// <param name="AdditionalInformation">Additional information about the extension.</param>
     public record ExtensionDescription(
         string Type, 
         string? Description,
         string? ProjectUrl,
         string? RepositoryUrl,
-        IReadOnlyDictionary<string, string>? AdditionalInfo);
+        JsonElement AdditionalInformation);
 
     /// <summary>
     /// A structure for catalog information.

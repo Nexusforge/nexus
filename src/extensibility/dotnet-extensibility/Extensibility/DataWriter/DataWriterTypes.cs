@@ -24,71 +24,20 @@ namespace Nexus.Extensibility
         ReadOnlyMemory<double> Data);
 
     /// <summary>
-    /// An attribute to provide the file format name to be display in the Nexus GUI.
+    /// An attribute to provide additional information about the data writer.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class)]
-    public class DataWriterFormatNameAttribute : Attribute
+    public class DataWriterDescriptionAttribute : Attribute
     {
         /// <summary>
-        /// Initializes a new instances of the <see cref="DataWriterFormatNameAttribute"/>.
+        /// Initializes a new instance of the <see cref="DataWriterDescriptionAttribute"/>.
         /// </summary>
-        /// <param name="formatName">The file format name to be display in the Nexus GUI.</param>
-        public DataWriterFormatNameAttribute(string formatName)
+        /// <param name="description">The data writer description including the data writer format label and UI options.</param>
+        public DataWriterDescriptionAttribute(string description)
         {
-            FormatName = formatName;
+            Description = JsonSerializer.Deserialize<JsonElement>(description);
         }
 
-        /// <summary>
-        /// Gets the file format name.
-        /// </summary>
-        public string FormatName { get; }
-    }
-
-    internal abstract class OptionAttribute : Attribute
-    {
-        public OptionAttribute(string configurationKey, string label)
-        {
-            ConfigurationKey = configurationKey;
-            Label = label;
-        }
-
-        public string ConfigurationKey { get; }
-
-        public string Label { get; }
-    }
-
-    [AttributeUsage(AttributeTargets.Class)]
-    internal class DataWriterSelectOptionAttribute : OptionAttribute
-    {
-        public DataWriterSelectOptionAttribute(string configurationKey, string label, string defaultValue, string[] keys, string[] values)
-            : base(configurationKey, label)
-        {
-            DefaultValue = defaultValue;
-
-            KeyValueMap = keys
-                .Zip(values)
-                .ToDictionary(entry => entry.First, entry => entry.Second);
-        }
-
-        public string DefaultValue { get; }
-
-        public Dictionary<string, string> KeyValueMap { get; }
-    }
-
-    [AttributeUsage(AttributeTargets.Class)]
-    internal class DataWriterIntegerNumberInputOptionAttribute : OptionAttribute
-    {
-        public DataWriterIntegerNumberInputOptionAttribute(string configurationKey, string label, int defaultValue, int minmum, int maximum) 
-            : base(configurationKey, label)
-        {
-            DefaultValue = defaultValue;
-
-            Minmum = minmum;
-            Maximum = maximum;
-        }
-
-        public int DefaultValue { get; }
-        public int Minmum { get; }
-        public int Maximum { get; }
+        internal JsonElement Description { get; }
     }
 }

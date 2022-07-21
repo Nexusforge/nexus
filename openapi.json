@@ -1871,13 +1871,8 @@
             "description": "A nullable source repository URL.",
             "nullable": true
           },
-          "additionalInfo": {
-            "type": "object",
-            "description": "A nullable dictionary with additional information.",
-            "nullable": true,
-            "additionalProperties": {
-              "type": "string"
-            }
+          "additionalInformation": {
+            "description": "Additional information about the extension."
           }
         }
       },

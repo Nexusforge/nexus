@@ -98,11 +98,6 @@ namespace Nexus.Utilities
             return ((ushort)dataType & 0x00FF) / 8;
         }
 
-        public static T GetFirstAttribute<T>(this Type type) where T : Attribute
-        {
-            return type.GetCustomAttributes(false).OfType<T>().First();
-        }
-
         public static IEnumerable<T> GetCustomAttributes<T>(this Type type) where T : Attribute
         {
             return type.GetCustomAttributes(false).OfType<T>();
