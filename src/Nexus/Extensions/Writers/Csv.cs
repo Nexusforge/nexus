@@ -25,7 +25,7 @@ namespace Nexus.Writers
     {
         #region "Fields"
 
-        public const string DESCRIPTION = @"
+        private const string DESCRIPTION = @"
 {
   ""label"": ""CSV + Schema (*.csv)"",
   ""options"": [
