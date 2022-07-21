@@ -43,8 +43,8 @@ params = {
 
     # CSV-only:
     "Configuration": {
-        "SignificantFigures": "4",
-        "RowIndexFormat": "Index" # Index, Unix, Excel
+        "significant-figures": "4",
+        "row-index-format": "index" # index, unix, excel, iso-8601
     }
 }
 

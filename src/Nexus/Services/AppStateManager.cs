@@ -248,61 +248,29 @@ namespace Nexus.Services
 
         private void LoadDataWriters()
         {
-            const string OPTIONS_KEY = "UI:Options";
-            const string FORMAT_NAME_KEY = "UI:FormatName";
-            const string TYPE_KEY = "Type";
-
             var dataWriterDescriptions = new List<ExtensionDescription>();
 
             /* for each data writer */
             foreach (var dataWriterType in _extensionHive.GetExtensions<IDataWriter>())
             {
                 var fullName = dataWriterType.FullName!;
-                var additionalInfo = new Dictionary<string, string>();
 
-                /* format name */
+                JsonElement additionalInformation;
+
                 try
                 {
-                    additionalInfo[FORMAT_NAME_KEY] = dataWriterType.GetFirstAttribute<DataWriterFormatNameAttribute>().FormatName;
+                    additionalInformation = dataWriterType.GetFirstAttribute<DataWriterDescriptionAttribute>().Description;
                 }
                 catch
                 {
-                    _logger.LogWarning("Data writer {DataWriter} has no format name attribute", fullName);
+                    _logger.LogWarning("Data writer {DataWriter} has no description attribute", fullName);
                     continue;
                 }
 
-                var counter = 0;
-
-                /* for each option */
-                foreach (var option in dataWriterType.GetCustomAttributes<OptionAttribute>())
-                {
-                    additionalInfo[$"{OPTIONS_KEY}:{counter}:{nameof(option.ConfigurationKey)}"] = option.ConfigurationKey;
-                    additionalInfo[$"{OPTIONS_KEY}:{counter}:{nameof(option.Label)}"] = option.Label;
-
-                    if (option is DataWriterIntegerNumberInputOptionAttribute integerNumberInput)
-                    {
-                        additionalInfo[$"{OPTIONS_KEY}:{counter}:{TYPE_KEY}"] = "IntegerNumberInput";
-                        additionalInfo[$"{OPTIONS_KEY}:{counter}:{nameof(integerNumberInput.DefaultValue)}"] = integerNumberInput.DefaultValue.ToString();
-                        additionalInfo[$"{OPTIONS_KEY}:{counter}:{nameof(integerNumberInput.Minmum)}"] = integerNumberInput.Minmum.ToString();
-                        additionalInfo[$"{OPTIONS_KEY}:{counter}:{nameof(integerNumberInput.Maximum)}"] = integerNumberInput.Maximum.ToString();
-                    }
-
-                    else if (option is DataWriterSelectOptionAttribute select)
-                    {
-                        additionalInfo[$"{OPTIONS_KEY}:{counter}:{TYPE_KEY}"] = "Select";
-                        additionalInfo[$"{OPTIONS_KEY}:{counter}:{nameof(select.DefaultValue)}"] = select.DefaultValue.ToString();
-
-                        var counter2 = 0;
-
-                        foreach (var entry in select.KeyValueMap)
-                        {
-                            additionalInfo[$"{OPTIONS_KEY}:{counter}:{nameof(select.KeyValueMap)}:{counter2}:{entry.Key}"] = entry.Value;
-                            counter2++;
-                        }
-                    }
-
-                    counter++;
-                }
+                if (!(additionalInformation.ValueKind == JsonValueKind.Object && 
+                      additionalInformation.TryGetProperty("label", out var labelProperty) && 
+                      labelProperty.ValueKind == JsonValueKind.String))
+                    throw new Exception($"The description of data writer {fullName} has no label property");
 
                 var attribute = dataWriterType.GetCustomAttribute<ExtensionDescriptionAttribute>(inherit: false);
 
@@ -312,7 +280,7 @@ namespace Nexus.Services
                         default, 
                         default,
                         default, 
-                        additionalInfo));
+                        additionalInformation));
 
                 else
                     dataWriterDescriptions.Add(new ExtensionDescription(
@@ -320,7 +288,7 @@ namespace Nexus.Services
                         attribute.Description, 
                         attribute.ProjectUrl, 
                         attribute.RepositoryUrl, 
-                        additionalInfo));
+                        additionalInformation));
             }
 
             AppState.DataWriterDescriptions = dataWriterDescriptions;

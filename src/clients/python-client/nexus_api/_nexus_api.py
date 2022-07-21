@@ -459,7 +459,7 @@ class ExtensionDescription:
         description: A nullable description.
         project_url: A nullable project website URL.
         repository_url: A nullable source repository URL.
-        additional_info: A nullable dictionary with additional information.
+        additional_information: Additional information about the extension.
     """
 
     type: str
@@ -474,8 +474,8 @@ class ExtensionDescription:
     repository_url: Optional[str]
     """A nullable source repository URL."""
 
-    additional_info: Optional[dict[str, str]]
-    """A nullable dictionary with additional information."""
+    additional_information: object
+    """Additional information about the extension."""
 
 
 @dataclass(frozen=True)

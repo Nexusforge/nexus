@@ -19,9 +19,9 @@ public class CatalogItemViewModel
 
         if (resource.Properties.HasValue)
         {
-            Description = Utilities.GetStringValue(resource.Properties, DESCRIPTION_KEY);
-            Warning = Utilities.GetStringValue(resource.Properties, WARNING_KEY);
-            Unit = Utilities.GetStringValue(resource.Properties, UNIT_KEY);
+            Description = resource.Properties.GetStringValue(DESCRIPTION_KEY);
+            Warning = resource.Properties.GetStringValue(WARNING_KEY);
+            Unit = resource.Properties.GetStringValue(UNIT_KEY);
         }
     }
 

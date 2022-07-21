@@ -102,8 +102,8 @@
         _ = Task.Run(async () =>
         {
             var catalog = await Catalog.CatalogTask.Value;
-            var alternativeReadme = Utilities.GetStringValue(catalog.Properties, CatalogItemViewModel.README_KEY);
-            var alternativeLicense = Utilities.GetStringValue(catalog.Properties, CatalogItemViewModel.LICENSE_KEY);
+            var alternativeReadme = catalog.Properties.GetStringValue(CatalogItemViewModel.README_KEY);
+            var alternativeLicense = catalog.Properties.GetStringValue(CatalogItemViewModel.LICENSE_KEY);
 
             _readme = Catalog.Info.Readme ?? alternativeReadme;
             _license = Catalog.Info.License ?? alternativeLicense;

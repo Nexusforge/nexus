@@ -18,40 +18,41 @@
             @bind-SelectedItem="AppState.Settings.FileType">
         </UISelect>
 
-        @if (AppState.Settings.Options is not null)
+        @if (AppState.Settings.ExtensionDescription is not null && 
+             AppState.Settings.ExtensionDescription.AdditionalInformation.TryGetProperty("options", out var optionsElement) &&
+             optionsElement.ValueKind == JsonValueKind.Array)
         {
-            @foreach (var entry in AppState.Settings.Options)
+            @foreach (var option in optionsElement.EnumerateArray())
             {
-                @if (entry.Key == "IntegerNumberInput" &&
-                    entry.Value.TryGetValue("ConfigurationKey", out var configurationKey) &&
-                    entry.Value.TryGetValue("Label", out var label) &&
-                    entry.Value.TryGetValue("DefaultValue", out var defaultValueString) &&
-                    entry.Value.TryGetValue("Minmum", out var minmumString) &&
-                    entry.Value.TryGetValue("Maximum", out var maximumString) &&
-                    int.TryParse(defaultValueString, out var defaultValue) &&
-                    int.TryParse(minmumString, out var minimum) &&
-                    int.TryParse(maximumString, out var maximum))
+                @if (option.ValueKind == JsonValueKind.Object &&
+                    option.TryGetStringValue("type", out var type) && type == "input-integer" &&
+                    option.TryGetStringValue("configuration-key", out var configurationKey) &&
+                    option.TryGetStringValue("label", out var label) &&
+                    option.TryGetIntegerValue("default", out var defaultValue) &&
+                    option.TryGetIntegerValue("minimum", out var minimum) &&
+                    option.TryGetIntegerValue("maximum", out var maximum))
                 {
-                    <UIOption Key="@configurationKey" DefaultValue="defaultValue" Store="AppState.Settings.Configuration">
+                    <UIOption Key="@configurationKey" DefaultValue="defaultValue.Value" Store="AppState.Settings.Configuration">
                         <ChildContent>
                             <UINumericTextBox 
                                 @bind-Value="@context.Value"
                                 Label="@label"
-                                Minimum="minimum"
-                                Maximum="maximum">
+                                Minimum="minimum.Value"
+                                Maximum="maximum.Value">
                             </UINumericTextBox>
                         </ChildContent>
                     </UIOption>
                 }
-                else if (entry.Key == "Select" &&
-                    entry.Value.TryGetValue("ConfigurationKey", out var configurationKey2) &&
-                    entry.Value.TryGetValue("Label", out var label2) &&
-                    entry.Value.TryGetValue("DefaultValue", out var defaultValue2))
+                else if (option.ValueKind == JsonValueKind.Object &&
+                    option.TryGetStringValue("type", out var type2) && type2 == "select" &&
+                    option.TryGetStringValue("configuration-key", out var configurationKey2) &&
+                    option.TryGetStringValue("label", out var label2) &&
+                    option.TryGetStringValue("default", out var defaultValue2))
                 {
                     <UIOption Key="@configurationKey2" DefaultValue="defaultValue2" Store="AppState.Settings.Configuration">
                         <UISelect 
                             @bind-SelectedItem="@context.Value"
-                            Items="AppState.Settings.GetOptionItems(entry.Value)"
+                            Items="@(option.GetStringDictionary("items") ?? new Dictionary<string, string>())"
                             Label="@label2">
                         </UISelect>
                     </UIOption>

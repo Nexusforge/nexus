@@ -1712,8 +1712,8 @@ public record PackageReference(Guid Id, string Provider, IDictionary<string, str
 /// <param name="Description">A nullable description.</param>
 /// <param name="ProjectUrl">A nullable project website URL.</param>
 /// <param name="RepositoryUrl">A nullable source repository URL.</param>
-/// <param name="AdditionalInfo">A nullable dictionary with additional information.</param>
-public record ExtensionDescription(string Type, string? Description, string? ProjectUrl, string? RepositoryUrl, IDictionary<string, string>? AdditionalInfo);
+/// <param name="AdditionalInformation">Additional information about the extension.</param>
+public record ExtensionDescription(string Type, string? Description, string? ProjectUrl, string? RepositoryUrl, JsonElement AdditionalInformation);
 
 /// <summary>
 /// A data source registration.

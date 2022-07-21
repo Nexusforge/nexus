@@ -14,6 +14,8 @@ public class SettingsViewModel : INotifyPropertyChanged
 
     #endregion
 
+    #region Fields
+
     private TimeSpan _samplePeriod { get; set; } = TimeSpan.FromSeconds(1);
     private IAppState _appState;
     private INexusClient _client;
@@ -24,6 +26,8 @@ public class SettingsViewModel : INotifyPropertyChanged
     private const string TYPE_KEY = "Type";
 
     private List<CatalogItemSelectionViewModel> _selectedCatalogItems = new List<CatalogItemSelectionViewModel>();
+
+    #endregion
 
     public SettingsViewModel(IAppState appState, IJSInProcessRuntime jsRuntime, INexusClient client)
     {
@@ -108,19 +112,20 @@ public class SettingsViewModel : INotifyPropertyChanged
         }
         set
         {
+            ExtensionDescription = ExtensionDescriptions.First(description => description.Type == value);
             _appState.ExportParameters = _appState.ExportParameters with { Type = value };
             _jSInProcessRuntime.InvokeVoid("nexus.util.saveSetting", "nexus.ui.file-type", value);
-            PrepareOptions();
         }
     }
-    
+
+    public IList<ExtensionDescription> ExtensionDescriptions { get; private set; }
+    public ExtensionDescription? ExtensionDescription { get; private set; }
+
     public IDictionary<string, string> Configuration { get; } = new Dictionary<string, string>();
 
     public IReadOnlyList<CatalogItemSelectionViewModel> SelectedCatalogItems => _selectedCatalogItems;
 
-    public IList<ExtensionDescription>? ExtensionDescriptions { get; private set; }
     public Dictionary<string, string> Items { get; private set; } = default!;
-    public Dictionary<string, Dictionary<string, string>>? Options { get; private set; }
 
     public Lazy<Task> InitializeTask { get; }
 
@@ -193,13 +198,6 @@ public class SettingsViewModel : INotifyPropertyChanged
         return actualParameters;
     }
 
-    public Dictionary<string, string> GetOptionItems(Dictionary<string, string> items)
-    {
-        return items
-            .Where(entry => entry.Key.StartsWith("KeyValueMap"))
-            .ToDictionary(entry => string.Join(':', entry.Key.Split(':').Skip(2)), entry => entry.Value);
-    }
-
     public bool IsSelected(CatalogItemViewModel catalogItem)
     {
         return TryFindSelectedCatalogItem(catalogItem) is not null;
@@ -262,13 +260,13 @@ public class SettingsViewModel : INotifyPropertyChanged
 
     private async Task InitializeAsync()
     {
+        const string LABEL_KEY = "label";
+
         try
         {
             var extensionDescriptions = (await _client.Writers
                 .GetDescriptionsAsync(CancellationToken.None))
-                .Where(description => 
-                    description.AdditionalInfo is not null && 
-                    description.AdditionalInfo.ContainsKey(FORMAT_NAME_KEY))
+                .Where(description => description.AdditionalInformation.GetStringValue(LABEL_KEY) is not null)
                 .ToList();
 
             if (extensionDescriptions.Any())
@@ -285,31 +283,14 @@ public class SettingsViewModel : INotifyPropertyChanged
 
             Items = extensionDescriptions.ToDictionary(
                 description => description.Type,
-                description => description.AdditionalInfo![FORMAT_NAME_KEY]);
+                description => description.AdditionalInformation.GetStringValue(LABEL_KEY)!);
 
             ExtensionDescriptions = extensionDescriptions;
+            ExtensionDescription = extensionDescriptions.First(description => description.Type == FileType);
         }
         catch (Exception ex)
         {
             _appState.AddError(ex);
         }
-
-        PrepareOptions();
-    }
-
-    private void PrepareOptions()
-    {
-        if (ExtensionDescriptions is null || !ExtensionDescriptions.Any())
-            return;
-
-        var description = ExtensionDescriptions!
-            .First(description => description.Type == FileType);
-
-        Options = description.AdditionalInfo!
-            .Where(entry => entry.Key.StartsWith(OPTIONS_KEY))
-            .GroupBy(entry => entry.Key.Split(":")[2])
-            .ToDictionary(
-                group => group.First(entry => entry.Key.EndsWith(TYPE_KEY)).Value, 
-                group => group.ToDictionary(entry => string.Join(':', entry.Key.Split(':').Skip(3)), entry => entry.Value));
     }
 }
