@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) [2022] [Apollo3zehn]
+Copyright (c) [2022] [malstroem-labs]
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
