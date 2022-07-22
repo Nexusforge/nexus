@@ -497,10 +497,10 @@ namespace Other
                     {
                         // required
                         ["server"] = "https://gitlab.com",
-                        ["projectPath"] = "malstroem-labs/Test-Group/my-awesome-test-project",
+                        ["project-path"] = "malstroem-labs/Test-Group/my-awesome-test-project",
                         ["package"] = "test-package",
                         ["version"] = "v1.0.1",
-                        ["assetSelector"] = assetSelector,
+                        ["asset-selector"] = assetSelector,
 
                         // optional token with scope(s): read_api
                         ["token"] = "zNSQJjP6eWpQ8k-zpvDs",
