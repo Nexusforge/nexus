@@ -7,10 +7,9 @@ def get_version(build: Optional[str], as_pypi_version: bool = False) -> str:
     with open("version.json", "r") as fh:
         version_data = json.load(fh)
         
-
     # version
-    version = version_data["Version"]
-    suffix = version_data["Suffix"]
+    version = version_data["version"]
+    suffix = version_data["suffix"]
 
     if suffix:
         version = f"{version}-{suffix}"

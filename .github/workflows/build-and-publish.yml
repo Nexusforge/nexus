@@ -24,14 +24,13 @@ jobs:
         run: git fetch --tags --force
 
       - name: Metadata
-        id: metadata_builder
         run: echo "IS_RELEASE=${{ startsWith(github.ref, 'refs/tags/') }}" >> $GITHUB_ENV
           
-      - name: Version
-        id: version_builder
+      - name: Environment
         run: |
-          echo "VERSION=$(python build/print_version.py       ${{ github.run_number }} ${{ env.IS_RELEASE }} false)" >> $GITHUB_ENV
-          echo "PYPI_VERSION=$(python build/print_version.py  ${{ github.run_number }} ${{ env.IS_RELEASE }} true)"  >> $GITHUB_ENV
+          echo "VERSION=$(python build/print_version.py ${{ github.run_number }} ${{ env.IS_RELEASE }} false)" >> $GITHUB_ENV
+          echo "PYPI_VERSION=$(python build/print_version.py  ${{ github.run_number }} ${{ env.IS_RELEASE }} true)" >> $GITHUB_ENV
+          echo "$(python build/print_solution.py)" >> $GITHUB_ENV
 
       - name: Extract annotation tag
         if: ${{ env.IS_RELEASE == 'true' }}
@@ -111,13 +110,11 @@ jobs:
       - name: Docker Load Image
         run: docker load --input artifacts/images/nexus_image.tar
 
-      # GitHub Package Registry is broken by design: https://github.community/t/download-from-github-package-registry-without-authentication/14407/138
       - name: Nuget package (MyGet)
         run: dotnet nuget push 'artifacts/packages/*.nupkg' --api-key ${MYGET_API_KEY} --source https://www.myget.org/F/apollo3zehn-dev/api/v3/index.json
         env:
           MYGET_API_KEY: ${{ secrets.MYGET_API_KEY }}
 
-      # GitHub Package Registry does not support Python packages: https://github.community/t/pypi-compatible-github-package-registry/14615
       - name: Python package (MyGet)
         run: 'for filePath in artifacts/packages/*.whl; do curl -k -X POST https://www.myget.org/F/apollo3zehn-dev/python/upload -H "Authorization: Bearer ${MYGET_API_KEY}" -F "data=@$filePath"; done'
         env:
