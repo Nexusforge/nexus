@@ -1,5 +1,4 @@
 import os
-import re
 from pathlib import Path
 
 import setuptools
@@ -13,27 +12,6 @@ os.chdir(build_dir)
 with open(os.path.join(source_dir, "README.md"), "r") as fh:
     long_description = fh.read()
 
-with open("../../../src/Directory.Build.props", "r") as fh:
-
-    content = fh.read()
-
-    match = re.match(".*" + \
-        "<Authors>(?P<authors>.*)<\\/Authors>.*" + \
-        "<PackageLicenseExpression>(?P<package_license_expression>.*)<\\/PackageLicenseExpression>.*" + \
-        "<PackageProjectUrl>(?P<package_project_url>.*)<\\/PackageProjectUrl>.*" + \
-        "<RepositoryUrl>(?P<repository_url>.*)<\\/RepositoryUrl>.*", \
-        content, re.DOTALL)
-
-    assert match
-
-    # author
-    author = match.group("authors")
-
-    # others
-    license = match.group("package_license_expression")
-    project_url = match.group("package_project_url")
-    repository_url = match.group("repository_url")
-
 # setuptools normalizes SemVer version :-/ https://github.com/pypa/setuptools/issues/308
 # The solution suggested there (from setuptools import sic, then call sic(version))
 # is useless here because setuptools calls packaging.version.Version when .egg is created
@@ -45,21 +23,21 @@ setuptools.setup(
     description="Type definitions to implement data sources for the Nexus system.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    author=author,
+    author=str(os.getenv("AUTHORS")),
     url="https://github.com/malstroem-labs/nexus",
     packages=[
         "nexus_extensibility"
     ],
     project_urls={
-        "Project": project_url,
-        "Repository": repository_url,
+        "Project": os.getenv("PACKAGEPROJECTURL"),
+        "Repository": os.getenv("REPOSITORYURL"),
     },
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent"
     ],
-    license=license,
+    license=str(os.getenv("PACKAGELICENSEEXPRESSION")),
     keywords="Nexus extensibility time-series data lake",
     platforms=[
         "any"
