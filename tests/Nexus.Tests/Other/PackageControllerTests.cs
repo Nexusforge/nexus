@@ -50,8 +50,8 @@ namespace Other
                     Configuration: new Dictionary<string, string>
                     {
                         // required
-                        ["Path"] = extensionFolderPath,
-                        ["Version"] = version
+                        ["path"] = extensionFolderPath,
+                        ["version"] = version
                     }
                 );
 
@@ -156,7 +156,7 @@ namespace Other
                     Provider: "local",
                     Configuration: new Dictionary<string, string>
                     {
-                        ["Path"] = root,
+                        ["path"] = root,
                     }
                 );
 
@@ -207,8 +207,8 @@ namespace Other
                     Configuration: new Dictionary<string, string>
                     {
                         // required
-                        ["Path"] = extensionRoot,
-                        ["Version"] = version
+                        ["path"] = extensionRoot,
+                        ["version"] = version
                     }
                 );
 
@@ -263,10 +263,10 @@ namespace Other
                 Configuration: new Dictionary<string, string>
                 {
                     // required
-                    ["ProjectPath"] = "malstroem-labs/github-releases-provider-test-project",
+                    ["project-path"] = "malstroem-labs/github-releases-provider-test-project",
 
                     // optional token with scope(s): repo
-                    ["Token"] = Encoding.ASCII.GetString(token)
+                    ["token"] = Encoding.ASCII.GetString(token)
                 }
             );
 
@@ -316,12 +316,12 @@ namespace Other
                     Configuration: new Dictionary<string, string>
                     {
                         // required
-                        ["ProjectPath"] = "malstroem-labs/github-releases-provider-test-project",
-                        ["Tag"] = "v1.0.1",
-                        ["AssetSelector"] = assetSelector,
+                        ["project-path"] = "malstroem-labs/github-releases-provider-test-project",
+                        ["tag"] = "v1.0.1",
+                        ["asset-selector"] = assetSelector,
 
                         // optional token with scope(s): repo
-                        ["Token"] = Encoding.ASCII.GetString(token)
+                        ["token"] = Encoding.ASCII.GetString(token)
                     }
                 );
 
@@ -363,11 +363,11 @@ namespace Other
                 Configuration: new Dictionary<string, string>
                 {
                     // required
-                    ["Server"] = "https://gitlab.com",
-                    ["ProjectPath"] = "malstroem-labs/Test-Group/my-awesome-test-project",
+                    ["server"] = "https://gitlab.com",
+                    ["project-path"] = "malstroem-labs/Test-Group/my-awesome-test-project",
 
                     // optional token with scope(s): read_api
-                    ["Token"] = "doQyXYqgmFxS1LUsupue"
+                    ["token"] = "doQyXYqgmFxS1LUsupue"
                 }
             );
 
@@ -405,13 +405,13 @@ namespace Other
                     Configuration: new Dictionary<string, string>
                     {
                         // required
-                        ["Server"] = "https://gitlab.com",
-                        ["ProjectPath"] = "malstroem-labs/Test-Group/my-awesome-test-project",
-                        ["Tag"] = "v1.0.1",
-                        ["AssetSelector"] = assetSelector,
+                        ["server"] = "https://gitlab.com",
+                        ["project-path"] = "malstroem-labs/Test-Group/my-awesome-test-project",
+                        ["tag"] = "v1.0.1",
+                        ["asset-selector"] = assetSelector,
 
                         // optional token with scope(s): read_api
-                        ["Token"] = "doQyXYqgmFxS1LUsupue"
+                        ["token"] = "doQyXYqgmFxS1LUsupue"
                     }
                 );
 
@@ -453,12 +453,12 @@ namespace Other
                 Configuration: new Dictionary<string, string>
                 {
                     // required
-                    ["Server"] = "https://gitlab.com",
-                    ["ProjectPath"] = "malstroem-labs/Test-Group/my-awesome-test-project",
-                    ["Package"] = "test-package",
+                    ["server"] = "https://gitlab.com",
+                    ["project-path"] = "malstroem-labs/Test-Group/my-awesome-test-project",
+                    ["package"] = "test-package",
 
                     // optional token with scope(s): read_api
-                    ["Token"] = "zNSQJjP6eWpQ8k-zpvDs",
+                    ["token"] = "zNSQJjP6eWpQ8k-zpvDs",
                 }
             );
 
@@ -496,14 +496,14 @@ namespace Other
                     Configuration: new Dictionary<string, string>
                     {
                         // required
-                        ["Server"] = "https://gitlab.com",
-                        ["ProjectPath"] = "malstroem-labs/Test-Group/my-awesome-test-project",
-                        ["Package"] = "test-package",
-                        ["Version"] = "v1.0.1",
-                        ["AssetSelector"] = assetSelector,
+                        ["server"] = "https://gitlab.com",
+                        ["projectPath"] = "malstroem-labs/Test-Group/my-awesome-test-project",
+                        ["package"] = "test-package",
+                        ["version"] = "v1.0.1",
+                        ["assetSelector"] = assetSelector,
 
                         // optional token with scope(s): read_api
-                        ["Token"] = "zNSQJjP6eWpQ8k-zpvDs",
+                        ["token"] = "zNSQJjP6eWpQ8k-zpvDs",
                     }
                 );
 
