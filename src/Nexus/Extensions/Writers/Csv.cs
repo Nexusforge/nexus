@@ -341,11 +341,11 @@ namespace Nexus.Writers
 
         #region IDisposable
 
-        private bool disposedValue;
+        private bool _disposedValue;
 
         protected virtual void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (!_disposedValue)
             {
                 if (disposing)
                 {
@@ -356,7 +356,7 @@ namespace Nexus.Writers
                     }
                 }
 
-                disposedValue = true;
+                _disposedValue = true;
             }
         }
 

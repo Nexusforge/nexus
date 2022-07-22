@@ -252,11 +252,11 @@ namespace Nexus.Extensibility
 
         #region IDisposable
 
-        private bool disposedValue;
+        private bool _disposedValue;
 
         protected virtual void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (!_disposedValue)
             {
                 if (disposing)
                 {
@@ -264,7 +264,7 @@ namespace Nexus.Extensibility
                     disposable?.Dispose();
                 }
 
-                disposedValue = true;
+                _disposedValue = true;
             }
         }
 
