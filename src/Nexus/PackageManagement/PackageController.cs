@@ -250,8 +250,8 @@ namespace Nexus.PackageManagement
             var rawResult = new List<string>();
             var configuration = PackageReference.Configuration;
 
-            if (!configuration.TryGetValue("Path", out var path))
-                throw new ArgumentException("The 'Path' parameter is missing in the extension reference.");
+            if (!configuration.TryGetValue("path", out var path))
+                throw new ArgumentException("The 'path' parameter is missing in the extension reference.");
 
             if (!Directory.Exists(path))
                 throw new DirectoryNotFoundException($"The extension path {path} does not exist.");
@@ -276,11 +276,11 @@ namespace Nexus.PackageManagement
             {
                 var configuration = PackageReference.Configuration;
 
-                if (!configuration.TryGetValue("Path", out var path))
-                    throw new ArgumentException("The 'Path' parameter is missing in the extension reference.");
+                if (!configuration.TryGetValue("path", out var path))
+                    throw new ArgumentException("The 'path' parameter is missing in the extension reference.");
 
-                if (!configuration.TryGetValue("Version", out var version))
-                    throw new ArgumentException("The 'Version' parameter is missing in the extension reference.");
+                if (!configuration.TryGetValue("version", out var version))
+                    throw new ArgumentException("The 'version' parameter is missing in the extension reference.");
 
                 var sourcePath = Path.Combine(path, version);
 
@@ -313,8 +313,8 @@ namespace Nexus.PackageManagement
             var result = new List<string>();
             var configuration = PackageReference.Configuration;
 
-            if (!configuration.TryGetValue("ProjectPath", out var projectPath))
-                throw new ArgumentException("The 'ProjectPath' parameter is missing in the extension reference.");
+            if (!configuration.TryGetValue("project-path", out var projectPath))
+                throw new ArgumentException("The 'project-path' parameter is missing in the extension reference.");
 
             var server = $"https://api.github.com";
             var requestUrl = $"{server}/repos/{projectPath}/releases?per_page={PER_PAGE}&page={1}";
@@ -323,7 +323,7 @@ namespace Nexus.PackageManagement
             {
                 using var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
 
-                if (configuration.TryGetValue("Token", out var token))
+                if (configuration.TryGetValue("token", out var token))
                     request.Headers.Add("Authorization", $"token {token}");
 
                 request.Headers.Add("User-Agent", "Nexus");
@@ -368,14 +368,14 @@ namespace Nexus.PackageManagement
         {
             var configuration = PackageReference.Configuration;
 
-            if (!configuration.TryGetValue("ProjectPath", out var projectPath))
-                throw new ArgumentException("The 'ProjectPath' parameter is missing in the extension reference.");
+            if (!configuration.TryGetValue("project-path", out var projectPath))
+                throw new ArgumentException("The 'project-path' parameter is missing in the extension reference.");
 
-            if (!configuration.TryGetValue("Tag", out var tag))
-                throw new ArgumentException("The 'Tag' parameter is missing in the extension reference.");
+            if (!configuration.TryGetValue("tag", out var tag))
+                throw new ArgumentException("The 'tag' parameter is missing in the extension reference.");
 
-            if (!configuration.TryGetValue("AssetSelector", out var assetSelector))
-                throw new ArgumentException("The 'AssetSelector' parameter is missing in the extension reference.");
+            if (!configuration.TryGetValue("asset-selector", out var assetSelector))
+                throw new ArgumentException("The 'asset-selector' parameter is missing in the extension reference.");
 
             var targetPath = Path.Combine(restoreRoot, projectPath.Replace('/', '_').ToLower(), tag);
 
@@ -386,7 +386,7 @@ namespace Nexus.PackageManagement
 
                 using var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
 
-                if (configuration.TryGetValue("Token", out var token))
+                if (configuration.TryGetValue("token", out var token))
                     request.Headers.Add("Authorization", $"token {token}");
 
                 request.Headers.Add("User-Agent", "Nexus");
@@ -416,7 +416,7 @@ namespace Nexus.PackageManagement
                     // get download stream
                     var headers = new Dictionary<string, string>();
 
-                    if (configuration.TryGetValue("Token", out var assetToken))
+                    if (configuration.TryGetValue("token", out var assetToken))
                         headers["Authorization"] = $"token {assetToken}";
 
                     headers["User-Agent"] = "Nexus";
@@ -447,16 +447,16 @@ namespace Nexus.PackageManagement
             var result = new List<string>();
             var configuration = PackageReference.Configuration;
 
-            if (!configuration.TryGetValue("Server", out var server))
-                throw new ArgumentException("The 'Server' parameter is missing in the extension reference.");
+            if (!configuration.TryGetValue("server", out var server))
+                throw new ArgumentException("The 'server' parameter is missing in the extension reference.");
 
-            if (!configuration.TryGetValue("ProjectPath", out var projectPath))
-                throw new ArgumentException("The 'ProjectPath' parameter is missing in the extension reference.");
+            if (!configuration.TryGetValue("project-path", out var projectPath))
+                throw new ArgumentException("The 'project-path' parameter is missing in the extension reference.");
 
-            if (!configuration.TryGetValue("Package", out var package))
-                throw new ArgumentException("The 'Package' parameter is missing in the extension reference.");
+            if (!configuration.TryGetValue("package", out var package))
+                throw new ArgumentException("The 'package' parameter is missing in the extension reference.");
 
-            configuration.TryGetValue("Token", out var token);
+            configuration.TryGetValue("token", out var token);
 
             var headers = new Dictionary<string, string>();
 
@@ -479,20 +479,20 @@ namespace Nexus.PackageManagement
         {
             var configuration = PackageReference.Configuration;
 
-            if (!configuration.TryGetValue("Server", out var server))
-                throw new ArgumentException("The 'Server' parameter is missing in the extension reference.");
+            if (!configuration.TryGetValue("server", out var server))
+                throw new ArgumentException("The 'server' parameter is missing in the extension reference.");
 
-            if (!configuration.TryGetValue("ProjectPath", out var projectPath))
-                throw new ArgumentException("The 'ProjectPath' parameter is missing in the extension reference.");
+            if (!configuration.TryGetValue("project-path", out var projectPath))
+                throw new ArgumentException("The 'project-path' parameter is missing in the extension reference.");
 
-            if (!configuration.TryGetValue("Package", out var package))
-                throw new ArgumentException("The 'Package' parameter is missing in the extension reference.");
+            if (!configuration.TryGetValue("package", out var package))
+                throw new ArgumentException("The 'package' parameter is missing in the extension reference.");
 
-            if (!configuration.TryGetValue("Version", out var version))
-                throw new ArgumentException("The 'Version' parameter is missing in the extension reference.");
+            if (!configuration.TryGetValue("version", out var version))
+                throw new ArgumentException("The 'version' parameter is missing in the extension reference.");
 
-            if (!configuration.TryGetValue("AssetSelector", out var assetSelector))
-                throw new ArgumentException("The 'AssetSelector' parameter is missing in the extension reference.");
+            if (!configuration.TryGetValue("asset-selector", out var assetSelector))
+                throw new ArgumentException("The 'asset-selector' parameter is missing in the extension reference.");
 
             configuration.TryGetValue("Token", out var token);
 
@@ -630,11 +630,11 @@ namespace Nexus.PackageManagement
         //{
         //    var result = new Dictionary<SemanticVersion, string>();
 
-        //    if (!_packageReference.TryGetValue("Server", out var server))
-        //        throw new ArgumentException("The 'Server' parameter is missing in the extension reference.");
+        //    if (!_packageReference.TryGetValue("server", out var server))
+        //        throw new ArgumentException("The 'server' parameter is missing in the extension reference.");
 
-        //    if (!_packageReference.TryGetValue("ProjectPath", out var projectPath))
-        //        throw new ArgumentException("The 'ProjectPath' parameter is missing in the extension reference.");
+        //    if (!_packageReference.TryGetValue("project-path", out var projectPath))
+        //        throw new ArgumentException("The 'project-path' parameter is missing in the extension reference.");
 
         //    var encodedProjectPath = WebUtility.UrlEncode(projectPath);
         //    var requestUrl = $"{server}/api/v4/projects/{encodedProjectPath}/releases?per_page={PER_PAGE}&page={1}";
@@ -690,17 +690,17 @@ namespace Nexus.PackageManagement
 
         //private async Task<string> RestoreGitLabReleasesAsync(string restoreRoot, CancellationToken cancellationToken)
         //{
-        //    if (!_packageReference.TryGetValue("Server", out var server))
-        //        throw new ArgumentException("The 'Server' parameter is missing in the extension reference.");
+        //    if (!_packageReference.TryGetValue("server", out var server))
+        //        throw new ArgumentException("The 'server' parameter is missing in the extension reference.");
 
-        //    if (!_packageReference.TryGetValue("ProjectPath", out var projectPath))
+        //    if (!_packageReference.TryGetValue("project-path", out var projectPath))
         //        throw new ArgumentException("The 'ProjectPath' parameter is missing in the extension reference.");
 
-        //    if (!_packageReference.TryGetValue("Tag", out var tag))
-        //        throw new ArgumentException("The 'Tag' parameter is missing in the extension reference.");
+        //    if (!_packageReference.TryGetValue("tag", out var tag))
+        //        throw new ArgumentException("The 'tag' parameter is missing in the extension reference.");
 
-        //    if (!_packageReference.TryGetValue("AssetSelector", out var assetSelector))
-        //        throw new ArgumentException("The 'AssetSelector' parameter is missing in the extension reference.");
+        //    if (!_packageReference.TryGetValue("asset-selector", out var assetSelector))
+        //        throw new ArgumentException("The 'asset-selector' parameter is missing in the extension reference.");
 
         //    var targetPath = Path.Combine(restoreRoot, projectPath.Replace('/', '_').ToLower(), tag);
 
