@@ -494,7 +494,7 @@ namespace Nexus.PackageManagement
             if (!configuration.TryGetValue("asset-selector", out var assetSelector))
                 throw new ArgumentException("The 'asset-selector' parameter is missing in the extension reference.");
 
-            configuration.TryGetValue("Token", out var token);
+            configuration.TryGetValue("token", out var token);
 
             var targetPath = Path.Combine(restoreRoot, projectPath.Replace('/', '_').ToLower(), version);
 
@@ -534,7 +534,6 @@ namespace Nexus.PackageManagement
                 }
 
                 using var response = await _httpClient.SendAsync(request, cancellationToken);
-
                 response.EnsureSuccessStatusCode();
 
                 var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
@@ -585,6 +584,8 @@ namespace Nexus.PackageManagement
                 }
 
                 using var response = await _httpClient.SendAsync(request, cancellationToken);
+                response.EnsureSuccessStatusCode();
+
                 var message = await response.Content.ReadAsStringAsync(cancellationToken);
 
                 var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
@@ -643,11 +644,10 @@ namespace Nexus.PackageManagement
         //    {
         //        using var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
 
-        //        if (_packageReference.TryGetValue("Token", out var token))
+        //        if (_packageReference.TryGetValue("token", out var token))
         //            request.Headers.Add("PRIVATE-TOKEN", token);
 
         //        using var response = await _httpClient.SendAsync(request);
-
         //        response.EnsureSuccessStatusCode();
 
         //        var contentStream = await response.Content.ReadAsStreamAsync();
@@ -711,11 +711,10 @@ namespace Nexus.PackageManagement
 
         //        using var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
 
-        //        if (_packageReference.TryGetValue("Token", out var token))
+        //        if (_packageReference.TryGetValue("token", out var token))
         //            request.Headers.Add("PRIVATE-TOKEN", token);
 
         //        using var response = await _httpClient.SendAsync(request);
-
         //        response.EnsureSuccessStatusCode();
 
         //        var contentStream = await response.Content.ReadAsStreamAsync();

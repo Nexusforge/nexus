@@ -61,8 +61,8 @@ namespace Services
                     Configuration: new Dictionary<string, string>
                     {
                         // required
-                        ["Path"] = extensionFolderPath,
-                        ["Version"] = version
+                        ["path"] = extensionFolderPath,
+                        ["version"] = version
                     }
                 );
 
