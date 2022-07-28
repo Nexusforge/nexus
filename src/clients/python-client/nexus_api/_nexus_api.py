@@ -926,20 +926,20 @@ class JobsClient:
 
         return self._client._invoke(Job, "POST", url, "application/json", "application/json", json.dumps(JsonEncoder.encode(parameters, _json_encoder_options)))
 
-    def load_packages(self) -> Awaitable[Job]:
+    def refresh_database(self) -> Awaitable[Job]:
         """
-        Creates a new load packages job.
+        Creates a new job which reloads all extensions and resets the resource catalog.
 
         Args:
         """
 
-        url = "/api/v1/jobs/load-packages"
+        url = "/api/v1/jobs/refresh-database"
 
         return self._client._invoke(Job, "POST", url, "application/json", None, None)
 
     def clear_cache(self, catalog_id: str, begin: datetime, end: datetime) -> Awaitable[Job]:
         """
-        Clears the catalog cache for the specified period of time.
+        Clears the aggregation data cache for the specified period of time.
 
         Args:
             catalog_id: The catalog identifier.

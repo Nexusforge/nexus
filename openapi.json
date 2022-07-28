@@ -646,13 +646,13 @@
         }
       }
     },
-    "/api/v1/jobs/load-packages": {
+    "/api/v1/jobs/refresh-database": {
       "post": {
         "tags": [
           "Jobs"
         ],
-        "summary": "Creates a new load packages job.",
-        "operationId": "Jobs_LoadPackages",
+        "summary": "Creates a new job which reloads all extensions and resets the resource catalog.",
+        "operationId": "Jobs_RefreshDatabase",
         "responses": {
           "200": {
             "description": "",
@@ -672,7 +672,7 @@
         "tags": [
           "Jobs"
         ],
-        "summary": "Clears the catalog cache for the specified period of time.",
+        "summary": "Clears the aggregation data cache for the specified period of time.",
         "operationId": "Jobs_ClearCache",
         "parameters": [
           {

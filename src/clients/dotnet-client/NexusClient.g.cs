@@ -714,13 +714,13 @@ public interface IJobsClient
     Task<Job> ExportAsync(ExportParameters parameters, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Creates a new load packages job.
+    /// Creates a new job which reloads all extensions and resets the resource catalog.
     /// </summary>
     /// <param name="cancellationToken">The token to cancel the current operation.</param>
-    Task<Job> LoadPackagesAsync(CancellationToken cancellationToken = default);
+    Task<Job> RefreshDatabaseAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Clears the catalog cache for the specified period of time.
+    /// Clears the aggregation data cache for the specified period of time.
     /// </summary>
     /// <param name="catalogId">The catalog identifier.</param>
     /// <param name="begin">Start date/time.</param>
@@ -783,10 +783,10 @@ public class JobsClient : IJobsClient
     }
 
     /// <inheritdoc />
-    public Task<Job> LoadPackagesAsync(CancellationToken cancellationToken = default)
+    public Task<Job> RefreshDatabaseAsync(CancellationToken cancellationToken = default)
     {
         var urlBuilder = new StringBuilder();
-        urlBuilder.Append("/api/v1/jobs/load-packages");
+        urlBuilder.Append("/api/v1/jobs/refresh-database");
 
         var url = urlBuilder.ToString();
         return _client.InvokeAsync<Job>("POST", url, "application/json", default, default, cancellationToken);
