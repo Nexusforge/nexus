@@ -236,5 +236,5 @@ async Task InitializeAppAsync(
             new Dictionary<string, UserConfiguration>());
 
     // packages and catalogs
-    await appStateManager.LoadPackagesAsync(new Progress<double>(), CancellationToken.None);
+    await appStateManager.RefreshDatabaseAsync(new Progress<double>(), CancellationToken.None);
 }

@@ -14,7 +14,7 @@ namespace Nexus.Services
         private ICatalogManager _catalogManager;
         private IDatabaseService _databaseService;
         private ILogger<AppStateManager> _logger;
-        private SemaphoreSlim _reloadPackagesSemaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
+        private SemaphoreSlim _refreshDatabaseSemaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
         private SemaphoreSlim _projectSemaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
 
         #endregion
@@ -45,18 +45,18 @@ namespace Nexus.Services
 
         #region Methods
 
-        public async Task LoadPackagesAsync(
+        public async Task RefreshDatabaseAsync(
             IProgress<double> progress,
             CancellationToken cancellationToken)
         {
-            await _reloadPackagesSemaphore.WaitAsync();
+            await _refreshDatabaseSemaphore.WaitAsync();
 
             try
             {
 #warning make atomic
-                var reloadPackagesTask = AppState.ReloadPackagesTask;
+                var refreshDatabaseTask = AppState.ReloadPackagesTask;
 
-                if (reloadPackagesTask is null)
+                if (refreshDatabaseTask is null)
                 {
                     /* create fresh app state */
                     AppState.CatalogState = new CatalogState(
@@ -67,7 +67,7 @@ namespace Nexus.Services
                     /* load packages */
                     _logger.LogInformation("Load packages");
 
-                    reloadPackagesTask = _extensionHive
+                    refreshDatabaseTask = _extensionHive
                         .LoadPackagesAsync(AppState.Project.PackageReferences.Values, progress, cancellationToken)
                         .ContinueWith(task =>
                         {
@@ -79,7 +79,7 @@ namespace Nexus.Services
             }
             finally
             {
-                _reloadPackagesSemaphore.Release();
+                _refreshDatabaseSemaphore.Release();
             }
         }
 

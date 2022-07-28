@@ -247,28 +247,28 @@ namespace Nexus.Controllers
         }
 
         /// <summary>
-        /// Creates a new load packages job.
+        /// Creates a new job which reloads all extensions and resets the resource catalog.
         /// </summary>
         [Authorize(Policy = NexusPolicies.RequireAdmin)]
-        [HttpPost("load-packages")]
-        public ActionResult<Job> LoadPackages()
+        [HttpPost("refresh-database")]
+        public ActionResult<Job> RefreshDatabase()
         {
             var username = User.Identity?.Name!;
 
-            var job = new Job(Guid.NewGuid(), "load-packages", username, default);
+            var job = new Job(Guid.NewGuid(), "refresh-database", username, default);
             var progress = new Progress<double>();
 
             var jobControl = _jobService.AddJob(job, progress, async (jobControl, cts) =>
             {
                 try
                 {
-                    await _appStateManager.LoadPackagesAsync(progress, cts.Token);
+                    await _appStateManager.RefreshDatabaseAsync(progress, cts.Token);
                     return null;
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Unable to load the packages.");
-                    throw new Exception("Unable to load the packages.", ex);
+                    _logger.LogError(ex, "Unable to reload extensions and reset the resource catalog.");
+                    throw new Exception("Unable to reload extensions and reset the resource catalog.", ex);
                 }
             });
 
@@ -277,7 +277,7 @@ namespace Nexus.Controllers
         }
 
         /// <summary>
-        /// Clears the catalog cache for the specified period of time.
+        /// Clears the aggregation data cache for the specified period of time.
         /// </summary>
         /// <param name="catalogId">The catalog identifier.</param>
         /// <param name="begin">Start date/time.</param>
